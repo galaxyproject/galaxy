@@ -32,14 +32,19 @@ class BaseGitPlugin(ErrorPlugin):
     ts_urls = {}
     ts_repo_cache = {}
     git_project_cache = {}
+    label_cache = {}
 
     def _determine_ts_url(self, tool):
+        if not tool.tool_shed:
+            return None
         if tool.tool_shed not in self.ts_urls:
             ts_url_request = requests.get('http://' + str(tool.tool_shed))
             self.ts_urls[tool.tool_shed] = ts_url_request.url
         return self.ts_urls[tool.tool_shed]
 
     def _get_gitrepo_from_ts(self, job, ts_url):
+        if not ts_url:
+            return None
         if job.tool_id not in self.ts_repo_cache:
             ts_repo_request_data = requests.get(ts_url + "/api/repositories?tool_ids=" + str(job.tool_id)).json()
 
@@ -65,11 +70,11 @@ class BaseGitPlugin(ErrorPlugin):
         return u"""Galaxy Job Error: {tool_id} v{tool_version}""".format(**tool_kw)
 
     @abstractmethod
-    def _create_issue(self, error_message, error_title, gl_project, issue_cache_key):
+    def _create_issue(self, **kwargs):
         raise NotImplementedError("Method _create_issue is required")
 
     @abstractmethod
-    def _append_issue(self, error_message, error_title, gitlab_urlencodedpath, issue_cache_key):
+    def _append_issue(self, **kwargs):
         raise NotImplementedError("Method _append_issue is required")
 
     @abstractmethod

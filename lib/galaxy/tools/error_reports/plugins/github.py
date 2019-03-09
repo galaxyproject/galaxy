@@ -2,15 +2,21 @@
 from __future__ import absolute_import
 
 import logging
+import sys
+if sys.version_info[0] < 3:
+    import urllib as urllib
+    import urlparse as urlparse
+else:
+    import urllib.parse as urllib
+    urlparse = urllib
 
-from galaxy.tools.errors import EmailErrorReporter
 from galaxy.util import string_as_bool, unicodify
-from . import ErrorPlugin
+from .base_git import BaseGitPlugin
 
 log = logging.getLogger(__name__)
 
 
-class GithubPlugin(ErrorPlugin):
+class GithubPlugin(BaseGitPlugin):
     """Send error report to Github.
     """
     plugin_type = "github"
@@ -20,43 +26,31 @@ class GithubPlugin(ErrorPlugin):
         self.redact_user_details_in_bugreport = self.app.config.redact_user_details_in_bugreport
         self.verbose = string_as_bool(kwargs.get('verbose', False))
         self.user_submission = string_as_bool(kwargs.get('user_submission', False))
+
+        # Github settings
+        self.github_base_url = kwargs.get('github_base_url', 'https://github.com')
+        self.github_api_url = kwargs.get('github_api_url', 'https://api.github.com')
+        self.git_default_repo_owner = kwargs.get('github_default_repo_owner', False)
+        self.git_default_repo_name = kwargs.get('github_default_repo_name', False)
+
         try:
             import github
 
             self.github = github.Github(
                 kwargs['github_oauth_token'],
                 # Allow running against GH enterprise deployments.
-                base_url=kwargs.get('github_base_url', 'https://api.github.com')
+                base_url=self.github_api_url
             )
-            self.repo = self.github.get_repo('{github_repo_owner}/{github_repo_name}'.format(**kwargs))
-            log.info(self.repo)
-            # We want to ensure that we don't generate a thousand issues when
-            # multiple users report a bug. So, we need to de-dupe issues. In
-            # order to de-dupe, we need to know which are open. So, we'll keep
-            # a cache of open issues and just add to it whenever we create a
-            # new one.
-            self.issue_cache = {}
-            for issue in self.repo.get_issues(state='open'):
-                log.info(issue)
-                self.issue_cache[issue.title] = issue
-            log.info(self.issue_cache)
+            # Connect to the default repository and fill up the issue cache for it
+            repo = self.github.get_repo('%s/%s' % (self.git_default_repo_owner, self.git_default_repo_name))
+            self._fill_issue_cache(repo, "default")
 
             # We'll also cache labels which we'll use for tagging issues.
-            self.label_cache = {}
-            for label in self.repo.get_labels():
-                log.info(label)
-                self.label_cache[label.name] = label
-            log.info(self.label_cache)
+            self.label_cache["default"] = {}
+            self._fill_label_cache(repo, "default")
         except ImportError:
             log.error("Please install pygithub to submit bug reports to github")
             self.github = None
-
-    def get_label(self, label):
-        # If we don't have this label, then create it + cache it.
-        if label not in self.label_cache:
-            self.label_cache[label] = self.repo.create_label(name=label, color='ffffff')
-
-        return self.label_cache[label]
 
     def submit_report(self, dataset, job, tool, **kwargs):
         """Submit the error report to sentry
@@ -64,29 +58,94 @@ class GithubPlugin(ErrorPlugin):
         log.info(self.github)
 
         if self.github:
-            tool_kw = {'tool_id': unicodify(job.tool_id), 'tool_version': unicodify(job.tool_version)}
-            label = self.get_label('{tool_id}/{tool_version}'.format(**tool_kw))
-            error_title = u"""Galaxy Job Error: {tool_id} v{tool_version}""".format(**tool_kw)
 
-            # We'll re-use the email error reporter's template since github supports HTML
-            error_reporter = EmailErrorReporter(dataset.id, self.app)
-            error_reporter.create_report(job.get_user(), email=kwargs.get('email', None), message=kwargs.get('message', None), redact_user_details_in_bugreport=self.redact_user_details_in_bugreport)
+            # Determine the ToolShed url, initially we connect with HTTP and if redirect to HTTPS is set up,
+            # this will be detected by requests and used further down the line. Also cache this so everything is
+            # as fast as possible
+            log.info(tool.tool_shed)
+            ts_url = self._determine_ts_url(tool)
+            log.info("GitLab error reporting - Determined ToolShed is %s", ts_url)
 
-            # The HTML report
-            error_message = error_reporter.html_report
+            # Find the repo inside the ToolShed
+            ts_repourl = self._get_gitrepo_from_ts(job, ts_url)
 
-            log.info(error_title in self.issue_cache)
-            if error_title not in self.issue_cache:
+            # Determine the GitLab project URL and the issue cache key
+            github_projecturl = urlparse.urlparse(ts_repourl).path[1:] if ts_repourl else \
+                "/".join([self.git_default_repo_owner, self.git_default_repo_name])
+            issue_cache_key = self._get_issue_cache_key(job, ts_repourl)
+
+            # Connect to the repo
+            if github_projecturl not in self.git_project_cache:
+                self.git_project_cache[github_projecturl] = self.github.get_repo('%s' % github_projecturl)
+            gh_project = self.git_project_cache[github_projecturl]
+
+            # Make sure we keep a cache of the issues, per tool in this case
+            if issue_cache_key not in self.issue_cache:
+                self._fill_issue_cache(gh_project, issue_cache_key)
+
+            # Retrieve label
+            label = self.get_label('%s/%s' % (unicodify(job.tool_id), unicodify(job.tool_version)), gh_project, issue_cache_key)
+
+            # Generate information for the tool
+            error_title = self._generate_error_title(job)
+
+            # Generate the error message
+            error_message = self._generate_error_message(dataset, job, kwargs)
+
+            log.info(error_title in self.issue_cache[issue_cache_key])
+            if error_title not in self.issue_cache[issue_cache_key]:
                 # Create a new issue.
-                self.issue_cache[error_title] = self.repo.create_issue(
-                    title=error_title,
-                    body=error_message,
-                    # Label it with a tag: tool_id/tool_version
-                    labels=[label]
-                )
+                self._create_issue(error_message=error_message, error_title=error_title, gh_project=gh_project,
+                                   issue_cache_key=issue_cache_key, label=label)
             else:
-                self.issue_cache[error_title].create_comment(error_message)
-            return ('Submitted bug report to Github. Your issue number is %s' % self.issue_cache[error_title].number, 'success')
+                self._append_issue(issue_cache_key=issue_cache_key, error_title=error_title, error_message=error_message)
+            return ('Submitted error report to Github. Your issue number is <a href="%s/%s/issues/%s" '
+                        'target="_blank">#%s</a>.' % (self.github_base_url, github_projecturl,
+                                                      self.issue_cache[issue_cache_key][error_title].number,
+                                                      self.issue_cache[issue_cache_key][error_title].number), 'success')
+
+    def _create_issue(self, **kwargs):
+        # Create a new issue.
+        self.issue_cache[kwargs.get('issue_cache_key')][kwargs.get('error_title')] = kwargs.get('gh_project').create_issue(
+            title=kwargs.get('error_title'),
+            body=kwargs.get('error_message'),
+            # Label it with a tag: tool_id/tool_version
+            labels=[kwargs.get('label')]
+        )
+
+    def _append_issue(self, **kwargs):
+        # Create comment on an issue
+        self.issue_cache[kwargs.get('issue_cache_key')][kwargs.get('error_title')]\
+            .create_comment(kwargs.get('error_message'))
+
+    def _fill_issue_cache(self, git_project, issue_cache_key):
+        # We want to ensure that we don't generate a thousand issues when
+        # multiple users report a bug. So, we need to de-dupe issues. In
+        # order to de-dupe, we need to know which are open. So, we'll keep
+        # a cache of open issues and just add to it whenever we create a
+        # new one.
+        self.issue_cache[issue_cache_key] = {}
+        for issue in git_project.get_issues(state='open'):
+            log.info(issue)
+            self.issue_cache[issue_cache_key][issue.title] = issue
+        log.info(self.issue_cache)
+
+    def _fill_label_cache(self, git_project, issue_cache_key):
+        for label in git_project.get_labels():
+            log.info(label)
+            self.label_cache[issue_cache_key][label.name] = label
+        log.info(self.label_cache)
+
+    def get_label(self, label, git_project, issue_cache_key):
+        # If we don't have this label, then create it + cache it.
+        if issue_cache_key not in self.label_cache:
+            self.label_cache[issue_cache_key] = {}
+            self._fill_label_cache(git_project, issue_cache_key)
+
+        if label not in self.label_cache[issue_cache_key]:
+            self.label_cache[issue_cache_key][label] = git_project.create_label(name=label, color='ffffff')
+
+        return self.label_cache[issue_cache_key][label]
 
 
 __all__ = ('GithubPlugin', )

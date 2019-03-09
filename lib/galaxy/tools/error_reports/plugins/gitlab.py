@@ -114,10 +114,10 @@ class GitLabPlugin(BaseGitPlugin):
                 log.info(error_title in self.issue_cache[issue_cache_key])
                 if error_title not in self.issue_cache[issue_cache_key]:
                     # Create a new issue.
-                    self._create_issue(error_message, error_title, gl_project, issue_cache_key)
+                    self._create_issue(error_message=error_message, error_title=error_title, gl_project=gl_project, issue_cache_key=issue_cache_key)
                 else:
                     # Add a comment to an issue...
-                    self._append_issue(error_message, error_title, gitlab_urlencodedpath, issue_cache_key)
+                    self._append_issue(error_message=error_message, error_title=error_title, gitlab_urlencodedpath=gitlab_urlencodedpath, issue_cache_key=issue_cache_key)
 
                 return ('Submitted error report to GitLab. Your issue number is <a href="%s/%s/issues/%s" '
                         'target="_blank">#%s</a>.' % (self.gitlab_base_url, gitlab_projecturl,
@@ -159,27 +159,27 @@ class GitLabPlugin(BaseGitPlugin):
             log.error("GitLab error reporting - No connection to GitLab. Cannot report error to GitLab.")
             return ('Internal Error.', 'danger')
 
-    def _create_issue(self, error_message, error_title, gl_project, issue_cache_key):
+    def _create_issue(self, **kwargs):
         # Create the issue on GitLab
-        issue = gl_project.issues.create({
-            'title': error_title,
-            'description': error_message
+        issue = kwargs.get('gl_project').issues.create({
+            'title': kwargs.get('error_title'),
+            'description': kwargs.get('error_message')
         })
-        self.issue_cache[issue_cache_key][error_title] = issue.iid
+        self.issue_cache[kwargs.get('issue_cache_key')][kwargs.get('error_title')] = issue.iid
 
-    def _append_issue(self, error_message, error_title, gitlab_urlencodedpath, issue_cache_key):
+    def _append_issue(self, **kwargs):
         # Add a comment to an existing issue
         gl_url = "/".join([
             self.gitlab_base_url,
             "api",
             "v4",
             "projects",
-            gitlab_urlencodedpath,
+            kwargs.get('gitlab_urlencodedpath'),
             "issues",
-            str(self.issue_cache[issue_cache_key][error_title]),
+            str(self.issue_cache[kwargs.get('issue_cache_key')][kwargs.get('error_title')]),
             "notes"
         ])
-        self.gitlab.http_post(gl_url, post_data={'body': error_message})
+        self.gitlab.http_post(gl_url, post_data={'body': kwargs.get('error_message')})
 
     def _fill_issue_cache(self, git_project, issue_cache_key):
         self.issue_cache[issue_cache_key] = {}
