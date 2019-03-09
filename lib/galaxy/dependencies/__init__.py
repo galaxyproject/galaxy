@@ -146,6 +146,9 @@ class ConditionalDependencies(object):
                 ('docker' in self.container_interface_types or
                  'docker_swarm' in self.container_interface_types))
 
+    def check_social_auth_core(self):
+        return self.config.get("enable_oidc", False)
+
 
 def optional(config_file=None):
     if not config_file:
