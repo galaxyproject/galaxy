@@ -58,12 +58,15 @@
 # comment on existing, open issues. The issues are labelled based on tool ID /
 # version and include all of the information the normal emailed bug reports
 # include. If you use a private Github Enterprise deployment, you can set
-# github_base_url='https://...'
+# github_base_url='https://...' and github_api_url='https://api.....' as shown below.
 # - type: github
+#   verbose: false
 #   user_submission: true
 #   github_oauth_token: 00000000000
-#   github_repo_owner: galaxyproject
-#   github_repo_name: galaxy
+#   github_base_url: https://github.com
+#   github_api_url: https://api.github.com
+#   github_default_repo_owner: galaxyproject
+#   github_default_repo_name: galaxy
 
 # GitLab error reporting backend. You will need to `pip install python-gitlab`
 # in the galaxy virtualenv. This will create a new issue if none exists, and
