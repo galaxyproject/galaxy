@@ -8,11 +8,12 @@ import store from "../../store";
 import { TagService } from "./tagService";
 import { createTag } from "./model";
 
-const localVue = createLocalVue();
-localVue.filter("localize", value => _l(value));
-localVue.use(Vuex);
 
 describe("Tags/Tags.vue", () => {
+
+    const localVue = createLocalVue();
+    localVue.filter("localize", value => _l(value));
+    localVue.use(Vuex);
 
     let id = "testId",
         itemClass = "TestObject",
@@ -130,4 +131,4 @@ describe("Tags/Tags.vue", () => {
         // done();
     })
 
-});
+})

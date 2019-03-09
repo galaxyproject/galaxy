@@ -3,7 +3,7 @@ import STATES from "mvc/dataset/states";
 import DC_LI from "mvc/collection/collection-li";
 import DC_VIEW from "mvc/collection/collection-view";
 import _l from "utils/localization";
-import { mountNametags } from "components/Tags";
+import { mountBadges } from "components/Tags";
 
 //==============================================================================
 var _super = DC_LI.DCListItemView;
@@ -13,15 +13,11 @@ var HDCAListItemView = _super.extend(
     /** @lends HDCAListItemView.prototype */ {
         className: `${_super.prototype.className} history-content`,
 
-        initialize: function() {
-            _super.prototype.initialize.call(this, arguments);
-            this._mountVueComponents("initialize");
+        render: function() {
+            let result = _super.prototype.render.apply(this, arguments);
+            this._mountBadges("initialize");
+            return result;
         },
-
-        // render: function() {
-        //     _super.prototype.render.call(this, arguments);
-        //     console.log("post render");
-        // },
 
         /** event listeners */
         _setUpListeners: function() {
@@ -29,7 +25,7 @@ var HDCAListItemView = _super.extend(
             var renderListen = (model, options) => {
                 // We want this to swap immediately without extra animations.
                 this.render(0);
-                this._mountVueComponents("listener");
+                this._mountBadges("listener");
             };
             if (this.model.jobStatesSummary) {
                 this.listenTo(this.model.jobStatesSummary, "change", renderListen);
@@ -39,12 +35,13 @@ var HDCAListItemView = _super.extend(
             });
         },
 
-        _mountVueComponents(context) {
-            console.log("_mountViewComponents", context);
+        _mountBadges(context) {
+            console.log("_mountBadges", context);
             let container = this.$el.find(".nametags")[0];
             if (container) {
-                let { id, model_class: itemClass, tags } = this.model.attributes;
-                mountNametags({ storeKey: `${itemClass}-${id}`, tags }, container);
+                let { tags } = this.model.attributes;
+                // storeKey: `${itemClass}-${id}`, 
+                mountBadges({ tags }, container);
             }
         },
 
@@ -157,7 +154,7 @@ HDCAListItemView.prototype.templates = (() => {
             </div>
             <div class="state-description">
             </div>
-            <div class="nametags"></div>
+            <div class="nametags"><!-- Nametags mount here (hdca-li) --></div>
         </div>
     `;
 

@@ -3,7 +3,8 @@
  * it's good practice to separate data modeling from data retrieval
  */
 
-// model prototype
+
+ // model prototype
 
 function TagModel(props = {}) {
     this.text = "";
@@ -17,6 +18,7 @@ TagModel.prototype.equals = function(otherTag) {
 TagModel.prototype.toString = function() {
     return this.text;
 };
+
 
 // Public factory
 
@@ -32,6 +34,7 @@ export function createTag(data) {
     }
     return new TagModel(props);
 }
+
 
 // Returns tags in "newTags" that aren't present in "existingTags"
 

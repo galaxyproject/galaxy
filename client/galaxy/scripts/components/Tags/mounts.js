@@ -4,7 +4,7 @@
  */
 
 import Tags from "./Tags";
-import Nametags from "./Nametags";
+import Badges from "./Badges";
 import { mountVueComponent } from "utils/mountVueComponent";
 import { redirectToUrl } from "utils/redirect";
 import { TagService, BackboneModelTagService } from "./tagService";
@@ -108,4 +108,4 @@ export const mountModelTags = (options = {}, el) => {
 
 
 // nametag badge list (stateless)
-export const mountNametags = mountVueComponent(Nametags);
+export const mountBadges = mountVueComponent(Badges);

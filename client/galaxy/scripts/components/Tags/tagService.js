@@ -113,8 +113,9 @@ export function parseAutocompleteResults(rawResponse) {
 }
 
 
-// Some parts of the application save tags by saving the entire backbone model,
-// which seems excessive. I expect this class to die when the mount functions die.
+// Some parts of the application save tags by saving model so that
+// it will update other parts of the app, which is a rudimentary way
+// of recreating reactivity, so I guess this will probably die soon
 export class BackboneModelTagService extends TagService {
 
     constructor(props) {

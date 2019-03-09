@@ -7,6 +7,7 @@ import STATES from "mvc/dataset/states";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import { mountBadges } from "components/Tags";
 
 var logNamespace = "dataset";
 /*==============================================================================
@@ -42,6 +43,18 @@ export var DatasetListItemView = _super.extend(
             this.linkTarget = attributes.linkTarget || "_blank";
         },
 
+        // mount new vue component for tags
+        render: function() {
+            let result = _super.prototype.render.apply(this, arguments);
+            this._mountVueBadges();
+            return result;
+        },
+
+        _mountVueBadges: function() {
+            let container = this.$('.nametags')[0];
+            mountBadges({ tags: this.model.attributes.tags }, container);
+        },
+
         /** event listeners */
         _setUpListeners: function() {
             _super.prototype._setUpListeners.call(this);
@@ -50,6 +63,7 @@ export var DatasetListItemView = _super.extend(
             // re-rendering on any model changes
             return self.listenTo(self.model, {
                 change: function(model) {
+                    console.log("change detected");
                     // if the model moved into the ready state and is expanded without details, fetch those details now
                     if (
                         self.model.changedAttributes().state &&
@@ -63,12 +77,12 @@ export var DatasetListItemView = _super.extend(
                         self.model.fetch({ silent: true }).done(() => {
                             self.render();
                         });
-                    } else {
-                        if (_.has(model.changed, "tags") && _.keys(model.changed).length === 1) {
-                            // If only the tags have changed, rerender specifically
-                            // the titlebar region.  Otherwise default to the full
-                            // render.
-                            self.$(".nametags").html(self._renderNametags());
+                    } else {  
+                        if (_.has(self.model.changed, "tags") && _.keys(self.model.changed).length === 2) {
+                            // If only the tags and update time have changed,
+                            // rerender specifically the titlebar region.
+                            // Otherwise default to the full render.
+                            self._mountVueBadges();
                         } else {
                             self.render();
                         }
@@ -325,20 +339,6 @@ export var DatasetListItemView = _super.extend(
                         )}
                     </ul>
                 </div>`);
-        },
-
-        // TODO: Mason come back here
-        _renderNametags: function() {
-            var tpl = _.template(
-                [
-                    "<% _.each(_.sortBy(_.uniq(tags), function(x) { return x }), function(tag){ %>",
-                    '<% if (tag.indexOf("name:") == 0){ %>',
-                    '<span class="badge badge-primary badge-tags"><%- tag.slice(5) %></span>',
-                    "<% } %>",
-                    "<% }); %>"
-                ].join("")
-            );
-            return tpl({ tags: this.model.get("tags") });
         },
 
         // ......................................................................... misc

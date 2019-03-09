@@ -2,11 +2,10 @@ import { mount, createLocalVue } from "@vue/test-utils";
 import StatelessTags from "./StatelessTags";
 import _l from "utils/localization";
 
-
-const localVue = createLocalVue();
-localVue.filter("localize", value => _l(value));
-
 describe("Tags/StatelessTags.vue", () => {
+
+    const localVue = createLocalVue();
+    localVue.filter("localize", value => _l(value));
     
     let testTags = ["abc", "def", "ghi"];
     let wrapper, emitted;

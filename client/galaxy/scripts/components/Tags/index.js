@@ -6,4 +6,4 @@ export { default as StatelessTags } from "./StatelessTags";
 export { default as Tags } from "./Tags";
 
 // functions for mounting the tag editor in non-Vue environments
-export { mountMakoTags, mountModelTags, mountNametags } from "./mounts";
+export { mountMakoTags, mountModelTags, mountBadges } from "./mounts";

@@ -38,7 +38,7 @@ HDAListItemView.prototype.templates = (() => {
                 <span class="name">${_.escape(dataset.name)}</span>
             </div>
             </br>
-            <div class="nametags"><!-- Nametags mount here --></div>
+            <div class="nametags"></div>
         </div>
     `;
 

@@ -26,11 +26,11 @@ describe("Tags/tagService.js", () => {
 
     beforeEach(() => {
         rewire.__Rewire__("axios", mockAxios);
-    });
+    })
 
     afterEach(() => {
         if (stub) stub.restore();
-    });
+    })
 
     describe("save", () => {
         let testLabel = "fo0bar123";
@@ -44,17 +44,17 @@ describe("Tags/tagService.js", () => {
             let savedTag = await svc.save(testLabel);
             expect(savedTag.text).to.equal(testLabel);
             assert(stub.calledWith(expectedSaveUrl));
-        });
+        })
 
         it("should save an object tag", async () => {
             stub = sinon.stub(mockAxios, "get").resolves({ status: 200 });
             let savedTag = await svc.save(testTag);
             expect(savedTag.text).to.equal(testLabel);
             assert(stub.calledWith(expectedSaveUrl));
-        });
+        })
 
         // TODO: test error conditions
-    });
+    })
 
     describe("delete", () => {
         let testLabel = "fo0bar123";
@@ -68,17 +68,17 @@ describe("Tags/tagService.js", () => {
             let result = await svc.delete(testTag);
             assert(result);
             assert(stub.calledWith(expectedDeleteUrl));
-        });
+        })
 
         it("should delete an object tag", async () => {
             stub = sinon.stub(mockAxios, "get").resolves({ status: 200 });
             let result = await svc.delete(testTag);
             assert(result);
             assert(stub.calledWith(expectedDeleteUrl));
-        });
+        })
 
         // TODO: test error conditions
-    });
+    })
 
     describe("autocomplete", () => {
         let searchString = "foo";
@@ -88,7 +88,7 @@ describe("Tags/tagService.js", () => {
         let successResponse = {
             status: 200,
             data: autocompleteResponse
-        };
+        }
 
         let checkAutocompleteResult = result => {
             assert(result);
@@ -96,7 +96,7 @@ describe("Tags/tagService.js", () => {
             assert(result.length == 2);
             assert(result[0] instanceof Object);
             assert((result[0].text = "abc"));
-        };
+        }
 
         // straight ajax request, unused in practice, but it's easier to
         // test this call if we just expose it
@@ -105,7 +105,7 @@ describe("Tags/tagService.js", () => {
             let result = await svc.autocomplete(searchString);
             assert(stub.calledWith(expectedSearchUrl), "Called with wrong search url");
             checkAutocompleteResult(result);
-        });
+        })
 
         // hit the search input with multiple entries, only one ajax call
         // should result because of debouncing
@@ -120,20 +120,25 @@ describe("Tags/tagService.js", () => {
             // searchString is the expected input
             stub = sinon.stub(mockAxios, "get").resolves(successResponse);
 
-            svc.autocompleteOptions.pipe(takeUntil(timer)).subscribe(
-                result => (searchResult = result),
-                err => console.log("error", err),
-                () => {
-                    assert(stub.called, "Ajax call not made");
-                    assert(stub.callCount == 1, `Wrong number of ajax calls: ${stub.callCount}`);
-                    checkAutocompleteResult(searchResult);
-                    done();
-                }
-            );
+            svc.autocompleteOptions
+                .pipe(takeUntil(timer))
+                .subscribe(
+                    result => (searchResult = result),
+                    err => console.log("error", err),
+                    () => {
+                        assert(stub.called, "Ajax call not made");
+                        assert(stub.callCount == 1, `Wrong number of ajax calls: ${stub.callCount}`);
+                        checkAutocompleteResult(searchResult);
+                        done();
+                    }
+                );
 
             // spam a bunch of key inputs
-            for (var i = 0; i < spamCount; i++) svc.autocompleteSearchText = new String(Math.random());
+            for (var i = 0; i < spamCount; i++) 
+                svc.autocompleteSearchText = new String(Math.random());
             svc.autocompleteSearchText = searchString;
-        });
-    });
-});
+        })
+
+    })
+
+})

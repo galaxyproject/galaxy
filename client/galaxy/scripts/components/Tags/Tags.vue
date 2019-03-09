@@ -34,9 +34,7 @@ export default {
         // initialization value
         tags: { type: Array, required: false, default: () => [] },
 
-        // data requests go through this object, it should have the following
-        // properties: .save(), .delete(), .autocompleteOptions (observable) and
-        // .autocompleteTextSearch
+        // data requests go through this object
         tagService: { type: TagService, required: true },
 
         // store key, usually a model ID or something like that
@@ -59,8 +57,8 @@ export default {
 
     subscriptions() {
         return {
-            // return search result tags without the ones we've already selected
             autocompleteItems: this.tagService.autocompleteOptions.pipe(
+                // without the ones we've already selected
                 map(resultTags => diffTags(resultTags, this.tags))
             )
         };

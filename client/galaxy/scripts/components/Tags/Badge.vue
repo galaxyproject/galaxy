@@ -1,6 +1,8 @@
 <template>
     <span class="badge badge-tags" :style="tagStyles" 
-        @click.prevent="$emit('tag-click', tag)">{{ tag }}</span>
+        @click.prevent="$emit('tag-click', tag)">
+        {{ tag }}
+    </span>
 </template>
 
 <script>
@@ -30,5 +32,3 @@ export default {
 }
 
 </style>
-
-

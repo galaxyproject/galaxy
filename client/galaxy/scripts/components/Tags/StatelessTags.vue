@@ -30,6 +30,7 @@ upstream component or environment that is accessed through props and events -->
 </template>
 
 <script>
+
 import VueTagsInput from "@johmun/vue-tags-input";
 import { createTag } from "./model";
 
@@ -115,7 +116,8 @@ export default {
             return Object.keys(this.$listeners).includes(eventName);
         }
     }
-};
+}
+
 </script>
 
 <style lang="scss" src="./StatelessTags.styles.scss"></style>
