@@ -5,6 +5,11 @@ from __future__ import absolute_import
 
 import logging
 import sys
+from abc import (
+    ABCMeta,
+    abstractmethod
+)
+
 import requests
 import six
 if sys.version_info[0] < 3:
@@ -13,16 +18,13 @@ if sys.version_info[0] < 3:
 else:
     import urllib.parse as urllib
     urlparse = urllib
-from abc import (
-    ABCMeta,
-    abstractmethod
-)
 
 from galaxy.tools.errors import EmailErrorReporter
-from galaxy.util import string_as_bool, unicodify
+from galaxy.util import unicodify
 from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
+
 
 @six.add_metaclass(ABCMeta)
 class BaseGitPlugin(ErrorPlugin):
