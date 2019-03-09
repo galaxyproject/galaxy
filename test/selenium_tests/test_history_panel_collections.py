@@ -160,7 +160,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
 
         # the space on the end of the parent_selector is importnat
         self.tagging_add(["moo"], parent_selector="#current-history-panel .dataset-collection-panel .controls ")
-        
+
         self.screenshot("history_panel_collection_view_add_nametag")
         collection_view.back.wait_for_and_click()
 
