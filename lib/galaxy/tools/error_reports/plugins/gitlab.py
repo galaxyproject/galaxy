@@ -12,14 +12,13 @@ else:
     import urllib.parse as urllib
     urlparse = urllib
 
-from galaxy.tools.errors import EmailErrorReporter
-from galaxy.util import string_as_bool, unicodify
-from . import ErrorPlugin
+from galaxy.util import string_as_bool
+from .base_git import BaseGitPlugin
 
 log = logging.getLogger(__name__)
 
 
-class GitLabPlugin(ErrorPlugin):
+class GitLabPlugin(BaseGitPlugin):
     """Send error report to GitLab.
     """
     plugin_type = "gitlab"
@@ -32,14 +31,8 @@ class GitLabPlugin(ErrorPlugin):
 
         # GitLab settings
         self.gitlab_base_url = kwargs.get('gitlab_base_url', 'https://gitlab.com')
-        self.gitlab_default_repo_owner = kwargs.get('gitlab_default_repo_owner', False)
-        self.gitlab_default_repo_name = kwargs.get('gitlab_default_repo_name', False)
-
-        # Cache for lookups
-        self.issue_cache = {}
-        self.ts_urls = {}
-        self.ts_repo_cache = {}
-        self.gitlab_project_cache = {}
+        self.git_default_repo_owner = kwargs.get('gitlab_default_repo_owner', False)
+        self.git_default_repo_name = kwargs.get('gitlab_default_repo_name', False)
 
         try:
             import gitlab
@@ -82,93 +75,49 @@ class GitLabPlugin(ErrorPlugin):
             # Import GitLab here for the error handling
             import gitlab
             try:
-                log.info("GitLab error reporting - submit report - job tool id: %s - job tool version: %s - "
-                         "tool tool_shed: %s", (job.tool_id, job.tool_version, tool.tool_shed))
+                log.info("GitLab error reporting - submit report - job tool id: %s - job tool version: %s - tool tool_shed: %s" % (job.tool_id, job.tool_version, tool.tool_shed))
 
                 # Determine the ToolShed url, initially we connect with HTTP and if redirect to HTTPS is set up,
                 # this will be detected by requests and used further down the line. Also cache this so everything is
                 # as fast as possible
-                if tool.tool_shed not in self.ts_urls:
-                    ts_url_request = requests.get('http://' + str(tool.tool_shed))
-                    self.ts_urls[tool.tool_shed] = ts_url_request.url
-                ts_url = self.ts_urls[tool.tool_shed]
-                log.info("GitLab error reporting - Determined ToolShed is " + ts_url)
+                ts_url = self._determine_ts_url(tool)
+                log.info("GitLab error reporting - Determined ToolShed is %s", ts_url)
 
                 # Find the repo inside the ToolShed
-                if job.tool_id not in self.ts_repo_cache:
-                    ts_repo_request = requests.get(ts_url + "/api/repositories?tool_ids=" + str(job.tool_id))
-                    ts_repo_request_data = ts_repo_request.json()
-
-                    for changeset, repoinfo in ts_repo_request_data.items():
-                        if isinstance(repoinfo, dict):
-                            if 'repository' in repoinfo.keys():
-                                if 'remote_repository_url' in repoinfo['repository'].keys():
-                                    self.ts_repo_cache[job.tool_id] = repoinfo['repository']['remote_repository_url']
-
-                ts_repourl = self.ts_repo_cache[job.tool_id]
+                ts_repourl = self._get_gitrepo_from_ts(job, ts_url)
 
                 log.info("GitLab error reporting - Determine ToolShed Repository URL: %s", ts_repourl)
 
-                if ts_repourl:
-                    gitlab_projecturl = urlparse.urlparse(ts_repourl).path[1:]
-                    issue_cache_key = job.tool_id
-                else:
-                    gitlab_projecturl = "/".join([self.gitlab_default_repo_owner,
-                                                  self.gitlab_default_repo_name])
-                    issue_cache_key = "default"
+                # Determine the GitLab project URL and the issue cache key
+                gitlab_projecturl = urlparse.urlparse(ts_repourl).path[1:] if ts_repourl else \
+                    "/".join([self.git_default_repo_owner, self.git_default_repo_name])
+                issue_cache_key = self._get_issue_cache_key(job, ts_repourl)
 
                 gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)
 
                 # Make sure we are always logged in, then retrieve the GitLab project if it isn't cached.
                 self.gitlab.auth()
-                if gitlab_projecturl not in self.gitlab_project_cache:
-                    self.gitlab_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
-                gl_project = self.gitlab_project_cache[gitlab_projecturl]
+                if gitlab_projecturl not in self.git_project_cache:
+                    self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
+                gl_project = self.git_project_cache[gitlab_projecturl]
 
                 # Make sure we keep a cache of the issues, per tool in this case
                 if issue_cache_key not in self.issue_cache:
-                    self.issue_cache[issue_cache_key] = {}
-
-                    # Loop over all open issues and add the issue iid to the cache
-                    for issue in gl_project.issues.list():
-                        if issue.state != 'closed':
-                            log.info("GitLab error reporting - Repo issue: %s", str(issue.iid))
-                            self.issue_cache[issue_cache_key][issue.title] = issue.iid
+                    self._fill_issue_cache(gl_project, issue_cache_key)
 
                 # Generate information for the tool
-                tool_kw = {'tool_id': unicodify(job.tool_id), 'tool_version': unicodify(job.tool_version)}
-                error_title = u"""Galaxy Job Error: {tool_id} v{tool_version}""".format(**tool_kw)
+                error_title = self._generate_error_title(job)
 
-                # We'll re-use the email error reporter's template since GitLab supports HTML
-                error_reporter = EmailErrorReporter(dataset.id, self.app)
-                error_reporter.create_report(job.get_user(), email=kwargs.get('email', None),
-                                             message=kwargs.get('message', None),
-                                             redact_user_details_in_bugreport=self.redact_user_details_in_bugreport)
-
-                # The HTML report
-                error_message = error_reporter.html_report
+                # Generate the error message
+                error_message = self._generate_error_message(dataset, job, kwargs)
 
                 log.info(error_title in self.issue_cache[issue_cache_key])
                 if error_title not in self.issue_cache[issue_cache_key]:
                     # Create a new issue.
-                    issue = gl_project.issues.create({
-                        'title': error_title,
-                        'description': error_message
-                    })
-                    self.issue_cache[issue_cache_key][error_title] = issue.iid
+                    self._create_issue(error_message, error_title, gl_project, issue_cache_key)
                 else:
                     # Add a comment to an issue...
-                    gl_url = "/".join([
-                        self.gitlab_base_url,
-                        "api",
-                        "v4",
-                        "projects",
-                        gitlab_urlencodedpath,
-                        "issues",
-                        str(self.issue_cache[issue_cache_key][error_title]),
-                        "notes"
-                    ])
-                    self.gitlab.http_post(gl_url, post_data={'body': error_message})
+                    self._append_issue(error_message, error_title, gitlab_urlencodedpath, issue_cache_key)
 
                 return ('Submitted error report to GitLab. Your issue number is <a href="%s/%s/issues/%s" '
                         'target="_blank">#%s</a>.' % (self.gitlab_base_url, gitlab_projecturl,
@@ -209,6 +158,36 @@ class GitLabPlugin(ErrorPlugin):
         else:
             log.error("GitLab error reporting - No connection to GitLab. Cannot report error to GitLab.")
             return ('Internal Error.', 'danger')
+
+    def _create_issue(self, error_message, error_title, gl_project, issue_cache_key):
+        # Create the issue on GitLab
+        issue = gl_project.issues.create({
+            'title': error_title,
+            'description': error_message
+        })
+        self.issue_cache[issue_cache_key][error_title] = issue.iid
+
+    def _append_issue(self, error_message, error_title, gitlab_urlencodedpath, issue_cache_key):
+        # Add a comment to an existing issue
+        gl_url = "/".join([
+            self.gitlab_base_url,
+            "api",
+            "v4",
+            "projects",
+            gitlab_urlencodedpath,
+            "issues",
+            str(self.issue_cache[issue_cache_key][error_title]),
+            "notes"
+        ])
+        self.gitlab.http_post(gl_url, post_data={'body': error_message})
+
+    def _fill_issue_cache(self, git_project, issue_cache_key):
+        self.issue_cache[issue_cache_key] = {}
+        # Loop over all open issues and add the issue iid to the cache
+        for issue in git_project.issues.list():
+            if issue.state != 'closed':
+                log.info("GitLab error reporting - Repo issue: %s", str(issue.iid))
+                self.issue_cache[issue_cache_key][issue.title] = issue.iid
 
 
 __all__ = ('GitLabPlugin', )
