@@ -90,7 +90,7 @@ class RealtimeSqlite(object):
     def save_entry_point(self, entry_point):
         """Convenience method to easily save an entry_point.
         """
-        return self.save(self.encode_id(entry_point.id), entry_point.__class__.__name__, entry_point.token, entry_point.host, entry_point.port, None)
+        return self.save(self.encode_id(entry_point.id), entry_point.__class__.__name__.lower(), entry_point.token, entry_point.host, entry_point.port, None)
 
 
 class RealTimeManager(object):

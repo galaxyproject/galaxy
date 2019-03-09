@@ -87,7 +87,8 @@ class RealTime(BaseUIController):
             entry_point = trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).get(entry_point_id)
             if trans.app.realtime_manager.can_access_entry_point(trans, entry_point):
                 if entry_point.realtime.active and entry_point.configured:
-                    rval = (url_for('%s/%s/%s/%s/' % (trans.app.config.realtime_prefix, entry_point.__class__.__name__, trans.security.encode_id(entry_point.id), entry_point.token)))
+                    rval = '%s//%s.%s.%s.%s.%s/' % (trans.request.host_url.split('//', 1)[0], entry_point.__class__.__name__.lower(), trans.security.encode_id(entry_point.id),
+                            entry_point.token, trans.app.config.realtime_prefix, trans.request.host)
                     if entry_point.entry_url:
                         rval = '%s%s' % (rval, entry_point.entry_url)
                     return trans.response.send_redirect(rval)
