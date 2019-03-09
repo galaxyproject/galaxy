@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import logging
 import os
 import sys
+
 import requests
 if sys.version_info[0] < 3:
     import urllib as urllib
