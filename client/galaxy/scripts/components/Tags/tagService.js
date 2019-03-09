@@ -111,34 +111,3 @@ export function parseAutocompleteResults(rawResponse) {
         .filter(label => label.length)
         .filter(label => label !== "#Header");
 }
-
-
-// Some parts of the application save tags by saving model so that
-// it will update other parts of the app, which is a rudimentary way
-// of recreating reactivity, so I guess this will probably die soon
-export class BackboneModelTagService extends TagService {
-
-    constructor(props) {
-        super(props);
-        this.model = props.model;
-    }
-
-    async save(rawTag) {
-        let tag = createTag(rawTag);
-        let newTags = new Set(this.model.attributes.tags);
-        newTags.add(tag.text);
-        let tags = Array.from(newTags);
-        await this.model.save({ tags });
-        return tag;
-    }
-
-    async delete(rawTag) {
-        let tag = createTag(rawTag);
-        let newTags = new Set(this.model.attributes.tags);
-        newTags.delete(tag.text);
-        let tags = Array.from(newTags);
-        await this.model.save({ tags });
-        return tag;
-    }
-
-}

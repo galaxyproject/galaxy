@@ -3,15 +3,13 @@ retrieval as well as and specific event handling should be managed from an
 upstream component or environment that is accessed through props and events -->
 
 <template>
-    <div class="galaxy-tags tags-display" :class="tagContainerClasses">
-        <a href="#" class="toggle-link" 
-            v-if="linkVisible"
+    <div class="tags-display" :class="tagContainerClasses">
+        <a v-if="linkVisible" href="#" class="toggle-link"
             @click.prevent="toggleTagDisplay">
             {{ linkText | localize }}
         </a>
-        <vue-tags-input
+        <vue-tags-input v-if="tagsVisible"
             class="tags-input tag-area"
-            v-if="tagsVisible"
             v-model="tagText"
             :tags="tagModels"
             :autocomplete-items="autocompleteTags"
@@ -21,10 +19,11 @@ upstream component or environment that is accessed through props and events -->
             @before-adding-tag="beforeAddingTag"
             @before-deleting-tag="beforeDeletingTag"
             @tags-changed="tagsChanged">
-            <div class="tag-name" slot="tag-center" slot-scope="tagProps" 
-                @click="$emit('tag-click', tagProps.tag)">
-                {{ tagProps.tag.text }}
-            </div>
+            <template slot="tag-center" slot-scope="t">
+                <div class="tag-name" @click="$emit('tag-click', t.tag)">
+                    {{ t.tag.text }}
+                </div>
+            </template>
         </vue-tags-input>
     </div>
 </template>
@@ -33,6 +32,7 @@ upstream component or environment that is accessed through props and events -->
 
 import VueTagsInput from "@johmun/vue-tags-input";
 import { createTag } from "./model";
+import { keyedColorScheme } from "utils/color";
 
 export default {
     components: {

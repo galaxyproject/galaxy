@@ -15,6 +15,11 @@ export const tagStore = {
     actions: {
         updateTags({ commit }, { key, tags }) {
             commit('setTags', { key, tags });
+        },
+        initializeTags({ dispatch, state }, { key, tags }) {
+            if (!state.modelTagCache.has(key)) {
+                dispatch("updateTags", { key, tags });
+            }
         }
     },
     mutations: {

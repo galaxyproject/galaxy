@@ -3,7 +3,7 @@ import STATES from "mvc/dataset/states";
 import DC_LI from "mvc/collection/collection-li";
 import DC_VIEW from "mvc/collection/collection-view";
 import _l from "utils/localization";
-import { mountBadges } from "components/Tags";
+import { mountBadges } from "components/Badges";
 
 //==============================================================================
 var _super = DC_LI.DCListItemView;
@@ -36,12 +36,11 @@ var HDCAListItemView = _super.extend(
         },
 
         _mountBadges(context) {
-            console.log("_mountBadges", context);
             let container = this.$el.find(".nametags")[0];
             if (container) {
-                let { tags } = this.model.attributes;
-                // storeKey: `${itemClass}-${id}`, 
-                mountBadges({ tags }, container);
+                let { id, model_class, tags } = this.model.attributes;
+                let storeKey = `${model_class}-${id}`;
+                mountBadges({ storeKey, tags }, container);
             }
         },
 

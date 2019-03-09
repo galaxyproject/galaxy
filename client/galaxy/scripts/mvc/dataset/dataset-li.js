@@ -7,7 +7,7 @@ import STATES from "mvc/dataset/states";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
-import { mountBadges } from "components/Tags";
+import { mountBadges } from "components/Badges";
 
 var logNamespace = "dataset";
 /*==============================================================================
@@ -52,7 +52,9 @@ export var DatasetListItemView = _super.extend(
 
         _mountVueBadges: function() {
             let container = this.$('.nametags')[0];
-            mountBadges({ tags: this.model.attributes.tags }, container);
+            let { id, model_class, tags } = this.model.attributes;
+            let storeKey = `${model_class}-${id}`;
+            mountBadges({ storeKey, tags }, container);
         },
 
         /** event listeners */

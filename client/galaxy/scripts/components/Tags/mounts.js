@@ -4,10 +4,10 @@
  */
 
 import Tags from "./Tags";
-import Badges from "./Badges";
 import { mountVueComponent } from "utils/mountVueComponent";
 import { redirectToUrl } from "utils/redirect";
-import { TagService, BackboneModelTagService } from "./tagService";
+import { TagService } from "./tagService";
+import { BackboneTagService } from "./backboneTagService";
 
 
 /**
@@ -97,7 +97,7 @@ export const mountModelTags = (options = {}, el) => {
 
     let propData = {
         storeKey: `${itemClass}-${id}`,
-        tagService: new BackboneModelTagService({ id, itemClass, context, model }),
+        tagService: new BackboneTagService({ id, itemClass, context, model }),
         tags,
         disabled
     };
@@ -105,7 +105,3 @@ export const mountModelTags = (options = {}, el) => {
     let fn = mountVueComponent(Tags);
     return fn(propData, el);
 }
-
-
-// nametag badge list (stateless)
-export const mountBadges = mountVueComponent(Badges);

@@ -1,6 +1,3 @@
-<!-- This component manages saving and deleting tags using a passed data service
-object. The UI itself is the generic galaxy-tags component. -->
-
 <template>
     <stateless-tags v-model="observedTags" 
         :disabled="disabled"
@@ -90,16 +87,11 @@ export default {
             this.tagService.autocompleteSearchText = searchTxt;
         },
 
-        ...mapActions(["updateTags"])
+        ...mapActions(["updateTags", "initializeTags"])
     },
     
     mounted() {
-        if (this.tags.length) {
-            this.updateTags({ 
-                key: this.storeKey, 
-                tags: this.tags 
-            });
-        }
+        this.initializeTags({ key: this.storeKey, tags: this.tags });
     }
 }
 

@@ -14,8 +14,7 @@
 // boxHeight must be larger than the expected maximum height of the element
 // or it will be clipped
 
-@mixin shutterFade($boxHeight: 100px) {    
-    overflow-y: hidden;
+@mixin shutterFade($boxHeight: 100px) {
     max-height: 0px;
     visibility: hidden;
     opacity: 0;

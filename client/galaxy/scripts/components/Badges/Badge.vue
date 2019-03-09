@@ -7,7 +7,7 @@
 
 <script>
 
-import { generateTagStyle } from "utils/utils";
+import { keyedColorScheme } from "utils/color";
 
 export default {
     props: {
@@ -15,18 +15,25 @@ export default {
     },
     computed: {
         tagStyles() {
-            return generateTagStyle(this.tag);
+            let { primary, contrasting, darker } = keyedColorScheme(this.tag);
+            return {
+                'background-color': primary,
+                'color': contrasting,
+                'border-color': darker
+            }
         }
     }
 }
+
 
 </script>
 
 <style lang="scss">
 
 .badge {
-    background-color: #3189a3;
     padding: 0.2em 0.6em 0.3em;
+    border-width: 1px;
+    border-style: solid;
     border-radius: 0.15rem;
     text-decoration: none;
 }
