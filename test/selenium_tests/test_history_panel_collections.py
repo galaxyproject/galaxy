@@ -167,9 +167,6 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         self.history_panel_wait_for_hid_state(collection_hid, "ok")
         nametags = self.history_panel_item_get_nametags(collection_hid)
 
-        # need to wait for the little gears to stop turning
-        self.sleep_for_seconds(10)
-
         assert nametags == ["moo"]
         self.screenshot("history_panel_collection_with_nametag")
 
