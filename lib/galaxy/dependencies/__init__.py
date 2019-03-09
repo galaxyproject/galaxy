@@ -6,9 +6,9 @@ from __future__ import print_function
 import sys
 from os.path import dirname, join
 from xml.etree import ElementTree
-import yaml
 
 import pkg_resources
+import yaml
 
 from galaxy.containers import parse_containers_config
 from galaxy.util import asbool
@@ -167,9 +167,6 @@ class ConditionalDependencies(object):
 
     def check_influxdb(self):
         return 'influxdb' in self.error_report_modules
-
-
-
 
 
 def optional(config_file=None):
