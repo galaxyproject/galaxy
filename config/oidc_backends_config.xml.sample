@@ -22,4 +22,15 @@
          login to Galaxy using their Google account.
         -->
     </provider>
+    <provider name="Okta">
+        <client_id> ... </client_id>
+        <client_secret> ... </client_secret>
+        <redirect_uri>http://localhost:8080/authnz/okta/callback</redirect_uri>
+        <!-- Okta API URL, based on 2nd URL here: https://developer.okta.com/docs/api/resources/oidc#2-okta-as-the-identity-platform-for-your-app-or-api
+        This has subsequently had the '/v1/authorize' removed. In productive deployments, this will likely resemble:
+        https://${company}.okta.com/oauth2/${authServerId}/
+         -->
+        <api_url>https://dev-000000.oktapreview.com/oauth2/default</api_url>
+    </provider>
+
 </OIDC>

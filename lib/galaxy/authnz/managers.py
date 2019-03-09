@@ -39,6 +39,7 @@ class AuthnzManager(object):
         :param config: sets the path for OIDC configuration
             file (e.g., oidc_backends_config.xml).
         """
+        self.app = app
         self._parse_oidc_config(oidc_config_file)
         self._parse_oidc_backends_config(oidc_backends_config_file)
 
@@ -88,8 +89,15 @@ class AuthnzManager(object):
                     log.error("Could not find a node attribute 'name'; skipping the node '{}'.".format(child.tag))
                     continue
                 idp = child.get('name').lower()
-                if idp == 'google':
-                    self.oidc_backends_config[idp] = self._parse_google_config(child)
+
+                idp_provider = {
+                    "google": self._parse_google_config,
+                    "okta": self._parse_okta_config
+                }
+                if idp in idp_provider:
+                    self.oidc_backends_config[idp] = idp_provider[idp](child)
+                    self.app.config.oidc[idp] = True
+
             if len(self.oidc_backends_config) == 0:
                 raise ParseError("No valid provider configuration parsed.")
         except ImportError:
@@ -102,6 +110,16 @@ class AuthnzManager(object):
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
             'redirect_uri': config_xml.find('redirect_uri').text}
+        if config_xml.find('prompt') is not None:
+            rtv['prompt'] = config_xml.find('prompt').text
+        return rtv
+
+    def _parse_okta_config(self, config_xml):
+        rtv = {
+            'client_id': config_xml.find('client_id').text,
+            'client_secret': config_xml.find('client_secret').text,
+            'redirect_uri': config_xml.find('redirect_uri').text,
+            'api_url': config_xml.find('api_url').text}
         if config_xml.find('prompt') is not None:
             rtv['prompt'] = config_xml.find('prompt').text
         return rtv

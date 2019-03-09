@@ -24,8 +24,8 @@
                         </b-card-footer>
                     </b-card>
                 </b-form>
-                <b-button v-if="enable_oidc" class="mt-3" @click="submitOIDCLogin()">
-                    <icon class="fa fa-google" /> Sign in with Google
+                <b-button v-for="idp in oidc_idps" :key="idp" class="mt-3" @click="submitOIDCLogin(idp)">
+                    <icon v-bind:class="oidc_idps_icons_class[idp]" /> Sign in with {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
                 </b-button>
             </div>
             <div v-if="show_welcome_with_login" class="col">
@@ -56,6 +56,7 @@ export default {
     },
     data() {
         let galaxy = getGalaxyInstance();
+        let oidc_idps = Object.keys(galaxy.config.oidc).filter(function(key) { return galaxy.config.oidc[key]; });
         return {
             login: null,
             password: null,
@@ -65,7 +66,9 @@ export default {
             messageVariant: null,
             redirect: galaxy.params.redirect,
             session_csrf_token: galaxy.session_csrf_token,
-            enable_oidc: galaxy.config.enable_oidc
+            enable_oidc: galaxy.config.enable_oidc,
+            oidc_idps: oidc_idps,
+            oidc_idps_icons_class: {'google': 'fa fa-google', 'okta': 'fa fa-circle-o'}
         };
     },
     computed: {
@@ -101,10 +104,10 @@ export default {
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
-        submitOIDCLogin: function(method) {
+        submitOIDCLogin: function(idp) {
             let rootUrl = getAppRoot();
             axios
-                .post(`${rootUrl}authnz/google/login`)
+                .post(`${rootUrl}authnz/${idp}/login`)
                 .then(response => {
                     if (response.data.redirect_uri) {
                         window.location = encodeURI(response.data.redirect_uri);
