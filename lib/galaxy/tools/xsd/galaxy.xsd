@@ -3150,13 +3150,10 @@ expressed with the validator. In general, ``dataset_metadata_in_file`` should be
 considered deprecated in favor of
 
 ```xml
-<validator type="dataset_metadata_in_file"
-           filename="alignseq.loc"
+<validator type="dataset_metadata_in_data_table"
            metadata_name="dbkey"
            metadata_column="1"
-           message="Sequences are not currently available for the specified build."
-           split=" "
-           line_startswith="seq" />
+           message="Sequences are not currently available for the specified build." />
 ```
 
 A very common validator is simply ensure a Python expression is valid for a
@@ -3177,7 +3174,9 @@ validators is in the ``validator_types`` dictionary in
 [/lib/galaxy/tools/parameters/validation.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/validation.py).
 Valid values include: ``expression``, ``regex``, ``in_range``, ``length``,
 ``metadata``, ``unspecified_build``, ``no_options``, ``empty_field``,
-``dataset_metadata_in_file``, ``dataset_metadata_in_data_table``,
+``dataset_metadata_in_file``, 
+``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``,
+``value_in_data_table``, ``value_not_in_data_table``,
 ``dataset_ok_validator``, ``dataset_metadata_in_range``]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -3198,7 +3197,7 @@ specified by the ``skip`` attribute.</xs:documentation>
         <xs:attribute name="table_name" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Tool data table name to check against
-if ``type`` is ``dataset_metadata_in_tool_data``. See the documentation for
+if ``type`` is ``dataset_metadata_in_tool_data``, ``dataset_metadata_not_in_tool_data``, ``value_in_tool_data``, or ``value_not_in_tool_data``. See the documentation for
 [tool data tables](https://galaxyproject.org/admin/tools/data-tables)
 and [data managers](https://galaxyproject.org/admin/tools/data-managers/) for
 more information.</xs:documentation>
@@ -3214,13 +3213,13 @@ if ``type`` is ``dataset_metadata_in_file``. File should be present Galaxy's
         <xs:attribute name="metadata_name" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Target metadata attribute name for
-``dataset_metadata_in_data_table`` and ``dataset_metadata_in_file`` options.</xs:documentation>
+``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table`` and ``dataset_metadata_in_file`` options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="metadata_column" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Target column for metadata attribute
-in ``dataset_metadata_in_data_table`` and ``dataset_metadata_in_file`` options.
+in ``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``, ``value_in_data_table``, ``value__not_in_data_table``, and ``dataset_metadata_in_file`` options.
 This can be an integer index to the column or a column name.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -5349,6 +5348,9 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="empty_field"/>
       <xs:enumeration value="dataset_metadata_in_file"/>
       <xs:enumeration value="dataset_metadata_in_data_table"/>
+      <xs:enumeration value="dataset_metadata_not_in_data_table"/>
+      <xs:enumeration value="value_in_data_table"/>
+      <xs:enumeration value="value_not_in_data_table"/>
       <xs:enumeration value="dataset_metadata_in_range"/>
       <xs:enumeration value="dataset_ok_validator"/>
     </xs:restriction>
