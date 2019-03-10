@@ -298,6 +298,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.RequestParameterInvalidException(message)
 
         if 'installed_repository_file' in payload:
+            if not trans.user_is_admin:
+                raise exceptions.AdminRequiredException()
             installed_repository_file = payload.get('installed_repository_file', '')
             if not os.path.exists(installed_repository_file):
                 raise exceptions.MessageException("Repository file '%s' not found.")
