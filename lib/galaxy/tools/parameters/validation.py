@@ -24,11 +24,11 @@ class Validator(object):
     def from_element(cls, param, elem):
         """
         Initialize the appropiate Validator class
-        
+
         example call `validation.Validator.from_element(ToolParameter_object, Validator_object)`
 
-        needs to be implemented in the subclasses and should return the 
-        corresponding Validator object by a call to `cls( ... )` which calls the 
+        needs to be implemented in the subclasses and should return the
+        corresponding Validator object by a call to `cls( ... )` which calls the
         `__init__` method of the corresponding validator
 
         param cls the Validator class
@@ -424,14 +424,14 @@ class ValueInDataTableColumnValidator(Validator):
         tool_data_table = param.tool.app.tool_data_tables[table_name]
         column = elem.get("metadata_column", 0)
         try:
-            column = int(metadata_column)
+            column = int(column)
         except ValueError:
             pass
         message = elem.get("message", "Value was not found in %s." % (table_name))
         line_startswith = elem.get("line_startswith", None)
         if line_startswith:
             line_startswith = line_startswith.strip()
-        return cls(tool_data_table, metadata_column, message, line_startswith)
+        return cls(tool_data_table, column, message, line_startswith)
 
     def __init__(self, tool_data_table, column, message="Value not found.", line_startswith=None):
         self.message = message
@@ -472,7 +472,7 @@ class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
     def validate(self, value, trans=None):
         try:
             super(ValueInDataTableColumnValidator, self).validate(value, trans)
-        except:
+        except ValueError:
             return
         else:
             raise ValueError(self.message)
@@ -545,7 +545,7 @@ class MetadataNotInDataTableColumnValidator(MetadataInDataTableColumnValidator):
     def validate(self, value, trans=None):
         try:
             super(MetadataInDataTableColumnValidator, self).validate(value, trans)
-        except:
+        except ValueError:
             return
         else:
             raise ValueError(self.message)
