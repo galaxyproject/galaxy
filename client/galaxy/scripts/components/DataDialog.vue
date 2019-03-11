@@ -127,14 +127,13 @@ export default {
             optionsShow: false,
             undoShow: false,
             url: null,
-            values: {},
-            valuesType: null
+            values: {}
         };
     },
     computed: {
         formatedItems() {
             for (let item of this.items) {
-                let key = this.identifier(item);
+                let key = item.id;
                 let variant = this.values[key] ? "success" : "default";
                 item._rowVariant = variant;
             }
@@ -151,23 +150,21 @@ export default {
         filtered: function(items) {
             this.nItems = items.length;
         },
-        identifier: function(record) {
-            return `${record.id}_${record.history_content_type}`;
-        },
         clicked: function(record) {
-            if (!this.multiple || this.valuesType !== record.history_content_type) {
-                this.values = {};
-                this.valuesType = record.history_content_type;
-            }
-            let key = this.identifier(record);
-            if (!this.values[key]) {
-                this.values[key] = record;
-            } else {
-                delete this.values[key];
-            }
-            this.values = Object.assign({}, this.values);
-            if (!this.multiple) {
-                this.done();
+            if (this.isDataset(record)) {
+                if (!this.multiple) {
+                    this.values = {};
+                }
+                let key = record.id;
+                if (!this.values[key]) {
+                    this.values[key] = record;
+                } else {
+                    delete this.values[key];
+                }
+                this.values = Object.assign({}, this.values);
+                if (!this.multiple) {
+                    this.done();
+                }
             }
         },
         done: function() {
