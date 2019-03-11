@@ -17,9 +17,6 @@ from ..authnz import IdentityProvider
 log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = 'custos-state'
 NONCE_COOKIE_NAME = 'custos-nonce'
-DEFAULT_CLAIM_USERNAME = 'preferred_username'
-DEFAULT_CLAIM_EMAIL = 'email'
-DEFAULT_CLAIM_ID = 'sub'
 
 
 class CustosAuthnz(IdentityProvider):
@@ -29,7 +26,7 @@ class CustosAuthnz(IdentityProvider):
         self.config['client_id'] = oidc_backend_config['client_id']
         self.config['client_secret'] = oidc_backend_config['client_secret']
         self.config['redirect_uri'] = oidc_backend_config['redirect_uri']
-        # Either get OIDC config from well-known config URI or directly
+        # Either get OIDC config from well-known config URI or lookup known urls based on provider name and realm
         if 'well_known_oidc_config_uri' in oidc_backend_config:
             self.config['well_known_oidc_config_uri'] = oidc_backend_config['well_known_oidc_config_uri']
             well_known_oidc_config = self._load_well_known_oidc_config(
@@ -38,11 +35,8 @@ class CustosAuthnz(IdentityProvider):
             self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
             self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
         else:
-            self.config['authorization_endpoint'] = oidc_backend_config['authorization_endpoint']
-            self.config['token_endpoint'] = oidc_backend_config['token_endpoint']
-            self.config['userinfo_endpoint'] = oidc_backend_config['userinfo_endpoint']
-        self.config['extra_params'] = oidc_backend_config.get('extra_params', None)
-        self.config['userinfo_claim_mappings'] = oidc_backend_config.get('userinfo_claim_mappings', None)
+            realm = oidc_backend_config['realm']
+            self._load_config_for_provider_and_realm(self.config['provider'], realm)
 
     def authenticate(self, trans):
         base_authorize_url = self.config['authorization_endpoint']
@@ -50,7 +44,7 @@ class CustosAuthnz(IdentityProvider):
         nonce = generate_nonce()
         nonce_hash = self._hash_nonce(nonce)
         extra_params = {"nonce": nonce_hash}
-        if self.config['extra_params']:
+        if "extra_params" in self.config:
             extra_params.update(self.config['extra_params'])
         authorization_url, state = oauth2_session.authorization_url(
             base_authorize_url, **extra_params)
@@ -82,10 +76,9 @@ class CustosAuthnz(IdentityProvider):
         # Get userinfo and lookup/create Galaxy user record
         userinfo = self._get_userinfo(oauth2_session)
         log.debug("userinfo={}".format(json.dumps(userinfo, indent=True)))
-        claim_mappings = self._get_claim_mappings()
-        username = userinfo[claim_mappings['username']]
-        email = userinfo[claim_mappings['email']]
-        user_id = userinfo[claim_mappings['id']]
+        username = userinfo['preferred_username']
+        email = userinfo['email']
+        user_id = userinfo['sub']
 
         # Create or update custos_authnz_token record
         custos_authnz_token = self._get_custos_authnz_token(trans.sa_session, user_id, self.config['provider'])
@@ -153,16 +146,6 @@ class CustosAuthnz(IdentityProvider):
         userinfo_endpoint = self.config['userinfo_endpoint']
         return oauth2_session.get(userinfo_endpoint).json()
 
-    def _get_claim_mappings(self):
-        userinfo_claim_mappings = {
-            'username': DEFAULT_CLAIM_USERNAME,
-            'email': DEFAULT_CLAIM_EMAIL,
-            'id': DEFAULT_CLAIM_ID
-        }
-        if self.config['userinfo_claim_mappings']:
-            userinfo_claim_mappings.update(self.config['userinfo_claim_mappings'])
-        return userinfo_claim_mappings
-
     def _get_custos_authnz_token(self, sa_session, user_id, provider):
         return sa_session.query(CustosAuthnzToken).filter_by(
             external_user_id=user_id, provider=provider).one_or_none()
@@ -188,5 +171,26 @@ class CustosAuthnz(IdentityProvider):
         if nonce_hash != nonce_cookie_hash:
             raise Exception("Nonce mismatch!")
 
+    def _load_config_for_provider_and_realm(self, provider, realm):
+        self.config['well_known_oidc_config_uri'] = self._get_well_known_uri_for_provider_and_realm(provider, realm)
+        well_known_oidc_config = self._load_well_known_oidc_config(self.config['well_known_oidc_config_uri'])
+        self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
+        self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
+        self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
+        self.config['extra_params'] = {'kc_idp_hint': 'cilogon'}
+
+    def _get_well_known_uri_for_provider_and_realm(self, provider, realm):
+        # TODO: Look up these URLs from a Python library
+        if provider == 'custos':
+            return "https://iam.scigap.org/auth/realms/{}/.well-known/openid-configuration".format(realm)
+        elif provider == 'custos-dev':
+            return "https://iamdev.scigap.org/auth/realms/{}/.well-known/openid-configuration".format(realm)
+        else:
+            raise Exception("Unknown Custos provider name: {}".format(provider))
+
     def _load_well_known_oidc_config(self, well_known_uri):
-        return requests.get(well_known_uri).json()
+        try:
+            return requests.get(well_known_uri).json()
+        except Exception:
+            log.error("Failed to load well-known OIDC config URI: {}".format(well_known_uri))
+            raise
