@@ -1931,7 +1931,6 @@ class Tool(Dictifiable):
             'id'            : self.id,
             'help'          : tool_help,
             'citations'     : bool(self.citations),
-            'biostar_url'   : self.app.config.biostar_url,
             'sharable_url'  : self.sharable_url,
             'message'       : tool_message,
             'warnings'      : tool_warnings,

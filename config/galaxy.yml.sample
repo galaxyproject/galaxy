@@ -721,21 +721,6 @@ galaxy:
   # The URL linked by the "Support" link in the "Help" menu.
   #support_url: 'https://galaxyproject.org/support/'
 
-  # Enable integration with a custom Biostar instance.
-  #biostar_url: ''
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_key_name: ''
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_key: ''
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_enable_bug_reports: true
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_never_authenticate: false
-
   # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
   #citation_url: 'https://galaxyproject.org/citing-galaxy'
 
