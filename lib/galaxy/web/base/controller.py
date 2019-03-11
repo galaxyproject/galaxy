@@ -1459,10 +1459,10 @@ class SharableMixin(object):
                     try:
                         trans.app.security_agent.make_dataset_public(hda.dataset)
                     except Exception:
-                        log.warning("Unable to make dataset with id: %s public.").format(dataset.id)
+                        log.warning("Unable to make dataset with id: %s public", dataset.id)
                         skipped = True
                 else:
-                    log.warning("User without permissions tried to make dataset with id: %s public.").format(dataset.id)
+                    log.warning("User without permissions tried to make dataset with id: %s public", dataset.id)
                     skipped = True
         return item, skipped
 
