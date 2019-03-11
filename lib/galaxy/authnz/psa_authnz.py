@@ -19,14 +19,12 @@ DEFAULTS = {
 
 BACKENDS = {
     'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
-    "globus": "social_core.backends.globus.GlobusOpenIdConnect",
-    "pixelpin": "social_core.backends.pixelpin.PixelPinOpenIDConnect"
+    "globus": "social_core.backends.globus.GlobusOpenIdConnect"
 }
 
 BACKENDS_NAME = {
     'google': 'google-openidconnect',
-    "globus": "globus",
-    "pixelpin": "pixelpin-openidconnect"
+    "globus": "globus"
 }
 
 AUTH_PIPELINE = (

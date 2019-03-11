@@ -31,12 +31,4 @@
 
         <prompt>consent</prompt>
     </provider>
-
-    <provider name="PixelPin">
-        <client_id> ... </client_id>
-        <client_secret> ... </client_secret>
-        <redirect_uri>http://localhost:8080/authnz/pixelpin/callback</redirect_uri>
-
-        <prompt>consent</prompt>
-    </provider>
 </OIDC>
