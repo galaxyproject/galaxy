@@ -1018,41 +1018,6 @@ mapping:
         desc: |
           The URL linked by the "Support" link in the "Help" menu.
 
-      biostar_url:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_key_name:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_key:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_enable_bug_reports:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_never_authenticate:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
       citation_url:
         type: str
         default: https://galaxyproject.org/citing-galaxy
