@@ -72,11 +72,11 @@ class BaseGitPlugin(ErrorPlugin):
         return u"""Galaxy Job Error: {tool_id} v{tool_version}""".format(**tool_kw)
 
     @abstractmethod
-    def _create_issue(self, **kwargs):
+    def _create_issue(self, issue_cache_key, error_title, error_mesage, project, **kwargs):
         raise NotImplementedError("Method _create_issue is required")
 
     @abstractmethod
-    def _append_issue(self, **kwargs):
+    def _append_issue(self, issue_cache_key, error_title, error_message, **kwargs):
         raise NotImplementedError("Method _append_issue is required")
 
     @abstractmethod

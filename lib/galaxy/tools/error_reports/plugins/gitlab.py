@@ -160,15 +160,15 @@ class GitLabPlugin(BaseGitPlugin):
             log.error("GitLab error reporting - No connection to GitLab. Cannot report error to GitLab.")
             return ('Internal Error.', 'danger')
 
-    def _create_issue(self, **kwargs):
+    def _create_issue(self, issue_cache_key, error_title, error_mesage, project, **kwargs):
         # Create the issue on GitLab
-        issue = kwargs.get('gl_project').issues.create({
-            'title': kwargs.get('error_title'),
-            'description': kwargs.get('error_message')
+        issue = project.issues.create({
+            'title': error_title,
+            'description': error_mesage
         })
-        self.issue_cache[kwargs.get('issue_cache_key')][kwargs.get('error_title')] = issue.iid
+        self.issue_cache[issue_cache_key][error_title] = issue.iid
 
-    def _append_issue(self, **kwargs):
+    def _append_issue(self, issue_cache_key, error_title, error_message, **kwargs):
         # Add a comment to an existing issue
         gl_url = "/".join([
             self.gitlab_base_url,
@@ -177,10 +177,10 @@ class GitLabPlugin(BaseGitPlugin):
             "projects",
             kwargs.get('gitlab_urlencodedpath'),
             "issues",
-            str(self.issue_cache[kwargs.get('issue_cache_key')][kwargs.get('error_title')]),
+            str(self.issue_cache[issue_cache_key][error_title]),
             "notes"
         ])
-        self.gitlab.http_post(gl_url, post_data={'body': kwargs.get('error_message')})
+        self.gitlab.http_post(gl_url, post_data={'body': error_message})
 
     def _fill_issue_cache(self, git_project, issue_cache_key):
         self.issue_cache[issue_cache_key] = {}

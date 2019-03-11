@@ -104,19 +104,18 @@ class GithubPlugin(BaseGitPlugin):
                                                   self.issue_cache[issue_cache_key][error_title].number,
                                                   self.issue_cache[issue_cache_key][error_title].number), 'success')
 
-    def _create_issue(self, **kwargs):
+    def _create_issue(self, issue_cache_key, error_title, error_mesage, project, **kwargs):
         # Create a new issue.
-        self.issue_cache[kwargs.get('issue_cache_key')][kwargs.get('error_title')] = kwargs.get('gh_project').create_issue(
-            title=kwargs.get('error_title'),
-            body=kwargs.get('error_message'),
+        self.issue_cache[issue_cache_key][error_title] = project.create_issue(
+            title=error_title,
+            body=error_mesage,
             # Label it with a tag: tool_id/tool_version
             labels=[kwargs.get('label')]
         )
 
-    def _append_issue(self, **kwargs):
+    def _append_issue(self, issue_cache_key, error_title, error_message, **kwargs):
         # Create comment on an issue
-        self.issue_cache[kwargs.get('issue_cache_key')][kwargs.get('error_title')]\
-            .create_comment(kwargs.get('error_message'))
+        self.issue_cache[issue_cache_key][error_title].create_comment(error_message)
 
     def _fill_issue_cache(self, git_project, issue_cache_key):
         # We want to ensure that we don't generate a thousand issues when
