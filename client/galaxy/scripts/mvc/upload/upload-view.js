@@ -73,9 +73,6 @@ export default Backbone.View.extend({
             }, 500);
             return;
         }
-
-        Galaxy.data.dialog(function(url){alert(url)}, {multiple: true});
-        return;
         this.current_user = Galaxy.user.id;
         if (!this.modal) {
             this.tabs = new Tabs.View();
