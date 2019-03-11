@@ -59,6 +59,8 @@
 # version and include all of the information the normal emailed bug reports
 # include. If you use a private Github Enterprise deployment, you can set
 # github_base_url='https://...' and github_api_url='https://api.....' as shown below.
+# The 'github_default_repo_only' flag restores the previous behaviour. When this is set
+# to true it will automatically only submit to the default git repository.
 # - type: github
 #   verbose: false
 #   user_submission: true
@@ -67,6 +69,7 @@
 #   github_api_url: https://api.github.com
 #   github_default_repo_owner: galaxyproject
 #   github_default_repo_name: galaxy
+#   github_default_repo_only: true
 
 # GitLab error reporting backend. You will need to `pip install python-gitlab`
 # in the galaxy virtualenv. This will create a new issue if none exists, and
@@ -76,7 +79,8 @@
 # gitlab_base_url='https://...'. It supports creating an issue on the git
 # repository of the tool by querying the ToolShed where the tool comes from
 # (if applicable). Set verbose to true if you want the message to be displayed
-# to the user.
+# to the user. The 'gitlab_default_repo_only' flags ensures all errors are
+# submitted to the default repository only.
 # - type: gitlab
 #   verbose: false
 #   user_submission: true
@@ -84,3 +88,4 @@
 #   gitlab_private_token: 00000000000
 #   gitlab_default_repo_owner: galaxyproject
 #   gitlab_default_repo_name: galaxy
+#   gitlab_default_repo_only: true

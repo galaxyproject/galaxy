@@ -34,6 +34,7 @@ class GitLabPlugin(BaseGitPlugin):
         self.gitlab_base_url = kwargs.get('gitlab_base_url', 'https://gitlab.com')
         self.git_default_repo_owner = kwargs.get('gitlab_default_repo_owner', False)
         self.git_default_repo_name = kwargs.get('gitlab_default_repo_name', False)
+        self.git_default_repo_only = string_as_bool(kwargs.get('gitlab_default_repo_only', True))
 
         try:
             import gitlab
@@ -90,8 +91,8 @@ class GitLabPlugin(BaseGitPlugin):
                 log.info("GitLab error reporting - Determine ToolShed Repository URL: %s", ts_repourl)
 
                 # Determine the GitLab project URL and the issue cache key
-                gitlab_projecturl = urlparse.urlparse(ts_repourl).path[1:] if ts_repourl else \
-                    "/".join([self.git_default_repo_owner, self.git_default_repo_name])
+                gitlab_projecturl = urlparse.urlparse(ts_repourl).path[1:] if (ts_repourl and not self.git_default_repo_only)\
+                    else "/".join([self.git_default_repo_owner, self.git_default_repo_name])
                 issue_cache_key = self._get_issue_cache_key(job, ts_repourl)
 
                 gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)

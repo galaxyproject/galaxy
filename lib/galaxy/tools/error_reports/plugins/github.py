@@ -32,6 +32,7 @@ class GithubPlugin(BaseGitPlugin):
         self.github_api_url = kwargs.get('github_api_url', 'https://api.github.com')
         self.git_default_repo_owner = kwargs.get('github_default_repo_owner', False)
         self.git_default_repo_name = kwargs.get('github_default_repo_name', False)
+        self.git_default_repo_only = string_as_bool(kwargs.get('github_default_repo_only', True))
 
         try:
             import github
@@ -70,8 +71,8 @@ class GithubPlugin(BaseGitPlugin):
             ts_repourl = self._get_gitrepo_from_ts(job, ts_url)
 
             # Determine the GitLab project URL and the issue cache key
-            github_projecturl = urlparse.urlparse(ts_repourl).path[1:] if ts_repourl else \
-                "/".join([self.git_default_repo_owner, self.git_default_repo_name])
+            github_projecturl = urlparse.urlparse(ts_repourl).path[1:] if (ts_repourl and not self.git_default_repo_only) \
+                else "/".join([self.git_default_repo_owner, self.git_default_repo_name])
             issue_cache_key = self._get_issue_cache_key(job, ts_repourl)
 
             # Connect to the repo
