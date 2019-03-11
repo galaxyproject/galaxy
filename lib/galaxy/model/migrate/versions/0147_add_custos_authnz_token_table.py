@@ -1,5 +1,5 @@
 """
-Migration for adding oidc_token table.
+Migration for adding custos_authnz_token table.
 """
 from __future__ import print_function
 
@@ -13,8 +13,8 @@ from galaxy.model.custom_types import JSONType
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
-OIDCToken_table = Table(
-    "oidc_token", metadata,
+CustosAuthnzToken_table = Table(
+    "custos_authnz_token", metadata,
     Column('id', Integer, primary_key=True),
     Column('user_id', Integer, ForeignKey("galaxy_user.id")),
     Column('external_user_id', String(64)),
@@ -36,9 +36,9 @@ def upgrade(migrate_engine):
     metadata.reflect()
 
     try:
-        OIDCToken_table.create()
+        CustosAuthnzToken_table.create()
     except Exception:
-        log.exception("Failed to create oidc_token table")
+        log.exception("Failed to create custos_authnz_token table")
 
 
 def downgrade(migrate_engine):
@@ -46,6 +46,6 @@ def downgrade(migrate_engine):
     metadata.reflect()
 
     try:
-        OIDCToken_table.drop()
+        CustosAuthnzToken_table.drop()
     except Exception:
-        log.exception("Failed to drop oidc_token table")
+        log.exception("Failed to drop custos_authnz_token table")

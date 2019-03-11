@@ -11,18 +11,18 @@ from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
 from galaxy import util
-from galaxy.model import OIDCToken, User
+from galaxy.model import CustosAuthnzToken, User
 from ..authnz import IdentityProvider
 
 log = logging.getLogger(__name__)
-STATE_COOKIE_NAME = 'oidc-state'
-NONCE_COOKIE_NAME = 'oidc-nonce'
+STATE_COOKIE_NAME = 'custos-state'
+NONCE_COOKIE_NAME = 'custos-nonce'
 DEFAULT_CLAIM_USERNAME = 'preferred_username'
 DEFAULT_CLAIM_EMAIL = 'email'
 DEFAULT_CLAIM_ID = 'sub'
 
 
-class OIDCAuthnz(IdentityProvider):
+class CustosAuthnz(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config):
         self.config = {'provider': provider.lower()}
         self.config['verify_ssl'] = oidc_config['VERIFY_SSL']
@@ -87,13 +87,13 @@ class OIDCAuthnz(IdentityProvider):
         email = userinfo[claim_mappings['email']]
         user_id = userinfo[claim_mappings['id']]
 
-        # Create or update oidc_token record
-        oidc_token = self._get_oidc_token(trans.sa_session, user_id, self.config['provider'])
-        if oidc_token is None:
+        # Create or update custos_authnz_token record
+        custos_authnz_token = self._get_custos_authnz_token(trans.sa_session, user_id, self.config['provider'])
+        if custos_authnz_token is None:
             user = self._get_current_user(trans)
             if not user:
                 user = self._create_user(trans.sa_session, username, email)
-            oidc_token = OIDCToken(user=user,
+            custos_authnz_token = CustosAuthnzToken(user=user,
                                    external_user_id=user_id,
                                    provider=self.config['provider'],
                                    access_token=access_token,
@@ -103,21 +103,21 @@ class OIDCAuthnz(IdentityProvider):
                                    refresh_expiration_time=refresh_expiration_time,
                                    raw_token=token)
         else:
-            oidc_token.access_token = access_token
-            oidc_token.id_token = id_token
-            oidc_token.refresh_token = refresh_token
-            oidc_token.expiration_time = expiration_time
-            oidc_token.refresh_expiration_time = refresh_expiration_time
-            oidc_token.raw_token = token
-        trans.sa_session.add(oidc_token)
+            custos_authnz_token.access_token = access_token
+            custos_authnz_token.id_token = id_token
+            custos_authnz_token.refresh_token = refresh_token
+            custos_authnz_token.expiration_time = expiration_time
+            custos_authnz_token.refresh_expiration_time = refresh_expiration_time
+            custos_authnz_token.raw_token = token
+        trans.sa_session.add(custos_authnz_token)
         trans.sa_session.flush()
-        return login_redirect_url, oidc_token.user
+        return login_redirect_url, custos_authnz_token.user
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None):
         try:
             user = trans.user
-            # Find OIDCToken record for this provider (should only be one)
-            provider_tokens = [token for token in user.oidc_auth if token.provider == self.config["provider"]]
+            # Find CustosAuthnzToken record for this provider (should only be one)
+            provider_tokens = [token for token in user.custos_auth if token.provider == self.config["provider"]]
             if len(provider_tokens) == 0:
                 raise Exception("User is not associated with provider {}".format(self.config["provider"]))
             if len(provider_tokens) > 1:
@@ -163,8 +163,8 @@ class OIDCAuthnz(IdentityProvider):
             userinfo_claim_mappings.update(self.config['userinfo_claim_mappings'])
         return userinfo_claim_mappings
 
-    def _get_oidc_token(self, sa_session, user_id, provider):
-        return sa_session.query(OIDCToken).filter_by(
+    def _get_custos_authnz_token(self, sa_session, user_id, provider):
+        return sa_session.query(CustosAuthnzToken).filter_by(
             external_user_id=user_id, provider=provider).one_or_none()
 
     def _get_current_user(self, trans):
