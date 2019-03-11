@@ -32,7 +32,15 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         super(MetadataTestCase, self).tearDown()
         self.metadata_compute_strategy = None
 
-    def test_simple_output(self):
+    def test_simple_output_legacy(self):
+        self.app.config.metadata_strategy = "legacy"
+        self._test_simple_output()
+
+    def test_simple_output_directory(self):
+        self.app.config.metadata_strategy = "directory"
+        self._test_simple_output()
+
+    def _test_simple_output(self):
         source_file_name = os.path.join(os.getcwd(), "test/functional/tools/for_workflows/cat.xml")
         self._init_tool_for_path(source_file_name)
         output_dataset = self._create_output_dataset(
@@ -46,13 +54,21 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         command = self.metadata_command(output_datasets)
         self._write_output_dataset_contents(output_dataset, ">seq1\nGCTGCATG\n")
         self.exec_metadata_command(command)
-        metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(output_dataset, sa_session)
+        metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
         assert metadata_set_successfully
         self.metadata_compute_strategy.load_metadata(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
         assert output_dataset.metadata.data_lines == 2
         assert output_dataset.metadata.sequences == 1
 
-    def test_primary_dataset_output_extension(self):
+    def test_primary_dataset_output_extension_legacy(self):
+        self.app.config.metadata_strategy = "legacy"
+        self._test_primary_dataset_output_extension()
+
+    def test_primary_dataset_output_extension_directory(self):
+        self.app.config.metadata_strategy = "directory"
+        self._test_primary_dataset_output_extension()
+
+    def _test_primary_dataset_output_extension(self):
         source_file_name = os.path.join(os.getcwd(), "test/functional/tools/for_workflows/cat.xml")
         self._init_tool_for_path(source_file_name)
         # setting extension to 'auto' here, results in the extension specified in
@@ -69,14 +85,22 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         self._write_galaxy_json("""{"type": "dataset", "dataset_id": "%s", "name": "my dynamic name", "ext": "fasta", "info": "my dynamic info"}""" % output_dataset.dataset.id)
         self._write_output_dataset_contents(output_dataset, ">seq1\nGCTGCATG\n")
         self.exec_metadata_command(command)
-        metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(output_dataset, sa_session)
+        metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
         assert metadata_set_successfully
         output_dataset.extension = "fasta"  # gets done in job finish...
         self.metadata_compute_strategy.load_metadata(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
         assert output_dataset.metadata.data_lines == 2
         assert output_dataset.metadata.sequences == 1
 
-    def test_primary_dataset_output_metadata_override(self):
+    def test_primary_dataset_output_metadata_override_legacy(self):
+        self.app.config.metadata_strategy = "legacy"
+        self._test_primary_dataset_output_metadata_override()
+
+    def test_primary_dataset_output_metadata_override_directory(self):
+        self.app.config.metadata_strategy = "directory"
+        self._test_primary_dataset_output_metadata_override()
+
+    def _test_primary_dataset_output_metadata_override(self):
         source_file_name = os.path.join(os.getcwd(), "test/functional/tools/for_workflows/cat.xml")
         self._init_tool_for_path(source_file_name)
         output_dataset = self._create_output_dataset(
@@ -91,7 +115,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
         self._write_galaxy_json("""{"type": "dataset", "dataset_id": "%s", "name": "my dynamic name", "ext": "fasta", "info": "my dynamic info", "metadata": {"sequences": 42}}""" % output_dataset.dataset.id)
         self._write_output_dataset_contents(output_dataset, ">seq1\nGCTGCATG\n")
         self.exec_metadata_command(command)
-        metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(output_dataset, sa_session)
+        metadata_set_successfully = self.metadata_compute_strategy.external_metadata_set_successfully(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
         assert metadata_set_successfully
         output_dataset.extension = "fasta"  # get done in job finish...
         self.metadata_compute_strategy.load_metadata(output_dataset, "out_file1", sa_session, working_directory=self.job_working_directory)
