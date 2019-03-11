@@ -8,7 +8,6 @@ import store from "../../store";
 import { TagService } from "./tagService";
 import { createTag } from "./model";
 
-
 describe("Tags/Tags.vue", () => {
 
     const localVue = createLocalVue();
@@ -22,8 +21,9 @@ describe("Tags/Tags.vue", () => {
         wrapper,
         emitted,
         startingTags = ["a","b","c"],
-        storeKey = "testingTagSet",
-        acResults = [];
+        storeKey = "testingTagSet";
+
+    let acResults = ["a","b","c","d","e","f"];
 
     let clickFirstTag = () => {
         if (wrapper) {
@@ -42,17 +42,17 @@ describe("Tags/Tags.vue", () => {
         tagService = new TagService({ id, itemClass, context });
         
         tagService.save = async function(tag) {
-            return null;
+            return createTag(tag);
         }
         
         tagService.delete = async function(tag) {
-            return null;
+            return createTag(tag);
         }
         
         tagService.autocomplete = async function() {
-            console.log("mock");
             return acResults.map(createTag);
         }
+
 
         // Mount the tags with sample props
 
@@ -103,10 +103,12 @@ describe("Tags/Tags.vue", () => {
         store.dispatch("updateTags", { key: storeKey, tags: newTags });
 
         // TODO: figure out how to make the computed observableTags
-        // prop update when the store does
-
-        // works, but is lame
-        wrapper.setProps({ storeKey: "thisisgarbage" });
+        // prop update when the store does. This works in the real code,
+        // but does not update in this test environment. The following
+        // brute force mechanism of changing a different dependency works
+        // and effectively recalculates the computed value, but it should 
+        // not be necessary
+        wrapper.setProps({ storeKey: "thisshouldbeunnecessary" });
         wrapper.setProps({ storeKey });
         
         let observed = wrapper.vm.observedTags;
@@ -116,19 +118,26 @@ describe("Tags/Tags.vue", () => {
         })
     })
 
-    xit("updating tag search should generate autocomplete items", async () => {
+    describe("debounced autocomplete list", () => {
 
-        let acResults = ["a","b","c","d","e","f"];
-        tagService._autocompleteResults = acResults;
-        await wrapper.vm.$nextTick();
-        
-        tagService.autocompleteSearchText = "foo";
-        await wrapper.vm.$nextTick();
-        expect(wrapper.vm.autocompleteItems.length).to.equal(acResults.length);
+        let subscription;
 
-        // // wrapper.vm.updateTagSearch("foo");
-        // // expect(wrapper.vm.autocompleteItems.length).to.equal(acResults.length);
-        // done();
+        afterEach(() => {
+            if (subscription) {
+                subscription.unsubscribe();
+            }
+        });
+
+        it("should generate autocomplete items when you set the search text", (done) => {
+            subscription = tagService.autocompleteOptions.subscribe(results => {
+                expect(results.length).equal(acResults.length);
+                results.forEach((r,i) => {
+                    expect(r.text).equal(acResults[i]);
+                })
+                done();
+            })
+            tagService.autocompleteSearchText = "foo";
+        })
     })
 
 })

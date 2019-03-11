@@ -32,7 +32,6 @@ upstream component or environment that is accessed through props and events -->
 
 import VueTagsInput from "@johmun/vue-tags-input";
 import { createTag } from "./model";
-import { keyedColorScheme } from "utils/color";
 
 export default {
     components: {

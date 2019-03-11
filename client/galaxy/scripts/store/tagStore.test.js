@@ -1,31 +1,67 @@
-/* global expect */
-
-import Vuex from "vuex";
-import { createLocalVue } from "@vue/test-utils";
-import _l from "utils/localization";
 import { tagStore } from "./tagStore";
 
 
 describe("store/tagStore.js", () => {
 
-    let localVue = createLocalVue();
-    localVue.filter("localize", value => _l(value));
-    localVue.use(Vuex);
+    const state = tagStore.state;
+    const { reset } = tagStore.mutations;
+    
+    afterEach(() => {
+        reset(state);
+    })
 
-    let testKey = "foo";
-    let testTags = ["a","b","c"];
+    describe("mutations/setTags", () => {
+        
+        const { setTags } = tagStore.mutations;
+        const testKey = "foo";
+        const testTags = ["a","b","c","b"];
 
-    describe("actions/updateTags", () => {
+        let stateTags;
 
-        it("should update the store with the tags we give it", () => {
-            
-            tagStore.dispatch("updateTags", { key: testKey, tags: testTags });
-            console.log(tagStore.state);
+        beforeEach(() => {
+            setTags(state, { key: testKey, tags: testTags });
+            stateTags = state.modelTagCache.get(testKey);
+        })
 
-            let retrievedTags = tagStore.getters.getTagsByKey(testKey);
-            expect(retrievedTags.length).to.equal(testTags.length);
-        });
+        it("should update the state Map and store a Set", () => {
+            assert(stateTags instanceof Set, "Stored list should be a Set");
+            testTags.forEach(t => {
+                assert(stateTags.has(t), `Missing tag: ${t}`);
+            });
+        })
 
+        it("that set should contain all the passed tags", () => {
+            testTags.forEach(t => {
+                assert(stateTags.has(t), `Missing tag: ${t}`);
+            });
+        })
+
+        it("should store a list of unique values", () => {
+            assert(stateTags.size == 3, "Stored list should only consist of unique items");
+        })
+
+    })
+
+    describe("getters/getTagsById", () => {
+        
+        const { getTagsById } = tagStore.getters;
+        const { setTags } = tagStore.mutations;
+        const testKey = "foo";
+        const testTags = ["a","b","c","b"];
+
+        let thisGetter;
+        
+        beforeEach(() => {
+            setTags(state, { key: testKey, tags: testTags });
+            // getter functions are compound functions, need to build the getter first
+            thisGetter = getTagsById(state);
+        })
+
+        it("should update the state Map and store a Set", () => {
+            let tags = thisGetter(testKey);
+            assert(tags instanceof Array, "returned result should be a simple array");
+            assert(tags.length = 3);
+        })
     })
 
 })
