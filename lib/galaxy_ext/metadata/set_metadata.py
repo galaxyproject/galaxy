@@ -82,9 +82,11 @@ def set_metadata_portable():
     galaxy.model.metadata.MetadataTempFile.tmp_dir = tool_job_working_directory = os.path.abspath(os.getcwd())
 
     metadata_params_path = os.path.join("metadata", "params.json")
-    with open(metadata_params_path, "r") as f:
-        metadata_params = json.load(f)
-
+    try:
+        with open(metadata_params_path, "r") as f:
+            metadata_params = json.load(f)
+    except IOError:
+        raise Exception("Failed to find metadata/params.json from cwd [%s]" % tool_job_working_directory)
     datatypes_config = metadata_params["datatypes_config"]
     job_metadata = metadata_params["job_metadata"]
     max_metadata_value_size = metadata_params.get("max_metadata_value_size") or 0

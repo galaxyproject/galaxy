@@ -99,6 +99,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                                 job_metadata=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
                                 kwds=None):
+        assert job_metadata, "setup_external_metadata must be supplied with job_metadata path"
         kwds = kwds or {}
         tmp_dir = _init_tmp_dir(tmp_dir)
 
