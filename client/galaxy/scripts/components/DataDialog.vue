@@ -133,9 +133,12 @@ export default {
     computed: {
         formatedItems() {
             for (let item of this.items) {
-                let key = item.id;
-                let variant = this.values[key] ? "success" : "default";
-                item._rowVariant = variant;
+                if (this.isDataset(item)) {
+                    let key = item.id;
+                    item._rowVariant = this.values[key] ? "success" : "default";
+                } else {
+                    item._rowVariant = "active";
+                }
             }
             return this.items;
         }
