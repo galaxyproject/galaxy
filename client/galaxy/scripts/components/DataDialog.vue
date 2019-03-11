@@ -8,9 +8,7 @@
                 </b-input-group-append>
             </b-input-group>
         </template>
-        <b-alert v-if="errorMessage" variant="danger" :show="errorShow">
-            {{ errorMessage }}
-        </b-alert>
+        <b-alert v-if="errorMessage" variant="danger" :show="errorShow"> {{ errorMessage }} </b-alert>
         <div v-else>
             <div v-if="optionsShow">
                 <b-table
@@ -23,8 +21,8 @@
                     @filtered="filtered"
                 >
                     <template slot="name" slot-scope="data">
-                        <i v-if="isDataset(data.item)" class="fa fa-file-o"/>
-                        <i v-else class="fa fa-copy" /> {{ data.item.hid }}: {{ data.value }}
+                        <i v-if="isDataset(data.item)" class="fa fa-file-o" /> <i v-else class="fa fa-copy" />
+                        {{ data.item.hid }}: {{ data.value }}
                     </template>
                     <template slot="extension" slot-scope="data">
                         {{ data.value ? data.value : "-" }}
@@ -33,45 +31,37 @@
                         {{ data.value ? data.value.substring(0, 16).replace("T", " ") : "-" }}
                     </template>
                     <template slot="arrow" slot-scope="data">
-                        <b-button variant="link" size="sm"
+                        <b-button
+                            variant="link"
+                            size="sm"
                             class="py-0"
                             v-if="!isDataset(data.item)"
-                            @click.stop="load(data.item.url)">
+                            @click.stop="load(data.item.url)"
+                        >
                             View
                         </b-button>
                     </template>
                 </b-table>
                 <div v-if="nItems == 0">
                     <div v-if="filter">
-                        No search results found for: <b>{{ this.filter }}</b>.
+                        No search results found for: <b>{{ this.filter }}</b
+                        >.
                     </div>
-                    <div v-else>
-                        No entries.
-                    </div>
+                    <div v-else>No entries.</div>
                 </div>
             </div>
-            <div v-else>
-                <span class="fa fa-spinner fa-spin"/>
-                <span>Please wait...</span>
-            </div>
+            <div v-else><span class="fa fa-spinner fa-spin" /> <span>Please wait...</span></div>
         </div>
         <div slot="modal-footer" class="w-100">
-            <b-btn size="sm" class="float-left"
-                v-if="undoShow"
-                @click="load()">
-                <div class="fa fa-caret-left mr-1"/>Back
+            <b-btn size="sm" class="float-left" v-if="undoShow" @click="load()">
+                <div class="fa fa-caret-left mr-1" />
+                Back
             </b-btn>
-            <b-btn size="sm" class="float-right ml-1"
-                variant="primary"
-                @click="done"
-                :disabled="values.length === 0">
+            <b-btn size="sm" class="float-right ml-1" variant="primary" @click="done" :disabled="values.length === 0">
                 Ok
             </b-btn>
-            <b-btn size="sm" class="float-right"
-                @click="modalShow=false">
-                Cancel
-            </b-btn>
-         </div>
+            <b-btn size="sm" class="float-right" @click="modalShow = false"> Cancel </b-btn>
+        </div>
     </b-modal>
 </template>
 
@@ -115,7 +105,7 @@ export default {
                 arrow: {
                     label: "",
                     sortable: false,
-                    "class": "text-right"
+                    class: "text-right"
                 }
             },
             filter: null,
@@ -223,7 +213,8 @@ export default {
                 })
                 .catch(e => {
                     if (e.response) {
-                        this.errorMessage = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
+                        this.errorMessage =
+                            e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
                     } else {
                         this.errorMessage = "Server unavailable.";
                     }
