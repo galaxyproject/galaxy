@@ -96,10 +96,9 @@ class GithubPlugin(BaseGitPlugin):
             log.info(error_title in self.issue_cache[issue_cache_key])
             if error_title not in self.issue_cache[issue_cache_key]:
                 # Create a new issue.
-                self._create_issue(error_message=error_message, error_title=error_title, gh_project=gh_project,
-                                   issue_cache_key=issue_cache_key, label=label)
+                self._create_issue(issue_cache_key, error_title, error_message, gh_project, label=label)
             else:
-                self._append_issue(issue_cache_key=issue_cache_key, error_title=error_title, error_message=error_message)
+                self._append_issue(issue_cache_key, error_title, error_message)
             return ('Submitted error report to Github. Your issue number is <a href="%s/%s/issues/%s" '
                     'target="_blank">#%s</a>.' % (self.github_base_url, github_projecturl,
                                                   self.issue_cache[issue_cache_key][error_title].number,

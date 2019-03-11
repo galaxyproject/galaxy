@@ -116,10 +116,10 @@ class GitLabPlugin(BaseGitPlugin):
                 log.info(error_title in self.issue_cache[issue_cache_key])
                 if error_title not in self.issue_cache[issue_cache_key]:
                     # Create a new issue.
-                    self._create_issue(error_message=error_message, error_title=error_title, gl_project=gl_project, issue_cache_key=issue_cache_key)
+                    self._create_issue(issue_cache_key, error_title, error_message, gl_project)
                 else:
                     # Add a comment to an issue...
-                    self._append_issue(error_message=error_message, error_title=error_title, gitlab_urlencodedpath=gitlab_urlencodedpath, issue_cache_key=issue_cache_key)
+                    self._append_issue(issue_cache_key, error_title, error_message, gitlab_urlencodedpath=gitlab_urlencodedpath)
 
                 return ('Submitted error report to GitLab. Your issue number is <a href="%s/%s/issues/%s" '
                         'target="_blank">#%s</a>.' % (self.gitlab_base_url, gitlab_projecturl,
