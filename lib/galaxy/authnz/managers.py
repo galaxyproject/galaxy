@@ -17,7 +17,7 @@ from cloudauthz.exceptions import (
 
 from galaxy import exceptions
 from galaxy import model
-from .oidc_authnz import OIDCAuthnz
+from .custos_authnz import CustosAuthnz
 from .psa_authnz import (
     BACKENDS_NAME,
     on_the_fly_config,
@@ -110,6 +110,7 @@ class AuthnzManager(object):
             rtv['prompt'] = config_xml.find('prompt').text
         return rtv
 
+    # TODO: rename
     def _parse_generic_oidc_backend_config(self, config_xml):
         rtv = {
             'client_id': config_xml.find('client_id').text,
@@ -162,7 +163,7 @@ class AuthnzManager(object):
         if implementation == 'psa':
             return PSAAuthnz
         elif implementation == 'oidc':
-            return OIDCAuthnz
+            return CustosAuthnz
         else:
             return None
 

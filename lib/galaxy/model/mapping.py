@@ -123,8 +123,8 @@ model.UserAuthnzToken.table = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
-model.OIDCToken.table = Table(
-    "oidc_token", metadata,
+model.CustosAuthnzToken.table = Table(
+    "custos_authnz_token", metadata,
     Column('id', Integer, primary_key=True),
     Column('user_id', Integer, ForeignKey("galaxy_user.id")),
     Column('external_user_id', String(64)),
@@ -1527,10 +1527,10 @@ mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
                   backref='social_auth')
 ))
 
-mapper(model.OIDCToken, model.OIDCToken.table, properties=dict(
+mapper(model.CustosAuthnzToken, model.CustosAuthnzToken.table, properties=dict(
     user=relation(model.User,
-                  primaryjoin=(model.OIDCToken.table.c.user_id == model.User.table.c.id),
-                  backref='oidc_auth')
+                  primaryjoin=(model.CustosAuthnzToken.table.c.user_id == model.User.table.c.id),
+                  backref='custos_auth')
 ))
 
 mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
