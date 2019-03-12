@@ -2004,7 +2004,6 @@ class Dataset(StorableObject, RepresentById):
 
     def get_file_name(self):
         if not self.external_filename:
-            assert self.id is not None, "ID must be set before filename used (commit the object)"
             assert self.object_store is not None, "Object Store has not been initialized for dataset %s" % self.id
             filename = self.object_store.get_filename(self)
             return filename
