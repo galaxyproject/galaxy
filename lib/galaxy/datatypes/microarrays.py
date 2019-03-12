@@ -130,7 +130,7 @@ class Gpr(GenericMicroarrayFile):
 
 class Cel(Binary):
     """ Cel File format described at:
-            https://media.affymetrix.com/support/developer/powertools/changelog/gcos-agcc/cel.html
+            http://media.affymetrix.com/support/developer/powertools/changelog/gcos-agcc/cel.html
     """
 
     file_ext = "cel"
