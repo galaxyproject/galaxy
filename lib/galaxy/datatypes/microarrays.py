@@ -108,6 +108,9 @@ class Gpr(GenericMicroarrayFile):
         >>> fname = get_test_fname('test.gpr')
         >>> Gpr().sniff(fname)
         True
+        >>> fname = get_test_fname('test.cel')
+        >>> Gpr().sniff(fname)
+        True
         >>> fname = get_test_fname('test.gal')
         >>> Gpr().sniff(fname)
         False
