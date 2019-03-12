@@ -24,6 +24,3 @@ pykube==0.15.0
 kamaki
 
 watchdog
-
-# OIDC dependencies
-social-auth-core[openidconnect]==3.1.0
