@@ -39,6 +39,7 @@ class AuthnzManager(object):
         :param config: sets the path for OIDC configuration
             file (e.g., oidc_backends_config.xml).
         """
+        self.app = app
         self._parse_oidc_config(oidc_config_file)
         self._parse_oidc_backends_config(oidc_backends_config_file)
 
@@ -90,6 +91,8 @@ class AuthnzManager(object):
                 idp = child.get('name').lower()
                 if idp in BACKENDS_NAME:
                     self.oidc_backends_config[idp] = self._parse_idp_config(child)
+                    # Add this variable so we can dynamically show OIDC IdP in Vue template
+                    self.app.config.oidc[idp] = True
             if len(self.oidc_backends_config) == 0:
                 raise ParseError("No valid provider configuration parsed.")
         except ImportError:
@@ -102,8 +105,14 @@ class AuthnzManager(object):
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
             'redirect_uri': config_xml.find('redirect_uri').text}
+
         if config_xml.find('prompt') is not None:
             rtv['prompt'] = config_xml.find('prompt').text
+        if config_xml.find('api_url') is not None:
+            rtv['api_url'] = config_xml.find('api_url').text
+        if config_xml.find('url') is not None:
+            rtv['url'] = config_xml.find('url').text
+
         return rtv
 
     def _unify_provider_name(self, provider):
