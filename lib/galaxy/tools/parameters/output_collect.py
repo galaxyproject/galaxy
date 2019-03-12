@@ -195,54 +195,7 @@ def collect_dynamic_outputs(
             )
             collection_builder.populate()
         elif destination_type == "hdas":
-            # discover files as individual datasets for the target history
-            history = job_context.job.history
-
-            datasets = []
-
-            def collect_elements_for_history(elements):
-                for element in elements:
-                    if "elements" in element:
-                        collect_elements_for_history(element["elements"])
-                    else:
-                        discovered_file = discovered_file_for_unnamed_output(element, job_working_directory)
-                        fields_match = discovered_file.match
-                        designation = fields_match.designation
-                        ext = fields_match.ext
-                        dbkey = fields_match.dbkey
-                        info = element.get("info", None)
-                        link_data = discovered_file.match.link_data
-
-                        # Create new primary dataset
-                        name = fields_match.name or designation
-
-                        hda_id = discovered_file.match.object_id
-                        primary_dataset = None
-                        if hda_id:
-                            primary_dataset = sa_session.query(galaxy.model.HistoryDatasetAssociation).get(hda_id)
-
-                        sources = fields_match.sources
-                        hashes = fields_match.hashes
-
-                        dataset = job_context.create_dataset(
-                            ext=ext,
-                            designation=designation,
-                            visible=True,
-                            dbkey=dbkey,
-                            name=name,
-                            filename=discovered_file.path,
-                            info=info,
-                            link_data=link_data,
-                            primary_data=primary_dataset,
-                            sources=sources,
-                            hashes=hashes,
-                        )
-                        dataset.raw_set_dataset_state('ok')
-                        if not hda_id:
-                            datasets.append(dataset)
-
-            collect_elements_for_history(elements)
-            job_context.add_datasets_to_history(datasets)
+            persist_hdas(elements, job_context)
 
     for name, has_collection in output_collections.items():
         if name not in tool.output_collections:
@@ -280,6 +233,55 @@ def collect_dynamic_outputs(
         except Exception:
             log.exception("Problem gathering output collection.")
             collection.handle_population_failed("Problem building datasets for collection.")
+
+
+def persist_hdas(elements, model_create_context):
+    # discover files as individual datasets for the target history
+    datasets = []
+
+    def collect_elements_for_history(elements):
+        for element in elements:
+            if "elements" in element:
+                collect_elements_for_history(element["elements"])
+            else:
+                discovered_file = discovered_file_for_unnamed_output(element, model_create_context.job_working_directory)
+                fields_match = discovered_file.match
+                designation = fields_match.designation
+                ext = fields_match.ext
+                dbkey = fields_match.dbkey
+                info = element.get("info", None)
+                link_data = discovered_file.match.link_data
+
+                # Create new primary dataset
+                name = fields_match.name or designation
+
+                hda_id = discovered_file.match.object_id
+                primary_dataset = None
+                if hda_id:
+                    primary_dataset = model_create_context.sa_session.query(galaxy.model.HistoryDatasetAssociation).get(hda_id)
+
+                sources = fields_match.sources
+                hashes = fields_match.hashes
+
+                dataset = model_create_context.create_dataset(
+                    ext=ext,
+                    designation=designation,
+                    visible=True,
+                    dbkey=dbkey,
+                    name=name,
+                    filename=discovered_file.path,
+                    info=info,
+                    link_data=link_data,
+                    primary_data=primary_dataset,
+                    sources=sources,
+                    hashes=hashes,
+                )
+                dataset.raw_set_dataset_state('ok')
+                if not hda_id:
+                    datasets.append(dataset)
+
+    collect_elements_for_history(elements)
+    model_create_context.add_datasets_to_history(datasets)
 
 
 class ModelPersistenceContext(object):
