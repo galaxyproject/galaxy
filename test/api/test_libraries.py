@@ -216,13 +216,16 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
 
     def test_detect_datatype_of_dataset_in_folder(self):
         ld = self._create_dataset_in_folder_in_library("ForDetectDataset")
-        data = {'file_ext': 'fastq'}
+        # Wait for metadata job to finish.
+        time.sleep(2)
+        data = {'file_ext': 'data'}
         create_response = self._patch("libraries/datasets/%s" % ld.json()["id"], data=data)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "file_ext")
-        assert create_response.json()["file_ext"] == "fastq"
+        assert create_response.json()["file_ext"] == "data"
+        # Wait for metadata job to finish.
+        time.sleep(2)
         data = {'file_ext': 'auto'}
-        time.sleep(1)
         create_response = self._patch("libraries/datasets/%s" % ld.json()["id"], data=data)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "file_ext")
@@ -275,6 +278,4 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")['id']
         payload = {'from_hda_id': hda_id, 'create_type': 'file', 'folder_id': folder_id}
         ld = self._post("libraries/%s/contents" % folder_id, payload)
-        # Sleep here, because there is metadata job running on the new dataset.
-        time.sleep(1)
         return ld
