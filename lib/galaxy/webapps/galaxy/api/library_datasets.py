@@ -59,6 +59,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         :returns:   detailed library dataset information
         :rtype:     dictionary
         """
+        log.debug('trans.get_galaxy_session()')
+        log.debug(trans.get_galaxy_session())
         ld = self.ld_manager.get(trans, managers_base.decode_id(self.app, id))
         serialized = self.ld_manager.serialize(trans, ld)
         return serialized
