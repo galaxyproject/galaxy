@@ -1,5 +1,4 @@
 import logging
-import struct
 
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
@@ -162,11 +161,11 @@ class Cel(Binary):
         found_cel_3 = False
         found_cel_agcc = False
         header_bytes = handle.read(5)
-        if struct.unpack("<i", header_bytes[0:4])[0] == 64:
+        if header_bytes[0] == b'@':
             found_cel_4 = True
-        elif struct.unpack(">B", header_bytes[0])[0] == 59:
+        elif header_bytes[0] == b';':
             found_cel_agcc = True
-        elif header_bytes == '[CEL]':
+        elif header_bytes == b'[CEL]':
             found_cel_3 = True
         return found_cel_3 or found_cel_4 or found_cel_agcc
 
@@ -176,11 +175,11 @@ class Cel(Binary):
         """
         handle = open(dataset.file_name, 'rb')
         header_bytes = handle.read(5)
-        if struct.unpack("<i", header_bytes[0:4])[0] == 64:
+        if header_bytes[0] == b'@':
             dataset.metadata.version = "4"
-        elif struct.unpack(">B", header_bytes[0])[0] == 59:
+        elif header_bytes[0] == b';':
             dataset.metadata.version = "agcc"
-        elif header_bytes == '[CEL]':
+        elif header_bytes == b'[CEL]':
             dataset.metadata.version = "3"
 
     def set_peek(self, dataset, is_multi_byte=False):
