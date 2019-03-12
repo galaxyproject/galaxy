@@ -5,11 +5,11 @@ import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import * as mod_toastr from "libs/toastr";
-import TAGS from "mvc/tag";
 import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";
 import _l from "utils/localization";
 import LoadingIndicator from "ui/loading-indicator";
+import { mountModelTags } from "components/Tags";
 
 /** View of the individual workflows */
 const WorkflowItemView = Backbone.View.extend({
@@ -127,8 +127,7 @@ const WorkflowItemView = Backbone.View.extend({
                 </div>
             </td>
             <td>
-                <div class="${wfId} tags-display">
-                </div>
+                <div class="${wfId} tags-display"></div>
             </td>
             <td>
                 ${this.model.get("owner") === Galaxy.user.attributes.username ? "You" : this.model.get("owner")}
@@ -139,13 +138,13 @@ const WorkflowItemView = Backbone.View.extend({
     },
 
     renderTagEditor: function() {
-        const TagEditor = new TAGS.TagsEditor({
+        let el = $(this.el).find('.tags-display')[0];
+        let propsData = {
             model: this.model,
-            el: $.find(`.${this.model.id}.tags-display`),
-            workflow_mode: true
-        });
-        TagEditor.toggle(true);
-        TagEditor.render();
+            disabled: false,
+            context: "workflow"
+        };
+        return mountModelTags(propsData, el);
     },
 
     /** Template for user actions for workflows */

@@ -224,16 +224,7 @@ var CurrentHistoryView = _super.extend(
 
         /** In this override, get and set current panel preferences when editor is used */
         _renderTags: function($where) {
-            var panel = this;
-            // render tags and show/hide based on preferences
-            _super.prototype._renderTags.call(panel, $where);
-            if (panel.preferences.get("tagsEditorShown")) {
-                panel.tagsEditor.toggle(true);
-            }
-            // store preference when shown or hidden
-            panel.listenTo(panel.tagsEditor, "hiddenUntilActivated:shown hiddenUntilActivated:hidden", tagsEditor => {
-                panel.preferences.set("tagsEditorShown", tagsEditor.hidden);
-            });
+            return _super.prototype._renderTags.call(this, $where);
         },
 
         /** In this override, get and set current panel preferences when editor is used */

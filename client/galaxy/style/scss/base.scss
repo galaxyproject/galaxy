@@ -1,7 +1,7 @@
 // Bootstrap variables and core framework
-@import "../../../node_modules/bootstrap/scss/_functions.scss";
+@import "~bootstrap/scss/_functions.scss";
 @import "theme/blue.scss";
-@import "../../../node_modules/bootstrap/scss/bootstrap.scss";
+@import "~bootstrap/scss/bootstrap.scss";
 
 // Bootstrap-related style overrides
 @import "overrides.scss";
@@ -1842,19 +1842,6 @@ div.toolTitleNoSection {
 .hidden_description_layer.dragover {
     visibility: visible;
     opacity: 1;
-}
-
-/* Temporary tag editor display; will be moved to a scoped Vue SFC upon refactoring */
-.tags-display {
-    @extend %vertical-spacing;
-    .select2-container {
-        max-height: 80px;
-        overflow: auto;
-        min-width: 0px;
-        .select2-choices {
-            border-radius: 3px;
-        }
-    }
 }
 
 /* TEMPORARY, REFACTOR THIS -- This is only image-related styles from the
