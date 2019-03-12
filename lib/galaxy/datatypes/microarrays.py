@@ -161,11 +161,11 @@ class Cel(Binary):
         found_cel_3 = False
         found_cel_agcc = False
         header_bytes = handle.read(5)
-        if header_bytes[0] == b'@':
+        if header_bytes[0].decode("utf8") == '@':
             found_cel_4 = True
-        elif header_bytes[0] == b';':
+        elif header_bytes[0].decode("utf8") == ';':
             found_cel_agcc = True
-        elif header_bytes == b'[CEL]':
+        elif header_bytes.decode("utf8") == '[CEL]':
             found_cel_3 = True
         return found_cel_3 or found_cel_4 or found_cel_agcc
 
