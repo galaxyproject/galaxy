@@ -800,7 +800,7 @@ For multiple handlers the service file needs to be a template unit - the filenam
 
 ```ini
 [Unit]
-Description=Galaxy handlers
+Description=Galaxy job handlers
 After=network.target
 After=time-sync.target
 
@@ -818,7 +818,7 @@ ExecStart=/srv/galaxy/venv/bin/python ./scripts/galaxy-main -c /srv/galaxy/confi
 WantedBy=multi-user.target
 ```
 
-We can now enable and start the web services with 
+We can now enable and start the web services with systemd 
 ```console
 # systemctl enable galaxy-web
 Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-web.service to /etc/systemd/system/galaxy-web.service.
