@@ -614,6 +614,8 @@ class Fastg(Sequence):
                         break
                 if line.startswith('#FASTG'):
                     props = {x.split('=')[0][1:]: x.split('=')[1] for x in re.findall(':[a-zA-Z0-9_]+=[a-zA-Z0-9_().,\" ]+', line)}
+                    if not dataset.metadata.properties:
+                        dataset.metadata.properties = {}
                     dataset.metadata.properties.update(props)
                     if 'version' in props:
                         dataset.metadata.version = props['version']
