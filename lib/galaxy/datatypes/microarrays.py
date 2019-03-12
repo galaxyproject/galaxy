@@ -128,6 +128,7 @@ class Gpr(GenericMicroarrayFile):
         dataset.metadata.number_of_data_columns = int(headers[1][1])
         dataset.metadata.file_type = headers[2][0].strip().strip('"').split("=")[1]
 
+
 class Cel(Binary):
     """ Cel File format described at:
             https://media.affymetrix.com/support/developer/powertools/changelog/gcos-agcc/cel.html
