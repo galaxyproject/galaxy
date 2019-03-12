@@ -19,11 +19,13 @@ DEFAULTS = {
 
 BACKENDS = {
     'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
+    'globus': 'social_core.backends.globus.GlobusOpenIdConnect',
     'okta': 'social_core.backends.okta.OktaOpenIdConnect'
 }
 
 BACKENDS_NAME = {
     'google': 'google-openidconnect',
+    'globus': 'globus',
     'okta': 'okta-openidconnect'
 }
 
@@ -98,26 +100,13 @@ class PSAAuthnz(IdentityProvider):
         # the just logged-in user.
         self.config[setting_name('INACTIVE_USER_LOGIN')] = True
 
-        idp_provider = {
-            "google": self._setup_google_backend,
-            "okta": self._setup_okta_backend
-        }
-        if provider in idp_provider:
-            idp_provider[provider](oidc_backend_config)
+        if provider in BACKENDS_NAME:
+            self._setup_idp(oidc_backend_config)
 
-    def _setup_google_backend(self, oidc_backend_config):
+    def _setup_idp(self, oidc_backend_config):
         self.config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'access_type': 'offline'}
-        self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY'] = oidc_backend_config.get('client_id')
-        self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET'] = oidc_backend_config.get('client_secret')
-        self.config['redirect_uri'] = oidc_backend_config.get('redirect_uri')
-        if oidc_backend_config.get('prompt') is not None:
-            self.config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')
-
-    def _setup_okta_backend(self, oidc_backend_config):
-        self.config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'access_type': 'offline'}
-        self.config['SOCIAL_AUTH_OKTA_OPENIDCONNECT_KEY'] = oidc_backend_config.get('client_id')
-        self.config['SOCIAL_AUTH_OKTA_OPENIDCONNECT_SECRET'] = oidc_backend_config.get('client_secret')
-        self.config['SOCIAL_AUTH_OKTA_OPENIDCONNECT_API_URL'] = oidc_backend_config.get('api_url')
+        self.config['KEY'] = oidc_backend_config.get('client_id')
+        self.config['SECRET'] = oidc_backend_config.get('client_secret')
         self.config['redirect_uri'] = oidc_backend_config.get('redirect_uri')
         if oidc_backend_config.get('prompt') is not None:
             self.config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')
@@ -175,9 +164,7 @@ class Strategy(BaseStrategy):
         self.session = session if session else {}
         self.config = config
         self.config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.request and self.request.host.startswith('https:') else False
-        if self.config['provider'] == "google":
-            self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_EXTRA_DATA'] = ['id_token']
-
+        self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_EXTRA_DATA'] = ['id_token']
         super(Strategy, self).__init__(storage, tpl)
 
     def get_setting(self, name):

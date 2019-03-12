@@ -187,22 +187,6 @@ export default FormBase.extend({
             title: (!options.narrow && "Options") || null,
             tooltip: "View available options"
         });
-        if (options.biostar_url) {
-            menu_button.addMenu({
-                icon: "fa-question-circle",
-                title: "Question?",
-                onclick: function() {
-                    window.open(`${options.biostar_url}/p/new/post/`);
-                }
-            });
-            menu_button.addMenu({
-                icon: "fa-search",
-                title: _l("Search"),
-                onclick: function() {
-                    window.open(`${options.biostar_url}/local/search/page/?q=${options.name}`);
-                }
-            });
-        }
         menu_button.addMenu({
             icon: "fa-share",
             title: _l("Share"),
