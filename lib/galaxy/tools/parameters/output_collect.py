@@ -117,46 +117,7 @@ def collect_dynamic_outputs(
 
             library_folder_manager = app.library_folder_manager
             library_folder = library_folder_manager.get(trans, app.security.decode_id(destination.get("library_folder_id")))
-
-            def add_elements_to_folder(elements, library_folder):
-                for element in elements:
-                    if "elements" in element:
-                        assert "name" in element
-                        name = element["name"]
-                        description = element.get("description")
-                        nested_folder = library_folder_manager.create(trans, library_folder.id, name, description)
-                        add_elements_to_folder(element["elements"], nested_folder)
-                    else:
-                        discovered_file = discovered_file_for_unnamed_output(element, job_working_directory)
-                        fields_match = discovered_file.match
-                        designation = fields_match.designation
-                        visible = fields_match.visible
-                        ext = fields_match.ext
-                        dbkey = fields_match.dbkey
-                        info = element.get("info", None)
-                        link_data = discovered_file.match.link_data
-
-                        sources = fields_match.sources
-                        hashes = fields_match.hashes
-
-                        # Create new primary dataset
-                        name = fields_match.name or designation
-
-                        job_context.create_dataset(
-                            ext=ext,
-                            designation=designation,
-                            visible=visible,
-                            dbkey=dbkey,
-                            name=name,
-                            filename=discovered_file.path,
-                            info=info,
-                            library_folder=library_folder,
-                            link_data=link_data,
-                            sources=sources,
-                            hashes=hashes,
-                        )
-
-            add_elements_to_folder(elements, library_folder)
+            persist_elements_to_folder(job_context, elements, library_folder)
         elif destination_type == "hdca":
             # create or populate a dataset collection in the history
             history = job_context.job.history
@@ -233,6 +194,45 @@ def collect_dynamic_outputs(
         except Exception:
             log.exception("Problem gathering output collection.")
             collection.handle_population_failed("Problem building datasets for collection.")
+
+
+def persist_elements_to_folder(job_context, elements, library_folder):
+    for element in elements:
+        if "elements" in element:
+            assert "name" in element
+            name = element["name"]
+            description = element.get("description")
+            nested_folder = job_context.create_library_folder(library_folder, name, description)
+            persist_elements_to_folder(job_context, element["elements"], nested_folder)
+        else:
+            discovered_file = discovered_file_for_unnamed_output(element, job_context.job_working_directory)
+            fields_match = discovered_file.match
+            designation = fields_match.designation
+            visible = fields_match.visible
+            ext = fields_match.ext
+            dbkey = fields_match.dbkey
+            info = element.get("info", None)
+            link_data = discovered_file.match.link_data
+
+            # Create new primary dataset
+            name = fields_match.name or designation
+
+            sources = fields_match.sources
+            hashes = fields_match.hashes
+
+            job_context.create_dataset(
+                ext=ext,
+                designation=designation,
+                visible=visible,
+                dbkey=dbkey,
+                name=name,
+                filename=discovered_file.path,
+                info=info,
+                library_folder=library_folder,
+                link_data=link_data,
+                sources=sources,
+                hashes=hashes,
+            )
 
 
 def persist_hdas(elements, model_create_context):
@@ -343,13 +343,13 @@ class ModelPersistenceContext(object):
                 ldda = galaxy.model.LibraryDatasetDatasetAssociation(name=name,
                                                                      extension=ext,
                                                                      dbkey=dbkey,
-                                                                     library_dataset=ld,
+                                                                     # library_dataset=ld,
                                                                      user=self.user,
                                                                      create_dataset=True,
                                                                      flush=False,
                                                                      sa_session=sa_session)
                 ld.library_dataset_dataset_association = ldda
-                ldda.state = ldda.states.OK
+                ldda.raw_set_dataset_state(ldda.states.OK)
 
                 self.add_library_dataset_to_folder(library_folder, ld)
                 primary_data = ldda
@@ -546,13 +546,21 @@ class JobContext(ModelPersistenceContext):
     def flush(self):
         self.sa_session.flush()
 
+    def create_library_folder(self, parent_folder, name, description):
+        assert parent_folder.id
+        library_folder_manager = self.app.library_folder_manager
+        nested_folder = library_folder_manager.create(self.work_context, parent_folder.id, name, description)
+        return nested_folder
+
     def add_output_dataset_association(self, name, dataset):
         assoc = galaxy.model.JobToOutputDatasetAssociation(name, dataset)
         assoc.job = self.job
         self.sa_session.add(assoc)
 
     def add_library_dataset_to_folder(self, library_folder, ld):
-        trans.sa_session.add(ld.ldda)
+        trans = self.work_context
+        ldda = ld.library_dataset_dataset_association
+        trans.sa_session.add(ldda)
 
         trans = self.work_context
         trans.app.security_agent.copy_library_permissions(trans, library_folder, ld)
@@ -563,7 +571,7 @@ class JobContext(ModelPersistenceContext):
         trans.app.security_agent.copy_library_permissions(trans, ld, ldda)
         # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
         trans.app.security_agent.set_all_dataset_permissions(ldda.dataset, trans.app.security_agent.user_get_default_permissions(trans.user))
-        library_folder.add_library_dataset(ld, genome_build=dbkey)
+        library_folder.add_library_dataset(ld, genome_build=ldda.dbkey)
         trans.sa_session.add(library_folder)
         trans.sa_session.flush()
 
