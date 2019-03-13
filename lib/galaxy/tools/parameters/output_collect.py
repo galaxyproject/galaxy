@@ -83,6 +83,9 @@ def collect_dynamic_outputs(
                         info = element.get("info", None)
                         link_data = discovered_file.match.link_data
 
+                        sources = fields_match.sources
+                        hashes = fields_match.hashes
+
                         # Create new primary dataset
                         name = fields_match.name or designation
 
@@ -95,7 +98,9 @@ def collect_dynamic_outputs(
                             filename=discovered_file.path,
                             info=info,
                             library_folder=library_folder,
-                            link_data=link_data
+                            link_data=link_data,
+                            sources=sources,
+                            hashes=hashes,
                         )
 
             add_elements_to_folder(elements, library_folder)
@@ -165,6 +170,9 @@ def collect_dynamic_outputs(
                             sa_session = tool.app.model.context
                             primary_dataset = sa_session.query(galaxy.model.HistoryDatasetAssociation).get(hda_id)
 
+                        sources = fields_match.sources
+                        hashes = fields_match.hashes
+
                         dataset = job_context.create_dataset(
                             ext=ext,
                             designation=designation,
@@ -175,6 +183,8 @@ def collect_dynamic_outputs(
                             info=info,
                             link_data=link_data,
                             primary_data=primary_dataset,
+                            sources=sources,
+                            hashes=hashes,
                         )
                         dataset.raw_set_dataset_state('ok')
                         if not hda_id:
@@ -286,6 +296,10 @@ class JobContext(object):
 
             link_data = discovered_file.match.link_data
             tag_list = discovered_file.match.tag_list
+
+            sources = discovered_file.match.sources
+            hashes = discovered_file.match.hashes
+
             dataset = self.create_dataset(
                 ext=ext,
                 designation=designation,
@@ -296,6 +310,8 @@ class JobContext(object):
                 metadata_source_name=metadata_source_name,
                 link_data=link_data,
                 tag_list=tag_list,
+                sources=sources,
+                hashes=hashes,
             )
             log.debug(
                 "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s] %s",
@@ -352,6 +368,8 @@ class JobContext(object):
         link_data=False,
         primary_data=None,
         tag_list=[],
+        sources=[],
+        hashes=[],
     ):
         app = self.app
         sa_session = self.sa_session
@@ -365,6 +383,17 @@ class JobContext(object):
             primary_data.extension = ext
             primary_data.visible = visible
             primary_data.dbkey = dbkey
+
+        for source_dict in sources:
+            source = galaxy.model.DatasetSource()
+            source.source_uri = source_dict["source_uri"]
+            primary_data.dataset.sources.append(source)
+
+        for hash_dict in hashes:
+            hash_object = galaxy.model.DatasetHash()
+            hash_object.hash_function = hash_dict["hash_function"]
+            hash_object.hash_value = hash_dict["hash_value"]
+            primary_data.dataset.hashes.append(hash_object)
 
         sa_session.flush()
 
@@ -737,6 +766,14 @@ class JsonCollectedDatasetMatch(object):
     @property
     def object_id(self):
         return self.as_dict.get("object_id", None)
+
+    @property
+    def sources(self):
+        return self.as_dict.get("sources", [])
+
+    @property
+    def hashes(self):
+        return self.as_dict.get("hashes", [])
 
 
 class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):

@@ -1992,6 +1992,8 @@ class Dataset(StorableObject, RepresentById):
         self.external_extra_files_path = None
         self._extra_files_path = extra_files_path
         self.file_size = file_size
+        self.sources = []
+        self.hashes = []
         if uuid is None:
             self.uuid = uuid4()
         else:
@@ -2142,6 +2144,18 @@ class Dataset(StorableObject, RepresentById):
             if dp.action == trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
                 return True
         return False
+
+
+class DatasetSource(RepresentById):
+    """ """
+
+
+class DatasetSourceHash(RepresentById):
+    """ """
+
+
+class DatasetHash(RepresentById):
+    """ """
 
 
 def datatype_for_extension(extension, datatypes_registry=None):
