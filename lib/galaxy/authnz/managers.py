@@ -74,6 +74,7 @@ class AuthnzManager(object):
 
     def _parse_oidc_backends_config(self, config_file):
         self.oidc_backends_config = {}
+        self.oidc_backends_implementation = {}
         try:
             tree = ET.parse(config_file)
             root = tree.getroot()
@@ -89,11 +90,12 @@ class AuthnzManager(object):
                     log.error("Could not find a node attribute 'name'; skipping the node '{}'.".format(child.tag))
                     continue
                 idp = child.get('name').lower()
-                implementation = child.get('implementation', 'psa').lower()
                 if idp in BACKENDS_NAME:
-                    self.oidc_backends_config[idp, implementation] = self._parse_idp_config(child)
-                elif implementation == 'keycloak':
-                    self.oidc_backends_config[idp, implementation] = self._parse_keycloak_config(child)
+                    self.oidc_backends_config[idp] = self._parse_idp_config(child)
+                    self.oidc_backends_implementation[idp] = 'psa'
+                elif idp == 'custos':
+                    self.oidc_backends_config[idp] = self._parse_custos_config(child)
+                    self.oidc_backends_implementation[idp] = 'custos'
             if len(self.oidc_backends_config) == 0:
                 raise ParseError("No valid provider configuration parsed.")
         except ImportError:
@@ -110,48 +112,33 @@ class AuthnzManager(object):
             rtv['prompt'] = config_xml.find('prompt').text
         return rtv
 
-    # TODO: rename
-    def _parse_generic_oidc_backend_config(self, config_xml):
+    def _parse_custos_config(self, config_xml):
         rtv = {
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
-            'redirect_uri': config_xml.find('redirect_uri').text}
+            'redirect_uri': config_xml.find('redirect_uri').text,
+            'realm': config_xml.find('realm').text}
         if config_xml.find('well_known_oidc_config_uri') is not None:
             rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
-        else:
-            rtv['authorization_endpoint'] = config_xml.find('authorization_endpoint').text
-            rtv['token_endpoint'] = config_xml.find('token_endpoint').text
-            rtv['userinfo_endpoint'] = config_xml.find('userinfo_endpoint').text
-        if config_xml.find('extra_params') is not None:
-            rtv['extra_params'] = {}
-            for extra_param in config_xml.find('extra_params'):
-                rtv['extra_params'][extra_param.attrib['name']] = extra_param.attrib['value']
-        if config_xml.find('userinfo_claim_mappings') is not None:
-            rtv['userinfo_claim_mappings'] = {}
-            for claim_mapping in config_xml.find('userinfo_claim_mappings'):
-                rtv['userinfo_claim_mappings'][claim_mapping.tag] = claim_mapping.text
         return rtv
 
-    def _unify_provider_implementation_names(self, provider, implementation):
-        if (provider.lower(), implementation.lower()) in self.oidc_backends_config:
-            return provider.lower(), implementation.lower()
+    def _unify_provider_name(self, provider):
+        if provider.lower() in self.oidc_backends_config:
+            return provider.lower()
         for k, v in BACKENDS_NAME.iteritems():
             if v == provider:
-                return k.lower(), 'psa'
-        return None, None
+                return k.lower()
+        return None
 
-    def _unify_provider_name(self, provider):
-        return self._unify_provider_implementation_names(provider, 'psa')
-
-    def _get_authnz_backend(self, provider, implementation):
-        unified_provider_name, implementation = self._unify_provider_implementation_names(provider, implementation)
-        if (unified_provider_name, implementation) in self.oidc_backends_config:
+    def _get_authnz_backend(self, provider):
+        unified_provider_name = self._unify_provider_name(provider)
+        if unified_provider_name in self.oidc_backends_config:
             provider = unified_provider_name
-            authnz_backend_class = self._get_authnz_backend_class(implementation)
+            identity_provider_class = self._get_identity_provider_class(self.oidc_backends_implementation[provider])
             try:
-                return True, "", authnz_backend_class(provider_, self.oidc_config, self.oidc_backends_config[provider_, implementation_])
+                return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name])
             except Exception as e:
-                log.exception('An error occurred when loading {}'.format(authnz_backend_class.__name__))
+                log.exception('An error occurred when loading {}'.format(identity_provider_class.__name__))
                 return False, str(e), None
         else:
             msg = 'The requested identity provider, `{}`, is not a recognized/expected provider.'.format(provider)
@@ -159,10 +146,10 @@ class AuthnzManager(object):
             return False, msg, None
 
     @staticmethod
-    def _get_authnz_backend_class(implementation):
+    def _get_identity_provider_class(implementation):
         if implementation == 'psa':
             return PSAAuthnz
-        elif implementation == 'oidc':
+        elif implementation == 'custos':
             return CustosAuthnz
         else:
             return None
@@ -229,19 +216,17 @@ class AuthnzManager(object):
             raise exceptions.ItemAccessibilityException(msg)
         return qres
 
-    def authenticate(self, provider, implementation, trans):
+    def authenticate(self, provider, trans):
         """
         :type provider: string
         :param provider: set the name of the identity provider to be
             used for authentication flow.
-        :param implementation: name of technology used to implement
-            authentication to this identity provider
         :type trans: GalaxyWebTransaction
         :param trans: Galaxy web transaction.
         :return: an identity provider specific authentication redirect URI.
         """
         try:
-            success, message, backend = self._get_authnz_backend(provider, implementation)
+            success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 return False, message, None
             return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans)
@@ -250,9 +235,9 @@ class AuthnzManager(object):
             log.exception(msg)
             return False, msg, None
 
-    def callback(self, provider, implementation, state_token, authz_code, trans, login_redirect_url):
+    def callback(self, provider, state_token, authz_code, trans, login_redirect_url):
         try:
-            success, message, backend = self._get_authnz_backend(provider, implementation)
+            success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 return False, message, (None, None)
             return True, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
@@ -261,9 +246,9 @@ class AuthnzManager(object):
             log.exception(msg)
             return False, msg, (None, None)
 
-    def disconnect(self, provider, implementation, trans, disconnect_redirect_url=None):
+    def disconnect(self, provider, trans, disconnect_redirect_url=None):
         try:
-            success, message, backend = self._get_authnz_backend(provider, implementation)
+            success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 return False, message, None
             return backend.disconnect(provider, trans, disconnect_redirect_url)

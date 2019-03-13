@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <OIDC>
-    <provider name="Google" implementation="PSA">
+    <provider name="Google">
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
         <redirect_uri>http://localhost:8080/authnz/google/callback</redirect_uri>
@@ -32,33 +32,13 @@
         <prompt>consent</prompt>
     </provider>
 
-    <provider name="Google" implementation="OIDC">
+    <provider name="Custos">
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
-        <redirect_uri>http://localhost:8000/authnz/google/oidc/callback</redirect_uri>
+        <redirect_uri>http://localhost:8000/authnz/custos/callback</redirect_uri>
 
-        <!-- Either specify the .well-known configuration URL or each endpoint separately -->
-        <well_known_oidc_config_uri>https://.../.well-known/openid-configuration</well_known_oidc_config_uri>
-
-        <!-- authorization_endpoint is only needed if well_known_oidc_config_uri is not specified -->
-        <!-- <authorization_endpoint>https://...</authorization_endpoint> -->
-        <!-- token_endpoint is only needed if well_known_oidc_config_uri is not specified -->
-        <!-- <token_endpoint>https://...</token_endpoint> -->
-        <!-- userinfo_endpoint is only needed if well_known_oidc_config_uri is not specified -->
-        <!-- <userinfo_endpoint>https://...</userinfo_endpoint> -->
-
-        <!-- (Optional) Add extra parameters to the authorization URI -->
-        <extra_params>
-            <!-- <param name="..." value="..."/> -->
-        </extra_params>
-
-        <!-- (Optional) Custom UserInfo Claim Mappings. Customize what UserInfo claims
-        are used to create/associate a Galaxy user account. The following
-        represents the default claim mappings. -->
-        <!-- <userinfo_claim_mappings>
-            <email>email</email>
-            <username>preferred_username</username>
-            <id>sub</id>
-        </userinfo_claim_mappings> -->
+        <realm> ... </realm>
+        <!-- (Optional) Override the default Custos well-known URL to point to a different instance -->
+        <!-- <well_known_oidc_config_uri>https://.../.well-known/openid-configuration</well_known_oidc_config_uri> -->
     </provider>
 </OIDC>
