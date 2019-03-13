@@ -19,10 +19,12 @@ var Router = Backbone.Router.extend({
             .toString(36)
             .substr(2);
         url += url.indexOf("?") == -1 ? "?" : "&";
-        url += $.param(data, true);
+        let bustParam = $.param(data, true);
+        url += bustParam;
         let Galaxy = getGalaxyInstance();
         Galaxy.params = data;
         this.navigate(url, { trigger: true });
+        window.history.replaceState(window.history.state, "", window.location.pathname.replace(bustParam, ""));
     },
 
     /** override to parse query string into obj and send to each route */
