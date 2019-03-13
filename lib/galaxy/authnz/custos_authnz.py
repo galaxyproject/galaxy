@@ -177,6 +177,7 @@ class CustosAuthnz(IdentityProvider):
         self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
         self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
         self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
+        # TODO: should we get this from library too? Allow override?
         self.config['extra_params'] = {'kc_idp_hint': 'cilogon'}
 
     def _get_well_known_uri_for_provider_and_realm(self, provider, realm):

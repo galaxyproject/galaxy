@@ -39,7 +39,7 @@ class OIDC(JSAppLauncher):
 
     @web.json
     @web.expose
-    def login(self, trans, provider, implementation):
+    def login(self, trans, provider):
         if not trans.app.config.enable_oidc:
             msg = "Login to Galaxy using third-party identities is not enabled on this Galaxy instance."
             log.debug(msg)
@@ -51,7 +51,7 @@ class OIDC(JSAppLauncher):
             raise exceptions.AuthenticationFailed(message)
 
     @web.expose
-    def callback(self, trans, provider, implementation, **kwargs):
+    def callback(self, trans, provider, **kwargs):
         user = trans.user.username if trans.user is not None else 'anonymous'
         if not bool(kwargs):
             log.error("OIDC callback received no data for provider `{}` and user `{}`".format(provider, user))
@@ -67,7 +67,6 @@ class OIDC(JSAppLauncher):
                                             'Please try again, and if the problem persists, contact '
                                             'the Galaxy instance admin'.format(provider))
         success, message, (redirect_url, user) = trans.app.authnz_manager.callback(provider,
-                                                                                   implementation,
                                                                                    kwargs['state'],
                                                                                    kwargs['code'],
                                                                                    trans,
@@ -84,12 +83,11 @@ class OIDC(JSAppLauncher):
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")
-    def disconnect(self, trans, provider, implementation, **kwargs):
+    def disconnect(self, trans, provider, **kwargs):
         if trans.user is None:
             # Only logged in users are allowed here.
             return
         success, message, redirect_url = trans.app.authnz_manager.disconnect(provider,
-                                                                             implementation,
                                                                              trans,
                                                                              disconnect_redirect_url=url_for('/'))
         if success is False:
