@@ -1524,7 +1524,10 @@ galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 
 def galaxy_directory():
-    return os.path.abspath(galaxy_root_path)
+    root_path = os.path.abspath(galaxy_root_path)
+    if os.path.basename(root_path) == "projects":
+        root_path = os.path.abspath(os.path.join(root_path, ".."))
+    return root_path
 
 
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):

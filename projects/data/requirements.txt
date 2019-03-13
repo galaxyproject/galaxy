@@ -1,0 +1,12 @@
+galaxy-objectstore
+galaxy-util
+bx
+h5py
+isa-rwval
+numpy
+pycryptodome
+pysam
+social_auth_core
+SQLAlchemy==1.2
+sqlalchemy-migrate
+WebOb

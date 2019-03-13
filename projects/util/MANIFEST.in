@@ -1,0 +1,3 @@
+include *.rst LICENSE
+include galaxy/util/docutils_template.txt
+include galaxy/exceptions/error_codes.json

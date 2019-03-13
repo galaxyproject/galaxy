@@ -150,6 +150,11 @@ client/styleguide
 # webpack stats
 client/webpack-stats.json
 
+# Projects
+projects/*/build
+projects/*/dist
+projects/*/*.egg-info
+
 # Misc
 *.orig
 .DS_Store

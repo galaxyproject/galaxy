@@ -1,0 +1,3 @@
+include *.rst LICENSE
+include galaxy/datatypes/test/*
+
