@@ -286,7 +286,7 @@ RadioButton.View = Base.extend({
 
     /** Main template function */
     _template: function() {
-        return $("<div/>").addClass("btn-group ui-radiobutton");
+        return $("<div/>").addClass("btn-group ui-radiobutton d-flex");
     }
 });
 

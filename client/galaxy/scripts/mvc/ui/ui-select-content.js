@@ -18,14 +18,15 @@ var Configurations = {
             icon: "fa-file-o",
             tooltip: _l("Single dataset"),
             multiple: false,
-            batch: Batch.DISABLED
+            batch: Batch.ENABLED,
+            showdialog: true
         },
         {
             src: "hda",
             icon: "fa-files-o",
             tooltip: _l("Multiple datasets"),
             multiple: true,
-            batch: Batch.LINKED
+            batch: Batch.ENABLED
         },
         {
             src: "hdca",
@@ -149,28 +150,11 @@ var View = Backbone.View.extend({
                 }
             ]
         });
-        var $batch_div = $("<div/>")
-            .addClass("form-text text-muted")
-            .append($("<i/>").addClass("fa fa-sitemap"))
-            .append(
-                $("<span/>").html(
-                    "This is a batch mode input field. Separate jobs will be triggered for each dataset selection."
-                )
-            );
         this.$batch = {
-            linked: $batch_div.clone(),
-            enabled: $batch_div
+            linked: $(this._templateBatch()).clone(),
+            enabled: $(this._templateBatch())
                 .clone()
-                .append(
-                    $("<div/>")
-                        .append(
-                            $("<div/>")
-                                .addClass("ui-form-title")
-                                .html("Batch options:")
-                        )
-                        .append(this.button_product.$el)
-                )
-                .append($("<div/>").css("clear", "both"))
+                .append(this.button_product.$el)
         };
 
         // add drag-drop event handlers
@@ -234,7 +218,7 @@ var View = Backbone.View.extend({
 
     /** Return the currently selected dataset values */
     value: function(new_value) {
-        let Galaxy = getGalaxyInstance();
+        let galaxy = getGalaxyInstance();
         new_value !== undefined && this.model.set("value", new_value);
         var current = this.model.get("current");
         if (this.config[current]) {
@@ -248,7 +232,7 @@ var View = Backbone.View.extend({
                         if (details) {
                             result.values.push(details);
                         } else {
-                            Galaxy.emit.debug(
+                            galaxy.emit.debug(
                                 "ui-select-content::value()",
                                 `Requested details not found for '${id_list[i]}'.`
                             );
@@ -260,7 +244,7 @@ var View = Backbone.View.extend({
                 }
             }
         } else {
-            Galaxy.emit.debug("ui-select-content::value()", `Invalid value/source '${new_value}'.`);
+            galaxy.emit.debug("ui-select-content::value()", `Invalid value/source '${new_value}'.`);
         }
         return null;
     },
@@ -269,11 +253,21 @@ var View = Backbone.View.extend({
     _changeCurrent: function() {
         var self = this;
         _.each(this.fields, (field, i) => {
+            let cnf = self.config[i];
             if (self.model.get("current") == i) {
                 field.$el.show();
                 _.each(self.$batch, ($batchfield, batchmode) => {
-                    $batchfield[self.config[i].batch == batchmode ? "show" : "hide"]();
+                    if (cnf.batch == batchmode) {
+                        $batchfield.show();
+                    } else {
+                        $batchfield.hide();
+                    }
                 });
+                if (cnf.showdialog) {
+                    self.button_dialog.show();
+                } else {
+                    self.button_dialog.hide();
+                }
                 self.button_type.value(i);
             } else {
                 field.$el.hide();
@@ -283,8 +277,8 @@ var View = Backbone.View.extend({
 
     /** Change of type */
     _changeType: function() {
-        let Galaxy = getGalaxyInstance();
-        var self = this;
+        let self = this;
+        let galaxy = getGalaxyInstance();
 
         // identify selector type identifier i.e. [ flavor ]_[ type ]_[ multiple ]
         var config_id =
@@ -295,7 +289,7 @@ var View = Backbone.View.extend({
             this.config = Configurations[config_id];
         } else {
             this.config = Configurations["data"];
-            Galaxy.emit.debug("ui-select-content::_changeType()", `Invalid configuration/type id '${config_id}'.`);
+            galaxy.emit.debug("ui-select-content::_changeType()", `Invalid configuration/type id '${config_id}'.`);
         }
 
         // prepare extension component of error message
@@ -303,7 +297,7 @@ var View = Backbone.View.extend({
         var extensions = Utils.textify(this.model.get("extensions"));
         var src_labels = this.model.get("src_labels");
 
-        // build views
+        // build radio button for data selectors
         this.fields = [];
         this.button_data = [];
         _.each(this.config, (c, i) => {
@@ -335,18 +329,45 @@ var View = Backbone.View.extend({
             }
         });
 
+        // build data dialog button
+        this.button_dialog = new Ui.Button({
+            icon: "fa-folder-open-o",
+            title: "Browse Datasets",
+            cls: "mt-2 mb-2 float-left",
+            onclick: () => {
+                galaxy.data.dialog(id => {
+                    this.model.set("value", {
+                        values: [{ src: "hda", id: id }]
+                    });
+                    this.model.trigger("change:value");
+                }, {
+                    multiple: false,
+                    format: null
+                });
+            }
+        });
+
         // append views
-        this.$el.empty();
-        var button_width = 0;
+        let $left = $("<div/>");
+        let $right = $("<div/>");
+        this.$el.empty()
+                .append("<div/>")
+                .addClass("d-flex flex-row")
+                .append($left)
+                .append($right);
         if (this.fields.length > 1) {
-            this.$el.append(this.button_type.$el);
-            button_width = `${Math.max(0, this.fields.length * 40)}px`;
+            $left.addClass("mr-2").append(
+                this.button_type.$el
+            );
         }
         _.each(this.fields, field => {
-            self.$el.append(field.$el.css({ "margin-left": button_width }));
+            $right.append(field.$el);
         });
+        $right.append(
+            this.button_dialog.$el
+        );
         _.each(this.$batch, ($batchfield, batchmode) => {
-            self.$el.append($batchfield.css({ "margin-left": button_width }));
+            $right.append($batchfield);
         });
         this.model.set("current", 0);
         this._changeCurrent();
@@ -487,6 +508,16 @@ var View = Backbone.View.extend({
             }
         }
         return result;
+    },
+
+    /** Template for batch mode execution options */
+    _templateBatch: function() {
+        return `<div class="form-text text-muted" style="clear: both;">
+                    <i class="fa fa-sitemap"/>
+                    <span>
+                        This is a batch mode input field. Separate jobs will be triggered for each dataset selection.
+                    </span>
+                </div>`;
     }
 });
 
