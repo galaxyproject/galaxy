@@ -9,6 +9,15 @@ import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
 
+function executeUseRouter(url){
+    let Galaxy = getGalaxyInstance();
+    let prefix = getAppRoot();
+    if (url.startsWith(prefix)){
+        url = url.replace(prefix, "/");
+    }
+    Galaxy.page.router.push(url);
+}
+
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
@@ -421,12 +430,7 @@ var Tab = Backbone.View.extend({
                 } else {
                     let Galaxy = getGalaxyInstance();
                     if (options.target == "__use_router__" && typeof Galaxy.page != "undefined") {
-                        let prefix = getAppRoot();
-                        let path = options.url;
-                        if (path.startsWith(prefix)){
-                            path = path.slice(prefix.length);
-                        }
-                        Galaxy.page.router.push(path);
+                        executeUseRouter(options.url);
                     } else {
                         try {
                             Galaxy.frame.add(options);
@@ -465,15 +469,7 @@ var Tab = Backbone.View.extend({
                 } else {
                     let Galaxy = getGalaxyInstance();
                     if (model.attributes.target == "__use_router__" && typeof Galaxy.page != "undefined") {
-                        let prefix = getAppRoot();
-                        let path = model.attributes.url;
-                        if (path.startsWith(prefix)){
-                            path = path.slice(prefix.length);
-                        }
-                        if (!path.startsWith("/")) {
-                            path = "/" + path;
-                        }
-                        Galaxy.page.router.push(path);
+                        executeUseRouter(model.attributes.url);
                     } else {
                         Galaxy.frame.add(model.attributes);
                     }
