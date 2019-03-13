@@ -9,10 +9,10 @@ import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
 
-function executeUseRouter(url){
+function executeUseRouter(url) {
     let Galaxy = getGalaxyInstance();
     let prefix = getAppRoot();
-    if (url.startsWith(prefix)){
+    if (url.startsWith(prefix)) {
         url = url.replace(prefix, "/");
     }
     Galaxy.page.router.push(url);

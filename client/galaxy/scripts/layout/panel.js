@@ -236,10 +236,12 @@ var CenterPanel = Backbone.View.extend({
         let message;
         try {
             message = contentWindow.onbeforeunload && contentWindow.onbeforeunload();
-        } catch(err) {
+        } catch (err) {
             // This can happen when external content is displayed in this iframe // CORS violation
             contentWindow = {};
-            console.warn("Iframe unload exception.  This can happen when external content is displayed in the page iframe and causes a CORS violation -- likely harmless.");
+            console.warn(
+                "Iframe unload exception.  This can happen when external content is displayed in the page iframe and causes a CORS violation -- likely harmless."
+            );
         }
         if (!message || confirm(message)) {
             contentWindow.onbeforeunload = undefined;
