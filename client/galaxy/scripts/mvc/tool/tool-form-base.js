@@ -120,7 +120,7 @@ export default FormBase.extend({
         let in_favorites = Galaxy.user.getFavorites().tools.indexOf(options.id) >= 0;
         var favorite_button = new Ui.Button({
             icon: "fa-star-o",
-            title: "Favorite",
+            title: options.narrow ? null : "Favorite",
             tooltip: "Add to favorites",
             visible: !Galaxy.user.isAnonymous() && !in_favorites,
             onclick: () => {
@@ -136,7 +136,7 @@ export default FormBase.extend({
 
         var remove_favorite_button = new Ui.Button({
             icon: "fa-star",
-            title: "Added",
+            title: options.narrow ? null : "Added",
             tooltip: "Remove from favorites",
             visible: !Galaxy.user.isAnonymous() && in_favorites,
             onclick: () => {
@@ -155,7 +155,7 @@ export default FormBase.extend({
         // button for version selection
         var versions_button = new Ui.ButtonMenu({
             icon: "fa-cubes",
-            title: (!options.narrow && "Versions") || null,
+            title: options.narrow ? null : "Versions",
             tooltip: "Select another tool version"
         });
 
@@ -184,7 +184,7 @@ export default FormBase.extend({
         var menu_button = new Ui.ButtonMenu({
             id: "options",
             icon: "fa-caret-down",
-            title: (!options.narrow && "Options") || null,
+            title: options.narrow ? null : "Options",
             tooltip: "View available options"
         });
         menu_button.addMenu({
