@@ -1360,56 +1360,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~
-``biostar_url``
-~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ````
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~
-``biostar_key_name``
-~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ````
-:Type: str
-
-
-~~~~~~~~~~~~~~~
-``biostar_key``
-~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ````
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``biostar_enable_bug_reports``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ``true``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``biostar_never_authenticate``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~
 ``citation_url``
 ~~~~~~~~~~~~~~~~

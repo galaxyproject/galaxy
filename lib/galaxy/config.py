@@ -276,6 +276,7 @@ class Configuration(object):
         self.id_secret = kwargs.get("id_secret", "USING THE DEFAULT IS NOT SECURE!")
         self.retry_metadata_internally = string_as_bool(kwargs.get("retry_metadata_internally", "True"))
         self.max_metadata_value_size = int(kwargs.get("max_metadata_value_size", 5242880))
+        self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
         self.single_user = kwargs.get("single_user", None)
         self.use_remote_user = string_as_bool(kwargs.get("use_remote_user", "False")) or self.single_user
         self.normalize_remote_user_email = string_as_bool(kwargs.get("normalize_remote_user_email", "False"))
@@ -633,11 +634,6 @@ class Configuration(object):
             self.amqp_internal_connection = "sqlalchemy+" + self.database_connection
         else:
             self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path("database/control.sqlite", self.root)
-        self.biostar_url = kwargs.get('biostar_url', None)
-        self.biostar_key_name = kwargs.get('biostar_key_name', None)
-        self.biostar_key = kwargs.get('biostar_key', None)
-        self.biostar_enable_bug_reports = string_as_bool(kwargs.get('biostar_enable_bug_reports', True))
-        self.biostar_never_authenticate = string_as_bool(kwargs.get('biostar_never_authenticate', False))
         self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
         self.user_preferences_extra_config_file = kwargs.get('user_preferences_extra_conf_path', 'config/user_preferences_extra_conf.yml')
         try:

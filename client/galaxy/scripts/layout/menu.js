@@ -220,20 +220,6 @@ var Collection = Backbone.Collection.extend({
                 target: "_blank"
             });
         }
-        if (options.biostar_url) {
-            helpTab.menu.unshift({
-                title: _l("Ask a question"),
-                url: "biostar/biostar_question_redirect",
-                target: "_blank"
-            });
-        }
-        if (options.biostar_url) {
-            helpTab.menu.unshift({
-                title: _l("Galaxy Biostar"),
-                url: options.biostar_url_redirect,
-                target: "_blank"
-            });
-        }
         if (options.helpsite_url) {
             helpTab.menu.unshift({
                 title: _l("Galaxy Help"),
