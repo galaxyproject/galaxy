@@ -2423,10 +2423,11 @@ class DatabaseOperationTool(Tool):
 
             map(check_dataset_instance, input_dataset_collection.dataset_instances)
 
-    def _add_datasets_to_history(self, history, elements):
+    def _add_datasets_to_history(self, history, elements, datasets_visible=False):
         datasets = []
         for element_object in elements:
             if getattr(element_object, "history_content_type", None) == "dataset":
+                element_object.visible = datasets_visible
                 datasets.append(element_object)
 
         if datasets:
@@ -2518,8 +2519,7 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
             raise Exception("Invalid tool parameters.")
         extracted = extracted_element.element_object
         extracted_o = extracted.copy(copy_tags=tags, new_name=extracted_element.element_identifier)
-        extracted_o.visible = True
-        self._add_datasets_to_history(history, [extracted_o])
+        self._add_datasets_to_history(history, [extracted_o], datasets_visible=True)
 
         out_data["output"] = extracted_o
 
@@ -2598,7 +2598,6 @@ class MergeCollectionTool(DatabaseOperationTool):
         for key, value in new_element_structure.items():
             if getattr(value, "history_content_type", None) == "dataset":
                 copied_value = value.copy(force_flush=False)
-                copied_value.visible = False
             else:
                 copied_value = value.copy()
             new_elements[key] = copied_value
@@ -2617,7 +2616,6 @@ class FilterDatasetsTool(DatabaseOperationTool):
             element_identifier = dce.element_identifier
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
                 copied_value = dce.element_object.copy(force_flush=False)
-                copied_value.visible = False
             else:
                 copied_value = dce.element_object.copy()
             new_elements[element_identifier] = copied_value
@@ -2693,7 +2691,6 @@ class FlattenTool(DatabaseOperationTool):
                     add_elements(dce_object, prefix=identifier)
                 else:
                     copied_dataset = dce_object.copy(force_flush=False)
-                    copied_dataset.visible = False
                     new_elements[identifier] = copied_dataset
                     copied_datasets.append(copied_dataset)
 
@@ -2739,7 +2736,6 @@ class SortTool(DatabaseOperationTool):
         for dce in sorted_elements:
             dce_object = dce.element_object
             copied_dataset = dce_object.copy(force_flush=False)
-            copied_dataset.visible = False
             new_elements[dce.element_identifier] = copied_dataset
 
         self._add_datasets_to_history(history, itervalues(new_elements))
@@ -2764,7 +2760,6 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 raise Exception("New identifier [%s] appears twice in resulting collection, these values must be unique." % new_label)
             if getattr(dce_object, "history_content_type", None) == "dataset":
                 copied_value = dce_object.copy(force_flush=False)
-                copied_value.visible = False
             else:
                 copied_value = dce_object.copy()
             new_elements[new_label] = copied_value
@@ -2810,7 +2805,6 @@ class ApplyRulesTool(DatabaseOperationTool):
 
         def copy_dataset(dataset):
             copied_dataset = dataset.copy(force_flush=False)
-            copied_dataset.visible = False
             copied_datasets.append(copied_dataset)
             return copied_dataset
 
@@ -2907,7 +2901,6 @@ class FilterFromFileTool(DatabaseOperationTool):
 
             if getattr(dce_object, "history_content_type", None) == "dataset":
                 copied_value = dce_object.copy(force_flush=False)
-                copied_value.visible = False
             else:
                 copied_value = dce_object.copy()
 
