@@ -354,7 +354,7 @@ def create_paramfile(trans, uploaded_datasets):
                 uploaded_dataset.type = 'ftp_import'
             params = dict(file_type=uploaded_dataset.file_type,
                           ext=uploaded_dataset.ext,
-                          name=uploaded_dataset.name,
+                          name=os.path.basename(uploaded_dataset.name),
                           dataset_id=data.dataset.id,
                           dbkey=uploaded_dataset.dbkey,
                           type=uploaded_dataset.type,
