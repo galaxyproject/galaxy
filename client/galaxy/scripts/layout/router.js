@@ -1,5 +1,6 @@
 import $ from "jquery";
 import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import QUERY_STRING from "utils/query-string-parsing";
 import Ui from "mvc/ui/ui-misc";
@@ -10,6 +11,14 @@ var Router = Backbone.Router.extend({
     initialize: function(page, options) {
         this.page = page;
         this.options = options;
+    },
+
+    executeUseRouter: function(url) {
+        let prefix = getAppRoot();
+        if (url.startsWith(prefix)) {
+            url = url.replace(prefix, "/");
+        }
+        return this.push(url);
     },
 
     /** helper to push a new navigation state */
