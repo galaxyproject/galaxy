@@ -771,7 +771,7 @@ galaxy:handler2: started
 ### Systemd
 
 Sample **uWSGI + Webless** strategy for systemd. While setting the `PATH` and `VIRTUAL_ENV` variables may not be strictly
-neccesary, if you have any problems might be useful to comment them out. More information of systemd.service environment
+neccesary, if you have any problems, it might be useful to comment them out. More information of systemd.service environment
 settings can be found in the [documentation](http://0pointer.de/public/systemd-man/systemd.exec.html#Environment=)
 
 
