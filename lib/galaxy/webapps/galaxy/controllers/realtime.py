@@ -47,7 +47,6 @@ class RealTimeToolEntryPointListGrid(grids.Grid):
         )
     )
     operations = [
-        grids.GridOperation("Open", condition=(lambda item: item.active), async_compatible=False),
         grids.GridOperation("Stop", condition=(lambda item: item.active), async_compatible=False),
     ]
 
@@ -96,32 +95,41 @@ class RealTime(BaseUIController):
                     return trans.show_error_message('RealTimeTool is not active. If you recently launched this tool it may not be ready yet, please wait a moment and refresh this page.')
         return trans.show_error_message('Access not authorized.')
 
-    def _get_job_for_dataset(self, trans, dataset_id):
-        '''
-        Return the job for the given dataset. This will throw an error if the
-        dataset is either nonexistent or inaccessible to the user.
-        '''
-        hda = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(self.decode_id(dataset_id))
-        return hda.creating_job
-
-    def _get_job(self, trans, job_id):
-        '''
-        Return the job for the given dataset. This will throw an error if the
-        dataset is either nonexistent or inaccessible to the user.
-        '''
-        return trans.sa_session.query(trans.app.model.Job).get(self.decode_id(job_id))
-
     @web.expose_api
     def list(self, trans, **kwargs):
         """List all available realtimetools"""
-        return self._rtt_ep_grid(trans)
-        rtts = trans.app.realtime_manager.get_nonterminal_for_user_by_trans(trans)
-        eps = []
-        if rtts:
-            for rtt in rtts:
-                for ep in rtt.entry_points:
-                    eps.append(self.encode_all_ids(trans, ep.to_dict(), True))
-        return self._rtt_ep_grid(eps)
+        log.debug('list kargs %s', str(kwargs))
+        operation = kwargs.get('operation', None)
+        message = None
+        if operation:
+            eps = []
+            rtts = []
+            ids = kwargs.get('id', None)
+            if ids:
+                if not isinstance(ids, list):
+                    ids = [ids]
+                for entry_point_id in ids:
+                    entry_point_id = self.decode_id(entry_point_id)
+                    entry_point = trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).get(entry_point_id)
+                    if trans.app.realtime_manager.can_access_entry_point(trans, entry_point):
+                        eps.append(entry_point)
+                        if entry_point.realtime not in rtts:
+                            rtts.append(entry_point.realtime)
+            if rtts:
+                failed = []
+                succeeded = []
+                if operation == 'stop':
+                    for realtime in rtts:
+                        stopped = trans.app.realtime_manager.stop(trans, realtime)
+                        if stopped:
+                            succeeded.append(realtime)
+                        else:
+                            failed.append(realtime)
+                    if failed:
+                        message = 'Unable to stop %i RealTimeTools.' % (len(failed))
+                    if succeeded:
+                        message = 'Stopped %i RealTimeTools.' % (len(succeeded))
+        return self._rtt_ep_grid(trans, message=message)
 
     @web.expose_api
     def stop(self, trans, realtime_id=None, realtime_entry_id=None):
@@ -132,7 +140,7 @@ class RealTime(BaseUIController):
             realtime = trans.app.model.RealTimeToolEntryPoint.get(trans.security.decode_id(realtime_entry_id)).realtime
         else:
             return dict(message="Can't stop: RealTimeTool not provided.", state='error')
-        stopped = trans.app.realtime_manager.stop(realtime)
+        stopped = trans.app.realtime_manager.stop(trans, realtime)
         if stopped:
             return dict(message="RealTimeTool has been stopped", state='ok')
         return dict(message="Unable to stop RealTimeTool", state='error')

@@ -111,6 +111,8 @@ class LocalJobRunner(BaseJobRunner):
                 job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
                 job_wrapper.change_state(model.Job.states.RUNNING)
 
+                self.__handle_container(job_wrapper, proc)
+
                 terminated = self.__poll_if_needed(proc, job_wrapper, job_id)
                 if terminated:
                     return
@@ -238,6 +240,8 @@ class LocalJobRunner(BaseJobRunner):
             return False
 
     def _terminate(self, proc):
+        if proc.container_commands:
+            self._run_command(proc.container_commands['kill'])
         os.killpg(proc.pid, 15)
         sleep(1)
         if proc.poll() is None:
@@ -256,13 +260,18 @@ class LocalJobRunner(BaseJobRunner):
             cont = job.container
             if cont:
                 if cont.container_type == 'docker':
-                    exit_code = subprocess.call(cont.container_info['commands'][command],
-                                            shell=True,
-                                            env=self._environ,
-                                            preexec_fn=os.setpgrp)
-                    log.debug('docker container command exit code %s', exit_code)
+                    return self._run_command(cont.container_info['commands'][command])
 
-    def __handle_container(self, job_wrapper):
+    def _run_command(self, command):
+        exit_code = subprocess.call(command,
+                                    shell=True,
+                                    env=self._environ,
+                                    preexec_fn=os.setpgrp)
+        log.debug('_run_command(%s) exit code %s', command, exit_code)
+        return exit_code
+
+    def __handle_container(self, job_wrapper, proc):
+        proc.container_commands = None
         job = job_wrapper.get_job()
         if job:
             cont = job.container
@@ -315,10 +324,10 @@ class LocalJobRunner(BaseJobRunner):
                                 # otherwise, Galaxy's db doesn't get written to, but the sqlite db does
                                 job_wrapper.sa_session.add(ep)
                                 job_wrapper.sa_session.flush()
+                    proc.container_commands = cont.container_info['commands']
 
     def __poll_if_needed(self, proc, job_wrapper, job_id):
         # Only poll if needed (i.e. job limits are set)
-        self.__handle_container(job_wrapper)
         if not job_wrapper.has_limits():
             return
 
@@ -331,7 +340,6 @@ class LocalJobRunner(BaseJobRunner):
                 limit_state = job_wrapper.check_limits(runtime=datetime.datetime.now() - job_start)
                 if limit_state is not None:
                     job_wrapper.fail(limit_state[1])
-                    self.__kill_container(job_wrapper)
                     log.debug('(%s) Terminating process group' % job_id)
                     self._terminate(proc)
                     return True

@@ -101,6 +101,7 @@ class RealTimeManager(object):
     def __init__(self, app):
         self.model = app.model
         self.security = app.security
+        self.job_manager = app.job_manager
         self.propagator = RealtimeSqlite(app.config.proxy_session_map, app.security.encode_id)
 
     # FIXME: Do we really want to directly associate a single dataset?
@@ -191,5 +192,18 @@ class RealTimeManager(object):
             return self.can_access_realtime(trans, entry_point.realtime)
         return False
 
-    def stop(self, realtime):
-        raise Exception('not implemented')
+    def stop(self, trans, realtime):
+        try:
+            job = realtime.job
+            if not job.finished:
+                # FIXME: Need stop container, but set to job OK.
+                log.debug('Stopping Job: %s for RealTimeTool: %s', job, realtime)
+                job.mark_deleted(trans.app.config.track_jobs_in_database)
+                # This self.job_manager.stop(job) does nothing without changing job.state, manually or e.g. with .mark_deleted()
+                self.job_manager.stop(job)
+                trans.sa_session.add(job)
+                trans.sa_session.flush()
+        except Exception as e:
+            log.debug('Unable to stop job for RealTimeTool: %s', e)
+            return False
+        return True
