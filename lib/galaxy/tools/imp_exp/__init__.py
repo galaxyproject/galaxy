@@ -338,7 +338,9 @@ class JobExportHistoryArchiveWrapper:
         #
         # Create attributes/metadata files for export.
         #
-        temp_output_dir = tempfile.mkdtemp()
+        # Use abspath because mkdtemp() does not, contrary to the documentation,
+        # always return an absolute path.
+        temp_output_dir = os.path.abspath(tempfile.mkdtemp())
 
         # Write history attributes to file.
         history = jeha.history
