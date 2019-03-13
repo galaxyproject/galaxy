@@ -35,7 +35,7 @@ dataset_hash_table = Table(
 dataset_source_hash_table = Table(
     "dataset_source_hash", metadata,
     Column("id", Integer, primary_key=True),
-    Column("dataset_id", Integer, ForeignKey("dataset_source.id"), index=True),
+    Column("dataset_source_id", Integer, ForeignKey("dataset_source.id"), index=True),
     Column("hash_function", TEXT),
     Column("hash_value", TEXT)
 )
@@ -57,8 +57,8 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     try:
-        dataset_source_table.create()
-        dataset_hash_table.create()
-        dataset_source_hash_table.create()
+        dataset_source_table.drop()
+        dataset_hash_table.drop()
+        dataset_source_hash_table.drop()
     except Exception:
         log.exception("Dropping dataset source and hash tables failed.")

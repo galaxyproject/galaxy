@@ -135,7 +135,11 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
 
     def test_fetch_single_url_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
-        items = [{"src": "url", "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed", "MD5": "37b59762b59fff860460522d271bc111"}]
+        items = [{
+            "src": "url",
+            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+            "MD5": "37b59762b59fff860460522d271bc111"
+        }]
         targets = [{
             "destination": destination,
             "items": items,
@@ -153,7 +157,11 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         # Exception handling is really rough here - we should be creating a dataset in error instead
         # of just failing the job like this.
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
-        items = [{"src": "url", "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed", "MD5": "37b59762b59fff860460522d271bc112"}]
+        items = [{
+            "src": "url",
+            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+            "MD5": "37b59762b59fff860460522d271bc112"
+        }]
         targets = [{
             "destination": destination,
             "items": items,

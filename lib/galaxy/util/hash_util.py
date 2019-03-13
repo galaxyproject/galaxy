@@ -33,7 +33,6 @@ HASH_NAMES = list(HASH_NAME_MAP.keys())
 def memory_bound_hexdigest(hash_func=None, hash_func_name=None, path=None, file=None):
     if hash_func is None:
         assert hash_func_name is not None
-        assert hash_func_name in HASH_NAME_MAP
         hash_func = HASH_NAME_MAP[hash_func_name]
 
     hasher = hash_func()

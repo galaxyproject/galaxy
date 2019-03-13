@@ -244,7 +244,7 @@ model.DatasetHash.table = Table(
 model.DatasetSourceHash.table = Table(
     "dataset_source_hash", metadata,
     Column("id", Integer, primary_key=True),
-    Column("dataset_id", Integer, ForeignKey("dataset_source.id"), index=True),
+    Column("dataset_source_id", Integer, ForeignKey("dataset_source.id"), index=True),
     Column("hash_function", TEXT),
     Column("hash_value", TEXT)
 )
