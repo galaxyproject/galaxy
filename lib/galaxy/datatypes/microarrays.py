@@ -164,11 +164,11 @@ class Cel(Binary):
         found_cel_3 = False
         found_cel_agcc = False
         header_bytes = handle.read(5)
-        if header_bytes.decode("utf8")[0] == '@':
+        if header_bytes.decode("utf8", errors="ignore")[0] == '@':
             found_cel_4 = True
-        elif header_bytes.decode("utf8")[0] == ';':
+        elif header_bytes.decode("utf8", errors="ignore")[0] == ';':
             found_cel_agcc = True
-        elif header_bytes.decode("utf8") == '[CEL]':
+        elif header_bytes.decode("utf8", errors="ignore") == '[CEL]':
             found_cel_3 = True
         return found_cel_3 or found_cel_4 or found_cel_agcc
 
@@ -178,11 +178,11 @@ class Cel(Binary):
         """
         handle = open(dataset.file_name, 'rb')
         header_bytes = handle.read(5)
-        if header_bytes.decode("utf8")[0] == '@':
+        if header_bytes.decode("utf8", errors="ignore")[0] == '@':
             dataset.metadata.version = "4"
-        elif header_bytes.decode("utf8")[0] == ';':
+        elif header_bytes.decode("utf8", errors="ignore")[0] == ';':
             dataset.metadata.version = "agcc"
-        elif header_bytes.decode("utf8") == '[CEL]':
+        elif header_bytes.decode("utf8", errors="ignore") == '[CEL]':
             dataset.metadata.version = "3"
 
     def set_peek(self, dataset, is_multi_byte=False):
