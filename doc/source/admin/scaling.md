@@ -795,7 +795,7 @@ ExecStart=/srv/galaxy/venv/bin/uwsgi --yaml /srv/galaxy/config/galaxy.yml
 WantedBy=multi-user.target
 ```
 
-For multiple handlers the service file needs to be a template unit - the filename follows the syntax 
+For multiple handlers, the service file needs to be a [template unit](https://www.freedesktop.org/software/systemd/man/systemd.unit.html#Description>) - the filename follows the syntax 
 `<service_name>@<argument>.service` and all instances of `%I` in the service file are replaced with the `<argument>`
 
 ```ini
