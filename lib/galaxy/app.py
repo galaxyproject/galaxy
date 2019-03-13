@@ -35,6 +35,7 @@ from galaxy.util import (
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
+from galaxy.web import url_for
 from galaxy.web.proxy import ProxyManager
 from galaxy.web.stack import application_stack_instance
 from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
@@ -226,6 +227,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.application_stack.register_postfork_function(self.application_stack.start)
 
         self.model.engine.dispose()
+
+        # Inject url_for for components to more easily optionally depend
+        # on url_for.
+        self.url_for = url_for
+
         self.server_starttime = int(time.time())  # used for cachebusting
         log.info("Galaxy app startup finished %s" % self.startup_timer)
 
