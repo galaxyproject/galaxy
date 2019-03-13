@@ -6,6 +6,7 @@ import hashlib
 import io
 import logging
 import os
+import os.path
 import re
 import shutil
 import tempfile
@@ -97,6 +98,11 @@ def verify(
         # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
         if keep_outputs_dir:
             ofn = os.path.join(keep_outputs_dir, filename)
+            out_dir = os.path.dirname(ofn)
+            try:
+                os.makedirs(out_dir)
+            except OSError as e:
+                log.debug('error creating {}, possibly because directory exists: {}'.format(out_dir, str(e)))
             log.debug('keep_outputs_dir: %s, ofn: %s', keep_outputs_dir, ofn)
             try:
                 shutil.copy(temp_name, ofn)
