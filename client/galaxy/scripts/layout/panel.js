@@ -231,9 +231,16 @@ var CenterPanel = Backbone.View.extend({
 
     /** Display a view in the center panel, hide iframe */
     display: function(view) {
-        var contentWindow = this.$frame[0].contentWindow || {};
-        var message = contentWindow.onbeforeunload && contentWindow.onbeforeunload();
-        var Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
+        let contentWindow = this.$frame[0].contentWindow || {};
+        let message;
+        try {
+            message = contentWindow.onbeforeunload && contentWindow.onbeforeunload();
+        } catch(err) {
+            // This can happen when external content is displayed in this iframe // CORS violation
+            contentWindow = {};
+            console.warn("Iframe unload exception.  This can happen when external content is displayed in the page iframe and causes a CORS violation -- likely harmless.");
+        }
         if (!message || confirm(message)) {
             contentWindow.onbeforeunload = undefined;
             this.$frame.attr("src", "about:blank").hide();
