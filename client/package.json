@@ -98,7 +98,6 @@
     "expose-loader": "^0.7.5",
     "file-loader": "^2.0.0",
     "gulp": "^4.0.0",
-    "gulp-sourcemaps": "^2.6.5",
     "gulp-uglify-es": "^1.0.4",
     "ignore-loader": "^0.1.2",
     "jshint": "^2.9.6",
