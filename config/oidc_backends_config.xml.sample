@@ -31,4 +31,16 @@
 
         <prompt>consent</prompt>
     </provider>
+
+    <provider name="Elixir">
+                <!--
+                 Details on Elixir-AAI: https://www.elixir-europe.org/services/compute/aai-documentation
+                -->
+                <client_id>...</client_id>
+                <client_secret>...</client_secret>
+                <redirect_uri>http://localhost:8080/authnz/elixir/callback</redirect_uri>
+                <prompt>consent</prompt>
+
+        </provider>
+
 </OIDC>

@@ -9,7 +9,6 @@ from galaxy.exceptions import MalformedContents
 from ..authnz import IdentityProvider
 from ..model import PSAAssociation, PSACode, PSANonce, PSAPartial, UserAuthnzToken
 
-
 # key: a component name which PSA requests.
 # value: is the name of a class associated with that key.
 DEFAULTS = {
@@ -19,12 +18,14 @@ DEFAULTS = {
 
 BACKENDS = {
     'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
-    "globus": "social_core.backends.globus.GlobusOpenIdConnect"
+    "globus": "social_core.backends.globus.GlobusOpenIdConnect",
+    'elixir': 'social_core.backends.elixir.ElixirOpenIdConnect'
 }
 
 BACKENDS_NAME = {
     'google': 'google-openidconnect',
-    "globus": "globus"
+    "globus": "globus",
+    'elixir': 'elixir'
 }
 
 AUTH_PIPELINE = (
@@ -100,14 +101,26 @@ class PSAAuthnz(IdentityProvider):
 
         if provider in BACKENDS_NAME:
             self._setup_idp(oidc_backend_config)
+            if provider == 'elixir':
+                # limit default scope to openid and email only
+                from social_core.backends.elixir import ElixirOpenIdConnect
+                ElixirOpenIdConnect.DEFAULT_SCOPE = ['openid', 'email']
+                # remove at_hash validation requirements since it's not provided by AAI for now and is optional according to oidc spec
+                ElixirOpenIdConnect.JWT_DECODE_OPTIONS['verify_at_hash'] = False
 
-    def _setup_idp(self, oidc_backend_config):
+    def _setup_idp(self, oidc_backend_config, provider):
         self.config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'access_type': 'offline'}
         self.config['KEY'] = oidc_backend_config.get('client_id')
         self.config['SECRET'] = oidc_backend_config.get('client_secret')
         self.config['redirect_uri'] = oidc_backend_config.get('redirect_uri')
         if oidc_backend_config.get('prompt') is not None:
             self.config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')
+
+        #these lines are needed to make Elixir aai integration word, possibly also needed for others as well
+        self.config['SOCIAL_AUTH_%s_KEY' % provider.upper()] = oidc_backend_config.get('client_id')
+        self.config['SOCIAL_AUTH_%s_SECRET' % provider.upper()] = oidc_backend_config.get('client_secret')
+
+
 
     def _get_helper(self, name, do_import=False):
         this_config = self.config.get(setting_name(name), DEFAULTS.get(name, None))
@@ -145,7 +158,7 @@ class PSAAuthnz(IdentityProvider):
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
         on_the_fly_config(trans.sa_session)
-        self.config[setting_name('DISCONNECT_REDIRECT_URL')] =\
+        self.config[setting_name('DISCONNECT_REDIRECT_URL')] = \
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
         strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
@@ -161,7 +174,8 @@ class Strategy(BaseStrategy):
         self.request = request
         self.session = session if session else {}
         self.config = config
-        self.config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.request and self.request.host.startswith('https:') else False
+        self.config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.request and self.request.host.startswith(
+            'https:') else False
         self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_EXTRA_DATA'] = ['id_token']
         super(Strategy, self).__init__(storage, tpl)
 
@@ -199,7 +213,7 @@ class Strategy(BaseStrategy):
             return path
         if self.request:
             return \
-                self.request.host +\
+                self.request.host + \
                 '/authnz' + ('/' + self.config.get('provider')) if self.config.get('provider', None) is not None else ''
         return path
 
