@@ -15,7 +15,7 @@ const paths = {
     ],
     plugin_dirs: [
         "../config/plugins/{visualizations,interactive_environments}/*/static/**/*",
-        "../config/plugins/{visualizations,interactive_environments}/*/*/static/**/*",
+        "../config/plugins/{visualizations,interactive_environments}/*/*/static/**/*"
     ],
     lib_locs: {
         // This is a stepping stone towards having all this staged
@@ -37,8 +37,8 @@ const paths = {
     libs: ["galaxy/scripts/libs/**/*.js"]
 };
 
-function stageLibs(callback){
-    Object.keys(paths.lib_locs).forEach( lib => {
+function stageLibs(callback) {
+    Object.keys(paths.lib_locs).forEach(lib => {
         var p1 = path.resolve(path.join(paths.node_modules, lib, paths.lib_locs[lib][0]));
         var p2 = path.resolve(path.join("galaxy", "scripts", "libs", paths.lib_locs[lib][1]));
         if (fs.existsSync(p1)) {
@@ -55,14 +55,14 @@ function stageLibs(callback){
 }
 
 function fonts() {
-    return src(path.resolve(path.join(paths.node_modules, "font-awesome/fonts/**/*")))
-        .pipe(dest("../static/images/fonts"));
+    return src(path.resolve(path.join(paths.node_modules, "font-awesome/fonts/**/*"))).pipe(
+        dest("../static/images/fonts")
+    );
 }
-
 
 // TODO: Remove script and lib tasks (for 19.05) once we are sure there are no
 // external accessors (via require or explicit inclusion in templates)
-function scripts(){
+function scripts() {
     return src(paths.scripts)
         .pipe(
             babel({
@@ -83,7 +83,7 @@ function plugins() {
     return src(paths.plugin_dirs).pipe(dest("../static/plugins/"));
 }
 
-function clean(){
+function clean() {
     //Wipe out all scripts that aren't handled by webpack
     return del(["../static/scripts/**/*.js", "!../static/scripts/bundled/**.*.js"], { force: true });
 }
@@ -91,7 +91,7 @@ function clean(){
 module.exports.fonts = fonts;
 module.exports.libs = libs;
 module.exports.scripts = scripts;
-module.exports.clean= clean;
+module.exports.clean = clean;
 module.exports.stageLibs = stageLibs;
 module.exports.plugins = plugins;
 module.exports.staging = parallel(stageLibs, fonts, plugins);
