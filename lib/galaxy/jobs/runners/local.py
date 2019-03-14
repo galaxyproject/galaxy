@@ -278,8 +278,10 @@ class LocalJobRunner(BaseJobRunner):
             if cont:
                 if cont.container_type == 'docker':
                     # Do we need to do inspect, or is only ports ok?
+                    max_command_attempts = 10 + 1
                     inspect = None
-                    for i in range(1, 11):
+                    exit_code = None
+                    for i in range(1, max_command_attempts):
                         with tempfile.TemporaryFile() as stdout_file:
                             exit_code = subprocess.call(cont.container_info['commands']['inspect'],
                                                     shell=True,
@@ -290,14 +292,18 @@ class LocalJobRunner(BaseJobRunner):
                                 stdout_file.seek(0)
                                 inspect = stdout_file.read()
                                 break
-                        t = 2 * i
-                        log.debug("Container not found, sleeping for %s seconds.", t)
-                        sleep(t)
-                    cont.container_info['inspect'] = json.loads(inspect)
+                        if i != max_command_attempts:
+                            t = 2 * i
+                            log.debug("Container not found during inspect check, sleeping for %s seconds.", t)
+                            sleep(t)
+                    if inspect:
+                        cont.container_info['inspect'] = json.loads(inspect)
+                    else:
+                        log.error('Unable to run inspect command (%s): %s', cont.container_info['commands']['inspect'], exit_code)
                     rtt = job.realtime_tool
                     if rtt:
                         ports_raw = None
-                        for i in range(1, 11):
+                        for i in range(1, max_command_attempts):
                             with tempfile.TemporaryFile() as stdout_file:
                                 exit_code = subprocess.call(cont.container_info['commands']['port'],
                                                         shell=True,
@@ -308,22 +314,26 @@ class LocalJobRunner(BaseJobRunner):
                                     stdout_file.seek(0)
                                     ports_raw = stdout_file.read()
                                     break
-                            t = 2 * i
-                            log.debug("Container not found, sleeping for %s seconds.", t)
-                            sleep(t)
+                            if i != max_command_attempts:
+                                t = 2 * i
+                                log.debug("Container not found during port check, sleeping for %s seconds.", t)
+                                sleep(t)
 
-                        for line in ports_raw.strip().split('\n'):
-                            # TODO: configure all ports at once, instead of individually
-                            # A port could e.g. be mapped multiple times, with diff entry URL
-                            tool, host = line.split(" -> ", 1)
-                            hostname, port = host.split(':')
-                            tool_p, tool_prot = tool.split("/")
-                            ep = self.app.realtime_manager.configure_entry_point(rtt, tool_port=tool_p, host=hostname, port=port, protocol=tool_prot)
-                            if ep:
-                                # must add and flush the ep, here or elsewhere
-                                # otherwise, Galaxy's db doesn't get written to, but the sqlite db does
-                                job_wrapper.sa_session.add(ep)
-                                job_wrapper.sa_session.flush()
+                        if ports_raw is not None:
+                            for line in ports_raw.strip().split('\n'):
+                                # TODO: configure all ports at once, instead of individually
+                                # A port could e.g. be mapped multiple times, with diff entry URL
+                                tool, host = line.split(" -> ", 1)
+                                hostname, port = host.split(':')
+                                tool_p, tool_prot = tool.split("/")
+                                ep = self.app.realtime_manager.configure_entry_point(rtt, tool_port=tool_p, host=hostname, port=port, protocol=tool_prot)
+                                if ep:
+                                    # must add and flush the ep, here or elsewhere
+                                    # otherwise, Galaxy's db doesn't get written to, but the sqlite db does
+                                    job_wrapper.sa_session.add(ep)
+                                    job_wrapper.sa_session.flush()
+                        else:
+                            log.error('Unable to run port command (%s): %s', cont.container_info['commands']['port'], exit_code)
                     proc.container_commands = cont.container_info['commands']
 
     def __poll_if_needed(self, proc, job_wrapper, job_id):
