@@ -100,7 +100,7 @@ class PSAAuthnz(IdentityProvider):
         self.config[setting_name('INACTIVE_USER_LOGIN')] = True
 
         if provider in BACKENDS_NAME:
-            self._setup_idp(oidc_backend_config, provider)
+            self._setup_idp(oidc_backend_config)
             if provider.lower() == 'elixir':
                 # limit default scope to openid and email only
                 from social_core.backends.elixir import ElixirOpenIdConnect
@@ -108,7 +108,7 @@ class PSAAuthnz(IdentityProvider):
                 # remove at_hash validation requirements since it's not provided by AAI for now and is optional according to oidc spec
                 ElixirOpenIdConnect.JWT_DECODE_OPTIONS['verify_at_hash'] = False
 
-    def _setup_idp(self, oidc_backend_config, provider):
+    def _setup_idp(self, oidc_backend_config):
         self.config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'access_type': 'offline'}
         self.config['KEY'] = oidc_backend_config.get('client_id')
         self.config['SECRET'] = oidc_backend_config.get('client_secret')
