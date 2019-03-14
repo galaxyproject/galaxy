@@ -95,5 +95,5 @@ module.exports.scripts = scripts;
 module.exports.clean= clean;
 module.exports.stageLibs = stageLibs;
 module.exports.plugins = plugins;
-module.exports.staging = parallel(stageLibs, fonts);
+module.exports.staging = parallel(stageLibs, fonts, plugins);
 module.exports.default = series(libs, scripts);
