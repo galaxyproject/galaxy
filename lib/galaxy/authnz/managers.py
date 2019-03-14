@@ -120,6 +120,8 @@ class AuthnzManager(object):
             'realm': config_xml.find('realm').text}
         if config_xml.find('well_known_oidc_config_uri') is not None:
             rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
+        if config_xml.find('idphint') is not None:
+            rtv['idphint'] = config_xml.find('idphint').text
         return rtv
 
     def _unify_provider_name(self, provider):
