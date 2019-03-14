@@ -13,8 +13,7 @@ from galaxy import (
 from galaxy.auth import AuthManager
 from galaxy.datatypes import registry
 from galaxy.jobs.manager import NoopManager
-from galaxy.managers import tags
-from galaxy.model import mapping
+from galaxy.model import mapping, tags
 from galaxy.tools.deps.containers import NullContainerFinder
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
@@ -65,7 +64,7 @@ class MockApp(object):
         self.model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=self.object_store)
         self.security_agent = self.model.security_agent
         self.visualizations_registry = MockVisualizationsRegistry()
-        self.tag_handler = tags.GalaxyTagManager(self.model.context)
+        self.tag_handler = tags.GalaxyTagHandler(self.model.context)
         self.quota_agent = quota.QuotaAgent(self.model)
         self.init_datatypes()
         self.job_config = Bunch(

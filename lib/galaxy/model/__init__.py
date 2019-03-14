@@ -43,9 +43,9 @@ from sqlalchemy.schema import UniqueConstraint
 
 import galaxy.model.metadata
 import galaxy.model.orm.now
+import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
-from galaxy.managers import tags
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.util import pgcalc
 from galaxy.security import get_permitted_actions
@@ -3145,7 +3145,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                                         copied_from_library_dataset_dataset_association=self,
                                         history=target_history)
 
-        tag_manager = tags.GalaxyTagManager(sa_session)
+        tag_manager = galaxy.model.tags.GalaxyTagHandler(sa_session)
         src_ldda_tags = tag_manager.get_tags_str(self.tags)
         tag_manager.apply_item_tags(user=self.user, item=hda, tags_str=src_ldda_tags)
 
@@ -3175,7 +3175,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                                                 copied_from_library_dataset_dataset_association=self,
                                                 folder=target_folder)
 
-        tag_manager = tags.GalaxyTagManager(sa_session)
+        tag_manager = galaxy.model.tags.GalaxyTagHandler(sa_session)
         src_ldda_tags = tag_manager.get_tags_str(self.tags)
         tag_manager.apply_item_tags(user=self.user, item=ldda, tags_str=src_ldda_tags)
 

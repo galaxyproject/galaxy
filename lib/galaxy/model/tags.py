@@ -22,7 +22,7 @@ class ItemTagAssocInfo(object):
         self.item_id_col = item_id_col
 
 
-class TagManager(object):
+class TagHandler(object):
     """
     Manages CRUD operations related to tagging objects.
     """
@@ -319,10 +319,10 @@ class TagManager(object):
         return name_value_pair
 
 
-class GalaxyTagManager(TagManager):
+class GalaxyTagHandler(TagHandler):
     def __init__(self, sa_session):
         from galaxy import model
-        TagManager.__init__(self, sa_session)
+        TagHandler.__init__(self, sa_session)
         self.item_tag_assoc_info["History"] = ItemTagAssocInfo(model.History,
                                                                model.HistoryTagAssociation,
                                                                model.HistoryTagAssociation.table.c.history_id)
@@ -349,6 +349,6 @@ class GalaxyTagManager(TagManager):
                                                                      model.VisualizationTagAssociation.table.c.visualization_id)
 
 
-class CommunityTagManager(TagManager):
+class CommunityTagHandler(TagHandler):
     def __init__(self, sa_session):
-        TagManager.__init__(self, sa_session)
+        TagHandler.__init__(self, sa_session)

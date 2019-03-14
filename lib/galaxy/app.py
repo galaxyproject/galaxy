@@ -16,7 +16,7 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.libraries import LibraryManager
-from galaxy.managers.tags import GalaxyTagManager
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.tools.cache import (
     ToolCache,
@@ -94,7 +94,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         # Security helper
         self._configure_security()
         # Tag handler
-        self.tag_handler = GalaxyTagManager(self.model.context)
+        self.tag_handler = GalaxyTagHandler(self.model.context)
         self.dataset_collections_service = DatasetCollectionManager(self)
         self.history_manager = HistoryManager(self)
         self.dependency_resolvers_view = DependencyResolversView(self)

@@ -2,7 +2,7 @@
 from galaxy.managers import hdas
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.histories import HistoryManager
-from galaxy.managers.tags import GalaxyTagManager
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.util import unicodify
 from .base import BaseTestCase
 
@@ -12,14 +12,14 @@ user2_data = dict(email='user2@user2.user2', username='user2', password=default_
 
 
 # =============================================================================
-class TagManagerTestCase(BaseTestCase):
+class TagHandlerTestCase(BaseTestCase):
 
     def set_up_managers(self):
-        super(TagManagerTestCase, self).set_up_managers()
+        super(TagHandlerTestCase, self).set_up_managers()
         self.hda_manager = hdas.HDAManager(self.app)
         self.history_manager = HistoryManager(self.app)
         self.dataset_manager = DatasetManager(self.app)
-        self.tag_manager = GalaxyTagManager(self.trans.sa_session)
+        self.tag_handler = GalaxyTagHandler(self.trans.sa_session)
         self.user = self.user_manager.create(**user2_data)
 
     def _create_vanilla_hda(self, user=None):
@@ -59,49 +59,49 @@ class TagManagerTestCase(BaseTestCase):
         ]
         for tag_string, expected_tag in zip(tag_strings, expected_tags):
             hda = self._create_vanilla_hda()
-            self.tag_manager.apply_item_tags(user=self.user, item=hda, tags_str=tag_string)
+            self.tag_handler.apply_item_tags(user=self.user, item=hda, tags_str=tag_string)
             self._check_tag_list(hda.tags, expected_tag)
 
     def test_set_tag_from_list(self):
         hda = self._create_vanilla_hda()
         tags = ['tag1', 'tag2']
-        self.tag_manager.set_tags_from_list(self.user, hda, tags)
+        self.tag_handler.set_tags_from_list(self.user, hda, tags)
         self._check_tag_list(hda.tags, tags)
         # Setting tags should erase previous tags
-        self.tag_manager.set_tags_from_list(self.user, hda, ['tag1'])
+        self.tag_handler.set_tags_from_list(self.user, hda, ['tag1'])
         self._check_tag_list(hda.tags, expected_tags=['tag1'])
 
     def test_add_tag_from_list(self):
         hda = self._create_vanilla_hda()
         tags = ['tag1', 'tag2']
-        self.tag_manager.add_tags_from_list(self.user, hda, tags)
+        self.tag_handler.add_tags_from_list(self.user, hda, tags)
         self._check_tag_list(tags=hda.tags, expected_tags=tags)
         # Adding tags should keep previous tags
-        self.tag_manager.add_tags_from_list(self.user, hda, ['tag3'])
+        self.tag_handler.add_tags_from_list(self.user, hda, ['tag3'])
         self._check_tag_list(hda.tags, expected_tags=['tag1', 'tag2', 'tag3'])
 
     def test_remove_tag_from_list(self):
         hda = self._create_vanilla_hda()
         tags = ['tag1', 'tag2']
-        self.tag_manager.set_tags_from_list(self.user, hda, tags)
+        self.tag_handler.set_tags_from_list(self.user, hda, tags)
         self._check_tag_list(hda.tags, tags)
-        self.tag_manager.remove_tags_from_list(self.user, hda, ['tag1'])
+        self.tag_handler.remove_tags_from_list(self.user, hda, ['tag1'])
         self._check_tag_list(hda.tags, ['tag2'])
 
     def test_delete_item_tags(self):
         hda = self._create_vanilla_hda()
         tags = ['tag1']
-        self.tag_manager.set_tags_from_list(self.user, hda, tags)
-        self.tag_manager.delete_item_tags(user=self.user, item=hda)
+        self.tag_handler.set_tags_from_list(self.user, hda, tags)
+        self.tag_handler.delete_item_tags(user=self.user, item=hda)
         self.assertEqual(hda.tags, [])
 
     def test_item_has_tag(self):
         hda = self._create_vanilla_hda()
         tags = ['tag1']
-        self.tag_manager.set_tags_from_list(self.user, hda, tags)
-        self.assertTrue(self.tag_manager.item_has_tag(self.user, item=hda, tag='tag1'))
+        self.tag_handler.set_tags_from_list(self.user, hda, tags)
+        self.assertTrue(self.tag_handler.item_has_tag(self.user, item=hda, tag='tag1'))
         # ItemTagAssociation
-        self.assertTrue(self.tag_manager.item_has_tag(self.user, item=hda, tag=hda.tags[0]))
+        self.assertTrue(self.tag_handler.item_has_tag(self.user, item=hda, tag=hda.tags[0]))
         # Tag
-        self.assertTrue(self.tag_manager.item_has_tag(self.user, item=hda, tag=hda.tags[0].tag))
-        self.assertFalse(self.tag_manager.item_has_tag(self.user, item=hda, tag='tag2'))
+        self.assertTrue(self.tag_handler.item_has_tag(self.user, item=hda, tag=hda.tags[0].tag))
+        self.assertFalse(self.tag_handler.item_has_tag(self.user, item=hda, tag='tag2'))
