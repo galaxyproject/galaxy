@@ -187,7 +187,7 @@ class Cel(Binary):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.blurb = "Cel version %s" % dataset.metadata.version
+            dataset.blurb = "Cel version: %s" % dataset.metadata.version
             dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
