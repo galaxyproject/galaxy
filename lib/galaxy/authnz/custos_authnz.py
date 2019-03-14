@@ -26,6 +26,9 @@ class CustosAuthnz(IdentityProvider):
         self.config['client_id'] = oidc_backend_config['client_id']
         self.config['client_secret'] = oidc_backend_config['client_secret']
         self.config['redirect_uri'] = oidc_backend_config['redirect_uri']
+        self.config['extra_params'] = {
+            'kc_idp_hint': oidc_backend_config.get('idphint', 'cilogon')
+        }
         # Either get OIDC config from well-known config URI or lookup known urls based on provider name and realm
         if 'well_known_oidc_config_uri' in oidc_backend_config:
             self.config['well_known_oidc_config_uri'] = oidc_backend_config['well_known_oidc_config_uri']
@@ -177,8 +180,6 @@ class CustosAuthnz(IdentityProvider):
         self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
         self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
         self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
-        # TODO: should we get this from library too? Allow override?
-        self.config['extra_params'] = {'kc_idp_hint': 'cilogon'}
 
     def _get_well_known_uri_for_provider_and_realm(self, provider, realm):
         # TODO: Look up these URLs from a Python library
