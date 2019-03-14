@@ -26,7 +26,8 @@ var Configurations = {
             icon: "fa-files-o",
             tooltip: _l("Multiple datasets"),
             multiple: true,
-            batch: Batch.ENABLED
+            batch: Batch.ENABLED,
+            showdialog: true
         },
         {
             src: "hdca",
@@ -335,13 +336,18 @@ var View = Backbone.View.extend({
             title: "Browse Datasets",
             cls: "mt-2 mb-2 float-left",
             onclick: () => {
-                galaxy.data.dialog(id => {
-                    this.model.set("value", {
-                        values: [{ src: "hda", id: id }]
+                let current = this.model.get("current");
+                let cnf = this.config[current];
+                galaxy.data.dialog(response => {
+                    let values = [];
+                    let ids = $.isArray(response) ? response : [response];
+                    _.each(ids, id => {
+                        values.push({ id: id, src: "hda" });
                     });
+                    this.model.set("value", { values: values });
                     this.model.trigger("change:value");
                 }, {
-                    multiple: false,
+                    multiple: cnf.multiple,
                     format: null
                 });
             }
