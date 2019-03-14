@@ -2,7 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const del = require("del");
 const _ = require("underscore");
-const { src, dest, series, parallel, symlink } = require("gulp");
+const { src, dest, series, parallel } = require("gulp");
 const uglifyes = require("gulp-uglify-es").default;
 const babel = require("gulp-babel");
 
@@ -81,7 +81,7 @@ function libs() {
 }
 
 function plugins() {
-    return src(paths.plugin_dirs).pipe(symlink("../static/plugins/"));
+    return src(paths.plugin_dirs).pipe(dest("../static/plugins/"));
 }
 
 function clean(){
