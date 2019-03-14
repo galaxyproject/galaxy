@@ -26,8 +26,8 @@ from galaxy import (
     model
 )
 from galaxy.managers.jobs import JobSearch
-from galaxy.managers.tags import GalaxyTagManager
 from galaxy.metadata import get_metadata_compute_strategy
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import send_control_task
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -2824,7 +2824,7 @@ class TagFromFileTool(DatabaseOperationTool):
         how = incoming['how']
         new_tags_dataset_assoc = incoming["tags"]
         new_elements = odict()
-        tags_manager = GalaxyTagManager(trans.app.model.context)
+        tags_manager = GalaxyTagHandler(trans.app.model.context)
         new_datasets = []
 
         def add_copied_value_to_new_elements(new_tags_dict, dce):

@@ -13,8 +13,7 @@ from galaxy import (
 from galaxy.auth import AuthManager
 from galaxy.datatypes import registry
 from galaxy.jobs.manager import NoopManager
-from galaxy.managers import tags
-from galaxy.model import mapping
+from galaxy.model import mapping, tags
 from galaxy.tools.deps.containers import NullContainerFinder
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
