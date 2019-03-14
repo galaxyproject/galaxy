@@ -1,9 +1,8 @@
 const path = require("path");
 const fs = require("fs");
 const del = require("del");
-const _ = require("underscore");
 const { src, dest, series, parallel } = require("gulp");
-const uglifyes = require("gulp-uglify-es").default;
+const uglify = require("gulp-uglify-es").default;
 const babel = require("gulp-babel");
 
 const paths = {
@@ -39,7 +38,7 @@ const paths = {
 };
 
 function stageLibs(callback){
-    _.each(_.keys(paths.lib_locs), function(lib) {
+    Object.keys(paths.lib_locs).forEach( lib => {
         var p1 = path.resolve(path.join(paths.node_modules, lib, paths.lib_locs[lib][0]));
         var p2 = path.resolve(path.join("galaxy", "scripts", "libs", paths.lib_locs[lib][1]));
         if (fs.existsSync(p1)) {
@@ -70,13 +69,13 @@ function scripts(){
                 plugins: ["transform-es2015-modules-amd"]
             })
         )
-        .pipe(uglifyes())
+        .pipe(uglify())
         .pipe(dest("../static/scripts/"));
 }
 
 function libs() {
     return src(paths.libs)
-        .pipe(uglifyes())
+        .pipe(uglify())
         .pipe(dest("../static/scripts/libs/"));
 }
 
