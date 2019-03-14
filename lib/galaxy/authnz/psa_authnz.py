@@ -101,7 +101,7 @@ class PSAAuthnz(IdentityProvider):
 
         if provider in BACKENDS_NAME:
             self._setup_idp(oidc_backend_config)
-            if provider == 'elixir':
+            if provider.lower() == 'elixir':
                 # limit default scope to openid and email only
                 from social_core.backends.elixir import ElixirOpenIdConnect
                 ElixirOpenIdConnect.DEFAULT_SCOPE = ['openid', 'email']
