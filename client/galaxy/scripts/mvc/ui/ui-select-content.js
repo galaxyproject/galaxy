@@ -339,13 +339,10 @@ var View = Backbone.View.extend({
                 let current = this.model.get("current");
                 let cnf = this.config[current];
                 galaxy.data.dialog(response => {
-                    let values = [];
-                    let ids = $.isArray(response) ? response : [response];
-                    _.each(ids, id => {
-                        values.push({ id: id, src: "hda" });
+                    let values = $.isArray(response) ? response : [response];
+                    _.each(values, v => {
+                        this._handleDropValues(v);
                     });
-                    this.model.set("value", { values: values });
-                    this.model.trigger("change:value");
                 }, {
                     multiple: cnf.multiple,
                     format: null
@@ -441,21 +438,27 @@ var View = Backbone.View.extend({
 
     /** Handles drop events e.g. from history panel */
     _handleDrop: function(ev) {
+        let drop_data = JSON.parse(ev.dataTransfer.getData("text"))[0];
+        this._handleDropValues(drop_data);
+        ev.preventDefault();
+    },
+
+    /** Add values from drag/drop */
+    _handleDropValues: function(drop_data) {
         try {
-            var data = this.model.get("data");
-            var current = this.model.get("current");
-            var config = this.config[current];
-            var field = this.fields[current];
-            var drop_data = JSON.parse(ev.dataTransfer.getData("text"))[0];
-            var new_id = drop_data.id;
-            var new_src = drop_data.history_content_type == "dataset_collection" ? "hdca" : "hda";
-            var new_value = { id: new_id, src: new_src };
-            if (data && drop_data.history_id) {
+            let data = this.model.get("data");
+            let current = this.model.get("current");
+            let config = this.config[current];
+            let field = this.fields[current];
+            let new_id = drop_data.id;
+            let new_src = drop_data.history_content_type == "dataset_collection" ? "hdca" : "hda";
+            let new_value = { id: new_id, src: new_src };
+            if (data) {
                 if (!_.findWhere(data[new_src], new_value)) {
                     data[new_src].push({
                         id: new_id,
                         src: new_src,
-                        hid: drop_data.hid || "Dropped",
+                        hid: drop_data.hid || "Selected",
                         name: drop_data.hid ? drop_data.name : new_id,
                         keep: true,
                         tags: []
@@ -477,14 +480,11 @@ var View = Backbone.View.extend({
                     this.model.trigger("change:value");
                 }
                 this.trigger("change");
-                this._handleDropStatus("success");
-            } else {
-                this._handleDropStatus("danger");
             }
+            this._handleDropStatus("success");
         } catch (e) {
             this._handleDropStatus("danger");
         }
-        ev.preventDefault();
     },
 
     /** Highlight drag result */

@@ -162,10 +162,12 @@ export default {
         done: function() {
             let results = [];
             Object.values(this.values).forEach(v => {
-                let value = v.id;
+                let value = null;
                 if (this.format == "url") {
                     let host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
                     value = `${host}/api/histories/${v.history_id}/contents/${value}/display`;
+                } else {
+                    value = v;
                 }
                 results.push(value);
             });
