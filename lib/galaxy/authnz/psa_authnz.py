@@ -116,10 +116,6 @@ class PSAAuthnz(IdentityProvider):
         if oidc_backend_config.get('prompt') is not None:
             self.config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')
 
-        # these lines are needed to make Elixir aai integration word, possibly also needed for others as well
-        self.config['SOCIAL_AUTH_%s_KEY' % provider.upper()] = oidc_backend_config.get('client_id')
-        self.config['SOCIAL_AUTH_%s_SECRET' % provider.upper()] = oidc_backend_config.get('client_secret')
-
     def _get_helper(self, name, do_import=False):
         this_config = self.config.get(setting_name(name), DEFAULTS.get(name, None))
         return do_import and module_member(this_config) or this_config
