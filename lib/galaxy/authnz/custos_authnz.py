@@ -182,11 +182,9 @@ class CustosAuthnz(IdentityProvider):
         self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
 
     def _get_well_known_uri_for_provider_and_realm(self, provider, realm):
-        # TODO: Look up these URLs from a Python library
+        # TODO: Look up this URL from a Python library
         if provider == 'custos':
             return "https://iam.scigap.org/auth/realms/{}/.well-known/openid-configuration".format(realm)
-        elif provider == 'custos-dev':
-            return "https://iamdev.scigap.org/auth/realms/{}/.well-known/openid-configuration".format(realm)
         else:
             raise Exception("Unknown Custos provider name: {}".format(provider))
 
