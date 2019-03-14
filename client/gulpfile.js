@@ -15,8 +15,8 @@ const paths = {
         "!galaxy/scripts/libs/**/*"
     ],
     plugin_dirs: [
-        "!../config/plugins/**/node_modules{,/**}",
-        "../config/plugins/**/static/**/*"
+        "../config/plugins/{visualizations,interactive_environments}/*/static/**/*",
+        "../config/plugins/{visualizations,interactive_environments}/*/*/static/**/*",
     ],
     lib_locs: {
         // This is a stepping stone towards having all this staged
