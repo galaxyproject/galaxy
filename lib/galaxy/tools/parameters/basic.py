@@ -1715,7 +1715,7 @@ class DataToolParameter(BaseDataToolParameter):
                 self.conversions.append((name, conv_extension, [conv_type]))
 
     def from_json(self, value, trans, other_values={}):
-        if trans.workflow_building_mode is workflow_building_modes.ENABLED:
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED or is_runtime_value(value):
             return None
         if not value and not self.optional:
             raise ValueError("Specify a dataset of the required format / build for parameter %s." % self.name)
