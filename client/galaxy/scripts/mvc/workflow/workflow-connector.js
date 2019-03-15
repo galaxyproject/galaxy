@@ -8,10 +8,7 @@ function Connector(handle1, handle2) {
     this.inner_color = "#FFFFFF";
     this.outer_color = "#25537b";
     if (handle1 && handle2) {
-        this.connect(
-            handle1,
-            handle2
-        );
+        this.connect(handle1, handle2);
     }
 }
 $.extend(Connector.prototype, {
