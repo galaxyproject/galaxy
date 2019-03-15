@@ -11,10 +11,7 @@
   },
   "license": "AFL-3.0",
   "dependencies": {
-    "@babel/core": "^7.1.2",
-    "@babel/plugin-syntax-dynamic-import": "^7.0.0",
-    "@babel/polyfill": "^7.0.0",
-    "@babel/preset-env": "^7.1.0",
+    "@babel/polyfill": "^7.2.5",
     "@handsontable/vue": "^2.0.0-beta1",
     "@johmun/vue-tags-input": "^2.0.0",
     "@vue/test-utils": "^1.0.0-beta.28",
@@ -78,7 +75,10 @@
     "eslint": "eslint -c .eslintrc.js galaxy/scripts --ext .js,.vue"
   },
   "devDependencies": {
-    "babel-loader": "^8.0.4",
+    "@babel/core": "^7.3.4",
+    "@babel/plugin-syntax-dynamic-import": "^7.2.0",
+    "@babel/preset-env": "^7.3.4",
+    "babel-loader": "^8.0.5",
     "babel-plugin-rewire": "^1.2.0",
     "babel-plugin-transform-inline-environment-variables": "^0.4.3",
     "babel-plugin-transform-vue-template": "^0.4.2",
