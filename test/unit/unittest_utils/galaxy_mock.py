@@ -81,6 +81,10 @@ class MockApp(object):
         self.application_stack = ApplicationStack()
         self.auth_manager = AuthManager(self)
 
+        def url_for(*args, **kwds):
+            return "/mock/url"
+        self.url_for = url_for
+
     def init_datatypes(self):
         datatypes_registry = registry.Registry()
         datatypes_registry.load_datatypes()

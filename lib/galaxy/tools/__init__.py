@@ -81,13 +81,12 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
+from galaxy.util.form_builder import SelectField
 from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.version import VERSION_MAJOR
-from galaxy.web import url_for
-from galaxy.web.form_builder import SelectField
 from galaxy.work.context import WorkRequestContext
 from tool_shed.util import common_util
 from .execute import (
@@ -1837,9 +1836,9 @@ class Tool(Dictifiable):
         if link_details:
             # Add details for creating a hyperlink to the tool.
             if not isinstance(self, DataSourceTool):
-                link = url_for(controller='tool_runner', tool_id=self.id)
+                link = self.app.url_for(controller='tool_runner', tool_id=self.id)
             else:
-                link = url_for(controller='tool_runner', action='data_source_redirect', tool_id=self.id)
+                link = self.app.url_for(controller='tool_runner', action='data_source_redirect', tool_id=self.id)
 
             # Basic information
             tool_dict.update({'link': link,
@@ -1923,7 +1922,7 @@ class Tool(Dictifiable):
         # create tool help
         tool_help = ''
         if self.help:
-            tool_help = self.help.render(static_path=url_for('/static'), host_url=url_for('/', qualified=True))
+            tool_help = self.help.render(static_path=self.app.url_for('/static'), host_url=self.app.url_for('/', qualified=True))
             tool_help = unicodify(tool_help, 'utf-8')
 
         # update tool model
@@ -1943,7 +1942,7 @@ class Tool(Dictifiable):
             'job_remap'     : self._get_job_remap(job),
             'history_id'    : trans.security.encode_id(history.id) if history else None,
             'display'       : self.display_interface,
-            'action'        : url_for(self.action),
+            'action'        : self.app.url_for(self.action),
             'method'        : self.method,
             'enctype'       : self.enctype
         })

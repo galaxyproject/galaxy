@@ -53,11 +53,11 @@ from galaxy.util import (directory_hash_id, ready_name_for_url,
                          unicodify, unique_id)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.form_builder import (AddressField, CheckboxField, HistoryField,
+                                      PasswordField, SelectField, TextArea, TextField, WorkflowField,
+                                      WorkflowMappingField)
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
-                                     PasswordField, SelectField, TextArea, TextField, WorkflowField,
-                                     WorkflowMappingField)
 
 log = logging.getLogger(__name__)
 
