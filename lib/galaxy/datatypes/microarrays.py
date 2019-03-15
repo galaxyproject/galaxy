@@ -143,10 +143,10 @@ class Cel(Binary):
         """
         Try to guess if the file is a Cel file.
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('affy_v_agcc.CEL')
+        >>> fname = get_test_fname('affy_v_agcc.cel')
         >>> Cel().sniff(fname)
         True
-        >>> fname = get_test_fname('affy_v_3.CEL')
+        >>> fname = get_test_fname('affy_v_3.cel')
         >>> Cel().sniff(fname)
         True
         >>> fname = get_test_fname('test.cel')
