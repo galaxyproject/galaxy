@@ -3,8 +3,10 @@
 import difflib
 import filecmp
 import hashlib
+import io
 import logging
 import os
+import os.path
 import re
 import shutil
 import tempfile
@@ -29,6 +31,7 @@ def verify(
     attributes,
     filename=None,
     get_filecontent=None,
+    get_filename=None,
     keep_outputs_dir=None,
     verify_extra_files=None,
     mode='file',
@@ -37,8 +40,16 @@ def verify(
 
     Throw an informative assertion error if any of these tests fail.
     """
-    if get_filecontent is None:
-        get_filecontent = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
+    if get_filename is None:
+        if get_filecontent is None:
+            get_filecontent = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
+
+        def get_filename(filename):
+            file_content = get_filecontent(filename)
+            local_name = make_temp_fname(fname=filename)
+            with open(local_name, 'wb') as f:
+                f.write(file_content)
+            return local_name
 
     # Check assertions...
     assertions = attributes.get("assert_list", None)
@@ -79,17 +90,17 @@ def verify(
             # filename already point to a file that exists on disk
             local_name = filename
         else:
-            file_content = get_filecontent(filename)
-            local_name = make_temp_fname(fname=filename)
-            with open(local_name, 'wb') as f:
-                f.write(file_content)
+            local_name = get_filename(filename)
         temp_name = make_temp_fname(fname=filename)
         with open(temp_name, 'wb') as f:
             f.write(output_content)
 
         # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
         if keep_outputs_dir:
-            ofn = os.path.join(keep_outputs_dir, os.path.basename(local_name))
+            ofn = os.path.join(keep_outputs_dir, filename)
+            out_dir = os.path.dirname(ofn)
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
             log.debug('keep_outputs_dir: %s, ofn: %s', keep_outputs_dir, ofn)
             try:
                 shutil.copy(temp_name, ofn)
@@ -191,8 +202,8 @@ def files_diff(file1, file2, attributes=None):
             compressed_formats = []
         is_pdf = False
         try:
-            local_file = get_fileobj(file1, 'U', compressed_formats=compressed_formats).readlines()
-            history_data = get_fileobj(file2, 'U', compressed_formats=compressed_formats).readlines()
+            local_file = get_fileobj(file1, compressed_formats=compressed_formats).readlines()
+            history_data = get_fileobj(file2, compressed_formats=compressed_formats).readlines()
         except UnicodeDecodeError:
             if file1.endswith('.pdf') or file2.endswith('.pdf'):
                 is_pdf = True
@@ -240,21 +251,21 @@ def files_diff(file1, file2, attributes=None):
                                 break
                         if not valid_diff:
                             invalid_diff_lines += 1
-                log.info('## files diff on %s and %s lines_diff=%d, found diff = %d, found pdf invalid diff = %d' % (file1, file2, allowed_diff_count, diff_lines, invalid_diff_lines))
+                log.info("## files diff on '%s' and '%s': lines_diff = %d, found diff = %d, found pdf invalid diff = %d" % (file1, file2, allowed_diff_count, diff_lines, invalid_diff_lines))
                 if invalid_diff_lines > allowed_diff_count:
                     # Print out diff_slice so we can see what failed
                     log.info("###### diff_slice ######")
                     raise AssertionError("".join(diff_slice))
             else:
-                log.info('## files diff on %s and %s lines_diff=%d, found diff = %d' % (file1, file2, allowed_diff_count, diff_lines))
+                log.info("## files diff on '%s' and '%s': lines_diff = %d, found diff = %d" % (file1, file2, allowed_diff_count, diff_lines))
                 raise AssertionError("".join(diff_slice))
 
 
 def files_re_match(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match."""
-    local_file = open(file1, 'U').readlines()  # regex file
-    history_data = open(file2, 'U').readlines()
-    assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%s != %s)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), ''.join(history_data[:40]))
+    local_file = io.open(file1, encoding='utf-8').readlines()  # regex file
+    history_data = io.open(file2, encoding='utf-8').readlines()
+    assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), ''.join(history_data[:40]))
     if attributes is None:
         attributes = {}
     if attributes.get('sort', False):
@@ -272,24 +283,24 @@ def files_re_match(file1, file2, attributes=None):
 
 def files_re_match_multiline(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match in multiline mode."""
-    local_file = open(file1, 'U').read()  # regex file
+    local_file = io.open(file1, encoding='utf-8').read()  # regex file
     if attributes is None:
         attributes = {}
     if attributes.get('sort', False):
-        history_data = open(file2, 'U').readlines()
+        history_data = io.open(file2, encoding='utf-8').readlines()
         history_data.sort()
         history_data = ''.join(history_data)
     else:
-        history_data = open(file2, 'U').read()
+        history_data = io.open(file2, encoding='utf-8').read()
     # lines_diff not applicable to multiline matching
     assert re.match(local_file, history_data, re.MULTILINE), "Multiline Regular expression did not match data file"
 
 
 def files_contains(file1, file2, attributes=None):
     """Check the contents of file2 for substrings found in file1, on a per-line basis."""
-    local_file = open(file1, 'U').readlines()  # regex file
+    local_file = io.open(file1, encoding='utf-8').readlines()  # regex file
     # TODO: allow forcing ordering of contains
-    history_data = open(file2, 'U').read()
+    history_data = io.open(file2, encoding='utf-8').read()
     lines_diff = int(attributes.get('lines_diff', 0))
     line_diff_count = 0
     while local_file:

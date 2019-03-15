@@ -43,9 +43,9 @@ from sqlalchemy.schema import UniqueConstraint
 
 import galaxy.model.metadata
 import galaxy.model.orm.now
+import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
-from galaxy.managers import tags
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.util import pgcalc
 from galaxy.security import get_permitted_actions
@@ -230,17 +230,28 @@ class JobLike(object):
         # TODO: Make iterable, concatenate with chain
         return self.text_metrics + self.numeric_metrics
 
-    def set_streams(self, stdout, stderr):
-        stdout = galaxy.util.unicodify(stdout) or u''
-        stderr = galaxy.util.unicodify(stderr) or u''
-        if (len(stdout) > galaxy.util.DATABASE_MAX_STRING_SIZE):
-            stdout = galaxy.util.shrink_string_by_size(stdout, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-            log.info("stdout for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY)
-        self.stdout = stdout
-        if (len(stderr) > galaxy.util.DATABASE_MAX_STRING_SIZE):
-            stderr = galaxy.util.shrink_string_by_size(stderr, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-            log.info("stderr for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY)
-        self.stderr = stderr
+    def set_streams(self, tool_stdout, tool_stderr, job_stdout=None, job_stderr=None, job_messages=None):
+        def shrink_and_unicodify(what, stream):
+            stream = galaxy.util.unicodify(stream) or u''
+            if (len(stream) > galaxy.util.DATABASE_MAX_STRING_SIZE):
+                stream = galaxy.util.shrink_string_by_size(tool_stdout, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+                log.info("%s for %s %d is greater than %s, only a portion will be logged to database", what, type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY)
+            return stream
+
+        self.tool_stdout = shrink_and_unicodify('tool_stdout', tool_stdout)
+        self.tool_stderr = shrink_and_unicodify('tool_stderr', tool_stderr)
+        if job_stdout is not None:
+            self.job_stdout = shrink_and_unicodify('job_stdout', job_stdout)
+        else:
+            self.job_stdout = None
+
+        if job_stderr is not None:
+            self.job_stderr = shrink_and_unicodify('job_stderr', job_stderr)
+        else:
+            self.job_stderr = None
+
+        if job_messages is not None:
+            self.job_messages = job_messages
 
     def log_str(self):
         extra = ""
@@ -251,6 +262,27 @@ class JobLike(object):
             extra += "unflushed"
 
         return "%s[%s,tool_id=%s]" % (self.__class__.__name__, extra, self.tool_id)
+
+    def get_stdout(self):
+        stdout = self.tool_stdout
+        if self.job_stdout:
+            stdout += "\n" + self.job_stdout
+        return stdout
+
+    def set_stdout(self, stdout):
+        raise NotImplementedError("Attempt to set stdout, must set tool_stdout or job_stdout")
+
+    def get_stderr(self):
+        stderr = self.tool_stderr
+        if self.job_stderr:
+            stderr += "\n" + self.job_stderr
+        return stderr
+
+    def set_stderr(self, stderr):
+        raise NotImplementedError("Attempt to set stdout, must set tool_stderr or job_stderr")
+
+    stdout = property(get_stdout, set_stdout)
+    stderr = property(get_stderr, set_stderr)
 
 
 class User(Dictifiable, RepresentById):
@@ -607,6 +639,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.imported = False
         self.handler = None
         self.exit_code = None
+        self.job_messages = None
         self._init_metrics()
         self.state_history.append(JobStateHistory(self))
 
@@ -980,8 +1013,6 @@ class Task(JobLike, RepresentById):
         self.task_runner_name = None
         self.task_runner_external_id = None
         self.job = job
-        self.stdout = ""
-        self.stderr = ""
         self.exit_code = None
         self.prepare_input_files_cmd = prepare_files_cmd
         self._init_metrics()
@@ -1026,12 +1057,6 @@ class Task(JobLike, RepresentById):
 
     def get_job(self):
         return self.job
-
-    def get_stdout(self):
-        return self.stdout
-
-    def get_stderr(self):
-        return self.stderr
 
     def get_prepare_input_files_cmd(self):
         return self.prepare_input_files_cmd
@@ -1108,12 +1133,6 @@ class Task(JobLike, RepresentById):
 
     def set_job(self, job):
         self.job = job
-
-    def set_stdout(self, stdout):
-        self.stdout = stdout
-
-    def set_stderr(self, stderr):
-        self.stderr = stderr
 
     def set_prepare_input_files_cmd(self, prepare_input_files_cmd):
         self.prepare_input_files_cmd = prepare_input_files_cmd
@@ -1254,15 +1273,16 @@ class JobExternalOutputMetadata(RepresentById):
 
 class JobExportHistoryArchive(RepresentById):
     def __init__(self, job=None, history=None, dataset=None, compressed=False,
-                 history_attrs_filename=None, datasets_attrs_filename=None,
-                 jobs_attrs_filename=None):
+                 history_attrs_filename=None):
         self.job = job
         self.history = history
         self.dataset = dataset
         self.compressed = compressed
         self.history_attrs_filename = history_attrs_filename
-        self.datasets_attrs_filename = datasets_attrs_filename
-        self.jobs_attrs_filename = jobs_attrs_filename
+
+    @property
+    def temp_directory(self):
+        return os.path.split(self.history_attrs_filename)[0]
 
     @property
     def up_to_date(self):
@@ -1972,6 +1992,8 @@ class Dataset(StorableObject, RepresentById):
         self.external_extra_files_path = None
         self._extra_files_path = extra_files_path
         self.file_size = file_size
+        self.sources = []
+        self.hashes = []
         if uuid is None:
             self.uuid = uuid4()
         else:
@@ -2122,6 +2144,18 @@ class Dataset(StorableObject, RepresentById):
             if dp.action == trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
                 return True
         return False
+
+
+class DatasetSource(RepresentById):
+    """ """
+
+
+class DatasetSourceHash(RepresentById):
+    """ """
+
+
+class DatasetHash(RepresentById):
+    """ """
 
 
 def datatype_for_extension(extension, datatypes_registry=None):
@@ -3111,7 +3145,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                                         copied_from_library_dataset_dataset_association=self,
                                         history=target_history)
 
-        tag_manager = tags.GalaxyTagManager(sa_session)
+        tag_manager = galaxy.model.tags.GalaxyTagHandler(sa_session)
         src_ldda_tags = tag_manager.get_tags_str(self.tags)
         tag_manager.apply_item_tags(user=self.user, item=hda, tags_str=src_ldda_tags)
 
@@ -3141,7 +3175,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                                                 copied_from_library_dataset_dataset_association=self,
                                                 folder=target_folder)
 
-        tag_manager = tags.GalaxyTagManager(sa_session)
+        tag_manager = galaxy.model.tags.GalaxyTagHandler(sa_session)
         src_ldda_tags = tag_manager.get_tags_str(self.tags)
         tag_manager.apply_item_tags(user=self.user, item=ldda, tags_str=src_ldda_tags)
 
@@ -4049,7 +4083,7 @@ class Workflow(Dictifiable, RepresentById):
         top_level_workflow = self
         if self.stored_workflow is None:
             # TODO: enforce this at creation...
-            assert len(self.parent_workflow_steps) == 1
+            assert len(set(w.uuid for w in self.parent_workflow_steps)) == 1
             return self.parent_workflow_steps[0].workflow.top_level_workflow
         return top_level_workflow
 

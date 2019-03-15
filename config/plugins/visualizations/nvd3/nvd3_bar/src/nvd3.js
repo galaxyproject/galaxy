@@ -109,7 +109,6 @@ var PieWrapper = Backbone.View.extend({
             dataset_id: chart.get("dataset_id"),
             dataset_groups: chart.groups,
             success: function(groups) {
-                window.console.log(groups);
                 for (var group_index in groups) {
                     var group = groups[group_index];
                     self._drawGroup(chart, group, targets[group_index]);
@@ -132,9 +131,9 @@ var PieWrapper = Backbone.View.extend({
                 pie_data.push({ y: value.y, x: value.label });
             });
             nv.addGraph(function() {
-                var legend_visible = chart.settings.get("show_legend") == "true";
-                var label_outside = chart.settings.get("label_outside") == "true";
-                var label_type = chart.settings.get("label_type");
+                var legend_visible = chart.settings.get("legend_visible") == "true";
+                var label_outside = chart.settings.get("label|outside") == "true";
+                var label_type = chart.settings.get("label|type");
                 var donut_ratio = parseFloat(chart.settings.get("donut_ratio"));
                 var chart_3d = nv.models
                     .pieChart()

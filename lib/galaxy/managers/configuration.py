@@ -50,8 +50,6 @@ class ConfigSerializer(base.ModelSerializer):
             'support_url'                       : _defaults_to(self.app.config.support_url),
             'helpsite_url'                      : _defaults_to(self.app.config.helpsite_url),
             'lims_doc_url'                      : _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),
-            'biostar_url'                       : _defaults_to(''),
-            'biostar_url_redirect'              : lambda *a, **c: self.url_for(controller='biostar', action='biostar_redirect', qualified=True),
             'default_locale'                    : _defaults_to(self.app.config.default_locale),
 
             'enable_beta_ts_api_install'        : _defaults_to(False),
@@ -85,6 +83,11 @@ class ConfigSerializer(base.ModelSerializer):
             'message_box_visible'               : _defaults_to(False),
             'message_box_class'                 : _defaults_to('info'),
             'server_startttime'                 : lambda i, k, **c: server_starttime,
+            'mailing_join_addr'                 : _defaults_to('galaxy-announce-join@bx.psu.edu'),
+            'smtp_server'                       : _defaults_to(None),
+            'registration_warning_message'      : _defaults_to(None),
+            'welcome_url'                       : _defaults_to(None),
+            'show_welcome_with_login'           : _defaults_to(True),
         }
 
 

@@ -66,6 +66,14 @@ uwsgi:
   # Reports, etc.) that you are loading.
   module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
 
+  # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
+  # URL prefix. Cannot be used together with 'module:' above.
+  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
+
+  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-
+  # points. Set this to true if a URL prefix is used.
+  manage-script-name: false
+
   # It is usually a good idea to set this to ``true`` if processes is
   # greater than 1.
   thunder-lock: false
@@ -90,16 +98,11 @@ uwsgi:
 
 galaxy:
 
-  # If running behind a proxy server and Galaxy is served from a
-  # subdirectory, enable the proxy-prefix filter and set the prefix in
-  # the [filter:proxy-prefix] section above.
-  #filter-with: proxy-prefix
-
-  # If proxy-prefix is enabled and you're running more than one Galaxy
-  # instance behind one hostname, you will want to set this to the same
-  # path as the prefix in the filter above.  This value becomes the
-  # "path" attribute set in the cookie so the cookies from each instance
-  # will not clobber each other.
+  # When running multiple Galaxy instances under separate URL prefixes
+  # on a single hostname, you will want to set this to the same path as
+  # the prefix set in the uWSGI "mount" configuration option above. This
+  # value becomes the "path" attribute set in the cookie so the cookies
+  # from one instance will not clobber those from another.
   #cookie_path: ''
 
   # By default, Galaxy uses a SQLite database at
@@ -167,10 +170,13 @@ galaxy:
   # not recommended for production use.
   #database_auto_migrate: false
 
-  # Dataset files are stored in this directory.
+  # Where dataset files are stored. It must accessible at the same path
+  # on any cluster nodes that will run Galaxy jobs, unless using Pulsar.
   #file_path: database/files
 
-  # Temporary files are stored in this directory.
+  # Where temporary files are stored. It must accessible at the same
+  # path on any cluster nodes that will run Galaxy jobs, unless using
+  # Pulsar.
   #new_file_path: database/tmp
 
   # Tool config files, defines what tools are available in Galaxy. Tools
@@ -181,12 +187,11 @@ galaxy:
 
   # Enable / disable checking if any tools defined in the above non-shed
   # tool_config_files (i.e., tool_conf.xml) have been migrated from the
-  # Galaxy code distribution to the Tool Shed.  This setting should
-  # generally be set to False only for development Galaxy environments
-  # that are often rebuilt from scratch where migrated tools do not need
-  # to be available in the Galaxy tool panel.  If the following setting
-  # remains commented, the default setting will be True.
-  #check_migrate_tools: true
+  # Galaxy code distribution to the Tool Shed. This functionality is
+  # largely untested in modern Galaxy releases and has serious issues
+  # such as #7273 and the possibility of slowing down Galaxy startup, so
+  # the default and recommended value is False.
+  #check_migrate_tools: false
 
   # Tool config maintained by tool migration scripts.  If you use the
   # migration scripts to install tools that have been migrated to the
@@ -669,6 +674,10 @@ galaxy:
   # format string as specified by ISO 8601 international   standard).
   #pretty_datetime_format: $locale (UTC)
 
+  # Location of the configuration file containing extra user
+  # preferences.
+  #user_preferences_extra_conf_path: config/user_preferences_extra_conf.yml
+
   # Default localization for Galaxy UI. Allowed values are listed at the
   # end of client/galaxy/scripts/nls/locale.js. With the default value
   # (auto), the locale will be automatically adjusted to the user's
@@ -711,21 +720,6 @@ galaxy:
 
   # The URL linked by the "Support" link in the "Help" menu.
   #support_url: 'https://galaxyproject.org/support/'
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_url: ''
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_key_name: ''
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_key: ''
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_enable_bug_reports: true
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_never_authenticate: false
 
   # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
   #citation_url: 'https://galaxyproject.org/citing-galaxy'
@@ -1351,19 +1345,6 @@ galaxy:
 
   # Enable the new container interface for Interactive Environments
   #enable_beta_containers_interface: false
-
-  # Set the following to a number of threads greater than 1 to spawn a
-  # Python task queue for dealing with large tool submissions (either
-  # through the tool form or as part of an individual workflow step
-  # across large collection). This affects workflow scheduling and web
-  # processes, not job handlers. This is a beta option and should not be
-  # used in production.
-  #tool_submission_burst_threads: 1
-
-  # If tool_submission_burst_threads is set to a number greater than 1,
-  # this is the number of jobs to schedule at which the task queue will
-  # be created.
-  #tool_submission_burst_at: 10
 
   # Enable beta workflow modules that should not yet be considered part
   # of Galaxy's stable API.

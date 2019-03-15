@@ -87,7 +87,7 @@ class SetMetadataToolAction(ToolAction):
                                                                      config_root=app.config.root,
                                                                      config_file=app.config.config_file,
                                                                      datatypes_config=datatypes_config,
-                                                                     job_metadata=None,
+                                                                     job_metadata=os.path.join(job_working_dir, 'working', tool.provided_metadata_file),
                                                                      include_command=False,
                                                                      max_metadata_value_size=app.config.max_metadata_value_size,
                                                                      kwds={'overwrite': overwrite})

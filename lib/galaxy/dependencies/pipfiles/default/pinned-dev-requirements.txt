@@ -16,11 +16,13 @@ idna==2.8
 imagesize==1.1.0
 jinja2==2.10
 lxml==4.3.2
+markdown==2.6.11
 markupsafe==1.1.1
 mock==2.0.0
 more-itertools==5.0.0 ; python_version <= '2.7'
 nose==1.3.7
 nosehtml==0.4.5
+packaging==19.0
 pathlib2==2.3.3 ; python_version < '3.6'
 pathtools==0.1.2
 pbr==5.1.3
@@ -28,6 +30,7 @@ pluggy==0.9.0
 py==1.8.0
 pygithub3==0.5.1 ; python_version < '3'
 pygments==2.3.1
+pyparsing==2.3.1
 pytest-html==1.20.0
 pytest-metadata==1.8.0
 pytest-pythonpath==0.7.3
@@ -40,8 +43,9 @@ scandir==1.10.0 ; python_version < '3.5'
 selenium==3.141.0
 six==1.11.0
 snowballstemmer==1.2.1
+sphinx-markdown-tables==0.0.9
 sphinx-rtd-theme==0.4.3
-sphinx==1.6.7
+sphinx==1.8.4
 sphinxcontrib-websupport==1.1.0
 testfixtures==6.6.1
 twill==0.9.1 ; python_version < '3'

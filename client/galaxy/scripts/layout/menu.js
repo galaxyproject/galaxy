@@ -1,6 +1,7 @@
 /** Masthead Collection **/
 import _ from "underscore";
 import $ from "jquery";
+import axios from "axios";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
@@ -9,17 +10,17 @@ import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
 
-
 function logoutClick() {
     let galaxy = getGalaxyInstance();
-    let token = galaxy.session_csrf_token || "";
-    if (galaxy.user) {
-        galaxy.user.clearSessionStorage();
-    }
-    let url = `${galaxy.root}user/logout?session_csrf_token=${token}`;
-    window.top.location.href = url;
+    let session_csrf_token = galaxy.session_csrf_token;
+    let url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
+    axios.get(url).then(() => {
+        if (galaxy.user) {
+            galaxy.user.clearSessionStorage();
+        }
+        window.top.location.href = `${galaxy.root}login`;
+    });
 }
-
 
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
@@ -47,8 +48,7 @@ var Collection = Backbone.Collection.extend({
             id: "analysis",
             title: _l("Analyze Data"),
             url: "",
-            tooltip: _l("Analysis home view"),
-            target: "__use_router__"
+            tooltip: _l("Analysis home view")
         });
 
         //
@@ -220,20 +220,6 @@ var Collection = Backbone.Collection.extend({
                 target: "_blank"
             });
         }
-        if (options.biostar_url) {
-            helpTab.menu.unshift({
-                title: _l("Ask a question"),
-                url: "biostar/biostar_question_redirect",
-                target: "_blank"
-            });
-        }
-        if (options.biostar_url) {
-            helpTab.menu.unshift({
-                title: _l("Galaxy Biostar"),
-                url: options.biostar_url_redirect,
-                target: "_blank"
-            });
-        }
         if (options.helpsite_url) {
             helpTab.menu.unshift({
                 title: _l("Galaxy Help"),
@@ -253,21 +239,8 @@ var Collection = Backbone.Collection.extend({
                     id: "user",
                     title: _l("Login or Register"),
                     cls: "loggedout-only",
-                    tooltip: _l("Account registration or login"),
-                    menu: [
-                        {
-                            title: _l("Login"),
-                            url: "login",
-                            target: "_top",
-                            noscratchbook: true
-                        },
-                        {
-                            title: _l("Register"),
-                            url: "user/create",
-                            target: "galaxy_main",
-                            noscratchbook: true
-                        }
-                    ]
+                    url: "login",
+                    tooltip: _l("Account registration or login")
                 };
             } else {
                 userTab = {
@@ -487,10 +460,7 @@ var Tab = Backbone.View.extend({
                 .popover({
                     html: true,
                     placement: "bottom",
-                    content: `Please ${this.buildLink("login", "login")} or ${this.buildLink(
-                        "register",
-                        "user/create?use_panels=True"
-                    )} to use this feature.`
+                    content: `Please ${this.buildLink("login or register", "login")} to use this feature.`
                 })
                 .popover("show");
             window.setTimeout(() => {

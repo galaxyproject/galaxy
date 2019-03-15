@@ -33,8 +33,8 @@ def skip_unless_docker():
     return skip_unless_executable("docker")
 
 
-def skip_unless_singularity():
-    return skip_unless_executable("singularity")
+def skip_unless_kubernetes():
+    return skip_unless_executable("kubectl")
 
 
 class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):

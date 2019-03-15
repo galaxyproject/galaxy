@@ -152,7 +152,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             jt['nativeSpecification'] = native_spec
 
         # fill in the DRM's job run template
-        script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file)
+        script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file, shell=job_wrapper.shell)
         try:
             self.write_executable_script(ajs.job_file, script)
         except Exception:

@@ -26,8 +26,8 @@ from galaxy import (
     model
 )
 from galaxy.managers.jobs import JobSearch
-from galaxy.managers.tags import GalaxyTagManager
 from galaxy.metadata import get_metadata_compute_strategy
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import send_control_task
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -99,6 +99,7 @@ from .loader import (
     raw_tool_xml_tree,
     template_macro_params
 )
+from .provided_metadata import parse_tool_provided_metadata
 
 log = logging.getLogger(__name__)
 
@@ -390,7 +391,7 @@ class Tool(Dictifiable):
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
 
-    def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True):
+    def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, tool_shed_repository=None, allow_code_files=True):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
         self.config_file = config_file
@@ -436,7 +437,7 @@ class Tool(Dictifiable):
         self._lineage = None
         self.dependencies = []
         # populate toolshed repository info, if available
-        self.populate_tool_shed_info()
+        self.populate_tool_shed_info(tool_shed_repository)
         # add tool resource parameters
         self.populate_resource_parameters(tool_source)
         self.tool_errors = None
@@ -489,8 +490,8 @@ class Tool(Dictifiable):
                                                             tool_shed=self.tool_shed,
                                                             name=self.repository_name,
                                                             owner=self.repository_owner,
-                                                            installed_changeset_revision=self.installed_changeset_revision)
-        return None
+                                                            installed_changeset_revision=self.installed_changeset_revision,
+                                                            repository_id=self.repository_id)
 
     @property
     def produces_collections_with_unknown_structure(self):
@@ -521,7 +522,7 @@ class Tool(Dictifiable):
         preserve_python_environment = config.preserve_python_environment
         if preserve_python_environment == "always":
             return True
-        elif preserve_python_environment == "legacy_and_local" and self.repository_id is None:
+        elif preserve_python_environment == "legacy_and_local" and self.tool_shed is None:
             return True
         else:
             unversioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_UNVERSIONED
@@ -850,7 +851,7 @@ class Tool(Dictifiable):
         """If tool shed installed tool, the base directory of the repository installed."""
         repository_dir = None
 
-        if hasattr(self, 'tool_shed') and self.tool_shed:
+        if getattr(self, 'tool_shed', None):
             repository_dir = self.tool_dir
             while True:
                 repository_dir_name = os.path.basename(repository_dir)
@@ -897,12 +898,7 @@ class Tool(Dictifiable):
 
     def tool_provided_metadata(self, job_wrapper):
         meta_file = os.path.join(job_wrapper.tool_working_directory, self.provided_metadata_file)
-        if not os.path.exists(meta_file):
-            return output_collect.NullToolProvidedMetadata()
-        if self.provided_metadata_style == "legacy":
-            return output_collect.LegacyToolProvidedMetadata(job_wrapper, meta_file)
-        else:
-            return output_collect.ToolProvidedMetadata(job_wrapper, meta_file)
+        return parse_tool_provided_metadata(meta_file, provided_metadata_style=self.provided_metadata_style, job_wrapper=job_wrapper)
 
     def parse_command(self, tool_source):
         """
@@ -1172,18 +1168,16 @@ class Tool(Dictifiable):
                     root.append(inputs)
                 inputs.append(resource_xml)
 
-    def populate_tool_shed_info(self):
-        if self.repository_id is not None and self.app.name == 'galaxy':
-            repository_id = self.app.security.decode_id(self.repository_id)
-            if hasattr(self.app, 'tool_shed_repository_cache'):
-                tool_shed_repository = self.app.tool_shed_repository_cache.get_installed_repository(repository_id=repository_id)
-                if tool_shed_repository:
-                    self.tool_shed = tool_shed_repository.tool_shed
-                    self.repository_name = tool_shed_repository.name
-                    self.repository_owner = tool_shed_repository.owner
-                    self.changeset_revision = tool_shed_repository.changeset_revision
-                    self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
-                    self.sharable_url = tool_shed_repository.get_sharable_url(self.app)
+    def populate_tool_shed_info(self, tool_shed_repository):
+        if tool_shed_repository:
+            self.tool_shed = tool_shed_repository.tool_shed
+            self.repository_name = tool_shed_repository.name
+            self.repository_owner = tool_shed_repository.owner
+            self.changeset_revision = tool_shed_repository.changeset_revision
+            self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+            self.sharable_url = common_util.get_tool_shed_repository_url(
+                self.app, self.tool_shed, self.repository_owner, self.repository_name
+            )
 
     @property
     def help(self):
@@ -1206,16 +1200,16 @@ class Tool(Dictifiable):
         tool_source = self.__help_source
         self.__help = None
         self.__help_by_page = []
-        help_header = ""
         help_footer = ""
         help_text = tool_source.parse_help()
         if help_text is not None:
-            if self.repository_id and help_text.find('.. image:: ') >= 0:
-                # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
-                try:
-                    help_text = tool_shed.util.shed_util_common.set_image_paths(self.app, self.repository_id, help_text)
-                except Exception:
-                    log.exception("Exception in parse_help, so images may not be properly displayed")
+            try:
+                if help_text.find('.. image:: ') >= 0 and (self.tool_shed_repository or self.repository_id):
+                    help_text = tool_shed.util.shed_util_common.set_image_paths(
+                        self.app, help_text, encoded_repository_id=self.repository_id, tool_shed_repository=self.tool_shed_repository, tool_id=self.old_id, tool_version=self.version
+                    )
+            except Exception:
+                log.exception("Exception in parse_help, so images may not be properly displayed")
             try:
                 self.__help = Template(rst_to_html(help_text), input_encoding='utf-8',
                                        default_filters=['decode.utf8'],
@@ -1687,17 +1681,32 @@ class Tool(Dictifiable):
         """
         pass
 
-    def collect_primary_datasets(self, output, tool_provided_metadata, job_working_directory, input_ext, input_dbkey="?"):
+    def discover_outputs(self, out_data, out_collections, tool_provided_metadata, tool_working_directory, job, input_ext, input_dbkey, inp_data=None):
         """
         Find any additional datasets generated by a tool and attach (for
         cases where number of outputs is not known in advance).
         """
-        return output_collect.collect_primary_datasets(self, output, tool_provided_metadata, job_working_directory, input_ext, input_dbkey=input_dbkey)
-
-    def collect_dynamic_outputs(self, output, tool_provided_metadata, **kwds):
-        """Collect dynamic outputs associated with a job from this tool.
-        """
-        return output_collect.collect_dynamic_outputs(self, output, tool_provided_metadata, **kwds)
+        tool = self
+        collected = output_collect.collect_primary_datasets(
+            tool,
+            out_data,
+            tool_provided_metadata,
+            tool_working_directory,
+            input_ext,
+            input_dbkey=input_dbkey,
+        )
+        output_collect.collect_dynamic_outputs(
+            tool,
+            out_collections,
+            tool_provided_metadata,
+            job_working_directory=tool_working_directory,
+            inp_data=inp_data,
+            job=job,
+            input_dbkey=input_dbkey,
+        )
+        # Return value only used in unit tests. Probably should be returning number of collected
+        # bytes instead?
+        return collected
 
     def to_archive(self):
         tool = self
@@ -1922,7 +1931,6 @@ class Tool(Dictifiable):
             'id'            : self.id,
             'help'          : tool_help,
             'citations'     : bool(self.citations),
-            'biostar_url'   : self.app.config.biostar_url,
             'sharable_url'  : self.sharable_url,
             'message'       : tool_message,
             'warnings'      : tool_warnings,
@@ -2264,7 +2272,7 @@ class SetMetadataTool(Tool):
         for name, dataset in inp_data.items():
             external_metadata = get_metadata_compute_strategy(app, job.id)
             sa_session = app.model.context
-            if external_metadata.external_metadata_set_successfully(dataset, sa_session):
+            if external_metadata.external_metadata_set_successfully(dataset, name, sa_session, working_directory=working_directory):
                 external_metadata.load_metadata(dataset, name, sa_session, working_directory=working_directory)
             else:
                 dataset._state = model.Dataset.states.FAILED_METADATA
@@ -2414,10 +2422,11 @@ class DatabaseOperationTool(Tool):
 
             map(check_dataset_instance, input_dataset_collection.dataset_instances)
 
-    def _add_datasets_to_history(self, history, elements):
+    def _add_datasets_to_history(self, history, elements, datasets_visible=False):
         datasets = []
         for element_object in elements:
             if getattr(element_object, "history_content_type", None) == "dataset":
+                element_object.visible = datasets_visible
                 datasets.append(element_object)
 
         if datasets:
@@ -2509,8 +2518,7 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
             raise Exception("Invalid tool parameters.")
         extracted = extracted_element.element_object
         extracted_o = extracted.copy(copy_tags=tags, new_name=extracted_element.element_identifier)
-        extracted_o.visible = True
-        self._add_datasets_to_history(history, [extracted_o])
+        self._add_datasets_to_history(history, [extracted_o], datasets_visible=True)
 
         out_data["output"] = extracted_o
 
@@ -2589,7 +2597,6 @@ class MergeCollectionTool(DatabaseOperationTool):
         for key, value in new_element_structure.items():
             if getattr(value, "history_content_type", None) == "dataset":
                 copied_value = value.copy(force_flush=False)
-                copied_value.visible = False
             else:
                 copied_value = value.copy()
             new_elements[key] = copied_value
@@ -2608,7 +2615,6 @@ class FilterDatasetsTool(DatabaseOperationTool):
             element_identifier = dce.element_identifier
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
                 copied_value = dce.element_object.copy(force_flush=False)
-                copied_value.visible = False
             else:
                 copied_value = dce.element_object.copy()
             new_elements[element_identifier] = copied_value
@@ -2684,7 +2690,6 @@ class FlattenTool(DatabaseOperationTool):
                     add_elements(dce_object, prefix=identifier)
                 else:
                     copied_dataset = dce_object.copy(force_flush=False)
-                    copied_dataset.visible = False
                     new_elements[identifier] = copied_dataset
                     copied_datasets.append(copied_dataset)
 
@@ -2712,7 +2717,8 @@ class SortTool(DatabaseOperationTool):
             sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
         if sorttype == 'file':
             hda = incoming["sort_type"]["sort_file"]
-            if hda.metadata and hda.metadata.get('data_lines', 0) == len(elements):
+            data_lines = hda.metadata.get('data_lines', 0)
+            if data_lines == len(elements):
                 old_elements_dict = OrderedDict()
                 for element in elements:
                     old_elements_dict[element.element_identifier] = element
@@ -2722,11 +2728,13 @@ class SortTool(DatabaseOperationTool):
                     hdca_history_name = "%s: %s" % (hdca.hid, hdca.name)
                     message = "List of element identifiers does not match element identifiers in collection '%s'" % hdca_history_name
                     raise Exception(message)
+            else:
+                message = "Number of lines must match number of list elements (%i), but file has %i lines"
+                raise Exception(message % (data_lines, len(elements)))
 
         for dce in sorted_elements:
             dce_object = dce.element_object
             copied_dataset = dce_object.copy(force_flush=False)
-            copied_dataset.visible = False
             new_elements[dce.element_identifier] = copied_dataset
 
         self._add_datasets_to_history(history, itervalues(new_elements))
@@ -2751,7 +2759,6 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 raise Exception("New identifier [%s] appears twice in resulting collection, these values must be unique." % new_label)
             if getattr(dce_object, "history_content_type", None) == "dataset":
                 copied_value = dce_object.copy(force_flush=False)
-                copied_value.visible = False
             else:
                 copied_value = dce_object.copy()
             new_elements[new_label] = copied_value
@@ -2797,7 +2804,6 @@ class ApplyRulesTool(DatabaseOperationTool):
 
         def copy_dataset(dataset):
             copied_dataset = dataset.copy(force_flush=False)
-            copied_dataset.visible = False
             copied_datasets.append(copied_dataset)
             return copied_dataset
 
@@ -2818,7 +2824,7 @@ class TagFromFileTool(DatabaseOperationTool):
         how = incoming['how']
         new_tags_dataset_assoc = incoming["tags"]
         new_elements = odict()
-        tags_manager = GalaxyTagManager(trans.app.model.context)
+        tags_manager = GalaxyTagHandler(trans.app.model.context)
         new_datasets = []
 
         def add_copied_value_to_new_elements(new_tags_dict, dce):
@@ -2894,7 +2900,6 @@ class FilterFromFileTool(DatabaseOperationTool):
 
             if getattr(dce_object, "history_content_type", None) == "dataset":
                 copied_value = dce_object.copy(force_flush=False)
-                copied_value.visible = False
             else:
                 copied_value = dce_object.copy()
 

@@ -318,9 +318,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
         self.monitor_job(pulsar_job_state)
 
     def __needed_features(self, client):
-            return {
-                'remote_metadata': PulsarJobRunner.__remote_metadata(client),
-            }
+        return {
+            'remote_metadata': PulsarJobRunner.__remote_metadata(client),
+        }
 
     def __prepare_job(self, job_wrapper, job_destination):
         """Build command-line and Pulsar client for this job."""
@@ -534,7 +534,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         self._handle_runner_state('failure', job_state)
         if not job_state.runner_state_handled:
             job_state.job_wrapper.fail(getattr(job_state, "fail_message", message),
-                                       stdout=stdout, stderr=stderr, exception=exception)
+                                       tool_stdout=stdout, tool_stderr=stderr, exception=exception)
 
     def check_pid(self, pid):
         try:

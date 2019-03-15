@@ -88,8 +88,8 @@ class AuthnzManager(object):
                     log.error("Could not find a node attribute 'name'; skipping the node '{}'.".format(child.tag))
                     continue
                 idp = child.get('name').lower()
-                if idp == 'google':
-                    self.oidc_backends_config[idp] = self._parse_google_config(child)
+                if idp in BACKENDS_NAME:
+                    self.oidc_backends_config[idp] = self._parse_idp_config(child)
             if len(self.oidc_backends_config) == 0:
                 raise ParseError("No valid provider configuration parsed.")
         except ImportError:
@@ -97,7 +97,7 @@ class AuthnzManager(object):
         except ParseError as e:
             raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
 
-    def _parse_google_config(self, config_xml):
+    def _parse_idp_config(self, config_xml):
         rtv = {
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
@@ -114,15 +114,16 @@ class AuthnzManager(object):
                 return k.lower()
 
     def _get_authnz_backend(self, provider):
-        provider = self._unify_provider_name(provider)
-        if provider in self.oidc_backends_config:
+        unified_provider_name = self._unify_provider_name(provider)
+        if unified_provider_name in self.oidc_backends_config:
+            provider = unified_provider_name
             try:
                 return True, "", PSAAuthnz(provider, self.oidc_config, self.oidc_backends_config[provider])
             except Exception as e:
                 log.exception('An error occurred when loading PSAAuthnz')
                 return False, str(e), None
         else:
-            msg = 'The requested identity provider, `{}`, is not a recognized/expected provider'.format(provider)
+            msg = 'The requested identity provider, `{}`, is not a recognized/expected provider.'.format(provider)
             log.debug(msg)
             return False, msg, None
 

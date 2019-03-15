@@ -491,6 +491,50 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
                 'label',
             )
 
+    @skip_without_tool('output_filter_with_input')
+    def test_export_editor_filtered_outputs(self):
+        template = """
+class: GalaxyWorkflow
+steps:
+  - tool_id: output_filter_with_input
+    state:
+      produce_out_1: {produce_out_1}
+      filter_text_1: {filter_text_1}
+      produce_collection: false
+      produce_paired_collection: false
+"""
+        workflow_id = self._upload_yaml_workflow(template.format(produce_out_1='false', filter_text_1='false'))
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        outputs = downloaded_workflow['steps']['0']['outputs']
+        assert len(outputs) == 1
+        assert outputs[0]['name'] == 'out_3'
+        workflow_id = self._upload_yaml_workflow(template.format(produce_out_1='true', filter_text_1='false'))
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        outputs = downloaded_workflow['steps']['0']['outputs']
+        assert len(outputs) == 2
+        assert outputs[0]['name'] == 'out_1'
+        assert outputs[1]['name'] == 'out_3'
+        workflow_id = self._upload_yaml_workflow(template.format(produce_out_1='true', filter_text_1='foo'))
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        outputs = downloaded_workflow['steps']['0']['outputs']
+        assert len(outputs) == 3
+        assert outputs[0]['name'] == 'out_1'
+        assert outputs[1]['name'] == 'out_2'
+        assert outputs[2]['name'] == 'out_3'
+
+    @skip_without_tool('output_filter_exception_1')
+    def test_export_editor_filtered_outputs_exception_handling(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  - tool_id: output_filter_exception_1
+""")
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        outputs = downloaded_workflow['steps']['0']['outputs']
+        assert len(outputs) == 2
+        assert outputs[0]['name'] == 'out_1'
+        assert outputs[1]['name'] == 'out_2'
+
     @skip_without_tool('collection_type_source')
     def test_export_editor_collection_type_source(self):
         workflow_id = self._upload_yaml_workflow("""
@@ -507,7 +551,9 @@ steps:
         downloaded_workflow = self._download_workflow(workflow_id, style="editor")
         steps = downloaded_workflow['steps']
         assert len(steps) == 2
-        assert steps['1']['outputs'][0]['collection_type'] == 'list:paired'
+        # Non-subworkflow collection_type_source tools will be handled by the client,
+        # so collection_type should be None here.
+        assert steps['1']['outputs'][0]['collection_type'] is None
 
     @skip_without_tool('collection_type_source')
     def test_export_editor_subworkflow_collection_type_source(self):
@@ -766,6 +812,32 @@ test_data:
             replaced_hda = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=replaced_hda_id, wait=True, assert_ok=False)
             assert not replaced_hda['visible'], replaced_hda
 
+    @skip_without_tool('multi_data_optional')
+    def test_workflow_list_list_multi_data_map_over(self):
+        # Test that a list:list is reduced to list with a multiple="true" data input
+        with self.dataset_populator.test_history() as history_id:
+            workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input_datasets: collection
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input_datasets
+""")
+            with self.dataset_populator.test_history() as history_id:
+                hdca_id = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()
+                self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+                inputs = {
+                    '0': self._ds_entry(hdca_id),
+                }
+                invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
+                self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+                output_collection = self.dataset_populator.get_history_collection_details(history_id, hid=6)
+                assert output_collection['collection_type'] == 'list'
+                assert output_collection['job_source_type'] == 'ImplicitCollectionJobs'
+
     @skip_without_tool("cat_list")
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collection_mapping(self):
@@ -778,7 +850,6 @@ test_data:
             }
             invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             self.assertEqual("a\nc\nb\nd\ne\ng\nf\nh\n", self.dataset_populator.get_history_dataset_content(history_id, hid=0))
 
     @skip_without_tool("cat_list")
@@ -986,19 +1057,19 @@ test_data:
             assert len([x for x in content.split("\n") if x]) == 2
 
     def test_run_subworkflow_auto_labels(self):
-            history_id = self.dataset_populator.new_history()
-            test_data = """
+        history_id = self.dataset_populator.new_history()
+        test_data = """
 outer_input:
   value: 1.bed
   type: File
 """
-            job_summary = self._run_jobs(NESTED_WORKFLOW_AUTO_LABELS, test_data=test_data, history_id=history_id)
-            assert len(job_summary.jobs) == 4, "4 jobs expected, got %d jobs" % len(job_summary.jobs)
+        job_summary = self._run_jobs(NESTED_WORKFLOW_AUTO_LABELS, test_data=test_data, history_id=history_id)
+        assert len(job_summary.jobs) == 4, "4 jobs expected, got %d jobs" % len(job_summary.jobs)
 
-            content = self.dataset_populator.get_history_dataset_content(history_id)
-            self.assertEqual(
-                "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
-                content)
+        content = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEqual(
+            "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
+            content)
 
     @skip_without_tool("cat1")
     @skip_without_tool("collection_paired_test")
@@ -1541,6 +1612,32 @@ input1:
 """, history_id=history_id, wait=True)
             self.assertEqual("0\n", self.dataset_populator.get_history_dataset_content(history_id))
 
+    @skip_without_tool("random_lines1")
+    def test_change_datatype_collection_map_over(self):
+        with self.dataset_populator.test_history() as history_id:
+            jobs_summary = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  text_input1: collection
+steps:
+  map_over:
+    tool_id: random_lines1
+    in:
+      input: text_input1
+    outputs:
+        out_file1:
+          change_datatype: csv
+""", test_data="""
+text_input1:
+  type: "list:paired"
+""", history_id=history_id)
+            hdca = self.dataset_populator.get_history_collection_details(history_id=jobs_summary.history_id, hid=4)
+            assert hdca['collection_type'] == 'list:paired'
+            assert len(hdca['elements'][0]['object']["elements"]) == 2
+            forward, reverse = hdca['elements'][0]['object']["elements"]
+            assert forward['object']['file_ext'] == 'csv'
+            assert reverse['object']['file_ext'] == 'csv'
+
     @skip_without_tool("collection_type_source_map_over")
     def test_mapping_and_subcollection_mapping(self):
         with self.dataset_populator.test_history() as history_id:
@@ -2049,6 +2146,23 @@ outer_input:
         content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
         assert content["name"] == "foo was replaced"
 
+    @skip_without_tool("hidden_param")
+    def test_hidden_param_in_workflow(self):
+        with self.dataset_populator.test_history() as history_id:
+            run_object = self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+  step1:
+    tool_id: hidden_param
+""", test_data={}, history_id=history_id, wait=False)
+            self.wait_for_invocation_and_jobs(history_id, run_object.workflow_id, run_object.invocation_id)
+            contents = self.__history_contents(history_id)
+            assert len(contents) == 1
+            okay_dataset = contents[0]
+            assert okay_dataset["state"] == "ok"
+            content = self.dataset_populator.get_history_dataset_content(history_id, hid=1)
+            assert content == '1\n'
+
     @skip_without_tool("output_filter")
     def test_optional_workflow_output(self):
         with self.dataset_populator.test_history() as history_id:
@@ -2159,7 +2273,121 @@ input1:
   name: fasta1
 """, history_id=history_id)
             details1 = self.dataset_populator.get_history_collection_details(history_id, hid=4, wait=True, assert_ok=True)
+            assert details1['elements'][0]['object']['visible'] is False
+            assert details1["name"] == "my new name", details1
+            assert details1["history_content_type"] == "dataset_collection"
 
+    @skip_without_tool("__BUILD_LIST__")
+    def test_run_build_list_hide_collection_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  - tool_id: __BUILD_LIST__
+    in:
+      datasets_0|input: input1
+    outputs:
+      output:
+        hide: true
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fasta1
+""", history_id=history_id)
+            details1 = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True, assert_ok=True)
+            assert details1['elements'][0]['object']['visible'] is False
+            assert details1["name"] == "data 1 (as list)", details1
+            assert details1["visible"] is False
+
+    @skip_without_tool("__BUILD_LIST__")
+    def test_run_build_list_delete_intermediate_collection_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  - tool_id: __BUILD_LIST__
+    in:
+      datasets_0|input: input1
+    outputs:
+      output:
+        delete_intermediate_datasets: true
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fasta1
+""", history_id=history_id)
+            details1 = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True,
+                                                                             assert_ok=True)
+            assert details1['elements'][0]['object']['visible'] is False
+            assert details1["name"] == "data 1 (as list)", details1
+            # FIXME: this doesn't work because the workflow is still being scheduled
+            # TODO: Implement a way to run PJAs that couldn't be run during/after the job
+            # after the workflow has run to completion
+            assert details1["deleted"] is False
+
+    @skip_without_tool("__BUILD_LIST__")
+    def test_run_build_list_change_datatype_collection_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  - tool_id: __BUILD_LIST__
+    in:
+      datasets_0|input: input1
+    outputs:
+      output:
+        change_datatype: txt
+  - tool_id: __BUILD_LIST__
+    in:
+      datasets_0|input: input1
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  file_type: fasta
+  name: fasta1
+""", history_id=history_id)
+            details1 = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True,
+                                                                             assert_ok=True)
+            assert details1["name"] == "data 1 (as list)", details1
+            assert details1['elements'][0]['object']['visible'] is False
+            assert details1['elements'][0]['object']['file_ext'] == 'txt'
+            details2 = self.dataset_populator.get_history_collection_details(history_id, hid=5, wait=True,
+                                                                             assert_ok=True)
+            # Also check that we don't overwrite the original HDA's datatype
+            assert details2['elements'][0]['object']['file_ext'] == 'fasta'
+
+    @skip_without_tool("__BUILD_LIST__")
+    def test_run_build_list_rename_collection_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  - tool_id: __BUILD_LIST__
+    in:
+      datasets_0|input: input1
+    outputs:
+      output:
+        rename: "my new name"
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fasta1
+""", history_id=history_id)
+            details1 = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True,
+                                                                             assert_ok=True)
+            assert details1['elements'][0]['object']['visible'] is False
             assert details1["name"] == "my new name", details1
             assert details1["history_content_type"] == "dataset_collection"
 
@@ -3134,18 +3362,18 @@ input_c:
             self._assert_status_code_is(usage_details_response, 403)
 
     def _invoke_paused_workflow(self, history_id):
-            workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
-            workflow_id = self.workflow_populator.create_workflow(workflow)
-            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
-            index_map = {
-                '0': self._ds_entry(hda1),
-            }
-            invocation_id = self.__invoke_workflow(
-                history_id,
-                workflow_id,
-                index_map,
-            )
-            return workflow_id, invocation_id
+        workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        index_map = {
+            '0': self._ds_entry(hda1),
+        }
+        invocation_id = self.__invoke_workflow(
+            history_id,
+            workflow_id,
+            index_map,
+        )
+        return workflow_id, invocation_id
 
     def _wait_for_invocation_non_new(self, workflow_id, invocation_id):
         target_state_reached = False

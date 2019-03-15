@@ -50,10 +50,11 @@ dictobj==0.4
 docopt==0.6.2
 docutils==0.14
 dogpile.cache==0.7.1
+ecdsa==0.13
 enum34==1.1.6 ; python_version < '3.4'
 fabric3==1.14.post1
 funcsigs==1.0.2 ; python_version < '3.3'
-functools32==3.2.3.post2 ; python_version == '2.7'
+functools32==3.2.3.post2 ; python_version < '3.2'
 future==0.17.1
 futures==3.2.0 ; python_version == '2.6' or python_version == '2.7'
 galaxy-sequence-utils==1.1.3
@@ -114,9 +115,7 @@ pyasn1-modules==0.2.4
 pyasn1==0.4.5
 pycparser==2.19
 pycryptodome==3.7.3
-pycryptodomex==3.7.3
-pyeventsystem==0.1.0
-pyjwkest==1.4.0
+pyinotify==0.9.6 ; sys_platform != 'win32' and sys_platform != 'darwin' and sys_platform != 'sunos5'
 pyjwt==1.7.1
 pykwalify==1.7.0
 pynacl==1.3.0
@@ -129,10 +128,11 @@ python-cinderclient==4.0.0
 python-dateutil==2.8.0
 python-genomespaceclient==1.1.0
 python-glanceclient==2.12.0
+python-jose==3.0.1
 python-keystoneclient==3.17.0
 python-neutronclient==6.9.0
 python-novaclient==11.0.0
-python-openid==2.2.5
+python-openid==2.2.5 ; python_version < '3.0'
 python-swiftclient==3.6.0
 pytz==2018.9
 pyyaml==5.1
@@ -147,7 +147,7 @@ rsa==4.0
 s3transfer==0.2.0
 simplejson==3.16.0
 six==1.11.0
-social-auth-core[openidconnect]==1.5.0
+social-auth-core[openidconnect]==3.1.0
 sqlalchemy-migrate==0.12.0
 sqlalchemy-utils==0.33.11
 sqlalchemy==1.2.18

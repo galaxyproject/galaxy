@@ -279,7 +279,7 @@ and can be configured locally to adapt to any other package management system.
 ```
 
 This older example shows a tool that requires R version 2.15.1. The
-``tool_depensencies.xml`` should contain matching declarations for Galaxy to
+``tool_dependencies.xml`` should contain matching declarations for Galaxy to
 actually install the R runtime. The ``set_envirornment`` type is only respected
 by the tool shed and is ignored by the newer and preferred conda dependency
 resolver.
@@ -314,7 +314,7 @@ resolver.
 This tag set is contained within the 'requirements' tag set. Galaxy can be
 configured to run tools within [Docker](https://www.docker.com/) or [Singularity](https://www.sylabs.io/singularity/)
 containers - this tag allows the tool to suggest possible valid containers for this tool. The contents of the tag should
-be a container image identifier appropriate for the particular container runtime being used, e.g. 
+be a container image identifier appropriate for the particular container runtime being used, e.g.
 ``quay.io/biocontainers/fastqc:0.11.2--1`` for Docker or ``docker://quay.io/biocontainers/fastqc:0.11.2--1``
 (or alternatively ``/opt/containers/fastqc.simg`` if your Galaxy installation will be loading the image from a filesystem path)
 for Singularity. The ``requirements`` tag can contain multiple ``container`` tags describing suitable container options, in
@@ -1243,7 +1243,7 @@ $assertions
 
 ### Examples
 
-The following demonstrtes a wide variety of text-based and tabular
+The following demonstrates a wide variety of text-based and tabular
 assertion statements.
 
 ```xml
@@ -1260,7 +1260,7 @@ assertion statements.
 </output>
 ```
 
-The following demonstrtes a wide variety of XML assertion statements.
+The following demonstrates a wide variety of XML assertion statements.
 
 ```xml
 <output name="out_file1">
@@ -1278,7 +1278,7 @@ The following demonstrtes a wide variety of XML assertion statements.
 </output>
 ```
 
-The following demonstrtes verifying XML content with XPath-like expressions.
+The following demonstrates verifying XML content with XPath-like expressions.
 
 ```xml
 <output name="out_file1">
@@ -1584,8 +1584,8 @@ module.
       <xs:element name="has_text_matching" type="xs:anyType">
         <xs:annotation>
           <xs:documentation><![CDATA[Asserts text matching the specified regular expression (``expression``) appears in the output (e.g. ``<has_text_matching expression="1274\d+53" />`` ).]]>
-        </xs:documentation>
-      </xs:annotation>
+          </xs:documentation>
+        </xs:annotation>
       </xs:element>
       <xs:element name="has_line" type="xs:anyType">
         <xs:annotation>
@@ -1651,8 +1651,52 @@ module.
           <xs:documentation><![CDATA[This tag allows the developer to recurisively specify additional assertions as child elements about just the text contained in the element specified by the XPath-like ``path`` (e.g. ``<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text text="EDK72998.1" /></element_text>``).]]></xs:documentation>
         </xs:annotation>
       </xs:element>
+      <xs:element name="has_h5_keys" type="AssertHasH5Keys">
+      </xs:element>
+      <xs:element name="has_h5_attribute" type="AssertHasH5Attribute">
+      </xs:element>
+      <xs:element name="has_archive_member" type="AssertHasArchiveMember">
+      </xs:element>
     </xs:choice>
   </xs:group>
+  <xs:complexType name="AssertHasH5Keys">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output has a set of attributes (``keys``), specified as a comma-separated list (e.g. ``<has_h5_keys keys="bins,chroms,indexes,pixels" />``).]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="keys" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Comma-separated list of HDF5 attributes to check for.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasH5Attribute">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified ``value`` for an attribute (``key``) (e.g. ``<has_attr key="nchroms" value="15" />``).]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="key" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">HDF5 attribute to check value of.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Expected value of HDF5 attribute to check.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasArchiveMember">
+    <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recursively specify additional assertions as child elements about just the member contained in the archive specified by the regular expression ``path`` (e.g. ``<has_archive_member path=".*/my-file.txt"><not_has_text text="EDK72998.1" /></has_archive_member>``). Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``.]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="TestAssertion" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="path" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The regular expression specifying the archive member.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="Inputs">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Consists of all elements that define the
@@ -3134,7 +3178,7 @@ validators is in the ``validator_types`` dictionary in
 Valid values include: ``expression``, ``regex``, ``in_range``, ``length``,
 ``metadata``, ``unspecified_build``, ``no_options``, ``empty_field``,
 ``dataset_metadata_in_file``, ``dataset_metadata_in_data_table``,
-``dataset_ok_validator``]]></xs:documentation>
+``dataset_ok_validator``, ``dataset_metadata_in_range``]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="message" type="xs:string">
@@ -5305,6 +5349,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="empty_field"/>
       <xs:enumeration value="dataset_metadata_in_file"/>
       <xs:enumeration value="dataset_metadata_in_data_table"/>
+      <xs:enumeration value="dataset_metadata_in_range"/>
       <xs:enumeration value="dataset_ok_validator"/>
     </xs:restriction>
   </xs:simpleType>

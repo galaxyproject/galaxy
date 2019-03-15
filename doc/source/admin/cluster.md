@@ -2,7 +2,7 @@
 
 Galaxy is designed to run jobs on your local system by default, but it can be configured to run jobs on a cluster.  The front-end Galaxy application runs on a single server as usual, but tools are run on cluster nodes instead.
 
-A [general reference for the job configuration file](jobs.html) is also available.
+A [general reference for the job configuration file](jobs.md) is also available.
 
 ## Distributed Resources Managers
 
@@ -12,7 +12,7 @@ Galaxy is known to work with:
 * [PBS Professional](https://www.pbsworks.com/PBSProduct.aspx?n=PBS-Professional&c=Overview-and-Capabilities)
 * [Open Grid Engine](http://gridscheduler.sourceforge.net/)
 * [Univa Grid Engine](http://www.univa.com/products/grid-engine.php) (previously known as Sun Grid Engine and Oracle Grid Engine)
-* [Platform LSF](https://www.ibm.com/us-en/marketplace/hpc-workload-management)
+* [Spectrum LSF](https://www.ibm.com/us-en/marketplace/hpc-workload-management)
 * [HTCondor](http://research.cs.wisc.edu/htcondor/)
 * [Slurm](https://slurm.schedmd.com/)
 * [Galaxy Pulsar](#pulsar) (formerly LWR)
@@ -70,7 +70,7 @@ You may also find that attribute caching in your filesystem causes problems with
 
 ## Runner Configuration
 
-**This documentation covers configuration of the various runner plugins, not how to distribute jobs to the various plugins.** Consult the [job configuration file documentation](jobs.html) for full details on the correct syntax, and for instructions on how to configure tools to actually use the runners explained below.
+**This documentation covers configuration of the various runner plugins, not how to distribute jobs to the various plugins.** Consult the [job configuration file documentation](jobs.md) for full details on the correct syntax, and for instructions on how to configure tools to actually use the runners explained below.
 
 ### Local
 
@@ -105,7 +105,7 @@ The value of *local_slots* is used to define [GALAXY_SLOTS](https://galaxyprojec
 
 ### DRMAA
 
-Runs jobs via any DRM which supports the [Distributed Resource Management Application API](http://www.drmaa.org). Most commonly used to interface with [PBS Professional](https://www.pbsworks.com/PBSProduct.aspx?n=PBS-Professional&c=Overview-and-Capabilities), [Sun Grid Engine](http://gridscheduler.sourceforge.net/), [Univa Grid Engine](http://www.univa.com/products/grid-engine.php), [Platform LSF](https://www.ibm.com/us-en/marketplace/hpc-workload-management), and [SLURM](https://slurm.schedmd.com/).
+Runs jobs via any DRM which supports the [Distributed Resource Management Application API](http://www.drmaa.org). Most commonly used to interface with [PBS Professional](https://www.pbsworks.com/PBSProduct.aspx?n=PBS-Professional&c=Overview-and-Capabilities), [Sun Grid Engine](http://gridscheduler.sourceforge.net/), [Univa Grid Engine](http://www.univa.com/products/grid-engine.php), [Spectrum LSF](https://www.ibm.com/us-en/marketplace/hpc-workload-management), and [SLURM](https://slurm.schedmd.com/).
 
 #### Dependencies
 
@@ -121,7 +121,7 @@ galaxy_server% export DRMAA_LIBRARY_PATH=/galaxy/sge/lib/lx24-amd64/libdrmaa.so
 
 **Limitations**: The DRMAA runner does not work if Galaxy is configured to run jobs as real user, because in this setting jobs are submitted with an external script, i.e. in an extra DRMAA session, and the session based (python) DRMAA library can only query jobs within the session in which started them. Furthermore, the DRMAA job runner only distinguishes successful and failed jobs and ignores information about possible failure sources, e.g. runtime / memory violation, which could be used for job resubmission. Specialized job runners are abvailable that are not affected by these limitations, e.g. univa and slurm runners.
 
-**TORQUE**: The DRMAA runner can also be used (instead of the [PBS](cluster.html#pbs) runner) to submit jobs to TORQUE, however, problems have been reported when using the `libdrmaa.so` provided with TORQUE.  Using this library will result in a segmentation fault when the drmaa runner attempts to write the job template, and any native job runner options will not be passed to the DRM.  Instead, you should compile the [pbs-drmaa](http://apps.man.poznan.pl/trac/pbs-drmaa/wiki) library and use this as the value for `$DRMAA_LIBRARY_PATH`.
+**TORQUE**: The DRMAA runner can also be used (instead of the [PBS](#pbs) runner) to submit jobs to TORQUE, however, problems have been reported when using the `libdrmaa.so` provided with TORQUE.  Using this library will result in a segmentation fault when the drmaa runner attempts to write the job template, and any native job runner options will not be passed to the DRM.  Instead, you should compile the [pbs-drmaa](http://apps.man.poznan.pl/trac/pbs-drmaa/wiki) library and use this as the value for `$DRMAA_LIBRARY_PATH`.
 
 **Slurm**: You will need to install [slurm-drmaa](https://github.com/natefoo/slurm-drmaa/). In production on [usegalaxy.org](https://usegalaxy.org) we observed pthread deadlocks in slurm-drmaa that would cause Galaxy job handlers to eventually stop processing jobs until the handler was restarted. Compiling slurm-drmaa using the compiler flags `-g -O0` (keep debugging symbols, disable optimization) caused the deadlock to disappear.
 
@@ -143,10 +143,10 @@ Most [options defined in the DRMAA interface](http://www.ogf.org/documents/GFD.1
 
 ### Univa
 
-The so called Univa job runner extends the DRMAA job runner to circumvent the limitations of the DRMAA runner. Despite its name it __may__ be used for various DRMAA based setups in the following cases (currently this has been tested for UNIVA only): 
+The so called Univa job runner extends the DRMAA job runner to circumvent the limitations of the DRMAA runner. Despite its name it __may__ be used for various DRMAA based setups in the following cases (currently this has been tested for UNIVA only):
 
 - If jobs run as the Galaxy user it can be used for any DRMAA based system.
-- If jobs are not run as Galaxy user (e.g. as real user) then the runner can be used if `qstat` and `qacct` are available to query jobs. 
+- If jobs are not run as Galaxy user (e.g. as real user) then the runner can be used if `qstat` and `qacct` are available to query jobs.
 
 Unlike the DRMAA runner which uses only `drmaa.job_status` to query jobs the Univa runner uses `drmaa.job_status` and `drmaa.wait` if possible and if this fails (e.g. in a real user setting) `qstat` and `qacct` to query jobs.
 
@@ -234,7 +234,7 @@ Runs jobs via a command-line/shell interface. The CLI runner itself takes plugin
 * Shell: For interacting with different shell types. Plugins for rsh, ssh, and gsi-ssh are provided.
 * Job: For interacting with a DRM via the DRM's command-line interface. A plugin for Torque is provided
 
-If you are interested in developing additional plugins, see `galaxy-app/lib/galaxy/jobs/runners/cli_*` for examples.
+If you are interested in developing additional plugins, see `lib/galaxy/jobs/runners/util/cli/` for examples.
 
 
 #### Parameters and Configuration
@@ -243,10 +243,10 @@ The cli runner requires, at a minimum, two parameters:
 
 ```eval_rst
 ``shell_plugin``
-    This required parameter should be [a cli_shell class](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/shell)</a> currently one of: ``LocalShell``, ``RemoteShell``, ``SecureShell``, ``ParamikoShell``, or ``GlobusSecureShell`` describing which shell plugin to use.
+    This required parameter should be `a cli_shell class <https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/shell>`_ currently one of: ``LocalShell``, ``RemoteShell``, ``SecureShell``, ``ParamikoShell``, or ``GlobusSecureShell`` describing which shell plugin to use.
 
 ``job_plugin``
-    This required parameter should be [a cli_job class](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/job) currently one of ``Torque``, ``SlurmTorque``, or ``Slurm``.
+    This required parameter should be `a cli_job class <https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/jobs/runners/util/cli/job>`_ currently one of ``Torque``, ``SlurmTorque``, or ``Slurm``.
 ```
 
 All other parameters are specific to the chosen plugins. Parameters to pass to the shell plugin begin with the id `shell_` and parameters to pass to the job plugin begin with the id `job_`.
@@ -284,7 +284,7 @@ The ``ParamikoShell`` option was added in 17.09 with this pull request https://g
 The `Torque` plugin uses `qsub(1)` and `qstat(1)` to interface with a Torque server on the command line.
 
 ```eval_rst
-``job_<PBS_JOB_ATTR>`` </td>
+``job_<PBS_JOB_ATTR>``
     ``<PBS_JOB_ATTR>`` refers to a ``qsub(1B)`` or ``pbs_submit(3B)`` argument/attribute
     (e.g. ``<param id="job_Resource_List">walltime=24:00:00,ncpus=4</param>``).
 ```
@@ -296,7 +296,7 @@ Torque attributes can be defined in either their short (e.g. [qsub(1B)](http://c
 
 ```xml
 <plugins>
-    <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:CLIJobRunner"/>
+    <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner"/>
 </plugins>
 <destinations default="cli_default">
     <destination id="cli_default" runner="cli">
@@ -334,7 +334,7 @@ You'll need to ensure that all datasets are stored on the filesystem such that t
 
 The directory specified in `new_file_path` in the Galaxy config should be world-writable, cluster-accessible (via the same absolute path) and have its sticky bit (+t) set. This directory should also be cleaned regularly using a script or program as is appropriate for your site, since temporary files created here may not always be cleaned up under certain conditions.
 
-The `outputs_to_working_directory` option in the Galaxy config **must** be set to `True`. This ensures that a tool/job's outputs are written to the temporary working directory, which (when using the real user system) is owned by the real user who submitted the job. If left set to the default (`False`), the tool will attempt to write directly to the directory specified in `file_path` (by default, `galaxy-app/database/files/`), which must be owned by the Galaxy user (and thus will not be writable by the real user).
+The `outputs_to_working_directory` option in the Galaxy config **must** be set to `True`. This ensures that a tool/job's outputs are written to the temporary working directory, which (when using the real user system) is owned by the real user who submitted the job. If left set to the default (`False`), the tool will attempt to write directly to the directory specified in `file_path` (by default, `database/files/`), which must be owned by the Galaxy user (and thus will not be writable by the real user).
 
 For releases later than 17.05 you can configure the method how the system user is determined in `config/galaxy.yml` via the variable `real_system_username`. For determining the system user from the email adress stored in Galaxy set it to `user_email`, otherwise for determining the system user from the Galaxy user name set it to `username`.
 

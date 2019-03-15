@@ -3,6 +3,7 @@ API operations for Workflows
 """
 from __future__ import absolute_import
 
+import io
 import json
 import logging
 import os
@@ -23,6 +24,7 @@ from galaxy.managers import (
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tools.parameters import populate_state
+from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
@@ -298,12 +300,13 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.RequestParameterInvalidException(message)
 
         if 'installed_repository_file' in payload:
+            if not trans.user_is_admin:
+                raise exceptions.AdminRequiredException()
             installed_repository_file = payload.get('installed_repository_file', '')
             if not os.path.exists(installed_repository_file):
-                raise exceptions.MessageException("Repository file '%s' not found.")
+                raise exceptions.RequestParameterInvalidException("Workflow file '%s' not found" % installed_repository_file)
             elif os.path.getsize(os.path.abspath(installed_repository_file)) > 0:
-                workflow_data = None
-                with open(installed_repository_file, 'rb') as f:
+                with io.open(installed_repository_file, encoding='utf-8') as f:
                     workflow_data = f.read()
                 return self.__api_import_from_archive(trans, workflow_data)
             else:
@@ -561,6 +564,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Builds module models for the workflow editor.
         """
         inputs = payload.get('inputs', {})
+        trans.workflow_building_mode = workflow_building_modes.ENABLED
         module = module_factory.from_dict(trans, payload)
         if 'tool_state' not in payload:
             module_state = {}

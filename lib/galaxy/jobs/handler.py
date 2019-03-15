@@ -28,8 +28,8 @@ from galaxy.jobs import (
     TaskWrapper
 )
 from galaxy.jobs.mapper import JobNotReadyException
-from galaxy.util.handlers import HANDLER_ASSIGNMENT_METHODS
 from galaxy.util.monitors import Monitors
+from galaxy.web.stack.handlers import HANDLER_ASSIGNMENT_METHODS
 from galaxy.web.stack.message import JobHandlerMessage
 
 log = logging.getLogger(__name__)
@@ -361,8 +361,10 @@ class JobHandlerQueue(Monitors):
                     job.text_metrics = copied_from_job.text_metrics
                     job.dependencies = copied_from_job.dependencies
                     job.state = copied_from_job.state
-                    job.stderr = copied_from_job.stderr
-                    job.stdout = copied_from_job.stdout
+                    job.job_stderr = copied_from_job.job_stderr
+                    job.job_stdout = copied_from_job.job_stdout
+                    job.tool_stderr = copied_from_job.tool_stderr
+                    job.tool_stdout = copied_from_job.tool_stdout
                     job.command_line = copied_from_job.command_line
                     job.traceback = copied_from_job.traceback
                     job.tool_version = copied_from_job.tool_version

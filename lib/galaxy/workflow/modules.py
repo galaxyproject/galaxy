@@ -19,9 +19,11 @@ from galaxy.exceptions import ToolMissingException
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
 from galaxy.tools import (
+    DatabaseOperationTool,
     DefaultToolState,
     ToolInputsNotReadyException
 )
+from galaxy.tools.actions import filter_output
 from galaxy.tools.execute import execute, MappingParameters, PartialJobExecution
 from galaxy.tools.parameters import (
     check_param,
@@ -33,6 +35,7 @@ from galaxy.tools.parameters.basic import (
     ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
+    HiddenToolParameter,
     is_runtime_value,
     parameter_types,
     runtime_to_json,
@@ -314,13 +317,10 @@ class WorkflowModule(object):
 
     def _find_collections_to_match(self, progress, step, all_inputs):
         collections_to_match = matching.CollectionsToMatch()
+        dataset_collection_type_descriptions = self.trans.app.dataset_collections_service.collection_type_descriptions
 
         for input_dict in all_inputs:
             name = input_dict["name"]
-            multiple = input_dict["multiple"]
-            if multiple:
-                continue
-
             data = progress.replacement_for_input(step, input_dict)
             can_map_over = hasattr(data, "collection")  # and data.collection.allow_implicit_mapping
 
@@ -329,13 +329,23 @@ class WorkflowModule(object):
 
             is_data_param = input_dict["input_type"] == "dataset"
             if is_data_param:
-                collections_to_match.add(name, data)
+                multiple = input_dict["multiple"]
+                if multiple:
+                    # multiple="true" data input, acts like "list" collection_type.
+                    # just need to figure out subcollection_type_description
+                    history_query = HistoryQuery.from_collection_types(
+                        ['list'],
+                        dataset_collection_type_descriptions,
+                    )
+                    subcollection_type_description = history_query.can_map_over(data)
+                    if subcollection_type_description:
+                        collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
+                else:
+                    collections_to_match.add(name, data)
                 continue
 
             is_data_collection_param = input_dict["input_type"] == "dataset_collection"
             if is_data_collection_param:
-                dataset_collection_type_descriptions = self.trans.app.dataset_collections_service.collection_type_descriptions
-
                 history_query = HistoryQuery.from_collection_types(
                     input_dict.get("collection_types", None),
                     dataset_collection_type_descriptions,
@@ -411,6 +421,8 @@ class SubWorkflowModule(WorkflowModule):
                     extensions=["data"],
                     input_type=step_to_input_type[step_type],
                 )
+                if step.type == 'data_collection_input':
+                    input['collection_type'] = step.tool_inputs.get('collection_type') if step.tool_inputs else None
                 inputs.append(input)
         return inputs
 
@@ -432,7 +444,8 @@ class SubWorkflowModule(WorkflowModule):
             subworkflow_dict = workflow_contents_manager._workflow_to_dict_editor(trans=self.trans,
                                                                                   stored=self.subworkflow.stored_workflow,
                                                                                   workflow=self.subworkflow,
-                                                                                  tooltip=False)
+                                                                                  tooltip=False,
+                                                                                  is_subworkflow=True)
             for order_index in sorted(subworkflow_dict['steps']):
                 step = subworkflow_dict['steps'][order_index]
                 data_outputs = step['outputs']
@@ -882,6 +895,8 @@ class ToolModule(WorkflowModule):
                     skip = not visible or not is_data
                 elif connectable_only:
                     skip = not visible or not (is_data or is_connectable)
+                elif isinstance(input, HiddenToolParameter):
+                    skip = False
                 else:
                     skip = not visible
                 if not skip:
@@ -919,6 +934,8 @@ class ToolModule(WorkflowModule):
         data_outputs = []
         if self.tool:
             for name, tool_output in self.tool.outputs.items():
+                if filter_output(tool_output, self.state.inputs):
+                    continue
                 extra_kwds = {}
                 if tool_output.collection:
                     extra_kwds["collection"] = True
@@ -1158,8 +1175,9 @@ class ToolModule(WorkflowModule):
 
                 replacement = NO_REPLACEMENT
                 if iteration_elements and prefixed_name in iteration_elements:
-                    if isinstance(input, DataToolParameter):
-                        # Pull out dataset instance from element.
+                    if isinstance(input, DataToolParameter) and hasattr(iteration_elements[prefixed_name], 'dataset_instance'):
+                        # Pull out dataset instance (=HDA) from element and set a temporary element_identifier attribute
+                        # See https://github.com/galaxyproject/galaxy/pull/1693 for context.
                         replacement = iteration_elements[prefixed_name].dataset_instance
                         if hasattr(iteration_elements[prefixed_name], u'element_identifier') and iteration_elements[prefixed_name].element_identifier:
                             replacement.element_identifier = iteration_elements[prefixed_name].element_identifier
@@ -1278,7 +1296,7 @@ class ToolModule(WorkflowModule):
         flush_required = False
         effective_post_job_actions = self._effective_post_job_actions(step)
         for pja in effective_post_job_actions:
-            if pja.action_type in ActionBox.immediate_actions:
+            if pja.action_type in ActionBox.immediate_actions or isinstance(self.tool, DatabaseOperationTool):
                 ActionBox.execute(self.trans.app, self.trans.sa_session, pja, job, replacement_dict)
             else:
                 pjaa = model.PostJobActionAssociation(pja, job_id=job.id)

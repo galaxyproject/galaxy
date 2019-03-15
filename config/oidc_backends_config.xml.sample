@@ -22,4 +22,13 @@
          login to Galaxy using their Google account.
         -->
     </provider>
+
+    <!-- Documentation: http://globus-integration-examples.readthedocs.io -->
+    <provider name="Globus">
+        <client_id> ... </client_id>
+        <client_secret> ... /client_secret>
+        <redirect_uri>http://localhost:8080/authnz/globus/callback</redirect_uri>
+
+        <prompt>consent</prompt>
+    </provider>
 </OIDC>

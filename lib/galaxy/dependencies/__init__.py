@@ -90,7 +90,7 @@ class ConditionalDependencies(object):
     def check_psycopg2_binary(self):
         return self.config["database_connection"].startswith("postgres")
 
-    def check_mysql_python(self):
+    def check_mysqlclient(self):
         return self.config["database_connection"].startswith("mysql")
 
     def check_drmaa(self):
@@ -103,6 +103,9 @@ class ConditionalDependencies(object):
 
     def check_pbs_python(self):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
+
+    def check_pykube(self):
+        return "galaxy.jobs.runners.kubernetes:KubernetesJobRunner" in self.job_runners
 
     def check_chronos_python(self):
         return "galaxy.jobs.runners.chronos:ChronosJobRunner" in self.job_runners

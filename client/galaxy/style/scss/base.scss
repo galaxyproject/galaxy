@@ -30,7 +30,6 @@ $fa-font-path: "../../../node_modules/font-awesome/fonts/";
 @import "ui.scss";
 @import "library.scss";
 @import "trackster.scss";
-@import "autocomplete_tagging.scss";
 @import "toastr.scss";
 @import "jstree.scss";
 @import "tour.scss";
@@ -233,28 +232,14 @@ body {
     .panel-header-buttons {
         order: 9999;
         float: right;
-    }
-    .panel-header-button {
-        text-decoration: none;
-        display: inline-block;
-        cursor: pointer;
-        width: 1.2rem;
-        text-align: center;
-        padding: 0px;
-        &:not(:last-child) {
-            margin-right: 2px;
-        }
-        &:hover {
-            color: $brand-info;
-        }
-        // Bootstrap style span caret needs positioning
-        .caret {
-            margin-top: 7px;
-        }
-        // Another way to get a caret
-        &.popup {
-            padding-right: 1.75em;
-            background: url(../../images/dropdownarrow.png) no-repeat right 7px;
+        .panel-header-button {
+            text-align: center;
+            &:not(:last-child) {
+                @extend .mr-2;
+            }
+            &:hover {
+                color: $brand-info;
+            }
         }
     }
 }
@@ -608,7 +593,7 @@ div.toolFormRow {
         @extend .py-1;
         @extend .px-2;
         cursor: move;
-        background: $panel-bg-color;
+        background: $brand-secondary;
     }
     .toolFormBody {
         @extend .card-body;
@@ -1559,8 +1544,6 @@ div.toolPanelLabel {
 }
 
 div.toolTitle {
-    padding-top: 5px;
-    padding-bottom: 5px;
     margin-left: 10px;
     margin-right: 10px;
     display: block;
@@ -1573,9 +1556,15 @@ div.toolTitle {
 div a.tool-link {
     text-decoration: none;
     display: block;
+    padding-top: 5px;
+    padding-bottom: 5px;
 
     span.tool-old-link {
         text-decoration: underline;
+    }
+
+    &:hover {
+        background: darken($panel-bg-color, 5%);
     }
 }
 
@@ -1778,11 +1767,6 @@ div.toolTitleNoSection {
 
 .modal-header-body {
     padding: 2px;
-}
-
-.communication-iframe {
-    width: 100%;
-    height: 100%;
 }
 
 .close-modal {

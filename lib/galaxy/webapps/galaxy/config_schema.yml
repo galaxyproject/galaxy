@@ -25,33 +25,16 @@ mapping:
     required: true
     mapping:
 
-      filter-with:
-        type: str
-        default: gzip
-        required: false
-        desc: |
-          If not running behind a proxy server, you may want to enable gzip compression
-          to decrease the size of data transferred over the network.  If using a proxy
-          server, please enable gzip compression there instead.
-
-      filter-with:
-        type: str
-        default: proxy-prefix
-        required: false
-        desc: |
-          If running behind a proxy server and Galaxy is served from a subdirectory,
-          enable the proxy-prefix filter and set the prefix in the
-          [filter:proxy-prefix] section above.
-
       cookie_path:
         type: str
         default: ''
         required: false
         desc: |
-          If proxy-prefix is enabled and you're running more than one Galaxy instance
-          behind one hostname, you will want to set this to the same path as the prefix
-          in the filter above.  This value becomes the "path" attribute set in the
-          cookie so the cookies from each instance will not clobber each other.
+          When running multiple Galaxy instances under separate URL prefixes on a
+          single hostname, you will want to set this to the same path as the prefix set
+          in the uWSGI "mount" configuration option above. This value becomes the "path"
+          attribute set in the cookie so the cookies from one instance will not clobber
+          those from another.
 
       database_connection:
         type: str
@@ -161,14 +144,16 @@ mapping:
         default: database/files
         required: false
         desc: |
-          Dataset files are stored in this directory.
+          Where dataset files are stored. It must accessible at the same path on any cluster
+          nodes that will run Galaxy jobs, unless using Pulsar.
 
       new_file_path:
         type: str
         default: database/tmp
         required: false
         desc: |
-          Temporary files are stored in this directory.
+          Where temporary files are stored. It must accessible at the same path on any cluster
+          nodes that will run Galaxy jobs, unless using Pulsar.
 
       tool_config_file:
         type: str
@@ -182,16 +167,14 @@ mapping:
 
       check_migrate_tools:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Enable / disable checking if any tools defined in the above non-shed
           tool_config_files (i.e., tool_conf.xml) have been migrated from the Galaxy
-          code distribution to the Tool Shed.  This setting should generally be set to
-          False only for development Galaxy environments that are often rebuilt from
-          scratch where migrated tools do not need to be available in the Galaxy tool
-          panel.  If the following setting remains commented, the default setting will
-          be True.
+          code distribution to the Tool Shed. This functionality is largely untested
+          in modern Galaxy releases and has serious issues such as #7273 and the possibility
+          of slowing down Galaxy startup, so the default and recommended value is False.
 
       migrated_tools_config:
         type: str
@@ -953,6 +936,13 @@ mapping:
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
 
+      user_preferences_extra_conf_path:
+        type: str
+        default: 'config/user_preferences_extra_conf.yml'
+        required: false
+        desc: |
+          Location of the configuration file containing extra user preferences.
+
       default_locale:
         type: str
         default: auto
@@ -1027,41 +1017,6 @@ mapping:
         required: false
         desc: |
           The URL linked by the "Support" link in the "Help" menu.
-
-      biostar_url:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_key_name:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_key:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_enable_bug_reports:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_never_authenticate:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
 
       citation_url:
         type: str
@@ -2094,25 +2049,6 @@ mapping:
         required: false
         desc: |
           Enable the new container interface for Interactive Environments
-
-      tool_submission_burst_threads:
-        type: int
-        default: 1
-        required: false
-        desc: |
-          Set the following to a number of threads greater than 1 to spawn
-          a Python task queue for dealing with large tool submissions (either
-          through the tool form or as part of an individual workflow step across
-          large collection). This affects workflow scheduling and web processes,
-          not job handlers. This is a beta option and should not be used in production.
-
-      tool_submission_burst_at:
-        type: int
-        default: 10
-        required: false
-        desc: |
-          If tool_submission_burst_threads is set to a number greater than 1, this
-          is the number of jobs to schedule at which the task queue will be created.
 
       enable_beta_workflow_modules:
         type: bool
