@@ -22,7 +22,7 @@
         ${h.javascript_link( app_root + "aequatus-vis/scripts/scriptaculous/prototype.js" )}
 
 ## aequatus-vis
-        ${h.javascript_link( app_root + "aequatus-vis/scripts/d3.js" )}
+        ${h.javascript_link( app_root + "aequatus-vis/scripts/d3.min.js" )}
         ${h.javascript_link( app_root + "aequatus-vis/scripts/init.js" )}
         ${h.javascript_link( app_root + "aequatus-vis/scripts/geneView.js" )}
         ${h.javascript_link( app_root + "aequatus-vis/scripts/drawGene.js" )}
