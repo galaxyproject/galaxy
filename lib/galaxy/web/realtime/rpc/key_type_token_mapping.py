@@ -1,5 +1,6 @@
-import uwsgi
 import sqlite3
+
+import uwsgi
 
 
 realtime_db_file = uwsgi.opt["sessions"]

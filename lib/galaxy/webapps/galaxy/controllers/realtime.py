@@ -11,7 +11,6 @@ from galaxy.web import url_for
 from galaxy.web.base.controller import (
     BaseUIController,
 )
-
 from galaxy.web.framework.helpers import (
     grids,
     time_ago,
