@@ -2327,7 +2327,7 @@ class RealTimeTool(Tool):
         if job:
             realtimetool = job.realtime_tool
             if realtimetool:
-                return url_for(controller='realtime', action='index', realtime_id=self.app.security.encode_id(realtimetool.id))
+                return self.app.url_for(controller='realtime', action='index', realtime_id=self.app.security.encode_id(realtimetool.id))
         return None
 
 
