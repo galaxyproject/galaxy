@@ -1,7 +1,10 @@
 """Manager and Serializer for library datasets."""
 import logging
 
-from galaxy import util
+from galaxy import (
+    model,
+    util
+)
 from galaxy.exceptions import (
     InsufficientPermissionsException,
     InternalServerError,
@@ -19,6 +22,7 @@ log = logging.getLogger(__name__)
 
 class LibraryDatasetsManager(datasets.DatasetAssociationManager):
     """Interface/service object for interacting with library datasets."""
+    model_class = model.LibraryDatasetDatasetAssociation
 
     def __init__(self, app):
         self.app = app
@@ -86,9 +90,11 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             ldda.message = new_message
             changed = True
         new_file_ext = new_data.get('file_ext', None)
-        if new_file_ext is not None and new_file_ext != ldda.extension:
+        if new_file_ext == 'auto':
+            self.detect_datatype(trans, ldda)
+        elif new_file_ext is not None and new_file_ext != ldda.extension:
             ldda.extension = new_file_ext
-            # TODO trigger set metadata here
+            self.set_metadata(trans, ldda)
             changed = True
         new_genome_build = new_data.get('genome_build', None)
         if new_genome_build is not None and new_genome_build != ldda.dbkey:
@@ -115,7 +121,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
                 validated_payload[key] = val
             if key in ('file_ext'):
                 datatype = self.app.datatypes_registry.get_datatype_by_extension(val)
-                if datatype is None:
+                if datatype is None and val not in ("auto",):
                     raise RequestParameterInvalidException('This Galaxy does not recognize the datatype of: %s' % (val))
                 validated_payload[key] = val
             if key in ('genome_build'):

@@ -29,7 +29,9 @@ var LibraryDatasetView = Backbone.View.extend({
         "click .make-private": "makeDatasetPrivate",
         "click .remove-restrictions": "removeDatasetRestrictions",
         "click .toolbtn_save_permissions": "savePermissions",
-        "click .toolbtn_save_modifications": "saveModifications"
+        "click .toolbtn_save_modifications": "saveModifications",
+        "click .toolbtn_detect_datatype": "detectDatatype"
+
     },
 
     // genome select
@@ -398,6 +400,12 @@ var LibraryDatasetView = Backbone.View.extend({
         return select_options;
     },
 
+    detectDatatype: function(options){
+        let ld = this.model;
+        ld.set("file_ext", 'auto');
+        this._submitModification(ld);
+    },
+
     /**
      * Save the changes made to the library dataset.
      */
@@ -434,12 +442,19 @@ var LibraryDatasetView = Backbone.View.extend({
             ld.set("file_ext", new_ext);
             is_changed = true;
         }
-        var dataset_view = this;
         if (is_changed) {
-            ld.save(null, {
+            this._submitModification(ld);
+        } else {
+            this.render();
+            mod_toastr.info("Nothing has changed.");
+        }
+    },
+
+    _submitModification(library_dataset){
+        library_dataset.save(null, {
                 patch: true,
-                success: function(ld) {
-                    dataset_view.render();
+                success: library_dataset => {
+                    this.render();
                     mod_toastr.success("Changes to library dataset saved.");
                 },
                 error: function(model, response) {
@@ -450,10 +465,6 @@ var LibraryDatasetView = Backbone.View.extend({
                     }
                 }
             });
-        } else {
-            dataset_view.render();
-            mod_toastr.info("Nothing has changed.");
-        }
     },
 
     copyToClipboard: function(e) {
@@ -617,6 +628,10 @@ var LibraryDatasetView = Backbone.View.extend({
                 '<button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-secondary toolbtn_modify_dataset toolbar-item mr-1" type="button">',
                 '<span class="fa fa-pencil"></span>',
                 "&nbsp;Modify",
+                "</button>",
+                '<button data-toggle="tooltip" data-placement="top" title="Attempt to detect the format of dataset" class="btn btn-secondary toolbtn_detect_datatype toolbar-item mr-1" type="button">',
+                '<span class="fa fa-undo"></span>',
+                "&nbsp;Auto-detect datatype",
                 "</button>",
                 "<% } %>",
                 '<% if (item.get("can_user_manage")) { %>',

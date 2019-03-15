@@ -18,8 +18,11 @@ class SetMetadataToolAction(ToolAction):
         Execute using a web transaction.
         """
         trans.check_user_activation()
-        job, odict = self.execute_via_app(tool, trans.app, trans.get_galaxy_session().id,
-                                          trans.history.id, trans.user, incoming, set_output_hid,
+        session = trans.get_galaxy_session()
+        session_id = session and session.id
+        history_id = trans.history and trans.history.id
+        job, odict = self.execute_via_app(tool, trans.app, session_id,
+                                          history_id, trans.user, incoming, set_output_hid,
                                           overwrite, history, job_params)
         # FIXME: can remove this when logging in execute_via_app method.
         trans.log_event("Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
