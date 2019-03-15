@@ -22,8 +22,8 @@ from galaxy.util.sleeper import Sleeper
 from .s3 import parse_config_xml
 from ..objectstore import convert_bytes, ObjectStore
 try:
-    from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
-    from cloudbridge.cloud.interfaces.exceptions import InvalidNameException
+    from cloudbridge.factory import CloudProviderFactory, ProviderList
+    from cloudbridge.interfaces.exceptions import InvalidNameException
 except ImportError:
     CloudProviderFactory = None
     ProviderList = None
