@@ -536,6 +536,8 @@
     <datatype extension="stockholm" type="galaxy.datatypes.msa:Stockholm_1_0" display_in_upload="true"/>
     <datatype extension="xmfa" type="galaxy.datatypes.msa:MauveXmfa" display_in_upload="true"/>
     <datatype extension="cel" type="galaxy.datatypes.binary:Cel" display_in_upload="true"/>
+    <datatype extension="gpr" type="galaxy.datatypes.microarrays:Gpr" display_in_upload="true"/>
+    <datatype extension="gal" type="galaxy.datatypes.microarrays:Gal" display_in_upload="true"/>
     <datatype extension="rdata" type="galaxy.datatypes.binary:RData" display_in_upload="true" description="Stored data from an R session"/>
     <datatype extension="rdata.sce" type="galaxy.datatypes.binary:RData" description="Stored RDS from a SingleCellObject" subclass="true" display_in_upload="true"/>
     <datatype extension="oxlicg" type="galaxy.datatypes.binary:OxliCountGraph" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -867,6 +869,8 @@
     <sniffer type="galaxy.datatypes.msa:InfernalCM"/>
     <sniffer type="galaxy.datatypes.annotation:SnapHmm"/>
     <sniffer type="galaxy.datatypes.binary:Cel"/>
+    <sniffer type="galaxy.datatypes.microarrays:Gpr"/>
+    <sniffer type="galaxy.datatypes.microarrays:Gal"/>
     <sniffer type="galaxy.datatypes.binary:RData"/>
     <sniffer type="galaxy.datatypes.images:Jpg"/>
     <sniffer type="galaxy.datatypes.images:Png"/>

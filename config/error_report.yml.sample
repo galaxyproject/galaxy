@@ -34,14 +34,6 @@
 - type: sentry
   user_submission: false
 
-# Allow users to submit error reports to biostars. This requires that the
-# biostars integration is configured. This *only* makes sense when
-# user_submission is true, as it only generates the link for the user to click
-# on and submit the bug report, it does not actually submit the bug report on
-# their behalf.
-# - type: biostars
-#   user_submission: true
-
 # InfluxDB error reporting backend. You will need to `pip install
 # influxdb` in the galaxy virtualenv yourself. This sends well tagged
 # errors InfluxDB allowing you to notice relationships between tool errors and

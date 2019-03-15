@@ -157,14 +157,21 @@ var Terminal = Backbone.Model.extend({
         });
     },
     setMapOver: function(val) {
+        let output_val = val;
         if (this.multiple) {
-            return; // Cannot set this to be multirun...
+            // emulate list input
+            let description = new CollectionTypeDescription('list');
+            if (val.collectionType === description.collectionType) {
+                // No mapping over necessary
+                return;
+            }
+            output_val = val.effectiveMapOver ? val.effectiveMapOver(description): val;
         }
 
         if (!this.mapOver().equal(val)) {
             this.terminalMapping.setMapOver(val);
             _.each(this.node.output_terminals, outputTerminal => {
-                outputTerminal.setMapOver(val);
+                outputTerminal.setMapOver(output_val);
             });
         }
     },
@@ -407,11 +414,8 @@ var InputTerminal = BaseInputTerminal.extend({
                     // collection (yet...)
                     return false;
                 }
-                if (otherCollectionType.rank == 1) {
-                    return this._producesAcceptableDatatype(other);
-                } else {
-                    // TODO: Allow subcollection mapping over this as if it were
-                    // a list collection input.
+                if (otherCollectionType.collectionType.endsWith('paired')) {
+                    // shouldn't process pairs in multiple="true" input
                     return false;
                 }
             }

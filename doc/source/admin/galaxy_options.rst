@@ -1249,6 +1249,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``user_preferences_extra_conf_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Location of the configuration file containing extra user
+    preferences.
+:Default: ``config/user_preferences_extra_conf.yml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~
 ``default_locale``
 ~~~~~~~~~~~~~~~~~~
@@ -1347,56 +1358,6 @@
     The URL linked by the "Support" link in the "Help" menu.
 :Default: ``https://galaxyproject.org/support/``
 :Type: str
-
-
-~~~~~~~~~~~~~~~
-``biostar_url``
-~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ````
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~
-``biostar_key_name``
-~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ````
-:Type: str
-
-
-~~~~~~~~~~~~~~~
-``biostar_key``
-~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ````
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``biostar_enable_bug_reports``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ``true``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``biostar_never_authenticate``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~

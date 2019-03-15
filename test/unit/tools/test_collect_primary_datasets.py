@@ -331,7 +331,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         else:
             tool_provided_metadata = LegacyToolProvidedMetadata(meta_file)
 
-        return self.tool.collect_primary_datasets(self.outputs, tool_provided_metadata, job_working_directory, "txt", input_dbkey="btau")
+        return self.tool.discover_outputs(self.outputs, {}, tool_provided_metadata, job_working_directory, job=None, input_ext="txt", input_dbkey="btau")
 
     def _replace_output_collectors(self, xml_str):
         # Rewrite tool as if it had been created with output containing

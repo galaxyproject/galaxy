@@ -770,7 +770,65 @@ galaxy:handler2: started
 
 ### Systemd
 
-TODO: write this section.
+Sample **uWSGI + Webless** strategy for systemd. More information on systemd.service environment
+settings can be found in the [documentation](http://0pointer.de/public/systemd-man/systemd.exec.html#Environment=)
+
+
+```ini
+[Unit]
+Description=Galaxy web handler
+After=network.target
+After=time-sync.target
+
+[Service]
+PermissionsStartOnly=true
+Type=simple
+User=galaxy
+Group=galaxy
+Restart=on-abort
+WorkingDirectory=/srv/galaxy/server
+TimeoutStartSec=10
+ExecStart=/srv/galaxy/venv/bin/uwsgi --yaml /srv/galaxy/config/galaxy.yml
+Environment=VIRTUAL_ENV=/srv/galaxy/venv PATH=/srv/galaxy/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+[Install]
+WantedBy=multi-user.target
+```
+
+For multiple handlers, the service file needs to be a [template unit](https://www.freedesktop.org/software/systemd/man/systemd.unit.html#Description>) - the filename follows the syntax 
+`<service_name>@<argument>.service` and all instances of `%I` in the service file are replaced with the `<argument>`
+
+```ini
+[Unit]
+Description=Galaxy job handlers
+After=network.target
+After=time-sync.target
+
+[Service]
+PermissionsStartOnly=true
+Type=simple
+User=galaxy
+Group=galaxy
+Restart=on-abort
+WorkingDirectory=/srv/galaxy/server
+TimeoutStartSec=10
+ExecStart=/srv/galaxy/venv/bin/python ./scripts/galaxy-main -c /srv/galaxy/config/galaxy.yml --server-name=handler%I --log-file=/srv/galaxy/log/handler%I.log
+#Environment=VIRTUAL_ENV=/srv/galaxy/venv PATH=/srv/galaxy/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+[Install]
+WantedBy=multi-user.target
+```
+
+We can now enable and start the web services with systemd 
+```console
+# systemctl enable galaxy-web
+Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-web.service to /etc/systemd/system/galaxy-web.service.
+# systemctl enable galaxy-handler@{0..3}
+Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-handler@0.service to /etc/systemd/system/galaxy-handler@.service.
+Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-handler@1.service to /etc/systemd/system/galaxy-handler@.service.
+Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-handler@2.service to /etc/systemd/system/galaxy-handler@.service.
+Created symlink from /etc/systemd/system/multi-user.target.wants/galaxy-handler@3.service to /etc/systemd/system/galaxy-handler@.service.
+# systemctl start galaxy-handler@{0..3}
+# systemctl start galaxy-web
+```
 
 ### Transparent Restart - Zerg Mode
 

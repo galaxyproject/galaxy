@@ -45,7 +45,7 @@ class TaggableManagerMixin(object):
     #: class of TagAssociation (e.g. HistoryTagAssociation)
     tag_assoc = None
 
-    # TODO: most of this can be done by delegating to the TagManager?
+    # TODO: most of this can be done by delegating to the GalaxyTagHandler?
     def get_tags(self, item):
         """
         Return a list of tag strings.
@@ -59,7 +59,7 @@ class TaggableManagerMixin(object):
         return _tags_from_strings(item, self.app.tag_handler, new_tags, user=user)
 
     # def tags_by_user( self, user, **kwargs ):
-    # TODO: here or TagManager
+    # TODO: here or GalaxyTagHandler
     #    pass
 
 

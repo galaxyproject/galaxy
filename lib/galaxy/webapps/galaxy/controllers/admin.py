@@ -1623,7 +1623,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     % (stop_msg, self.app.config.get("support_url", "https://galaxyproject.org/support/"))
                 if trans.app.config.track_jobs_in_database:
                     job = trans.sa_session.query(trans.app.model.Job).get(job_id)
-                    job.stderr = error_msg
+                    job.job_stderr = error_msg
                     job.set_state(trans.app.model.Job.states.DELETED_NEW)
                     trans.sa_session.add(job)
                 else:

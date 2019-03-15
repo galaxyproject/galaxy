@@ -18,11 +18,13 @@ DEFAULTS = {
 }
 
 BACKENDS = {
-    'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect'
+    'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
+    "globus": "social_core.backends.globus.GlobusOpenIdConnect"
 }
 
 BACKENDS_NAME = {
-    'google': 'google-openidconnect'
+    'google': 'google-openidconnect',
+    "globus": "globus"
 }
 
 AUTH_PIPELINE = (
@@ -96,13 +98,13 @@ class PSAAuthnz(IdentityProvider):
         # the just logged-in user.
         self.config[setting_name('INACTIVE_USER_LOGIN')] = True
 
-        if provider == 'google':
-            self._setup_google_backend(oidc_backend_config)
+        if provider in BACKENDS_NAME:
+            self._setup_idp(oidc_backend_config)
 
-    def _setup_google_backend(self, oidc_backend_config):
+    def _setup_idp(self, oidc_backend_config):
         self.config[setting_name('AUTH_EXTRA_ARGUMENTS')] = {'access_type': 'offline'}
-        self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_KEY'] = oidc_backend_config.get('client_id')
-        self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_SECRET'] = oidc_backend_config.get('client_secret')
+        self.config['KEY'] = oidc_backend_config.get('client_id')
+        self.config['SECRET'] = oidc_backend_config.get('client_secret')
         self.config['redirect_uri'] = oidc_backend_config.get('redirect_uri')
         if oidc_backend_config.get('prompt') is not None:
             self.config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')

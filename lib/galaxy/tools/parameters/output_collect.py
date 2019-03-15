@@ -6,6 +6,7 @@ import os
 import re
 from collections import namedtuple
 
+import galaxy.model
 from galaxy import util
 from galaxy.dataset_collections.structure import UninitializedTree
 from galaxy.tools.parser.output_collection_def import (
@@ -82,6 +83,9 @@ def collect_dynamic_outputs(
                         info = element.get("info", None)
                         link_data = discovered_file.match.link_data
 
+                        sources = fields_match.sources
+                        hashes = fields_match.hashes
+
                         # Create new primary dataset
                         name = fields_match.name or designation
 
@@ -94,7 +98,9 @@ def collect_dynamic_outputs(
                             filename=discovered_file.path,
                             info=info,
                             library_folder=library_folder,
-                            link_data=link_data
+                            link_data=link_data,
+                            sources=sources,
+                            hashes=hashes,
                         )
 
             add_elements_to_folder(elements, library_folder)
@@ -105,7 +111,7 @@ def collect_dynamic_outputs(
             object_id = destination.get("object_id")
             if object_id:
                 sa_session = tool.app.model.context
-                hdca = sa_session.query(app.model.HistoryDatasetCollectionAssociation).get(int(object_id))
+                hdca = sa_session.query(galaxy.model.HistoryDatasetCollectionAssociation).get(int(object_id))
             else:
                 name = unnamed_output_dict.get("name", "unnamed collection")
                 collection_type = unnamed_output_dict["collection_type"]
@@ -162,7 +168,10 @@ def collect_dynamic_outputs(
                         primary_dataset = None
                         if hda_id:
                             sa_session = tool.app.model.context
-                            primary_dataset = sa_session.query(app.model.HistoryDatasetAssociation).get(hda_id)
+                            primary_dataset = sa_session.query(galaxy.model.HistoryDatasetAssociation).get(hda_id)
+
+                        sources = fields_match.sources
+                        hashes = fields_match.hashes
 
                         dataset = job_context.create_dataset(
                             ext=ext,
@@ -174,6 +183,8 @@ def collect_dynamic_outputs(
                             info=info,
                             link_data=link_data,
                             primary_data=primary_dataset,
+                            sources=sources,
+                            hashes=hashes,
                         )
                         dataset.raw_set_dataset_state('ok')
                         if not hda_id:
@@ -285,6 +296,10 @@ class JobContext(object):
 
             link_data = discovered_file.match.link_data
             tag_list = discovered_file.match.tag_list
+
+            sources = discovered_file.match.sources
+            hashes = discovered_file.match.hashes
+
             dataset = self.create_dataset(
                 ext=ext,
                 designation=designation,
@@ -295,6 +310,8 @@ class JobContext(object):
                 metadata_source_name=metadata_source_name,
                 link_data=link_data,
                 tag_list=tag_list,
+                sources=sources,
+                hashes=hashes,
             )
             log.debug(
                 "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s] %s",
@@ -306,7 +323,6 @@ class JobContext(object):
             )
             element_datasets.append((element_identifiers, dataset))
 
-        app = self.app
         sa_session = self.sa_session
         job = self.job
 
@@ -330,7 +346,7 @@ class JobContext(object):
             if job:
                 element_identifier_str = ":".join(element_identifiers)
                 # Below was changed from '__new_primary_file_%s|%s__' % (name, designation )
-                assoc = app.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, element_identifier_str), dataset)
+                assoc = galaxy.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, element_identifier_str), dataset)
                 assoc.job = self.job
             sa_session.add(assoc)
 
@@ -352,6 +368,8 @@ class JobContext(object):
         link_data=False,
         primary_data=None,
         tag_list=[],
+        sources=[],
+        hashes=[],
     ):
         app = self.app
         sa_session = self.sa_session
@@ -366,10 +384,16 @@ class JobContext(object):
             primary_data.visible = visible
             primary_data.dbkey = dbkey
 
-        # Copy metadata from one of the inputs if requested.
-        metadata_source = None
-        if metadata_source_name:
-            metadata_source = self.inp_data[metadata_source_name]
+        for source_dict in sources:
+            source = galaxy.model.DatasetSource()
+            source.source_uri = source_dict["source_uri"]
+            primary_data.dataset.sources.append(source)
+
+        for hash_dict in hashes:
+            hash_object = galaxy.model.DatasetHash()
+            hash_object.hash_function = hash_dict["hash_function"]
+            hash_object.hash_value = hash_dict["hash_value"]
+            primary_data.dataset.hashes.append(hash_object)
 
         sa_session.flush()
 
@@ -387,6 +411,11 @@ class JobContext(object):
         # If match specified a name use otherwise generate one from
         # designation.
         primary_data.name = name
+
+        # Copy metadata from one of the inputs if requested.
+        metadata_source = None
+        if metadata_source_name:
+            metadata_source = self.inp_data[metadata_source_name]
 
         if metadata_source:
             primary_data.init_meta(copy_from=metadata_source)
@@ -459,7 +488,7 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
                 job = assoc.job
                 break
             if job:
-                assoc = app.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, designation), primary_data)
+                assoc = galaxy.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, designation), primary_data)
                 assoc.job = job
                 sa_session.add(assoc)
                 sa_session.flush()
@@ -738,6 +767,14 @@ class JsonCollectedDatasetMatch(object):
     def object_id(self):
         return self.as_dict.get("object_id", None)
 
+    @property
+    def sources(self):
+        return self.as_dict.get("sources", [])
+
+    @property
+    def hashes(self):
+        return self.as_dict.get("hashes", [])
+
 
 class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):
 
@@ -758,18 +795,18 @@ def _new_ldda(
     dbkey,
     library_folder,
 ):
-    ld = trans.app.model.LibraryDataset(folder=library_folder, name=name)
+    ld = galaxy.model.LibraryDataset(folder=library_folder, name=name)
     trans.sa_session.add(ld)
     trans.sa_session.flush()
     trans.app.security_agent.copy_library_permissions(trans, library_folder, ld)
 
-    ldda = trans.app.model.LibraryDatasetDatasetAssociation(name=name,
-                                                            extension=ext,
-                                                            dbkey=dbkey,
-                                                            library_dataset=ld,
-                                                            user=trans.user,
-                                                            create_dataset=True,
-                                                            sa_session=trans.sa_session)
+    ldda = galaxy.model.LibraryDatasetDatasetAssociation(name=name,
+                                                         extension=ext,
+                                                         dbkey=dbkey,
+                                                         library_dataset=ld,
+                                                         user=trans.user,
+                                                         create_dataset=True,
+                                                         sa_session=trans.sa_session)
     trans.sa_session.add(ldda)
     ldda.state = ldda.states.OK
     # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
@@ -798,13 +835,13 @@ def _new_hda(
     """Return a new unflushed HDA with dataset and permissions setup.
     """
     # Create new primary dataset
-    primary_data = app.model.HistoryDatasetAssociation(extension=ext,
-                                                       designation=designation,
-                                                       visible=visible,
-                                                       dbkey=dbkey,
-                                                       create_dataset=True,
-                                                       flush=False,
-                                                       sa_session=sa_session)
+    primary_data = galaxy.model.HistoryDatasetAssociation(extension=ext,
+                                                          designation=designation,
+                                                          visible=visible,
+                                                          dbkey=dbkey,
+                                                          create_dataset=True,
+                                                          flush=False,
+                                                          sa_session=sa_session)
     if permissions is not UNSET:
         app.security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
     sa_session.add(primary_data)

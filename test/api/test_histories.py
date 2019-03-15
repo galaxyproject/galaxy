@@ -2,7 +2,6 @@
 import time
 
 from requests import (
-    get,
     post,
     put
 )
@@ -180,11 +179,54 @@ class HistoriesApiTestCase(api.ApiTestCase):
         self._assert_status_code_is(create_response, 403)
 
     def test_import_export(self):
-        history_name = "for_export"
+        history_name = "for_export_default"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(history_id, content="1 2 3")
-        imported_history_id = self._reimport_history(history_id, history_name)
-        self._assert_history_length(imported_history_id, 1)
+        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
+        imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2)
+
+        def upload_job_check(job):
+            assert job["tool_id"] == "upload1"
+
+        def check_discarded(hda):
+            assert hda["state"] == "discarded", hda
+            assert hda["purged"] is True
+
+        self._check_imported_dataset(history_id=imported_history_id, hid=1, job_checker=upload_job_check)
+        self._check_imported_dataset(history_id=imported_history_id, hid=2, has_job=False, hda_checker=check_discarded, job_checker=upload_job_check)
+
+        imported_content = self.dataset_populator.get_history_dataset_content(
+            history_id=imported_history_id,
+            hid=1,
+        )
+        assert imported_content == "1 2 3\n"
+
+    def test_import_1901_histories(self):
+        f = open(self.test_data_resolver.get_filename("exports/1901_two_datasets.tgz"), 'rb')
+        import_data = dict(archive_source='', archive_file=f)
+        self._import_history_and_wait(import_data, "API Test History", wait_on_history_length=2)
+
+    def test_import_export_include_deleted(self):
+        history_name = "for_export_include_deleted"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
+
+        imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2, export_kwds={"include_deleted": "True"})
+        self._assert_history_length(imported_history_id, 2)
+
+        def upload_job_check(job):
+            assert job["tool_id"] == "upload1"
+
+        def check_ok(hda):
+            assert hda["state"] == "ok", hda
+            assert hda["deleted"] is True, hda
+
+        self._check_imported_dataset(history_id=imported_history_id, hid=1, job_checker=upload_job_check)
+        self._check_imported_dataset(history_id=imported_history_id, hid=2, hda_checker=check_ok, job_checker=upload_job_check)
+
         imported_content = self.dataset_populator.get_history_dataset_content(
             history_id=imported_history_id,
             hid=1,
@@ -197,6 +239,7 @@ class HistoriesApiTestCase(api.ApiTestCase):
         self.dataset_populator.new_dataset(history_id, content=open(self.test_data_resolver.get_filename("1.bam"), 'rb'), file_type='bam', wait=True)
         imported_history_id = self._reimport_history(history_id, history_name)
         self._assert_history_length(imported_history_id, 1)
+        self._check_imported_dataset(history_id=imported_history_id, hid=1)
         import_bam_metadata = self.dataset_populator.get_history_dataset_details(
             history_id=imported_history_id,
             hid=1,
@@ -222,23 +265,40 @@ class HistoriesApiTestCase(api.ApiTestCase):
 
         history_name = "for_export_with_collections"
         history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_collection_populator.create_list_in_history(history_id, contents=["Hello", "World"])
+        self.dataset_collection_populator.create_list_in_history(history_id, contents=["Hello", "World"], direct_upload=True)
 
-        imported_history_id = self._reimport_history(history_id, history_name)
-
+        imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=3)
         self._assert_history_length(imported_history_id, 3)
 
-    def _reimport_history(self, history_id, history_name):
+        def check_elements(elements):
+            assert len(elements) == 2
+            element0 = elements[0]["object"]
+            element1 = elements[1]["object"]
+            for element in [element0, element1]:
+                assert not element["visible"]
+                assert not element["deleted"]
+                assert element["state"] == "ok"
+
+            assert element0["hid"] == 2
+            assert element1["hid"] == 3
+
+        self._check_imported_collection(imported_history_id, hid=1, collection_type="list", elements_checker=check_elements)
+
+    def _reimport_history(self, history_id, history_name, wait_on_history_length=None, export_kwds={}):
         # Ensure the history is ready to go...
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
         # Export the history.
-        download_path = self._export(history_id)
+        download_path = self.dataset_populator.export_url(history_id, export_kwds, check_download=True)
 
         # Create download for history
         full_download_url = "%s%s?key=%s" % (self.url, download_path, self.galaxy_interactor.api_key)
-        download_response = get(full_download_url)
-        self._assert_status_code_is(download_response, 200)
+
+        import_data = dict(archive_source=full_download_url, archive_type="url")
+
+        return self._import_history_and_wait(import_data, history_name, wait_on_history_length=wait_on_history_length)
+
+    def _import_history_and_wait(self, import_data, history_name, wait_on_history_length=None):
 
         def history_names():
             history_index = self._get("histories")
@@ -247,8 +307,11 @@ class HistoriesApiTestCase(api.ApiTestCase):
         import_name = "imported from archive: %s" % history_name
         assert import_name not in history_names()
 
-        import_data = dict(archive_source=full_download_url, archive_type="url")
-        import_response = self._post("histories", data=import_data)
+        files = {}
+        archive_file = import_data.pop("archive_file", None)
+        if archive_file:
+            files["archive_file"] = archive_file
+        import_response = self._post("histories", data=import_data, files=files)
 
         self._assert_status_code_is(import_response, 200)
 
@@ -260,6 +323,16 @@ class HistoriesApiTestCase(api.ApiTestCase):
         imported_history_id = imported_history["id"]
         self.dataset_populator.wait_for_history(imported_history_id)
 
+        if wait_on_history_length:
+
+            def history_has_length():
+                contents_response = self._get("histories/%s/contents" % imported_history_id)
+                self._assert_status_code_is(contents_response, 200)
+                contents = contents_response.json()
+                return None if len(contents) != wait_on_history_length else True
+
+            wait_on(history_has_length, desc="import history population")
+
         return imported_history_id
 
     def _assert_history_length(self, history_id, n):
@@ -268,6 +341,46 @@ class HistoriesApiTestCase(api.ApiTestCase):
         contents = contents_response.json()
         assert len(contents) == n, contents
 
+    def _check_imported_dataset(self, history_id, hid, has_job=True, hda_checker=None, job_checker=None):
+        imported_dataset_metadata = self.dataset_populator.get_history_dataset_details(
+            history_id=history_id,
+            hid=hid,
+        )
+        assert imported_dataset_metadata["history_content_type"] == "dataset"
+        assert imported_dataset_metadata["history_id"] == history_id
+
+        if hda_checker is not None:
+            hda_checker(imported_dataset_metadata)
+
+        assert "creating_job" in imported_dataset_metadata
+        job_id = imported_dataset_metadata["creating_job"]
+        if has_job:
+            assert job_id
+
+            job_details = self.dataset_populator.get_job_details(job_id, full=True)
+            assert job_details.status_code == 200, job_details.content
+            job = job_details.json()
+            assert 'history_id' in job, job
+            assert job['history_id'] == history_id, job
+
+            if job_checker is not None:
+                job_checker(job)
+
+    def _check_imported_collection(self, history_id, hid, collection_type=None, elements_checker=None):
+        imported_collection_metadata = self.dataset_populator.get_history_collection_details(
+            history_id=history_id,
+            hid=hid,
+        )
+        assert imported_collection_metadata["history_content_type"] == "dataset_collection"
+        assert imported_collection_metadata["history_id"] == history_id
+        assert "collection_type" in imported_collection_metadata
+        assert "elements" in imported_collection_metadata
+        if collection_type is not None:
+            assert imported_collection_metadata["collection_type"] == collection_type, imported_collection_metadata
+
+        if elements_checker is not None:
+            elements_checker(imported_collection_metadata["elements"])
+
     def test_create_tag(self):
         post_data = dict(name="TestHistoryForTag")
         history_id = self._post("histories", data=post_data).json()["id"]
@@ -275,24 +388,6 @@ class HistoriesApiTestCase(api.ApiTestCase):
         tag_url = "histories/%s/tags/awesometagname" % history_id
         tag_create_response = self._post(tag_url, data=tag_data)
         self._assert_status_code_is(tag_create_response, 200)
-
-    def _export(self, history_id):
-        export_url = self._api_url("histories/%s/exports" % history_id, use_key=True)
-        put_response = put(export_url)
-        self._assert_status_code_is(put_response, 202)
-
-        def export_ready_response():
-            put_response = put(export_url)
-            if put_response.status_code == 202:
-                return None
-            return put_response
-
-        put_response = wait_on(export_ready_response, desc="export ready")
-        self._assert_status_code_is(put_response, 200)
-        response = put_response.json()
-        self._assert_has_keys(response, "download_url")
-        download_path = response["download_url"]
-        return download_path
 
     def _show(self, history_id):
         return self._get("histories/%s" % history_id).json()

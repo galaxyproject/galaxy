@@ -47,6 +47,8 @@ class JobImportHistoryArchiveWrapper:
         # Import history.
         #
 
+        new_history = None
+
         jiha = self.sa_session.query(model.JobImportHistoryArchive).filter_by(job_id=self.job_id).first()
         if jiha:
             try:
@@ -109,6 +111,7 @@ class JobImportHistoryArchiveWrapper:
                                                           peek=dataset_attrs['peek'],
                                                           designation=dataset_attrs['designation'],
                                                           visible=dataset_attrs['visible'],
+                                                          deleted=dataset_attrs.get('deleted', False),
                                                           dbkey=metadata['dbkey'],
                                                           metadata=metadata,
                                                           history=new_history,
@@ -188,8 +191,8 @@ class JobImportHistoryArchiveWrapper:
                     imported_job.info = job_attrs.get('info', None)
                     imported_job.exit_code = job_attrs.get('exit_code', None)
                     imported_job.traceback = job_attrs.get('traceback', None)
-                    imported_job.stdout = job_attrs.get('stdout', None)
-                    imported_job.stderr = job_attrs.get('stderr', None)
+                    imported_job.tool_stdout = job_attrs.get('stdout', None)
+                    imported_job.tool_stderr = job_attrs.get('stderr', None)
                     imported_job.command_line = job_attrs.get('command_line', None)
                     try:
                         imported_job.create_time = datetime.datetime.strptime(job_attrs["create_time"], "%Y-%m-%dT%H:%M:%S.%f")
@@ -242,9 +245,11 @@ class JobImportHistoryArchiveWrapper:
                 if os.path.exists(archive_dir):
                     shutil.rmtree(archive_dir)
             except Exception as e:
-                jiha.job.stderr += "Error cleaning up history import job: %s" % e
+                jiha.job.tool_stderr += "Error cleaning up history import job: %s" % e
                 self.sa_session.flush()
                 raise
+
+        return new_history
 
 
 class JobExportHistoryArchiveWrapper:
@@ -265,7 +270,6 @@ class JobExportHistoryArchiveWrapper:
                  .join("dataset")
                  .options(eagerload_all("dataset.actions"))
                  .order_by(trans.model.HistoryDatasetAssociation.hid)
-                 .filter(trans.model.HistoryDatasetAssociation.deleted == expression.false())
                  .filter(trans.model.Dataset.purged == expression.false()))
         return query.all()
 
@@ -338,7 +342,9 @@ class JobExportHistoryArchiveWrapper:
         #
         # Create attributes/metadata files for export.
         #
-        temp_output_dir = tempfile.mkdtemp()
+        # Use abspath because mkdtemp() does not, contrary to the documentation,
+        # always return an absolute path.
+        temp_output_dir = os.path.abspath(tempfile.mkdtemp())
 
         # Write history attributes to file.
         history = jeha.history

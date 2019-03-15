@@ -19,9 +19,11 @@ from galaxy.exceptions import ToolMissingException
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
 from galaxy.tools import (
+    DatabaseOperationTool,
     DefaultToolState,
     ToolInputsNotReadyException
 )
+from galaxy.tools.actions import filter_output
 from galaxy.tools.execute import execute, MappingParameters, PartialJobExecution
 from galaxy.tools.parameters import (
     check_param,
@@ -33,6 +35,7 @@ from galaxy.tools.parameters.basic import (
     ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
+    HiddenToolParameter,
     is_runtime_value,
     parameter_types,
     runtime_to_json,
@@ -892,6 +895,8 @@ class ToolModule(WorkflowModule):
                     skip = not visible or not is_data
                 elif connectable_only:
                     skip = not visible or not (is_data or is_connectable)
+                elif isinstance(input, HiddenToolParameter):
+                    skip = False
                 else:
                     skip = not visible
                 if not skip:
@@ -929,6 +934,8 @@ class ToolModule(WorkflowModule):
         data_outputs = []
         if self.tool:
             for name, tool_output in self.tool.outputs.items():
+                if filter_output(tool_output, self.state.inputs):
+                    continue
                 extra_kwds = {}
                 if tool_output.collection:
                     extra_kwds["collection"] = True
@@ -1289,7 +1296,7 @@ class ToolModule(WorkflowModule):
         flush_required = False
         effective_post_job_actions = self._effective_post_job_actions(step)
         for pja in effective_post_job_actions:
-            if pja.action_type in ActionBox.immediate_actions:
+            if pja.action_type in ActionBox.immediate_actions or isinstance(self.tool, DatabaseOperationTool):
                 ActionBox.execute(self.trans.app, self.trans.sa_session, pja, job, replacement_dict)
             else:
                 pjaa = model.PostJobActionAssociation(pja, job_id=job.id)

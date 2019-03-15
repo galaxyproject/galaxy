@@ -11,7 +11,6 @@ from galaxy.util import (
 )
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
-from galaxy.web import url_for
 from .parameters import (
     DEFAULT_DATASET_NAME,
     DisplayApplicationDataParameter,
@@ -20,9 +19,6 @@ from .parameters import (
 from .util import encode_dataset_user
 
 log = logging.getLogger(__name__)
-
-# Any basic functions that we want to provide as a basic part of parameter dict should be added to this dict
-BASE_PARAMS = {'qp': quote_plus, 'url_for': url_for}
 
 
 class DisplayApplicationLink(object):
@@ -53,13 +49,13 @@ class DisplayApplicationLink(object):
 
     def get_display_url(self, data, trans):
         dataset_hash, user_hash = encode_dataset_user(trans, data, None)
-        return url_for(controller='dataset',
-                       action="display_application",
-                       dataset_id=dataset_hash,
-                       user_id=user_hash,
-                       app_name=quote_plus(self.display_application.id),
-                       link_name=quote_plus(self.id),
-                       app_action=None)
+        return trans.app.url_for(controller='dataset',
+                                 action="display_application",
+                                 dataset_id=dataset_hash,
+                                 user_id=user_hash,
+                                 app_name=quote_plus(self.display_application.id),
+                                 link_name=quote_plus(self.id),
+                                 app_action=None)
 
     def get_inital_values(self, data, trans):
         if self.other_values:
@@ -67,6 +63,7 @@ class DisplayApplicationLink(object):
         else:
             rval = odict()
         rval.update({'BASE_URL': trans.request.base, 'APP': trans.app})  # trans automatically appears as a response, need to add properties of trans that we want here
+        BASE_PARAMS = {'qp': quote_plus, 'url_for': trans.app.url_for}
         for key, value in BASE_PARAMS.items():  # add helper functions/variables
             rval[key] = value
         rval[DEFAULT_DATASET_NAME] = data  # always have the display dataset name available
