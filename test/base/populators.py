@@ -254,6 +254,10 @@ class BaseDatasetPopulator(object):
     def cancel_job(self, job_id):
         return self._delete("jobs/%s" % job_id)
 
+    def delete_dataset(self, history_id, content_id):
+        delete_response = self._delete("histories/%s/contents/%s" % (history_id, content_id))
+        return delete_response
+
     def _summarize_history(self, history_id):
         pass
 
@@ -486,6 +490,34 @@ class BaseDatasetPopulator(object):
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
+    def export_url(self, history_id, data, check_download=True):
+        url = "histories/%s/exports" % history_id
+        put_response = self._put(url, data)
+        api_asserts.assert_status_code_is(put_response, 202)
+
+        def export_ready_response():
+            put_response = self._put(url)
+            if put_response.status_code == 202:
+                return None
+            return put_response
+
+        put_response = wait_on(export_ready_response, desc="export ready")
+        api_asserts.assert_status_code_is(put_response, 200)
+        response = put_response.json()
+        api_asserts.assert_has_keys(response, "download_url")
+        download_url = response["download_url"]
+
+        if check_download:
+            self.get_export_url(download_url)
+
+        return download_url
+
+    def get_export_url(self, export_url):
+        full_download_url = "%s?key=%s" % (export_url, self._api_key)
+        download_response = self._get(full_download_url)
+        api_asserts.assert_status_code_is(download_response, 200)
+        return download_response
+
     def get_random_name(self, prefix=None, suffix=None, len=10):
         # stolen from navigates_galaxy.py
         return '%s%s%s' % (
@@ -500,6 +532,10 @@ class DatasetPopulator(BaseDatasetPopulator):
     def __init__(self, galaxy_interactor):
         self.galaxy_interactor = galaxy_interactor
 
+    @property
+    def _api_key(self):
+        return self.galaxy_interactor.api_key
+
     def _post(self, route, data=None, files=None):
         if data is None:
             data = {}
@@ -509,6 +545,12 @@ class DatasetPopulator(BaseDatasetPopulator):
             del data["__files"]
 
         return self.galaxy_interactor.post(route, data, files=files)
+
+    def _put(self, route, data=None):
+        if data is None:
+            data = {}
+
+        return self.galaxy_interactor.put(route, data)
 
     def _get(self, route, data=None):
         if data is None:
@@ -1239,6 +1281,10 @@ def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "n
 class GiPostGetMixin(object):
     """Mixin for adapting Galaxy testing populators helpers to bioblend."""
 
+    @property
+    def _api_key(self):
+        return self._gi.key
+
     def _get(self, route, data=None):
         if data is None:
             data = {}
@@ -1250,12 +1296,20 @@ class GiPostGetMixin(object):
         data['key'] = self._gi.key
         return requests.post(self.__url(route), data=data)
 
+    def _put(self, route, data={}):
+        data = data.copy()
+        data['key'] = self._gi.key
+        return requests.put(self.__url(route), data=data)
+
     def _delete(self, route, data={}):
         data = data.copy()
         data['key'] = self._gi.key
         return requests.delete(self.__url(route), data=data)
 
     def __url(self, route):
+        if route.startswith("/api/"):
+            route = route[len("/api/"):]
+
         return self._gi.url + "/" + route
 
 
