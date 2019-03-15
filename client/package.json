@@ -113,7 +113,7 @@
     "optimize-css-assets-webpack-plugin": "^5.0.1",
     "phantomjs-polyfill": "0.0.2",
     "phantomjs-prebuilt": "^2.1.7",
-    "prettier": "^1.15.3",
+    "prettier": "^1.16.4",
     "qunitjs": "^2.4.1",
     "raw-loader": "^1.0.0",
     "sass-loader": "^7.1.0",
