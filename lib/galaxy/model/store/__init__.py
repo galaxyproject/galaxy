@@ -19,7 +19,6 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util import in_directory
 from galaxy.util.bunch import Bunch
-from galaxy.version import VERSION_MAJOR
 from ..item_attrs import add_item_annotation, get_item_annotation_str
 from ... import model
 
@@ -30,6 +29,7 @@ ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS = 'implicit_collection_jobs_attrs.txt'
 ATTRS_FILENAME_COLLECTIONS = 'collections_attrs.txt'
 ATTRS_FILENAME_EXPORT = 'export_attrs.txt'
 ATTRS_FILENAME_LIBRARIES = 'libraries_attrs.txt'
+GALAXY_EXPORT_VERSION = "2"
 
 
 class ImportOptions(object):
@@ -1329,7 +1329,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
         export_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_EXPORT)
         with open(export_attrs_filename, 'w') as export_attrs_out:
-            dump({"galaxy_version": VERSION_MAJOR}, export_attrs_out)
+            dump({"galaxy_export_version": GALAXY_EXPORT_VERSION}, export_attrs_out)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is None:

@@ -38,9 +38,9 @@ def _run_jihaw_cleanup(archive_dir, app=None):
     return app, jihaw.cleanup_after_job()
 
 
-def _mock_app():
+def _mock_app(store_by="id"):
     app = MockApp()
-    test_object_store_config = TestConfig()
+    test_object_store_config = TestConfig(store_by=store_by)
     app.object_store = test_object_store_config.object_store
     app.model.Dataset.object_store = app.object_store
     app.datatypes_registry.set_external_metadata_tool = MockSetExternalTool()
