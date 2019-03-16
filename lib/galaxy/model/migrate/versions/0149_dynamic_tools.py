@@ -3,7 +3,7 @@
 import datetime
 import logging
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, MetaData, Table, Unicode, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, Unicode
 
 from galaxy.model.custom_types import JSONType, UUIDType
 
@@ -25,7 +25,6 @@ DynamicTool_table = Table(
     Column("tool_id", Unicode(255)),
     Column("tool_version", Unicode(255)),
     Column("tool_format", Unicode(255)),
-    Column("tool_hash", Unicode(500)),
     Column("tool_path", Unicode(255)),
     Column("tool_directory", Unicode(255)),
     Column("hidden", Boolean),
@@ -40,33 +39,38 @@ TABLES = [
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
     metadata.reflect()
 
     for table in TABLES:
         __create(table)
 
-    __add_column(Column("tool_hash", Text), "workflow_step", metadata)
-    __add_column(Column("tool_hash", Text), "job", metadata)
+    if migrate_engine.name in ['postgres', 'postgresql']:
+        workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), nullable=True)
+        job_workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), nullable=True)
+    else:
+        workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, nullable=True)
+        job_workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, nullable=True)
+
+    __add_column(workflow_dynamic_tool_id_column, "workflow_step", metadata)
+    __add_column(job_workflow_dynamic_tool_id_column, "job", metadata)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
+    __drop_column("dynamic_tool_id", "workflow_step", metadata)
+    __drop_column("dynamic_tool_id", "job", metadata)
+
     for table in TABLES:
         __drop(table)
-
-    __drop_column("tool_hash", "workflow_step", metadata)
-    __drop_column("tool_hash", "job", metadata)
 
 
 def __add_column(column, table_name, metadata, **kwds):
     try:
         table = Table(table_name, metadata, autoload=True)
         column.create(table, **kwds)
-    except Exception as e:
-        print str(e)
+    except Exception:
         log.exception("Adding column %s column failed." % column)
 
 
@@ -74,8 +78,7 @@ def __drop_column(column_name, table_name, metadata):
     try:
         table = Table(table_name, metadata, autoload=True)
         getattr(table.c, column_name).drop()
-    except Exception as e:
-        print str(e)
+    except Exception:
         log.exception("Dropping column %s failed." % column_name)
 
 
@@ -83,7 +86,6 @@ def __create(table):
     try:
         table.create()
     except Exception as e:
-        print str(e)
         log.exception("Creating %s table failed: %s" % (table.name, str(e)))
 
 
@@ -91,5 +93,4 @@ def __drop(table):
     try:
         table.drop()
     except Exception as e:
-        print str(e)
         log.exception("Dropping %s table failed: %s" % (table.name, str(e)))

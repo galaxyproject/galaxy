@@ -181,7 +181,7 @@ class WorkflowsManager(object):
             raise exceptions.RequestParameterInvalidException("Attempting to modify the state of an completed workflow invocation.")
 
         step = workflow_invocation_step.workflow_step
-        module = modules.module_factory.from_workflow_step(trans, step)
+        module = module_factory.from_workflow_step(trans, step)
         performed_action = module.do_invocation_step_action(step, action)
         workflow_invocation_step.action = performed_action
         trans.sa_session.add(workflow_invocation_step)
@@ -529,7 +529,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_model = None
             if step.type == 'tool':
                 incoming = {}
-                tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_hash=step.tool_hash)
+                tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid)
                 params_to_incoming(incoming, tool.inputs, step.state.inputs, trans.app)
                 step_model = tool.to_json(trans, incoming, workflow_building_mode=workflow_building_modes.USE_HISTORY)
                 step_model['post_job_actions'] = [{
@@ -814,7 +814,6 @@ class WorkflowContentsManager(UsesAnnotations):
                 'tool_id': content_id,  # For workflows exported to older Galaxies,
                                         # eliminate after a few years...
                 'tool_version': step.tool_version,
-                'tool_hash': step.tool_hash,
                 'name': module.get_name(),
                 'tool_state': json.dumps(tool_state),
                 'errors': module.get_errors(),
@@ -833,14 +832,13 @@ class WorkflowContentsManager(UsesAnnotations):
                     }
 
                 tool_representation = None
-                tool_hash = step.tool_hash
-                if tool_hash is not None:
-                    dynamic_tool = self.app.dynamic_tool_manager.get_tool_by_hash(
-                        tool_hash
-                    )
-                    tool_representation = json.dumps(dynamic_tool.value)
-                step.tool_representation = tool_representation
-                step_dict['tool_representation'] = tool_representation
+                dynamic_tool = step.dynamic_tool
+                if dynamic_tool:
+                    tool_representation = dynamic_tool.value
+                    step_dict['tool_representation'] = tool_representation
+                    if util.is_uuid(step_dict['content_id']):
+                        step_dict['content_id'] = None
+                        step_dict['tool_id'] = None
 
                 pja_dict = {}
                 for pja in step.post_job_actions:

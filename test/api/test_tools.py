@@ -29,6 +29,16 @@ MINIMAL_TOOL = {
         output1=dict(format='txt'),
     )
 }
+MINIMAL_TOOL_NO_ID = {
+    'name': "Minimal Tool",
+    'class': "GalaxyTool",
+    'version': "1.0.0",
+    'command': "echo 'Hello World 2' > $output1",
+    'inputs': [],
+    'outputs': dict(
+        output1=dict(format='txt'),
+    )
+}
 
 
 class ToolsTestCase(api.ApiTestCase):
@@ -899,6 +909,20 @@ class ToolsTestCase(api.ApiTestCase):
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual(output_content, "Hello World\n")
+
+    def test_dynamic_tool_no_id(self):
+        # Create tool.
+        tool_response = self.dataset_populator.create_tool(MINIMAL_TOOL_NO_ID)
+        self._assert_has_keys(tool_response, "uuid")
+
+        # Run tool.
+        history_id = self.dataset_populator.new_history()
+        inputs = {}
+        self._run(history_id=history_id, inputs=inputs, tool_uuid=tool_response["uuid"])
+
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEqual(output_content, "Hello World 2\n")
 
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)
@@ -1996,12 +2020,16 @@ class ToolsTestCase(api.ApiTestCase):
     def _run_cat1(self, history_id, inputs, assert_ok=False, **kwargs):
         return self._run('cat1', history_id, inputs, assert_ok=assert_ok, **kwargs)
 
-    def _run(self, tool_id, history_id, inputs, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False):
+    def _run(self, tool_id=None, history_id=None, inputs={}, tool_uuid=None, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False):
+        if tool_id is None:
+            assert tool_uuid is not None
         payload = self.dataset_populator.run_tool_payload(
             tool_id=tool_id,
             inputs=inputs,
             history_id=history_id,
         )
+        if tool_uuid:
+            payload['tool_uuid'] = tool_uuid
         if tool_version is not None:
             payload["tool_version"] = tool_version
         if use_cached_job:

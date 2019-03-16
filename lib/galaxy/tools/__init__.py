@@ -284,7 +284,8 @@ class ToolBox(BaseGalaxyToolBox):
         )
         kwds["dynamic"] = True
         tool = self._create_tool_from_source(tool_source, **kwds)
-        tool.tool_hash = dynamic_tool.tool_hash
+        tool.dynamic_tool = dynamic_tool
+        tool.uuid = dynamic_tool.uuid
         if not tool.id:
             tool.id = dynamic_tool.tool_id
         if not tool.name:
@@ -436,7 +437,8 @@ class Tool(Dictifiable):
         self.display_interface = True
         self.require_login = False
         self.rerun = False
-        self.tool_hash = None
+        # This will be non-None for tools loaded from the database (DynamicTool objects).
+        self.dynamic_tool = None
         # Define a place to keep track of all input   These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form

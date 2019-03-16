@@ -1,14 +1,10 @@
 import logging
-
-from galaxy.exceptions import ObjectHashExistsException
-
 from uuid import uuid4
-
-from .base import ModelManager
 
 from galaxy import exceptions
 from galaxy import model
-from galaxy.tools.hash import build_tool_hash
+from galaxy.exceptions import DuplicatedIdentifierException
+from .base import ModelManager
 
 log = logging.getLogger(__name__)
 
@@ -27,18 +23,11 @@ class DynamicToolManager(ModelManager):
         )
         return dynamic_tool
 
-    def get_tool_by_id_or_hash(self, id_or_hash):
+    def get_tool_by_id(self, id_or_uuid):
         dynamic_tool = self._one_or_none(
-            self.query().filter(self.model_class.tool_id == id_or_hash)
+            self.query().filter(self.model_class.tool_id == id_or_uuid)
         )
-        if dynamic_tool is None:
-            dynamic_tool = self.get_tool_by_hash(id_or_hash)
         return dynamic_tool
-
-    def get_tool_by_hash(self, tool_hash):
-        return self._one_or_none(
-            self.query().filter(self.model_class.tool_hash == tool_hash)
-        )
 
     def create_tool(self, tool_payload, allow_load=False):
         if "representation" not in tool_payload:
@@ -63,15 +52,14 @@ class DynamicToolManager(ModelManager):
                 tool_id = str(uuid)
 
             tool_version = representation.get("version", None)
-            tool_hash = build_tool_hash(representation)
             value = representation
         else:
             raise Exception("Unknown tool type encountered.")
         # TODO: enforce via DB constraint and catch appropriate
         # exception.
-        existing_tool = self.get_tool_by_hash(tool_hash)
+        existing_tool = self.get_tool_by_uuid(uuid)
         if existing_tool is not None and not allow_load:
-            raise ObjectHashExistsException(existing_tool.id)
+            raise DuplicatedIdentifierException(existing_tool.id)
         elif existing_tool:
             dynamic_tool = existing_tool
         else:
@@ -79,7 +67,6 @@ class DynamicToolManager(ModelManager):
                 tool_format=tool_format,
                 tool_id=tool_id,
                 tool_version=tool_version,
-                tool_hash=tool_hash,
                 uuid=uuid,
                 value=value,
             )

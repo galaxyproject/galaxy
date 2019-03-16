@@ -774,12 +774,12 @@ class ToolModule(WorkflowModule):
     type = "tool"
     name = "Tool"
 
-    def __init__(self, trans, tool_id, tool_version=None, exact_tools=True, tool_hash=None, **kwds):
+    def __init__(self, trans, tool_id, tool_version=None, exact_tools=True, tool_uuid=None, **kwds):
         super(ToolModule, self).__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
         self.tool_version = tool_version
-        self.tool_hash = tool_hash
-        self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=exact_tools, tool_hash=tool_hash)
+        self.tool_uuid = tool_uuid
+        self.tool = trans.app.toolbox.get_tool(tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid)
         if self.tool and tool_version and exact_tools and str(self.tool.version) != str(tool_version):
             log.info("Exact tool specified during workflow module creation for [%s] but couldn't find correct version [%s]." % (tool_id, tool_version))
             self.tool = None
@@ -796,10 +796,22 @@ class ToolModule(WorkflowModule):
         tool_version = d.get('tool_version')
         if tool_version:
             tool_version = str(tool_version)
-        tool_hash = d.get('tool_hash', None)
-        if tool_id is None and tool_hash is None:
+        tool_uuid = d.get('tool_uuid', None)
+        if tool_id is None and tool_uuid is None:
+            tool_representation = d.get("tool_representation")
+            if tool_representation:
+                create_request = {
+                    "representation": tool_representation,
+                }
+                if not trans.user_is_admin:
+                    raise exceptions.AdminRequiredException("Only admin users can create tools dynamically.")
+                dynamic_tool = trans.app.dynamic_tool_manager.create_tool(
+                    create_request, allow_load=False
+                )
+                tool_uuid = dynamic_tool.uuid
+        if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("No content id could be located for for step [%s]" % d)
-        module = super(ToolModule, Class).from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, tool_hash=tool_hash, **kwds)
+        module = super(ToolModule, Class).from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
         module.post_job_actions = d.get('post_job_actions', {})
         module.workflow_outputs = d.get('workflow_outputs', [])
         if module.tool:
@@ -820,8 +832,8 @@ class ToolModule(WorkflowModule):
         else:
             tool_id = None
         tool_version = step.tool_version
-        tool_hash = step.tool_hash
-        module = super(ToolModule, Class).from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version, tool_hash=tool_hash, **kwds)
+        tool_uuid = step.tool_uuid
+        module = super(ToolModule, Class).from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version, tool_uuid=tool_uuid, **kwds)
         module.workflow_outputs = step.workflow_outputs
         module.post_job_actions = {}
         for pja in step.post_job_actions:
@@ -857,7 +869,9 @@ class ToolModule(WorkflowModule):
             step.tool_version = self.get_version()
         else:
             step.tool_version = self.tool_version
-        step.tool_hash = self.tool_hash
+        tool_uuid = getattr(self, "tool_uuid", None)
+        if tool_uuid:
+            step.dynamic_tool = self.trans.app.dynamic_tool_manager.get_tool_by_uuid(tool_uuid)
         for k, v in self.post_job_actions.items():
             pja = self.__to_pja(k, v, step)
             self.trans.sa_session.add(pja)
@@ -1148,7 +1162,7 @@ class ToolModule(WorkflowModule):
     def execute(self, trans, progress, invocation_step, use_cached_job=False):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
-        tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_hash=step.tool_hash)
+        tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid)
         if not tool.is_workflow_compatible:
             message = "Specified tool [%s] in workflow is not workflow-compatible." % tool.id
             raise Exception(message)

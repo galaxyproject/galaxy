@@ -62,7 +62,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         # shed_tool_conf.xml file.
         self._dynamic_tool_confs = []
         self._tools_by_id = {}
-        self._tools_by_hash = {}
+        self._tools_by_uuid = {}
         self._integrated_section_by_tool = {}
         # Tool lineages can contain chains of related tools with different ids
         # so each will be present once in the above dictionary. The following
@@ -189,11 +189,11 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                                        config_elems=config_elems)
             self._dynamic_tool_confs.append(shed_tool_conf_dict)
 
-    def _get_tool_by_hash(self, tool_hash):
-        if tool_hash in self._tools_by_hash:
-            return self._tools_by_hash[tool_hash]
+    def _get_tool_by_uuid(self, tool_uuid):
+        if tool_uuid in self._tools_by_uuid:
+            return self._tools_by_uuid[tool_uuid]
 
-        dynamic_tool = self.app.dynamic_tool_manager.get_tool_by_hash(tool_hash)
+        dynamic_tool = self.app.dynamic_tool_manager.get_tool_by_uuid(tool_uuid)
         if dynamic_tool:
             return self.load_dynamic_tool(dynamic_tool)
 
@@ -205,7 +205,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
         tool = self.create_dynamic_tool(dynamic_tool)
         self.register_tool(tool)
-        self._tools_by_hash[tool.tool_hash] = tool
+        self._tools_by_uuid[dynamic_tool.uuid] = tool
         return tool
 
     def load_item(self, item, tool_path, panel_dict=None, integrated_panel_dict=None, load_panel_dict=True, guid=None, index=None, internal=False):
@@ -435,7 +435,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             elif elem.tag == 'label':
                 self._integrated_tool_panel.stub_label(key)
 
-    def get_tool(self, tool_id, tool_version=None, get_all_versions=False, exact=False, tool_hash=None):
+    def get_tool(self, tool_id, tool_version=None, get_all_versions=False, exact=False, tool_uuid=None):
         """Attempt to locate a tool in the tool box. Note that `exact` only refers to the `tool_id`, not the `tool_version`."""
         if tool_version:
             tool_version = str(tool_version)
@@ -444,8 +444,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             raise AssertionError("Cannot specify get_tool with both get_all_versions and exact as True")
 
         if tool_id is None:
-            if tool_hash is not None:
-                tool_id = self._get_tool_by_hash(tool_hash).id
+            if tool_uuid is not None:
+                tool_id = self._get_tool_by_uuid(tool_uuid).id
             if tool_id is None:
                 raise AssertionError("get_tool called with tool_id as None")
 

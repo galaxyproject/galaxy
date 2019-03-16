@@ -242,7 +242,6 @@ steps:
 """)
         self.workflow_populator.dump_workflow(workflow_id)
 
-
     @uses_test_history()
     def test_conditional_ints(self, history_id):
         self._run_jobs("""
