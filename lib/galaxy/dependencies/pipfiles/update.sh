@@ -4,20 +4,25 @@ commit=0
 
 usage() {
 cat << EOF
-Usage: ${0##*/} [-c]
+Usage: ${0##*/} [-c] [-d]
 
 Use pipenv to regenerate locked and hashed versions of Galaxy dependencies.
 Use -c to automatically commit these changes (be sure you have no staged git
-changes).
+changes). Use -d to rebuild with Pipenv from the
+galaxy/update-python-dependencies container. This container can be built be
+running 'make' from the docker subdirectory.
 
 EOF
 }
 
-while getopts ":hc" opt; do
+while getopts ":hcd" opt; do
     case "$opt" in
         h)
             usage
             exit 0
+            ;;
+        d)
+            docker=1
             ;;
         c)
             commit=1
@@ -36,11 +41,18 @@ default"
 export PIPENV_IGNORE_VIRTUALENVS=1
 for env in $ENVS; do
     cd "$THIS_DIRECTORY/$env"
-    pipenv lock -v
+    if [ "$docker" -eq "1" ];
+    then
+        docker run -v `pwd`:/working -t 'galaxy/update-python-dependencies'
+    else
+        pipenv lock -v
+        pipenv lock -r > pinned-requirements.txt
+        pipenv lock -r --dev > pinned-dev-requirements.txt
+    fi
+
     # Strip out hashes and trailing whitespace for unhashed version
     # of this requirements file, needed for pipenv < 11.1.2
-    pipenv lock -r | sed -e 's/--hash[^[:space:]]*//g' -e 's/[[:space:]]*$//' > pinned-requirements.txt
-    pipenv lock -r --dev | sed -e 's/--hash[^[:space:]]*//g' -e 's/[[:space:]]*$//' > pinned-dev-requirements.txt
+    sed -i.raw.orig -e 's/--hash[^[:space:]]*//g' -e 's/[[:space:]]*$//' pinned-requirements.txt pinned-dev-requirements.txt
     # Fix oscillating environment markers
     sed -i.orig -e "s/^azure-storage-nspkg==\([^ ;]\{1,\}\).*$/azure-storage-nspkg==\1/" \
                 -e "s/^cffi==\([^ ;]\{1,\}\).*$/cffi==\1/" \
