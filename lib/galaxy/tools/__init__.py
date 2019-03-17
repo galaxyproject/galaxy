@@ -1686,22 +1686,26 @@ class Tool(Dictifiable):
         cases where number of outputs is not known in advance).
         """
         tool = self
-        collected = output_collect.collect_primary_datasets(
+        permission_provider = output_collect.PermissionProvider(inp_data, tool.app.security_agent, job)
+        metadata_source_provider = output_collect.MetadataSourceProvider(inp_data)
+        job_context = output_collect.JobContext(
             tool,
-            out_data,
             tool_provided_metadata,
+            job,
             tool_working_directory,
+            permission_provider,
+            metadata_source_provider,
+            input_dbkey,
+            object_store=tool.app.object_store,
+        )
+        collected = output_collect.collect_primary_datasets(
+            job_context,
+            out_data,
             input_ext,
-            input_dbkey=input_dbkey,
         )
         output_collect.collect_dynamic_outputs(
-            tool,
+            job_context,
             out_collections,
-            tool_provided_metadata,
-            job_working_directory=tool_working_directory,
-            inp_data=inp_data,
-            job=job,
-            input_dbkey=input_dbkey,
         )
         # Return value only used in unit tests. Probably should be returning number of collected
         # bytes instead?
