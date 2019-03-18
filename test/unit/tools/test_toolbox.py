@@ -559,6 +559,7 @@ class SimplifiedToolBox(ToolBox):
             tool_root_dir,
             app,
         )
+        self.app.watchers.start()
 
     def handle_panel_update(self, section_dict):
         self.create_section(section_dict)
