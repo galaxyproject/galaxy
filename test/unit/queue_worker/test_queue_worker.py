@@ -1,4 +1,6 @@
+import contextlib
 import os
+import sys
 import tempfile
 import time
 
@@ -9,6 +11,7 @@ from galaxy.queue_worker import (
     send_control_task,
 )
 from galaxy.queues import connection_from_config
+from galaxy.util import which
 from ..tools_support import UsesApp
 
 
@@ -20,25 +23,53 @@ control_message_to_task = {'echo': foo}
 
 
 @pytest.fixture
-def sqlite_database_path():
+def sqlite_connection():
     fd, path = tempfile.mkstemp()
     os.close(fd)
-    yield path
+    yield 'sqlalchemy+sqlite:////%s' % path
     os.remove(path)
 
 
 @pytest.fixture
-def simple_app(sqlite_database_path):
+def simple_app(sqlite_connection):
+    with create_test(sqlite_connection) as test:
+        yield test.app
+
+
+@pytest.fixture
+def postgres_app(postgresql_db):
+    connection = "sqlalchemy+" + str(postgresql_db.engine.url)
+    if postgresql_db.has_table('kombu_message'):
+        raise Exception("postgresql table has kombu_message table, this shouldn't happen during tests.")
+    with create_test(connection) as test:
+        time.sleep(0.5)
+        # Wait for kombu table setup
+        yield test.app
+
+
+@contextlib.contextmanager
+def create_test(amqp_connection):
     test = UsesApp()
     test.setup_app()
     test.app.config.server_name = 'test_queue_worker'
     test.app.config.server_names = ['test_server_name', 'test_queue_worker']
-    test.app.config.amqp_internal_connection = 'sqlalchemy+sqlite:////%s' % sqlite_database_path
+    test.app.config.amqp_internal_connection = amqp_connection
     test.app.amqp_internal_connection_obj = connection_from_config(test.app.config)
     test.queue_worker = GalaxyQueueWorker(app=test.app, task_mapping=control_message_to_task)
     test.queue_worker.bind_and_start()
-    yield test.app
-    test.queue_worker.shutdown()
+    try:
+        yield test
+    finally:
+        test.queue_worker.shutdown()
+
+
+@pytest.mark.skipif(sys.version_info[0] < 3,
+                    reason="postgresql_db fixture requires python 3 or higher")
+@pytest.mark.skipif(not which('initdb'), reason='reason postgresql initdb not on PATH')
+def test_queue_worker_echo_postgresql(postgres_app):
+    postgres_app.some_var = 'foo'
+    send_control_task(app=postgres_app, task='echo')
+    wait_for_var(postgres_app, 'some_var', 'bar')
 
 
 def test_queue_worker_echo(simple_app):
