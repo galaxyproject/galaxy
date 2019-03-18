@@ -57,6 +57,7 @@ def send_control_task(app, task, noop_self=False, kwargs={}):
             control_queues = galaxy.queues.all_control_queues_for_declare(app.config, app.application_stack)
             producer.publish(payload, exchange=galaxy.queues.galaxy_exchange,
                              declare=[galaxy.queues.galaxy_exchange] + control_queues,
+                             retry=True,
                              routing_key='control')
     except Exception:
         # This is likely connection refused.
