@@ -1,4 +1,3 @@
-import json
 from galaxy.tools.deps.commands import which
 
 

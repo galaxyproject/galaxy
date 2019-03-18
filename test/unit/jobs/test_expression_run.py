@@ -1,8 +1,8 @@
 import json
 import os
-import tempfile
 import shutil
 import subprocess
+import tempfile
 
 from galaxy.tools import expressions
 
