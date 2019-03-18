@@ -9,7 +9,7 @@ Usage: ${0##*/} [-c] [-d]
 Use pipenv to regenerate locked and hashed versions of Galaxy dependencies.
 Use -c to automatically commit these changes (be sure you have no staged git
 changes). Use -d to rebuild with Pipenv from the
-galaxy/update-python-dependencies container. This container can be built be
+galaxy/update-python-dependencies container. This container can be built by
 running 'make' from the docker subdirectory.
 
 EOF
