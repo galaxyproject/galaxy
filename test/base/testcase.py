@@ -4,8 +4,8 @@ import logging
 import os
 import unittest
 
+from galaxy.security import idencoding
 from galaxy.tools.verify.test_data import TestDataResolver
-from galaxy.web import security
 from .driver_util import GalaxyTestDriver, setup_keep_outdir, target_url_parts
 
 log = logging.getLogger(__name__)
@@ -14,8 +14,7 @@ log = logging.getLogger(__name__)
 class FunctionalTestCase(unittest.TestCase):
 
     def setUp(self):
-        # Security helper
-        self.security = security.SecurityHelper(id_secret='changethisinproductiontoo')
+        self.security = idencoding.IdEncodingHelper(id_secret='changethisinproductiontoo')
         self.history_id = os.environ.get('GALAXY_TEST_HISTORY_ID', None)
         self.host, self.port, self.url = target_url_parts()
         self.test_data_resolver = TestDataResolver()
