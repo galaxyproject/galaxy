@@ -6,7 +6,7 @@ from sqlalchemy import and_, false, not_, or_
 from sqlalchemy.orm import eagerload_all
 
 import galaxy.model
-from galaxy.security import Action, RBACAgent
+from galaxy.security import Action, get_permitted_actions, RBACAgent
 from galaxy.util import listify
 from galaxy.util.bunch import Bunch
 
