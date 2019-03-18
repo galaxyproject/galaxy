@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import string
 import time
@@ -19,6 +20,8 @@ from .test_tool_loader import (
 )
 from .test_toolbox_filters import mock_trans
 from ..tools_support import UsesApp, UsesTools
+
+log = logging.getLogger(__name__)
 
 
 CONFIG_TEST_TOOL_VERSION_TEMPLATE = string.Template(
@@ -563,4 +566,6 @@ class SimplifiedToolBox(ToolBox):
 
 def reload_callback(test_case):
     test_case.app.tool_cache.cleanup()
+    log.debug("Reload callback called, toolbox contains %s", test_case._toolbox._tool_versions_by_id)
     test_case._toolbox = test_case.app.toolbox = SimplifiedToolBox(test_case)
+    log.debug("After callback toolbox contains %s", test_case._toolbox._tool_versions_by_id)
