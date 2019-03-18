@@ -35,7 +35,7 @@
     "latex-parser": "^0.6.2",
     "latex-to-unicode-converter": "^0.5.2",
     "mini-css-extract-plugin": "^0.4.4",
-    "popper.js": "^1.14.4",
+    "popper.js": "^1.14.7",
     "pyre-to-regexp": "^0.0.5",
     "raven-js": "^3.27.0",
     "requirejs": "2.3.6",
