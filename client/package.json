@@ -16,7 +16,7 @@
     "@johmun/vue-tags-input": "^2.0.0",
     "@vue/test-utils": "^1.0.0-beta.28",
     "axios": "^0.18.0",
-    "backbone": "1.3",
+    "backbone": "1.4.0",
     "bibtex-parse-js": "^0.0.24",
     "bootstrap": "^4.1.3",
     "bootstrap-tour": "https://github.com/sorich87/bootstrap-tour.git#6a1028fb562f9aa68c451f0901f8cfeb43cad140",
