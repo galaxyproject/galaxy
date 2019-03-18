@@ -17,6 +17,8 @@
                     :items="formatedItems"
                     :fields="fields"
                     :filter="filter"
+                    :per-page="perPage"
+                    :current-page="currentPage"
                     @row-clicked="clicked"
                     @filtered="filtered"
                 >
@@ -42,6 +44,11 @@
                         </b-button>
                     </template>
                 </b-table>
+                <b-pagination
+                  v-model="currentPage"
+                  :per-page="perPage"
+                  :total-rows="rows"
+                />
                 <div v-if="nItems == 0">
                     <div v-if="filter">
                         No search results found for: <b>{{ this.filter }}</b
@@ -90,6 +97,7 @@ export default {
     },
     data() {
         return {
+            currentPage: 1,
             errorMessage: null,
             errorShow: false,
             fields: {
@@ -114,6 +122,7 @@ export default {
             modalShow: true,
             nItems: 0,
             optionsShow: false,
+            perPage: 100,
             undoShow: false,
             url: null,
             values: {}
@@ -130,6 +139,9 @@ export default {
                 }
             }
             return this.items;
+        },
+        rows() {
+            return this.items.length
         }
     },
     created: function() {
