@@ -157,7 +157,7 @@ class Cloud(ObjectStore, CloudConfigMixin):
         #
         # Therefore, to adhere with principle of least privilege, we do not
         # assert credentials; instead, we handle exceptions raised as a
-        # result of signing API calls to cloud provider (e.g., GCE) using
+        # result of signing API calls to cloud provider (e.g., GCP) using
         # incorrect, invalid, or unauthorized credentials.
 
         return connection
@@ -215,7 +215,7 @@ class Cloud(ObjectStore, CloudConfigMixin):
             elif provider == "google":
                 cre = auth_element.get("credentials_file")
                 if not os.path.isfile(cre):
-                    msg = "The following file specified for GCE credentials not found: {}".format(cre)
+                    msg = "The following file specified for GCP credentials not found: {}".format(cre)
                     log.error(msg)
                     raise IOError(msg)
                 if cre is None:

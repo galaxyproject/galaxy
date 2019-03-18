@@ -577,7 +577,7 @@ extra_dirs:
 
 
 CLOUD_GOOGLE_TEST_CONFIG = """<object_store type="cloud" provider="google">
-     <auth credentials_file="gce.config" />
+     <auth credentials_file="gcp.config" />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
      <cache path="database/object_store_cache" size="1000" />
      <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
@@ -589,7 +589,7 @@ CLOUD_GOOGLE_TEST_CONFIG_YAML = """
 type: cloud
 provider: google
 auth:
-  credentials_file: gce.config
+  credentials_file: gcp.config
 
 bucket:
   name: unique_bucket_name_all_lowercase
@@ -615,9 +615,9 @@ def test_config_parse_cloud():
             tmpdir = mkdtemp()
             if not os.path.exists(tmpdir):
                 os.makedirs(tmpdir)
-            path = os.path.join(tmpdir, "gce.config")
-            open(path, "w").write("some_gce_config")
-            config_str = config_str.replace("gce.config", path)
+            path = os.path.join(tmpdir, "gcp.config")
+            open(path, "w").write("some_gcp_config")
+            config_str = config_str.replace("gcp.config", path)
         with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
 
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
