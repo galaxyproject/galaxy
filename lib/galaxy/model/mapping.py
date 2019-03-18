@@ -40,7 +40,7 @@ from galaxy.model.base import ModelMapping
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from galaxy.security import GalaxyRBACAgent
+from galaxy.model.security import GalaxyRBACAgent
 
 log = logging.getLogger(__name__)
 
