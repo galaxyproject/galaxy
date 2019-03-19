@@ -325,7 +325,7 @@ def release_issue(argv):
 def do_release(argv):
     release_name = argv[2]
     release_file = _release_file(release_name + ".rst")
-    release_info = TEMPLATE.safe_substitute(release_name=release_name)
+    release_info = TEMPLATE.safe_substitute(release=release_name)
     open(release_file, "w").write(release_info.encode("utf-8"))
     month = int(release_name.split(".")[1])
     month_name = calendar.month_name[month]
