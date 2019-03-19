@@ -174,7 +174,6 @@
 <%def name="javascripts()">
     <!-- galaxy.panels.mako javascripts -->
     ${h.js(
-        'libs/d3',
         'bundled/libs.chunk',
         'bundled/base.chunk'
     )}
