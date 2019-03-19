@@ -149,7 +149,7 @@ class Cel(Binary):
         >>> fname = get_test_fname('affy_v_3.cel')
         >>> Cel().sniff(fname)
         True
-        >>> fname = get_test_fname('test.cel')
+        >>> fname = get_test_fname('affy_v_4.cel')
         >>> Cel().sniff(fname)
         True
         >>> fname = get_test_fname('test.gal')
