@@ -1075,6 +1075,8 @@ class SelectTagParameter(SelectToolParameter):
         # Get the value of the associated data reference (a dataset)
         history_items = other_values.get(self.data_ref, None)
         # Check if a dataset is selected
+        if is_runtime_value(history_items):
+            return []
         if not history_items:
             return []
         tags = set()
@@ -1105,7 +1107,7 @@ class SelectTagParameter(SelectToolParameter):
         return SelectToolParameter.get_initial_value(self, trans, other_values)
 
     def get_legal_values(self, trans, other_values):
-        if self.data_ref not in other_values:
+        if self.data_ref not in other_values and not trans.workflow_building_mode:
             raise ValueError("Value for associated data reference not found (data_ref).")
         return set(self.get_tag_list(other_values))
 
