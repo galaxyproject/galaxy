@@ -17,6 +17,8 @@ from ..authnz import IdentityProvider
 log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = 'custos-state'
 NONCE_COOKIE_NAME = 'custos-nonce'
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CA_CERTFILE = os.path.join(BASE_DIR, "incommon_rsa_server_ca.pem")
 
 
 class CustosAuthnz(IdentityProvider):
@@ -132,10 +134,12 @@ class CustosAuthnz(IdentityProvider):
             log.warn("Setting OAUTHLIB_INSECURE_TRANSPORT to '1' to "
                      "allow plain HTTP (non-SSL) callback")
             os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = "1"
-        return OAuth2Session(client_id,
+        session = OAuth2Session(client_id,
                              scope=scope,
                              redirect_uri=redirect_uri,
                              state=state)
+        session.verify = self._get_verify_param()
+        return session
 
     def _fetch_token(self, oauth2_session, trans):
         client_secret = self.config['client_secret']
@@ -143,11 +147,13 @@ class CustosAuthnz(IdentityProvider):
         return oauth2_session.fetch_token(
             token_endpoint,
             client_secret=client_secret,
-            authorization_response=trans.request.url)
+            authorization_response=trans.request.url,
+            verify=self._get_verify_param())
 
     def _get_userinfo(self, oauth2_session):
         userinfo_endpoint = self.config['userinfo_endpoint']
-        return oauth2_session.get(userinfo_endpoint).json()
+        return oauth2_session.get(userinfo_endpoint,
+                                  verify=self._get_verify_param()).json()
 
     def _get_custos_authnz_token(self, sa_session, user_id, provider):
         return sa_session.query(CustosAuthnzToken).filter_by(
@@ -184,13 +190,23 @@ class CustosAuthnz(IdentityProvider):
     def _get_well_known_uri_for_provider_and_realm(self, provider, realm):
         # TODO: Look up this URL from a Python library
         if provider == 'custos':
+            self.config['ca_bundle'] = CA_CERTFILE
             return "https://iam.scigap.org/auth/realms/{}/.well-known/openid-configuration".format(realm)
         else:
             raise Exception("Unknown Custos provider name: {}".format(provider))
 
     def _load_well_known_oidc_config(self, well_known_uri):
         try:
-            return requests.get(well_known_uri).json()
+            return requests.get(well_known_uri,
+                                verify=self._get_verify_param()).json()
         except Exception:
             log.error("Failed to load well-known OIDC config URI: {}".format(well_known_uri))
             raise
+
+    def _get_verify_param(self):
+        """Return 'ca_bundle' if 'verify_ssl' is true and 'ca_bundle' is configured."""
+        # in requests_oauthlib, the verify param can either bea boolean or a CA bundle path
+        if 'ca_bundle' in self.config and self.config['verify_ssl']:
+            return self.config['ca_bundle']
+        else:
+            return self.config['verify_ssl']
