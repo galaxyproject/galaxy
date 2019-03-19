@@ -1,6 +1,6 @@
 import logging
-
 import struct
+
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import get_file_peek
