@@ -163,7 +163,7 @@ class Cel(Binary):
         header_bytes = handle.read(5)
         if header_bytes.decode("utf8", errors="ignore")[0] == '@':
             found_cel_4 = True
-        elif header_bytes == b';\x01\x00\x00':
+        elif struct.unpack("<bb", header_bytes[:2]) == (59, 1):
             found_cel_agcc = True
         elif header_bytes.decode("utf8", errors="ignore") == '[CEL]':
             found_cel_3 = True
