@@ -47,6 +47,14 @@ log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
+model.WorkerProcess.table = Table(
+    'worker_process',
+    metadata,
+    Column('server_name', Text, primary_key=True),
+    Column("update_time", DateTime, default=now, onupdate=now),
+)
+
+
 model.User.table = Table(
     "galaxy_user", metadata,
     Column("id", Integer, primary_key=True),
@@ -1491,6 +1499,8 @@ model.APIKeys.table = Table(
 def simple_mapping(model, **kwds):
     mapper(model, model.table, properties=kwds)
 
+
+simple_mapping(model.WorkerProcess)
 
 mapper(model.FormValues, model.FormValues.table, properties=dict(
     form_definition=relation(model.FormDefinition,

@@ -17,6 +17,7 @@ pygithub3 = {version = "*", markers = "python_version < '3'"}
 pytest = "*"
 pytest-html = "*"
 pytest-pythonpath = "*"
+pytest-postgresql = "*"
 recommonmark = "*"
 selenium = "*"
 Sphinx = "*"

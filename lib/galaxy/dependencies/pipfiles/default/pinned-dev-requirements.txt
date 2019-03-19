@@ -34,7 +34,7 @@ pyparsing==2.3.1
 pytest-html==1.20.0
 pytest-metadata==1.8.0
 pytest-pythonpath==0.7.3
-pytest-pgsql==1.1.1 ; python_version > '3.3'
+pytest-postgresql==1.3.4
 pytest==4.3.1
 pytz==2018.9
 pyyaml==5.1
