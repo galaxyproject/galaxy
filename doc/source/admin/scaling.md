@@ -149,36 +149,36 @@ job configuration and use of uWSGI Mules, and was not configurable by the admini
 19.01, two new handler assignment methods have been added and methods are now configurable with the `assign_with`
 attribute on the `<handlers>` tag in `job_conf.xml`.  The available methods are:
 
-- **Database Self Assignment** - Like *In-memory Self Assignment* but assignment occurs by setting a new job's 'handler'
+- **Database Self Assignment** (`db-self`) - Like *In-memory Self Assignment* but assignment occurs by setting a new job's 'handler'
   column in the database to the process that created the job at the time it is created. Additionally, if a tool is
   configured to use a specific handler (ID or tag), that handler is assigned (tags by *Database Preassignment*). This is
   the default if no handlers are defined and no `job-handlers` uWSGI Farm is present (the default for a completely
   unconfigured Galaxy).
 
-- **In-memory Self Assignment** - Jobs are assigned to the web worker that received the tool execution request from the
+- **In-memory Self Assignment** (`mem-self`) - Jobs are assigned to the web worker that received the tool execution request from the
   user via an internal in-memory queue. If a tool is configured to use a specific handler, that configuration is
   ignored; the process that creates the job *always* handles it. This can be slightly faster than **Database Self
   Assignment** but only makes sense in single process environments without dedicated job handlers. This option
   supercedes the former `track_jobs_in_database` option in `galaxy.yml` and corresponds to setting that option to
   `false`.
 
-- **Database Preassignment** - Jobs are assigned a handler by selecting one at random from the configured tag or default
+- **Database Preassignment** (`db-preassign`) - Jobs are assigned a handler by selecting one at random from the configured tag or default
   handlers at the time the job is created. This occurs by the web worker that receives the tool execution request (via
   the UI or API) setting a new job's 'handler' column in the database to the randomly chose handler ID (hence
   "preassignment"). This is the default if handlers are defined and no `job-handlers` uWSGI Farm is present.
 
-- **uWSGI Mule Messaging** - Jobs are assigned a handler via uWSGI mule messaging.  A mule in the `job-handlers` (for
+- **uWSGI Mule Messaging** (`uwsgi-mule-message`) - Jobs are assigned a handler via uWSGI mule messaging.  A mule in the `job-handlers` (for
   default/untagged tool-to-handler mappings) or `job-handlers.<tag>` farm will receive the message and assign itself.
   This the default if a `job-handlers` uWSGI Farm is present and no handlers are configured.
 
-- **Database Transaction Isolation** (new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned
+- **Database Transaction Isolation** (`db-transaction-isolation`, new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned
   job from the database using SQL transaction isolation, which uses database locks to guarantee that only one handler
   can select a given job. This occurs by the web worker that receives the tool execution request (via the UI or API)
   setting a new job's 'handler' column in the database to the configured tag/default (or `_default_` if no tag/default
   is configured). Handlers "listen" for jobs by selecting jobs from the database that match the handler tag(s) for which
   they are configured.
 
-- **Database SKIP LOCKED** (new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned job from
+- **Database SKIP LOCKED** (`db-skip-locked`, new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned job from
   the database using `SELECT ... FOR UPDATE SKIP LOCKED` on databases that support this query (see the next section for
   details). This occurs via the same process as *Database Transaction Isolation*, the only difference is the way in
   which handlers query the database.
