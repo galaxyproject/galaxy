@@ -20,7 +20,6 @@ try:
     from pygithub3 import Github
 except ImportError:
     Github = None
-print(Github)
 from six import string_types
 from six.moves.urllib.parse import urljoin
 
