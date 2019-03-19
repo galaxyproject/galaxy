@@ -170,10 +170,20 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
 
 
 def _find_attributes(tag):
-    return tag.findall("{http://www.w3.org/2001/XMLSchema}attribute") or \
+    raw_attributes = tag.findall("{http://www.w3.org/2001/XMLSchema}attribute") or \
         tag.findall("{http://www.w3.org/2001/XMLSchema}complexType/{http://www.w3.org/2001/XMLSchema}attribute") or \
         tag.findall("{http://www.w3.org/2001/XMLSchema}complexContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attribute") or \
         tag.findall("{http://www.w3.org/2001/XMLSchema}simpleContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attribute")
+    attribute_groups = tag.findall("{http://www.w3.org/2001/XMLSchema}attributeGroup") or \
+        tag.findall("{http://www.w3.org/2001/XMLSchema}complexType/{http://www.w3.org/2001/XMLSchema}attributeGroup") or \
+        tag.findall("{http://www.w3.org/2001/XMLSchema}complexContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attributeGroup") or \
+        tag.findall("{http://www.w3.org/2001/XMLSchema}simpleContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attributeGroup")
+    attributes = list(raw_attributes)
+    for attribute_group in attribute_groups:
+        attribute_group_name = attribute_group.get("ref")
+        attribute_group_def = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}attributeGroup/[@name='%s']" % attribute_group_name)
+        attributes.extend(_find_attributes(attribute_group_def))
+    return attributes
 
 
 def _find_tag_el(tag):

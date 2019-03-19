@@ -3684,11 +3684,11 @@ The default is ``galaxy.json``.
   </xs:complexType>
   <xs:group name="OutputsElement">
     <xs:choice>
-      <xs:element name="data" type="Data"/>
-      <xs:element name="collection" type="Collection" />
+      <xs:element name="data" type="OutputData"/>
+      <xs:element name="collection" type="OutputCollection" />
     </xs:choice>
   </xs:group>
-  <xs:group name="DataElement">
+  <xs:group name="OutputDataElement">
     <xs:choice>
       <xs:element name="change_format" type="ChangeFormat"/>
       <xs:element name="filter" type="OutputFilter" />
@@ -3696,7 +3696,36 @@ The default is ``galaxy.json``.
       <xs:element name="actions" type="Actions"/>
     </xs:choice>
   </xs:group>
-  <xs:complexType name="Data">
+
+  <xs:attributeGroup name="OutputCommon">
+    <xs:attribute name="format_source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+This will be the name of the history item for the output data set. The string
+can include structure like ``${<some param name>.<some attribute>}``, as
+discussed for command line parameters in the ``<command>`` tag set section
+above. The default label is ``${tool.name} on ${on_string}``.
+
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Name for this output. This
+``name`` is used as the Cheetah variable containing the Galaxy assigned output
+path in ``command`` and ``configfile`` elements. The name should not contain
+pipes or periods (e.g. ``.``).]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:complexType name="OutputData">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
@@ -3782,17 +3811,10 @@ on Human (hg18)``.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="DataElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OutputDataElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <!-- TODO: add a unique constraint for action. -->
-    <xs:attribute name="name" type="xs:string">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Name for this output. This
-``name`` is used as the Cheetah variable containing the Galaxy assigned output
-path in ``command`` and ``configfile`` elements. The name should not contain
-pipes or periods (e.g. ``.``).]]></xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="OutputCommon"/>
     <xs:attribute name="auto_format" type="PermissiveBoolean">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
@@ -3810,11 +3832,6 @@ The valid values for format can be found in
 (e.g. ``format="pdf"`` or ``format="fastqsanger"``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="format_source" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">This sets the data type of the output file to be the same format as that of a tool input dataset.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
     <xs:attribute name="default_identifier_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Sets the source of element identifier to the specified input.
@@ -3826,18 +3843,6 @@ This only applies to collections that are mapped over a non-collection input and
         <xs:documentation xml:lang="en">This copies the metadata information
 from the tool's input dataset. This is particularly useful for interval data
 types where the order of the columns is not set.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="label" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en"><![CDATA[
-
-This will be the name of the history item for the output data set. The string
-can include structure like ``${<some param name>.<some attribute>}``, as
-discussed for command line parameters in the ``<command>`` tag set section
-above. The default label is ``${tool.name} on ${on_string}``.
-
-]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_work_dir" type="xs:string">
@@ -3855,15 +3860,15 @@ dataset in the history view. (Default is ``false``.)</xs:documentation>
     </xs:attribute>
   </xs:complexType>
 
-  <xs:group name="CollectionElement">
+  <xs:group name="OutputCollectionElement">
     <xs:choice>
-      <xs:element name="data" type="Data" />
+      <xs:element name="data" type="OutputData" />
       <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets" />
       <xs:element name="filter" type="OutputFilter" />
     </xs:choice>
   </xs:group>
 
-  <xs:complexType name="Collection">
+  <xs:complexType name="OutputCollection">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
@@ -3879,37 +3884,12 @@ Creating collections in tools is covered in-depth in
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="CollectionElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OutputCollectionElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
-    <xs:attribute name="name" type="xs:string" use="required">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Name for this output. This
-``name`` is used as the Cheetah variable containing the Galaxy assigned output
-path in ``command`` and ``configfile`` elements. The name should not contain
-pipes or periods (e.g. ``.``).]]></xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="OutputCommon"/>
     <xs:attribute name="type" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Collection type for output (e.g. ``paired``, ``list``, or ``list:list``).</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="label" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en"><![CDATA[
-
-This will be the name of the history item for the output data set. The string
-can include structure like ``${<some param name>.<some attribute>}``, as
-discussed for command line parameters in the ``<command>`` tag set section
-above. The default label is ``${tool.name} on ${on_string}``.
-
-]]></xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="format_source" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">This is the name of input collection or
-dataset to derive output dataset collection's element's format/datatype from.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="type_source" type="xs:string">
