@@ -6,6 +6,7 @@ import sys
 import time
 
 import galaxy.model
+import galaxy.model.security
 import galaxy.queues
 import galaxy.quota
 import galaxy.security
@@ -154,7 +155,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.webhooks_registry = WebhooksRegistry(self.config.webhooks_dirs)
         # Load security policy.
         self.security_agent = self.model.security_agent
-        self.host_security_agent = galaxy.security.HostAgent(
+        self.host_security_agent = galaxy.model.security.HostAgent(
             model=self.security_agent.model,
             permitted_actions=self.security_agent.permitted_actions)
         # Load quota management.
