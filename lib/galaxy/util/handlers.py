@@ -287,7 +287,7 @@ class ConfiguresHandlers(object):
         :returns: str -- The assigned handler ID.
         """
         if configured:
-            return self.handler_assignment_method_methods[HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN](
+            return self._handler_assignment_method_methods[HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN](
                 obj, method, configured, **kwargs
             )
         obj.set_handler(self.app.config.server_name)
