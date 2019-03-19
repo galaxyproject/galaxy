@@ -268,6 +268,20 @@ class BaseDatasetPopulator(object):
         assert create_response.status_code == 200, create_response
         return create_response.json()
 
+    def list_dynamic_tools(self):
+        list_response = self._get("dynamic_tools", admin=True)
+        assert list_response.status_code == 200, list_response
+        return list_response.json()
+
+    def show_dynamic_tool(self, uuid):
+        show_response = self._get("dynamic_tools/%s" % uuid, admin=True)
+        assert show_response.status_code == 200, show_response
+        return show_response.json()
+
+    def deactivate_dynamic_tool(self, uuid):
+        delete_response = self._delete("dynamic_tools/%s" % uuid, admin=True)
+        return delete_response.json()
+
     def _summarize_history(self, history_id):
         pass
 
@@ -562,17 +576,17 @@ class DatasetPopulator(BaseDatasetPopulator):
 
         return self.galaxy_interactor.put(route, data)
 
-    def _get(self, route, data=None):
+    def _get(self, route, data=None, admin=False):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.get(route, data=data)
+        return self.galaxy_interactor.get(route, data=data, admin=admin)
 
-    def _delete(self, route, data=None):
+    def _delete(self, route, data=None, admin=False):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.delete(route, data=data)
+        return self.galaxy_interactor.delete(route, data=data, admin=admin)
 
     def _summarize_history(self, history_id):
         self.galaxy_interactor._summarize_history(history_id)

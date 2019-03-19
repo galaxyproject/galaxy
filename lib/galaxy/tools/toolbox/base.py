@@ -445,7 +445,10 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
         if tool_id is None:
             if tool_uuid is not None:
-                tool_id = self._get_tool_by_uuid(tool_uuid).id
+                tool_from_uuid = self._get_tool_by_uuid(tool_uuid)
+                if tool_from_uuid is None:
+                    raise ObjectNotFound("Failed to find a tool with uuid [%s]" % tool_uuid)
+                tool_id = tool_from_uuid.id
             if tool_id is None:
                 raise AssertionError("get_tool called with tool_id as None")
 

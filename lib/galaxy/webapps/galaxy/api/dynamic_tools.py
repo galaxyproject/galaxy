@@ -23,7 +23,7 @@ class DynamicToolsController(BaseAPIController):
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwds):
         """
-        GET /api/dynamic_tools: returns a list of dynamic tools.
+        GET /api/dynamic_tools
 
         This returns meta-information about the dynamic tool, such as
         tool_uuid. To use the tool or view funtional information such as
@@ -38,17 +38,9 @@ class DynamicToolsController(BaseAPIController):
     @expose_api_anonymous_and_sessionless
     def show(self, trans, id, **kwd):
         """
-        GET /api/dynamic_tools/{tool_id|tool_uuid}
+        GET /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}
         """
-        manager = self.app.dynamic_tools_manager
-        if util.is_uuid(id):
-            dynamic_tool = manager.get_by_uuid(id)
-        else:
-            dynamic_tool = manager.get_by_id(trans.security.decode_id(id))
-        if dynamic_tool is None:
-            raise ObjectNotFound()
-
-        return dynamic_tool.to_dict()
+        self._get_dynamic_tool(trans, id).to_dict()
 
     @web.require_admin
     @expose_api
@@ -68,3 +60,27 @@ class DynamicToolsController(BaseAPIController):
             payload
         )
         return dynamic_tool.to_dict()
+
+    @expose_api
+    @web.require_admin
+    def delete(self, trans, id, **kwd):
+        """
+        DELETE /api/dynamic_tools/{encoded_dynamic_tool_id|tool_uuid}
+
+        Deactivate the specified dynamic tool. Deactivated tools will not
+        be loaded into the toolbox.
+        """
+        manager = self.app.dynamic_tools_manager
+        dynamic_tool = self._get_dynamic_tool(trans, id)
+        updated_dynamic_tool = manager.deactivate(dynamic_tool)
+        return updated_dynamic_tool.to_dict()
+
+    def _get_dynamic_tool(self, trans, request_id):
+        manager = self.app.dynamic_tools_manager
+        if util.is_uuid(request_id):
+            dynamic_tool = manager.get_tool_by_uuid(request_id)
+        else:
+            dynamic_tool = manager.get_tool_by_id(trans.security.decode_id(request_id))
+        if dynamic_tool is None:
+            raise ObjectNotFound()
+        return dynamic_tool

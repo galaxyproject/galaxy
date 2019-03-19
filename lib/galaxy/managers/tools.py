@@ -23,9 +23,15 @@ class DynamicToolManager(ModelManager):
         )
         return dynamic_tool
 
-    def get_tool_by_id(self, id_or_uuid):
+    def get_tool_by_tool_id(self, tool_id):
         dynamic_tool = self._one_or_none(
-            self.query().filter(self.model_class.tool_id == id_or_uuid)
+            self.query().filter(self.model_class.tool_id == tool_id)
+        )
+        return dynamic_tool
+
+    def get_tool_by_id(self, object_id):
+        dynamic_tool = self._one_or_none(
+            self.query().filter(self.model_class.id == object_id)
         )
         return dynamic_tool
 
@@ -78,4 +84,8 @@ class DynamicToolManager(ModelManager):
         return dynamic_tool
 
     def list_tools(self, active=True):
-        return self.query().filter(active=active)
+        return self.query().filter(self.model_class.active == active)
+
+    def deactivate(self, dynamic_tool):
+        self.update(dynamic_tool, {"active": False})
+        return dynamic_tool

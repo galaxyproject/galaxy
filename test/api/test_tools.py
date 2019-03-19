@@ -924,6 +924,45 @@ class ToolsTestCase(api.ApiTestCase):
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual(output_content, "Hello World 2\n")
 
+    def test_show_dynamic_tools(self):
+        # Create tool.
+        original_list = self.dataset_populator.list_dynamic_tools()
+        created_dynamic_tool_dict = self.dataset_populator.create_tool(MINIMAL_TOOL_NO_ID)
+        self._assert_has_keys(created_dynamic_tool_dict, "id", "uuid", "active")
+        created_id = created_dynamic_tool_dict["id"]
+        created_uuid = created_dynamic_tool_dict["uuid"]
+        new_list = self.dataset_populator.list_dynamic_tools()
+
+        for dynamic_tool_dict in original_list:
+            self._assert_has_keys(dynamic_tool_dict, "id", "uuid", "active")
+            assert dynamic_tool_dict["id"] != created_id
+            assert dynamic_tool_dict["uuid"] != created_uuid
+
+        found_id = False
+        found_uuid = False
+        for dynamic_tool_dict in new_list:
+            self._assert_has_keys(dynamic_tool_dict, "id", "uuid", "active")
+            found_id = found_id or dynamic_tool_dict["id"] == created_id
+            found_uuid = found_uuid or dynamic_tool_dict["uuid"] == created_uuid
+
+        assert found_id
+        assert found_uuid
+
+    def test_tool_deactivate(self):
+        # Create tool.
+        tool_response = self.dataset_populator.create_tool(MINIMAL_TOOL_NO_ID)
+        self._assert_has_keys(tool_response, "id", "uuid", "active")
+        assert tool_response["active"]
+        deactivate_response = self.dataset_populator.deactivate_dynamic_tool(tool_response["uuid"])
+        assert not deactivate_response["active"]
+
+        # Run tool.
+        history_id = self.dataset_populator.new_history()
+        inputs = {}
+        response = self._run(history_id=history_id, inputs=inputs, tool_uuid=tool_response["uuid"], assert_ok=False)
+        # Get a 404 when trying to run a deactivated tool.
+        self._assert_status_code_is(response, 404)
+
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)
     def test_run_cat1_with_two_inputs(self, history_id):
