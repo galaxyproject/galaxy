@@ -41,6 +41,10 @@ class DynamicToolManager(ModelManager):
                 "Current tool representations require 'class'."
             )
 
+        enable_beta_formats = getattr(self.app.config, "enable_beta_tool_formats", False)
+        if not enable_beta_formats:
+            raise exceptions.ConfigDoesNotAllowException("Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools.")
+
         tool_format = representation["class"]
         if tool_format == "GalaxyTool":
             uuid = tool_payload.get("uuid", None)
