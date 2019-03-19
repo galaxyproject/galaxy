@@ -105,10 +105,7 @@ from .provided_metadata import parse_tool_provided_metadata
 log = logging.getLogger(__name__)
 
 REQUIRES_JS_RUNTIME_MESSAGE = ("The tool [%s] requires a nodejs runtime to execute "
-                               "but node nor nodejs could be found on Galaxy's PATH and "
-                               "no runtime was configured using the nodejs_path option in "
-                               "galaxy.ini.")
-
+                               "but node or nodejs could not be found. Please contact the Galaxy adminstrator")
 
 HELP_UNINITIALIZED = threading.Lock()
 MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
