@@ -41,10 +41,10 @@ DEVTEAM = [
     "VJalili"
 ]
 
-TEMPLATE = """
+TEMPLATE = string.Template("""
 .. to_doc
 
-%s
+${release}
 ===============================
 
 .. announce_start
@@ -74,9 +74,9 @@ Fixes
 .. bug
 
 
-.. github_links
+.. include:: ${release}_prs.rst
 
-"""
+""")
 
 ANNOUNCE_TEMPLATE = string.Template("""
 ===========================================================
@@ -119,6 +119,45 @@ Release Notes
 
 .. include:: ${release}.rst
    :start-after: announce_start
+
+.. include:: _thanks.rst
+""")
+
+ANNOUNCE_USER_TEMPLATE = string.Template("""
+===========================================================
+${month_name} 20${year} Galaxy Release (v ${release})
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Feature1**
+  Feature description.
+
+**Feature2**
+  Feature description.
+
+**Feature3**
+  Feature description.
+
+
+New Visualisations
+===========================================================
+
+New Datatypes
+===========================================================
+
+Builtin Tool Updates
+===========================================================
+
+Release Notes
+===========================================================
+
+Please see the `full release notes <${release}_announce.html>`_ for more details.
+
+.. include:: ${release}_prs.rst
 
 .. include:: _thanks.rst
 """)
@@ -286,7 +325,7 @@ def release_issue(argv):
 def do_release(argv):
     release_name = argv[2]
     release_file = _release_file(release_name + ".rst")
-    release_info = TEMPLATE % release_name
+    release_info = TEMPLATE.safe_substitute(release=release_name)
     open(release_file, "w").write(release_info.encode("utf-8"))
     month = int(release_name.split(".")[1])
     month_name = calendar.month_name[month]
@@ -299,6 +338,14 @@ def do_release(argv):
     )
     announce_file = _release_file(release_name + "_announce.rst")
     open(announce_file, "w").write(announce_info.encode("utf-8"))
+
+    announce_user_info = ANNOUNCE_USER_TEMPLATE.substitute(
+        month_name=month_name,
+        year=year,
+        release=release_name
+    )
+    announce_user_file = _release_file(release_name + "_announce_user.rst")
+    open(announce_user_file, "w").write(announce_user_info.encode("utf-8"))
 
     next_version_params = _next_version_params(release_name)
     next_version = next_version_params["version"]
@@ -319,7 +366,7 @@ def do_release(argv):
             "number": pr.number,
             "head": pr.head,
         }
-        main([argv[0], "--release_file", "%s.rst" % release_name, "--request", as_dict, "pr" + str(pr.number)])
+        main([argv[0], "--release_file", "%s_prs.rst" % release_name, "--request", as_dict, "pr" + str(pr.number)])
 
 
 def check_release(argv):
