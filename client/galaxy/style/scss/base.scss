@@ -840,9 +840,9 @@ button {
 .warningmessagelarge,
 .donemessagelarge,
 .infomessagelarge,
-.ui-form-help .error,
-.ui-form-help .warning,
-.ui-form-help .note {
+.form-help .error,
+.form-help .warning,
+.form-help .note {
     @extend .alert;
     min-height: 36px;
     padding-left: 52px;
@@ -891,9 +891,9 @@ button {
 .warningmessagesmall,
 .donemessagesmall,
 .infomessagesmall,
-.ui-form-help .error,
-.ui-form-help .warning,
-.ui-form-help .note {
+.form-help .error,
+.form-help .warning,
+.form-help .note {
     @extend .alert;
     padding: 5px;
     padding-left: 25px;
@@ -907,13 +907,13 @@ button {
 
 .errormessage,
 .errormessagesmall,
-.ui-form-help .error {
+.form-help .error {
     @extend .alert-danger;
 }
 
 .warningmessage,
 .warningmessagesmall,
-.ui-form-help .warning {
+.form-help .warning {
     @extend .alert-warning;
     background-image: url(../../images/warn_small.png);
 }
@@ -926,7 +926,7 @@ button {
 
 .infomessage,
 .infomessagesmall,
-.ui-form-help .note {
+.form-help .note {
     @extend .alert-info;
     background-image: url(../../images/info_small.png);
 }
