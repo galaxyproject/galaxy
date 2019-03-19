@@ -157,11 +157,11 @@ class Cel(Binary):
         >>> Cel().sniff(fname)
         False
         """
-        handle = open(filename, 'rb')
+        with open(filename, 'rb') as handle:
+            header_bytes = handle.read(5)
         found_cel_4 = False
         found_cel_3 = False
         found_cel_agcc = False
-        header_bytes = handle.read(5)
         if header_bytes.decode("utf8", errors="ignore")[0] == '@':
             found_cel_4 = True
         elif struct.unpack("<bb", header_bytes[:2]) == (59, 1):
@@ -174,8 +174,8 @@ class Cel(Binary):
         """
         Set metadata for Cel file.
         """
-        handle = open(dataset.file_name, 'rb')
-        header_bytes = handle.read(5)
+        with open(dataset.file_name, 'rb') as handle:
+            header_bytes = handle.read(5)        
         if header_bytes.decode("utf8", errors="ignore")[0] == '@':
             dataset.metadata.version = "4"
         elif header_bytes.decode("utf8", errors="ignore")[0] == ';':
