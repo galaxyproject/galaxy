@@ -69,7 +69,8 @@ def _json_wrap_input(input, value, handle_files="skip"):
                 return _hda_to_object(value)
             else:
                 return None
-        raise NotImplementedError()
+        else:
+            raise NotImplementedError()
     elif input_type == "data_collection":
         if handle_files == "skip":
             return SKIP_INPUT
