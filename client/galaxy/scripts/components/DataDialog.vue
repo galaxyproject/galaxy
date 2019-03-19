@@ -44,10 +44,10 @@
                         </b-button>
                     </template>
                 </b-table>
-                <b-pagination
+                <b-pagination v-if="nItems > perPage"
                   v-model="currentPage"
                   :per-page="perPage"
-                  :total-rows="rows"
+                  :total-rows="nItems"
                 />
                 <div v-if="nItems == 0">
                     <div v-if="filter">
@@ -139,9 +139,6 @@ export default {
                 }
             }
             return this.items;
-        },
-        rows() {
-            return this.items.length
         }
     },
     created: function() {
@@ -153,6 +150,7 @@ export default {
         },
         filtered: function(items) {
             this.nItems = items.length;
+            this.currentPage = 1
         },
         clicked: function(record) {
             if (this.isDataset(record)) {
@@ -208,6 +206,7 @@ export default {
                 .then(response => {
                     this.items = [];
                     this.stack = [response.data];
+                    this.filter = null;
                     while (this.stack.length > 0) {
                         let root = this.stack.pop();
                         if (Array.isArray(root)) {
