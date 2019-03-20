@@ -58,18 +58,22 @@ class RealTime(BaseUIController):
     _rtt_ep_grid = RealTimeToolEntryPointListGrid()
 
     @web.expose
-    def index(self, trans, realtime_id=None, **kwd):
-        realtime = None
-        if realtime_id:
-            realtime_id = self.decode_id(realtime_id)
-            realtime = trans.sa_session.query(trans.app.model.RealTimeTool).get(realtime_id)
-        if realtime:
-            if trans.app.realtime_manager.can_access_realtime(trans, realtime):
-                if realtime.entry_points:
-                    if len(realtime.entry_points) == 1:
-                        return self.access_entry_point(trans, entry_point_id=trans.security.encode_id(realtime.entry_points[0].id))
-                    else:
-                        return trans.response.send_redirect(url_for(controller="realtime", action="list"))
+    def index(self, trans, entry_point_id=None, job_id=None, **kwd):
+        eps = []
+        if entry_point_id:
+            if not isinstance(entry_point_id, list):
+                entry_point_id = [entry_point_id]
+            eps = [trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).get(self.decode_id(ep_id)) for ep_id in entry_point_id]
+        if job_id:
+            job = trans.sa_session.query(trans.app.model.Job).get(self.decode_id(job_id))
+            for ep in job.realtimetool_entry_points:
+                eps.append(ep)
+        if eps:
+            if trans.app.realtime_manager.can_access_entry_points(trans, eps):
+                if len(eps) == 1:
+                    return self.access_entry_point(trans, entry_point_id=trans.security.encode_id(eps[0].id))
+                else:
+                    return trans.response.send_redirect(url_for(controller="realtime", action="list"))
             else:
                 return trans.show_error_message('Access not authorized.')
         return trans.show_error_message('RealTimeTool instance not found')
@@ -84,12 +88,14 @@ class RealTime(BaseUIController):
             entry_point_id = self.decode_id(entry_point_id)
             entry_point = trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).get(entry_point_id)
             if trans.app.realtime_manager.can_access_entry_point(trans, entry_point):
-                if entry_point.realtime.active and entry_point.configured:
+                if entry_point.active:
                     rval = '%s//%s.%s.%s.%s.%s/' % (trans.request.host_url.split('//', 1)[0], entry_point.__class__.__name__.lower(), trans.security.encode_id(entry_point.id),
                             entry_point.token, trans.app.config.realtime_prefix, trans.request.host)
                     if entry_point.entry_url:
                         rval = '%s%s' % (rval, entry_point.entry_url)
                     return trans.response.send_redirect(rval)
+                elif entry_point.deleted:
+                    return trans.show_error_message('RealTimeTool has ended. You will have to start a new one.')
                 else:
                     return trans.show_error_message('RealTimeTool is not active. If you recently launched this tool it may not be ready yet, please wait a moment and refresh this page.')
         return trans.show_error_message('Access not authorized.')
@@ -102,7 +108,6 @@ class RealTime(BaseUIController):
         message = None
         if operation:
             eps = []
-            rtts = []
             ids = kwargs.get('id', None)
             if ids:
                 if not isinstance(ids, list):
@@ -112,18 +117,21 @@ class RealTime(BaseUIController):
                     entry_point = trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).get(entry_point_id)
                     if trans.app.realtime_manager.can_access_entry_point(trans, entry_point):
                         eps.append(entry_point)
-                        if entry_point.realtime not in rtts:
-                            rtts.append(entry_point.realtime)
-            if rtts:
+            if eps:
                 failed = []
                 succeeded = []
+                jobs = []
                 if operation == 'stop':
-                    for realtime in rtts:
-                        stopped = trans.app.realtime_manager.stop(trans, realtime)
-                        if stopped:
-                            succeeded.append(realtime)
+                    for ep in eps:
+                        if ep.job not in jobs:
+                            stopped = trans.app.realtime_manager.stop(trans, ep)
+                            if stopped:
+                                succeeded.append(ep)
+                                jobs.append(ep.job)
+                            else:
+                                failed.append(ep)
                         else:
-                            failed.append(realtime)
+                            succeeded.append(ep)
                     if failed:
                         message = 'Unable to stop %i RealTimeTools.' % (len(failed))
                     if succeeded:
@@ -131,7 +139,7 @@ class RealTime(BaseUIController):
         return self._rtt_ep_grid(trans, message=message)
 
     @web.expose_api
-    def stop(self, trans, realtime_id=None, realtime_entry_id=None):
+    def stop0(self, trans, realtime_id=None, realtime_entry_id=None):
         """List all available realtimetools"""
         if realtime_id:
             realtime = trans.app.model.RealTimeTool.get(trans.security.decode_id(realtime_id))

@@ -1327,36 +1327,22 @@ class JobContainerAssociation(RepresentById):
         self.container_info = container_info or {}
 
 
-class RealTimeTool(RepresentById):
-    def __init__(self, job=None, user=None, session=None, dataset=None):
-        self.job = job
-        self.user = user
-        self.galaxy_session = session
-        self.dataset = dataset
-
-    @property
-    def active(self):
-        # FIXME: don't included queued?
-        return not self.job.finished
-
-    def to_dict(self, *args, **kwds):
-        return dict(job_id=self.job.id, user_id=self.user.id, galaxy_session_id=self.galaxy_session.id, dataset_id=self.dataset.id, active=self.active)
-
-
 class RealTimeToolEntryPoint(RepresentById):
-    def __init__(self, realtime=None, name=None, token=None, tool_port=None, entry_url=None,
-                 host=None, port=None, protocol=None, configured=False):
-        self.realtime = realtime
+    def __init__(self, job=None, name=None, token=None, tool_port=None, host=None, port=None, protocol=None,
+                 entry_url=None, info=None, configured=False, deleted=False):
+        self.job = job
         self.name = name
         if not token:
             token = uuid4().get_hex()
         self.token = token
         self.tool_port = tool_port
-        self.entry_url = entry_url
         self.host = host
         self.port = port
         self.protocol = protocol
+        self.entry_url = entry_url
+        self.info = info or {}
         self.configured = configured
+        self.deleted = deleted
 
     def to_dict(self, *args, **kwds):
         rval = dict(realtime_id=self.realtime.id)
@@ -1366,8 +1352,9 @@ class RealTimeToolEntryPoint(RepresentById):
 
     @property
     def active(self):
-        if self.configured:
-            return self.realtime.active
+        if self.configured and not self.deleted:
+            # FIXME: don't included queued?
+            return not self.job.finished
         return False
 
 

@@ -2325,10 +2325,9 @@ class RealTimeTool(Tool):
 
     def __remove_realtime_by_job(self, job):
         if job:
-            rtt = job.realtime_tool
-            log.debug('__remove_realtime_by_job: %s', rtt)
-            if rtt:
-                self.app.realtime_manager.remove_realtime(rtt)
+            eps = job.realtimetool_entry_points
+            log.debug('__remove_realtime_by_job: %s', eps)
+            self.app.realtime_manager.remove_entry_points(eps)
         else:
             log.warning("Could not determine job to stop RealTimeTool: %s", job)
 
@@ -2344,9 +2343,9 @@ class RealTimeTool(Tool):
 
     def get_view_result(self, job=None):
         if job:
-            realtimetool = job.realtime_tool
-            if realtimetool:
-                return self.app.url_for(controller='realtime', action='index', realtime_id=self.app.security.encode_id(realtimetool.id))
+            eps = job.realtimetool_entry_points
+            if eps:
+                return self.app.url_for(controller='realtime', action='index', entry_point_id=[self.app.security.encode_id(ep.id) for ep in eps])
         return None
 
 

@@ -31,8 +31,7 @@ class Realtime(Html):
 
     def generate_primary_file(self, dataset=None):
         """
-        This is called only at upload to write the html file
-        cannot rename the datasets here - they come with the default unfortunately
+        This is called only at creation to write the html file
         """
         defined_files = self.get_composite_files(dataset=dataset).items()
         rval = ["<html><head><title>Files for Composite Dataset (%s)</title></head>" % (self.file_ext)]
@@ -65,10 +64,11 @@ class Realtime(Html):
         return "\n".join(rval)
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
-        log.debug('dataset.realtime_tool.id %s', dataset.realtime_tool.id)
-        rtt = dataset.realtime_tool
-        if rtt and rtt.active:
-            return trans.response.send_redirect(url_for(controller='realtime', action='index', realtime_id=trans.security.encode_id(rtt.id)))
+        job = dataset.creating_job
+        if job and not job.finished:
+            eps = job.realtimetool_entry_points
+            if eps:
+                return trans.response.send_redirect(url_for(controller='realtime', action='index', entry_point_id=[trans.security.encode_id(ep.id) for ep in eps]))
         return super(Realtime, self).display_data(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, offset=offset, ck_size=ck_size, **kwd)
 
 

@@ -286,8 +286,8 @@ class LocalJobRunner(BaseJobRunner):
                         cont.container_info['inspect'] = json.loads(inspect)
                     else:
                         log.error('Unable to run inspect command (%s): %s', cont.container_info['commands']['inspect'], exit_code)
-                    rtt = job.realtime_tool
-                    if rtt:
+                    eps = job.realtimetool_entry_points
+                    if eps:
                         ports_raw = None
                         for i in range(1, max_command_attempts):
                             with tempfile.TemporaryFile() as stdout_file:
@@ -306,18 +306,7 @@ class LocalJobRunner(BaseJobRunner):
                                 sleep(t)
 
                         if ports_raw is not None:
-                            for line in ports_raw.strip().split('\n'):
-                                # TODO: configure all ports at once, instead of individually
-                                # A port could e.g. be mapped multiple times, with diff entry URL
-                                tool, host = line.split(" -> ", 1)
-                                hostname, port = host.split(':')
-                                tool_p, tool_prot = tool.split("/")
-                                ep = self.app.realtime_manager.configure_entry_point(rtt, tool_port=tool_p, host=hostname, port=port, protocol=tool_prot)
-                                if ep:
-                                    # must add and flush the ep, here or elsewhere
-                                    # otherwise, Galaxy's db doesn't get written to, but the sqlite db does
-                                    job_wrapper.sa_session.add(ep)
-                                    job_wrapper.sa_session.flush()
+                            self.app.realtime_manager.configure_entry_points_raw_docker_ports(job, ports_raw)
                         else:
                             log.error('Unable to run port command (%s): %s', cont.container_info['commands']['port'], exit_code)
                     proc.container_commands = cont.container_info['commands']

@@ -6,12 +6,12 @@ from six import string_types
 from sqlalchemy import or_
 
 
+from galaxy.tools.deps.docker_util import parse_port_text as docker_parse_port_text
 from galaxy.util.filelock import FileLock
 
 
 log = logging.getLogger(__name__)
 
-REALTIMETOOL_DATASET_EXT = 'realtimetool'
 DATABASE_TABLE_NAME = 'gxrtproxy'
 
 
@@ -124,7 +124,15 @@ class RealtimeSqlite(object):
         """
         return self.remove(key=self.encode_id(entry_point.id), key_type=entry_point.__class__.__name__.lower())
 
-    def remove_realtime(self, rtt):
+    def remove_entry_points0(self, entry_points):
+        """Convenience method to easily remove entry_points.
+        """
+        rval = []
+        for entry_point in entry_points:
+            rval.append(self.remove_entry_point(entry_point))
+        return rval
+
+    def remove_realtime0(self, rtt):
         """Convenience method to easily remove a RealTimeTool.
         """
         for ep in rtt.entry_points:
@@ -139,42 +147,45 @@ class RealTimeManager(object):
     def __init__(self, app):
         self.model = app.model
         self.security = app.security
+        self.sa_session = app.model.context
         self.job_manager = app.job_manager
         self.propagator = RealtimeSqlite(app.config.proxy_session_map, app.security.encode_id)
 
-    # FIXME: Do we really want to directly associate a single dataset?
-    # Probably Not
-    def guess_associated_dataset(self, datasets):
-        for dataset in datasets:
-            dataset = dataset.dataset
-            if dataset.ext == REALTIMETOOL_DATASET_EXT:
-                return dataset
-        return None
-
-    def create_entry_points(self, trans, rtt, tool, flush=True):
+    def create_entry_points(self, job, tool, flush=True):
         for entry in tool.tool_ports:
-            rtt_entry = self.model.RealTimeToolEntryPoint(realtime=rtt, tool_port=entry['port'], entry_url=entry['url'], name=entry['name'])
-            trans.sa_session.add(rtt_entry)
+            ep = self.model.RealTimeToolEntryPoint(job=job, tool_port=entry['port'], entry_url=entry['url'], name=entry['name'])
+            self.sa_session.add(ep)
         if flush:
-            trans.sa_session.flush()
+            self.sa_session.flush()
 
-    def configure_entry_point(self, rtt, tool_port=None, host=None, port=None, protocol=None):
-        if tool_port is not None:
-            tool_port = int(tool_port)
+    def configure_entry_point(self, job, tool_port=None, host=None, port=None, protocol=None):
+        return self.configure_entry_points(job, {tool_port: dict(tool_port=tool_port, host=host, port=port, protocol=protocol)})
+
+    def configure_entry_points(self, job, ports_dict):
+        # There can be multiple entry points that reference the same tool port (could have different entry URLs)
+        configured = []
         not_configured = []
-        for entry in rtt.entry_points:
-            if entry.tool_port == tool_port:
-                entry.host = host
-                entry.port = port
-                entry.protocol = protocol
-                entry.configured = True
-                self.save_entry_point(entry)
-                return entry
-            elif not entry.configured:
-                not_configured.append(entry)
-        # TODO: port not found in entry, add to random one?
-        log.warning('tool port not found! %s', str(not_configured))
-        return None
+        log.debug('ports_dict %s', str(ports_dict))
+        for ep in job.realtimetool_entry_points:
+            port_dict = ports_dict.get(ep.tool_port, None)
+            if port_dict is None:
+                log.error("Did not find port to assign to RealTimeToolEntryPoint by tool port: %s.", ep.tool_port)
+                not_configured.append(ep)
+            else:
+                ep.host = port_dict['host']
+                ep.port = port_dict['port']
+                ep.protocol = port_dict['protocol']
+                ep.configured = True
+                self.sa_session.add(ep)
+                self.save_entry_point(ep)
+                configured.append(ep)
+        if configured:
+            self.sa_session.flush()
+        return dict(not_configured=not_configured, configured=configured)
+
+    def configure_entry_points_raw_docker_ports(self, job, port_text):
+        ports_dict = docker_parse_port_text(port_text)
+        return self.configure_entry_points(job, ports_dict)
 
     def save_entry_point(self, entry_point):
         """
@@ -182,16 +193,12 @@ class RealTimeManager(object):
         """
         self.propagator.save_entry_point(entry_point)
 
-    def create_realtime(self, trans, job, tool):
+    def create_realtime(self, job, tool):
         # create from initial job
-        if job:
-            realtime_tool = self.model.RealTimeTool(job=job, user=trans.user, session=trans.galaxy_session, dataset=self.guess_associated_dataset(job.get_output_datasets()))
-            trans.sa_session.add(realtime_tool)
-            if tool:
-                self.create_entry_points(trans, realtime_tool, tool, flush=False)
-            trans.sa_session.flush()
+        if job and tool:
+            self.create_entry_points(job, tool)
         else:
-            log.warning('Called RealTimeManager.create_realtime, but job is None')
+            log.warning('Called RealTimeManager.create_realtime, but job (%s) or tool (%s) is None', job, tool)
 
     def get_nonterminal_for_user_by_trans(self, trans):
         if trans.user:
@@ -210,16 +217,15 @@ class RealTimeManager(object):
                     query = query.filter(or_(*t))
             return query
         jobs = build_and_apply_filters(jobs, trans.app.model.Job.non_ready_states, lambda s: trans.app.model.Job.state == s)
-        rtts = trans.sa_session.query(trans.app.model.RealTimeTool).filter(trans.app.model.RealTimeTool.job_id.in_([job.id for job in jobs]))
-        return trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).filter(trans.app.model.RealTimeToolEntryPoint.realtime_id.in_([rtt.id for rtt in rtts]))
+        return trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).filter(trans.app.model.RealTimeToolEntryPoint.job_id.in_([job.id for job in jobs]))
 
-    def can_access_realtime(self, trans, realtime):
-        if realtime:
+    def can_access_job(self, trans, job):
+        if job:
             if trans.user is None:
                 galaxy_session = trans.get_galaxy_session()
-                if galaxy_session is None or realtime.session_id != galaxy_session.id:
+                if galaxy_session is None or job.session_id != galaxy_session.id:
                     return False
-            elif realtime.user != trans.user:
+            elif job.user != trans.user:
                 return False
         else:
             return False
@@ -227,10 +233,16 @@ class RealTimeManager(object):
 
     def can_access_entry_point(self, trans, entry_point):
         if entry_point:
-            return self.can_access_realtime(trans, entry_point.realtime)
+            return self.can_access_job(trans, entry_point.job)
         return False
 
-    def stop(self, trans, realtime):
+    def can_access_entry_points(self, trans, entry_points):
+        for ep in entry_points:
+            if not self.can_access_entry_point(trans, ep):
+                return False
+        return True
+
+    def stop0(self, trans, realtime):
         try:
             self.remove_realtime(realtime)
             job = realtime.job
@@ -247,8 +259,18 @@ class RealTimeManager(object):
             return False
         return True
 
-    def remove_realtime(self, realtime):
+    def remove_realtime0(self, realtime):
         return self.propagator.remove_realtime(realtime)
 
-    def remove_entry_point(self, entry_point):
-        return self.propagator.remove_entry_point(entry_point)
+    def remove_entry_points(self, entry_points):
+        if entry_points:
+            for entry_point in entry_points:
+                self.remove_entry_point(entry_point, flush=False)
+            self.sa_session.flush()
+
+    def remove_entry_point(self, entry_point, flush=True):
+        entry_point.deleted = True
+        self.sa_session.add(entry_point)
+        if flush:
+            self.sa_session.flush()
+        self.propagator.remove_entry_point(entry_point)

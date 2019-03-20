@@ -222,3 +222,17 @@ def _docker_prefix(
     if host:
         command_parts.extend(["-H", host])
     return command_parts
+
+
+def parse_port_text(port_text):
+    ports = None
+    if port_text is not None:
+        ports = {}
+        for line in port_text.strip().split('\n'):
+            tool, host = line.split(" -> ", 1)
+            hostname, port = host.split(':')
+            port = int(port)
+            tool_p, tool_prot = tool.split("/")
+            tool_p = int(tool_p)
+            ports[tool_p] = dict(tool_port=tool_p, host=hostname, port=port, protocol=tool_prot)
+    return ports

@@ -11,5 +11,5 @@ class RealTimeToolAction(DefaultToolAction):
     def execute(self, tool, trans, **kwds):
         rval = super(RealTimeToolAction, self).execute(tool, trans, **kwds)
         job, output_dict = rval
-        trans.app.realtime_manager.create_realtime(trans, job, tool)
+        trans.app.realtime_manager.create_realtime(job, tool)
         return rval
