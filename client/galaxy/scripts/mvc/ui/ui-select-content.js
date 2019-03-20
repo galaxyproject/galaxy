@@ -351,7 +351,6 @@ var View = Backbone.View.extend({
         let $left = $("<div/>");
         let $right = $("<div/>").addClass("w-100");
         this.$el.empty()
-                .append("<div/>")
                 .addClass("d-flex flex-row")
                 .append($left)
                 .append($right);

@@ -421,6 +421,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
             -webkit-appearance: none;
             -moz-border-radius: $border-radius-base;
             line-height: 1.5rem;
+            .select2-chosen {
+                white-space: normal;
+            }
             .select2-arrow {
                 display: none;
             }
