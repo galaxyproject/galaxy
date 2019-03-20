@@ -2323,6 +2323,25 @@ class RealTimeTool(Tool):
     tool_type = 'realtime'
     default_tool_action = RealTimeToolAction
 
+    def __remove_realtime_by_job(self, job):
+        if job:
+            rtt = job.realtime_tool
+            log.debug('__remove_realtime_by_job: %s', rtt)
+            if rtt:
+                self.app.realtime_manager.remove_realtime(rtt)
+        else:
+            log.warning("Could not determine job to stop RealTimeTool: %s", job)
+
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+        # run original exec_after_process
+        super(RealTimeTool, self).exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+        self.__remove_realtime_by_job(job)
+
+    def job_failed(self, job_wrapper, message, exception=False):
+        super(RealTimeTool, self).job_failed(job_wrapper, message, exception=exception)
+        job = job_wrapper.sa_session.query(model.Job).get(job_wrapper.job_id)
+        self.__remove_realtime_by_job(job)
+
     def get_view_result(self, job=None):
         if job:
             realtimetool = job.realtime_tool

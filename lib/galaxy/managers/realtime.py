@@ -87,10 +87,48 @@ class RealtimeSqlite(object):
             finally:
                 conn.close()
 
+    def remove(self, **kwd):
+        """
+        Remove entry from a key, key_type, token, value store that is can be used for coordinating
+        with external resources. Remove entries that match all provided key=values
+        """
+        assert kwd, ValueError("You must provide some values to key upon")
+        delete = 'DELETE FROM %s WHERE' % (DATABASE_TABLE_NAME)
+        value_list = []
+        for i, (key, value) in enumerate(kwd.items()):
+            if i != 0:
+                delete += ' and'
+            delete += ' %s=?' % (key)
+            value_list.append(value)
+        with FileLock(self.sqlite_filename):
+            conn = sqlite3.connect(self.sqlite_filename)
+            try:
+                c = conn.cursor()
+                try:
+                    # Delete entry
+                    # NB: This does not invalidate in-memory caches used by uwsgi (if any)
+                    c.execute(delete, tuple(value_list))
+                except Exception as e:
+                    log.debug('Error removing entry (%s): %s', delete, e)
+                conn.commit()
+            finally:
+                conn.close()
+
     def save_entry_point(self, entry_point):
         """Convenience method to easily save an entry_point.
         """
         return self.save(self.encode_id(entry_point.id), entry_point.__class__.__name__.lower(), entry_point.token, entry_point.host, entry_point.port, None)
+
+    def remove_entry_point(self, entry_point):
+        """Convenience method to easily remove an entry_point.
+        """
+        return self.remove(key=self.encode_id(entry_point.id), key_type=entry_point.__class__.__name__.lower())
+
+    def remove_realtime(self, rtt):
+        """Convenience method to easily remove a RealTimeTool.
+        """
+        for ep in rtt.entry_points:
+            self.remove_entry_point(ep)
 
 
 class RealTimeManager(object):
@@ -194,6 +232,7 @@ class RealTimeManager(object):
 
     def stop(self, trans, realtime):
         try:
+            self.remove_realtime(realtime)
             job = realtime.job
             if not job.finished:
                 # FIXME: Need stop container, but set to job OK.
@@ -207,3 +246,9 @@ class RealTimeManager(object):
             log.debug('Unable to stop job for RealTimeTool: %s', e)
             return False
         return True
+
+    def remove_realtime(self, realtime):
+        return self.propagator.remove_realtime(realtime)
+
+    def remove_entry_point(self, entry_point):
+        return self.propagator.remove_entry_point(entry_point)
