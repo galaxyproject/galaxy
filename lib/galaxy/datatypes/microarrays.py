@@ -175,7 +175,7 @@ class Cel(Binary):
         Set metadata for Cel file.
         """
         with open(dataset.file_name, 'rb') as handle:
-            header_bytes = handle.read(5)        
+            header_bytes = handle.read(5)
         if header_bytes.decode("utf8", errors="ignore")[0] == '@':
             dataset.metadata.version = "4"
         elif header_bytes.decode("utf8", errors="ignore")[0] == ';':
