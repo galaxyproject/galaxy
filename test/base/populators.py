@@ -258,6 +258,30 @@ class BaseDatasetPopulator(object):
         delete_response = self._delete("histories/%s/contents/%s" % (history_id, content_id))
         return delete_response
 
+    def create_tool(self, representation):
+        if isinstance(representation, dict):
+            representation = json.dumps(representation)
+        payload = dict(
+            representation=representation,
+        )
+        create_response = self._post("dynamic_tools", data=payload, admin=True)
+        assert create_response.status_code == 200, create_response
+        return create_response.json()
+
+    def list_dynamic_tools(self):
+        list_response = self._get("dynamic_tools", admin=True)
+        assert list_response.status_code == 200, list_response
+        return list_response.json()
+
+    def show_dynamic_tool(self, uuid):
+        show_response = self._get("dynamic_tools/%s" % uuid, admin=True)
+        assert show_response.status_code == 200, show_response
+        return show_response.json()
+
+    def deactivate_dynamic_tool(self, uuid):
+        delete_response = self._delete("dynamic_tools/%s" % uuid, admin=True)
+        return delete_response.json()
+
     def _summarize_history(self, history_id):
         pass
 
@@ -536,7 +560,7 @@ class DatasetPopulator(BaseDatasetPopulator):
     def _api_key(self):
         return self.galaxy_interactor.api_key
 
-    def _post(self, route, data=None, files=None):
+    def _post(self, route, data=None, files=None, admin=False):
         if data is None:
             data = {}
 
@@ -544,7 +568,7 @@ class DatasetPopulator(BaseDatasetPopulator):
         if files is not None:
             del data["__files"]
 
-        return self.galaxy_interactor.post(route, data, files=files)
+        return self.galaxy_interactor.post(route, data, files=files, admin=admin)
 
     def _put(self, route, data=None):
         if data is None:
@@ -552,17 +576,17 @@ class DatasetPopulator(BaseDatasetPopulator):
 
         return self.galaxy_interactor.put(route, data)
 
-    def _get(self, route, data=None):
+    def _get(self, route, data=None, admin=False):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.get(route, data=data)
+        return self.galaxy_interactor.get(route, data=data, admin=admin)
 
-    def _delete(self, route, data=None):
+    def _delete(self, route, data=None, admin=False):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.delete(route, data=data)
+        return self.galaxy_interactor.delete(route, data=data, admin=admin)
 
     def _summarize_history(self, history_id):
         self.galaxy_interactor._summarize_history(history_id)
@@ -761,11 +785,11 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
         self.dataset_populator = DatasetPopulator(galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(galaxy_interactor)
 
-    def _post(self, route, data=None):
+    def _post(self, route, data=None, admin=False):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.post(route, data)
+        return self.galaxy_interactor.post(route, data, admin=admin)
 
     def _get(self, route, data=None):
         if data is None:
@@ -784,6 +808,22 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
         upload_response = self._post("workflows", data=data)
         assert upload_response.status_code == 200, upload_response.content
         return upload_response.json()
+
+    def import_tool(self, tool):
+        """ Import a workflow via POST /api/workflows or
+        comparable interface into Galaxy.
+        """
+        upload_response = self._import_tool_response(tool)
+        assert upload_response.status_code == 200, upload_response
+        return upload_response.json()
+
+    def _import_tool_response(self, tool):
+        tool_str = json.dumps(tool, indent=4)
+        data = {
+            'representation': tool_str
+        }
+        upload_response = self._post("dynamic_tools", data=data, admin=True)
+        return upload_response
 
 
 class LibraryPopulator(object):

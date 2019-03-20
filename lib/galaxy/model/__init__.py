@@ -550,6 +550,24 @@ class PasswordResetToken(object):
         self.expiration_time = galaxy.model.orm.now.now() + timedelta(hours=24)
 
 
+class DynamicTool(Dictifiable):
+    dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
+    dict_element_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
+
+    def __init__(self, tool_format=None, tool_id=None, tool_version=None,
+                 uuid=None, active=True, hidden=True, value=None):
+        self.tool_format = tool_format
+        self.tool_id = tool_id
+        self.tool_version = tool_version
+        self.active = active
+        self.hidden = hidden
+        self.value = value
+        if uuid is None:
+            self.uuid = uuid4()
+        else:
+            self.uuid = UUID(str(uuid))
+
+
 class BaseJobMetric(object):
 
     def __init__(self, plugin, metric_name, metric_value):
@@ -616,6 +634,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.user_id = None
         self.tool_id = None
         self.tool_version = None
+        self.tool_hash = None
         self.copied_from_job_id = None
         self.command_line = None
         self.dependencies = []
@@ -4133,6 +4152,7 @@ class WorkflowStep(RepresentById):
         self.tool_id = None
         self.tool_inputs = None
         self.tool_errors = None
+        self.dynamic_tool = None
         self.position = None
         self.inputs = []
         self.config = None
@@ -4140,6 +4160,10 @@ class WorkflowStep(RepresentById):
         self.uuid = uuid4()
         self.workflow_outputs = []
         self._input_connections_by_name = None
+
+    @property
+    def tool_uuid(self):
+        return self.dynamic_tool and self.dynamic_tool.uuid
 
     def get_input(self, input_name):
         for step_input in self.inputs:

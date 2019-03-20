@@ -203,9 +203,6 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
 # - Much more testing obviously, always more testing.
 class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
 
-    def setUp(self):
-        super(WorkflowsApiTestCase, self).setUp()
-
     def test_show_valid(self):
         workflow_id = self.workflow_populator.simple_workflow("dummy")
         workflow_id = self.workflow_populator.simple_workflow("test_regular")
@@ -384,6 +381,40 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 200)
             self._assert_user_has_workflow_with_name("imported: test_import_published_deprecated")
+
+    def test_import_export_dynamic(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  - type: input
+    label: input1
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: 0
+  - label: embed1
+    run:
+      class: GalaxyTool
+      command: echo 'hello world 2' > $output1
+      outputs:
+        output1:
+          format: txt
+  - tool_id: cat1
+    state:
+      input1:
+        $link: first_cat#out_file1
+      queries:
+        input2:
+          $link: embed1#output1
+test_data:
+  input1: "hello world"
+""")
+        downloaded_workflow = self._download_workflow(workflow_id)
+        # The _upload_yaml_workflow entry point uses an admin key, but if we try to
+        # do the raw re-import as a regular user we expect a 403 error.
+        response = self.workflow_populator.create_workflow_response(downloaded_workflow)
+        self._assert_status_code_is(response, 403)
 
     def test_import_annotations(self):
         workflow_id = self.workflow_populator.simple_workflow("test_import_annotations", publish=True)
@@ -3535,3 +3566,49 @@ input_c:
         self._assert_status_code_is(all_invocations_for_user, 200)
         invocation_ids = [i["id"] for i in all_invocations_for_user.json()]
         return invocation_ids
+
+
+class AdminWorkflowsApiTestCase(BaseWorkflowsApiTestCase):
+
+    require_admin_user = True
+
+    def test_import_export_dynamic_tools(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  - type: input
+    label: input1
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: 0
+  - label: embed1
+    run:
+      class: GalaxyTool
+      command: echo 'hello world 2' > $output1
+      outputs:
+        output1:
+          format: txt
+  - tool_id: cat1
+    state:
+      input1:
+        $link: first_cat#out_file1
+      queries:
+      - input2:
+          $link: embed1#output1
+test_data:
+  input1: "hello world"
+""")
+        downloaded_workflow = self._download_workflow(workflow_id)
+        response = self.workflow_populator.create_workflow_response(downloaded_workflow)
+        workflow_id = response.json()["id"]
+        history_id = self.dataset_populator.new_history()
+        hda1 = self.dataset_populator.new_dataset(history_id, content="Hello World Second!")
+        workflow_request = dict(
+            inputs_by="name",
+            inputs=json.dumps({'input1': self._ds_entry(hda1)}),
+        )
+        invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, request=workflow_request, assert_ok=True)
+        self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+        self.assertEqual("Hello World Second!\nhello world 2\n", self.dataset_populator.get_history_dataset_content(history_id, hid=4))

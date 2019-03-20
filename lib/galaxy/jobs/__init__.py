@@ -2201,7 +2201,10 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
         return self.job_wrapper.get_version_string_path()
 
     def tool_directory(self):
-        return os.path.abspath(self.job_wrapper.tool.tool_dir)
+        tool_dir = self.job_wrapper.tool.tool_dir
+        if tool_dir is not None:
+            tool_dir = os.path.abspath(tool_dir)
+        return tool_dir
 
     def home_directory(self):
         return self.job_wrapper.home_directory()

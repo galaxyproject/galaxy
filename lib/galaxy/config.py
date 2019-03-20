@@ -1047,6 +1047,8 @@ class ConfiguresGalaxyMixin(object):
 
         self.citations_manager = CitationsManager(self)
 
+        from galaxy.managers.tools import DynamicToolManager
+        self.dynamic_tools_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
         tool_configs = self.config.tool_configs
