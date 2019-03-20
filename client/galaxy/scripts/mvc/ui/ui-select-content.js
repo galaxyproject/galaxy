@@ -171,7 +171,13 @@ var View = Backbone.View.extend({
             this.lastenter === e.target && self.$el.removeClass("ui-dragover");
         });
         element.addEventListener("drop", e => {
-            self._handleDrop(e);
+            e.preventDefault();
+            try {
+                let drop_data = JSON.parse(e.dataTransfer.getData("text"))[0];
+                this._handleDropValues(drop_data);
+            } catch (e) {
+                this._handleDropStatus("danger");
+            }
         });
 
         // track current history elements
@@ -430,13 +436,6 @@ var View = Backbone.View.extend({
         }
     },
 
-    /** Handles drop events e.g. from history panel */
-    _handleDrop: function(ev) {
-        let drop_data = JSON.parse(ev.dataTransfer.getData("text"))[0];
-        this._handleDropValues(drop_data);
-        ev.preventDefault();
-    },
-
     /** Source helper matches history_content_types to source types */
     _getSource: function(v) {
         return v.history_content_type == "dataset_collection" ? "hdca" : "hda";
@@ -444,64 +443,55 @@ var View = Backbone.View.extend({
 
     /** Add values from drag/drop */
     _handleDropValues: function(drop_data, drop_partial=true) {
-        try {
-            let data = this.model.get("data");
-            let current = this.model.get("current");
-            let config = this.config[current];
-            let field = this.fields[current];
-            if (data) {
-                let values = $.isArray(drop_data) ? drop_data : [drop_data];
-                if (values.length > 0) {
-                    let data_changed = false;
-                    _.each(values, v => {
-                        let new_id = v.id;
-                        let new_src = v.src = this._getSource(v);
-                        let new_value = { id: new_id, src: new_src };
-                        if (!_.findWhere(data[new_src], new_value)) {
-                            data_changed = true;
-                            data[new_src].push({
-                                id: new_id,
-                                src: new_src,
-                                hid: v.hid || "Selected",
-                                name: v.hid ? v.name : new_id,
-                                keep: true,
-                                tags: []
-                            });
-                        }
-                    });
-                    if (data_changed) {
-                        this._changeData();
+        let data = this.model.get("data");
+        let current = this.model.get("current");
+        let config = this.config[current];
+        let field = this.fields[current];
+        if (data) {
+            let values = $.isArray(drop_data) ? drop_data : [drop_data];
+            if (values.length > 0) {
+                let data_changed = false;
+                _.each(values, v => {
+                    let new_id = v.id;
+                    let new_src = v.src = this._getSource(v);
+                    let new_value = { id: new_id, src: new_src };
+                    if (!_.findWhere(data[new_src], new_value)) {
+                        data_changed = true;
+                        data[new_src].push({
+                            id: new_id,
+                            src: new_src,
+                            hid: v.hid || "Selected",
+                            name: v.hid ? v.name : new_id,
+                            keep: true,
+                            tags: []
+                        });
                     }
-                    let first_id = values[0].id;
-                    let first_src = values[0].src;
-                    if (config.src == first_src && drop_partial) {
-                        var current_value = field.value();
-                        if (current_value && config.multiple) {
-                            _.each(values, v => {
-                                if (current_value.indexOf(v.id) == -1) {
-                                    current_value.push(v.id);
-                                }
-                            });
-                        } else {
-                            current_value = first_id;
-                        }
-                        field.value(current_value);
-                    } else {
-                        this.model.set("value", { values: values });
-                        this.model.trigger("change:value");
-                    }
-                    this.trigger("change");
+                });
+                if (data_changed) {
+                    this._changeData();
                 }
+                let first_id = values[0].id;
+                let first_src = values[0].src;
+                if (config.src == first_src && drop_partial) {
+                    var current_value = field.value();
+                    if (current_value && config.multiple) {
+                        _.each(values, v => {
+                            if (current_value.indexOf(v.id) == -1) {
+                                current_value.push(v.id);
+                            }
+                        });
+                    } else {
+                        current_value = first_id;
+                    }
+                    field.value(current_value);
+                } else {
+                    this.model.set("value", { values: values });
+                    this.model.trigger("change:value");
+                }
+                this.trigger("change");
             }
-            this._handleDropStatus("success");
-        } catch (e) {
-            let galaxy = getGalaxyInstance();
-            galaxy.emit.debug(
-                "ui-select-content::_handleDropValues()",
-                "Selected value could not be applied to data selector."
-            );
-            this._handleDropStatus("danger");
         }
+        this._handleDropStatus("success");
     },
 
     /** Highlight drag result */
