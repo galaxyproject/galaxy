@@ -791,12 +791,14 @@ test_data:
 """, history_id=history_id, assert_ok=False, wait=False)
             self.wait_for_invocation_and_jobs(history_id, job_summary.workflow_id, job_summary.invocation_id, assert_ok=False)
             history_contents = self.dataset_populator._get_contents_request(history_id=history_id).json()
+            first_input = history_contents[1]
+            assert first_input['history_content_type'] == 'dataset'
             paused_dataset = history_contents[-1]
             failed_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=5, assert_ok=False)
             assert paused_dataset['state'] == 'paused', paused_dataset
             assert failed_dataset['state'] == 'error', failed_dataset
             inputs = {"input1": {'values': [{'src': 'hda',
-                                             'id': history_contents[0]['id']}]
+                                             'id': first_input['id']}]
                                  },
                       "failbool": "false",
                       "rerun_remap_job_id": failed_dataset['creating_job']}
