@@ -1,7 +1,7 @@
 <tool name="expression_forty_two" id="expression_forty_two"
 	  version="0.1.0" tool_type="expression">
     <description>Parse Int</description>
-    <expression type="emca5.1">
+    <expression type="ecma5.1">
         {return {'output':
                  42};
         }

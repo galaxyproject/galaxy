@@ -116,7 +116,12 @@ class XmlToolSource(ToolSource):
         """ Return string contianing command to run.
         """
         expression_el = self.root.find("expression")
-        return ((expression_el is not None) and expression_el.text) or None
+        if expression_el is not None:
+            expression_type = expression_el.get("type")
+            if expression_type != "ecma5.1":
+                raise Exception("Unknown expression type [%s] encountered" % expression_type)
+            return expression_el.text
+        return None
 
     def parse_environment_variables(self):
         environment_variables_el = self.root.find("environment_variables")

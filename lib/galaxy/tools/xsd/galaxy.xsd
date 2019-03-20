@@ -2794,7 +2794,7 @@ of "type" specified for this expression block.
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ExpressionType">
           <xs:annotation>
-            <xs:documentation>Type of expression defined by this expression block. The only current valid option is emca5.1 - which will evaluate the expression in a sandbox using node. The option still must be specified to allow a different default in the future.</xs:documentation>
+            <xs:documentation>Type of expression defined by this expression block. The only current valid option is ecma5.1 - which will evaluate the expression in a sandbox using node. The option still must be specified to allow a different default in the future.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -2806,7 +2806,7 @@ of "type" specified for this expression block.
       <xs:documentation xml:lang="en"></xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
-      <xs:enumeration value="emca5.1" />
+      <xs:enumeration value="ecma5.1" />
     </xs:restriction>
   </xs:simpleType>
 

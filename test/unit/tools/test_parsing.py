@@ -95,7 +95,7 @@ tests:
 TOOL_EXPRESSION_XML_1 = """
 <tool name="parse_int" id="parse_int" version="0.1.0" tool_type="expression">
     <description>Parse Int</description>
-    <expression>
+    <expression type="ecma5.1">
         {return {'output': parseInt($job.input1)};}
     </expression>
     <inputs>
