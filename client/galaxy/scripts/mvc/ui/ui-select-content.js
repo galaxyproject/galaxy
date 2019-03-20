@@ -274,6 +274,11 @@ var View = Backbone.View.extend({
                 field.$el.hide();
             }
         });
+        if (this.fields.length > 1) {
+            this.button_type.show();
+        } else {
+            this.button_type.hide();
+        }
     },
 
     /** Change of type */
@@ -324,6 +329,7 @@ var View = Backbone.View.extend({
         this.button_type = new Ui.RadioButton.View({
             value: this.model.get("current"),
             data: this.button_data,
+            cls: "mr-2",
             onchange: function(value) {
                 self.model.set("current", value);
                 self.trigger("change");
@@ -333,8 +339,8 @@ var View = Backbone.View.extend({
         // build data dialog button
         this.button_dialog = new Ui.Button({
             icon: "fa-folder-open-o",
-            title: "Browse Datasets",
-            cls: "mt-2 mb-2 float-left",
+            tooltip: "Browse Datasets",
+            cls: "ml-2",
             onclick: () => {
                 let current = this.model.get("current");
                 let cnf = this.config[current];
@@ -348,25 +354,17 @@ var View = Backbone.View.extend({
         });
 
         // append views
-        let $left = $("<div/>");
-        let $right = $("<div/>").addClass("w-100");
+        let $fields = $("<div/>").addClass("w-100");
         this.$el.empty()
                 .addClass("d-flex flex-row")
-                .append($left)
-                .append($right);
-        if (this.fields.length > 1) {
-            $left.addClass("mr-2").append(
-                this.button_type.$el
-            );
-        }
+                .append($("<div/>").append(this.button_type.$el))
+                .append($fields)
+                .append($("<div/>").append(this.button_dialog.$el));
         _.each(this.fields, field => {
-            $right.append(field.$el);
+            $fields.append(field.$el);
         });
-        $right.append(
-            this.button_dialog.$el
-        );
         _.each(this.$batch, ($batchfield, batchmode) => {
-            $right.append($batchfield);
+            $fields.append($batchfield);
         });
         this.model.set("current", 0);
         this._changeCurrent();
