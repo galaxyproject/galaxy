@@ -10,10 +10,10 @@ import galaxy
 import galaxy.app
 import galaxy.config
 from galaxy.objectstore import build_object_store_from_config
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.script import app_properties_from_args, populate_config_args
-from galaxy.web.security import SecurityHelper
 from galaxy.webapps.galaxy.controllers.page import _PageContentProcessor, _placeholderRenderForSave
 
 
@@ -26,7 +26,7 @@ def main(argv):
     properties = app_properties_from_args(args)
     config = galaxy.config.Configuration(**properties)
     secret = args.secret_key or config.id_secret
-    security_helper = SecurityHelper(id_secret=secret)
+    security_helper = IdEncodingHelper(id_secret=secret)
     object_store = build_object_store_from_config(config)
     if not config.database_connection:
         print("The database connection is empty. If you are using the default value, please uncomment that in your galaxy.yml")

@@ -4,8 +4,8 @@ import yaml
 
 from galaxy import model
 from galaxy.model import mapping
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import bunch
-from galaxy.web.security import SecurityHelper
 
 
 class MockTrans(object):
@@ -47,7 +47,7 @@ class TestApp(object):
         )
         self.toolbox = TestToolbox()
         self.datatypes_registry = TestDatatypesRegistry()
-        self.security = SecurityHelper(id_secret="testing")
+        self.security = IdEncodingHelper(id_secret="testing")
 
 
 class TestDatatypesRegistry(object):
