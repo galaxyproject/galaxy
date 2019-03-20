@@ -18,7 +18,7 @@ MAXIMUM_ID_SECRET_LENGTH = int(MAXIMUM_ID_SECRET_BITS / 8)
 KIND_TOO_LONG_MESSAGE = "Galaxy coding error, keep encryption 'kinds' smaller to utilize more bites of randomness from id_secret values."
 
 
-class SecurityHelper(object):
+class IdEncodingHelper(object):
 
     def __init__(self, **config):
         id_secret = config['id_secret']

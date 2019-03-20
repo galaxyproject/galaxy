@@ -1,23 +1,23 @@
 # -*- coding: utf-8 -*-
 
-from galaxy.web import security
+from galaxy.security import idencoding
 
 
-test_helper_1 = security.SecurityHelper(id_secret="secu1")
-test_helper_2 = security.SecurityHelper(id_secret="secu2")
+test_helper_1 = idencoding.IdEncodingHelper(id_secret="secu1")
+test_helper_2 = idencoding.IdEncodingHelper(id_secret="secu2")
 
 
 def test_maximum_length_handling_ascii():
     # Test that id secrets can be up to 56 characters long.
-    longest_id_secret = "m" * security.MAXIMUM_ID_SECRET_LENGTH
-    helper = security.SecurityHelper(id_secret=longest_id_secret)
+    longest_id_secret = "m" * idencoding.MAXIMUM_ID_SECRET_LENGTH
+    helper = idencoding.IdEncodingHelper(id_secret=longest_id_secret)
     helper.encode_id(1)
 
     # Test that security helper will catch if the id secret is too long.
     threw_exception = False
-    longer_id_secret = "m" * (security.MAXIMUM_ID_SECRET_LENGTH + 1)
+    longer_id_secret = "m" * (idencoding.MAXIMUM_ID_SECRET_LENGTH + 1)
     try:
-        security.SecurityHelper(id_secret=longer_id_secret)
+        idencoding.IdEncodingHelper(id_secret=longer_id_secret)
     except Exception:
         threw_exception = True
 
@@ -44,14 +44,14 @@ def test_maximum_length_handling_ascii():
 
 def test_maximum_length_handling_nonascii():
     longest_id_secret = "◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎"
-    helper = security.SecurityHelper(id_secret=longest_id_secret)
+    helper = idencoding.IdEncodingHelper(id_secret=longest_id_secret)
     helper.encode_id(1)
 
     # Test that security helper will catch if the id secret is too long.
     threw_exception = False
     longer_id_secret = "◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎"
     try:
-        security.SecurityHelper(id_secret=longer_id_secret)
+        idencoding.IdEncodingHelper(id_secret=longer_id_secret)
     except Exception:
         threw_exception = True
 

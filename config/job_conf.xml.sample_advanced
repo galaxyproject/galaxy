@@ -329,6 +329,9 @@
         <!-- Job handler processes - for a full discussion of job handlers, see the documentation at:
              https://docs.galaxyproject.org/en/latest/admin/scaling.html
 
+             For documentation on handler assignment methods, see the documentation under:
+             https://docs.galaxyproject.org/en/latest/admin/scaling.html#job-handler-assignment-methods
+
              The <handlers> container tag takes two optional attributes:
 
                <handlers assign_with="method" default="id_or_tag"/>

@@ -6,6 +6,7 @@ import sys
 import time
 
 import galaxy.model
+import galaxy.model.security
 import galaxy.queues
 import galaxy.quota
 import galaxy.security
@@ -17,6 +18,7 @@ from galaxy.managers.folders import FolderManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.realtime import RealTimeManager
+from galaxy.managers.tools import DynamicToolManager
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.tools.cache import (
@@ -102,6 +104,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.test_data_resolver = test_data.TestDataResolver(file_dirs=self.config.tool_test_data_directories)
         self.library_folder_manager = FolderManager()
         self.library_manager = LibraryManager()
+        self.dynamic_tool_manager = DynamicToolManager(self)
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)
@@ -155,7 +158,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.webhooks_registry = WebhooksRegistry(self.config.webhooks_dirs)
         # Load security policy.
         self.security_agent = self.model.security_agent
-        self.host_security_agent = galaxy.security.HostAgent(
+        self.host_security_agent = galaxy.model.security.HostAgent(
             model=self.security_agent.model,
             permitted_actions=self.security_agent.permitted_actions)
         # Load quota management.

@@ -18,6 +18,29 @@ from requests import get
 from six import BytesIO
 
 
+MINIMAL_TOOL = {
+    'id': "minimal_tool",
+    'name': "Minimal Tool",
+    'class': "GalaxyTool",
+    'version': "1.0.0",
+    'command': "echo 'Hello World' > $output1",
+    'inputs': [],
+    'outputs': dict(
+        output1=dict(format='txt'),
+    )
+}
+MINIMAL_TOOL_NO_ID = {
+    'name': "Minimal Tool",
+    'class': "GalaxyTool",
+    'version': "1.0.0",
+    'command': "echo 'Hello World 2' > $output1",
+    'inputs': [],
+    'outputs': dict(
+        output1=dict(format='txt'),
+    )
+}
+
+
 class ToolsTestCase(api.ApiTestCase):
 
     def setUp(self):
@@ -866,6 +889,79 @@ class ToolsTestCase(api.ApiTestCase):
         assert output_element_0["element_identifier"] == "samp1"
         output_element_hda_0 = output_element_0["object"]
         assert output_element_hda_0["metadata_column_types"] is not None
+
+    def test_nonadmin_users_cannot_create_tools(self):
+        payload = dict(
+            representation=json.dumps(MINIMAL_TOOL),
+        )
+        create_response = self._post("dynamic_tools", data=payload, admin=False)
+        self._assert_status_code_is(create_response, 403)
+
+    def test_dynamic_tool_1(self):
+        # Create tool.
+        self.dataset_populator.create_tool(MINIMAL_TOOL)
+
+        # Run tool.
+        history_id = self.dataset_populator.new_history()
+        inputs = {}
+        self._run("minimal_tool", history_id, inputs)
+
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEqual(output_content, "Hello World\n")
+
+    def test_dynamic_tool_no_id(self):
+        # Create tool.
+        tool_response = self.dataset_populator.create_tool(MINIMAL_TOOL_NO_ID)
+        self._assert_has_keys(tool_response, "uuid")
+
+        # Run tool.
+        history_id = self.dataset_populator.new_history()
+        inputs = {}
+        self._run(history_id=history_id, inputs=inputs, tool_uuid=tool_response["uuid"])
+
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEqual(output_content, "Hello World 2\n")
+
+    def test_show_dynamic_tools(self):
+        # Create tool.
+        original_list = self.dataset_populator.list_dynamic_tools()
+        created_dynamic_tool_dict = self.dataset_populator.create_tool(MINIMAL_TOOL_NO_ID)
+        self._assert_has_keys(created_dynamic_tool_dict, "id", "uuid", "active")
+        created_id = created_dynamic_tool_dict["id"]
+        created_uuid = created_dynamic_tool_dict["uuid"]
+        new_list = self.dataset_populator.list_dynamic_tools()
+
+        for dynamic_tool_dict in original_list:
+            self._assert_has_keys(dynamic_tool_dict, "id", "uuid", "active")
+            assert dynamic_tool_dict["id"] != created_id
+            assert dynamic_tool_dict["uuid"] != created_uuid
+
+        found_id = False
+        found_uuid = False
+        for dynamic_tool_dict in new_list:
+            self._assert_has_keys(dynamic_tool_dict, "id", "uuid", "active")
+            found_id = found_id or dynamic_tool_dict["id"] == created_id
+            found_uuid = found_uuid or dynamic_tool_dict["uuid"] == created_uuid
+
+        assert found_id
+        assert found_uuid
+
+    def test_tool_deactivate(self):
+        # Create tool.
+        tool_response = self.dataset_populator.create_tool(MINIMAL_TOOL_NO_ID)
+        self._assert_has_keys(tool_response, "id", "uuid", "active")
+        assert tool_response["active"]
+        deactivate_response = self.dataset_populator.deactivate_dynamic_tool(tool_response["uuid"])
+        assert not deactivate_response["active"]
+
+        # Run tool.
+        history_id = self.dataset_populator.new_history()
+        inputs = {}
+        response = self._run(history_id=history_id, inputs=inputs, tool_uuid=tool_response["uuid"], assert_ok=False)
+        # Get a 404 when trying to run a deactivated tool.
+        self._assert_status_code_is(response, 404)
 
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)
@@ -1963,12 +2059,16 @@ class ToolsTestCase(api.ApiTestCase):
     def _run_cat1(self, history_id, inputs, assert_ok=False, **kwargs):
         return self._run('cat1', history_id, inputs, assert_ok=assert_ok, **kwargs)
 
-    def _run(self, tool_id, history_id, inputs, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False):
+    def _run(self, tool_id=None, history_id=None, inputs={}, tool_uuid=None, assert_ok=False, tool_version=None, use_cached_job=False, wait_for_job=False):
+        if tool_id is None:
+            assert tool_uuid is not None
         payload = self.dataset_populator.run_tool_payload(
             tool_id=tool_id,
             inputs=inputs,
             history_id=history_id,
         )
+        if tool_uuid:
+            payload['tool_uuid'] = tool_uuid
         if tool_version is not None:
             payload["tool_version"] = tool_version
         if use_cached_job:

@@ -24,3 +24,8 @@ pykube==0.15.0
 kamaki
 
 watchdog
+
+# Error reporters optional modules
+python-gitlab
+pygithub
+influxdb

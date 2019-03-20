@@ -40,7 +40,7 @@ from galaxy.model.base import ModelMapping
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from galaxy.security import GalaxyRBACAgent
+from galaxy.model.security import GalaxyRBACAgent
 
 log = logging.getLogger(__name__)
 
@@ -140,6 +140,24 @@ model.PasswordResetToken.table = Table(
     Column("token", String(32), primary_key=True, unique=True, index=True),
     Column("expiration_time", DateTime),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
+
+
+model.DynamicTool.table = Table(
+    "dynamic_tool", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("uuid", UUIDType()),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, index=True, default=now, onupdate=now),
+    Column("tool_id", Unicode(255)),
+    Column("tool_version", Unicode(255)),
+    Column("tool_format", Unicode(255)),
+    Column("tool_path", Unicode(255)),
+    Column("tool_directory", Unicode(255)),
+    Column("hidden", Boolean, default=True),
+    Column("active", Boolean, default=True),
+    Column("value", JSONType()),
+)
+
 
 model.History.table = Table(
     "history", metadata,
@@ -548,6 +566,7 @@ model.Job.table = Table(
     Column("library_folder_id", Integer, ForeignKey("library_folder.id"), index=True),
     Column("tool_id", String(255)),
     Column("tool_version", TEXT, default="1.0.0"),
+    Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), index=True, nullable=True),
     Column("state", String(64), index=True),
     Column("info", TrimmedString(255)),
     Column("copied_from_job_id", Integer, nullable=True),
@@ -944,6 +963,7 @@ model.WorkflowStep.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("workflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=False),
     Column("subworkflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=True),
+    Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), index=True, nullable=True),
     Column("type", String(64)),
     Column("tool_id", TEXT),
     Column("tool_version", TEXT),
@@ -1548,6 +1568,8 @@ mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
 ))
 
 mapper(model.ValidationError, model.ValidationError.table)
+
+simple_mapping(model.DynamicTool)
 
 simple_mapping(model.HistoryDatasetAssociation,
     dataset=relation(model.Dataset,
@@ -2281,8 +2303,11 @@ mapper(model.Workflow, model.Workflow.table, properties=dict(
 
 mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
     subworkflow=relation(model.Workflow,
-        primaryjoin=((model.Workflow.table.c.id == model.WorkflowStep.table.c.subworkflow_id)),
+        primaryjoin=(model.Workflow.table.c.id == model.WorkflowStep.table.c.subworkflow_id),
         backref="parent_workflow_steps"),
+    dynamic_tool=relation(model.DynamicTool,
+        primaryjoin=(model.DynamicTool.table.c.id == model.WorkflowStep.table.c.dynamic_tool_id),
+        backref="workflow_steps"),
     tags=relation(model.WorkflowStepTagAssociation,
         order_by=model.WorkflowStepTagAssociation.table.c.id,
         backref="workflow_steps"),

@@ -22,11 +22,30 @@ class Validator(object):
 
     @classmethod
     def from_element(cls, param, elem):
+        """
+        Initialize the appropiate Validator class
+
+        example call `validation.Validator.from_element(ToolParameter_object, Validator_object)`
+
+        needs to be implemented in the subclasses and should return the
+        corresponding Validator object by a call to `cls( ... )` which calls the
+        `__init__` method of the corresponding validator
+
+        param cls the Validator class
+        param param the element to be evaluated (which contains the validator)
+        param elem the validator element
+        return an object of a Validator subclass that corresponds to the type attribute of the validator element
+        """
         type = elem.get('type', None)
         assert type is not None, "Required 'type' attribute missing from validator"
         return validator_types[type].from_element(param, elem)
 
     def validate(self, value, trans=None):
+        """
+        validate a value
+
+        return None if positive validation, otherwise a ValueError is raised
+        """
         raise TypeError("Abstract Method")
 
 
@@ -393,6 +412,72 @@ class MetadataInFileColumnValidator(Validator):
         raise ValueError(self.message)
 
 
+class ValueInDataTableColumnValidator(Validator):
+    """
+    Validator that checks if a value is in a tool data table column.
+    """
+
+    @classmethod
+    def from_element(cls, param, elem):
+        table_name = elem.get("table_name", None)
+        assert table_name, 'You must specify a table_name.'
+        tool_data_table = param.tool.app.tool_data_tables[table_name]
+        column = elem.get("metadata_column", 0)
+        try:
+            column = int(column)
+        except ValueError:
+            pass
+        message = elem.get("message", "Value was not found in %s." % (table_name))
+        line_startswith = elem.get("line_startswith", None)
+        if line_startswith:
+            line_startswith = line_startswith.strip()
+        return cls(tool_data_table, column, message, line_startswith)
+
+    def __init__(self, tool_data_table, column, message="Value not found.", line_startswith=None):
+        self.message = message
+        self.valid_values = []
+        self._data_table_content_version = None
+        self._tool_data_table = tool_data_table
+        if isinstance(column, string_types):
+            column = tool_data_table.columns[column]
+        self._column = column
+        self._load_values()
+
+    def _load_values(self):
+        self._data_table_content_version, data_fields = self._tool_data_table.get_version_fields()
+        self.valid_values = []
+        for fields in data_fields:
+            if self._column < len(fields):
+                self.valid_values.append(fields[self._metadata_column])
+
+    def validate(self, value, trans=None):
+        if not value:
+            return
+        if not self._tool_data_table.is_current_version(self._data_table_content_version):
+            log.debug('MetadataInDataTableColumnValidator values are out of sync with data table (%s), updating validator.', self._tool_data_table.name)
+            self._load_values()
+        if value in self.valid_values:
+            return
+        raise ValueError(self.message)
+
+
+class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
+    """
+    Validator that checks if a value is NOT in a tool data table column.
+    """
+
+    def __init__(self, tool_data_table, metadata_column, message="Value already present.", line_startswith=None):
+        super(ValueNotInDataTableColumnValidator, self).__init__(tool_data_table, metadata_column, message, line_startswith)
+
+    def validate(self, value, trans=None):
+        try:
+            super(ValueInDataTableColumnValidator, self).validate(value, trans)
+        except ValueError:
+            return
+        else:
+            raise ValueError(self.message)
+
+
 class MetadataInDataTableColumnValidator(Validator):
     """
     Validator that checks if the value for a dataset's metadata item exists in a file.
@@ -448,6 +533,24 @@ class MetadataInDataTableColumnValidator(Validator):
         raise ValueError(self.message)
 
 
+class MetadataNotInDataTableColumnValidator(MetadataInDataTableColumnValidator):
+    """
+    Validator that checks if the value for a dataset's metadata item doesn't exists in a file.
+    """
+    requires_dataset_metadata = True
+
+    def __init__(self, tool_data_table, metadata_name, metadata_column, message="Value for metadata not found.", line_startswith=None):
+        super(MetadataInDataTableColumnValidator, self).__init__(tool_data_table, metadata_name, metadata_column, message, line_startswith)
+
+    def validate(self, value, trans=None):
+        try:
+            super(MetadataInDataTableColumnValidator, self).validate(value, trans)
+        except ValueError:
+            return
+        else:
+            raise ValueError(self.message)
+
+
 class MetadataInRangeValidator(InRangeValidator):
     """
     Validator that ensures metadata is in a specified range
@@ -494,7 +597,10 @@ validator_types = dict(
     empty_extra_files_path=DatasetExtraFilesPathEmptyValidator,
     dataset_metadata_in_file=MetadataInFileColumnValidator,
     dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
+    dataset_metadata_not_in_data_table=MetadataNotInDataTableColumnValidator,
     dataset_metadata_in_range=MetadataInRangeValidator,
+    value_in_data_table=ValueInDataTableColumnValidator,
+    value_not_in_data_table=ValueInDataTableColumnValidator,
     dataset_ok_validator=DatasetOkValidator,
 )
 

@@ -36,6 +36,15 @@ var HistoryPanel = Backbone.View.extend({
                 self.historyView.loadCurrentHistory();
             }
         });
+        this.buttonNew = new Ui.ButtonLink({
+            id: "history-new-button",
+            title: _l("Create new history"),
+            cls: "panel-header-button",
+            icon: "fa fa-plus",
+            onclick: function() {
+                Galaxy.currHistoryPanel.createNewHistory();
+            }
+        });
         this.buttonOptions = new Ui.ButtonLink({
             id: "history-options-button",
             title: _l("History options"),
@@ -52,11 +61,11 @@ var HistoryPanel = Backbone.View.extend({
             href: `${this.root}history/view_multiple`
         });
 
-        // define components
         this.model = new Backbone.Model({
+        // define components
             cls: "history-right-panel",
             title: _l("History"),
-            buttons: [this.buttonRefresh, this.buttonOptions, this.buttonViewMulti]
+            buttons: [this.buttonRefresh, this.buttonNew, this.buttonOptions, this.buttonViewMulti]
         });
 
         // build body template and connect history view

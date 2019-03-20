@@ -65,6 +65,7 @@ from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.tools.parser import (
     get_tool_source,
+    get_tool_source_from_representation,
     ToolOutputCollectionPart
 )
 from galaxy.tools.parser.xml import XmlPageSource
@@ -275,6 +276,23 @@ class ToolBox(BaseGalaxyToolBox):
     def _create_tool_from_source(self, tool_source, **kwds):
         return create_tool_from_source(self.app, tool_source, **kwds)
 
+    def create_dynamic_tool(self, dynamic_tool, **kwds):
+        tool_format = dynamic_tool.tool_format
+        tool_representation = dynamic_tool.value
+        tool_source = get_tool_source_from_representation(
+            tool_format=tool_format,
+            tool_representation=tool_representation,
+        )
+        kwds["dynamic"] = True
+        tool = self._create_tool_from_source(tool_source, **kwds)
+        tool.dynamic_tool = dynamic_tool
+        tool.uuid = dynamic_tool.uuid
+        if not tool.id:
+            tool.id = dynamic_tool.tool_id
+        if not tool.name:
+            tool.name = tool.id
+        return tool
+
     def get_tool_components(self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False):
         """
         Retrieve all loaded versions of a tool from the toolbox and return a select list enabling
@@ -391,11 +409,16 @@ class Tool(Dictifiable):
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
 
-    def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, tool_shed_repository=None, allow_code_files=True):
+    def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, tool_shed_repository=None, allow_code_files=True, dynamic=False):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
-        self.config_file = config_file
-        self.tool_dir = os.path.dirname(config_file)
+        if config_file is not None:
+            self.config_file = config_file
+            self.tool_dir = os.path.dirname(config_file)
+        else:
+            self.config_file = None
+            self.tool_dir = None
+
         self.app = app
         self.repository_id = repository_id
         self._allow_code_files = allow_code_files
@@ -415,6 +438,8 @@ class Tool(Dictifiable):
         self.display_interface = True
         self.require_login = False
         self.rerun = False
+        # This will be non-None for tools loaded from the database (DynamicTool objects).
+        self.dynamic_tool = None
         # Define a place to keep track of all input   These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
@@ -443,7 +468,7 @@ class Tool(Dictifiable):
         self.tool_errors = None
         # Parse XML element containing configuration
         try:
-            self.parse(tool_source, guid=guid)
+            self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
             global_tool_errors.add_error(config_file, "Tool Loading", e)
             raise e
@@ -594,7 +619,7 @@ class Tool(Dictifiable):
             return False
         return True
 
-    def parse(self, tool_source, guid=None):
+    def parse(self, tool_source, guid=None, dynamic=False):
         """
         Read tool configuration from the element `root` and fill in `self`.
         """
@@ -605,7 +630,8 @@ class Tool(Dictifiable):
             self.id = self.old_id
         else:
             self.id = guid
-        if not self.id:
+
+        if not dynamic and not self.id:
             raise Exception("Missing tool 'id' for tool at '%s'" % tool_source)
 
         profile = packaging.version.parse(str(self.profile))
@@ -616,7 +642,9 @@ class Tool(Dictifiable):
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
-        if not self.name:
+        if not self.name and dynamic:
+            self.name = self.id
+        if not dynamic and not self.name:
             raise Exception("Missing tool 'name' for tool with id '%s' at '%s'" % (self.id, tool_source))
 
         self.version = tool_source.parse_version()
@@ -700,10 +728,13 @@ class Tool(Dictifiable):
         # a 'default' will be provided that uses the 'default' handler and
         # 'default' destination.  I thought about moving this to the
         # job_config, but it makes more sense to store here. -nate
-        self_ids = [self.id.lower()]
-        if self.old_id != self.id:
-            # Handle toolshed guids
-            self_ids = [self.id.lower(), self.id.lower().rsplit('/', 1)[0], self.old_id.lower()]
+        if self.id:
+            self_ids = [self.id.lower()]
+            if self.old_id != self.id:
+                # Handle toolshed guids
+                self_ids = [self.id.lower(), self.id.lower().rsplit('/', 1)[0], self.old_id.lower()]
+        else:
+            self_ids = []
         self.all_ids = self_ids
 
         # In the toolshed context, there is no job config.
@@ -1691,22 +1722,26 @@ class Tool(Dictifiable):
         cases where number of outputs is not known in advance).
         """
         tool = self
-        collected = output_collect.collect_primary_datasets(
+        permission_provider = output_collect.PermissionProvider(inp_data, tool.app.security_agent, job)
+        metadata_source_provider = output_collect.MetadataSourceProvider(inp_data)
+        job_context = output_collect.JobContext(
             tool,
-            out_data,
             tool_provided_metadata,
+            job,
             tool_working_directory,
+            permission_provider,
+            metadata_source_provider,
+            input_dbkey,
+            object_store=tool.app.object_store,
+        )
+        collected = output_collect.collect_primary_datasets(
+            job_context,
+            out_data,
             input_ext,
-            input_dbkey=input_dbkey,
         )
         output_collect.collect_dynamic_outputs(
-            tool,
+            job_context,
             out_collections,
-            tool_provided_metadata,
-            job_working_directory=tool_working_directory,
-            inp_data=inp_data,
-            job=job,
-            input_dbkey=input_dbkey,
         )
         # Return value only used in unit tests. Probably should be returning number of collected
         # bytes instead?
@@ -1835,7 +1870,8 @@ class Tool(Dictifiable):
 
         # If an admin user, expose the path to the actual tool config XML file.
         if trans.user_is_admin:
-            tool_dict['config_file'] = os.path.abspath(self.config_file)
+            config_file = None if not self.config_file else os.path.abspath(self.config_file)
+            tool_dict['config_file'] = config_file
 
         # Add link details.
         if link_details:

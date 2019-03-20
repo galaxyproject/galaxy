@@ -174,9 +174,14 @@ class HasDockerLikeVolumes(object):
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
             # We have a Pulsar job directory, so everything needed (excluding index
             # files) should be available in job_directory...
-            defaults = "$job_directory:default_ro,$tool_directory:default_ro,$job_directory/outputs:rw,$working_directory:rw"
+            defaults = "$job_directory:default_ro"
+            if self.job_info.tool_directory:
+                defaults += ",$tool_directory:default_ro"
+            defaults += ",$job_directory/outputs:rw,$working_directory:rw"
         else:
-            defaults = "$galaxy_root:default_ro,$tool_directory:default_ro"
+            defaults = "$galaxy_root:default_ro"
+            if self.job_info.tool_directory:
+                defaults += ",$tool_directory:default_ro"
             if self.job_info.job_directory:
                 defaults += ",$job_directory:default_ro"
             if self.job_info.tmp_directory is not None:
@@ -195,7 +200,18 @@ class HasDockerLikeVolumes(object):
         # index data without deployer worrying about above details.
         variables["defaults"] = string.Template(defaults).safe_substitute(variables)
 
-        return template.safe_substitute(variables)
+        volumes_str = template.safe_substitute(variables)
+
+        # Not all tools have a tool_directory - strip this out if supplied by
+        # job_conf.
+        tool_directory_index = volumes_str.find("$tool_directory")
+        if tool_directory_index > 0:
+            end_index = volumes_str.find(",", tool_directory_index)
+            if end_index < 0:
+                end_index = len(volumes_str)
+            volumes_str = volumes_str[0:tool_directory_index] + volumes_str[end_index:len(volumes_str)]
+
+        return volumes_str
 
 
 class DockerContainer(Container, HasDockerLikeVolumes):

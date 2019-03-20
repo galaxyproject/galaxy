@@ -9,7 +9,7 @@ import PopupMenu from "mvc/ui/popup-menu";
 import LoadingIndicator from "ui/loading-indicator";
 import { init_refresh_on_change } from "onload/globalInits/init_refresh_on_change";
 import store from "../../store";
-import slug from "slug";
+import slugify from "slugify";
 
 // This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
 // not appended to the identifier of a nested array.
@@ -698,6 +698,6 @@ export default Backbone.View.extend({
     // use for conditional styling in the various kinds of grids
     // instead of acres of if/then statements in javascript
     getRootClassName({ title = "grid" }) {
-        return slug(title).toLowerCase();
+        return slugify(title).toLowerCase();
     }
 });

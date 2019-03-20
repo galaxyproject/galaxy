@@ -14,10 +14,10 @@ from galaxy.auth import AuthManager
 from galaxy.datatypes import registry
 from galaxy.jobs.manager import NoopManager
 from galaxy.model import mapping, tags
+from galaxy.security import idencoding
 from galaxy.tools.deps.containers import NullContainerFinder
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.web import security
 from galaxy.web.stack import ApplicationStack
 
 
@@ -110,7 +110,7 @@ class MockAppConfig(Bunch):
     def __init__(self, root=None, **kwargs):
         Bunch.__init__(self, **kwargs)
         root = root or '/tmp'
-        self.security = security.SecurityHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
+        self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
         self.use_remote_user = kwargs.get('use_remote_user', False)
         self.file_path = '/tmp'
         self.jobs_directory = '/tmp'
@@ -155,7 +155,7 @@ class MockWebapp(object):
 
     def __init__(self, **kwargs):
         self.name = kwargs.get('name', 'galaxy')
-        self.security = security.SecurityHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
+        self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
 
 
 class MockTrans(object):

@@ -1049,6 +1049,8 @@ class ConfiguresGalaxyMixin(object):
 
         self.citations_manager = CitationsManager(self)
 
+        from galaxy.managers.tools import DynamicToolManager
+        self.dynamic_tools_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
         tool_configs = self.config.tool_configs
@@ -1126,8 +1128,8 @@ class ConfiguresGalaxyMixin(object):
         self.object_store = build_object_store_from_config(self.config, **kwds)
 
     def _configure_security(self):
-        from galaxy.web import security
-        self.security = security.SecurityHelper(id_secret=self.config.id_secret)
+        from galaxy.security import idencoding
+        self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
 
     def _configure_tool_shed_registry(self):
         import tool_shed.tool_shed_registry
