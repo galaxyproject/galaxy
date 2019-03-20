@@ -40,6 +40,7 @@ uWSGI = "*"
 pysam = "==0.15.2"
 bdbag = "==1.4.1"  # 1.5.0 requires Python >=2.7.9
 bleach = "*"
+cwltool = "==1.0.20180721142728"
 "bz2file" = {version = "*", markers = "python_version < '3.3'"}
 ipaddress = {version = "*", markers = "python_version < '3.3'"}
 isa-rwval = "*"

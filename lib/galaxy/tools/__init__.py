@@ -29,6 +29,7 @@ from galaxy.managers.jobs import JobSearch
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import send_control_task
+from galaxy.tools import expressions
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
@@ -62,6 +63,7 @@ from galaxy.tools.parameters.dataset_matcher import (
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
+from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.tools.parser import (
     get_tool_source,
     get_tool_source_from_representation,
@@ -102,6 +104,9 @@ from .loader import (
 from .provided_metadata import parse_tool_provided_metadata
 
 log = logging.getLogger(__name__)
+
+REQUIRES_JS_RUNTIME_MESSAGE = ("The tool [%s] requires a nodejs runtime to execute "
+                               "but node or nodejs could not be found. Please contact the Galaxy adminstrator")
 
 HELP_UNINITIALIZED = threading.Lock()
 MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
@@ -778,6 +783,12 @@ class Tool(Dictifiable):
             module, cls = action
             mod = __import__(module, globals(), locals(), [cls])
             self.tool_action = getattr(mod, cls)()
+            if getattr(self.tool_action, "requires_js_runtime", False):
+                try:
+                    expressions.find_engine(self.app.config)
+                except Exception:
+                    message = REQUIRES_JS_RUNTIME_MESSAGE % self.tool_id or self.tool_uuid
+                    raise Exception(message)
         # Tests
         self.__parse_tests(tool_source)
 
@@ -2209,6 +2220,72 @@ class OutputParameterJSONTool(Tool):
         out.close()
 
 
+class ExpressionTool(Tool):
+    requires_js_runtime = True
+    tool_type = 'expression'
+    EXPRESSION_INPUTS_NAME = "_expression_inputs_.json"
+
+    def parse_command(self, tool_source):
+        self.command = "cd ../; %s" % expressions.EXPRESSION_SCRIPT_CALL
+        self.interpreter = None
+        self._expression = tool_source.parse_expression().strip()
+
+    def parse_outputs(self, tool_source):
+        # Setup self.outputs and self.output_collections
+        super(ExpressionTool, self).parse_outputs(tool_source)
+
+        # Validate these outputs for expression tools.
+        if len(self.output_collections) != 0:
+            message = "Expression tools may not declare output collections at this time."
+            raise Exception(message)
+        for output in self.outputs.values():
+            if not hasattr(output, "from_expression"):
+                message = "Expression tools may not declare output datasets at this time."
+                raise Exception(message)
+
+    def exec_before_job(self, app, inp_data, out_data, param_dict=None):
+        super(ExpressionTool, self).exec_before_job(app, inp_data, out_data, param_dict=param_dict)
+        local_working_directory = param_dict["__local_working_directory__"]
+        expression_inputs_path = os.path.join(local_working_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
+
+        outputs = []
+        for i, (out_name, data) in enumerate(out_data.items()):
+            output_def = self.outputs[out_name]
+            wrapped_data = param_dict.get(out_name)
+            file_name = str(wrapped_data)
+
+            outputs.append(dict(
+                name=out_name,
+                from_expression=output_def.from_expression,
+                path=file_name,
+            ))
+
+        if param_dict is None:
+            raise Exception("Internal error - param_dict is empty.")
+
+        job = {}
+        json_wrap(self.inputs, param_dict, job, handle_files='OBJECT')
+        expression_inputs = {
+            'job': job,
+            'script': self._expression,
+            'outputs': outputs,
+        }
+        expressions.write_evalute_script(os.path.join(local_working_directory))
+        with open(expression_inputs_path, "w") as f:
+            json.dump(expression_inputs, f)
+
+    def parse_environment_variables(self, tool_source):
+        """ Setup environment variable for inputs file.
+        """
+        environmnt_variables_raw = super(ExpressionTool, self).parse_environment_variables(tool_source)
+        expression_script_inputs = dict(
+            name="GALAXY_EXPRESSION_INPUTS",
+            template=ExpressionTool.EXPRESSION_INPUTS_NAME,
+        )
+        environmnt_variables_raw.append(expression_script_inputs)
+        return environmnt_variables_raw
+
+
 class DataSourceTool(OutputParameterJSONTool):
     """
     Alternate implementation of Tool for data_source tools -- those that
@@ -2955,7 +3032,7 @@ class FilterFromFileTool(DatabaseOperationTool):
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool,
+for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool,
                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
                    BuildListCollectionTool, ExtractDatasetCollectionTool,

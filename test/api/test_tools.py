@@ -2130,6 +2130,48 @@ class ToolsTestCase(api.ApiTestCase):
         output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
         self.assertEqual(output_content.strip(), "123\n456\n456\n0ab")
 
+    @skip_without_tool("expression_forty_two")
+    def test_galaxy_expression_tool_simplest(self):
+        history_id = self.dataset_populator.new_history()
+        inputs = {
+        }
+        run_response = self._run(
+            "expression_forty_two", history_id, inputs
+        )
+        self._assert_status_code_is(run_response, 200)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEqual(output_content, "42")
+
+    @skip_without_tool("expression_parse_int")
+    def test_galaxy_expression_tool_simple(self):
+        history_id = self.dataset_populator.new_history()
+        inputs = {
+            'input1': '7',
+        }
+        run_response = self._run(
+            "expression_parse_int", history_id, inputs
+        )
+        self._assert_status_code_is(run_response, 200)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEqual(output_content, "7")
+
+    @skip_without_tool("expression_log_line_count")
+    def test_galaxy_expression_metadata(self):
+        history_id = self.dataset_populator.new_history()
+        new_dataset1 = self.dataset_populator.new_dataset(history_id, content='1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14')
+        inputs = {
+            'input1': dataset_to_param(new_dataset1),
+        }
+        run_response = self._run(
+            "expression_log_line_count", history_id, inputs
+        )
+        self._assert_status_code_is(run_response, 200)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output_content = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEqual(output_content, "3")
+
     def __build_group_list(self, history_id):
         response = self.dataset_collection_populator.upload_collection(history_id, "list", elements=[
             {

@@ -224,14 +224,23 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     fi
 fi
 
+# Install node if not installed
+if [ -n "$VIRTUAL_ENV" ]; then
+    if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v$NODE_VERSION" ]; then
+        echo "Installing node into $VIRTUAL_ENV with nodeenv."
+        nodeenv -n $NODE_VERSION -p
+    fi
+elif [ -n "$CONDA_DEFAULT_ENV" -a -n "$CONDA_EXE" ]; then
+    if ! in_conda_env "$(command -v node)"; then
+        echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
+        $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name $CONDA_DEFAULT_ENV node=$NODE_VERSION
+    fi
+fi
+
 # Build client if necessary.
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     # Ensure dependencies are installed
     if [ -n "$VIRTUAL_ENV" ]; then
-        if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v$NODE_VERSION" ]; then
-            echo "Installing node into $VIRTUAL_ENV with nodeenv."
-            nodeenv -n $NODE_VERSION -p
-        fi
         if ! in_venv "$(command -v yarn)"; then
             echo "Installing yarn into $VIRTUAL_ENV with npm."
             npm install --global yarn
