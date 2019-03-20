@@ -753,8 +753,10 @@ class Tool(Dictifiable):
             mod = __import__(module, globals(), locals(), [cls])
             self.tool_action = getattr(mod, cls)()
             if getattr(self.tool_action, "requires_js_runtime", False):
-                if expressions.find_engine(self.app.config) is None:
-                    message = REQUIRES_JS_RUNTIME_MESSAGE % self.tool_id
+                try:
+                    expressions.find_engine(self.app.config)
+                except Exception:
+                    message = REQUIRES_JS_RUNTIME_MESSAGE % self.tool_id or self.tool_uuid
                     raise Exception(message)
         # Tests
         self.__parse_tests(tool_source)
