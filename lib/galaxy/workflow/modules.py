@@ -45,6 +45,7 @@ from galaxy.tools.parameters.basic import (
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
 from galaxy.tools.parameters.wrapped import make_dict_copy
+from galaxy.tools.parser.output_objects import ToolExpressionOutput
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
@@ -937,6 +938,8 @@ class ToolModule(WorkflowModule):
                 if filter_output(tool_output, self.state.inputs):
                     continue
                 extra_kwds = {}
+                if isinstance(tool_output, ToolExpressionOutput):
+                    extra_kwds['parameter'] = True
                 if tool_output.collection:
                     extra_kwds["collection"] = True
                     collection_type = tool_output.structure.collection_type
@@ -973,6 +976,7 @@ class ToolModule(WorkflowModule):
                     dict(
                         name=name,
                         extensions=formats,
+                        type=tool_output.output_type,
                         **extra_kwds
                     )
                 )

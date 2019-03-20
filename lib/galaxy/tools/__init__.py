@@ -753,8 +753,10 @@ class Tool(Dictifiable):
             mod = __import__(module, globals(), locals(), [cls])
             self.tool_action = getattr(mod, cls)()
             if getattr(self.tool_action, "requires_js_runtime", False):
-                if expressions.find_engine(self.app.config) is None:
-                    message = REQUIRES_JS_RUNTIME_MESSAGE % self.tool_id
+                try:
+                    expressions.find_engine(self.app.config)
+                except Exception:
+                    message = REQUIRES_JS_RUNTIME_MESSAGE % self.tool_id or self.tool_uuid
                     raise Exception(message)
         # Tests
         self.__parse_tests(tool_source)
@@ -2215,7 +2217,7 @@ class ExpressionTool(Tool):
         expression_inputs_path = os.path.join(local_working_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
 
         outputs = []
-        for i, (out_name, data) in enumerate(out_data.iteritems()):
+        for i, (out_name, data) in enumerate(out_data.items()):
             output_def = self.outputs[out_name]
             wrapped_data = param_dict.get(out_name)
             file_name = str(wrapped_data)
