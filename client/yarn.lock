@@ -13664,10 +13664,10 @@ vue-hot-reload-api@^2.3.0:
   resolved "https://registry.yarnpkg.com/vue-hot-reload-api/-/vue-hot-reload-api-2.3.1.tgz#b2d3d95402a811602380783ea4f566eb875569a2"
   integrity sha512-AA86yKZ5uOKz87/q1UpngEXhbRkaYg1b7HMMVRobNV1IVKqZe8oLIzo6iMocVwZXnYitlGwf2k4ZRLOZlS8oPQ==
 
-vue-loader@^15.6.2:
-  version "15.6.2"
-  resolved "https://registry.yarnpkg.com/vue-loader/-/vue-loader-15.6.2.tgz#892741d96260936ff69e892f72ec361ba4d100d2"
-  integrity sha512-T6fONodj861M3PqZ1jlbUFjeezbUnPRY2bd+3eZuDvYADgkN3VFU2H5feqySNg9XBt8rcbyBGmFWTZtrOX+v5w==
+vue-loader@^15.7.0:
+  version "15.7.0"
+  resolved "https://registry.yarnpkg.com/vue-loader/-/vue-loader-15.7.0.tgz#27275aa5a3ef4958c5379c006dd1436ad04b25b3"
+  integrity sha512-x+NZ4RIthQOxcFclEcs8sXGEWqnZHodL2J9Vq+hUz+TDZzBaDIh1j3d9M2IUlTjtrHTZy4uMuRdTi8BGws7jLA==
   dependencies:
     "@vue/component-compiler-utils" "^2.5.1"
     hash-sum "^1.0.2"
@@ -13760,14 +13760,6 @@ vue-styleguidist@^3.11.0:
     webpack-dev-server "^3.1.14"
     webpack-merge "^4.0.0"
 
-vue-template-compiler@^2.5.22:
-  version "2.5.22"
-  resolved "https://registry.yarnpkg.com/vue-template-compiler/-/vue-template-compiler-2.5.22.tgz#c3d3c02c65f1908205c4fbd3b0ef579e51239955"
-  integrity sha512-1VTw/NPTUeHNiwhkq6NkFzO7gYLjFCueBN0FX8NEiQIemd5EUMQ5hxrF7O0zCPo5tae+U9S/scETPea+hIz8Eg==
-  dependencies:
-    de-indent "^1.0.2"
-    he "^1.1.0"
-
 vue-template-compiler@^2.6.9:
   version "2.6.10"
   resolved "https://registry.yarnpkg.com/vue-template-compiler/-/vue-template-compiler-2.6.10.tgz#323b4f3495f04faa3503337a82f5d6507799c9cc"
@@ -13790,11 +13782,6 @@ vue@^2.5.16:
   version "2.5.17"
   resolved "https://registry.yarnpkg.com/vue/-/vue-2.5.17.tgz#0f8789ad718be68ca1872629832ed533589c6ada"
   integrity sha512-mFbcWoDIJi0w0Za4emyLiW72Jae0yjANHbCVquMKijcavBGypqlF7zHRgMa5k4sesdv7hv2rB4JPdZfR+TPfhQ==
-
-vue@^2.5.22:
-  version "2.5.22"
-  resolved "https://registry.yarnpkg.com/vue/-/vue-2.5.22.tgz#3bf88041af08b8539c37b268b70ca79245e9cc30"
-  integrity sha512-pxY3ZHlXNJMFQbkjEgGVMaMMkSV1ONpz+4qB55kZuJzyJOhn6MSy/YZdzhdnumegNzVTL/Dn3Pp4UrVBYt1j/g==
 
 vue@^2.6.9:
   version "2.6.10"
