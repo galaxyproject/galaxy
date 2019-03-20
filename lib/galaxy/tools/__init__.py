@@ -2217,7 +2217,7 @@ class ExpressionTool(Tool):
         expression_inputs_path = os.path.join(local_working_directory, ExpressionTool.EXPRESSION_INPUTS_NAME)
 
         outputs = []
-        for i, (out_name, data) in enumerate(out_data.iteritems()):
+        for i, (out_name, data) in enumerate(out_data.items()):
             output_def = self.outputs[out_name]
             wrapped_data = param_dict.get(out_name)
             file_name = str(wrapped_data)
