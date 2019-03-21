@@ -3,10 +3,16 @@
  * it's good practice to separate data modeling from data retrieval
  */
 
- import { keyedColorScheme } from "utils/color";
+import { keyedColorScheme } from "utils/color";
 
 function TagModel(props = {}) {
     this.text = "";
+
+    // special handling for name:thing tags
+    if (props.text && props.text.startsWith("#")) {
+        props.text = props.text.replace("#", "name:");
+    }
+
     Object.assign(this, props);
 
     // Need to do Object.defineProperty instead of a class getter to make
