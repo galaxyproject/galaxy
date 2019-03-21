@@ -641,6 +641,7 @@ export default Backbone.View.extend({
             url: `${getAppRoot()}api/workflows/build_module`,
             data: request_data,
             success: function(data) {
+                const Galaxy = getGalaxyInstance();
                 node.init_field_data(data);
                 node.update_field_data(data);
                 // Post init/update, for new modules we want to default to
