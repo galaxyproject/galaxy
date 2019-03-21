@@ -3,11 +3,34 @@
  * it's good practice to separate data modeling from data retrieval
  */
 
-// model prototype
+ import { keyedColorScheme } from "utils/color";
 
 function TagModel(props = {}) {
     this.text = "";
     Object.assign(this, props);
+
+    // Need to do Object.defineProperty instead of a class getter to make
+    // style enumerable for vue-tags-input
+    Object.defineProperty(this, 'style', { 
+        enumerable: true,
+        get: function() {
+            if (this.text.startsWith("name:")) {
+        
+                let { primary, contrasting, darker } = keyedColorScheme(this.text);
+    
+                let styles = {
+                    'background-color': primary,
+                    'color': contrasting,
+                    'border-color': darker
+                }
+
+                return Object.keys(styles)
+                    .map(prop => `${prop}: ${styles[prop]}`)
+                    .join(";");
+            }
+            return "";
+        }
+    });
 }
 
 TagModel.prototype.equals = function(otherTag) {

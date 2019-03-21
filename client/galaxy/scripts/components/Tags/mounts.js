@@ -38,9 +38,7 @@ export const mountMakoTags = (options = {}, el) => {
 }
 
 /**
- * Generate a click handler for the tags, must return a function (not an arrow
- * function) so that it can be called in the context of the vue component.
- * (See Tags.vue, method: clickHandler)
+ * Generate a click handler for the tags
  * 
  * @param {object} options Passed options from mount fn
  */
@@ -64,8 +62,6 @@ const makoClickHandler = (options, vm) => function(tag) {
             }
             break;
         
-        // this function will be called in context of the component
-        // this == vm
         case "add_tag_to_grid_filter":
             vm.$store.dispatch("toggleSearchTag", tag);
             break;

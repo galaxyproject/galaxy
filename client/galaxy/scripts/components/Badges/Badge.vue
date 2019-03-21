@@ -1,7 +1,7 @@
 <template>
     <span class="badge badge-tags" :style="tagStyles" 
         @click.prevent="$emit('tag-click', tag)">
-        {{ tag }}
+        {{ tagLabel }}
     </span>
 </template>
 
@@ -14,6 +14,9 @@ export default {
         tag: { type: String, required: true }
     },
     computed: {
+        tagLabel() {
+            return this.tag.startsWith("name:") ? this.tag.replace("name:", "#") : this.tag;
+        },
         tagStyles() {
             let { primary, contrasting, darker } = keyedColorScheme(this.tag);
             return {

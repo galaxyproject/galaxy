@@ -1,6 +1,6 @@
 <template>
     <div class="nametags" :title="title">
-        <badge v-for="tag in observedTags" :key="tag" :tag="tag" />
+        <badge v-for="tag in nameTags" :key="tag" :tag="tag" />
     </div>
 </template>
 
@@ -18,16 +18,13 @@ export default {
         tags: { type: Array, required: false, default: () => [] }
     },
     computed: {
-        observedTags: {
-            get() {
-                return this.$store.getters.getTagsById(this.storeKey);
-            },
-            set(tags) {
-                this.updateTags({ key: this.storeKey, tags });
-            }
+        // only display tags that start with name:
+        nameTags() {
+            return this.$store.getters.getTagsById(this.storeKey)
+                .filter(tag => tag.startsWith("name:"));
         },
         title() {
-            return `${this.observedTags.length} nametags`;
+            return `${this.nameTags.length} nametags`;
         }
     },
     methods: {

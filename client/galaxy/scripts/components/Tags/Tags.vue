@@ -68,6 +68,9 @@ export default {
         },
 
         beforeAddingTag({ tag, addTag }) {
+            if (tag.text.startsWith("#")) {
+                tag.text = tag.text.replace("#", "name:");
+            }
             this.tagService.save(tag)
                 .then(() => addTag(tag))
                 .catch(err => console.warn("unable to save tag", err));
