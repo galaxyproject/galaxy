@@ -2595,9 +2595,9 @@ boolbase@^1.0.0, boolbase@~1.0.0:
   resolved "https://registry.yarnpkg.com/boolbase/-/boolbase-1.0.0.tgz#68dff5fbe60c51eb37725ea9e3ed310dcc1e776e"
   integrity sha1-aN/1++YMUes3cl6p4+0xDcwed24=
 
-"bootstrap-tour@https://github.com/sorich87/bootstrap-tour.git#6a1028fb562f9aa68c451f0901f8cfeb43cad140":
+"bootstrap-tour@https://github.com/sorich87/bootstrap-tour.git#65a49742e131d19f41e3f5bf63588995f7b8a9e0":
   version "0.12.0"
-  resolved "https://github.com/sorich87/bootstrap-tour.git#6a1028fb562f9aa68c451f0901f8cfeb43cad140"
+  resolved "https://github.com/sorich87/bootstrap-tour.git#65a49742e131d19f41e3f5bf63588995f7b8a9e0"
   dependencies:
     bootstrap ">=4.0.0-beta"
     jquery "^3.0.0"

@@ -18,7 +18,7 @@
     "backbone": "1.4.0",
     "bibtex-parse-js": "^0.0.24",
     "bootstrap": "^4.3.1",
-    "bootstrap-tour": "https://github.com/sorich87/bootstrap-tour.git#6a1028fb562f9aa68c451f0901f8cfeb43cad140",
+    "bootstrap-tour": "https://github.com/sorich87/bootstrap-tour.git#65a49742e131d19f41e3f5bf63588995f7b8a9e0",
     "bootstrap-vue": "^2.0.0-rc.15",
     "d3": "3",
     "decode-uri-component": "^0.2.0",
