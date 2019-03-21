@@ -49,8 +49,7 @@ jobs:
               # Shallow clone
               git clone --depth=1 "${CIRCLE_REPOSITORY_URL}" .
 
-              if [[ -n "${CIRCLE_PR_NUMBER}" ]]
-              then
+              if [[ -n "${CIRCLE_PR_NUMBER}" ]]; then
                   # Update PR refs for testing.
                   FETCH_REFS="${FETCH_REFS} +refs/pull/${CIRCLE_PR_NUMBER}/head:pr/${CIRCLE_PR_NUMBER}/head"
                   FETCH_REFS="${FETCH_REFS} +refs/pull/${CIRCLE_PR_NUMBER}/merge:pr/${CIRCLE_PR_NUMBER}/merge"
@@ -59,31 +58,25 @@ jobs:
                   git fetch --force origin ${FETCH_REFS}
 
                   # Checkout PR merge ref.
-                  git checkout -qf "pr/${CIRCLE_PR_NUMBER}/merge"
+                  git checkout -f "pr/${CIRCLE_PR_NUMBER}/merge"
 
                   # Test for *some* merge conflicts.
                   git branch --merged | grep "pr/${CIRCLE_PR_NUMBER}/head" > /dev/null
-              elif [ -n "$CIRCLE_TAG" ]
-              then
-                git fetch --depth=1 --force origin "refs/tags/${CIRCLE_TAG}"
-              elif [[ "$CIRCLE_BRANCH" =~ ^pull\/* ]]
-              then
-                git fetch --depth=1 --force origin "$CIRCLE_BRANCH/head:remotes/origin/$CIRCLE_BRANCH"
               else
-                git fetch --depth=1 --force origin "$CIRCLE_BRANCH:remotes/origin/$CIRCLE_BRANCH"
+                  if [ -n "$CIRCLE_TAG" ]; then
+                      git fetch --depth=1 --force origin "refs/tags/${CIRCLE_TAG}"
+                  else
+                      git fetch --depth=1 --force origin "$CIRCLE_BRANCH:remotes/origin/$CIRCLE_BRANCH"
+                  fi
+                  if [ -n "$CIRCLE_TAG" ]; then
+                      git reset --hard "$CIRCLE_SHA1"
+                      git checkout "$CIRCLE_TAG"
+                  elif [ -n "$CIRCLE_BRANCH" ]; then
+                      git reset --hard "$CIRCLE_SHA1"
+                      git checkout -B "$CIRCLE_BRANCH"
+                  fi
+                  git reset --hard "${CIRCLE_SHA1}"
               fi
-
-              if [ -n "$CIRCLE_TAG" ]
-              then
-                git reset --hard "$CIRCLE_SHA1"
-                git checkout -q "$CIRCLE_TAG"
-              elif [ -n "$CIRCLE_BRANCH" ]
-              then
-                git reset --hard "$CIRCLE_SHA1"
-                git checkout -q -B "$CIRCLE_BRANCH"
-              fi
-
-              git reset --hard "${CIRCLE_SHA1}"
       - save_cache:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
