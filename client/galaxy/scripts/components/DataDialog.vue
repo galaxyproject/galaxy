@@ -44,11 +44,7 @@
                         </b-button>
                     </template>
                 </b-table>
-                <b-pagination v-if="nItems > perPage"
-                  v-model="currentPage"
-                  :per-page="perPage"
-                  :total-rows="nItems"
-                />
+                <b-pagination v-if="nItems > perPage" v-model="currentPage" :per-page="perPage" :total-rows="nItems" />
                 <div v-if="nItems == 0">
                     <div v-if="filter">
                         No search results found for: <b>{{ this.filter }}</b
@@ -150,7 +146,7 @@ export default {
         },
         filtered: function(items) {
             this.nItems = items.length;
-            this.currentPage = 1
+            this.currentPage = 1;
         },
         clicked: function(record) {
             if (this.isDataset(record)) {

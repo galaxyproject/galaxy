@@ -355,22 +355,26 @@ var View = Backbone.View.extend({
             onclick: () => {
                 let current = this.model.get("current");
                 let cnf = this.config[current];
-                galaxy.data.dialog(response => {
-                    this._handleDropValues(response, false);
-                }, {
-                    multiple: cnf.multiple,
-                    format: null
-                });
+                galaxy.data.dialog(
+                    response => {
+                        this._handleDropValues(response, false);
+                    },
+                    {
+                        multiple: cnf.multiple,
+                        format: null
+                    }
+                );
             }
         });
 
         // append views
         let $fields = $("<div/>").addClass("w-100");
-        this.$el.empty()
-                .addClass("d-flex flex-row")
-                .append($("<div/>").append(this.button_type.$el))
-                .append($fields)
-                .append($("<div/>").append(this.button_dialog.$el));
+        this.$el
+            .empty()
+            .addClass("d-flex flex-row")
+            .append($("<div/>").append(this.button_type.$el))
+            .append($fields)
+            .append($("<div/>").append(this.button_dialog.$el));
         _.each(this.fields, field => {
             $fields.append(field.$el);
         });
@@ -447,7 +451,7 @@ var View = Backbone.View.extend({
     },
 
     /** Add values from drag/drop */
-    _handleDropValues: function(drop_data, drop_partial=true) {
+    _handleDropValues: function(drop_data, drop_partial = true) {
         let data = this.model.get("data");
         let current = this.model.get("current");
         let config = this.config[current];
@@ -458,7 +462,7 @@ var View = Backbone.View.extend({
                 let data_changed = false;
                 _.each(values, v => {
                     let new_id = v.id;
-                    let new_src = v.src = this._getSource(v);
+                    let new_src = (v.src = this._getSource(v));
                     let new_value = { id: new_id, src: new_src };
                     if (!_.findWhere(data[new_src], new_value)) {
                         data_changed = true;
