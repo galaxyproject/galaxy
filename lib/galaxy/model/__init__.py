@@ -634,7 +634,6 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.user_id = None
         self.tool_id = None
         self.tool_version = None
-        self.tool_hash = None
         self.copied_from_job_id = None
         self.command_line = None
         self.dependencies = []
