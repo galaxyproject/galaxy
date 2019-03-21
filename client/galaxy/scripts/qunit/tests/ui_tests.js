@@ -726,8 +726,7 @@ QUnit.test("select-content", function(assert) {
             "Contains " + options.totalmultiple + " multiselect fields"
         );
         assert.ok(
-            select.$el.children(".ui-options").find(".ui-option").length ===
-                (options.selectfields > 1 ? options.selectfields : 0),
+            select.$el.children(".ui-options").find(".ui-option").length === options.selectfields,
             "Radio button count"
         );
         assert.ok(select.$(".ui-select:first").css("display") == "block", "Check select visibility");
