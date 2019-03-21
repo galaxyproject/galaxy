@@ -13,7 +13,7 @@
   "dependencies": {
     "@babel/polyfill": "^7.4.0",
     "@handsontable/vue": "^2.0.0-beta1",
-    "@johmun/vue-tags-input": "^2.0.0",
+    "@johmun/vue-tags-input": "^2.0.1",
     "axios": "^0.18.0",
     "backbone": "1.4.0",
     "bibtex-parse-js": "^0.0.24",
@@ -74,7 +74,7 @@
   "devDependencies": {
     "@babel/core": "^7.4.0",
     "@babel/plugin-syntax-dynamic-import": "^7.2.0",
-    "@babel/preset-env": "^7.4.1",
+    "@babel/preset-env": "^7.4.2",
     "@vue/test-utils": "^1.0.0-beta.29",
     "amdi18n-loader": "^0.9.2",
     "babel-loader": "^8.0.5",
