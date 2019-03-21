@@ -180,6 +180,7 @@ class ShellJobRunner(AsynchronousJobRunner):
                 if state == model.Job.states.ERROR:
                     # Try to find out the reason for exiting
                     self.__handle_out_of_memory(ajs, external_job_id)
+                    self.mark_as_failed(ajs)
             if state == model.Job.states.RUNNING and not ajs.running:
                 ajs.running = True
             ajs.old_state = state
