@@ -106,6 +106,30 @@ class Json(Text):
             return "JSON file (%s)" % (nice_size(dataset.get_size()))
 
 
+class ExpressionJson(Json):
+    """ Represents the non-data input or output to a tool or workflow.
+    """
+    file_ext = "json"
+    MetadataElement(name="json_type", default=None, desc="JavaScript or JSON type of expression", readonly=True, visible=True, no_value=None)
+
+    def set_meta(self, dataset, **kwd):
+        """
+        """
+        json_type = "null"
+        with open(dataset.file_name) as f:
+            obj = json.load(f)
+            if isinstance(obj, int):
+                json_type = "int"
+            elif isinstance(obj, float):
+                json_type = "float"
+            elif isinstance(obj, list):
+                json_type = "list"
+            elif isinstance(obj, dict):
+                json_type = "object"
+
+        dataset.metadata.json_type = json_type
+
+
 @build_sniff_from_prefix
 class Ipynb(Json):
     file_ext = "ipynb"

@@ -147,8 +147,10 @@
   <tool file="collection_creates_dynamic_nested_fail.xml" />
   <tool file="collection_cat_group_tag.xml" />
   <tool file="collection_cat_group_tag_multiple.xml" />
+  <tool file="expression_forty_two.xml" />
+  <tool file="expression_parse_int.xml" />
+  <tool file="expression_log_line_count.xml" />
   <tool file="cheetah_casting.xml" />
-
   <tool file="cheetah_problem_unbound_var.xml" />
   <tool file="cheetah_problem_unbound_var_input.xml" />
   <tool file="cheetah_problem_syntax_error.xml" />
