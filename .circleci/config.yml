@@ -58,7 +58,7 @@ jobs:
                   git fetch --force origin ${FETCH_REFS}
 
                   # Checkout PR merge ref.
-                  git checkout -qf "pr/${CIRCLE_PR_NUMBER}/merge"
+                  git checkout -f "pr/${CIRCLE_PR_NUMBER}/merge"
 
                   # Test for *some* merge conflicts.
                   git branch --merged | grep "pr/${CIRCLE_PR_NUMBER}/head" > /dev/null
@@ -70,10 +70,10 @@ jobs:
                   fi
                   if [ -n "$CIRCLE_TAG" ]; then
                       git reset --hard "$CIRCLE_SHA1"
-                      git checkout -q "$CIRCLE_TAG"
+                      git checkout "$CIRCLE_TAG"
                   elif [ -n "$CIRCLE_BRANCH" ]; then
                       git reset --hard "$CIRCLE_SHA1"
-                      git checkout -q -B "$CIRCLE_BRANCH"
+                      git checkout -B "$CIRCLE_BRANCH"
                   fi
                   git reset --hard "${CIRCLE_SHA1}"
               fi
