@@ -2048,7 +2048,13 @@ test_data: {}
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         content = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEquals("43\n4.14\n", content)
+        lines = content.split("\n")
+        assert len(lines) == 3
+        str_43 = lines[0]
+        str_4point14 = lines[1]
+        assert lines[2] == ""
+        assert int(str_43) == 43
+        assert abs(float(str_4point14) - 4.14) < .0001
 
     @skip_without_tool('cat1')
     def test_workflow_rerun_with_use_cached_job(self):
