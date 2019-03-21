@@ -80,7 +80,6 @@
     "eslint": "eslint -c .eslintrc.js galaxy/scripts --ext .js,.vue"
   },
   "devDependencies": {
-    "animatewithsass": "^3.2.1",
     "babel-loader": "^8.0.4",
     "babel-plugin-rewire": "^1.2.0",
     "babel-plugin-transform-inline-environment-variables": "^0.4.3",
