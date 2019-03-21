@@ -37,6 +37,26 @@ function TagModel(props = {}) {
             return "";
         }
     });
+
+    // Changes name:foo to #foo
+    Object.defineProperty(this, 'label', { 
+        enumerable: true,
+        get: function() {
+            return this.text.startsWith("name:")
+                ? this.text.replace("name:", "#")
+                : this.text;
+        }
+    });
+
+    // valid flag
+    Object.defineProperty(this, 'valid', { 
+        enumerable: false,
+        get: function() {
+            if (!this.text.length) return false;
+            if (this.text == "name:") return false;
+            return true;
+        }
+    });
 }
 
 TagModel.prototype.equals = function(otherTag) {

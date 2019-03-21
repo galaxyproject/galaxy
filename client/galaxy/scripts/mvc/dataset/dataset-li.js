@@ -65,7 +65,6 @@ export var DatasetListItemView = _super.extend(
             // re-rendering on any model changes
             return self.listenTo(self.model, {
                 change: function(model) {
-                    console.log("change detected");
                     // if the model moved into the ready state and is expanded without details, fetch those details now
                     if (
                         self.model.changedAttributes().state &&

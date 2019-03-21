@@ -14,6 +14,9 @@ export class BackboneTagService extends TagService {
 
     async save(rawTag) {
         let tag = createTag(rawTag);
+        if (!tag.valid) {
+            throw new Error("Invalid tag");
+        }
 
         // update model
         let tags = new Set(this.model.attributes.tags);

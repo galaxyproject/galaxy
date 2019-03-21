@@ -70,7 +70,7 @@ export default {
         beforeAddingTag({ tag, addTag }) {
             this.tagService.save(tag)
                 .then(() => addTag(tag))
-                .catch(err => console.warn("unable to save tag", err));
+                .catch(err => console.warn("Unable to save tag", err));
         },
 
         beforeDeletingTag({ tag, deleteTag }) {

@@ -11,7 +11,7 @@
 import axios from "axios";
 import { createTag } from "./model";
 import { Subject } from "rxjs";
-import { filter, debounceTime, switchMap, distinctUntilChanged } from "rxjs/operators";
+import { map, filter, debounceTime, switchMap, distinctUntilChanged } from "rxjs/operators";
 
 export class TagService {
 
@@ -34,6 +34,7 @@ export class TagService {
      */
     get autocompleteOptions() {
         return this._searchText.pipe(
+            map(txt => txt.replace("name:", "")),
             filter(txt => txt.length),
             debounceTime(this.debounceInterval),
             distinctUntilChanged(),
@@ -57,6 +58,9 @@ export class TagService {
     async save(rawTag) {
         let { id, itemClass, context } = this;
         let tag = createTag(rawTag);
+        if (!tag.valid) {
+            throw new Error("Invalid tag");
+        }
         let url = `/tag/add_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&new_tag=${tag.text}`;
         let response = await axios.get(url);
         if (response.status !== 200) {
