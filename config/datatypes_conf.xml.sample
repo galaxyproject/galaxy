@@ -287,6 +287,7 @@
     <datatype extension="mafcustomtrack" type="galaxy.datatypes.sequence:MafCustomTrack">
       <display file="ucsc/maf_customtrack.xml"/>
     </datatype>
+    <datatype extension="mtx" type="galaxy.datatypes.tabular:MatrixMarket" display_in_upload="true"/>
     <datatype extension="encodepeak" type="galaxy.datatypes.interval:ENCODEPeak" display_in_upload="true">
       <converter file="encodepeak_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="encodepeak_to_bgzip_converter.xml" target_datatype="bgzip"/>
@@ -861,6 +862,7 @@
     <sniffer type="galaxy.datatypes.tabular:ConnectivityTable"/>
     <sniffer type="galaxy.datatypes.tabular:CSV"/>
     <sniffer type="galaxy.datatypes.tabular:TSV"/>
+    <sniffer type="galaxy.datatypes.tabular:mtx"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer2"/>
     <sniffer type="galaxy.datatypes.msa:Hmmer3"/>
     <sniffer type="galaxy.datatypes.msa:Stockholm_1_0"/>

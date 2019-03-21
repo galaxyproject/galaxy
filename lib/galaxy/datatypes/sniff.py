@@ -471,6 +471,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.fastqsanger.gz')
     >>> guess_ext(fname, sniff_order)  # See test_datatype_registry for more compressed type tests.
     'fastqsanger.gz'
+    >>> fname = get_test_fname('1.mtx')
+    >>> guess_ext(fname, sniff_order)
+    'mtx'
     """
     file_prefix = FilePrefix(fname)
     file_ext = run_sniffers_raw(file_prefix, sniff_order, is_binary)
