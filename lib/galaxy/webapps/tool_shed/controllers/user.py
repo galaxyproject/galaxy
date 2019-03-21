@@ -9,10 +9,12 @@ from galaxy import (
     web
 )
 from galaxy.security.validate_user_input import (
+    transform_publicname,
     validate_email,
     validate_publicname
 )
 from galaxy.web import url_for
+from galaxy.web.form_builder import CheckboxField
 from galaxy.webapps.galaxy.controllers.user import User as BaseUser
 
 log = logging.getLogger(__name__)
@@ -96,6 +98,119 @@ class User(BaseUser):
                                    status=status,
                                    form_input_auto_focus=True,
                                    active_view="user")
+
+    @web.expose
+    def create(self, trans, cntrller='user', redirect_url='', refresh_frames=[], **kwd):
+        params = util.Params(kwd)
+        # If the honeypot field is not empty we are dealing with a bot.
+        honeypot_field = params.get('bear_field', '')
+        if honeypot_field != '':
+            return trans.show_error_message("You've been flagged as a possible bot. If you are not, please try registering again and fill the form out carefully. <a target=\"_top\" href=\"%s\">Go to the home page</a>.") % url_for('/')
+
+        message = util.restore_text(params.get('message', ''))
+        status = params.get('status', 'done')
+        use_panels = util.string_as_bool(kwd.get('use_panels', True))
+        email = util.restore_text(params.get('email', ''))
+        # Do not sanitize passwords, so take from kwd
+        # instead of params ( which were sanitized )
+        password = kwd.get('password', '')
+        confirm = kwd.get('confirm', '')
+        username = util.restore_text(params.get('username', ''))
+        subscribe = params.get('subscribe', '')
+        subscribe_checked = CheckboxField.is_checked(subscribe)
+        referer = trans.request.referer or ''
+        redirect = kwd.get('redirect', referer).strip()
+        is_admin = trans.user_is_admin
+        success = False
+        show_user_prepopulate_form = False
+        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
+            message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
+            if trans.app.config.error_email_to is not None:
+                message += ' Contact: %s' % trans.app.config.error_email_to
+            status = 'error'
+        else:
+            # check user is allowed to register
+            message, status = trans.app.auth_manager.check_registration_allowed(email, username, password)
+            if not message:
+                # Create the user, save all the user info and login to Galaxy
+                if params.get('create_user_button', False):
+                    # Check email and password validity
+                    message = self.__validate(trans, email, password, confirm, username)
+                    if not message:
+                        # All the values are valid
+                        message, status, user, success = self.__register(trans, subscribe_checked=subscribe_checked, **kwd)
+                        if success and not is_admin:
+                            # The handle_user_login() method has a call to the history_set_default_permissions() method
+                            # (needed when logging in with a history), user needs to have default permissions set before logging in
+                            trans.handle_user_login(user)
+                            trans.log_event("User created a new account")
+                            trans.log_event("User logged in")
+                    else:
+                        status = 'error'
+        registration_warning_message = trans.app.config.registration_warning_message
+        if success:
+            if is_admin:
+                redirect_url = web.url_for('/admin/users?status=success&message=Created new user account.')
+            else:
+                redirect_url = web.url_for('/')
+        return trans.fill_template('/webapps/tool_shed/user/register.mako',
+                                   cntrller=cntrller,
+                                   email=email,
+                                   username=transform_publicname(trans, username),
+                                   subscribe_checked=subscribe_checked,
+                                   show_user_prepopulate_form=show_user_prepopulate_form,
+                                   use_panels=use_panels,
+                                   redirect=redirect,
+                                   redirect_url=redirect_url,
+                                   refresh_frames=refresh_frames,
+                                   registration_warning_message=registration_warning_message,
+                                   message=message,
+                                   status=status)
+
+    def __register(self, trans, email=None, username=None, password=None, subscribe_checked=False, **kwd):
+        """Registers a new user."""
+        email = util.restore_text(email)
+        username = util.restore_text(username)
+        status = None
+        message = None
+        is_admin = trans.user_is_admin
+        user = self.user_manager.create(email=email, username=username, password=password)
+        if subscribe_checked:
+            # subscribe user to email list
+            if trans.app.config.smtp_server is None:
+                status = "error"
+                message = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
+            else:
+                body = 'Join Mailing list.\n'
+                to = trans.app.config.mailing_join_addr
+                frm = email
+                subject = 'Join Mailing List'
+                try:
+                    util.send_mail(frm, to, subject, body, trans.app.config)
+                except Exception:
+                    log.exception('Subscribing to the mailing list has failed.')
+                    status = "warning"
+                    message = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
+        if status != "error":
+            if not is_admin:
+                # The handle_user_login() method has a call to the history_set_default_permissions() method
+                # (needed when logging in with a history), user needs to have default permissions set before logging in
+                trans.handle_user_login(user)
+                trans.log_event("User created a new account")
+                trans.log_event("User logged in")
+            if trans.app.config.user_activation_on:
+                is_activation_sent = self.user_manager.send_activation_email(trans, email, username)
+                if is_activation_sent:
+                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
+                else:
+                    status = "error"
+                    message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                    if trans.app.config.error_email_to is not None:
+                        message += ' Contact: %s' % trans.app.config.error_email_to
+        else:
+            # User activation is OFF, proceed without sending the activation email.
+            message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
+        return message, status, user, status is None
 
     @web.expose
     def reset_password(self, trans, email=None, **kwd):

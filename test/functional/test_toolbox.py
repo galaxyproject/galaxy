@@ -82,7 +82,7 @@ def build_tests(app=None,
         # Create a new subclass of ToolTestCase, dynamically adding methods
         # named test_tool_XXX that run each test defined in the tool config.
         if contains and contains not in tool_id:
-                continue
+            continue
         name = name_prefix + tool_id.replace(' ', '_')
         baseclasses = (baseclass, )
         namespace = dict()

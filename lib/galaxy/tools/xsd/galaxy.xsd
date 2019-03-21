@@ -279,7 +279,7 @@ and can be configured locally to adapt to any other package management system.
 ```
 
 This older example shows a tool that requires R version 2.15.1. The
-``tool_depensencies.xml`` should contain matching declarations for Galaxy to
+``tool_dependencies.xml`` should contain matching declarations for Galaxy to
 actually install the R runtime. The ``set_envirornment`` type is only respected
 by the tool shed and is ignored by the newer and preferred conda dependency
 resolver.
@@ -1651,8 +1651,37 @@ module.
           <xs:documentation><![CDATA[This tag allows the developer to recurisively specify additional assertions as child elements about just the text contained in the element specified by the XPath-like ``path`` (e.g. ``<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text text="EDK72998.1" /></element_text>``).]]></xs:documentation>
         </xs:annotation>
       </xs:element>
+      <xs:element name="has_h5_keys" type="AssertHasH5Keys">
+      </xs:element>
+      <xs:element name="has_h5_attribute" type="AssertHasH5Attribute">
+      </xs:element>
     </xs:choice>
   </xs:group>
+  <xs:complexType name="AssertHasH5Keys">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified ``keys`` (h5py.File().keys()) (e.g. ``<has_h5_keys keys="bins, chroms,indexes,pixels" />``).]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="keys" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Comma separated list of keys to check for.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasH5Attribute">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified key-vaue pair given as ``key`` and ``value`` (e.g. ``<has_attr key="nchroms" value="15" />``).]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="key" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Key to check H5 attribute value of.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Expected value of H5 attribute to check.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="Inputs">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Consists of all elements that define the

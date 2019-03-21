@@ -99,6 +99,7 @@ from .loader import (
     raw_tool_xml_tree,
     template_macro_params
 )
+from .provided_metadata import parse_tool_provided_metadata
 
 log = logging.getLogger(__name__)
 
@@ -897,12 +898,7 @@ class Tool(Dictifiable):
 
     def tool_provided_metadata(self, job_wrapper):
         meta_file = os.path.join(job_wrapper.tool_working_directory, self.provided_metadata_file)
-        if not os.path.exists(meta_file):
-            return output_collect.NullToolProvidedMetadata()
-        if self.provided_metadata_style == "legacy":
-            return output_collect.LegacyToolProvidedMetadata(job_wrapper, meta_file)
-        else:
-            return output_collect.ToolProvidedMetadata(job_wrapper, meta_file)
+        return parse_tool_provided_metadata(meta_file, provided_metadata_style=self.provided_metadata_style, job_wrapper=job_wrapper)
 
     def parse_command(self, tool_source):
         """

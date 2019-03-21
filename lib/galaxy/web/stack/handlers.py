@@ -12,11 +12,11 @@ from collections import namedtuple
 
 from sqlalchemy.orm import object_session
 
-from . import (
+from galaxy.exceptions import HandlerAssignmentError
+from galaxy.util import (
     ExecutionTimer,
     listify
 )
-from ..exceptions import HandlerAssignmentError
 
 log = logging.getLogger(__name__)
 

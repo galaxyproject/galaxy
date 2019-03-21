@@ -31,7 +31,7 @@ def memory_bound_hexdigest(hash_func, path=None, file=None):
 
     try:
         for block in iter(lambda: file.read(BLOCK_SIZE), b''):
-                hasher.update(block)
+            hasher.update(block)
         return hasher.hexdigest()
     finally:
         file.close()

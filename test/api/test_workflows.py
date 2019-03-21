@@ -507,7 +507,9 @@ steps:
         downloaded_workflow = self._download_workflow(workflow_id, style="editor")
         steps = downloaded_workflow['steps']
         assert len(steps) == 2
-        assert steps['1']['outputs'][0]['collection_type'] == 'list:paired'
+        # Non-subworkflow collection_type_source tools will be handled by the client,
+        # so collection_type should be None here.
+        assert steps['1']['outputs'][0]['collection_type'] is None
 
     @skip_without_tool('collection_type_source')
     def test_export_editor_subworkflow_collection_type_source(self):
@@ -766,6 +768,32 @@ test_data:
             replaced_hda = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=replaced_hda_id, wait=True, assert_ok=False)
             assert not replaced_hda['visible'], replaced_hda
 
+    @skip_without_tool('multi_data_optional')
+    def test_workflow_list_list_multi_data_map_over(self):
+        # Test that a list:list is reduced to list with a multiple="true" data input
+        with self.dataset_populator.test_history() as history_id:
+            workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input_datasets: collection
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input_datasets
+""")
+            with self.dataset_populator.test_history() as history_id:
+                hdca_id = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()
+                self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+                inputs = {
+                    '0': self._ds_entry(hdca_id),
+                }
+                invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
+                self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+                output_collection = self.dataset_populator.get_history_collection_details(history_id, hid=6)
+                assert output_collection['collection_type'] == 'list'
+                assert output_collection['job_source_type'] == 'ImplicitCollectionJobs'
+
     @skip_without_tool("cat_list")
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collection_mapping(self):
@@ -778,7 +806,6 @@ test_data:
             }
             invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             self.assertEqual("a\nc\nb\nd\ne\ng\nf\nh\n", self.dataset_populator.get_history_dataset_content(history_id, hid=0))
 
     @skip_without_tool("cat_list")
@@ -986,19 +1013,19 @@ test_data:
             assert len([x for x in content.split("\n") if x]) == 2
 
     def test_run_subworkflow_auto_labels(self):
-            history_id = self.dataset_populator.new_history()
-            test_data = """
+        history_id = self.dataset_populator.new_history()
+        test_data = """
 outer_input:
   value: 1.bed
   type: File
 """
-            job_summary = self._run_jobs(NESTED_WORKFLOW_AUTO_LABELS, test_data=test_data, history_id=history_id)
-            assert len(job_summary.jobs) == 4, "4 jobs expected, got %d jobs" % len(job_summary.jobs)
+        job_summary = self._run_jobs(NESTED_WORKFLOW_AUTO_LABELS, test_data=test_data, history_id=history_id)
+        assert len(job_summary.jobs) == 4, "4 jobs expected, got %d jobs" % len(job_summary.jobs)
 
-            content = self.dataset_populator.get_history_dataset_content(history_id)
-            self.assertEqual(
-                "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
-                content)
+        content = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEqual(
+            "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
+            content)
 
     @skip_without_tool("cat1")
     @skip_without_tool("collection_paired_test")
@@ -3134,18 +3161,18 @@ input_c:
             self._assert_status_code_is(usage_details_response, 403)
 
     def _invoke_paused_workflow(self, history_id):
-            workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
-            workflow_id = self.workflow_populator.create_workflow(workflow)
-            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
-            index_map = {
-                '0': self._ds_entry(hda1),
-            }
-            invocation_id = self.__invoke_workflow(
-                history_id,
-                workflow_id,
-                index_map,
-            )
-            return workflow_id, invocation_id
+        workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        index_map = {
+            '0': self._ds_entry(hda1),
+        }
+        invocation_id = self.__invoke_workflow(
+            history_id,
+            workflow_id,
+            index_map,
+        )
+        return workflow_id, invocation_id
 
     def _wait_for_invocation_non_new(self, workflow_id, invocation_id):
         target_state_reached = False

@@ -18,7 +18,7 @@ CREATE_VENV=1
 REPLACE_PIP=$SET_VENV
 COPY_SAMPLE_FILES=1
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
-NODE_VERSION="10.13.0"
+NODE_VERSION=${GALAXY_NODE_VERSION:-"$(cat client/.node_version)"}
 
 for arg in "$@"; do
     [ "$arg" = "--skip-eggs" ] && FETCH_WHEELS=0

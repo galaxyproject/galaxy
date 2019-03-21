@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import time
+
 from requests import (
     get,
     post,
@@ -192,13 +194,21 @@ class HistoriesApiTestCase(api.ApiTestCase):
     def test_import_metadata_regeneration(self):
         history_name = "for_import_metadata_regeneration"
         history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_populator.new_dataset(history_id, content=open(self.test_data_resolver.get_filename("1.bam"), 'rb'), file_type='bam')
+        self.dataset_populator.new_dataset(history_id, content=open(self.test_data_resolver.get_filename("1.bam"), 'rb'), file_type='bam', wait=True)
         imported_history_id = self._reimport_history(history_id, history_name)
         self._assert_history_length(imported_history_id, 1)
         import_bam_metadata = self.dataset_populator.get_history_dataset_details(
             history_id=imported_history_id,
             hid=1,
         )
+        # The cleanup() method of the __IMPORT_HISTORY__ job (which is executed
+        # after the job has entered its final state):
+        # - creates a new dataset with 'ok' state and adds it to the history
+        # - starts a __SET_METADATA__ job to regerenate the dataset metadata, if
+        #   needed
+        # We need to wait a bit for the creation of the __SET_METADATA__ job.
+        time.sleep(1)
+        self.dataset_populator.wait_for_history_jobs(imported_history_id, assert_ok=True)
         bai_metadata = import_bam_metadata["meta_files"][0]
         assert bai_metadata["file_type"] == "bam_index"
         api_url = bai_metadata["download_url"].split("api/", 1)[1]

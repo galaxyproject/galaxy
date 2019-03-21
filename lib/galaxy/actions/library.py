@@ -126,15 +126,15 @@ class LibraryActions(object):
         return output
 
     def _get_server_dir_uploaded_datasets(self, trans, params, full_dir, import_dir_desc, library_bunch, response_code, message):
-            dir_response = self._get_server_dir_files(params, full_dir, import_dir_desc)
-            files = dir_response[0]
-            if not files:
-                return dir_response
-            uploaded_datasets = []
-            for file in files:
-                name = os.path.basename(file)
-                uploaded_datasets.append(self._make_library_uploaded_dataset(trans, params, name, file, 'server_dir', library_bunch))
-            return uploaded_datasets, 200, None
+        dir_response = self._get_server_dir_files(params, full_dir, import_dir_desc)
+        files = dir_response[0]
+        if not files:
+            return dir_response
+        uploaded_datasets = []
+        for file in files:
+            name = os.path.basename(file)
+            uploaded_datasets.append(self._make_library_uploaded_dataset(trans, params, name, file, 'server_dir', library_bunch))
+        return uploaded_datasets, 200, None
 
     def _get_server_dir_files(self, params, full_dir, import_dir_desc):
         files = []

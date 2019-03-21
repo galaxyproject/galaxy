@@ -9,7 +9,6 @@ import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
 
-
 function logoutClick() {
     let galaxy = getGalaxyInstance();
     let token = galaxy.session_csrf_token || "";
@@ -19,7 +18,6 @@ function logoutClick() {
     let url = `${galaxy.root}user/logout?session_csrf_token=${token}`;
     window.top.location.href = url;
 }
-
 
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
@@ -253,21 +251,8 @@ var Collection = Backbone.Collection.extend({
                     id: "user",
                     title: _l("Login or Register"),
                     cls: "loggedout-only",
-                    tooltip: _l("Account registration or login"),
-                    menu: [
-                        {
-                            title: _l("Login"),
-                            url: "login",
-                            target: "_top",
-                            noscratchbook: true
-                        },
-                        {
-                            title: _l("Register"),
-                            url: "user/create",
-                            target: "galaxy_main",
-                            noscratchbook: true
-                        }
-                    ]
+                    url: "login",
+                    tooltip: _l("Account registration or login")
                 };
             } else {
                 userTab = {
@@ -487,10 +472,7 @@ var Tab = Backbone.View.extend({
                 .popover({
                     html: true,
                     placement: "bottom",
-                    content: `Please ${this.buildLink("login", "login")} or ${this.buildLink(
-                        "register",
-                        "user/create?use_panels=True"
-                    )} to use this feature.`
+                    content: `Please ${this.buildLink("login or register", "login")} to use this feature.`
                 })
                 .popover("show");
             window.setTimeout(() => {

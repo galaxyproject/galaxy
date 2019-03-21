@@ -11,13 +11,14 @@ from sqlalchemy.sql import expression
 
 from galaxy import model
 from galaxy.exceptions import MalformedContents
-from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.web.framework.helpers import to_unicode
+from galaxy.exceptions import ObjectNotFound
+from galaxy.model.item_attrs import add_item_annotation, get_item_annotation_str
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
 
-class JobImportHistoryArchiveWrapper(UsesAnnotations):
+class JobImportHistoryArchiveWrapper:
     """
         Class provides support for performing jobs that import a history from
         an archive.
@@ -83,7 +84,7 @@ class JobImportHistoryArchiveWrapper(UsesAnnotations):
 
                 # Add annotation, tags.
                 if user:
-                    self.add_item_annotation(self.sa_session, user, new_history, history_attrs['annotation'])
+                    add_item_annotation(self.sa_session, user, new_history, history_attrs['annotation'])
                     """
                     TODO: figure out to how add tags to item.
                     for tag, value in history_attrs[ 'tags' ].items():
@@ -160,7 +161,7 @@ class JobImportHistoryArchiveWrapper(UsesAnnotations):
 
                     # Set tags, annotations.
                     if user:
-                        self.add_item_annotation(self.sa_session, user, hda, dataset_attrs['annotation'])
+                        add_item_annotation(self.sa_session, user, hda, dataset_attrs['annotation'])
                         # TODO: Set tags.
                         """
                         for tag, value in dataset_attrs[ 'tags' ].items():
@@ -268,7 +269,7 @@ class JobImportHistoryArchiveWrapper(UsesAnnotations):
                 raise
 
 
-class JobExportHistoryArchiveWrapper(UsesAnnotations):
+class JobExportHistoryArchiveWrapper:
     """
     Class provides support for performing jobs that export a history to an
     archive.
@@ -306,8 +307,8 @@ class JobExportHistoryArchiveWrapper(UsesAnnotations):
             """ Create dictionary of an item's tags. """
             tags = {}
             for tag in item.tags:
-                tag_user_tname = to_unicode(tag.user_tname)
-                tag_user_value = to_unicode(tag.user_value)
+                tag_user_tname = unicodify(tag.user_tname)
+                tag_user_value = unicodify(tag.user_value)
                 tags[tag_user_tname] = tag_user_value
             return tags
 
@@ -331,8 +332,8 @@ class JobExportHistoryArchiveWrapper(UsesAnnotations):
                         "create_time": obj.create_time.__str__(),
                         "update_time": obj.update_time.__str__(),
                         "hid": obj.hid,
-                        "name": to_unicode(obj.name),
-                        "info": to_unicode(obj.info),
+                        "name": unicodify(obj.name),
+                        "info": unicodify(obj.info),
                         "blurb": obj.blurb,
                         "peek": obj.peek,
                         "extension": obj.extension,
@@ -341,12 +342,21 @@ class JobExportHistoryArchiveWrapper(UsesAnnotations):
                         "designation": obj.designation,
                         "deleted": obj.deleted,
                         "visible": obj.visible,
-                        "file_name": obj.file_name,
                         "uuid": (lambda uuid: str(uuid) if uuid else None)(obj.dataset.uuid),
-                        "annotation": to_unicode(getattr(obj, 'annotation', '')),
-                        "tags": get_item_tag_dict(obj),
-                        "extra_files_path": obj.extra_files_path
+                        "annotation": unicodify(getattr(obj, 'annotation', '')),
+                        "tags": get_item_tag_dict(obj)
                     }
+
+                    try:
+                        rval['file_name'] = obj.file_name
+                    except ObjectNotFound:
+                        rval['file_name'] = None
+
+                    if obj.extra_files_path_exists():
+                        rval['extra_files_path'] = obj.extra_files_path
+                    else:
+                        rval['extra_files_path'] = None
+
                     if not obj.visible and not include_hidden:
                         rval['exported'] = False
                     elif obj.deleted and not include_deleted:
@@ -366,10 +376,10 @@ class JobExportHistoryArchiveWrapper(UsesAnnotations):
         history_attrs = {
             "create_time": history.create_time.__str__(),
             "update_time": history.update_time.__str__(),
-            "name": to_unicode(history.name),
+            "name": unicodify(history.name),
             "hid_counter": history.hid_counter,
             "genome_build": history.genome_build,
-            "annotation": to_unicode(self.get_item_annotation_str(trans.sa_session, history.user, history)),
+            "annotation": unicodify(get_item_annotation_str(trans.sa_session, history.user, history)),
             "tags": get_item_tag_dict(history),
             "includes_hidden_datasets": include_hidden,
             "includes_deleted_datasets": include_deleted
@@ -386,7 +396,7 @@ class JobExportHistoryArchiveWrapper(UsesAnnotations):
         datasets_attrs = []
         provenance_attrs = []
         for dataset in datasets:
-            dataset.annotation = self.get_item_annotation_str(trans.sa_session, history.user, dataset)
+            dataset.annotation = get_item_annotation_str(trans.sa_session, history.user, dataset)
             if (not dataset.visible and not include_hidden) or (dataset.deleted and not include_deleted):
                 provenance_attrs.append(dataset)
             else:

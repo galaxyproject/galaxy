@@ -608,7 +608,7 @@ div.toolFormRow {
         @extend .py-1;
         @extend .px-2;
         cursor: move;
-        background: $panel-bg-color;
+        background: $brand-secondary;
     }
     .toolFormBody {
         @extend .card-body;
