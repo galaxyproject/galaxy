@@ -19,12 +19,24 @@ from galaxy.web.framework.helpers import (
 log = logging.getLogger(__name__)
 
 
+class JobStatusColumn(grids.StateColumn):
+    def get_value(self, trans, grid, item):
+        return super(JobStatusColumn, self).get_value(trans, grid, item.job)
+
+
 class RealTimeToolEntryPointListGrid(grids.Grid):
     def get_url_args(item):
         """
         Returns dictionary used to create item link.
         """
-        url_kwargs = dict(controller="realtime", action="access_entry_point_ri", entry_point_id=item.id)
+        url_kwargs = dict(controller="realtime", action="access_entry_point", id=item.id)
+        return url_kwargs
+
+    def get_url_args_job(item):
+        """
+        Returns dictionary used to create item link.
+        """
+        url_kwargs = dict(controller="api/jobs", action='show', id=item.job.id)
         return url_kwargs
 
     use_panels = True
@@ -35,6 +47,7 @@ class RealTimeToolEntryPointListGrid(grids.Grid):
     columns = [
         grids.TextColumn("Name", key="name", filterable="advanced", link=get_url_args),
         grids.GridColumn("Active", key="active"),
+        JobStatusColumn("Job Info", key="job_state", model_class=model.Job),
         grids.GridColumn("Created", key="created_time", format=time_ago),
         grids.GridColumn("Last Updated", key="modified_time", format=time_ago),
     ]
@@ -55,7 +68,7 @@ class RealTimeToolEntryPointListGrid(grids.Grid):
 
 
 class RealTime(BaseUIController):
-    _rtt_ep_grid = RealTimeToolEntryPointListGrid()
+    entry_point_grid = RealTimeToolEntryPointListGrid()
 
     @web.expose
     def index(self, trans, entry_point_id=None, job_id=None, **kwd):
@@ -71,7 +84,7 @@ class RealTime(BaseUIController):
         if eps:
             if trans.app.realtime_manager.can_access_entry_points(trans, eps):
                 if len(eps) == 1:
-                    return self.access_entry_point(trans, entry_point_id=trans.security.encode_id(eps[0].id))
+                    return self.access_entry_point(trans, id=trans.security.encode_id(eps[0].id))
                 else:
                     return trans.response.send_redirect(url_for(controller="realtime", action="list"))
             else:
@@ -79,13 +92,10 @@ class RealTime(BaseUIController):
         return trans.show_error_message('RealTimeTool instance not found')
 
     @web.expose
-    def access_entry_point_ri(self, trans, entry_point_id=None):
-        return trans.response.send_redirect(url_for(controller='realtime', action='access_entry_point', entry_point_id=trans.security.encode_id(entry_point_id)))
-
-    @web.expose
-    def access_entry_point(self, trans, entry_point_id=None):
-        if entry_point_id:
-            entry_point_id = self.decode_id(entry_point_id)
+    def access_entry_point(self, trans, id=None):
+        # Because of auto id encoding needed for link from grid, the item.id keyword must be 'id'
+        if id:
+            entry_point_id = self.decode_id(id)
             entry_point = trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).get(entry_point_id)
             if trans.app.realtime_manager.can_access_entry_point(trans, entry_point):
                 if entry_point.active:
@@ -103,9 +113,9 @@ class RealTime(BaseUIController):
     @web.expose_api
     def list(self, trans, **kwargs):
         """List all available realtimetools"""
-        log.debug('list kargs %s', str(kwargs))
         operation = kwargs.get('operation', None)
         message = None
+        status = None
         if operation:
             eps = []
             ids = kwargs.get('id', None)
@@ -134,20 +144,11 @@ class RealTime(BaseUIController):
                             succeeded.append(ep)
                     if failed:
                         message = 'Unable to stop %i RealTimeTools.' % (len(failed))
+                        status = 'error'
                     if succeeded:
                         message = 'Stopped %i RealTimeTools.' % (len(succeeded))
-        return self._rtt_ep_grid(trans, message=message)
-
-    @web.expose_api
-    def stop0(self, trans, realtime_id=None, realtime_entry_id=None):
-        """List all available realtimetools"""
-        if realtime_id:
-            realtime = trans.app.model.RealTimeTool.get(trans.security.decode_id(realtime_id))
-        elif realtime_entry_id:
-            realtime = trans.app.model.RealTimeToolEntryPoint.get(trans.security.decode_id(realtime_entry_id)).realtime
-        else:
-            return dict(message="Can't stop: RealTimeTool not provided.", state='error')
-        stopped = trans.app.realtime_manager.stop(trans, realtime)
-        if stopped:
-            return dict(message="RealTimeTool has been stopped", state='ok')
-        return dict(message="Unable to stop RealTimeTool", state='error')
+                        status = 'ok'
+        if message and status:
+            kwargs['message'] = message
+            kwargs['status'] = status
+        return self.entry_point_grid(trans, **kwargs)

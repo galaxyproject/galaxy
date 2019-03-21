@@ -301,7 +301,7 @@ var Collection = Backbone.Collection.extend({
                     },
                     {
                         title: _l("Active RealTimeTools"),
-                        url: "realtime/list",
+                        url: "realtime_entry_points/list",
                         target: "__use_router__"
                     }
                 ]

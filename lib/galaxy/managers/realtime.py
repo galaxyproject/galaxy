@@ -241,20 +241,19 @@ class RealTimeManager(object):
                 return False
         return True
 
-    def stop0(self, trans, realtime):
+    def stop(self, trans, entry_point):
         try:
-            self.remove_realtime(realtime)
-            job = realtime.job
+            self.remove_entry_point(entry_point)
+            job = entry_point.job
             if not job.finished:
-                # FIXME: Need stop container, but set to job OK.
-                log.debug('Stopping Job: %s for RealTimeTool: %s', job, realtime)
+                log.debug('Stopping Job: %s for RealTimeToolEntryPoint: %s', job, entry_point)
                 job.mark_deleted(trans.app.config.track_jobs_in_database)
                 # This self.job_manager.stop(job) does nothing without changing job.state, manually or e.g. with .mark_deleted()
                 self.job_manager.stop(job)
                 trans.sa_session.add(job)
                 trans.sa_session.flush()
         except Exception as e:
-            log.debug('Unable to stop job for RealTimeTool: %s', e)
+            log.debug('Unable to stop job for RealTimeToolEntryPoint (%s): %s', entry_point, e)
             return False
         return True
 

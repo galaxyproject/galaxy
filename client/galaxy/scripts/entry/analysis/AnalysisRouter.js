@@ -73,7 +73,7 @@ export const getAnalysisRouter = Galaxy =>
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
-            "(/)realtime/list": "show_realtime_list"
+            "(/)realtime_entry_points(/)list": "show_realtime_list"
         },
 
         require_login: ["show_user", "show_user_form", "show_workflows"],
