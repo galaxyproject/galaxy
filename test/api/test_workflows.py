@@ -21,6 +21,9 @@ from base.workflow_fixtures import (  # noqa: I100
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_ONE_STEP_DEFAULT,
+    WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT,
+    WORKFLOW_PARAMETER_INPUT_INTEGER_OPTIONAL,
+    WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED,
     WORKFLOW_RENAME_ON_INPUT,
     WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
@@ -2113,7 +2116,7 @@ steps:
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
             self._assert_history_job_count(history_id, 4)
 
-    def test_run_with_validated_parameter_connection_valid(self):
+    def test_run_with_validated_parameter_connection_optional(self):
         with self.dataset_populator.test_history() as history_id:
             run_summary = self._run_jobs("""
 class: GalaxyWorkflow
@@ -2134,6 +2137,54 @@ text_input:
             self.wait_for_invocation_and_jobs(history_id, run_summary.workflow_id, run_summary.invocation_id)
             jobs = self._history_jobs(history_id)
             assert len(jobs) == 1
+
+    def test_run_with_int_parameter(self):
+        with self.dataset_populator.test_history() as history_id:
+            failed = False
+            try:
+                self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED, test_data="""
+data_input:
+  value: 1.bed
+  type: File
+""", history_id=history_id, wait=True, assert_ok=True)
+            except AssertionError as e:
+                assert '(int_input) has no input' in str(e)
+                failed = True
+            assert failed
+            self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED, test_data="""
+data_input:
+  value: 1.bed
+  type: File
+int_input:
+  value: 1
+  type: raw
+""", history_id=history_id, wait=True, assert_ok=True)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert len(content.split("\n")) == 2, content
+
+            failed = False
+            try:
+                self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_OPTIONAL, test_data="""
+data_input:
+  value: 1.bed
+  type: File
+""", history_id=history_id, wait=True, assert_ok=True)
+            except AssertionError as e:
+                print(e)
+                failed = True
+            assert not failed
+
+    def test_run_with_validated_parameter_connection_default_values(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT, test_data="""
+data_input:
+  value: 1.bed
+  type: File
+""", history_id=history_id, wait=True, assert_ok=True)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert len(content.split("\n")) == 4, content
 
     def test_run_with_validated_parameter_connection_invalid(self):
         with self.dataset_populator.test_history() as history_id:

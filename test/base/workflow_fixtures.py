@@ -316,6 +316,64 @@ steps:
 """
 
 
+WORKFLOW_PARAMETER_INPUT_INTEGER_REQUIRED = """
+class: GalaxyWorkflow
+inputs:
+  data_input: data
+  int_input: integer
+steps:
+  random:
+    tool_id: random_lines1
+    in:
+      input: data_input
+      num_lines: int_input
+    state:
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+"""
+
+
+WORKFLOW_PARAMETER_INPUT_INTEGER_OPTIONAL = """
+class: GalaxyWorkflow
+inputs:
+  data_input: data
+  int_input:
+    type: integer
+    optional: true
+steps:
+  random:
+    tool_id: random_lines1
+    in:
+      input: data_input
+      num_lines: int_input
+    state:
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+"""
+
+
+WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT = """
+class: GalaxyWorkflow
+inputs:
+  data_input: data
+  int_input:
+    type: integer
+    default: 3
+steps:
+  random:
+    tool_id: random_lines1
+    in:
+      input: data_input
+      num_lines: int_input
+    state:
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+"""
+
+
 WORKFLOW_RUNTIME_PARAMETER_SIMPLE = """
 class: GalaxyWorkflow
 inputs:

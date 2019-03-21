@@ -82,10 +82,13 @@ def _normalize_inputs(steps, inputs, inputs_by):
         for possible_input_key in possible_input_keys:
             if possible_input_key in inputs:
                 inputs_key = possible_input_key
-        if not inputs_key:
-            message = "Workflow cannot be run because an expected input step '%s' has no input dataset." % step.id
+        default_value = json.loads(step.tool_inputs.get("default") or 'null')
+        optional = json.loads(step.tool_inputs.get("optional") or 'false')
+        if not inputs_key and default_value is None and not optional:
+            message = "Workflow cannot be run because an expected input step '%s' (%s) has no input dataset." % (step.id, step.label)
             raise exceptions.MessageException(message)
-        normalized_inputs[step.id] = inputs[inputs_key]
+        if inputs_key:
+            normalized_inputs[step.id] = inputs[inputs_key]
     return normalized_inputs
 
 

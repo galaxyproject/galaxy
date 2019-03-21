@@ -4655,6 +4655,15 @@ class WorkflowStep(RepresentById):
     def tool_uuid(self):
         return self.dynamic_tool and self.dynamic_tool.uuid
 
+    @property
+    def input_default_value(self):
+        tool_inputs = self.tool_inputs
+        tool_state = tool_inputs
+        default_value = tool_state.get("default")
+        if default_value:
+            default_value = json.loads(default_value)["value"]
+        return default_value
+
     def get_input(self, input_name):
         for step_input in self.inputs:
             if step_input.name == input_name:
