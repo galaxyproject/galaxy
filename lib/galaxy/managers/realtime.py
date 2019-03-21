@@ -165,7 +165,6 @@ class RealTimeManager(object):
         # There can be multiple entry points that reference the same tool port (could have different entry URLs)
         configured = []
         not_configured = []
-        log.debug('ports_dict %s', str(ports_dict))
         for ep in job.realtimetool_entry_points:
             port_dict = ports_dict.get(ep.tool_port, None)
             if port_dict is None:
