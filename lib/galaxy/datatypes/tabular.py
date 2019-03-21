@@ -1163,8 +1163,7 @@ class ConnectivityTable(Tabular):
         return dumps({'ck_data': util.unicodify(ck_data_header + "\n" + ck_data_body), 'ck_index': ck_index + 1})
 
 
-@build_sniff_from_prefix
-class MatrixMarket(Tabular):
+class MatrixMarket(TabularData):
     """
     The Matrix Market (MM) exchange formats provide a simple mechanism
     to facilitate the exchange of matrix data. MM coordinate format is
@@ -1191,38 +1190,39 @@ class MatrixMarket(Tabular):
     False
     >>> MatrixMarket().sniff( get_test_fname( '1.mtx' ) )
     True
+    >>> MatrixMarket().sniff( get_test_fname( '2.mtx' ) )
+    True
     """
     file_ext = "mtx"
 
     def __init__(self, **kwd):
         super(MatrixMarket, self).__init__(**kwd)
 
-    def sniff_prefix(self, file_prefix):
+    def sniff(self, filename):
         count = 0
         nonzeros = 0
-        handle = file_prefix.string_io()
-        lines = handle.readlines()
+        with open(filename, 'r') as handle:
+            lines = handle.readlines()
 
-        if not lines[0].startswith('%%MatrixMarket matrix coordinate real general'):
-            return False
+            if not lines[0].startswith('%%MatrixMarket matrix coordinate real general'):
+                return False
 
-        for line in lines:
-            if not line.startswith('%'):
-                split_line = line.split('\t')
-                if len(split_line) != 3:
-                    print("not 3 columns")
-                    return False
-                try:
-                    int(split_line[0])
-                    int(split_line[1])
-                    float(split_line[2])
-                except ValueError:
-                    return False
+            for line in lines:
+                if not line.startswith('%'):
+                    split_line = line.split()
+                    if len(split_line) != 3:
+                        return False
+                    try:
+                        int(split_line[0])
+                        int(split_line[1])
+                        float(split_line[2])
+                    except ValueError:
+                        return False
 
-                if nonzeros == 0:
-                    nonzeros = int(split_line[2])
-                else:
-                    count += 1
+                    if nonzeros == 0:
+                        nonzeros = int(split_line[2])
+                    else:
+                        count += 1
 
         if nonzeros == count:
             return True
@@ -1233,20 +1233,19 @@ class MatrixMarket(Tabular):
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:
                 comment_lines = 0
-                if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-                    # If the dataset is larger than optional_metadata, just count comment lines.
-                    for i, l in enumerate(dataset_fh):
-                        if l.startswith('%'):
-                            comment_lines += 1
-                        else:
-                            # No more comments, and the file is too big to look at the whole thing.  Give up.
-                            dataset.metadata.data_lines = None
-                            break
+                for i, l in enumerate(dataset_fh):
+                    if l.startswith('%'):
+                        comment_lines += 1
+                    elif self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+                        # If the dataset is larger than optional_metadata, just count comment lines.
+                        # No more comments, and the file is too big to look at the whole thing. Give up.
+                        dataset.metadata.data_lines = None
+                        break
+                if ' ' in l:
+                    dataset.metadata.delimiter = ' '
                 else:
-                    # Otherwise, read the whole thing and set num data lines.
-                    for i, l in enumerate(dataset_fh):
-                        if l.startswith('%'):
-                            comment_lines += 1
+                    dataset.metadata.delimiter = '\t'
+                if not (self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize):
                     dataset.metadata.data_lines = i + 1 - comment_lines
             dataset.metadata.comment_lines = comment_lines
             dataset.metadata.columns = 3
