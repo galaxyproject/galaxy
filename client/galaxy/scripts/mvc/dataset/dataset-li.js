@@ -7,7 +7,7 @@ import STATES from "mvc/dataset/states";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
-import { mountBadges } from "components/Badges";
+import { mountNametags } from "components/Nametags";
 
 var logNamespace = "dataset";
 /*==============================================================================
@@ -46,15 +46,15 @@ export var DatasetListItemView = _super.extend(
         // mount new vue component for tags
         render: function() {
             let result = _super.prototype.render.apply(this, arguments);
-            this._mountVueBadges();
+            this._mountVueNametags();
             return result;
         },
 
-        _mountVueBadges: function() {
+        _mountVueNametags: function() {
             let container = this.$('.nametags')[0];
             let { id, model_class, tags } = this.model.attributes;
             let storeKey = `${model_class}-${id}`;
-            mountBadges({ storeKey, tags }, container);
+            mountNametags({ storeKey, tags }, container);
         },
 
         /** event listeners */
@@ -83,7 +83,7 @@ export var DatasetListItemView = _super.extend(
                             // If only the tags and update time have changed,
                             // rerender specifically the titlebar region.
                             // Otherwise default to the full render.
-                            self._mountVueBadges();
+                            self._mountVueNametags();
                         } else {
                             self.render();
                         }

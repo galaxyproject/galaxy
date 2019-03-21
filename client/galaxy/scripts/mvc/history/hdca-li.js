@@ -3,7 +3,7 @@ import STATES from "mvc/dataset/states";
 import DC_LI from "mvc/collection/collection-li";
 import DC_VIEW from "mvc/collection/collection-view";
 import _l from "utils/localization";
-import { mountBadges } from "components/Badges";
+import { mountNametags } from "components/Nametags";
 
 //==============================================================================
 var _super = DC_LI.DCListItemView;
@@ -15,7 +15,7 @@ var HDCAListItemView = _super.extend(
 
         render: function() {
             let result = _super.prototype.render.apply(this, arguments);
-            this._mountBadges("initialize");
+            this._mountNametags("initialize");
             return result;
         },
 
@@ -25,7 +25,7 @@ var HDCAListItemView = _super.extend(
             var renderListen = (model, options) => {
                 // We want this to swap immediately without extra animations.
                 this.render(0);
-                this._mountBadges("listener");
+                this._mountNametags("listener");
             };
             if (this.model.jobStatesSummary) {
                 this.listenTo(this.model.jobStatesSummary, "change", renderListen);
@@ -35,12 +35,12 @@ var HDCAListItemView = _super.extend(
             });
         },
 
-        _mountBadges(context) {
+        _mountNametags(context) {
             let container = this.$el.find(".nametags")[0];
             if (container) {
                 let { id, model_class, tags } = this.model.attributes;
                 let storeKey = `${model_class}-${id}`;
-                mountBadges({ storeKey, tags }, container);
+                mountNametags({ storeKey, tags }, container);
             }
         },
 

@@ -1,17 +1,17 @@
 <template>
     <div class="nametags" :title="title">
-        <badge v-for="tag in nameTags" :key="tag" :tag="tag" />
+        <nametag v-for="tag in nameTags" :key="tag" :tag="tag" />
     </div>
 </template>
 
 <script>
 
-import Badge from "./Badge";
+import Nametag from "./Nametag";
 import { mapActions } from "vuex";
 
 export default {
     components: {
-        Badge
+        Nametag
     },
     props: {
         storeKey: { type: String, required: true },
