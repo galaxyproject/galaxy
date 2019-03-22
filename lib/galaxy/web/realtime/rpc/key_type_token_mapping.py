@@ -1,6 +1,5 @@
 import itertools
 import sqlite3
-
 from threading import RLock
 from time import time
 
