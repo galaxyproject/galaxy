@@ -1,17 +1,16 @@
 import { mount, createLocalVue } from "@vue/test-utils";
-import GalaxyTags from "./GalaxyTags";
+import StatelessTags from "./StatelessTags";
 import _l from "utils/localization";
 
-let localVue = createLocalVue();
-localVue.filter("localize", value => _l(value));
+describe("Tags/StatelessTags.vue", () => {
+    const localVue = createLocalVue();
+    localVue.filter("localize", value => _l(value));
 
-describe("Tags/GalaxyTags.vue", () => {
-    const testTags = ["abc", "def", "ghi"];
-
+    let testTags = ["abc", "def", "ghi"];
     let wrapper, emitted;
 
     beforeEach(function() {
-        wrapper = mount(GalaxyTags, { localVue });
+        wrapper = mount(StatelessTags, { localVue });
         wrapper.setProps({
             value: testTags
         });
@@ -42,7 +41,7 @@ describe("Tags/GalaxyTags.vue", () => {
         assert((firstArg.text = testTags[0]), "returned tag model doesn't match test data");
     });
 
-    it("should change intermal model representation when new tag list assigned", async () => {
+    it("should change internal model representation when new tag list assigned", async () => {
         assert(wrapper.vm.tagModels.length == 3);
         let newTags = ["floob", "clown", "hoohah", "doodoo"];
         wrapper.setProps({ value: newTags });

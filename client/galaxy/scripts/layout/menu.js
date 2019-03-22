@@ -411,7 +411,7 @@ var Tab = Backbone.View.extend({
                 } else {
                     let Galaxy = getGalaxyInstance();
                     if (options.target == "__use_router__" && typeof Galaxy.page != "undefined") {
-                        Galaxy.page.router.push(options.url);
+                        Galaxy.page.router.executeUseRouter(options.url);
                     } else {
                         try {
                             Galaxy.frame.add(options);
@@ -450,7 +450,7 @@ var Tab = Backbone.View.extend({
                 } else {
                     let Galaxy = getGalaxyInstance();
                     if (model.attributes.target == "__use_router__" && typeof Galaxy.page != "undefined") {
-                        Galaxy.page.router.push(model.attributes.url);
+                        Galaxy.page.router.executeUseRouter(model.attributes.url);
                     } else {
                         Galaxy.frame.add(model.attributes);
                     }

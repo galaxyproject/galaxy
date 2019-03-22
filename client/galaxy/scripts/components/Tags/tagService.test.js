@@ -1,5 +1,6 @@
+/* global expect */
 import sinon from "sinon";
-import { buildTagService, __RewireAPI__ as rewire } from "./tagService";
+import { TagService, __RewireAPI__ as rewire } from "./tagService";
 import { createTag } from "./model";
 import { interval } from "rxjs";
 import { take, takeUntil } from "rxjs/operators";
@@ -15,7 +16,7 @@ describe("Tags/tagService.js", () => {
         debounceInterval: 50 // shorter value than default for unit tests
     };
 
-    let svc = buildTagService(svcParams);
+    let svc = new TagService(svcParams);
 
     let mockAxios = {
         get: () => null

@@ -1,3 +1,5 @@
+@import "scss/mixins";
+
 // all histories
 .history-panel {
     @extend .flex-vertical-container;
@@ -34,7 +36,6 @@
         }
 
         //TODO: move these out
-        .tags-display,
         .annotation-display {
             display: none;
             margin-bottom: 8px;
@@ -194,15 +195,6 @@
                 }
             }
         }
-        div.nametags {
-            max-height: 26px;
-            overflow-y: auto;
-            span.badge {
-                display: inline-block;
-                margin-right: 2px;
-                text-decoration: none;
-            }
-        }
     }
 }
 
@@ -218,7 +210,6 @@
     .subtitle,
     .history-size,
     //TODO: move these out
-    .tags-display .prompt,
     .annotation-display .prompt {
         display: none;
     }
@@ -628,4 +619,10 @@
             margin-right: 8px;
         }
     }
+}
+
+// History panel tags editor
+.history-panel .tags-display {
+    padding: 1px;
+    @include shutterFade(250px);
 }

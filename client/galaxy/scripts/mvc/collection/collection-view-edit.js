@@ -1,7 +1,8 @@
+import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import DC_VIEW from "mvc/collection/collection-view";
 import DC_EDIT from "mvc/collection/collection-li-edit";
-import TAGS from "mvc/tag";
+import { mountModelTags } from "components/Tags";
 import _l from "utils/localization";
 import "ui/editable-text";
 
@@ -76,15 +77,27 @@ var CollectionViewEdit = _super.extend(
                         }
                     }
                 });
-            this.tagsEditor = new TAGS.TagsEditor({
+
+            let el = $where.find(".tags-display")[0];
+            let propsData = {
                 model: this.model,
-                el: $where.find(".tags-display"),
-                onshowFirstTime: function() {
-                    this.render();
-                },
-                usePrompt: false
-            });
-            this.tagsEditor.toggle(true);
+                disabled: false,
+                context: "collection-view-edit"
+            };
+
+            let vm = mountModelTags(propsData, el);
+
+            let toggleEditor = () => {
+                $(vm.$el).toggleClass("active");
+                this.tagsEditorShown = $(vm.$el).hasClass("active");
+            };
+
+            if (this.tagsEditorShown) {
+                let editorIsOpen = $(vm.$el).hasClass("active");
+                if (!editorIsOpen) {
+                    toggleEditor();
+                }
+            }
         },
 
         // ........................................................................ misc
