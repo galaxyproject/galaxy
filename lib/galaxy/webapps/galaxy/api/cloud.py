@@ -234,6 +234,6 @@ class CloudController(BaseAPIController):
                                                authz_id=authz_id,
                                                dataset_ids=dataset_ids,
                                                overwrite_existing=payload.get("overwrite_existing", False))
-        return json.dumps({'sent_dataset_labels': sent,
-                           'failed_dataset_labels': failed,
-                           'bucket_name': bucket})
+        return {'sent_dataset_labels': sent,
+                'failed_dataset_labels': failed,
+                'bucket_name': bucket}
