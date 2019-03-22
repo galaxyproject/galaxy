@@ -9,7 +9,6 @@ var View = Backbone.View.extend({
         this.model =
             (options && options.model) ||
             new Backbone.Model({
-                icon: "fa-upload",
                 tooltip: _l("Download from URL or upload files from disk"),
                 label: "Load Data",
                 percentage: 0,
@@ -46,16 +45,14 @@ var View = Backbone.View.extend({
 
     /** Template */
     _template: function() {
-        return (
-            '<div class="upload-button">' +
-            '<div class="progress">' +
-            '<div class="progress-bar"/>' +
-            '<a class="panel-header-button" href="javascript:void(0)" id="tool-panel-upload-button">' +
-            '<span class="fa fa-upload"/>' +
-            "</a>" +
-            "</div>" +
-            "</div>"
-        );
+        return `<div class="upload-button">
+                <div class="progress">
+                    <div class="progress-bar"/>
+                        <a class="upload-button-link" href="javascript:void(0)" id="tool-panel-upload-button">
+                            <span class="fa fa-upload"/>
+                        </a>
+                    </div>
+            </div>`;
     }
 });
 export default { View: View };

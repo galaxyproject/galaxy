@@ -19,6 +19,7 @@ import threading
 import time
 from datetime import timedelta
 
+import yaml
 from six import string_types
 from six.moves import configparser
 
@@ -47,6 +48,8 @@ PATH_DEFAULTS = dict(
     tool_destinations_config_file=['config/tool_destinations.yml', 'config/tool_destinations.yml.sample'],
     job_metrics_config_file=['config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample'],
     error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
+    oidc_config_file=['config/oidc_config.yml', 'config/oidc_config.yml.sample'],
+    oidc_backends_config_file=['config/oidc_backends_config.yml', 'config/oidc_backends_config.yml.sample'],
     dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
     job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
     workflow_resource_params_file=['config/workflow_resource_params_conf.xml', 'workflow_resource_params_conf.xml'],
@@ -58,7 +61,6 @@ PATH_DEFAULTS = dict(
     workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
     modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
     local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
-    user_preferences_extra_config_file=['config/user_preferences_extra_conf.yml'],
     containers_config_file=['config/containers_conf.yml'],
 )
 
@@ -208,8 +210,8 @@ class Configuration(object):
         self.len_file_path = resolve_path(kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')), self.root)
         # Galaxy OIDC settings.
         self.enable_oidc = kwargs.get("enable_oidc", False)
-        self.oidc_config = kwargs.get('oidc_config_file', None)
-        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", None)
+        self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
+        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
         self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'), self.root)
@@ -274,6 +276,7 @@ class Configuration(object):
         self.id_secret = kwargs.get("id_secret", "USING THE DEFAULT IS NOT SECURE!")
         self.retry_metadata_internally = string_as_bool(kwargs.get("retry_metadata_internally", "True"))
         self.max_metadata_value_size = int(kwargs.get("max_metadata_value_size", 5242880))
+        self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
         self.single_user = kwargs.get("single_user", None)
         self.use_remote_user = string_as_bool(kwargs.get("use_remote_user", "False")) or self.single_user
         self.normalize_remote_user_email = string_as_bool(kwargs.get("normalize_remote_user_email", "False"))
@@ -310,6 +313,7 @@ class Configuration(object):
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             preserve_python_environment = "legacy_only"
         self.preserve_python_environment = preserve_python_environment
+        self.nodejs_path = kwargs.get("nodejs_path", None)
         # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
         # should probably drop the backward compatiblity to save the path check.
         self.container_image_cache_path = self.resolve_path(kwargs.get("container_image_cache_path", "database/container_images"))
@@ -362,8 +366,6 @@ class Configuration(object):
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool(kwargs.get('use_tasked_jobs', False))
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
-        self.tool_submission_burst_threads = int(kwargs.get('tool_submission_burst_threads', '1'))
-        self.tool_submission_burst_at = int(kwargs.get('tool_submission_burst_at', '10'))
 
         # Enable new interface for API installations from TS.
         # Admin menu will list both if enabled.
@@ -633,12 +635,15 @@ class Configuration(object):
             self.amqp_internal_connection = "sqlalchemy+" + self.database_connection
         else:
             self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path("database/control.sqlite", self.root)
-        self.biostar_url = kwargs.get('biostar_url', None)
-        self.biostar_key_name = kwargs.get('biostar_key_name', None)
-        self.biostar_key = kwargs.get('biostar_key', None)
-        self.biostar_enable_bug_reports = string_as_bool(kwargs.get('biostar_enable_bug_reports', True))
-        self.biostar_never_authenticate = string_as_bool(kwargs.get('biostar_never_authenticate', False))
         self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
+        self.user_preferences_extra_config_file = kwargs.get('user_preferences_extra_conf_path', 'config/user_preferences_extra_conf.yml')
+        try:
+            with open(self.user_preferences_extra_config_file, 'r') as stream:
+                self.user_preferences_extra = yaml.safe_load(stream)
+        except Exception:
+            log.warning('Config file (%s) could not be found or is malformed.' % self.user_preferences_extra_config_file)
+            self.user_preferences_extra = {'preferences': {}}
+
         self.default_locale = kwargs.get('default_locale', None)
         self.master_api_key = kwargs.get('master_api_key', None)
         if self.master_api_key == "changethis":  # default in sample config file
@@ -1043,6 +1048,8 @@ class ConfiguresGalaxyMixin(object):
 
         self.citations_manager = CitationsManager(self)
 
+        from galaxy.managers.tools import DynamicToolManager
+        self.dynamic_tools_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
         tool_configs = self.config.tool_configs
@@ -1120,8 +1127,8 @@ class ConfiguresGalaxyMixin(object):
         self.object_store = build_object_store_from_config(self.config, **kwds)
 
     def _configure_security(self):
-        from galaxy.web import security
-        self.security = security.SecurityHelper(id_secret=self.config.id_secret)
+        from galaxy.security import idencoding
+        self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
 
     def _configure_tool_shed_registry(self):
         import tool_shed.tool_shed_registry

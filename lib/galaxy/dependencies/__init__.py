@@ -8,6 +8,7 @@ from os.path import dirname, join
 from xml.etree import ElementTree
 
 import pkg_resources
+import yaml
 
 from galaxy.containers import parse_containers_config
 from galaxy.util import asbool
@@ -27,6 +28,7 @@ class ConditionalDependencies(object):
         self.conditional_reqs = []
         self.container_interface_types = []
         self.job_rule_modules = []
+        self.error_report_modules = []
         self.parse_configs()
         self.get_conditional_requirements()
 
@@ -75,6 +77,17 @@ class ConditionalDependencies(object):
         containers_conf = parse_containers_config(containers_conf_yml)
         self.container_interface_types = [c.get('type', None) for c in containers_conf.values()]
 
+        # Parse error report config
+        error_report_yml = self.config.get(
+            "error_report_file",
+            join(dirname(self.config_file), 'error_report.yml'))
+        try:
+            with open(error_report_yml, "r") as f:
+                error_reporters = yaml.safe_load(f)
+                self.error_report_modules = [er.get('type', None) for er in error_reporters]
+        except (OSError, IOError):
+            pass
+
     def get_conditional_requirements(self):
         crfile = join(dirname(__file__), 'conditional-requirements.txt')
         for req in pkg_resources.parse_requirements(open(crfile).readlines()):
@@ -90,7 +103,7 @@ class ConditionalDependencies(object):
     def check_psycopg2_binary(self):
         return self.config["database_connection"].startswith("postgres")
 
-    def check_mysql_python(self):
+    def check_mysqlclient(self):
         return self.config["database_connection"].startswith("mysql")
 
     def check_drmaa(self):
@@ -103,6 +116,9 @@ class ConditionalDependencies(object):
 
     def check_pbs_python(self):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
+
+    def check_pykube(self):
+        return "galaxy.jobs.runners.kubernetes:KubernetesJobRunner" in self.job_runners
 
     def check_chronos_python(self):
         return "galaxy.jobs.runners.chronos:ChronosJobRunner" in self.job_runners
@@ -142,6 +158,15 @@ class ConditionalDependencies(object):
         return (self.config.get("enable_beta_containers_interface", False) and
                 ('docker' in self.container_interface_types or
                  'docker_swarm' in self.container_interface_types))
+
+    def check_python_gitlab(self):
+        return 'gitlab' in self.error_report_modules
+
+    def check_pygithub(self):
+        return 'github' in self.error_report_modules
+
+    def check_influxdb(self):
+        return 'influxdb' in self.error_report_modules
 
 
 def optional(config_file=None):

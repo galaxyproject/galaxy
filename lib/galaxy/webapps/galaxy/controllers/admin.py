@@ -537,6 +537,14 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.require_admin
     def index(self, trans, **kwd):
+        return self.client(trans, **kwd)
+
+    @web.expose
+    @web.require_admin
+    def client(self, trans, **kwd):
+        """
+        Endpoint for admin clientside routes.
+        """
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         settings = {
@@ -544,7 +552,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             'installing_repository_ids': repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=True),
             'is_tool_shed_installed': bool(trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds)
         }
-        return self.template(trans, 'admin', settings=settings, message=message, status=status)
+        return self._bootstrapped_client(trans, app_name='admin', settings=settings, message=message, status=status)
 
     @web.expose
     @web.json
@@ -1615,7 +1623,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     % (stop_msg, self.app.config.get("support_url", "https://galaxyproject.org/support/"))
                 if trans.app.config.track_jobs_in_database:
                     job = trans.sa_session.query(trans.app.model.Job).get(job_id)
-                    job.stderr = error_msg
+                    job.job_stderr = error_msg
                     job.set_state(trans.app.model.Job.states.DELETED_NEW)
                     trans.sa_session.add(job)
                 else:

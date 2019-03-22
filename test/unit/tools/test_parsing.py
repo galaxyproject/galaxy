@@ -92,6 +92,39 @@ tests:
          compare: sim_size
 """
 
+TOOL_EXPRESSION_XML_1 = """
+<tool name="parse_int" id="parse_int" version="0.1.0" tool_type="expression">
+    <description>Parse Int</description>
+    <expression type="ecma5.1">
+        {return {'output': parseInt($job.input1)};}
+    </expression>
+    <inputs>
+        <input type="text" label="Text to parse." name="input1" />
+    </inputs>
+    <outputs>
+        <output type="integer" name="out1" from="output" />
+    </outputs>
+    <help>Parse an integer from text.</help>
+</tool>
+"""
+
+
+TOOL_EXPRESSION_YAML_1 = """
+class: GalaxyExpressionTool
+name: "parse_int"
+id: parse_int
+version: 1.0.2
+expression: "{return {'output': parseInt($job.input1)};}"
+inputs:
+ - name: input1
+   label: Text to parse
+   type: text
+outputs:
+  out1:
+    type: integer
+    from: "#output"
+"""
+
 
 class BaseLoaderTestCase(unittest.TestCase):
 
@@ -117,6 +150,22 @@ class BaseLoaderTestCase(unittest.TestCase):
             path = source_file_name
         tool_source = get_tool_source(path)
         return tool_source
+
+
+class XmlExpressionLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = "expression.xml"
+    source_contents = TOOL_EXPRESSION_XML_1
+
+    def test_expression(self):
+        assert self._tool_source.parse_expression().strip() == "{return {'output': parseInt($job.input1)};}"
+
+    def test_tool_type(self):
+        assert self._tool_source.parse_tool_type() == "expression"
+
+
+class YamlExpressionLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = "expression.yml"
+    source_contents = TOOL_EXPRESSION_XML_1
 
 
 class XmlLoaderTestCase(BaseLoaderTestCase):
@@ -485,6 +534,7 @@ class CollectionTestCase(BaseLoaderTestCase):
         tests = tests_dict["tests"]
         assert len(tests) == 2
         assert len(tests[0]["inputs"]) == 3, tests[0]
+
         outputs, output_collections = self._tool_source.parse_outputs(None)
         assert len(output_collections) == 0
 
@@ -505,3 +555,16 @@ class CollectionOutputYamlTestCase(BaseLoaderTestCase):
     def test_tests(self):
         outputs, output_collections = self._tool_source.parse_outputs(None)
         assert len(output_collections) == 1
+
+
+class ExpectationsTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/detect_errors.xml")
+    source_contents = None
+
+    def test_tests(self):
+        tests_dict = self._tool_source.parse_tests_to_dict()
+        tests = tests_dict["tests"]
+        assert len(tests) == 10
+        test_0 = tests[0]
+        assert len(test_0["stderr"]) == 1
+        assert len(test_0["stdout"]) == 2

@@ -4,8 +4,8 @@ import yaml
 
 from galaxy import model
 from galaxy.model import mapping
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import bunch
-from galaxy.web.security import SecurityHelper
 
 
 class MockTrans(object):
@@ -47,7 +47,7 @@ class TestApp(object):
         )
         self.toolbox = TestToolbox()
         self.datatypes_registry = TestDatatypesRegistry()
-        self.security = SecurityHelper(id_secret="testing")
+        self.security = IdEncodingHelper(id_secret="testing")
 
 
 class TestDatatypesRegistry(object):
@@ -64,7 +64,7 @@ class TestToolbox(object):
     def __init__(self):
         self.tools = {}
 
-    def get_tool(self, tool_id, tool_version=None, exact=False):
+    def get_tool(self, tool_id, tool_version=None, exact=False, tool_uuid=None):
         # Real tool box returns None of missing tool also
         return self.tools.get(tool_id, None)
 

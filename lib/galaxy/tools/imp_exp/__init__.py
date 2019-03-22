@@ -9,13 +9,19 @@ from json import dumps, load
 from sqlalchemy.orm import eagerload_all
 from sqlalchemy.sql import expression
 
+
 from galaxy import model
 from galaxy.exceptions import MalformedContents
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model.item_attrs import add_item_annotation, get_item_annotation_str
 from galaxy.util import unicodify
+from galaxy.version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
+
+ATTRS_FILENAME_HISTORY = 'history_attrs.txt'
+ATTRS_FILENAME_DATASETS = 'datasets_attrs.txt'
+ATTRS_FILENAME_JOBS = 'jobs_attrs.txt'
 
 
 class JobImportHistoryArchiveWrapper:
@@ -32,25 +38,16 @@ class JobImportHistoryArchiveWrapper:
     def cleanup_after_job(self):
         """ Set history, datasets, and jobs' attributes and clean up archive directory. """
 
-        #
-        # Helper methods.
-        #
-
         def file_in_dir(file_path, a_dir):
             """ Returns true if file is in directory. """
             abs_file_path = os.path.abspath(file_path)
             return os.path.split(abs_file_path)[0] == a_dir
 
-        def get_tag_str(tag, value):
-            """ Builds a tag string for a tag, value pair. """
-            if not value:
-                return tag
-            else:
-                return tag + ":" + value
-
         #
         # Import history.
         #
+
+        new_history = None
 
         jiha = self.sa_session.query(model.JobImportHistoryArchive).filter_by(job_id=self.job_id).first()
         if jiha:
@@ -60,7 +57,7 @@ class JobImportHistoryArchiveWrapper:
                 user = jiha.job.user
 
                 # Bioblend previous to 17.01 exported histories with an extra subdir.
-                if not os.path.exists(os.path.join(archive_dir, 'history_attrs.txt')):
+                if not os.path.exists(os.path.join(archive_dir, ATTRS_FILENAME_HISTORY)):
                     for d in os.listdir(archive_dir):
                         if os.path.isdir(os.path.join(archive_dir, d)):
                             archive_dir = os.path.join(archive_dir, d)
@@ -69,7 +66,7 @@ class JobImportHistoryArchiveWrapper:
                 #
                 # Create history.
                 #
-                history_attr_file_name = os.path.join(archive_dir, 'history_attrs.txt')
+                history_attr_file_name = os.path.join(archive_dir, ATTRS_FILENAME_HISTORY)
                 history_attrs = load(open(history_attr_file_name))
 
                 # Create history.
@@ -94,7 +91,7 @@ class JobImportHistoryArchiveWrapper:
                 #
                 # Create datasets.
                 #
-                datasets_attrs_file_name = os.path.join(archive_dir, 'datasets_attrs.txt')
+                datasets_attrs_file_name = os.path.join(archive_dir, ATTRS_FILENAME_DATASETS)
                 datasets_attrs = load(open(datasets_attrs_file_name))
                 provenance_file_name = datasets_attrs_file_name + ".provenance"
 
@@ -114,6 +111,7 @@ class JobImportHistoryArchiveWrapper:
                                                           peek=dataset_attrs['peek'],
                                                           designation=dataset_attrs['designation'],
                                                           visible=dataset_attrs['visible'],
+                                                          deleted=dataset_attrs.get('deleted', False),
                                                           dbkey=metadata['dbkey'],
                                                           metadata=metadata,
                                                           history=new_history,
@@ -131,9 +129,6 @@ class JobImportHistoryArchiveWrapper:
                     self.sa_session.flush()
                     new_history.add_dataset(hda, genome_build=None)
                     hda.hid = dataset_attrs['hid']  # Overwrite default hid set when HDA added to history.
-                    # TODO: Is there a way to recover permissions? Is this needed?
-                    # permissions = trans.app.security_agent.history_get_default_permissions( new_history )
-                    # trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
                     self.sa_session.flush()
                     if dataset_attrs.get('exported', True) is True:
                         # Do security check and move/copy dataset data.
@@ -159,15 +154,9 @@ class JobImportHistoryArchiveWrapper:
                                         create=True)
                         hda.dataset.set_total_size()  # update the filesize record in the database
 
-                    # Set tags, annotations.
                     if user:
                         add_item_annotation(self.sa_session, user, hda, dataset_attrs['annotation'])
                         # TODO: Set tags.
-                        """
-                        for tag, value in dataset_attrs[ 'tags' ].items():
-                            trans.app.tag_handler.apply_item_tags( trans, trans.user, hda, get_tag_str( tag, value ) )
-                            self.sa_session.flush()
-                        """
 
                     self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
                         hda, new_history, jiha.job
@@ -185,7 +174,7 @@ class JobImportHistoryArchiveWrapper:
                         return self.sa_session.query(model.HistoryDatasetAssociation) \
                             .filter_by(history=new_history, hid=obj_dct['hid']).first()
                     return obj_dct
-                jobs_attr_file_name = os.path.join(archive_dir, 'jobs_attrs.txt')
+                jobs_attr_file_name = os.path.join(archive_dir, ATTRS_FILENAME_JOBS)
                 jobs_attrs = load(open(jobs_attr_file_name), object_hook=as_hda)
 
                 # Create each job.
@@ -202,8 +191,8 @@ class JobImportHistoryArchiveWrapper:
                     imported_job.info = job_attrs.get('info', None)
                     imported_job.exit_code = job_attrs.get('exit_code', None)
                     imported_job.traceback = job_attrs.get('traceback', None)
-                    imported_job.stdout = job_attrs.get('stdout', None)
-                    imported_job.stderr = job_attrs.get('stderr', None)
+                    imported_job.tool_stdout = job_attrs.get('stdout', None)
+                    imported_job.tool_stderr = job_attrs.get('stderr', None)
                     imported_job.command_line = job_attrs.get('command_line', None)
                     try:
                         imported_job.create_time = datetime.datetime.strptime(job_attrs["create_time"], "%Y-%m-%dT%H:%M:%S.%f")
@@ -222,12 +211,6 @@ class JobImportHistoryArchiveWrapper:
                                 return obj.id
                             return json.JSONEncoder.default(self, obj)
 
-                    # Set parameters. May be useful to look at metadata.py for creating parameters.
-                    # TODO: there may be a better way to set parameters, e.g.:
-                    #   for name, value in tool.params_to_strings( incoming, trans.app ).items():
-                    #       job.add_parameter( name, value )
-                    # to make this work, we'd need to flesh out the HDA objects. The code below is
-                    # relatively similar.
                     for name, value in job_attrs['params'].items():
                         # Transform parameter values when necessary.
                         if isinstance(value, model.HistoryDatasetAssociation):
@@ -236,8 +219,6 @@ class JobImportHistoryArchiveWrapper:
                                             .filter_by(history=new_history, hid=value.hid).first()
                             value = input_hda.id
                         imported_job.add_parameter(name, dumps(value, cls=HistoryDatasetAssociationIDEncoder))
-
-                    # TODO: Connect jobs to input datasets.
 
                     # Connect jobs to output datasets.
                     for output_hid in job_attrs['output_datasets']:
@@ -264,9 +245,11 @@ class JobImportHistoryArchiveWrapper:
                 if os.path.exists(archive_dir):
                     shutil.rmtree(archive_dir)
             except Exception as e:
-                jiha.job.stderr += "Error cleaning up history import job: %s" % e
+                jiha.job.tool_stderr += "Error cleaning up history import job: %s" % e
                 self.sa_session.flush()
                 raise
+
+        return new_history
 
 
 class JobExportHistoryArchiveWrapper:
@@ -287,7 +270,6 @@ class JobExportHistoryArchiveWrapper:
                  .join("dataset")
                  .options(eagerload_all("dataset.actions"))
                  .order_by(trans.model.HistoryDatasetAssociation.hid)
-                 .filter(trans.model.HistoryDatasetAssociation.deleted == expression.false())
                  .filter(trans.model.Dataset.purged == expression.false()))
         return query.all()
 
@@ -302,15 +284,6 @@ class JobExportHistoryArchiveWrapper:
         #
         # Helper methods/classes.
         #
-
-        def get_item_tag_dict(item):
-            """ Create dictionary of an item's tags. """
-            tags = {}
-            for tag in item.tags:
-                tag_user_tname = unicodify(tag.user_tname)
-                tag_user_value = unicodify(tag.user_value)
-                tags[tag_user_tname] = tag_user_value
-            return tags
 
         def prepare_metadata(metadata):
             """ Prepare metatdata for exporting. """
@@ -344,7 +317,7 @@ class JobExportHistoryArchiveWrapper:
                         "visible": obj.visible,
                         "uuid": (lambda uuid: str(uuid) if uuid else None)(obj.dataset.uuid),
                         "annotation": unicodify(getattr(obj, 'annotation', '')),
-                        "tags": get_item_tag_dict(obj)
+                        "tags": obj.make_tag_string_list()
                     }
 
                     try:
@@ -369,7 +342,9 @@ class JobExportHistoryArchiveWrapper:
         #
         # Create attributes/metadata files for export.
         #
-        temp_output_dir = tempfile.mkdtemp()
+        # Use abspath because mkdtemp() does not, contrary to the documentation,
+        # always return an absolute path.
+        temp_output_dir = os.path.abspath(tempfile.mkdtemp())
 
         # Write history attributes to file.
         history = jeha.history
@@ -380,11 +355,9 @@ class JobExportHistoryArchiveWrapper:
             "hid_counter": history.hid_counter,
             "genome_build": history.genome_build,
             "annotation": unicodify(get_item_annotation_str(trans.sa_session, history.user, history)),
-            "tags": get_item_tag_dict(history),
-            "includes_hidden_datasets": include_hidden,
-            "includes_deleted_datasets": include_deleted
+            "tags": history.make_tag_string_list()
         }
-        history_attrs_filename = tempfile.NamedTemporaryFile(dir=temp_output_dir).name
+        history_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_HISTORY)
         history_attrs_out = open(history_attrs_filename, 'w')
         history_attrs_out.write(dumps(history_attrs))
         history_attrs_out.close()
@@ -402,11 +375,11 @@ class JobExportHistoryArchiveWrapper:
             else:
                 datasets_attrs.append(dataset)
                 included_datasets.append(dataset)
-        datasets_attrs_filename = tempfile.NamedTemporaryFile(dir=temp_output_dir).name
+
+        datasets_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_DATASETS)
         datasets_attrs_out = open(datasets_attrs_filename, 'w')
         datasets_attrs_out.write(dumps(datasets_attrs, cls=HistoryDatasetAssociationEncoder))
         datasets_attrs_out.close()
-        jeha.datasets_attrs_filename = datasets_attrs_filename
 
         provenance_attrs_out = open(datasets_attrs_filename + ".provenance", 'w')
         provenance_attrs_out.write(dumps(provenance_attrs, cls=HistoryDatasetAssociationEncoder))
@@ -469,47 +442,36 @@ class JobExportHistoryArchiveWrapper:
 
             # -- Get input, output datasets. --
 
-            input_datasets = []
             input_mapping = {}
             for assoc in job.input_datasets:
                 # Optional data inputs will not have a dataset.
                 if assoc.dataset:
-                    input_datasets.append(assoc.dataset.hid)
                     input_mapping[assoc.name] = assoc.dataset.hid
-            job_attrs['input_datasets'] = input_datasets
             job_attrs['input_mapping'] = input_mapping
             output_datasets = [assoc.dataset.hid for assoc in job.output_datasets]
             job_attrs['output_datasets'] = output_datasets
 
             jobs_attrs.append(job_attrs)
 
-        jobs_attrs_filename = tempfile.NamedTemporaryFile(dir=temp_output_dir).name
+        jobs_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_JOBS)
         jobs_attrs_out = open(jobs_attrs_filename, 'w')
         jobs_attrs_out.write(dumps(jobs_attrs, cls=HistoryDatasetAssociationEncoder))
         jobs_attrs_out.close()
-        jeha.jobs_attrs_filename = jobs_attrs_filename
 
         #
         # Create and return command line for running tool.
         #
-        options = ""
+        options = "--galaxy-version '%s'" % VERSION_MAJOR
         if jeha.compressed:
-            options = "-G"
-        return "%s %s %s %s" % (options, history_attrs_filename,
-                                datasets_attrs_filename,
-                                jobs_attrs_filename)
+            options += " -G"
+        return "%s %s" % (options, temp_output_dir)
 
     def cleanup_after_job(self, db_session):
         """ Remove temporary directory and attribute files generated during setup for this job. """
         # Get jeha for job.
         jeha = db_session.query(model.JobExportHistoryArchive).filter_by(job_id=self.job_id).first()
         if jeha:
-            for filename in [jeha.history_attrs_filename, jeha.datasets_attrs_filename, jeha.jobs_attrs_filename]:
-                try:
-                    os.remove(filename)
-                except Exception as e:
-                    log.debug('Failed to cleanup attributes file (%s): %s' % (filename, e))
-            temp_dir = os.path.split(jeha.history_attrs_filename)[0]
+            temp_dir = jeha.temp_directory
             try:
                 shutil.rmtree(temp_dir)
             except Exception as e:

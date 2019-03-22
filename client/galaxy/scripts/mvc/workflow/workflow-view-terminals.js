@@ -77,9 +77,7 @@ var BaseInputTerminalView = TerminalView.extend({
         const name = input.name;
         const id = `node-${node.cid}-input-${name}`;
         const terminal = this.terminalForInput(input);
-        if (!terminal.multiple) {
-            this.setupMappingView(terminal);
-        }
+        this.setupMappingView(terminal);
         this.el.terminal = terminal;
         this.$el.attr("input-name", name);
         this.$el.attr("id", id);

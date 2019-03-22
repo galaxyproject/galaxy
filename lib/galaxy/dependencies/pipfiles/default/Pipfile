@@ -19,7 +19,7 @@ pytest-html = "*"
 pytest-pythonpath = "*"
 recommonmark = "*"
 selenium = "*"
-Sphinx = "<1.7"  # Docs do not build with sphinx 1.7 for some reason, can't find issue.
+Sphinx = "*"
 sphinx_markdown_tables = "*"
 sphinx_rtd_theme = "*"
 testfixtures = "*"
@@ -40,6 +40,7 @@ uWSGI = "*"
 pysam = "==0.15.2"
 bdbag = "==1.4.1"  # 1.5.0 requires Python >=2.7.9
 bleach = "*"
+cwltool = "==1.0.20180721142728"
 "bz2file" = {version = "*", markers = "python_version < '3.3'"}
 ipaddress = {version = "*", markers = "python_version < '3.3'"}
 isa-rwval = "*"
@@ -73,7 +74,7 @@ pyparsing = "*"
 "Fabric3" = "*"
 paramiko = "*"
 python-genomespaceclient = "<2.0"
-social_auth_core = {version = "==1.5.0", extras = ['openidconnect']}
+social_auth_core = {version = "==3.1.0", extras = ['openidconnect']}
 cloudauthz = "<=0.2.0"
 gxformat2 = "*"
 

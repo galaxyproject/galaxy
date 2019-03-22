@@ -295,10 +295,8 @@ class JobHandlerQueue(Monitors):
                 .join(model.JobToInputLibraryDatasetAssociation) \
                 .join(model.LibraryDatasetDatasetAssociation) \
                 .join(model.Dataset) \
-                .filter(and_((model.Job.state == model.Job.states.NEW),
-                        or_((model.LibraryDatasetDatasetAssociation._state != null()),
-                            (model.Dataset.state.in_(model.Dataset.non_ready_states)),
-                            ))).subquery()
+                .filter(and_(model.Job.state == model.Job.states.NEW,
+                             model.Dataset.state.in_(model.Dataset.non_ready_states))).subquery()
             if self.app.config.user_activation_on:
                 jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
                     .outerjoin(model.User) \
@@ -361,8 +359,10 @@ class JobHandlerQueue(Monitors):
                     job.text_metrics = copied_from_job.text_metrics
                     job.dependencies = copied_from_job.dependencies
                     job.state = copied_from_job.state
-                    job.stderr = copied_from_job.stderr
-                    job.stdout = copied_from_job.stdout
+                    job.job_stderr = copied_from_job.job_stderr
+                    job.job_stdout = copied_from_job.job_stdout
+                    job.tool_stderr = copied_from_job.tool_stderr
+                    job.tool_stdout = copied_from_job.tool_stdout
                     job.command_line = copied_from_job.command_line
                     job.traceback = copied_from_job.traceback
                     job.tool_version = copied_from_job.tool_version

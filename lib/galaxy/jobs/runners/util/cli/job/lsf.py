@@ -18,7 +18,8 @@ argmap = {
     'memory': '-M',  # There is code in job_script_kwargs relying on this name's setting
     'cores': '-n',
     'queue': '-q',
-    'working_dir': '-cwd'
+    'working_dir': '-cwd',
+    'project': '-P'
 }
 
 

@@ -380,7 +380,7 @@ class ToolEvaluator(object):
 
         param_dict['__tool_directory__'] = self.compute_environment.tool_directory()
         param_dict['__get_data_table_entry__'] = get_data_table_entry
-
+        param_dict['__local_working_directory__'] = self.local_working_directory
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper(self.app)
         # More convienent access to app.config.new_file_path; we don't need to

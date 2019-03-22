@@ -13,8 +13,8 @@ import sys
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, 'lib'))
 
 import galaxy.config
+from galaxy.security import idencoding
 from galaxy.util.script import app_properties_from_args, populate_config_args
-from galaxy.web import security
 
 parser = argparse.ArgumentParser()
 populate_config_args(parser)
@@ -26,7 +26,7 @@ args = parser.parse_args()
 
 app_properties = app_properties_from_args(args)
 config = galaxy.config.Configuration(**app_properties)
-helper = security.SecurityHelper(id_secret=app_properties.get('id_secret'))
+helper = idencoding.IdEncodingHelper(id_secret=app_properties.get('id_secret'))
 model = galaxy.config.init_models_from_config(config)
 
 if args.encode_id:

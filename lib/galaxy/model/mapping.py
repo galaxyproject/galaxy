@@ -40,7 +40,7 @@ from galaxy.model.base import ModelMapping
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from galaxy.security import GalaxyRBACAgent
+from galaxy.model.security import GalaxyRBACAgent
 
 log = logging.getLogger(__name__)
 
@@ -141,6 +141,24 @@ model.PasswordResetToken.table = Table(
     Column("expiration_time", DateTime),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
 
+
+model.DynamicTool.table = Table(
+    "dynamic_tool", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("uuid", UUIDType()),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, index=True, default=now, onupdate=now),
+    Column("tool_id", Unicode(255)),
+    Column("tool_version", Unicode(255)),
+    Column("tool_format", Unicode(255)),
+    Column("tool_path", Unicode(255)),
+    Column("tool_directory", Unicode(255)),
+    Column("hidden", Boolean, default=True),
+    Column("active", Boolean, default=True),
+    Column("value", JSONType()),
+)
+
+
 model.History.table = Table(
     "history", metadata,
     Column("id", Integer, primary_key=True),
@@ -222,6 +240,32 @@ model.Dataset.table = Table(
     Column('file_size', Numeric(15, 0)),
     Column('total_size', Numeric(15, 0)),
     Column('uuid', UUIDType()))
+
+model.DatasetSource.table = Table(
+    "dataset_source", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
+    Column("source_uri", TEXT),
+    Column("extra_files_path", TEXT),
+    Column("transform", JSONType)
+)
+
+model.DatasetHash.table = Table(
+    "dataset_hash", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
+    Column("hash_function", TEXT),
+    Column("hash_value", TEXT),
+    Column("extra_files_path", TEXT),
+)
+
+model.DatasetSourceHash.table = Table(
+    "dataset_source_hash", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("dataset_source_id", Integer, ForeignKey("dataset_source.id"), index=True),
+    Column("hash_function", TEXT),
+    Column("hash_value", TEXT)
+)
 
 # hda read access permission given by a user to a specific site (gen. for external display applications)
 model.HistoryDatasetAssociationDisplayAtAuthorization.table = Table(
@@ -522,15 +566,19 @@ model.Job.table = Table(
     Column("library_folder_id", Integer, ForeignKey("library_folder.id"), index=True),
     Column("tool_id", String(255)),
     Column("tool_version", TEXT, default="1.0.0"),
+    Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), index=True, nullable=True),
     Column("state", String(64), index=True),
     Column("info", TrimmedString(255)),
     Column("copied_from_job_id", Integer, nullable=True),
     Column("command_line", TEXT),
     Column("dependencies", JSONType, nullable=True),
+    Column("job_messages", JSONType, nullable=True),
     Column("param_filename", String(1024)),
     Column("runner_name", String(255)),
-    Column("stdout", TEXT),
-    Column("stderr", TEXT),
+    Column("job_stdout", TEXT),
+    Column("job_stderr", TEXT),
+    Column("tool_stdout", TEXT),
+    Column("tool_stderr", TEXT),
     Column("exit_code", Integer, nullable=True),
     Column("traceback", TEXT),
     Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True, nullable=True),
@@ -656,9 +704,7 @@ model.JobExportHistoryArchive.table = Table(
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
     Column("compressed", Boolean, index=True, default=False),
-    Column("history_attrs_filename", TEXT),
-    Column("datasets_attrs_filename", TEXT),
-    Column("jobs_attrs_filename", TEXT))
+    Column("history_attrs_filename", TEXT))
 
 model.JobImportHistoryArchive.table = Table(
     "job_import_history_archive", metadata,
@@ -723,9 +769,12 @@ model.Task.table = Table(
     Column("command_line", TEXT),
     Column("param_filename", String(1024)),
     Column("runner_name", String(255)),
-    Column("stdout", TEXT),
-    Column("stderr", TEXT),
+    Column("job_stdout", TEXT),  # job_stdout makes sense here because it is short for job script standard out.
+    Column("job_stderr", TEXT),
+    Column("tool_stdout", TEXT),
+    Column("tool_stderr", TEXT),
     Column("exit_code", Integer, nullable=True),
+    Column("job_messages", JSONType, nullable=True),
     Column("info", TrimmedString(255)),
     Column("traceback", TEXT),
     Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=False),
@@ -887,6 +936,7 @@ model.WorkflowStep.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("workflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=False),
     Column("subworkflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=True),
+    Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), index=True, nullable=True),
     Column("type", String(64)),
     Column("tool_id", TEXT),
     Column("tool_version", TEXT),
@@ -1492,6 +1542,8 @@ mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
 
 mapper(model.ValidationError, model.ValidationError.table)
 
+simple_mapping(model.DynamicTool)
+
 simple_mapping(model.HistoryDatasetAssociation,
     dataset=relation(model.Dataset,
         primaryjoin=(model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id), lazy=False),
@@ -1560,6 +1612,18 @@ simple_mapping(model.Dataset,
         order_by=model.DatasetTagAssociation.table.c.id,
         backref='datasets')
 )
+
+mapper(model.DatasetHash, model.DatasetHash.table, properties=dict(
+    dataset=relation(model.Dataset, backref='hashes')
+))
+
+mapper(model.DatasetSource, model.DatasetSource.table, properties=dict(
+    dataset=relation(model.Dataset, backref='sources')
+))
+
+mapper(model.DatasetSourceHash, model.DatasetSourceHash.table, properties=dict(
+    source=relation(model.DatasetSource, backref='hashes')
+))
 
 mapper(model.HistoryDatasetAssociationHistory, model.HistoryDatasetAssociationHistory.table)
 
@@ -2204,8 +2268,11 @@ mapper(model.Workflow, model.Workflow.table, properties=dict(
 
 mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
     subworkflow=relation(model.Workflow,
-        primaryjoin=((model.Workflow.table.c.id == model.WorkflowStep.table.c.subworkflow_id)),
+        primaryjoin=(model.Workflow.table.c.id == model.WorkflowStep.table.c.subworkflow_id),
         backref="parent_workflow_steps"),
+    dynamic_tool=relation(model.DynamicTool,
+        primaryjoin=(model.DynamicTool.table.c.id == model.WorkflowStep.table.c.dynamic_tool_id),
+        backref="workflow_steps"),
     tags=relation(model.WorkflowStepTagAssociation,
         order_by=model.WorkflowStepTagAssociation.table.c.id,
         backref="workflow_steps"),

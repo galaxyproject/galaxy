@@ -282,7 +282,7 @@
                     Tags:
                 </label>
                     <div style="float: left; width: 225px; margin-right: 10px; border-style: inset; border-width: 1px; margin-left: 2px">
-                        ${render_individual_tagging_element(user=trans.get_user(), tagged_item=stored, elt_context="edit_attributes.mako", use_toggle_link=False, input_size="20")}
+                        ${render_individual_tagging_element(user=trans.get_user(), tagged_item=stored, elt_context="edit_attributes.mako", use_toggle_link=False)}
                     </div>
                     <div class="toolParamHelp">Apply tags to make it easy to search for and find items with the same tag.</div>
                 </div>

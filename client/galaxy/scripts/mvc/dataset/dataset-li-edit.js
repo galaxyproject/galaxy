@@ -4,7 +4,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import STATES from "mvc/dataset/states";
 import DATASET_LI from "mvc/dataset/dataset-li";
-import TAGS from "mvc/tag";
+import { mountModelTags } from "components/Tags";
 import ANNOTATIONS from "mvc/annotation";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
@@ -297,35 +297,44 @@ var DatasetListItemEdit = _super.extend(
             }
         },
 
-        //TODO: if possible move these to readonly view - but display the owner's tags/annotation (no edit)
         /** Render the tags list/control */
         _renderTags: function($where) {
             if (!this.hasUser) {
                 return;
             }
-            var view = this;
-            this.tagsEditor = new TAGS.TagsEditor({
+
+            let el = $where.find(".tags-display")[0];
+
+            let propsData = {
                 model: this.model,
-                el: $where.find(".tags-display"),
-                onshowFirstTime: function() {
-                    this.render();
-                },
-                // persist state on the hda view (and not the editor) since these are currently re-created each time
-                onshow: function() {
-                    view.tagsEditorShown = true;
-                },
-                onhide: function() {
-                    view.tagsEditorShown = false;
-                },
-                $activator: faIconButton({
-                    title: _l("Edit dataset tags"),
-                    classes: "tag-btn",
-                    faIcon: "fa-tags"
-                }).appendTo($where.find(".actions .right"))
-            });
+                disabled: false,
+                context: "dataset-li-edit"
+            };
+
+            let vm = mountModelTags(propsData, el);
+
+            // tag icon button open/closes
+            let activator = faIconButton({
+                title: _l("Edit dataset tags"),
+                classes: "tag-btn",
+                faIcon: "fa-tags"
+            }).appendTo($where.find(".actions .right"));
+
+            let toggleEditor = () => {
+                $(vm.$el).toggleClass("active");
+                this.tagsEditorShown = $(vm.$el).hasClass("active");
+            };
+
+            activator.on("click", toggleEditor);
+
             if (this.tagsEditorShown) {
-                this.tagsEditor.toggle(true);
+                let editorIsOpen = $(vm.$el).hasClass("active");
+                if (!editorIsOpen) {
+                    toggleEditor();
+                }
             }
+
+            return vm;
         },
 
         /** Render the annotation display/control */

@@ -49,6 +49,7 @@ The following individuals have contributed code to Galaxy:
 * Gianmauro Cuccuru <gmauro@crs4.it>
 * Frederik Delaere <frederik.delaere@gmail.com>
 * Matthias Desmet <matthias.desmet@ugent.be>
+* Matthew Ryan Dillon <matthewrdillon@gmail.com>
 * Olivia Doppelt <olivia.doppelt@pasteur.fr>
 * Shane Dowling <shane@shanedowling.com>
 * John Duddy <jduddy@illumina.com>

@@ -211,20 +211,16 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_saved_histories_page()
 
-        # Click the add tag button
-        tags_cell = self.get_history_tags_cell(self.history2_name)
-        add_tag_button = tags_cell.find_element_by_css_selector('.add-tag-button')
-        add_tag_button.click()
-
         # Insert a tag
         tags_cell = self.get_history_tags_cell(self.history2_name)
-        tag_area = tags_cell.find_element_by_tag_name('textarea')
+        tag_area = tags_cell.find_element_by_css_selector('.ti-new-tag-input-wrapper input')
+        tag_area.click()
         tag_area.send_keys(self.history2_tags[0])
         self.send_enter(tag_area)
 
         # Search by tag
         tags_cell = self.get_history_tags_cell(self.history2_name)
-        tag = tags_cell.find_element_by_css_selector('span.tag-name')
+        tag = tags_cell.find_element_by_css_selector('.ti-tag-center')
         tag.click()
 
         self.assert_grid_histories_are([self.history2_name], False)

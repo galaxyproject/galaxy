@@ -3,7 +3,7 @@
         <div class="row justify-content-md-center">
             <div class="col col-lg-6">
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
-                <b-form id="login" @submit.prevent="submit()">
+                <b-form id="login" @submit.prevent="submitGalaxyLogin()">
                     <b-card no-body header="Welcome to Galaxy, please log in">
                         <b-card-body>
                             <b-form-group label="Username or Email Address">
@@ -19,10 +19,14 @@
                             <b-button name="login" type="submit">Login</b-button>
                         </b-card-body>
                         <b-card-footer>
-                            Don't have an account? <a id="register-toggle" href="#" @click.prevent="toggleLogin">Register here.</a>
+                            Don't have an account?
+                            <a id="register-toggle" href="#" @click.prevent="toggleLogin">Register here.</a>
                         </b-card-footer>
                     </b-card>
                 </b-form>
+                <b-button v-if="enable_oidc" class="mt-3" @click="submitOIDCLogin()">
+                    <icon class="fa fa-google" /> Sign in with Google
+                </b-button>
             </div>
             <div v-if="show_welcome_with_login" class="col">
                 <b-embed type="iframe" :src="welcome_url" aspect="1by1" />
@@ -51,7 +55,7 @@ export default {
         }
     },
     data() {
-        let Galaxy = getGalaxyInstance();
+        let galaxy = getGalaxyInstance();
         return {
             login: null,
             password: null,
@@ -59,7 +63,9 @@ export default {
             provider: null,
             messageText: null,
             messageVariant: null,
-            redirect: Galaxy.params.redirect
+            redirect: galaxy.params.redirect,
+            session_csrf_token: galaxy.session_csrf_token,
+            enable_oidc: galaxy.config.enable_oidc
         };
     },
     computed: {
@@ -73,11 +79,10 @@ export default {
                 this.$root.toggleLogin();
             }
         },
-        submit: function(method) {
+        submitGalaxyLogin: function(method) {
             let rootUrl = getAppRoot();
-            let data = { login: this.login, password: this.password, redirect: this.redirect };
             axios
-                .post(`${rootUrl}user/login`, data)
+                .post(`${rootUrl}user/login`, this.$data)
                 .then(response => {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);
@@ -89,6 +94,22 @@ export default {
                     } else {
                         window.location = `${rootUrl}`;
                     }
+                })
+                .catch(error => {
+                    this.messageVariant = "danger";
+                    let message = error.response.data && error.response.data.err_msg;
+                    this.messageText = message || "Login failed for an unknown reason.";
+                });
+        },
+        submitOIDCLogin: function(method) {
+            let rootUrl = getAppRoot();
+            axios
+                .post(`${rootUrl}authnz/google/login`)
+                .then(response => {
+                    if (response.data.redirect_uri) {
+                        window.location = encodeURI(response.data.redirect_uri);
+                    }
+                    // Else do something intelligent or maybe throw an error -- what else does this endpoint possibly return?
                 })
                 .catch(error => {
                     this.messageVariant = "danger";

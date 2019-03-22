@@ -34,14 +34,6 @@
 - type: sentry
   user_submission: false
 
-# Allow users to submit error reports to biostars. This requires that the
-# biostars integration is configured. This *only* makes sense when
-# user_submission is true, as it only generates the link for the user to click
-# on and submit the bug report, it does not actually submit the bug report on
-# their behalf.
-# - type: biostars
-#   user_submission: true
-
 # InfluxDB error reporting backend. You will need to `pip install
 # influxdb` in the galaxy virtualenv yourself. This sends well tagged
 # errors InfluxDB allowing you to notice relationships between tool errors and
@@ -58,9 +50,34 @@
 # comment on existing, open issues. The issues are labelled based on tool ID /
 # version and include all of the information the normal emailed bug reports
 # include. If you use a private Github Enterprise deployment, you can set
-# github_base_url='https://...'
+# github_base_url='https://...' and github_api_url='https://api.....' as shown below.
+# The 'github_default_repo_only' flag restores the previous behaviour. When this is set
+# to true it will automatically only submit to the default git repository.
 # - type: github
+#   verbose: false
 #   user_submission: true
 #   github_oauth_token: 00000000000
-#   github_repo_owner: galaxyproject
-#   github_repo_name: galaxy
+#   github_base_url: https://github.com
+#   github_api_url: https://api.github.com
+#   github_default_repo_owner: galaxyproject
+#   github_default_repo_name: galaxy
+#   github_default_repo_only: true
+
+# GitLab error reporting backend. You will need to `pip install python-gitlab`
+# in the galaxy virtualenv. This will create a new issue if none exists, and
+# comment on existing, open issues. The issues are labelled based on tool ID /
+# version and include all of the information the normal emailed bug reports
+# include. If you use a private GitLab deployment, you can set
+# gitlab_base_url='https://...'. It supports creating an issue on the git
+# repository of the tool by querying the ToolShed where the tool comes from
+# (if applicable). Set verbose to true if you want the message to be displayed
+# to the user. The 'gitlab_default_repo_only' flags ensures all errors are
+# submitted to the default repository only.
+# - type: gitlab
+#   verbose: false
+#   user_submission: true
+#   gitlab_base_url: https://gitlab.com
+#   gitlab_private_token: 00000000000
+#   gitlab_default_repo_owner: galaxyproject
+#   gitlab_default_repo_name: galaxy
+#   gitlab_default_repo_only: true

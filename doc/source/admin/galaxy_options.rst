@@ -1,25 +1,13 @@
 ~~~~~~~~~~~~~~~
-``filter-with``
-~~~~~~~~~~~~~~~
-
-:Description:
-    If running behind a proxy server and Galaxy is served from a
-    subdirectory, enable the proxy-prefix filter and set the prefix in
-    the [filter:proxy-prefix] section above.
-:Default: ``proxy-prefix``
-:Type: str
-
-
-~~~~~~~~~~~~~~~
 ``cookie_path``
 ~~~~~~~~~~~~~~~
 
 :Description:
-    If proxy-prefix is enabled and you're running more than one Galaxy
-    instance behind one hostname, you will want to set this to the
-    same path as the prefix in the filter above.  This value becomes
-    the "path" attribute set in the cookie so the cookies from each
-    instance will not clobber each other.
+    When running multiple Galaxy instances under separate URL prefixes
+    on a single hostname, you will want to set this to the same path
+    as the prefix set in the uWSGI "mount" configuration option above.
+    This value becomes the "path" attribute set in the cookie so the
+    cookies from one instance will not clobber those from another.
 :Default: ````
 :Type: str
 
@@ -173,7 +161,9 @@
 ~~~~~~~~~~~~~
 
 :Description:
-    Dataset files are stored in this directory.
+    Where dataset files are stored. It must accessible at the same
+    path on any cluster nodes that will run Galaxy jobs, unless using
+    Pulsar.
 :Default: ``database/files``
 :Type: str
 
@@ -183,7 +173,9 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Temporary files are stored in this directory.
+    Where temporary files are stored. It must accessible at the same
+    path on any cluster nodes that will run Galaxy jobs, unless using
+    Pulsar.
 :Default: ``database/tmp``
 :Type: str
 
@@ -1257,6 +1249,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``user_preferences_extra_conf_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Location of the configuration file containing extra user
+    preferences.
+:Default: ``config/user_preferences_extra_conf.yml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~
 ``default_locale``
 ~~~~~~~~~~~~~~~~~~
@@ -1355,56 +1358,6 @@
     The URL linked by the "Support" link in the "Help" menu.
 :Default: ``https://galaxyproject.org/support/``
 :Type: str
-
-
-~~~~~~~~~~~~~~~
-``biostar_url``
-~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ````
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~
-``biostar_key_name``
-~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ````
-:Type: str
-
-
-~~~~~~~~~~~~~~~
-``biostar_key``
-~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ````
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``biostar_enable_bug_reports``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ``true``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``biostar_never_authenticate``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~
@@ -2803,33 +2756,6 @@
     Enable the new container interface for Interactive Environments
 :Default: ``false``
 :Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``tool_submission_burst_threads``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Set the following to a number of threads greater than 1 to spawn a
-    Python task queue for dealing with large tool submissions (either
-    through the tool form or as part of an individual workflow step
-    across large collection). This affects workflow scheduling and web
-    processes, not job handlers. This is a beta option and should not
-    be used in production.
-:Default: ``1``
-:Type: int
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``tool_submission_burst_at``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If tool_submission_burst_threads is set to a number greater than
-    1, this is the number of jobs to schedule at which the task queue
-    will be created.
-:Default: ``10``
-:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

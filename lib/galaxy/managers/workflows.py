@@ -37,7 +37,6 @@ from galaxy.tools.parameters.basic import (
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
-from galaxy.workflow import modules
 from galaxy.workflow.modules import (
     is_tool_module_type,
     module_factory,
@@ -182,7 +181,7 @@ class WorkflowsManager(object):
             raise exceptions.RequestParameterInvalidException("Attempting to modify the state of an completed workflow invocation.")
 
         step = workflow_invocation_step.workflow_step
-        module = modules.module_factory.from_workflow_step(trans, step)
+        module = module_factory.from_workflow_step(trans, step)
         performed_action = module.do_invocation_step_action(step, action)
         workflow_invocation_step.action = performed_action
         trans.sa_session.add(workflow_invocation_step)
@@ -530,7 +529,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_model = None
             if step.type == 'tool':
                 incoming = {}
-                tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version)
+                tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid)
                 params_to_incoming(incoming, tool.inputs, step.state.inputs, trans.app)
                 step_model = tool.to_json(trans, incoming, workflow_building_mode=workflow_building_modes.USE_HISTORY)
                 step_model['post_job_actions'] = [{
@@ -831,6 +830,16 @@ class WorkflowContentsManager(UsesAnnotations):
                         'changeset_revision': module.tool.changeset_revision,
                         'tool_shed': module.tool.tool_shed
                     }
+
+                tool_representation = None
+                dynamic_tool = step.dynamic_tool
+                if dynamic_tool:
+                    tool_representation = dynamic_tool.value
+                    step_dict['tool_representation'] = tool_representation
+                    if util.is_uuid(step_dict['content_id']):
+                        step_dict['content_id'] = None
+                        step_dict['tool_id'] = None
+
                 pja_dict = {}
                 for pja in step.post_job_actions:
                     pja_dict[pja.action_type + pja.output_name] = dict(
@@ -1200,7 +1209,7 @@ class WorkflowContentsManager(UsesAnnotations):
         if not module.label and module.type in ['data_input', 'data_collection_input']:
             new_state = safe_loads(state)
             default_label = new_state.get('name')
-            if str(default_label).lower() not in ['input dataset', 'input dataset collection']:
+            if default_label and util.unicodify(default_label).lower() not in ['input dataset', 'input dataset collection']:
                 step.label = module.label = default_label
 
 

@@ -67,7 +67,8 @@ the tool menu immediately following the hyperlink for the tool (based on the
         </xs:element>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
         <xs:element name="environment_variables" type="EnvironmentVariables" minOccurs="0" maxOccurs="1"/>
-        <xs:element name="command" type="Command"/>
+        <xs:element name="command" type="Command" minOccurs="0" maxOccurs="1"/>
+        <xs:element name="expression" type="Expression" minOccurs="0" maxOccurs="1"/>
         <xs:element name="request_param_translation" type="RequestParameterTranslation" minOccurs="0"/>
         <xs:element name="configfiles" type="ConfigFiles" minOccurs="0"/>
         <xs:element name="outputs" type="Outputs" minOccurs="0"/>
@@ -314,7 +315,7 @@ resolver.
 This tag set is contained within the 'requirements' tag set. Galaxy can be
 configured to run tools within [Docker](https://www.docker.com/) or [Singularity](https://www.sylabs.io/singularity/)
 containers - this tag allows the tool to suggest possible valid containers for this tool. The contents of the tag should
-be a container image identifier appropriate for the particular container runtime being used, e.g. 
+be a container image identifier appropriate for the particular container runtime being used, e.g.
 ``quay.io/biocontainers/fastqc:0.11.2--1`` for Docker or ``docker://quay.io/biocontainers/fastqc:0.11.2--1``
 (or alternatively ``/opt/containers/fastqc.simg`` if your Galaxy installation will be loading the image from a filesystem path)
 for Singularity. The ``requirements`` tag can contain multiple ``container`` tags describing suitable container options, in
@@ -1243,7 +1244,7 @@ $assertions
 
 ### Examples
 
-The following demonstrtes a wide variety of text-based and tabular
+The following demonstrates a wide variety of text-based and tabular
 assertion statements.
 
 ```xml
@@ -1260,7 +1261,7 @@ assertion statements.
 </output>
 ```
 
-The following demonstrtes a wide variety of XML assertion statements.
+The following demonstrates a wide variety of XML assertion statements.
 
 ```xml
 <output name="out_file1">
@@ -1278,7 +1279,7 @@ The following demonstrtes a wide variety of XML assertion statements.
 </output>
 ```
 
-The following demonstrtes verifying XML content with XPath-like expressions.
+The following demonstrates verifying XML content with XPath-like expressions.
 
 ```xml
 <output name="out_file1">
@@ -1584,8 +1585,8 @@ module.
       <xs:element name="has_text_matching" type="xs:anyType">
         <xs:annotation>
           <xs:documentation><![CDATA[Asserts text matching the specified regular expression (``expression``) appears in the output (e.g. ``<has_text_matching expression="1274\d+53" />`` ).]]>
-        </xs:documentation>
-      </xs:annotation>
+          </xs:documentation>
+        </xs:annotation>
       </xs:element>
       <xs:element name="has_line" type="xs:anyType">
         <xs:annotation>
@@ -1655,30 +1656,45 @@ module.
       </xs:element>
       <xs:element name="has_h5_attribute" type="AssertHasH5Attribute">
       </xs:element>
+      <xs:element name="has_archive_member" type="AssertHasArchiveMember">
+      </xs:element>
     </xs:choice>
   </xs:group>
   <xs:complexType name="AssertHasH5Keys">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified ``keys`` (h5py.File().keys()) (e.g. ``<has_h5_keys keys="bins, chroms,indexes,pixels" />``).]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output has a set of attributes (``keys``), specified as a comma-separated list (e.g. ``<has_h5_keys keys="bins,chroms,indexes,pixels" />``).]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="keys" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Comma separated list of keys to check for.</xs:documentation>
+        <xs:documentation xml:lang="en">Comma-separated list of HDF5 attributes to check for.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
   <xs:complexType name="AssertHasH5Attribute">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified key-vaue pair given as ``key`` and ``value`` (e.g. ``<has_attr key="nchroms" value="15" />``).]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified ``value`` for an attribute (``key``) (e.g. ``<has_attr key="nchroms" value="15" />``).]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="key" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Key to check H5 attribute value of.</xs:documentation>
+        <xs:documentation xml:lang="en">HDF5 attribute to check value of.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Expected value of H5 attribute to check.</xs:documentation>
+        <xs:documentation xml:lang="en">Expected value of HDF5 attribute to check.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasArchiveMember">
+    <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recursively specify additional assertions as child elements about just the member contained in the archive specified by the regular expression ``path`` (e.g. ``<has_archive_member path=".*/my-file.txt"><not_has_text text="EDK72998.1" /></has_archive_member>``). Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``.]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="TestAssertion" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="path" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The regular expression specifying the archive member.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -2766,6 +2782,33 @@ Prior to Galaxy release 19.01 the stdio block has only been used for non-legacy 
     </xs:simpleContent>
   </xs:complexType>
 
+  <xs:complexType name="Expression">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+For "Expression Tools" (tools with ``tool_type="expression``) this block describes the expression
+used to evaluate inputs and produce outputs. The semantics are going to vary based on the value
+of "type" specified for this expression block.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="ExpressionType">
+          <xs:annotation>
+            <xs:documentation>Type of expression defined by this expression block. The only current valid option is ecma5.1 - which will evaluate the expression in a sandbox using node. The option still must be specified to allow a different default in the future.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:simpleType name="ExpressionType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"></xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ecma5.1" />
+    </xs:restriction>
+  </xs:simpleType>
 
   <xs:complexType name="ParamOption">
     <xs:annotation>
@@ -3135,13 +3178,10 @@ expressed with the validator. In general, ``dataset_metadata_in_file`` should be
 considered deprecated in favor of
 
 ```xml
-<validator type="dataset_metadata_in_file"
-           filename="alignseq.loc"
+<validator type="dataset_metadata_in_data_table"
            metadata_name="dbkey"
            metadata_column="1"
-           message="Sequences are not currently available for the specified build."
-           split=" "
-           line_startswith="seq" />
+           message="Sequences are not currently available for the specified build." />
 ```
 
 A very common validator is simply ensure a Python expression is valid for a
@@ -3162,8 +3202,10 @@ validators is in the ``validator_types`` dictionary in
 [/lib/galaxy/tools/parameters/validation.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/validation.py).
 Valid values include: ``expression``, ``regex``, ``in_range``, ``length``,
 ``metadata``, ``unspecified_build``, ``no_options``, ``empty_field``,
-``dataset_metadata_in_file``, ``dataset_metadata_in_data_table``,
-``dataset_ok_validator``]]></xs:documentation>
+``dataset_metadata_in_file``, 
+``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``,
+``value_in_data_table``, ``value_not_in_data_table``,
+``dataset_ok_validator``, ``dataset_metadata_in_range``]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="message" type="xs:string">
@@ -3183,7 +3225,7 @@ specified by the ``skip`` attribute.</xs:documentation>
         <xs:attribute name="table_name" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Tool data table name to check against
-if ``type`` is ``dataset_metadata_in_tool_data``. See the documentation for
+if ``type`` is ``dataset_metadata_in_tool_data``, ``dataset_metadata_not_in_tool_data``, ``value_in_tool_data``, or ``value_not_in_tool_data``. See the documentation for
 [tool data tables](https://galaxyproject.org/admin/tools/data-tables)
 and [data managers](https://galaxyproject.org/admin/tools/data-managers/) for
 more information.</xs:documentation>
@@ -3199,13 +3241,13 @@ if ``type`` is ``dataset_metadata_in_file``. File should be present Galaxy's
         <xs:attribute name="metadata_name" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Target metadata attribute name for
-``dataset_metadata_in_data_table`` and ``dataset_metadata_in_file`` options.</xs:documentation>
+``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table`` and ``dataset_metadata_in_file`` options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="metadata_column" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Target column for metadata attribute
-in ``dataset_metadata_in_data_table`` and ``dataset_metadata_in_file`` options.
+in ``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``, ``value_in_data_table``, ``value__not_in_data_table``, and ``dataset_metadata_in_file`` options.
 This can be an integer index to the column or a column name.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -3670,11 +3712,12 @@ The default is ``galaxy.json``.
   </xs:complexType>
   <xs:group name="OutputsElement">
     <xs:choice>
-      <xs:element name="data" type="Data"/>
-      <xs:element name="collection" type="Collection" />
+      <xs:element name="output" type="Output" />
+      <xs:element name="data" type="OutputData"/>
+      <xs:element name="collection" type="OutputCollection" />
     </xs:choice>
   </xs:group>
-  <xs:group name="DataElement">
+  <xs:group name="OutputDataElement">
     <xs:choice>
       <xs:element name="change_format" type="ChangeFormat"/>
       <xs:element name="filter" type="OutputFilter" />
@@ -3682,7 +3725,101 @@ The default is ``galaxy.json``.
       <xs:element name="actions" type="Actions"/>
     </xs:choice>
   </xs:group>
-  <xs:complexType name="Data">
+
+  <xs:attributeGroup name="OutputCommon">
+    <xs:attribute name="format_source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="label" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+This will be the name of the history item for the output data set. The string
+can include structure like ``${<some param name>.<some attribute>}``, as
+discussed for command line parameters in the ``<command>`` tag set section
+above. The default label is ``${tool.name} on ${on_string}``.
+
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string" use="required">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Name for this output. This
+``name`` is used as the Cheetah variable containing the Galaxy assigned output
+path in ``command`` and ``configfile`` elements. The name should not contain
+pipes or periods (e.g. ``.``).]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="OutputDataAttributes">
+    <xs:attribute name="auto_format" type="PermissiveBoolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+If ``true``, this output will sniffed and its format determined automatically by Galaxy.
+
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="format" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The short name for the output datatype.
+The valid values for format can be found in
+[/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
+(e.g. ``format="pdf"`` or ``format="fastqsanger"``).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="default_identifier_source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Sets the source of element identifier to the specified input.
+This only applies to collections that are mapped over a non-collection input and that have equivalent structures. If this references input elements in conditionals, this value should be qualified (e.g. ``cond|input`` instead of ``input`` if ``input`` is in a conditional with ``name="cond"``).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="metadata_source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This copies the metadata information
+from the tool's input dataset. This is particularly useful for interval data
+types where the order of the columns is not set.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="from_work_dir" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Relative path to a file produced by the
+tool in its working directory. Output's contents are set to this file's
+contents.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="hidden" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Boolean indicating whether to hide
+dataset in the history view. (Default is ``false``.)</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="OutputCollectionAttributes">
+    <xs:attribute name="structured_like" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This is the name of input collection or
+dataset to derive "structure" of the output from (output element count and
+identifiers). For instance, if the referenced input has three ordered items with
+identifiers ``sample1``, ``sample2``,  and ``sample3``. If this references input
+elements in conditionals, this value should be qualified (e.g. ``cond|input`` instead
+of ``input`` if ``input`` is in a conditional with ``name="cond"``).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="inherit_format" type="xs:boolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If ``structured_like`` is set, inherit
+format of outputs from format of corresponding input.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:complexType name="OutputData">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
@@ -3768,88 +3905,22 @@ on Human (hg18)``.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="DataElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OutputDataElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <!-- TODO: add a unique constraint for action. -->
-    <xs:attribute name="name" type="xs:string">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Name for this output. This
-``name`` is used as the Cheetah variable containing the Galaxy assigned output
-path in ``command`` and ``configfile`` elements. The name should not contain
-pipes or periods (e.g. ``.``).]]></xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="auto_format" type="PermissiveBoolean">
-      <xs:annotation>
-        <xs:documentation xml:lang="en"><![CDATA[
-
-If ``true``, this output will sniffed and its format determined automatically by Galaxy.
-
-]]></xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="format" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">The short name for the output datatype.
-The valid values for format can be found in
-[/config/datatypes_conf.xml.sample](https://github.com/galaxyproject/galaxy/blob/dev/config/datatypes_conf.xml.sample)
-(e.g. ``format="pdf"`` or ``format="fastqsanger"``).</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="format_source" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">This sets the data type of the output file to be the same format as that of a tool input dataset.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="default_identifier_source" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Sets the source of element identifier to the specified input.
-This only applies to collections that are mapped over a non-collection input and that have equivalent structures. If this references input elements in conditionals, this value should be qualified (e.g. ``cond|input`` instead of ``input`` if ``input`` is in a conditional with ``name="cond"``).</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="metadata_source" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">This copies the metadata information
-from the tool's input dataset. This is particularly useful for interval data
-types where the order of the columns is not set.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="label" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en"><![CDATA[
-
-This will be the name of the history item for the output data set. The string
-can include structure like ``${<some param name>.<some attribute>}``, as
-discussed for command line parameters in the ``<command>`` tag set section
-above. The default label is ``${tool.name} on ${on_string}``.
-
-]]></xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="from_work_dir" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Relative path to a file produced by the
-tool in its working directory. Output's contents are set to this file's
-contents.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="hidden" type="xs:boolean" default="false">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Boolean indicating whether to hide
-dataset in the history view. (Default is ``false``.)</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="OutputCommon"/>
+    <xs:attributeGroup ref="OutputDataAttributes"/>
   </xs:complexType>
 
-  <xs:group name="CollectionElement">
+  <xs:group name="OutputCollectionElement">
     <xs:choice>
-      <xs:element name="data" type="Data" />
+      <xs:element name="data" type="OutputData" />
       <xs:element name="discover_datasets" type="OutputCollectionDiscoverDatasets" />
       <xs:element name="filter" type="OutputFilter" />
     </xs:choice>
   </xs:group>
 
-  <xs:complexType name="Collection">
+  <xs:complexType name="OutputCollection">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
@@ -3865,37 +3936,13 @@ Creating collections in tools is covered in-depth in
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="CollectionElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OutputCollectionElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
-    <xs:attribute name="name" type="xs:string" use="required">
-        <xs:annotation>
-          <xs:documentation xml:lang="en"><![CDATA[Name for this output. This
-``name`` is used as the Cheetah variable containing the Galaxy assigned output
-path in ``command`` and ``configfile`` elements. The name should not contain
-pipes or periods (e.g. ``.``).]]></xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:attributeGroup ref="OutputCommon"/>
+    <xs:attributeGroup ref="OutputCollectionAttributes"/>
     <xs:attribute name="type" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Collection type for output (e.g. ``paired``, ``list``, or ``list:list``).</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="label" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en"><![CDATA[
-
-This will be the name of the history item for the output data set. The string
-can include structure like ``${<some param name>.<some attribute>}``, as
-discussed for command line parameters in the ``<command>`` tag set section
-above. The default label is ``${tool.name} on ${on_string}``.
-
-]]></xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="format_source" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">This is the name of input collection or
-dataset to derive output dataset collection's element's format/datatype from.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="type_source" type="xs:string">
@@ -3904,24 +3951,44 @@ dataset to derive output dataset collection's element's format/datatype from.</x
 derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="structured_like" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">This is the name of input collection or
-dataset to derive "structure" of the output from (output element count and
-identifiers). For instance, if the referenced input has three ordered items with
-identifiers ``sample1``, ``sample2``,  and ``sample3``. If this references input
-elements in conditionals, this value should be qualified (e.g. ``cond|input`` instead
-of ``input`` if ``input`` is in a conditional with ``name="cond"``).</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="inherit_format" type="xs:boolean">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">If ``structured_like`` is set, inherit
-format of outputs from format of corresponding input.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
   </xs:complexType>
 
+  <xs:complexType name="Output">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag describes an output to the tool.
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:group ref="OutputDataElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OutputCollectionElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attributeGroup ref="OutputCommon"/>
+    <xs:attributeGroup ref="OutputCollectionAttributes"/>
+    <xs:attribute name="type" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Output type. This could be older more established Galaxy types (e.g. data and collection) - in which case the semantics of this largely reflect the corresponding ``data`` and ``collection`` tags. This could also be newer non-data types such as ``integer`` or ``boolean``.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="from" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">In expression tools, use this to specify a dictionary value to populate this output from. The semantics may change for other expression types in the future.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="collection_type" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Collection type for output (e.g. ``paired``, ``list``, or ``list:list``).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="collection_type_source" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">This is the name of input collection to
+derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+  </xs:complexType>
   <xs:complexType name="OutputFilter">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -5270,6 +5337,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="data_source"/>
       <xs:enumeration value="manage_data"/>
+      <xs:enumeration value="expression"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="URLmethodType">
@@ -5334,6 +5402,10 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="empty_field"/>
       <xs:enumeration value="dataset_metadata_in_file"/>
       <xs:enumeration value="dataset_metadata_in_data_table"/>
+      <xs:enumeration value="dataset_metadata_not_in_data_table"/>
+      <xs:enumeration value="value_in_data_table"/>
+      <xs:enumeration value="value_not_in_data_table"/>
+      <xs:enumeration value="dataset_metadata_in_range"/>
       <xs:enumeration value="dataset_ok_validator"/>
     </xs:restriction>
   </xs:simpleType>

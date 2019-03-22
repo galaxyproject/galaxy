@@ -508,7 +508,7 @@ def test_config_parse_s3():
             assert len(extra_dirs) == 2
 
 
-CLOUD_TEST_CONFIG = """<object_store type="cloud">
+CLOUD_AWS_TEST_CONFIG = """<object_store type="cloud" provider="aws">
      <auth access_key="access_moo" secret_key="secret_cow" />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
      <cache path="database/object_store_cache" size="1000" />
@@ -518,8 +518,9 @@ CLOUD_TEST_CONFIG = """<object_store type="cloud">
 """
 
 
-CLOUD_TEST_CONFIG_YAML = """
-type: s3
+CLOUD_AWS_TEST_CONFIG_YAML = """
+type: cloud
+provider: aws
 auth:
   access_key: access_moo
   secret_key: secret_cow
@@ -540,13 +541,86 @@ extra_dirs:
 """
 
 
-def test_config_parse_cloud():
-    for config_str in [CLOUD_TEST_CONFIG, CLOUD_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
-            assert object_store.access_key == "access_moo"
-            assert object_store.secret_key == "secret_cow"
+CLOUD_AZURE_TEST_CONFIG = """<object_store type="cloud" provider="azure">
+     <auth subscription_id="a_sub_id" client_id="and_a_client_id" secret="and_a_secret_key"
+     tenant="and_some_tenant_info" />
+     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
+     <cache path="database/object_store_cache" size="1000" />
+     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+     <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
 
-            assert object_store.bucket == "unique_bucket_name_all_lowercase"
+CLOUD_AZURE_TEST_CONFIG_YAML = """
+type: cloud
+provider: azure
+auth:
+  subscription_id: a_sub_id
+  client_id: and_a_client_id
+  secret: and_a_secret_key
+  tenant: and_some_tenant_info
+
+bucket:
+  name: unique_bucket_name_all_lowercase
+  use_reduced_redundancy: false
+
+cache:
+  path: database/object_store_cache
+  size: 1000
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_cloud
+- type: temp
+  path: database/tmp_cloud
+"""
+
+
+CLOUD_GOOGLE_TEST_CONFIG = """<object_store type="cloud" provider="google">
+     <auth credentials_file="gcp.config" />
+     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
+     <cache path="database/object_store_cache" size="1000" />
+     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+     <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
+
+CLOUD_GOOGLE_TEST_CONFIG_YAML = """
+type: cloud
+provider: google
+auth:
+  credentials_file: gcp.config
+
+bucket:
+  name: unique_bucket_name_all_lowercase
+  use_reduced_redundancy: false
+
+cache:
+  path: database/object_store_cache
+  size: 1000
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_cloud
+- type: temp
+  path: database/tmp_cloud
+"""
+
+
+def test_config_parse_cloud():
+    for config_str in [CLOUD_AWS_TEST_CONFIG, CLOUD_AWS_TEST_CONFIG_YAML,
+                       CLOUD_AZURE_TEST_CONFIG, CLOUD_AZURE_TEST_CONFIG_YAML,
+                       CLOUD_GOOGLE_TEST_CONFIG, CLOUD_GOOGLE_TEST_CONFIG_YAML]:
+        if "google" in config_str:
+            tmpdir = mkdtemp()
+            if not os.path.exists(tmpdir):
+                os.makedirs(tmpdir)
+            path = os.path.join(tmpdir, "gcp.config")
+            open(path, "w").write("some_gcp_config")
+            config_str = config_str.replace("gcp.config", path)
+        with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
+
+            assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
             assert object_store.host is None
@@ -555,13 +629,13 @@ def test_config_parse_cloud():
             assert object_store.is_secure is True
             assert object_store.conn_path == "/"
 
-            assert object_store.cache_size == 1000
+            assert object_store.cache_size == 1000.0
             assert object_store.staging_path == "database/object_store_cache"
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_cloud"
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
             as_dict = object_store.to_dict()
-            _assert_has_keys(as_dict, ["auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+            _assert_has_keys(as_dict, ["provider", "auth", "bucket", "connection", "cache", "extra_dirs", "type"])
 
             _assert_key_has_value(as_dict, "type", "cloud")
 
@@ -570,8 +644,17 @@ def test_config_parse_cloud():
             connection_dict = as_dict["connection"]
             cache_dict = as_dict["cache"]
 
-            _assert_key_has_value(auth_dict, "access_key", "access_moo")
-            _assert_key_has_value(auth_dict, "secret_key", "secret_cow")
+            provider = as_dict["provider"]
+            if provider == "aws":
+                _assert_key_has_value(auth_dict, "access_key", "access_moo")
+                _assert_key_has_value(auth_dict, "secret_key", "secret_cow")
+            elif provider == "azure":
+                _assert_key_has_value(auth_dict, "subscription_id", "a_sub_id")
+                _assert_key_has_value(auth_dict, "client_id", "and_a_client_id")
+                _assert_key_has_value(auth_dict, "secret", "and_a_secret_key")
+                _assert_key_has_value(auth_dict, "tenant", "and_some_tenant_info")
+            elif provider == "google":
+                _assert_key_has_value(auth_dict, "credentials_file", path)
 
             _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
             _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
@@ -581,7 +664,7 @@ def test_config_parse_cloud():
             _assert_key_has_value(connection_dict, "multipart", True)
             _assert_key_has_value(connection_dict, "is_secure", True)
 
-            _assert_key_has_value(cache_dict, "size", 1000)
+            _assert_key_has_value(cache_dict, "size", 1000.0)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
 
             extra_dirs = as_dict["extra_dirs"]

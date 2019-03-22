@@ -666,6 +666,7 @@ class DefaultToolAction(object):
             job.tool_version = tool.version
         except AttributeError:
             job.tool_version = "1.0.0"
+        job.dynamic_tool = tool.dynamic_tool
         return job, galaxy_session
 
     def _record_inputs(self, trans, tool, job, incoming, inp_data, inp_dataset_collections):

@@ -1,7 +1,7 @@
 // Bootstrap variables and core framework
-@import "../../../node_modules/bootstrap/scss/_functions.scss";
+@import "~bootstrap/scss/_functions.scss";
 @import "theme/blue.scss";
-@import "../../../node_modules/bootstrap/scss/bootstrap.scss";
+@import "~bootstrap/scss/bootstrap.scss";
 
 // Bootstrap-related style overrides
 @import "overrides.scss";
@@ -30,7 +30,6 @@ $fa-font-path: "../../../node_modules/font-awesome/fonts/";
 @import "ui.scss";
 @import "library.scss";
 @import "trackster.scss";
-@import "autocomplete_tagging.scss";
 @import "toastr.scss";
 @import "jstree.scss";
 @import "tour.scss";
@@ -233,28 +232,14 @@ body {
     .panel-header-buttons {
         order: 9999;
         float: right;
-    }
-    .panel-header-button {
-        text-decoration: none;
-        display: inline-block;
-        cursor: pointer;
-        width: 1.2rem;
-        text-align: center;
-        padding: 0px;
-        &:not(:last-child) {
-            margin-right: 2px;
-        }
-        &:hover {
-            color: $brand-info;
-        }
-        // Bootstrap style span caret needs positioning
-        .caret {
-            margin-top: 7px;
-        }
-        // Another way to get a caret
-        &.popup {
-            padding-right: 1.75em;
-            background: url(../../images/dropdownarrow.png) no-repeat right 7px;
+        .panel-header-button {
+            text-align: center;
+            &:not(:last-child) {
+                @extend .mr-2;
+            }
+            &:hover {
+                color: $brand-info;
+            }
         }
     }
 }
@@ -807,9 +792,9 @@ button {
 .warningmessagelarge,
 .donemessagelarge,
 .infomessagelarge,
-.ui-form-help .error,
-.ui-form-help .warning,
-.ui-form-help .note {
+.form-help .error,
+.form-help .warning,
+.form-help .note {
     @extend .alert;
     min-height: 36px;
     padding-left: 52px;
@@ -851,9 +836,9 @@ button {
 .warningmessagesmall,
 .donemessagesmall,
 .infomessagesmall,
-.ui-form-help .error,
-.ui-form-help .warning,
-.ui-form-help .note {
+.form-help .error,
+.form-help .warning,
+.form-help .note {
     @extend .alert;
     padding: 5px;
     padding-left: 25px;
@@ -867,13 +852,13 @@ button {
 
 .errormessage,
 .errormessagesmall,
-.ui-form-help .error {
+.form-help .error {
     @extend .alert-danger;
 }
 
 .warningmessage,
 .warningmessagesmall,
-.ui-form-help .warning {
+.form-help .warning {
     @extend .alert-warning;
     background-image: url(../../images/warn_small.png);
 }
@@ -886,7 +871,7 @@ button {
 
 .infomessage,
 .infomessagesmall,
-.ui-form-help .note {
+.form-help .note {
     @extend .alert-info;
     background-image: url(../../images/info_small.png);
 }
@@ -1559,8 +1544,6 @@ div.toolPanelLabel {
 }
 
 div.toolTitle {
-    padding-top: 5px;
-    padding-bottom: 5px;
     margin-left: 10px;
     margin-right: 10px;
     display: block;
@@ -1573,9 +1556,15 @@ div.toolTitle {
 div a.tool-link {
     text-decoration: none;
     display: block;
+    padding-top: 5px;
+    padding-bottom: 5px;
 
     span.tool-old-link {
         text-decoration: underline;
+    }
+
+    &:hover {
+        background: darken($panel-bg-color, 5%);
     }
 }
 
@@ -1780,11 +1769,6 @@ div.toolTitleNoSection {
     padding: 2px;
 }
 
-.communication-iframe {
-    width: 100%;
-    height: 100%;
-}
-
 .close-modal {
     float: right;
     cursor: pointer;
@@ -1858,19 +1842,6 @@ div.toolTitleNoSection {
 .hidden_description_layer.dragover {
     visibility: visible;
     opacity: 1;
-}
-
-/* Temporary tag editor display; will be moved to a scoped Vue SFC upon refactoring */
-.tags-display {
-    @extend %vertical-spacing;
-    .select2-container {
-        max-height: 80px;
-        overflow: auto;
-        min-width: 0px;
-        .select2-choices {
-            border-radius: 3px;
-        }
-    }
 }
 
 /* TEMPORARY, REFACTOR THIS -- This is only image-related styles from the

@@ -29,15 +29,6 @@ var menu = [
         anon: true
     },
     {
-        html: _l("Create New"),
-        func: function() {
-            let Galaxy = getGalaxyInstance();
-            if (Galaxy && Galaxy.currHistoryPanel) {
-                Galaxy.currHistoryPanel.createNewHistory();
-            }
-        }
-    },
-    {
         html: _l("Copy History"),
         func: function() {
             let Galaxy = getGalaxyInstance();

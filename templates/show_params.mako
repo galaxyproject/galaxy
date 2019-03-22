@@ -173,6 +173,13 @@
         <tr><td>Tool Standard Error:</td><td><a href="${h.url_for( controller='dataset', action='stderr', dataset_id=encoded_hda_id )}">stderr</a></td></tr>
         %if job:
             <tr><td>Tool Exit Code:</td><td>${ job.exit_code | h }</td></tr>
+            %if job.job_messages:
+            <tr><td>Job Messages</td><td><ul style="padding-left: 15px; margin-bottom: 0px">
+            %for job_message in job.job_messages:
+            <li>${ job_message['desc'] |h }</li>
+            %endfor
+            <ul></td></tr>
+            %endif
         %endif
         <tr><td>History Content API ID:</td>
         <td>${encoded_hda_id}

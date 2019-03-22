@@ -5,11 +5,9 @@ collections from matched collections.
 """
 import collections
 import logging
-from threading import Thread
 
 import six
 import six.moves
-from six.moves.queue import Queue
 
 from galaxy import model
 from galaxy.dataset_collections.structure import get_structure, tool_output_to_structure
@@ -46,7 +44,6 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
         execution_tracker = ToolExecutionTracker(trans, tool, mapping_params, collection_info)
     else:
         execution_tracker = WorkflowStepExecutionTracker(trans, tool, mapping_params, collection_info, invocation_step, job_callback=job_callback)
-    app = trans.app
     execution_cache = ToolExecutionCache(trans)
 
     def execute_single_job(execution_slice, completed_job):
@@ -86,46 +83,17 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             )
 
     execution_tracker.ensure_implicit_collections_populated(history, mapping_params.param_template)
-    config = app.config
-    burst_at = getattr(config, 'tool_submission_burst_at', 10)
-    burst_threads = getattr(config, 'tool_submission_burst_threads', 1)
-
     job_count = len(execution_tracker.param_combinations)
 
     jobs_executed = 0
     has_remaining_jobs = False
 
-    if (job_count < burst_at or burst_threads < 2):
-        for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
-            if max_num_jobs and jobs_executed >= max_num_jobs:
-                has_remaining_jobs = True
-                break
-            else:
-                execute_single_job(execution_slice, completed_jobs[i])
-    else:
-        # TODO: re-record success...
-        q = Queue()
-
-        def worker():
-            while True:
-                params = q.get()
-                execute_single_job(params)
-                q.task_done()
-
-        for i in range(burst_threads):
-            t = Thread(target=worker)
-            t.daemon = True
-            t.start()
-
-        for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
-            if max_num_jobs and jobs_executed >= max_num_jobs:
-                has_remaining_jobs = True
-                break
-            else:
-                q.put(execution_slice, completed_jobs[i])
-                jobs_executed += 1
-
-        q.join()
+    for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
+        if max_num_jobs and jobs_executed >= max_num_jobs:
+            has_remaining_jobs = True
+            break
+        else:
+            execute_single_job(execution_slice, completed_jobs[i])
 
     if has_remaining_jobs:
         raise PartialJobExecution(execution_tracker)

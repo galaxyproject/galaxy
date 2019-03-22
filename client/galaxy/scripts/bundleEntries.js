@@ -96,7 +96,7 @@ export let chartUtilities = {
 
 export { initMasthead } from "components/Masthead/initMasthead";
 export { panelManagement } from "onload/globalInits/panelManagement";
-export { init_tag_click_function } from "ui/autocom_tagging";
+export { mountMakoTags } from "components/Tags";
 
 // Used in common.mako
-export { default as store } from "store";
+export { default as store } from "storemodern";

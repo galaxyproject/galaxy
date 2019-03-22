@@ -6,6 +6,7 @@ import hashlib
 import io
 import logging
 import os
+import os.path
 import re
 import shutil
 import tempfile
@@ -30,6 +31,7 @@ def verify(
     attributes,
     filename=None,
     get_filecontent=None,
+    get_filename=None,
     keep_outputs_dir=None,
     verify_extra_files=None,
     mode='file',
@@ -38,8 +40,16 @@ def verify(
 
     Throw an informative assertion error if any of these tests fail.
     """
-    if get_filecontent is None:
-        get_filecontent = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
+    if get_filename is None:
+        if get_filecontent is None:
+            get_filecontent = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
+
+        def get_filename(filename):
+            file_content = get_filecontent(filename)
+            local_name = make_temp_fname(fname=filename)
+            with open(local_name, 'wb') as f:
+                f.write(file_content)
+            return local_name
 
     # Check assertions...
     assertions = attributes.get("assert_list", None)
@@ -80,17 +90,17 @@ def verify(
             # filename already point to a file that exists on disk
             local_name = filename
         else:
-            file_content = get_filecontent(filename)
-            local_name = make_temp_fname(fname=filename)
-            with open(local_name, 'wb') as f:
-                f.write(file_content)
+            local_name = get_filename(filename)
         temp_name = make_temp_fname(fname=filename)
         with open(temp_name, 'wb') as f:
             f.write(output_content)
 
         # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
         if keep_outputs_dir:
-            ofn = os.path.join(keep_outputs_dir, os.path.basename(local_name))
+            ofn = os.path.join(keep_outputs_dir, filename)
+            out_dir = os.path.dirname(ofn)
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
             log.debug('keep_outputs_dir: %s, ofn: %s', keep_outputs_dir, ofn)
             try:
                 shutil.copy(temp_name, ofn)

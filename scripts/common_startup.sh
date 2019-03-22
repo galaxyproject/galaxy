@@ -100,7 +100,6 @@ if command -v git >/dev/null && [ -d .git ]; then
     esac
 else
     GIT_BRANCH=0
-    DEV_WHEELS=1
 fi
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}
@@ -114,7 +113,7 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
         set_conda_exe
         if [ -n "$CONDA_EXE" ]; then
             echo "Found Conda, will set up a virtualenv using conda."
-            echo "To use a virtualenv instead, create one with a non-Conda Python 2.7 at $GALAXY_VIRTUAL_ENV"
+            echo "To use a virtualenv instead, create one with a non-Conda Python at $GALAXY_VIRTUAL_ENV"
             : ${GALAXY_CONDA_ENV:="_galaxy_"}
             if [ "$CONDA_DEFAULT_ENV" != "$GALAXY_CONDA_ENV" ]; then
                 if ! check_conda_env "$GALAXY_CONDA_ENV"; then
@@ -155,7 +154,7 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
     from urllib import urlretrieve
 except:
     from urllib.request import urlretrieve
-urllib.urlretrieve('$vurl', '$vsrc')"
+urlretrieve('$vurl', '$vsrc')"
                 fi
                 echo "Verifying $vsrc checksum is $vsha"
                 python -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
@@ -225,14 +224,23 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     fi
 fi
 
+# Install node if not installed
+if [ -n "$VIRTUAL_ENV" ]; then
+    if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v$NODE_VERSION" ]; then
+        echo "Installing node into $VIRTUAL_ENV with nodeenv."
+        nodeenv -n $NODE_VERSION -p
+    fi
+elif [ -n "$CONDA_DEFAULT_ENV" -a -n "$CONDA_EXE" ]; then
+    if ! in_conda_env "$(command -v node)"; then
+        echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
+        $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name $CONDA_DEFAULT_ENV node=$NODE_VERSION
+    fi
+fi
+
 # Build client if necessary.
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     # Ensure dependencies are installed
     if [ -n "$VIRTUAL_ENV" ]; then
-        if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v$NODE_VERSION" ]; then
-            echo "Installing node into $VIRTUAL_ENV with nodeenv."
-            nodeenv -n $NODE_VERSION -p
-        fi
         if ! in_venv "$(command -v yarn)"; then
             echo "Installing yarn into $VIRTUAL_ENV with npm."
             npm install --global yarn
@@ -247,7 +255,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     fi
     # Build client
     cd client
-    if yarn install --network-timeout 120000 --check-files; then
+    if yarn install --network-timeout 300000 --check-files; then
         if ! yarn run build-production-maps; then
             echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
             exit 1
@@ -257,7 +265,4 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
         exit 1
     fi
     cd -
-else
-    echo "Regenerating static plugin directories."
-    python ./scripts/plugin_staging.py
 fi
