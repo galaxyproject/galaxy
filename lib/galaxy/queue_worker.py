@@ -260,9 +260,6 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
         if queue:
             # Allows assignment of a particular queue for this worker.
             self.control_queue = queue
-        else:
-            # Default to figuring out which control queue to use based on the app config.
-            queue = galaxy.queues.control_queue_from_config(app.config)
         self.task_mapping = task_mapping
         self.declare_queues = galaxy.queues.all_control_queues_for_declare(app.config, app.application_stack)
         # TODO we may want to purge the queue at the start to avoid executing
