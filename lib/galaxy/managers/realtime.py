@@ -149,7 +149,7 @@ class RealTimeManager(object):
         self.security = app.security
         self.sa_session = app.model.context
         self.job_manager = app.job_manager
-        self.propagator = RealtimeSqlite(app.config.proxy_session_map, app.security.encode_id)
+        self.propagator = RealtimeSqlite(app.config.realtime_map, app.security.encode_id)
 
     def create_entry_points(self, job, tool, flush=True):
         for entry in tool.ports:

@@ -12,12 +12,12 @@ uwsgi:
 
   module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
 
-  sessions: database/session_map.sqlite
+  realtime_map: database/realtime_map.sqlite
   python-raw: lib/galaxy/web/realtime/rpc/key_type_token_mapping.py
   route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(realtime\.localhost:8080)$ goto:realtime
   route-run: goto:endendend
   route-label: realtime
-  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(realtime\.localhost:8080)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper $2 $1 $3 $4 $0
+  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(realtime\.localhost:8080)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $2 $1 $3 $4 $0 5
   route-if-not: empty:${TARGET_HOST} httpdumb:${TARGET_HOST}
   route-label: endendend
 

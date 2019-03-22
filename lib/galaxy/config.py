@@ -668,6 +668,8 @@ class Configuration(object):
         self.fluent_log = string_as_bool(kwargs.get('fluent_log', False))
         self.fluent_host = kwargs.get('fluent_host', 'localhost')
         self.fluent_port = int(kwargs.get('fluent_port', 24224))
+        # RealTimeTools propagator mapping file
+        self.realtime_map = self.resolve_path(kwargs.get("realtime_map", "database/realtime_map.sqlite"))
         # directory where the visualization registry searches for plugins
         self.visualization_plugins_directory = kwargs.get(
             'visualization_plugins_directory', 'config/plugins/visualizations')
