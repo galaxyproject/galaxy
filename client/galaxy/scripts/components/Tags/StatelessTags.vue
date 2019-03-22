@@ -4,11 +4,11 @@ upstream component or environment that is accessed through props and events -->
 
 <template>
     <div class="tags-display" :class="tagContainerClasses">
-        <a v-if="linkVisible" href="#" class="toggle-link"
-            @click.prevent="toggleTagDisplay">
+        <a v-if="linkVisible" href="#" class="toggle-link" @click.prevent="toggleTagDisplay">
             {{ linkText | localize }}
         </a>
-        <vue-tags-input v-if="tagsVisible"
+        <vue-tags-input
+            v-if="tagsVisible"
             class="tags-input tag-area"
             v-model="tagText"
             :tags="tagModels"
@@ -18,18 +18,16 @@ upstream component or environment that is accessed through props and events -->
             :add-on-key="triggerKeys"
             @before-adding-tag="beforeAddingTag"
             @before-deleting-tag="beforeDeletingTag"
-            @tags-changed="tagsChanged">
+            @tags-changed="tagsChanged"
+        >
             <template slot="tag-center" slot-scope="t">
-                <div class="tag-name" @click="$emit('tag-click', t.tag)">
-                    {{ t.tag.label }}
-                </div>
+                <div class="tag-name" @click="$emit('tag-click', t.tag)">{{ t.tag.label }}</div>
             </template>
         </vue-tags-input>
     </div>
 </template>
 
 <script>
-
 import VueTagsInput from "@johmun/vue-tags-input";
 import { createTag } from "./model";
 
@@ -46,19 +44,19 @@ export default {
     },
     data() {
         // initialize toggle value
-        let isClosed = this.useToggleLink && (this.value.length > this.maxVisibleTags);
-        
-        return { 
+        let isClosed = this.useToggleLink && this.value.length > this.maxVisibleTags;
+
+        return {
             tagText: "",
             tagToggle: !isClosed,
-            triggerKeys: [13, ' ']
+            triggerKeys: [13, " "]
         };
     },
     computed: {
         tagContainerClasses() {
             return {
-                "disabled": this.disabled
-            }
+                disabled: this.disabled
+            };
         },
         tagModels() {
             return this.value.map(createTag);
@@ -115,8 +113,7 @@ export default {
             return Object.keys(this.$listeners).includes(eventName);
         }
     }
-}
-
+};
 </script>
 
 <style lang="scss">
@@ -125,7 +122,7 @@ export default {
 @import "theme/blue";
 @import "scss/mixins";
 
-// Puts a little graphic in place of the text-input 
+// Puts a little graphic in place of the text-input
 // when the input is not in focus
 @mixin newTagHoverButton() {
     .vue-tags-input .ti-tags .ti-new-tag-input-wrapper {
@@ -143,7 +140,7 @@ export default {
     }
 }
 
-// general style butchering 
+// general style butchering
 @mixin matchBootstrapStyling() {
     // TODO: actually match the bootstrap button classes in
     // here either by importing mixins or just using colors
@@ -159,7 +156,7 @@ export default {
             font-size: 0.8rem;
             font-weight: 400;
         }
-        &.tag-area { 
+        &.tag-area {
             background-color: transparent;
         }
     }
@@ -177,7 +174,6 @@ export default {
 }
 
 .tags-display {
-
     // adds in a graphic in place of the text input
     @include newTagHoverButton();
 

@@ -77,7 +77,6 @@ var CollectionViewEdit = _super.extend(
                         }
                     }
                 });
-            
 
             let el = $where.find(".tags-display")[0];
             let propsData = {
@@ -85,7 +84,7 @@ var CollectionViewEdit = _super.extend(
                 disabled: false,
                 context: "collection-view-edit"
             };
-            
+
             let vm = mountModelTags(propsData, el);
 
             let toggleEditor = () => {

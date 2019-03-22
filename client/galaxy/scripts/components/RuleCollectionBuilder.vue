@@ -583,7 +583,6 @@ Vue.use(BootstrapVue);
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
 
-
 const ColumnSelector = {
     template: `
         <div class="rule-column-selector" v-if="!multiple || !ordered">

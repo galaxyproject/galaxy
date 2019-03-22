@@ -60,5 +60,5 @@ describe("Tags/model.js", () => {
             assert.equal(model.text, expectedLabel);
             assert.equal(model.toString(), expectedLabel);
         });
-    })
+    });
 });

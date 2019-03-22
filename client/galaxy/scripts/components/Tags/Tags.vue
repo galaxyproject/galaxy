@@ -1,5 +1,6 @@
 <template>
-    <stateless-tags v-model="observedTags" 
+    <stateless-tags
+        v-model="observedTags"
         :disabled="disabled"
         :autocomplete-items="autocompleteItems"
         @tag-click="onClick"
@@ -10,7 +11,6 @@
 </template>
 
 <script>
-
 import Vue from "vue";
 import VueRx from "vue-rx";
 import { mapActions } from "vuex";
@@ -22,7 +22,6 @@ import { TagService } from "./tagService";
 Vue.use(VueRx);
 
 export default {
-
     components: {
         StatelessTags
     },
@@ -60,21 +59,22 @@ export default {
             )
         };
     },
-    
-    methods: {
 
+    methods: {
         onClick(tag) {
             this.$emit("tag-click", tag);
         },
 
         beforeAddingTag({ tag, addTag }) {
-            this.tagService.save(tag)
+            this.tagService
+                .save(tag)
                 .then(() => addTag(tag))
                 .catch(err => console.warn("Unable to save tag", err));
         },
 
         beforeDeletingTag({ tag, deleteTag }) {
-            this.tagService.delete(tag)
+            this.tagService
+                .delete(tag)
                 .then(() => deleteTag(tag))
                 .catch(err => console.warn("Unable to delete tag", err));
         },
@@ -89,10 +89,9 @@ export default {
 
         ...mapActions(["updateTags", "initializeTags"])
     },
-    
+
     mounted() {
         this.initializeTags({ key: this.storeKey, tags: this.tags });
     }
-}
-
+};
 </script>

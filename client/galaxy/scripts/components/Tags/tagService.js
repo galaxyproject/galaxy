@@ -14,9 +14,7 @@ import { Subject } from "rxjs";
 import { map, filter, debounceTime, switchMap, distinctUntilChanged } from "rxjs/operators";
 
 export class TagService {
-
     constructor({ id, itemClass, context, debounceInterval = 150 }) {
-
         this.id = id;
         this.itemClass = itemClass;
         this.context = context;
@@ -25,7 +23,6 @@ export class TagService {
         // Buffer for autocomplete text changes
         this._searchText = new Subject();
     }
-
 
     /**
      * Autocomplete observable. Subscribe to this object to get updates to
@@ -39,7 +36,7 @@ export class TagService {
             debounceTime(this.debounceInterval),
             distinctUntilChanged(),
             switchMap(txt => this.autocomplete(txt))
-        )
+        );
     }
 
     /**
@@ -48,7 +45,6 @@ export class TagService {
     set autocompleteSearchText(txt) {
         this._searchText.next(txt);
     }
-
 
     /**
      * Save tag, input can be text string or tag model
@@ -99,7 +95,6 @@ export class TagService {
         }
         return parseAutocompleteResults(response.data).map(createTag);
     }
-
 }
 
 /**

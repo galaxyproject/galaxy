@@ -5,7 +5,7 @@ import $ from "jquery";
 export default {
     props: ["options", "value", "placeholder"],
     template: `<select><slot></slot></select>`,
-    mounted: function () {
+    mounted: function() {
         var vm = this;
         $(this.$el)
             // init select2
@@ -13,25 +13,25 @@ export default {
             .val(this.value)
             .trigger("change")
             // emit event on change.
-            .on("change", function (event) {
+            .on("change", function(event) {
                 vm.$emit("input", event.val);
             });
     },
     watch: {
-        value: function (value) {
+        value: function(value) {
             // update value
             $(this.$el).val(value);
         },
-        options: function (options) {
+        options: function(options) {
             // update options
             $(this.$el)
                 .empty()
                 .select2({ data: options });
         }
     },
-    destroyed: function () {
+    destroyed: function() {
         $(this.$el)
             .off()
             .select2("destroy");
     }
-}
+};

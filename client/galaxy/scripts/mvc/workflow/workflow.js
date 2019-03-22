@@ -138,7 +138,7 @@ const WorkflowItemView = Backbone.View.extend({
     },
 
     renderTagEditor: function() {
-        let el = $(this.el).find('.tags-display')[0];
+        let el = $(this.el).find(".tags-display")[0];
         let propsData = {
             model: this.model,
             disabled: false,

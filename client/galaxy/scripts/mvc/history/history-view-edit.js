@@ -162,9 +162,9 @@ var HistoryViewEdit = _super.extend(
                 disabled: false,
                 context: "history-view-edit"
             };
-            
+
             let vm = mountModelTags(propsData, el);
-            
+
             // tag icon button open/closes
             let activator = faIconButton({
                 title: _l("Edit history tags"),
@@ -172,7 +172,7 @@ var HistoryViewEdit = _super.extend(
                 faIcon: "fa-tags",
                 tooltipConfig: { placement: "top" }
             }).appendTo($where.find(".controls .actions"));
-            
+
             activator.on("click", () => {
                 $(vm.$el).toggleClass("active");
             });

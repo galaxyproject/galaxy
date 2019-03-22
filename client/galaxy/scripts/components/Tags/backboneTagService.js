@@ -6,7 +6,6 @@ import { TagService } from "./tagService";
 // of recreating reactivity, so I expect this will probably die soon
 
 export class BackboneTagService extends TagService {
-
     constructor(props) {
         super(props);
         this.model = props.model;
@@ -37,5 +36,4 @@ export class BackboneTagService extends TagService {
         await this.model.save({ tags });
         return tag;
     }
-
 }

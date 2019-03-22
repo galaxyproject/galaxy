@@ -17,18 +17,17 @@ function TagModel(props = {}) {
 
     // Need to do Object.defineProperty instead of a class getter to make
     // style enumerable for vue-tags-input
-    Object.defineProperty(this, 'style', { 
+    Object.defineProperty(this, "style", {
         enumerable: true,
         get: function() {
             if (this.text.startsWith("name:")) {
-        
                 let { primary, contrasting, darker } = keyedColorScheme(this.text);
-    
+
                 let styles = {
-                    'background-color': primary,
-                    'color': contrasting,
-                    'border-color': darker
-                }
+                    "background-color": primary,
+                    color: contrasting,
+                    "border-color": darker
+                };
 
                 return Object.keys(styles)
                     .map(prop => `${prop}: ${styles[prop]}`)
@@ -39,17 +38,15 @@ function TagModel(props = {}) {
     });
 
     // Changes name:foo to #foo
-    Object.defineProperty(this, 'label', { 
+    Object.defineProperty(this, "label", {
         enumerable: true,
         get: function() {
-            return this.text.startsWith("name:")
-                ? this.text.replace("name:", "#")
-                : this.text;
+            return this.text.startsWith("name:") ? this.text.replace("name:", "#") : this.text;
         }
     });
 
     // valid flag
-    Object.defineProperty(this, 'valid', { 
+    Object.defineProperty(this, "valid", {
         enumerable: false,
         get: function() {
             if (!this.text.length) return false;

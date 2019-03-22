@@ -57,7 +57,6 @@ export function hslToRgb(h, s, l) {
  * from a string key
  */
 export function keyedColorScheme(strKey) {
-
     let hash = hashFnv32a(strKey);
     let hue = Math.abs((hash >> 4) % 360);
     let lightnessOffset = 75;
@@ -68,5 +67,5 @@ export function keyedColorScheme(strKey) {
     let [r, g, b] = hslToRgb(hue, 1.0, lightness / 100);
     let contrasting = contrastingColor(r, g, b);
 
-    return { primary, darker, contrasting }
+    return { primary, darker, contrasting };
 }

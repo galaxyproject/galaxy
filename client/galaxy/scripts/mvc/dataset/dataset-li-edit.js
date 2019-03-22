@@ -302,7 +302,7 @@ var DatasetListItemEdit = _super.extend(
             if (!this.hasUser) {
                 return;
             }
-            
+
             let el = $where.find(".tags-display")[0];
 
             let propsData = {
@@ -310,7 +310,7 @@ var DatasetListItemEdit = _super.extend(
                 disabled: false,
                 context: "dataset-li-edit"
             };
-            
+
             let vm = mountModelTags(propsData, el);
 
             // tag icon button open/closes

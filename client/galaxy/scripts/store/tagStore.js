@@ -4,7 +4,7 @@ export const state = {
 };
 
 export const getters = {
-    getTagsById: (state) => (key) => {
+    getTagsById: state => key => {
         if (state.modelTagCache.has(key)) {
             let tagSet = state.modelTagCache.get(key); //.sort();
             return Array.from(tagSet);
@@ -15,14 +15,14 @@ export const getters = {
 
 export const actions = {
     updateTags({ commit }, { key, tags }) {
-        commit('setTags', { key, tags });
+        commit("setTags", { key, tags });
     },
     initializeTags({ dispatch, state }, { key, tags }) {
         if (!state.modelTagCache.has(key)) {
             dispatch("updateTags", { key, tags });
         }
     }
-}
+};
 
 export const mutations = {
     setTags(state, { key, tags }) {
@@ -33,8 +33,11 @@ export const mutations = {
         state.userTagList = [];
         state.modelTagCache = new Map();
     }
-}
+};
 
 export const tagStore = {
-    state, getters, actions, mutations
-}
+    state,
+    getters,
+    actions,
+    mutations
+};

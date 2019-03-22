@@ -51,7 +51,7 @@ export var DatasetListItemView = _super.extend(
         },
 
         _mountVueNametags: function() {
-            let container = this.$('.nametags')[0];
+            let container = this.$(".nametags")[0];
             let { id, model_class, tags } = this.model.attributes;
             let storeKey = `${model_class}-${id}`;
             mountNametags({ storeKey, tags }, container);
@@ -78,7 +78,7 @@ export var DatasetListItemView = _super.extend(
                         self.model.fetch({ silent: true }).done(() => {
                             self.render();
                         });
-                    } else {  
+                    } else {
                         if (_.has(self.model.changed, "tags") && _.keys(self.model.changed).length === 2) {
                             // If only the tags and update time have changed,
                             // rerender specifically the titlebar region.
