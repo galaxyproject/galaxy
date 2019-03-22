@@ -35,7 +35,7 @@ class OIDC(JSAppLauncher):
         rtv = []
         for authnz in trans.user.social_auth:
             rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider})
-        return rtv
+        return json.dumps(rtv)
 
     @web.expose
     def login(self, trans, provider):

@@ -2,6 +2,7 @@
 API operations on Cloud-based storages, such as Amazon Simple Storage Service (S3).
 """
 
+import json
 import logging
 
 from galaxy import exceptions
@@ -132,7 +133,7 @@ class CloudController(BaseAPIController):
         rtv = []
         for dataset in datasets:
             rtv.append(self.datasets_serializer.serialize_to_view(dataset, view='summary'))
-        return rtv
+        return json.dumps(rtv)
 
     @expose_api
     def send(self, trans, payload, **kwargs):
@@ -233,6 +234,6 @@ class CloudController(BaseAPIController):
                                                authz_id=authz_id,
                                                dataset_ids=dataset_ids,
                                                overwrite_existing=payload.get("overwrite_existing", False))
-        return {'sent_dataset_labels': sent,
-                'failed_dataset_labels': failed,
-                'bucket_name': bucket}
+        return json.dumps({'sent_dataset_labels': sent,
+                           'failed_dataset_labels': failed,
+                           'bucket_name': bucket})
