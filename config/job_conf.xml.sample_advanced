@@ -812,8 +812,9 @@
         <destination id="local_lsf_8cpu_16GbRam" runner="cli">
             <param id="shell_plugin">LocalShell</param>
             <param id="job_plugin">LSF</param>
-            <param id="memory">16000</param>
-            <param id="cores">8</param>
+            <param id="job_memory">16000</param>
+            <param id="job_cores">8</param>
+            <param id="job_project">BigMem</param>
         </destination>
 
         <destination id="condor" runner="condor">
