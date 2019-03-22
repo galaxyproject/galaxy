@@ -5,12 +5,17 @@ reloading the toolbox, etc., across multiple processes.
 
 import importlib
 import logging
+import socket
 import sys
 import threading
 from inspect import ismodule
 
-from kombu import Connection
-from kombu.mixins import ConsumerMixin
+from kombu import (
+    Consumer,
+    Queue,
+    uuid,
+)
+from kombu.mixins import ConsumerProducerMixin
 from kombu.pools import producers
 from six.moves import reload_module
 
@@ -29,40 +34,88 @@ def send_local_control_task(app, task, kwargs={}):
     log.info("Queuing async task %s for %s." % (task, app.config.server_name))
     payload = {'task': task,
                'kwargs': kwargs}
-    try:
-        c = Connection(app.config.amqp_internal_connection)
-        with producers[c].acquire(block=True) as producer:
-            producer.publish(payload,
-                             exchange=galaxy.queues.galaxy_exchange,
-                             declare=[galaxy.queues.galaxy_exchange] + [galaxy.queues.control_queue_from_config(app.config)],
-                             routing_key='control.%s' % app.config.server_name)
-    except Exception:
-        log.exception("Error queueing async task: %s.", payload)
+    routing_key = 'control.%s' % app.config.server_name
+    control_task = ControlTask(app.control_worker)
+    control_task.send_task(payload, routing_key, local=True, get_response=False)
 
 
-def send_control_task(app, task, noop_self=False, kwargs={}):
+def send_control_task(app, task, noop_self=False, get_response=False, routing_key='control.*', kwargs={}):
     """
     This sends a control task out to all processes, useful for things like
     reloading a data table, which needs to happen individually in all
     processes.
+    Set noop_self to True to not run task for current process.
+    Set get_response to True to wait for and return the task results
+    as a list.
     """
     log.info("Sending %s control task." % task)
     payload = {'task': task,
                'kwargs': kwargs}
     if noop_self:
         payload['noop'] = app.config.server_name
-    try:
-        c = Connection(app.config.amqp_internal_connection)
-        with producers[c].acquire(block=True) as producer:
-            control_queues = galaxy.queues.all_control_queues_for_declare(app.config, app.application_stack)
-            producer.publish(payload, exchange=galaxy.queues.galaxy_exchange,
-                             declare=[galaxy.queues.galaxy_exchange] + control_queues,
-                             retry=True,
-                             routing_key='control')
-    except Exception:
-        # This is likely connection refused.
-        # TODO Use the specific Exception above.
-        log.exception("Error sending control task: %s.", payload)
+    control_task = ControlTask(app.control_worker)
+    return control_task.send_task(payload=payload, routing_key=routing_key, get_response=get_response)
+
+
+class ControlTask(object):
+
+    def __init__(self, control_worker):
+        self.control_worker = control_worker
+        self.correlation_id = None
+        self.response = object()
+        self._response = self.response
+
+    @property
+    def connection(self):
+        return self.control_worker.connection
+
+    @property
+    def control_queue(self):
+        return self.control_worker.control_queue
+
+    @property
+    def declare_queues(self):
+        return self.control_worker.declare_queues
+
+    def on_response(self, message):
+        if message.properties['correlation_id'] == self.correlation_id:
+            self.response = message.payload['result']
+
+    def send_task(self, payload, routing_key, local=False, get_response=False, timeout=60):
+        if local:
+            # TODO: This would probably still be received on all queues if a real task broker is used.
+            # we should probably use a dedicated direct exchange.
+            declare_queues = [self.control_queue]
+        else:
+            declare_queues = self.declare_queues
+        reply_to = None
+        self.correlation_id = None
+        callback_queue = []
+        if get_response:
+            callback_queue = [Queue(uuid(), exclusive=True, auto_delete=True)]
+            reply_to = callback_queue[0].name
+            self.correlation_id = uuid()
+        try:
+            with producers[self.connection].acquire(block=True) as producer:
+                producer.publish(payload,
+                                 exchange=declare_queues[0].exchange,
+                                 declare=declare_queues + callback_queue,
+                                 routing_key=routing_key,
+                                 reply_to=reply_to,
+                                 correlation_id=self.correlation_id,
+                                 )
+            if get_response:
+                with Consumer(self.connection,
+                              on_message=self.on_response,
+                              queues=callback_queue,
+                              no_ack=True):
+                    while self.response is self._response:
+                        self.connection.drain_events(timeout=timeout)
+                return self.response
+        except socket.timeout:
+            log.exception("Error waiting for task: '%s' sent with routing key '%s'", (payload, routing_key))
+        except Exception:
+            log.exception("Error queueing async task: '%s'. for %s", (payload, routing_key))
 
 
 # Tasks -- to be reorganized into a separate module as appropriate.  This is
@@ -236,7 +289,7 @@ control_message_to_task = {'create_panel_section': create_panel_section,
                            'rebuild_toolbox_search_index': rebuild_toolbox_search_index}
 
 
-class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
+class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
     """
     This is a flexible worker for galaxy's queues.  Each process, web or
     handler, will have one of these used for dispatching so called 'control'
@@ -261,11 +314,14 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
             # Allows assignment of a particular queue for this worker.
             self.control_queue = queue
         self.task_mapping = task_mapping
-        self.declare_queues = galaxy.queues.all_control_queues_for_declare(app.config, app.application_stack)
         # TODO we may want to purge the queue at the start to avoid executing
         # stale 'reload_tool', etc messages.  This can happen if, say, a web
         # process goes down and messages get sent before it comes back up.
         # Those messages will no longer be useful (in any current case)
+
+    @property
+    def declare_queues(self):
+        return galaxy.queues.all_control_queues_for_declare(self.app.config, self.app.application_stack)
 
     def bind_and_start(self):
         log.info("Binding and starting galaxy control worker for %s", self.app.config.server_name)
@@ -277,17 +333,29 @@ class GalaxyQueueWorker(ConsumerMixin, threading.Thread):
                          callbacks=[self.process_task])]
 
     def process_task(self, body, message):
+        result = 'NO_RESULT'
         if body['task'] in self.task_mapping:
             if body.get('noop', None) != self.app.config.server_name:
                 try:
                     f = self.task_mapping[body['task']]
                     log.info("Instance '%s' received '%s' task, executing now.", self.app.config.server_name, body['task'])
-                    f(self.app, **body['kwargs'])
+                    result = f(self.app, **body['kwargs'])
                 except Exception:
                     # this shouldn't ever throw an exception, but...
                     log.exception("Error running control task type: %s", body['task'])
+            else:
+                result = 'NO_OP'
         else:
             log.warning("Received a malformed task message:\n%s" % body)
+        if message.properties['reply_to']:
+            self.producer.publish(
+                {'result': result},
+                exchange='',
+                routing_key=message.properties['reply_to'],
+                correlation_id=message.properties['correlation_id'],
+                serializer='json',
+                retry=True,
+            )
         message.ack()
 
     def shutdown(self):
