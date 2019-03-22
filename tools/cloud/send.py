@@ -21,7 +21,7 @@ from galaxy.managers.cloud import CloudManager
 
 
 try:
-    from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
+    from cloudbridge.factory import CloudProviderFactory, ProviderList
 except ImportError:
     CloudProviderFactory = None
     ProviderList = None

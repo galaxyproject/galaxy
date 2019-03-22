@@ -18,7 +18,7 @@ from galaxy.managers import sharable
 from galaxy.util import Params
 
 try:
-    from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
+    from cloudbridge.factory import CloudProviderFactory, ProviderList
 except ImportError:
     CloudProviderFactory = None
     ProviderList = None
