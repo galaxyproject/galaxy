@@ -249,7 +249,7 @@ to provide access to graphical tools in real time.
     </xs:annotation>
     <xs:sequence>
       <xs:element name="url" type="PortURL" minOccurs="0" maxOccurs="1"/>
-    </xs:sequence
+    </xs:sequence>
         <xs:attribute name="name" type="xs:string" use="required">
           <xs:annotation>
             <xs:documentation xml:lang="en">This value defines the name of the entry point.</xs:documentation>
