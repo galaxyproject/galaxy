@@ -1417,15 +1417,7 @@ class JobWrapper(HasResourceParameters):
         if tool_exit_code is not None:
             job.exit_code = tool_exit_code
         # custom post process setup
-        inp_data = dict([(da.name, da.dataset) for da in job.input_datasets])
-        out_data = dict([(da.name, da.dataset) for da in job.output_datasets])
-        inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
-        out_data.update([(da.name, da.dataset) for da in job.output_library_datasets])
-
-        # TODO: eliminate overlap with tools/evaluation.py
-        out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in job.output_dataset_collection_instances])
-        out_collections.update([(obj.name, obj.dataset_collection) for obj in job.output_dataset_collections])
-
+        inp_data, out_data, out_collections = job.io_dicts()
         self.discover_outputs(job, inp_data, out_data, out_collections)
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
