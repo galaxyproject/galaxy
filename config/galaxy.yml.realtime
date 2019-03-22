@@ -13,7 +13,7 @@ uwsgi:
   module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
 
   realtime_map: database/realtime_map.sqlite
-  python-raw: lib/galaxy/web/realtime/rpc/key_type_token_mapping.py
+  python-raw: scripts/realtime/key_type_token_mapping.py
   route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(realtime\.localhost:8080)$ goto:realtime
   route-run: goto:endendend
   route-label: realtime
