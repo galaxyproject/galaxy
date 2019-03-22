@@ -174,15 +174,6 @@ jobs:
       - *save_yarn_cache
       - run: cd client && yarn run build
       - run: cd client && yarn run test
-  js_lint:
-    docker:
-      - image: circleci/node:9-browsers
-    <<: *set_workdir
-    steps:
-      - *restore_yarn_cache
-      - run: cd client && yarn install --frozen-lockfile
-      - *save_yarn_cache
-      - run: cd client && yarn run eslint
 workflows:
   version: 2
   get_code_and_test:
@@ -207,6 +198,4 @@ workflows:
       - check_py3_compatibility:
           <<: *requires_get_code
       - js_unit:
-          <<: *requires_get_code
-      - js_lint:
           <<: *requires_get_code
