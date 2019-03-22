@@ -10,10 +10,12 @@ install:
   - set -e
   - pip install tox
   - |
-      sh scripts/common_startup.sh
-      wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite
-      mv db_gx_rev_0127.sqlite database/universe.sqlite
-      sh manage_db.sh -c ./config/galaxy.yml.sample upgrade
+    if [ "$TOX_ENV" == "py27-first_startup" ]; then
+        sh scripts/common_startup.sh
+        wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite
+        mv db_gx_rev_0127.sqlite database/universe.sqlite
+        sh manage_db.sh -c ./config/galaxy.yml.sample upgrade
+    fi
 script: tox -e $TOX_ENV
 notifications:
   email: false
