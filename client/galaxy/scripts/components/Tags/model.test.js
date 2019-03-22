@@ -1,3 +1,4 @@
+/* global expect */
 import { createTag, diffTags } from "./model";
 
 describe("Tags/model.js", () => {
@@ -47,6 +48,17 @@ describe("Tags/model.js", () => {
             assert(result[0].equals(createTag("b")), true);
             assert(result[1].equals(source[2]), true);
             assert(result[1].equals(createTag("c")), true);
+        });
+    });
+
+    describe("handles name tags", () => {
+        it("should accept a #label", () => {
+            let testLabel = "#abc";
+            let expectedLabel = "name:abc";
+            let model = createTag(testLabel);
+            assert.equal(model, expectedLabel);
+            assert.equal(model.text, expectedLabel);
+            assert.equal(model.toString(), expectedLabel);
         });
     });
 });

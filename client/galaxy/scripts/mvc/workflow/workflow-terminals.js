@@ -160,12 +160,12 @@ var Terminal = Backbone.Model.extend({
         let output_val = val;
         if (this.multiple) {
             // emulate list input
-            let description = new CollectionTypeDescription('list');
+            let description = new CollectionTypeDescription("list");
             if (val.collectionType === description.collectionType) {
                 // No mapping over necessary
                 return;
             }
-            output_val = val.effectiveMapOver ? val.effectiveMapOver(description): val;
+            output_val = val.effectiveMapOver ? val.effectiveMapOver(description) : val;
         }
 
         if (!this.mapOver().equal(val)) {
@@ -414,7 +414,7 @@ var InputTerminal = BaseInputTerminal.extend({
                     // collection (yet...)
                     return false;
                 }
-                if (otherCollectionType.collectionType.endsWith('paired')) {
+                if (otherCollectionType.collectionType.endsWith("paired")) {
                     // shouldn't process pairs in multiple="true" input
                     return false;
                 }
