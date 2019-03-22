@@ -4,9 +4,8 @@ from abc import (
     ABCMeta,
     abstractmethod
 )
-from uuid import uuid4
-
 from logging import getLogger
+from uuid import uuid4
 
 import six
 
