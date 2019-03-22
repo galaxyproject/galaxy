@@ -734,6 +734,10 @@ QUnit.test("select-content", function(assert) {
             select.$(".ui-select:last").css("display") == (options.selectfields == 1 ? "block" : "none"),
             "Last select visibility"
         );
+        assert.ok(
+            (select.button_dialog.$el.css("display") != "none") === options.showdialog,
+            "Data dialog button visible"
+        );
         _testSelect("first", options);
         _testSelect("last", options);
     };
@@ -758,7 +762,8 @@ QUnit.test("select-content", function(assert) {
         lastvalue: "id2",
         lastlabel: "hid2: name2",
         lastlength: 3,
-        lastmultiple: false
+        lastmultiple: false,
+        showdialog: true
     };
     _test(initial);
 
@@ -774,7 +779,8 @@ QUnit.test("select-content", function(assert) {
         lastvalue: "id2",
         lastlabel: "hid2: name2",
         lastlength: 3,
-        lastmultiple: true
+        lastmultiple: true,
+        showdialog: true
     });
 
     select.model.set("multiple", false);
@@ -789,7 +795,8 @@ QUnit.test("select-content", function(assert) {
         lastvalue: "id2",
         lastlabel: "hid2: name2",
         lastlength: 3,
-        lastmultiple: false
+        lastmultiple: false,
+        showdialog: false
     });
 
     select.model.set("type", "module_data_collection");
@@ -803,7 +810,8 @@ QUnit.test("select-content", function(assert) {
         lastvalue: "id2",
         lastlabel: "hid2: name2",
         lastlength: 3,
-        lastmultiple: true
+        lastmultiple: true,
+        showdialog: false
     });
 
     select.model.set("type", "module_data");
@@ -817,7 +825,8 @@ QUnit.test("select-content", function(assert) {
         lastvalue: "id0",
         lastlabel: "hid0: name0",
         lastlength: 2,
-        lastmultiple: true
+        lastmultiple: true,
+        showdialog: true
     });
 
     select.model.set("type", "data");

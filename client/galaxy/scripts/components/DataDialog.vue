@@ -1,5 +1,5 @@
 <template>
-    <b-modal class="data-dialog-modal" v-model="modalShow" :ok-only="true" ok-title="Close">
+    <b-modal class="data-dialog-modal" v-if="modalShow" v-model="modalShow" :ok-only="true" ok-title="Close">
         <template slot="modal-header">
             <b-input-group v-if="optionsShow">
                 <b-input v-model="filter" placeholder="Type to Search" />
