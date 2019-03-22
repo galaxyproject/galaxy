@@ -48,6 +48,7 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="edam_topics" type="EdamTopics" minOccurs="0"/>
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
+        <xs:element name="ports" type="Ports" minOccurs="0" maxOccurs="1" />
         <xs:element name="description" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="tool-descriptions">
             <xs:documentation xml:lang="en"><![CDATA[The value is displayed in
@@ -213,6 +214,56 @@ For more information, see https://planemo.readthedocs.io/en/latest/writing_advan
       <xs:element name="token" type="xs:anyType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="xml" type="xs:anyType" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="Ports">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This is a container tag set for the ``port`` and ``url`` tags
+described in greater detail below. ``ports``s describe RealTimeTool entry points
+to a tool.
+
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="port" type="Port" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="Port" mixed="true">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the ``<ports>`` tag set. Access ports and
+entry point urls are included in this tag set. These are used by RealTimeTools
+to provide access to graphical tools in real time.
+
+```xml
+<ports>
+    <port name="Example name">80<url>landing/index.html</url></port>
+</ports>
+```
+
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="url" type="PortURL" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence
+        <xs:attribute name="name" type="xs:string" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">This value defines the name of the entry point.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="PortURL">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the ``<port>`` tag set. It contains the entry URL.
+
+]]></xs:documentation>
+    </xs:annotation>
   </xs:complexType>
 
   <xs:complexType name="ToolAction">
@@ -5337,6 +5388,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="data_source"/>
       <xs:enumeration value="manage_data"/>
+      <xs:enumeration value="realtime"/>
       <xs:enumeration value="expression"/>
     </xs:restriction>
   </xs:simpleType>
