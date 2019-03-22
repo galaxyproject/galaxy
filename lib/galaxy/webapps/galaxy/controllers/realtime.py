@@ -110,7 +110,7 @@ class RealTime(BaseUIController):
                     return trans.show_error_message('RealTimeTool is not active. If you recently launched this tool it may not be ready yet, please wait a moment and refresh this page.')
         return trans.show_error_message('Access not authorized.')
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def list(self, trans, **kwargs):
         """List all available realtimetools"""
         operation = kwargs.get('operation', None)

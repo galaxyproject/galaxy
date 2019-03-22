@@ -123,7 +123,7 @@ class ToolSource(object):
         """
 
     @abstractmethod
-    def parse_tool_ports(self):
+    def parse_ports(self):
         """ Return port templates to expose.
         """
 

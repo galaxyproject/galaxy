@@ -807,7 +807,7 @@ class Tool(Dictifiable):
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths()
-        self.tool_ports = tool_source.parse_tool_ports()
+        self.ports = tool_source.parse_ports()
 
     def __parse_legacy_features(self, tool_source):
         self.code_namespace = dict()

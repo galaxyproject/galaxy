@@ -417,8 +417,8 @@ class BaseJobRunner(object):
             compute_tmp_directory = job_wrapper.tmp_directory()
 
         tool = job_wrapper.tool
-        # TODO: template tool ports?
-        guest_ports = [port.get('port') for port in tool.tool_ports]
+        # TODO: template RealTimeTool ports?
+        guest_ports = [port.get('port') for port in tool.ports]
         tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through, guest_ports=guest_ports)
         job_info = JobInfo(
             compute_working_directory,
