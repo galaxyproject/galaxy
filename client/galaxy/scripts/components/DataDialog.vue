@@ -1,5 +1,5 @@
 <template>
-    <b-modal class="data-dialog-modal" v-if="modalShow" v-model="modalShow" :ok-only="true" ok-title="Close">
+    <b-modal class="data-dialog-modal" v-if="modalShow" visible ok-only ok-title="Close">
         <template slot="modal-header">
             <b-input-group v-if="optionsShow">
                 <b-input v-model="filter" placeholder="Type to Search" />
@@ -8,7 +8,7 @@
                 </b-input-group-append>
             </b-input-group>
         </template>
-        <b-alert v-if="errorMessage" variant="danger" :show="errorShow"> {{ errorMessage }} </b-alert>
+        <b-alert v-if="errorMessage" variant="danger" show v-html="errorMessage"/>
         <div v-else>
             <div v-if="optionsShow">
                 <b-table
@@ -55,7 +55,7 @@
             </div>
             <div v-else><span class="fa fa-spinner fa-spin" /> <span>Please wait...</span></div>
         </div>
-        <div slot="modal-footer" class="w-100">
+        <div v-if="!errorMessage" slot="modal-footer" class="w-100">
             <b-btn size="sm" class="float-left" v-if="undoShow" @click="load()">
                 <div class="fa fa-caret-left mr-1" />
                 Back
@@ -95,7 +95,6 @@ export default {
         return {
             currentPage: 1,
             errorMessage: null,
-            errorShow: false,
             fields: {
                 name: {
                     sortable: true
