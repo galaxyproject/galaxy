@@ -14,7 +14,7 @@
     "@babel/polyfill": "^7.4.0",
     "@handsontable/vue": "^2.0.0-beta1",
     "@johmun/vue-tags-input": "^2.0.1",
-    "@vue/test-utils": "1.0.0-beta.28",
+    "@vue/test-utils": "1.0.0-beta.29",
     "axios": "^0.18.0",
     "backbone": "1.4.0",
     "bibtex-parse-js": "^0.0.24",
