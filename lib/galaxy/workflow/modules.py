@@ -23,6 +23,7 @@ from galaxy.tools import (
     DefaultToolState,
     ToolInputsNotReadyException
 )
+from galaxy.tools.actions import filter_output
 from galaxy.tools.execute import execute, MappingParameters, PartialJobExecution
 from galaxy.tools.parameters import (
     check_param,
@@ -930,6 +931,8 @@ class ToolModule(WorkflowModule):
         data_outputs = []
         if self.tool:
             for name, tool_output in self.tool.outputs.items():
+                if filter_output(tool_output, self.state.inputs):
+                    continue
                 extra_kwds = {}
                 if tool_output.collection:
                     extra_kwds["collection"] = True
