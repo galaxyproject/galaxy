@@ -1,11 +1,13 @@
 language: python
 python: 2.7
+
 matrix:
   include:
     - os: osx
       # No version of Python is available via virtualenv on OS X workers, see https://github.com/travis-ci/travis-ci/issues/2312
       language: generic
       env: TOX_ENV=py27-first_startup
+
 install:
   - set -e
   - pip install tox
@@ -16,6 +18,8 @@ install:
         mv db_gx_rev_0127.sqlite database/universe.sqlite
         sh manage_db.sh -c ./config/galaxy.yml.sample upgrade
     fi
+
 script: tox -e $TOX_ENV
+
 notifications:
   email: false
