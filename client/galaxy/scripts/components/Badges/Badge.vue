@@ -15,7 +15,7 @@ export default {
     },
     computed: {
         tagLabel() {
-            return this.tag.startsWith("name:") ? this.tag.replace("name:", "#") : this.tag;
+            return this.tag.startsWith("name:") ? this.tag.replace("name:", "") : this.tag;
         },
         tagStyles() {
             let { primary, contrasting, darker } = keyedColorScheme(this.tag);

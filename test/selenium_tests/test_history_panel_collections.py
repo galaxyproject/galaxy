@@ -159,7 +159,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         collection_view = self._click_and_wait_for_collection_view(collection_hid)
 
         # the space on the end of the parent_selector is important
-        self.tagging_add(["moo"], parent_selector="#current-history-panel .dataset-collection-panel .controls ")
+        self.tagging_add(["#moo"], parent_selector="#current-history-panel .dataset-collection-panel .controls ")
 
         self.screenshot("history_panel_collection_view_add_nametag")
         collection_view.back.wait_for_and_click()
