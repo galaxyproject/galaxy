@@ -299,9 +299,9 @@ class ImgtJson(Json):
     MetadataElement(name="taxon_names", default=[], desc="taxonID: names", readonly=True, visible=True, no_value=[])
     """
         https://github.com/repseqio/library-imgt/releases
-        Data coming from IMGT server may be used for academic research only, 
+        Data coming from IMGT server may be used for academic research only,
         provided that it is referred to IMGT®, and cited as:
-        "IMGT®, the international ImMunoGeneTics information system® 
+        "IMGT®, the international ImMunoGeneTics information system®
         http://www.imgt.org (founder and director: Marie-Paule Lefranc, Montpellier, France)."
     """
 
@@ -336,7 +336,6 @@ class ImgtJson(Json):
         is_imgt = False
         try:
             with open(file_prefix.filename, "r") as fh:
-                prev_str = ""
                 segment_str = fh.read(load_size)
                 if segment_str.strip().startswith('['):
                     if '"taxonId"' in segment_str and '"anchorPoints"' in segment_str:
@@ -356,7 +355,7 @@ class ImgtJson(Json):
                     tax_names = []
                     for i, entry in enumerate(json_dict):
                         if 'taxonId' in entry:
-                            names = "%d: %s" % (entry['taxonId'],','.join(entry['speciesNames']))
+                            names = "%d: %s" % (entry['taxonId'], ','.join(entry['speciesNames']))
                             tax_names.append(names)
                     dataset.metadata.taxon_names = tax_names
                 except Exception:
