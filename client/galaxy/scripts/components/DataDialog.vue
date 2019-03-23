@@ -44,14 +44,14 @@
                         </b-button>
                     </template>
                 </b-table>
-                <b-pagination v-if="nItems > perPage" v-model="currentPage" :per-page="perPage" :total-rows="nItems" />
-                <div v-if="nItems == 0">
+                <div v-if="nItems === 0">
                     <div v-if="filter">
                         No search results found for: <b>{{ this.filter }}</b
                         >.
                     </div>
                     <div v-else>No entries.</div>
                 </div>
+                <b-pagination v-if="nItems > perPage" v-model="currentPage" :per-page="perPage" :total-rows="nItems" />
             </div>
             <div v-else><span class="fa fa-spinner fa-spin" /> <span>Please wait...</span></div>
         </div>
@@ -115,15 +115,16 @@ export default {
             historyId: null,
             items: [],
             modalShow: true,
+            navigation: [],
             nItems: 0,
             optionsShow: false,
             perPage: 100,
             undoShow: false,
-            url: null,
             values: {}
         };
     },
     computed: {
+        /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
         formatedItems() {
             for (let item of this.items) {
                 if (this.isDataset(item)) {
@@ -140,13 +141,16 @@ export default {
         this.load();
     },
     methods: {
+        /** Returns true if the item is a dataset entry **/
         isDataset: function(item) {
-            return item.history_content_type == "dataset";
+            return item.history_content_type == "dataset" || item.type == "file";
         },
+        /** Called when a filter/search word is entered **/
         filtered: function(items) {
             this.nItems = items.length;
             this.currentPage = 1;
         },
+        /** Collects selected datasets in value array **/
         clicked: function(record) {
             if (this.isDataset(record)) {
                 if (!this.multiple) {
@@ -164,6 +168,7 @@ export default {
                 }
             }
         },
+        /** Called when selection is complete, values are formatted and parsed to external callback **/
         done: function() {
             let results = [];
             Object.values(this.values).forEach(v => {
@@ -182,15 +187,24 @@ export default {
             this.modalShow = false;
             this.callback(results);
         },
-        getHistory: function() {
+        /** Returns the default url of current history **/
+        getHistoryUrl: function() {
             let galaxy = getGalaxyInstance();
             let historyId = galaxy.currHistoryPanel && galaxy.currHistoryPanel.model.id;
             if (historyId) {
                 return `${galaxy.root}api/histories/${historyId}/contents?deleted=false`;
             }
         },
+        /** Travereses server response to identify dataset records **/
         getItems: function(data) {
+            let galaxy = getGalaxyInstance();
             let items = [];
+            if (this.navigation.length == 0) {
+                items.push({
+                    name: "Data Libraries",
+                    url: `${galaxy.root}api/libraries`
+                });
+            }
             let stack = [data];
             while (stack.length > 0) {
                 let root = stack.pop();
@@ -202,24 +216,36 @@ export default {
                     stack.push(root.elements);
                 } else if (root.object) {
                     stack.push(root.object);
+                } else if (root.model_class == "Library") {
+                    root.url = `${galaxy.root}api/libraries/${root.id}/contents`;
+                    items.push(root);
+                } else if (root.type == "file") {
+                    root.name = root.name.substring(1);
+                    items.push(root);
                 } else if (root.hid) {
                     items.push(root);
                 }
             }
             return items;
         },
-        load: function(url) {
-            this.navigation = this.navigation || [];
+        /** Returns and tracks urls for data drilling **/
+        getUrl: function(url) {
             if (url) {
                 this.navigation.push(url);
             } else {
                 this.navigation.pop();
-                if (this.navigation.length > 0) {
-                    url = this.navigation[this.navigation.length - 1];
+                let navigationLength = this.navigation.length;
+                if (navigationLength > 0) {
+                    url = this.navigation[navigationLength - 1];
                 } else {
-                    url = this.getHistory();
+                    url = this.getHistoryUrl();
                 }
             }
+            return url
+        },
+        /** Performs server request to retrieve raw data records **/
+        load: function(url) {
+            url = this.getUrl(url);
             this.filter = null;
             this.optionsShow = false;
             this.undoShow = this.navigation.length > 0;
@@ -228,6 +254,7 @@ export default {
                     .get(url)
                     .then(response => {
                         this.items = this.getItems(response.data);
+                        this.filtered(this.items);
                         this.optionsShow = true;
                     })
                     .catch(e => {
@@ -239,7 +266,7 @@ export default {
                         }
                     });
             } else {
-                this.errorMessage = "Datasets not accessible.";
+                this.errorMessage = "Datasets not available.";
             }
         }
     }
