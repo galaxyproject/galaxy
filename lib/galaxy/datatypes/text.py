@@ -13,7 +13,7 @@ import tempfile
 from six.moves import shlex_quote
 
 from galaxy.datatypes.data import get_file_peek, Text
-from galaxy.datatypes.metadata import DictParameter, MetadataElement, MetadataParameter
+from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
 from galaxy.datatypes.sniff import build_sniff_from_prefix, iter_headers
 from galaxy.util import nice_size, string_as_bool
 
