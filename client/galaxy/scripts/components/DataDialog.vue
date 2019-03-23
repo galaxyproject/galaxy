@@ -1,7 +1,7 @@
 <template>
     <b-modal class="data-dialog-modal" v-if="modalShow" visible ok-only ok-title="Close">
         <template slot="modal-header">
-            <b-input-group v-if="optionsShow">
+            <b-input-group>
                 <b-input v-model="filter" placeholder="Type to Search" />
                 <b-input-group-append>
                     <b-btn :disabled="!filter" @click="filter = ''">Clear</b-btn>
@@ -182,40 +182,45 @@ export default {
             this.modalShow = false;
             this.callback(results);
         },
+        getHistory: function() {
+            let galaxy = getGalaxyInstance();
+            let historyId = galaxy.currHistoryPanel && galaxy.currHistoryPanel.model.id;
+            if (historyId) {
+                return `${galaxy.root}api/histories/${historyId}/contents?deleted=false`;
+            }
+        },
+        getItems: function(data) {
+            let items = [];
+            let stack = [data];
+            while (stack.length > 0) {
+                let root = stack.pop();
+                if (Array.isArray(root)) {
+                    root.forEach(element => {
+                        stack.push(element);
+                    });
+                } else if (root.elements) {
+                    stack.push(root.elements);
+                } else if (root.object) {
+                    stack.push(root.object);
+                } else if (root.hid) {
+                    items.push(root);
+                }
+            }
+            return items;
+        },
         load: function(url) {
-            let Galaxy = getGalaxyInstance();
             this.optionsShow = false;
             this.undoShow = false;
             let hasUrl = !!url;
             if (!hasUrl) {
-                let historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
-                if (historyId) {
-                    url = `${Galaxy.root}api/histories/${historyId}/contents`;
-                } else {
-                    this.errorMessage = "History not accessible.";
-                    return;
-                }
+                url = this.getHistory();
             }
-            axios
+            if (url) {
+                axios
                 .get(url)
                 .then(response => {
-                    this.items = [];
-                    this.stack = [response.data];
+                    this.items = this.getItems(response.data);
                     this.filter = null;
-                    while (this.stack.length > 0) {
-                        let root = this.stack.pop();
-                        if (Array.isArray(root)) {
-                            root.forEach(element => {
-                                this.stack.push(element);
-                            });
-                        } else if (root.elements) {
-                            this.stack.push(root.elements);
-                        } else if (root.object) {
-                            this.stack.push(root.object);
-                        } else if (root.hid) {
-                            this.items.push(root);
-                        }
-                    }
                     this.optionsShow = true;
                     this.undoShow = hasUrl;
                 })
@@ -227,6 +232,9 @@ export default {
                         this.errorMessage = "Server unavailable.";
                     }
                 });
+            } else {
+                this.errorMessage = "Datasets not accessible.";
+            }
         }
     }
 };
