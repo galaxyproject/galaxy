@@ -209,20 +209,26 @@ export default {
             return items;
         },
         load: function(url) {
-            this.optionsShow = false;
-            this.undoShow = false;
-            let hasUrl = !!url;
-            if (!hasUrl) {
-                url = this.getHistory();
+            this.navigation = this.navigation || [];
+            if (url) {
+                this.navigation.push(url);
+            } else {
+                this.navigation.pop();
+                if (this.navigation.length > 0) {
+                    url = this.navigation[this.navigation.length - 1];
+                } else {
+                    url = this.getHistory();
+                }
             }
+            this.filter = null;
+            this.optionsShow = false;
+            this.undoShow = this.navigation.length > 0;
             if (url) {
                 axios
                     .get(url)
                     .then(response => {
                         this.items = this.getItems(response.data);
-                        this.filter = null;
                         this.optionsShow = true;
-                        this.undoShow = hasUrl;
                     })
                     .catch(e => {
                         if (e.response) {
