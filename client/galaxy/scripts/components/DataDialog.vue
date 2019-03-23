@@ -8,7 +8,7 @@
                 </b-input-group-append>
             </b-input-group>
         </template>
-        <b-alert v-if="errorMessage" variant="danger" show v-html="errorMessage"/>
+        <b-alert v-if="errorMessage" variant="danger" show v-html="errorMessage" />
         <div v-else>
             <div v-if="optionsShow">
                 <b-table
@@ -217,21 +217,21 @@ export default {
             }
             if (url) {
                 axios
-                .get(url)
-                .then(response => {
-                    this.items = this.getItems(response.data);
-                    this.filter = null;
-                    this.optionsShow = true;
-                    this.undoShow = hasUrl;
-                })
-                .catch(e => {
-                    if (e.response) {
-                        this.errorMessage =
-                            e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
-                    } else {
-                        this.errorMessage = "Server unavailable.";
-                    }
-                });
+                    .get(url)
+                    .then(response => {
+                        this.items = this.getItems(response.data);
+                        this.filter = null;
+                        this.optionsShow = true;
+                        this.undoShow = hasUrl;
+                    })
+                    .catch(e => {
+                        if (e.response) {
+                            this.errorMessage =
+                                e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
+                        } else {
+                            this.errorMessage = "Server unavailable.";
+                        }
+                    });
             } else {
                 this.errorMessage = "Datasets not accessible.";
             }
