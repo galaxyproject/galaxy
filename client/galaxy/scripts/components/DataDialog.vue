@@ -24,13 +24,13 @@
                 >
                     <template slot="name" slot-scope="data">
                         <i v-if="isDataset(data.item)" class="fa fa-file-o" /> <i v-else class="fa fa-copy" />
-                        {{ data.item.hid }}: {{ data.value }}
-                    </template>
-                    <template slot="extension" slot-scope="data">
                         {{ data.value ? data.value : "-" }}
                     </template>
-                    <template slot="update_time" slot-scope="data">
-                        {{ data.value ? data.value.substring(0, 16).replace("T", " ") : "-" }}
+                    <template slot="details" slot-scope="data">
+                        {{ data.value ? data.value : "-" }}
+                    </template>
+                    <template slot="time" slot-scope="data">
+                        {{ data.value ? data.value : "-" }}
                     </template>
                     <template slot="arrow" slot-scope="data">
                         <b-button
@@ -89,6 +89,10 @@ export default {
         format: {
             type: String,
             default: "url"
+        },
+        library: {
+            type: Boolean,
+            default: true
         }
     },
     data() {
@@ -99,10 +103,10 @@ export default {
                 name: {
                     sortable: true
                 },
-                extension: {
+                details: {
                     sortable: true
                 },
-                update_time: {
+                time: {
                     sortable: true
                 },
                 arrow: {
@@ -138,6 +142,7 @@ export default {
         }
     },
     created: function() {
+        this.galaxy = getGalaxyInstance();
         this.load();
     },
     methods: {
@@ -187,22 +192,40 @@ export default {
             this.modalShow = false;
             this.callback(results);
         },
-        /** Returns the default url of current history **/
+        /** Returns the default url i.e. the url of the current history **/
         getHistoryUrl: function() {
-            let galaxy = getGalaxyInstance();
-            let historyId = galaxy.currHistoryPanel && galaxy.currHistoryPanel.model.id;
+            let historyId = this.galaxy.currHistoryPanel && this.galaxy.currHistoryPanel.model.id;
             if (historyId) {
-                return `${galaxy.root}api/histories/${historyId}/contents?deleted=false`;
+                return `${this.galaxy.root}api/histories/${historyId}/contents?deleted=false`;
             }
         },
-        /** Travereses server response to identify dataset records **/
+        /** Populate record data from raw record source **/
+        populateRecord: function(record) {
+            record.details = record.extension || record.description;
+            record.time = record.update_time || record.create_time;
+            if (record.time) {
+                record.time = record.time.substring(0, 16).replace("T", " ");
+            }
+            if (record.model_class == "Library") {
+                record.url = `${this.galaxy.root}api/libraries/${record.id}/contents`;
+                return record;
+            } else if (record.hid) {
+                record.name = `${record.hid}: ${record.name}`;
+                return record;
+            } else if (record.type == "file") {
+                if (record.name && record.name[0] === "/") {
+                    record.name = record.name.substring(1);
+                }
+                return record;
+            }
+        },
+        /** Traverese raw records from server response **/
         getItems: function(data) {
-            let galaxy = getGalaxyInstance();
             let items = [];
-            if (this.navigation.length == 0) {
+            if (this.library && this.navigation.length == 0) {
                 items.push({
                     name: "Data Libraries",
-                    url: `${galaxy.root}api/libraries`
+                    url: `${this.galaxy.root}api/libraries`
                 });
             }
             let stack = [data];
@@ -216,14 +239,11 @@ export default {
                     stack.push(root.elements);
                 } else if (root.object) {
                     stack.push(root.object);
-                } else if (root.model_class == "Library") {
-                    root.url = `${galaxy.root}api/libraries/${root.id}/contents`;
-                    items.push(root);
-                } else if (root.type == "file") {
-                    root.name = root.name.substring(1);
-                    items.push(root);
-                } else if (root.hid) {
-                    items.push(root);
+                } else {
+                    let record = this.populateRecord(root);
+                    if (record) {
+                        items.push(record);
+                    }
                 }
             }
             return items;
@@ -241,7 +261,7 @@ export default {
                     url = this.getHistoryUrl();
                 }
             }
-            return url
+            return url;
         },
         /** Performs server request to retrieve raw data records **/
         load: function(url) {
