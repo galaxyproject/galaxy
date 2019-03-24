@@ -15,8 +15,8 @@ from galaxy.managers.collections_util import validate_input_element_identifiers
 from galaxy.model import tags
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.matching import MatchingCollections
-from galaxy.model.dataset_collections.registry import DatasetCollectionTypesRegistry
-from galaxy.model.dataset_collections.type_description import CollectionTypeDescriptionFactory
+from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_REGISTRY
+from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.util import (
     odict,
     validation
@@ -36,8 +36,8 @@ class DatasetCollectionManager(object):
     ELEMENTS_UNINITIALIZED = object()
 
     def __init__(self, app):
-        self.type_registry = DatasetCollectionTypesRegistry(app)
-        self.collection_type_descriptions = CollectionTypeDescriptionFactory(self.type_registry)
+        self.type_registry = DATASET_COLLECTION_TYPES_REGISTRY
+        self.collection_type_descriptions = COLLECTION_TYPE_DESCRIPTION_FACTORY
         self.model = app.model
         self.security = app.security
 
@@ -239,9 +239,7 @@ class DatasetCollectionManager(object):
         return dataset_collection
 
     def collection_builder_for(self, dataset_collection):
-        collection_type = dataset_collection.collection_type
-        collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
-        return builder.BoundCollectionBuilder(dataset_collection, collection_type_description)
+        return builder.BoundCollectionBuilder(dataset_collection)
 
     def delete(self, trans, instance_type, id, recursive=False, purge=False):
         dataset_collection_instance = self.get_dataset_collection_instance(trans, instance_type, id, check_ownership=True)

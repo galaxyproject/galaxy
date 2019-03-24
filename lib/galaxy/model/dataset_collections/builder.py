@@ -1,5 +1,6 @@
 from galaxy import model
 from galaxy.util.odict import odict
+from .type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 
 
 def build_collection(type, dataset_instances):
@@ -78,10 +79,12 @@ class CollectionBuilder(object):
 class BoundCollectionBuilder(CollectionBuilder):
     """ More stateful builder that is bound to a particular model object. """
 
-    def __init__(self, dataset_collection, collection_type_description):
+    def __init__(self, dataset_collection):
         self.dataset_collection = dataset_collection
         if dataset_collection.populated:
             raise Exception("Cannot reset elements of an already populated dataset collection.")
+        collection_type = dataset_collection.collection_type
+        collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
         super(BoundCollectionBuilder, self).__init__(collection_type_description)
 
     def populate(self):
