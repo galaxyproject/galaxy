@@ -6,7 +6,9 @@ import os
 import re
 
 import galaxy.model
+from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.structure import UninitializedTree
+from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.model.store.discover import (
     discover_target_directory,
     discovered_file_for_element,
@@ -83,7 +85,6 @@ def collect_dynamic_outputs(
     tool = job_context.tool
     app = job_context.app
     sa_session = job_context.sa_session
-    collections_service = app.dataset_collections_service
     job_working_directory = job_context.job_working_directory
 
     # unmapped outputs do not correspond to explicit outputs of the tool, they were inferred entirely
@@ -110,15 +111,15 @@ def collect_dynamic_outputs(
             persist_elements_to_folder(job_context, elements, library_folder)
         elif destination_type == "hdca":
             # create or populate a dataset collection in the history
-            history = job_context.job.history
             assert "collection_type" in unnamed_output_dict
             object_id = destination.get("object_id")
             if object_id:
                 hdca = sa_session.query(galaxy.model.HistoryDatasetCollectionAssociation).get(int(object_id))
             else:
+                history = job_context.job.history
                 name = unnamed_output_dict.get("name", "unnamed collection")
                 collection_type = unnamed_output_dict["collection_type"]
-                collection_type_description = collections_service.collection_type_descriptions.for_collection_type(collection_type)
+                collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
                 structure = UninitializedTree(collection_type_description)
                 hdca = collections_service.precreate_dataset_collection_instance(
                     trans, history, name, structure=structure
@@ -136,9 +137,7 @@ def collect_dynamic_outputs(
             add_to_discovered_files(elements)
 
             collection = hdca.collection
-            collection_builder = collections_service.collection_builder_for(
-                collection
-            )
+            collection_builder = builder.BoundCollectionBuilder(collection)
             job_context.populate_collection_elements(
                 collection,
                 collection_builder,
@@ -166,10 +165,7 @@ def collect_dynamic_outputs(
         collection.populated_state = collection.populated_states.NEW
 
         try:
-
-            collection_builder = collections_service.collection_builder_for(
-                collection
-            )
+            collection_builder = builder.BoundCollectionBuilder(collection)
             dataset_collectors = [dataset_collector(description) for description in output_collection_def.dataset_collector_descriptions]
             output_name = output_collection_def.name
             filenames = job_context.find_files(output_name, collection, dataset_collectors)
@@ -278,8 +274,6 @@ class JobContext(ModelPersistenceContext):
             )
             element_datasets.append((element_identifiers, dataset))
 
-        sa_session = self.sa_session
-
         add_datasets_timer = ExecutionTimer()
         self.add_datasets_to_history([d for (ei, d) in element_datasets])
         log.debug(
@@ -302,7 +296,7 @@ class JobContext(ModelPersistenceContext):
 
             dataset.raw_set_dataset_state('ok')
 
-        sa_session.flush()
+        self.flush()
 
     def persist_object(self, obj):
         self.sa_session.add(obj)
