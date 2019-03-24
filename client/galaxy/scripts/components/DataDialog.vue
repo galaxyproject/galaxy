@@ -88,7 +88,7 @@ export default {
         },
         format: {
             type: String,
-            default: "url"
+            default: "download"
         },
         library: {
             type: Boolean,
@@ -150,7 +150,7 @@ export default {
         isDataset: function(item) {
             return item.history_content_type == "dataset" || item.type == "file";
         },
-        /** Called when a filter/search word is entered **/
+        /** Resets pagination when a filter/search word is entered **/
         filtered: function(items) {
             this.nItems = items.length;
             this.currentPage = 1;
@@ -178,9 +178,8 @@ export default {
             let results = [];
             Object.values(this.values).forEach(v => {
                 let value = null;
-                if (this.format == "url") {
-                    let host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
-                    value = `${host}/api/histories/${v.history_id}/contents/${value}/display`;
+                if (this.format) {
+                    value = v[this.format];
                 } else {
                     value = v;
                 }
@@ -199,6 +198,10 @@ export default {
                 return `${this.galaxy.root}api/histories/${historyId}/contents?deleted=false`;
             }
         },
+        /** Build record url **/
+        addHostToUrl: function(url) {
+            return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${url}`;
+        },
         /** Populate record data from raw record source **/
         populateRecord: function(record) {
             record.details = record.extension || record.description;
@@ -211,11 +214,14 @@ export default {
                 return record;
             } else if (record.hid) {
                 record.name = `${record.hid}: ${record.name}`;
+                record.download = this.addHostToUrl(`${record.url}/display`);
                 return record;
             } else if (record.type == "file") {
                 if (record.name && record.name[0] === "/") {
                     record.name = record.name.substring(1);
                 }
+                let url = `${this.galaxy.root}api/libraries/datasets/download/uncompressed?ld_ids=${record.id}`;
+                record.download = this.addHostToUrl(url);
                 return record;
             }
         },
