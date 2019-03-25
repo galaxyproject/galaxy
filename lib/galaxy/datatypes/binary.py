@@ -97,6 +97,69 @@ class Idat(Binary):
             return False
 
 
+class Cel(Binary):
+    """ Cel File format described at:
+            http://media.affymetrix.com/support/developer/powertools/changelog/gcos-agcc/cel.html
+    """
+
+    file_ext = "cel"
+    edam_format = "format_1638"
+    edam_data = "data_3110"
+    MetadataElement(name="version", default="3", desc="Version", readonly=True, visible=True,
+                    optional=True, no_value="3")
+
+    def sniff(self, filename):
+        """
+        Try to guess if the file is a Cel file.
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('affy_v_agcc.cel')
+        >>> Cel().sniff(fname)
+        True
+        >>> fname = get_test_fname('affy_v_3.cel')
+        >>> Cel().sniff(fname)
+        True
+        >>> fname = get_test_fname('affy_v_4.cel')
+        >>> Cel().sniff(fname)
+        True
+        >>> fname = get_test_fname('test.gal')
+        >>> Cel().sniff(fname)
+        False
+        """
+        with open(filename, 'rb') as handle:
+            header_bytes = handle.read(5)
+        found_cel_4 = False
+        found_cel_3 = False
+        found_cel_agcc = False
+        if header_bytes.decode("utf8", errors="ignore")[0] == '@':
+            found_cel_4 = True
+        elif struct.unpack("<bb", header_bytes[:2]) == (59, 1):
+            found_cel_agcc = True
+        elif header_bytes.decode("utf8", errors="ignore") == '[CEL]':
+            found_cel_3 = True
+        return found_cel_3 or found_cel_4 or found_cel_agcc
+
+    def set_meta(self, dataset, **kwd):
+        """
+        Set metadata for Cel file.
+        """
+        with open(dataset.file_name, 'rb') as handle:
+            header_bytes = handle.read(5)
+        if header_bytes.decode("utf8", errors="ignore")[0] == '@':
+            dataset.metadata.version = "4"
+        elif header_bytes.decode("utf8", errors="ignore")[0] == ';':
+            dataset.metadata.version = "agcc"
+        elif header_bytes.decode("utf8", errors="ignore") == '[CEL]':
+            dataset.metadata.version = "3"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.blurb = "Cel version: %s" % dataset.metadata.version
+            dataset.peek = get_file_peek(dataset.file_name)
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+
 class MashSketch(Binary):
     """
         Mash Sketch file.
