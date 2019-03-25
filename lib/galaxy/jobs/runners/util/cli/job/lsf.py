@@ -2,6 +2,7 @@
 # non-submit host and using a Slurm cluster.
 from logging import getLogger
 
+from galaxy.jobs import JobState
 try:
     from galaxy.model import Job
     job_states = Job.states
@@ -9,7 +10,6 @@ except ImportError:
     # Not in Galaxy, map Galaxy job states to Pulsar ones.
     from pulsar.util import enum
     job_states = enum(RUNNING='running', OK='complete', QUEUED='queued', ERROR="failed")
-
 from ..job import BaseJobExec
 
 log = getLogger(__name__)
@@ -92,6 +92,18 @@ class LSF(BaseJobExec):
             log.warning("Job id '%s' not found LSF status check" % job_id)
             return job_states.OK
         return self._get_job_state(status)
+
+    def get_failure_reason(self, job_id):
+        return "bjobs -l " + job_id
+
+    def parse_failure_reason(self, reason, job_id):
+        # LSF will produce the following in the job output file:
+        # TERM_MEMLIMIT: job killed after reaching LSF memory usage limit.
+        # Exited with exit code 143.
+        for line in reason.splitlines():
+            if "TERM_MEMLIMIT" in line:
+                return JobState.runner_states.MEMORY_LIMIT_REACHED
+        return None
 
     def _get_job_state(self, state):
         # based on:
