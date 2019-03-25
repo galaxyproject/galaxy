@@ -1,5 +1,4 @@
 import logging
-import struct
 
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import (
