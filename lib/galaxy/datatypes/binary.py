@@ -20,6 +20,7 @@ import pysam
 import pysam.bcftools
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
+from galaxy.datatypes.data import get_file_peek
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
