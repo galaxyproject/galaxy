@@ -8,7 +8,7 @@ from galaxy.web.stack.database_heartbeat import DatabaseHeartbeat
 
 @pytest.fixture
 def heartbeat_app(database_app):
-    with setup_heartbeat_app(database_app) as heartbeat_app:
+    with setup_heartbeat_app(database_app()) as heartbeat_app:
         yield heartbeat_app
 
 

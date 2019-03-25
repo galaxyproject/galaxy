@@ -15,7 +15,7 @@ def create_base_test(connection):
     yield app
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture()
 def sqlite_connection():
     fd, path = tempfile.mkstemp()
     os.close(fd)
@@ -23,20 +23,28 @@ def sqlite_connection():
     os.remove(path)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture()
 def sqlite_app(sqlite_connection):
-    with create_base_test(sqlite_connection) as app:
-        yield app
+
+    def create_app():
+        with create_base_test(sqlite_connection) as app:
+            return app
+
+    return create_app
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture()
 def postgres_app(postgresql_proc):
     connection = "postgresql://{p.user}@{p.host}:{p.port}/".format(p=postgresql_proc)
-    with create_base_test(connection) as app:
-        yield app
+
+    def create_app():
+        with create_base_test(connection) as app:
+            return app
+
+    return create_app
 
 
-@pytest.fixture(params=['postgres_app', 'sqlite_app'], scope='session')
+@pytest.fixture(params=['postgres_app', 'sqlite_app'])
 def database_app(request):
     if request.param == 'postgres_app':
         if not which('initdb'):
