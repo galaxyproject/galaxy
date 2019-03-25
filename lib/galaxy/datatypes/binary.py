@@ -149,7 +149,7 @@ class Cel(Binary):
             dataset.metadata.version = "4"
         elif struct.unpack(">bb", header_bytes[:2]) == (59, 1):
             dataset.metadata.version = "agcc"
-        elif header_bytes[:5].decode("utf8", errors="ignore") == '[CEL]':
+        elif header_bytes.decode("utf8", errors="ignore").startswith('[CEL]'):
             dataset.metadata.version = "3"
 
     def set_peek(self, dataset, is_multi_byte=False):
