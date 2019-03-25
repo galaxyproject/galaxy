@@ -144,7 +144,7 @@ class Cel(Binary):
         """
         with open(dataset.file_name, 'rb') as handle:
             header_bytes = handle.read(5)
-        if header_bytes.decode("utf8", errors="ignore")[0] == '@':
+        if struct.unpack("<ii", header_bytes[:9]) == (64, 4):
             dataset.metadata.version = "4"
         elif header_bytes.decode("utf8", errors="ignore")[0] == ';':
             dataset.metadata.version = "agcc"
