@@ -126,7 +126,7 @@ class Cel(Binary):
         False
         """
         with open(filename, 'rb') as handle:
-            header_bytes = handle.read(5)
+            header_bytes = handle.read(8)
         found_cel_4 = False
         found_cel_3 = False
         found_cel_agcc = False
