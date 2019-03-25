@@ -68,6 +68,7 @@ for env in $ENVS; do
                 -e "s/^pyinotify==\([^ ;]\{1,\}\).*$/pyinotify==\1 ; sys_platform != 'win32' and sys_platform != 'darwin' and sys_platform != 'sunos5'/" \
                 -e "s/^python-dateutil==\([^ ;]\{1,\}\).*$/python-dateutil==\1/" \
                 -e "s/^subprocess32==\([^ ;]\{1,\}\).*$/subprocess32==\1 ; python_version < '3.0'/" \
+                -e "s/^typing==\([^ ;]\{1,\}\).*$/typing==\1 ; python_version < '3.5'/" \
                 pinned-requirements.txt pinned-dev-requirements.txt
 done
 
