@@ -135,7 +135,7 @@ class Cel(Binary):
             found_cel_4 = True
         elif struct.unpack(">bb", header_bytes[:2]) == (59, 1):
             found_cel_agcc = True
-        elif header_bytes.decode("utf8", errors="ignore") == '[CEL]':
+        elif header_bytes[:5].decode("utf8", errors="ignore") == '[CEL]':
             found_cel_3 = True
         return found_cel_3 or found_cel_4 or found_cel_agcc
 
@@ -149,7 +149,7 @@ class Cel(Binary):
             dataset.metadata.version = "4"
         elif struct.unpack(">bb", header_bytes[:2]) == (59, 1):
             dataset.metadata.version = "agcc"
-        elif header_bytes.decode("utf8", errors="ignore") == '[CEL]':
+        elif header_bytes[:5].decode("utf8", errors="ignore") == '[CEL]':
             dataset.metadata.version = "3"
 
     def set_peek(self, dataset, is_multi_byte=False):
