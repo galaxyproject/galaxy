@@ -1,7 +1,7 @@
 import logging
 
 from galaxy.datatypes import data
-from galaxy.datatypes.binary import (
+from galaxy.datatypes.binary import (  # noqa: F401
     Binary,
     Cel
 )
