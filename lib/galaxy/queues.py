@@ -18,11 +18,13 @@ def all_control_queues_for_declare(config, application_stack):
     """
     For in-memory routing (used by sqlalchemy-based transports), we need to be able to
     build the entire routing table in producers.
-
-    Refactor later to actually persist this somewhere instead of building it repeatedly.
     """
-    possible_stack_queues = [Queue("control.%s.%s" % (config.server_name.split('.')[0], wkr['id']), galaxy_exchange, routing_key='control') for wkr in application_stack.workers()]
-    return possible_stack_queues + [Queue('control.%s' % q, galaxy_exchange, routing_key='control') for q in config.server_names]
+    # Get all active processes and construct queues for each process
+    if application_stack and application_stack.app:
+        server_names = (p.server_name for p in application_stack.app.database_heartbeat.get_active_processes())
+    else:
+        server_names = config.server_names
+    return [Queue("control.%s" % server_name, galaxy_exchange, routing_key='control.*') for server_name in server_names]
 
 
 def control_queue_from_config(config):
