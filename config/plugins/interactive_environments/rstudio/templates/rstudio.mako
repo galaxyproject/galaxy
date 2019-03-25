@@ -33,6 +33,7 @@ ${ ie.load_default_js() }
 <script type="text/javascript">
 ${ ie.default_javascript_variables() }
 var notebook_access_url = '${ notebook_access_url }';
+${ ie.plugin_require_config() }
 requirejs(['galaxy.interactive_environments', 'plugin/rstudio'], function(IES){
     window.IES = IES;
     IES.load_when_ready(ie_readiness_url, function(){
