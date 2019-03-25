@@ -361,7 +361,8 @@ var View = Backbone.View.extend({
                     },
                     {
                         multiple: cnf.multiple,
-                        format: null
+                        format: null,
+                        library: false
                     }
                 );
             }
