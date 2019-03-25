@@ -6,9 +6,8 @@
 # appropriate `apt-get/pip install` statements.
 ---
 -
-    image: erasche/docker-rstudio-notebook:17.01
+    image: erasche/docker-rstudio-notebook:19.05
     description: |
-        If you've ever done R analysis, you probably used RStudio. This
-        familiar R analysis software suite will let you explore your datasets
-        in depth. Comes with ggplot2, RODBC, maps, shinyapps, knitr, LaTeX,
-        bioconductor, cummeRbund, and many more pre-installed packages.
+        This familiar R analysis software suite will let you explore your
+        datasets in depth. Comes with ggplot2, RODBC, maps, shinyapps, knitr,
+        LaTeX, bioconductor, cummeRbund, and many more pre-installed packages.
