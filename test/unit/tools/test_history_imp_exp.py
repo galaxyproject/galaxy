@@ -461,7 +461,7 @@ def test_export_collection_with_copied_datasets_and_overlapping_hids():
 
 
 def test_export_copied_collection():
-    app, sa_session, h = _setup_history_for_export("Collection History with dataset from other history")
+    app, sa_session, h = _setup_history_for_export("Collection History with copied collection")
 
     d1, d2 = _create_datasets(sa_session, h, 2)
 
@@ -494,6 +494,62 @@ def test_export_copied_collection():
     assert imported_by_hid[4].copied_from_history_dataset_association == imported_by_hid[1]
     assert imported_by_hid[5].copied_from_history_dataset_association == imported_by_hid[2]
     assert imported_by_hid[6].copied_from_history_dataset_collection_association == imported_by_hid[3]
+
+
+def test_export_copied_objects_copied_outside_history():
+    app, sa_session, h = _setup_history_for_export("Collection History with copied objects")
+
+    d1, d2 = _create_datasets(sa_session, h, 2)
+
+    c1 = model.DatasetCollection(collection_type="paired")
+    hc1 = model.HistoryDatasetCollectionAssociation(history=h, hid=3, collection=c1, name="HistoryCollectionTest1")
+    h.hid_counter = 4
+    dce1 = model.DatasetCollectionElement(collection=c1, element=d1, element_identifier="forward", element_index=0)
+    dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="reverse", element_index=1)
+
+    sa_session.add_all((dce1, dce2, d1, d2, hc1))
+    sa_session.flush()
+
+    hc2 = hc1.copy(element_destination=h)
+    h.add_dataset_collection(hc2)
+
+    sa_session.add(hc2)
+
+    other_h = model.History(name=h.name + "-other", user=h.user)
+    sa_session.add(other_h)
+
+    hc3 = hc2.copy(element_destination=other_h)
+    other_h.add_dataset_collection(hc3)
+    sa_session.add(hc3)
+    sa_session.flush()
+
+    hc4 = hc3.copy(element_destination=h)
+    h.add_dataset_collection(hc4)
+    sa_session.add(hc4)
+    sa_session.flush()
+
+    assert h.hid_counter == 10
+
+    original_by_hid = _hid_dict(h)
+    assert original_by_hid[7].copied_from_history_dataset_association != original_by_hid[4]
+    assert original_by_hid[8].copied_from_history_dataset_association != original_by_hid[5]
+    assert original_by_hid[9].copied_from_history_dataset_collection_association != original_by_hid[6]
+
+    imported_history = _import_export(app, h)
+
+    assert imported_history.hid_counter == 10
+    assert len(imported_history.dataset_collections) == 3
+    assert len(imported_history.datasets) == 6
+
+    _assert_distinct_hids(imported_history)
+    imported_by_hid = _hid_dict(imported_history)
+    assert imported_by_hid[4].copied_from_history_dataset_association == imported_by_hid[1]
+    assert imported_by_hid[5].copied_from_history_dataset_association == imported_by_hid[2]
+    assert imported_by_hid[6].copied_from_history_dataset_collection_association == imported_by_hid[3]
+
+    assert imported_by_hid[7].copied_from_history_dataset_association == imported_by_hid[4]
+    assert imported_by_hid[8].copied_from_history_dataset_association == imported_by_hid[5]
+    assert imported_by_hid[9].copied_from_history_dataset_collection_association == imported_by_hid[6]
 
 
 def test_export_collection_hids():
