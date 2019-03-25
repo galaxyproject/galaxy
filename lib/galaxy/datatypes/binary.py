@@ -144,10 +144,10 @@ class Cel(Binary):
         Set metadata for Cel file.
         """
         with open(dataset.file_name, 'rb') as handle:
-            header_bytes = handle.read(5)
+            header_bytes = handle.read(8)
         if struct.unpack("<ii", header_bytes[:9]) == (64, 4):
             dataset.metadata.version = "4"
-        elif header_bytes.decode("utf8", errors="ignore")[0] == ';':
+        elif struct.unpack(">bb", header_bytes[:2]) == (59, 1):
             dataset.metadata.version = "agcc"
         elif header_bytes.decode("utf8", errors="ignore") == '[CEL]':
             dataset.metadata.version = "3"
