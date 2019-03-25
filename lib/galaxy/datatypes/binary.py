@@ -831,6 +831,27 @@ class Loom(H5):
             log.warning('%s, set_meta Exception: %s', self, e)
 
 
+class Anndata(H5):
+    """
+    Class describing an HDF5 anndata files: http://anndata.rtfd.io
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> Anndata().sniff(get_test_fname('pbmc3k_tiny.h5ad'))
+    True
+    >>> Anndata().sniff(get_test_fname('test.mz5'))
+    False
+    """
+    file_ext = 'h5ad'
+
+    def sniff(self, filename):
+        if super(Anndata, self).sniff(filename):
+            try:
+                with h5py.File(filename) as f:
+                    return all(attr in f for attr in ['X', 'obs', 'var'])
+            except Exception:
+                return False
+        return False
+
+
 class GmxBinary(Binary):
     """
     Base class for GROMACS binary files - xtc, trr, cpt
