@@ -1519,7 +1519,7 @@ class JobWrapper(HasResourceParameters):
                 for fname in self.extra_filenames:
                     os.remove(fname)
                 self.external_output_metadata.cleanup_external_metadata(self.sa_session)
-            galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper(self.job_id).cleanup_after_job(self.sa_session)
+            galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             if delete_files:
                 self.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)

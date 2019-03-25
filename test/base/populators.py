@@ -542,6 +542,63 @@ class BaseDatasetPopulator(object):
         api_asserts.assert_status_code_is(download_response, 200)
         return download_response
 
+    def import_history(self, import_data):
+        files = {}
+        archive_file = import_data.pop("archive_file", None)
+        if archive_file:
+            files["archive_file"] = archive_file
+        import_response = self._post("histories", data=import_data, files=files)
+        api_asserts.assert_status_code_is(import_response, 200)
+
+    def import_history_and_wait_for_name(self, import_data, history_name):
+        def history_names():
+            return dict((h["name"], h) for h in self.get_histories())
+
+        import_name = "imported from archive: %s" % history_name
+        assert import_name not in history_names()
+
+        self.import_history(import_data)
+
+        def has_history_with_name():
+            histories = history_names()
+            return histories.get(import_name, None)
+
+        imported_history = wait_on(has_history_with_name, desc="import history")
+        imported_history_id = imported_history["id"]
+        self.wait_for_history(imported_history_id)
+        return imported_history_id
+
+    def get_histories(self):
+        history_index_response = self._get("histories")
+        api_asserts.assert_status_code_is(history_index_response, 200)
+        return history_index_response.json()
+
+    def wait_on_history_length(self, history_id, wait_on_history_length):
+
+        def history_has_length():
+            contents_response = self._get("histories/%s/contents" % history_id)
+            api_asserts.assert_status_code_is(contents_response, 200)
+            contents = contents_response.json()
+            return None if len(contents) != wait_on_history_length else True
+
+        wait_on(history_has_length, desc="import history population")
+
+    def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds, url, api_key):
+        # Export the history.
+        download_path = self.export_url(history_id, export_kwds, check_download=True)
+
+        # Create download for history
+        full_download_url = "%s%s?key=%s" % (url, download_path, api_key)
+
+        import_data = dict(archive_source=full_download_url, archive_type="url")
+
+        imported_history_id = self.import_history_and_wait_for_name(import_data, history_name)
+
+        if wait_on_history_length:
+            self.wait_on_history_length(imported_history_id, wait_on_history_length)
+
+        return imported_history_id
+
     def get_random_name(self, prefix=None, suffix=None, len=10):
         # stolen from navigates_galaxy.py
         return '%s%s%s' % (
@@ -564,9 +621,10 @@ class DatasetPopulator(BaseDatasetPopulator):
         if data is None:
             data = {}
 
-        files = data.get("__files", None)
-        if files is not None:
-            del data["__files"]
+        if files is None:
+            files = data.get("__files", None)
+            if files is not None:
+                del data["__files"]
 
         return self.galaxy_interactor.post(route, data, files=files, admin=admin)
 
@@ -1325,32 +1383,35 @@ class GiPostGetMixin(object):
     def _api_key(self):
         return self._gi.key
 
+    def _api_url(self):
+        return self._gi.url
+
     def _get(self, route, data=None):
         if data is None:
             data = {}
 
-        return self._gi.make_get_request(self.__url(route), data=data)
+        return self._gi.make_get_request(self._url(route), data=data)
 
     def _post(self, route, data={}):
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.post(self.__url(route), data=data)
+        return requests.post(self._url(route), data=data)
 
     def _put(self, route, data={}):
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.put(self.__url(route), data=data)
+        return requests.put(self._url(route), data=data)
 
     def _delete(self, route, data={}):
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.delete(self.__url(route), data=data)
+        return requests.delete(self._url(route), data=data)
 
-    def __url(self, route):
+    def _url(self, route):
         if route.startswith("/api/"):
             route = route[len("/api/"):]
 
-        return self._gi.url + "/" + route
+        return self._api_url() + "/" + route
 
 
 class GiDatasetPopulator(BaseDatasetPopulator, GiPostGetMixin):
