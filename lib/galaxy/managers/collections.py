@@ -1,10 +1,6 @@
 import logging
 
 from galaxy import model
-from galaxy.dataset_collections import builder
-from galaxy.dataset_collections.matching import MatchingCollections
-from galaxy.dataset_collections.registry import DatasetCollectionTypesRegistry
-from galaxy.dataset_collections.type_description import CollectionTypeDescriptionFactory
 from galaxy.exceptions import (
     ItemAccessibilityException,
     MessageException,
@@ -17,6 +13,10 @@ from galaxy.managers import (
 )
 from galaxy.managers.collections_util import validate_input_element_identifiers
 from galaxy.model import tags
+from galaxy.model.dataset_collections import builder
+from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.model.dataset_collections.registry import DatasetCollectionTypesRegistry
+from galaxy.model.dataset_collections.type_description import CollectionTypeDescriptionFactory
 from galaxy.util import (
     odict,
     validation

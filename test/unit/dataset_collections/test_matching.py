@@ -1,4 +1,4 @@
-from galaxy.dataset_collections import (
+from galaxy.model.dataset_collections import (
     matching,
     registry,
     type_description,

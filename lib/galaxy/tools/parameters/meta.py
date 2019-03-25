@@ -10,6 +10,7 @@ from galaxy import (
     model,
     util
 )
+from galaxy.model.dataset_collections import matching, subcollections
 from galaxy.util import permutations
 from . import visit_input_values
 
@@ -152,7 +153,6 @@ def expand_meta_parameters(trans, tool, incoming):
             values = value
         return classification, values
 
-    from galaxy.dataset_collections import matching
     collections_to_match = matching.CollectionsToMatch()
 
     # Stick an unexpanded version of multirun keys so they can be replaced,
@@ -186,7 +186,6 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
     hdc = trans.sa_session.query(model.HistoryDatasetCollectionAssociation).get(hdc_id)
     collections_to_match.add(input_key, hdc, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
-        from galaxy.dataset_collections import subcollections
         subcollection_elements = subcollections.split_dataset_collection_instance(hdc, subcollection_type)
         return subcollection_elements
     else:

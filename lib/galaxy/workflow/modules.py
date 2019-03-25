@@ -14,10 +14,10 @@ from galaxy import (
     model,
     web
 )
-from galaxy.dataset_collections import matching
 from galaxy.exceptions import ToolMissingException
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
+from galaxy.model.dataset_collections import matching
 from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
