@@ -131,9 +131,9 @@ class Cel(Binary):
         found_cel_4 = False
         found_cel_3 = False
         found_cel_agcc = False
-        if header_bytes.decode("utf8", errors="ignore")[0] == '@':
+        if struct.unpack("<ii", header_bytes[:9]) == (64, 4):
             found_cel_4 = True
-        elif struct.unpack("<bb", header_bytes[:2]) == (59, 1):
+        elif struct.unpack(">bb", header_bytes[:2]) == (59, 1):
             found_cel_agcc = True
         elif header_bytes.decode("utf8", errors="ignore") == '[CEL]':
             found_cel_3 = True
