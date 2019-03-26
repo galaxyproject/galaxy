@@ -33,6 +33,7 @@ var HistoryPanel = Backbone.View.extend({
             cls: "panel-header-button",
             icon: "fa fa-refresh",
             onclick: function() {
+                this._gatherClick("refresh_history")
                 self.historyView.loadCurrentHistory();
             }
         });
@@ -49,7 +50,10 @@ var HistoryPanel = Backbone.View.extend({
             title: _l("View all histories"),
             cls: "panel-header-button",
             icon: "fa fa-columns",
-            href: `${this.root}history/view_multiple`
+            onclick: function() {
+                this._gatherClick("view_all_histories");
+                window.location = `${this.root}history/view_multiple`;
+            }
         });
 
         // define components
@@ -72,6 +76,14 @@ var HistoryPanel = Backbone.View.extend({
             });
         });
     },
+
+
+    _gatherClick: function(option) {
+        if (typeof ga !== "undefined") {
+            let event_name = "history_menu_" + menu_option;
+            ga('send', 'event', 'link', 'click', event_name);
+        }
+    };
 
     render: function() {
         this.optionsMenu = historyOptionsMenu(this.buttonOptions.$el, {
