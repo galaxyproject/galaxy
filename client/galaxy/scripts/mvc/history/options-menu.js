@@ -15,13 +15,17 @@ var menu = [
     },
     {
         html: _l("Saved Histories"),
-        href: "histories/list",
-        target: "_top"
+        func: function() {
+            _gatherClick("saved_histories");
+            window.top.location = "histories/list";
+        }
     },
     {
         html: _l("Histories Shared with Me"),
-        href: "histories/list_shared",
-        target: "_top"
+        func: function() {
+            _gatherClick("histories_shared_with_me");
+            window.top.location = "histories/list_shared";
+        }
     },
     {
         html: _l("Current History"),
@@ -31,6 +35,7 @@ var menu = [
     {
         html: _l("Create New"),
         func: function() {
+            _gatherClick("create_new");
             let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel) {
                 Galaxy.currHistoryPanel.createNewHistory();
@@ -40,6 +45,7 @@ var menu = [
     {
         html: _l("Copy History"),
         func: function() {
+            _gatherClick("copy_history");
             let Galaxy = getGalaxyInstance();
             historyCopyDialog(Galaxy.currHistoryPanel.model).done(() => {
                 Galaxy.currHistoryPanel.loadCurrentHistory();
@@ -49,6 +55,7 @@ var menu = [
     {
         html: _l("Share or Publish"),
         func: function() {
+            _gatherClick("share_or_publish");
             let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
                 Galaxy.router.push(`/histories/sharing?id=${Galaxy.currHistoryPanel.model.id}`);
@@ -59,6 +66,7 @@ var menu = [
         html: _l("Show Structure"),
         anon: true,
         func: function() {
+            _gatherClick("show_structure");
             let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
                 Galaxy.router.push("/histories/show_structure");
@@ -67,12 +75,16 @@ var menu = [
     },
     {
         html: _l("Extract Workflow"),
-        href: "workflow/build_from_current_history"
+        func: function() {
+            _gatherClick("extract_workflow");
+            window.location = "workflow/build_from_current_history";
+        }
     },
     {
         html: _l("Delete"),
         anon: true,
         func: function() {
+            _gatherClick("delete");
             let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really delete the current history?"))) {
                 Galaxy.currHistoryPanel.model._delete().done(() => {
@@ -86,6 +98,7 @@ var menu = [
         purge: true,
         anon: true,
         func: function() {
+            _gatherClick("delete_permanently");
             let Galaxy = getGalaxyInstance();
             if (
                 Galaxy &&
@@ -102,6 +115,7 @@ var menu = [
         html: _l("Make Data Private"),
         anon: true,
         func: function() {
+            _gatherClick("make_data_private");
             if (
                 Galaxy &&
                 Galaxy.currHistoryPanel &&
@@ -124,11 +138,15 @@ var menu = [
     },
     {
         html: _l("Copy Datasets"),
-        href: "dataset/copy_datasets"
+        func: function() {
+            _gatherClick("copy_datasets");
+            window.location = "dataset/copy_datasets";
+        }
     },
     {
         html: _l("Dataset Security"),
         func: function() {
+            _gatherClick("dataset_security");
             let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
                 Galaxy.router.push(`/histories/permissions?id=${Galaxy.currHistoryPanel.model.id}`);
@@ -137,12 +155,16 @@ var menu = [
     },
     {
         html: _l("Resume Paused Jobs"),
-        href: "history/resume_paused_jobs?current=True",
-        anon: true
+        anon: true,
+        func: function() {
+            _gatherClick("resume_paused_jobs");
+            window.location = "history/resume_paused_jobs?current=True";
+        }
     },
     {
         html: _l("Collapse Expanded Datasets"),
         func: function() {
+            _gatherClick("collapse_expanded_datasets");
             let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel) {
                 Galaxy.currHistoryPanel.collapseAll();
@@ -153,6 +175,7 @@ var menu = [
         html: _l("Unhide Hidden Datasets"),
         anon: true,
         func: function() {
+            _gatherClick("unhide_hidden_datasets");
             let Galaxy = getGalaxyInstance();
             // TODO: Deprecate this functionality and replace with group dataset selector and action combination
             if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really unhide all hidden datasets?"))) {
@@ -166,6 +189,7 @@ var menu = [
         html: _l("Delete Hidden Datasets"),
         anon: true,
         func: function() {
+            _gatherClick("delete_hidden_datasets");
             let Galaxy = getGalaxyInstance();
             // TODO: Deprecate this functionality and replace with group dataset selector and action combination
             if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really delete all hidden datasets?"))) {
@@ -177,10 +201,15 @@ var menu = [
     },
     {
         html: _l("Purge Deleted Datasets"),
-        confirm: _l("Really delete all deleted datasets permanently? This cannot be undone."),
-        href: "history/purge_deleted_datasets",
         purge: true,
-        anon: true
+        anon: true,
+        func: function() {
+            _gatherClick("purge_deleted_datasets");
+            let Galaxy = getGalaxyInstance();
+            if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really delete all deleted datasets permanently? This cannot be undone."))) {
+                window.parent.location = "history/purge_deleted_datasets"
+            }
+        }
     },
 
     {
@@ -191,6 +220,7 @@ var menu = [
         html: _l("Export Tool Citations"),
         anon: true,
         func: function() {
+            _gatherClick("export_tool_citations");
             let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
                 Galaxy.router.push(`/histories/citations?id=${Galaxy.currHistoryPanel.model.id}`);
@@ -199,8 +229,11 @@ var menu = [
     },
     {
         html: _l("Export History to File"),
-        href: "history/export_archive?preview=True",
-        anon: true
+        anon: true,
+        func: function() {
+            _gatherClick("export_history_to_file");
+            window.location = "history/export_archive?preview=True";
+        }
     },
 
     {
@@ -209,8 +242,10 @@ var menu = [
     },
     {
         html: _l("Import from File"),
-        href: "histories/import",
-        target: "_top"
+        func: function() {
+            _gatherClick("import_from_file");
+            window.top.location = "histories/import";
+        }
     }
 ];
 
@@ -242,6 +277,13 @@ Webhooks.load({
     }
 });
 
+function _gatherClick(menu_option) {
+    if (typeof ga !== "undefined") {
+        let event_name = "history_cog_" + menu_option;
+        ga('send', 'event', 'link', 'click', event_name);
+    }
+};
+
 function buildMenu(isAnon, purgeAllowed, urlRoot) {
     return _.clone(menu).filter(menuOption => {
         if (isAnon && !menuOption.anon) {
@@ -267,7 +309,7 @@ function buildMenu(isAnon, purgeAllowed, urlRoot) {
         }
         return true;
     });
-}
+};
 
 var create = ($button, options) => {
     options = options || {};
