@@ -1076,7 +1076,7 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
         title: title
     });
     const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options); // eslint-disable-line no-unused-vars
-    return import("components/RuleCollectionBuilder.vue").then(module => {
+    return import(/* webpackChunkName: "ruleCollectionBuilder" */ "components/RuleCollectionBuilder.vue").then(module => {
         var ruleCollectionBuilderInstance = Vue.extend(module.default);
         var vm = document.createElement("div");
         showEl(vm);
