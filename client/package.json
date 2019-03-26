@@ -69,7 +69,6 @@
     "test-watch": "npm run test-mocha -- --no-single-run",
     "test-qunit": "karma start karma/karma.config.qunit.js",
     "test-mocha": "karma start karma/karma.config.mocha.js",
-    "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js",
     "eslint": "eslint -c .eslintrc.js galaxy/scripts --ext .js,.vue"
   },
   "devDependencies": {
@@ -97,7 +96,6 @@
     "gulp-babel": "^8.0.0",
     "gulp-uglify-es": "^1.0.4",
     "ignore-loader": "^0.1.2",
-    "jshint": "^2.10.2",
     "json-loader": "^0.5.7",
     "karma": "^1.7.1",
     "karma-chai": "^0.1.0",
