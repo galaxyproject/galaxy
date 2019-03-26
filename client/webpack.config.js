@@ -44,7 +44,7 @@ let buildconfig = {
                 },
                 libs: {
                     name: "libs",
-                    test: /node_modules|galaxy\/scripts\/libs/,
+                    test: /node_modules[\\/](?!(handsontable|pikaday|moment)[\\/])|galaxy\/scripts\/libs/,
                     chunks: "all",
                     priority: -10
                 }
