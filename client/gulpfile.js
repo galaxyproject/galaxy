@@ -94,4 +94,4 @@ module.exports.clean = clean;
 module.exports.stageLibs = stageLibs;
 module.exports.plugins = plugins;
 module.exports.staging = parallel(stageLibs, fonts, plugins);
-module.exports.default = series(libs, scripts);
+module.exports.default = libs;
