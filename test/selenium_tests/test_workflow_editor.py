@@ -335,7 +335,7 @@ steps:
         self.screenshot("workflow_editor_missing_tool")
 
     def workflow_editor_save_and_close(self):
-        self.workflow_editor_click_option("Save")
+        self.workflow_editor_click_save()
         self.workflow_editor_click_option("Close")
 
     def workflow_editor_maximize_center_pane(self, collapse_left=True, collapse_right=True):
