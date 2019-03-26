@@ -77,6 +77,7 @@ def test_send_control_task_get_result(queue_worker_factory):
 def test_send_local_control_task_with_non_target_listeners(queue_worker_factory):
     app1 = queue_worker_factory('test_server1')
     app2 = queue_worker_factory('test_server2')
+    assert app2.some_var == 'foo'
     send_local_control_task(app=app1, task='echo')
     wait_for_var(app1, 'some_var', 'bar')
     assert app2.some_var == 'foo'
@@ -84,6 +85,7 @@ def test_send_local_control_task_with_non_target_listeners(queue_worker_factory)
 
 def test_send_control_task_noop_self(queue_worker_factory):
     app = queue_worker_factory('test_server')
+    assert app.some_var == 'foo'
     response = send_control_task(app=app, task='echo', noop_self=True, get_response=True)
     assert response == 'NO_OP'
     assert app.some_var == 'foo'

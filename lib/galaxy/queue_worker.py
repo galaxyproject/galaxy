@@ -326,6 +326,8 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
     def bind_and_start(self):
         log.info("Binding and starting galaxy control worker for %s", self.app.config.server_name)
         self.control_queue = galaxy.queues.control_queue_from_config(self.app.config)
+        # Delete messages for this control queue on startup
+        self.control_queue(self.connection).delete()
         self.start()
 
     def get_consumers(self, Consumer, channel):
