@@ -3,9 +3,6 @@ let glob = require("glob");
 
 let webpackConfig = require("./webpack.config.js");
 
-// We don't use webpack for our sass files in the main app, but use it here
-// so we get rebuilds
-
 // Clear existing .scss rule(s) out of webpack config, we need special handling
 // here.
 webpackConfig.module.rules = webpackConfig.module.rules.filter((value) =>{
