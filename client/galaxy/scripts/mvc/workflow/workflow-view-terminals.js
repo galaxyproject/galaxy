@@ -229,10 +229,7 @@ var BaseOutputTerminalView = TerminalView.extend({
         h.terminal = new Terminals.OutputTerminal({ element: h });
         var c = new Connector();
         c.dragging = true;
-        c.connect(
-            this.el.terminal,
-            h.terminal
-        );
+        c.connect(this.el.terminal, h.terminal);
         return h;
     },
     onDragEnd: function(e, d) {
