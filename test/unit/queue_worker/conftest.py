@@ -1,4 +1,3 @@
-import contextlib
 import os
 import tempfile
 
@@ -8,28 +7,27 @@ from galaxy.util import which
 from ..unittest_utils import galaxy_mock
 
 
-@contextlib.contextmanager
-def create_base_test(connection, amqp_connection=None):
+def create_base_test(connection, amqp_type, amqp_connection=None):
     app = galaxy_mock.MockApp(database_connection=connection)
     app.config.database_connection = connection
     app.config.amqp_internal_connection = amqp_connection or "sqlalchemy+%s" % app.config.database_connection
-    yield app
+    app.amqp_type = amqp_type
+    return app
 
 
 @pytest.fixture()
-def sqlite_connection():
+def sqlite_connection(request):
     fd, path = tempfile.mkstemp()
     os.close(fd)
-    yield 'sqlite:////%s' % path
-    os.remove(path)
+    request.addfinalizer(lambda: os.remove(path))
+    return 'sqlite:////%s' % path
 
 
 @pytest.fixture()
 def sqlite_rabbitmq_app(sqlite_connection):
 
     def create_app():
-        with create_base_test(sqlite_connection, amqp_connection='amqp://127.0.0.1:5672/') as app:
-            return app
+        return create_base_test(sqlite_connection, amqp_type='rabbitmq', amqp_connection='amqp://guest:guest@localhost:5672/')
 
     return create_app
 
@@ -38,8 +36,7 @@ def sqlite_rabbitmq_app(sqlite_connection):
 def sqlite_app(sqlite_connection):
 
     def create_app():
-        with create_base_test(sqlite_connection) as app:
-            return app
+        return create_base_test(sqlite_connection, amqp_type='sqlite')
 
     return create_app
 
@@ -49,8 +46,7 @@ def postgres_app(postgresql_proc):
     connection = "postgresql://{p.user}@{p.host}:{p.port}/".format(p=postgresql_proc)
 
     def create_app():
-        with create_base_test(connection) as app:
-            return app
+        return create_base_test(connection, amqp_type='postgres')
 
     return create_app
 
@@ -60,4 +56,4 @@ def database_app(request):
     if request.param == 'postgres_app':
         if not which('initdb'):
             pytest.skip("initdb must be on PATH for postgresql fixture")
-    yield request.getfixturevalue(request.param)
+    return request.getfixturevalue(request.param)
