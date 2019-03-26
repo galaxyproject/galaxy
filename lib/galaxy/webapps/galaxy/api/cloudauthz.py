@@ -163,7 +163,7 @@ class CloudAuthzController(BaseAPIController):
 
         try:
             cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
-            self.cloudauthz_manager.purge(cloudauthz)
+            self.cloudauthz_manager.delete(cloudauthz)
             log.debug('Deleted a cloudauthz record with id `{}` for the user id `{}` '.format(authz_id, str(trans.user.id)))
             view = self.cloudauthz_serializer.serialize_to_view(cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
             trans.response.status = '200'

@@ -12,7 +12,7 @@ from galaxy.managers import sharable
 log = logging.getLogger(__name__)
 
 
-class CloudAuthzManager(sharable.SharableModelManager):
+class CloudAuthzManager(sharable.SharableModelManager, deletable.PurgableManagerMixin):
 
     model_class = model.CloudAuthz
     foreign_key_name = 'cloudauthz'
