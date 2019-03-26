@@ -50,15 +50,6 @@ var HistoryPanel = Backbone.View.extend({
             });
             panelHeaderButtons.push(this.buttonNew);
         }
-        this.buttonOptions = new Ui.ButtonLink({
-            id: "history-options-button",
-            title: _l("History options"),
-            cls: "panel-header-button",
-            target: "galaxy_main",
-            icon: "fa fa-cog",
-            href: `${this.root}root/history_options`
-        });
-        panelHeaderButtons.push(this.buttonOptions);
 
         this.buttonViewMulti = new Ui.ButtonLink({
             id: "history-view-multi-button",
@@ -68,6 +59,16 @@ var HistoryPanel = Backbone.View.extend({
             href: `${this.root}history/view_multiple`
         });
         panelHeaderButtons.push(this.buttonViewMulti);
+
+        this.buttonOptions = new Ui.ButtonLink({
+            id: "history-options-button",
+            title: _l("History options"),
+            cls: "panel-header-button",
+            target: "galaxy_main",
+            icon: "fa fa-cog",
+            href: `${this.root}root/history_options`
+        });
+        panelHeaderButtons.push(this.buttonOptions);
 
         this.model = new Backbone.Model({
         // define components
