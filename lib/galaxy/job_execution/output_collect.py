@@ -83,9 +83,6 @@ def collect_dynamic_outputs(
     job_context,
     output_collections,
 ):
-    tool = job_context.tool
-    app = tool.app
-
     # unmapped outputs do not correspond to explicit outputs of the tool, they were inferred entirely
     # from the tool provided metadata (e.g. galaxy.json).
     for unnamed_output_dict in job_context.tool_provided_metadata.get_unnamed_outputs():
@@ -97,40 +94,35 @@ def collect_dynamic_outputs(
         assert "type" in destination
         destination_type = destination["type"]
         assert destination_type in ["library_folder", "hdca", "hdas"]
-        trans = job_context.work_context
 
         # three destination types we need to handle here - "library_folder" (place discovered files in a library folder),
         # "hdca" (place discovered files in a history dataset collection), and "hdas" (place discovered files in a history
         # as stand-alone datasets).
         if destination_type == "library_folder":
             # populate a library folder (needs to be already have been created)
-
-            library_folder_manager = app.library_folder_manager
-            library_folder = library_folder_manager.get(trans, app.security.decode_id(destination.get("library_folder_id")))
+            library_folder = job_context.get_library_folder(destination)
             persist_elements_to_folder(job_context, elements, library_folder)
         elif destination_type == "hdca":
             # create or populate a dataset collection in the history
             assert "collection_type" in unnamed_output_dict
             object_id = destination.get("object_id")
             if object_id:
-                hdca = job_context.sa_session.query(galaxy.model.HistoryDatasetCollectionAssociation).get(int(object_id))
+                hdca = job_context.get_hdca(object_id)
             else:
-                history = job_context.job.history
                 name = unnamed_output_dict.get("name", "unnamed collection")
                 collection_type = unnamed_output_dict["collection_type"]
                 collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
                 structure = UninitializedTree(collection_type_description)
-                hdca = app.dataset_collections_service.precreate_dataset_collection_instance(
-                    trans, history, name, structure=structure
-                )
+                hdca = job_context.create_hdca(name, structure)
             persist_elements_to_hdca(job_context, elements, hdca, collector=DEFAULT_DATASET_COLLECTOR)
         elif destination_type == "hdas":
             persist_hdas(elements, job_context)
 
     for name, has_collection in output_collections.items():
-        if name not in tool.output_collections:
+        output_collection_def = job_context.output_collection_def(name)
+        if not output_collection_def:
             continue
-        output_collection_def = tool.output_collections[name]
+
         if not output_collection_def.dynamic_structure:
             continue
 
@@ -205,11 +197,30 @@ class JobContext(ModelPersistenceContext):
     def flush(self):
         self.sa_session.flush()
 
+    def get_library_folder(self, destination):
+        app = self.app
+        library_folder_manager = app.library_folder_manager
+        library_folder = library_folder_manager.get(self.work_context, app.security.decode_id(destination.get("library_folder_id")))
+        return library_folder
+
+    def get_hdca(self, object_id):
+        hdca = self.sa_session.query(galaxy.model.HistoryDatasetCollectionAssociation).get(int(object_id))
+        return hdca
+
     def create_library_folder(self, parent_folder, name, description):
         assert parent_folder.id
         library_folder_manager = self.app.library_folder_manager
         nested_folder = library_folder_manager.create(self.work_context, parent_folder.id, name, description)
         return nested_folder
+
+    def create_hdca(self, name, structure):
+        history = self.job.history
+        trans = self.work_context
+        collections_service = self.app.dataset_collections_service
+        hdca = collections_service.precreate_dataset_collection_instance(
+            trans, history, name, structure=structure
+        )
+        return hdca
 
     def add_output_dataset_association(self, name, dataset):
         assoc = galaxy.model.JobToOutputDatasetAssociation(name, dataset)
@@ -252,11 +263,26 @@ class JobContext(ModelPersistenceContext):
                     sa_session.add(new_data)
                     sa_session.flush()
 
+    def output_collection_def(self, name):
+        tool = self.tool
+        if name not in tool.output_collections:
+            return None
+        output_collection_def = tool.output_collections[name]
+        return output_collection_def
+
+    def output_def(self, name):
+        tool = self.tool
+        if name not in tool.outputs:
+            return None
+        output_collection_def = tool.outputs[name]
+        return output_collection_def
+
+    def job_id(self):
+        return self.job.id
+
 
 def collect_primary_datasets(job_context, output, input_ext):
-    tool = job_context.tool
     job_working_directory = job_context.job_working_directory
-    sa_session = job_context.sa_session
 
     # Loop through output file names, looking for generated primary
     # datasets in form specified by discover dataset patterns or in tool provided metadata.
@@ -265,8 +291,9 @@ def collect_primary_datasets(job_context, output, input_ext):
     primary_datasets = {}
     for output_index, (name, outdata) in enumerate(output.items()):
         dataset_collectors = [DEFAULT_DATASET_COLLECTOR]
-        if name in tool.outputs:
-            dataset_collectors = [dataset_collector(description) for description in tool.outputs[name].dataset_collector_descriptions]
+        output_def = job_context.output_def(name)
+        if output_def is not None:
+            dataset_collectors = [dataset_collector(description) for description in output_def.dataset_collector_descriptions]
         filenames = OrderedDict()
         for discovered_file in discover_files(name, job_context.tool_provided_metadata, dataset_collectors, job_working_directory, outdata):
             filenames[discovered_file.path] = discovered_file
@@ -339,9 +366,10 @@ def collect_primary_datasets(job_context, output, input_ext):
             outdata.init_meta()
             outdata.set_meta()
             outdata.set_peek()
+            sa_session = job_context.sa_session
             sa_session.add(outdata)
 
-    sa_session.flush()
+    job_context.flush()
     return primary_datasets
 
 
