@@ -170,8 +170,8 @@ class CloudAuthzController(BaseAPIController):
         try:
             authz_id = self.decode_id(encoded_authz_id)
         except Exception:
-            log.debug(msg_template.format("cannot decode authn_id `" + str(authz_id) + "`"))
-            raise MalformedId('Invalid `authn_id`!')
+            log.debug(msg_template.format("cannot decode authz_id `" + str(encoded_authz_id) + "`"))
+            raise MalformedId('Invalid `authz_id`!')
 
         try:
             cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
@@ -181,6 +181,7 @@ class CloudAuthzController(BaseAPIController):
             trans.response.status = '200'
             return view
         except Exception as e:
-            log.exception(msg_template.format("exception while deleting the cloudauthz record"))
+            log.exception(msg_template.format("exception while deleting the cloudauthz record with "
+                                              "ID: `{}`.".format(encoded_authz_id)))
             raise InternalServerError('An unexpected error has occurred while responding to the DELETE request of the '
                                       'cloudauthz API.' + str(e))
