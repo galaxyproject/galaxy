@@ -7,12 +7,6 @@ const babel = require("gulp-babel");
 
 const paths = {
     node_modules: "./node_modules",
-    scripts: [
-        "galaxy/scripts/**/*.js",
-        "!galaxy/scripts/qunit/**/*",
-        "!galaxy/scripts/entry/**/*",
-        "!galaxy/scripts/libs/**/*"
-    ],
     plugin_dirs: [
         "../config/plugins/{visualizations,interactive_environments}/*/static/**/*",
         "../config/plugins/{visualizations,interactive_environments}/*/*/static/**/*"
@@ -59,19 +53,6 @@ function fonts() {
     );
 }
 
-// TODO: Remove script and lib tasks (for 19.05) once we are sure there are no
-// external accessors (via require or explicit inclusion in templates)
-function scripts() {
-    return src(paths.scripts)
-        .pipe(
-            babel({
-                plugins: ["transform-es2015-modules-amd"]
-            })
-        )
-        .pipe(uglify())
-        .pipe(dest("../static/scripts/"));
-}
-
 function libs() {
     return src(paths.libs)
         .pipe(uglify())
@@ -89,7 +70,6 @@ function clean() {
 
 module.exports.fonts = fonts;
 module.exports.libs = libs;
-module.exports.scripts = scripts;
 module.exports.clean = clean;
 module.exports.stageLibs = stageLibs;
 module.exports.plugins = plugins;
