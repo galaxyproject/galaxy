@@ -2289,6 +2289,10 @@ class Dataset(StorableObject, RepresentById):
     def serialize(self, id_encoder, serialization_options):
         # serialize Dataset objects only for jobs that can actually modify these models.
         assert serialization_options.serialize_dataset_objects
+
+        def to_int(n):
+            return int(n) if n is not None else 0
+
         rval = dict_for(
             self,
             state=self.state,
@@ -2296,9 +2300,9 @@ class Dataset(StorableObject, RepresentById):
             purged=self.purged,
             external_filename=self.external_filename,
             _extra_files_path=self._extra_files_path,
-            file_size=self.file_size,
+            file_size=to_int(self.file_size),
             object_store_id=self.object_store_id,
-            total_size=self.total_size,
+            total_size=to_int(self.total_size),
             uuid=str(self.uuid or '') or None,
             hashes=list(map(lambda h: h.serialize(id_encoder, serialization_options), self.hashes))
         )
