@@ -62,16 +62,24 @@ class ControlTask(object):
     def __init__(self, control_worker):
         self.control_worker = control_worker
         self.correlation_id = None
+        self.callback_queue = Queue(uuid(), exclusive=True, auto_delete=True)
         self.response = object()
         self._response = self.response
+        self._connection = None
 
     @property
     def connection(self):
-        return self.control_worker.connection
+        if self._connection is None:
+            self._connection = self.control_worker.connection.clone()
+        return self._connection
 
     @property
-    def control_queue(self):
-        return self.control_worker.control_queue
+    def control_queues(self):
+        return self.control_worker.control_queues
+
+    @property
+    def exchange(self):
+        return self.control_worker.exchange_queue.exchange
 
     @property
     def declare_queues(self):
@@ -81,34 +89,30 @@ class ControlTask(object):
         if message.properties['correlation_id'] == self.correlation_id:
             self.response = message.payload['result']
 
-    def send_task(self, payload, routing_key, local=False, get_response=False, timeout=60):
+    def send_task(self, payload, routing_key, local=False, get_response=False, timeout=10):
         if local:
-            # TODO: This would probably still be received on all queues if a real task broker is used.
-            # we should probably use a dedicated direct exchange.
-            declare_queues = [self.control_queue]
+            declare_queues = self.control_queues
         else:
             declare_queues = self.declare_queues
         reply_to = None
-        self.correlation_id = None
         callback_queue = []
         if get_response:
-            callback_queue = [Queue(uuid(), exclusive=True, auto_delete=True)]
-            reply_to = callback_queue[0].name
+            reply_to = self.callback_queue.name
+            callback_queue = [self.callback_queue]
             self.correlation_id = uuid()
         try:
             with producers[self.connection].acquire(block=True) as producer:
-                producer.publish(payload,
-                                 exchange=declare_queues[0].exchange,
-                                 declare=declare_queues + callback_queue,
-                                 routing_key=routing_key,
-                                 reply_to=reply_to,
-                                 correlation_id=self.correlation_id,
-                                 )
+                producer.publish(
+                    payload,
+                    exchange=None if local else self.exchange,
+                    declare=declare_queues,
+                    routing_key=routing_key,
+                    reply_to=reply_to,
+                    correlation_id=self.correlation_id,
+                    retry=True,
+                )
             if get_response:
-                with Consumer(self.connection,
-                              on_message=self.on_response,
-                              queues=callback_queue,
-                              no_ack=True):
+                with Consumer(self.connection, on_message=self.on_response, queues=callback_queue, no_ack=True):
                     while self.response is self._response:
                         self.connection.drain_events(timeout=timeout)
                 return self.response
@@ -296,43 +300,32 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
     tasks.
     """
 
-    def __init__(self, app, queue=None, task_mapping=control_message_to_task, connection=None):
+    def __init__(self, app, task_mapping=control_message_to_task):
         super(GalaxyQueueWorker, self).__init__()
         log.info("Initializing %s Galaxy Queue Worker on %s", app.config.server_name, util.mask_password_from_url(app.config.amqp_internal_connection))
         self.daemon = True
-        if connection:
-            self.connection = connection
-        else:
-            self.connection = app.amqp_internal_connection_obj
-        # explicitly force connection instead of lazy-connecting the first
-        # time it is required.
-        self.connection.connect()
+        self.connection = app.amqp_internal_connection_obj
         self.app = app
-        # Eventually we may want different workers w/ their own queues and task
-        # mappings.  Right now, there's only the one.
-        if queue:
-            # Allows assignment of a particular queue for this worker.
-            self.control_queue = queue
         self.task_mapping = task_mapping
-        # TODO we may want to purge the queue at the start to avoid executing
-        # stale 'reload_tool', etc messages.  This can happen if, say, a web
-        # process goes down and messages get sent before it comes back up.
-        # Those messages will no longer be useful (in any current case)
+        self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(self.app.config)
+        self.control_queues = [self.exchange_queue, self.direct_queue]
+        # Delete messages for the current workers' control queues on startup
+        for q in self.control_queues:
+            q(self.connection).delete()
 
     @property
     def declare_queues(self):
+        # dynamically produce queues, allows addressing all known processes at a given time
         return galaxy.queues.all_control_queues_for_declare(self.app.config, self.app.application_stack)
 
     def bind_and_start(self):
         log.info("Binding and starting galaxy control worker for %s", self.app.config.server_name)
-        self.control_queue = galaxy.queues.control_queue_from_config(self.app.config)
-        # Delete messages for this control queue on startup
-        self.control_queue(self.connection).delete()
         self.start()
 
     def get_consumers(self, Consumer, channel):
-        return [Consumer(queues=self.control_queue,
-                         callbacks=[self.process_task])]
+        return [Consumer(queues=[q],
+                         callbacks=[self.process_task],
+                         accept={'application/json'}) for q in self.control_queues]
 
     def process_task(self, body, message):
         result = 'NO_RESULT'

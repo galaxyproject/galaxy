@@ -27,14 +27,14 @@ def all_control_queues_for_declare(config, application_stack):
     return [Queue("control.%s" % server_name, galaxy_exchange, routing_key='control.*') for server_name in server_names]
 
 
-def control_queue_from_config(config):
+def control_queues_from_config(config):
     """
     Returns a Queue instance with the correct name and routing key for this
     galaxy process's config
     """
-    return Queue("control.%s" % config.server_name,
-                 galaxy_exchange,
-                 routing_key='control.%s' % config.server_name)
+    exchange_queue = Queue("control.%s" % config.server_name, galaxy_exchange, routing_key='control.%s' % config.server_name)
+    non_exchange_queue = Queue("control.%s" % config.server_name, routing_key='control.%s' % config.server_name)
+    return exchange_queue, non_exchange_queue
 
 
 def connection_from_config(config):
