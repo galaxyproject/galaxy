@@ -210,10 +210,12 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
         # If git is not used and static/client_build_hash.txt is present, next
         # client rebuilds must be done manually by the admin
         if [ "$GIT_BRANCH" = "0" ]; then
+            echo "Skipping Galaxy client build because git is not in use and the client build state cannot be compared against local changes.  If you have made local modifications, then manual client builds will be required."
             SKIP_CLIENT_BUILD=1
         else
             # Check if anything has changed in client/ since the last build
             if git diff --quiet $(cat static/client_build_hash.txt) -- client/; then
+                echo "The Galaxy client build is up to date and will not be rebuilt at this time."
                 SKIP_CLIENT_BUILD=1
             else
                 echo "The Galaxy client is out of date and will be built now."
@@ -222,6 +224,8 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     else
         echo "The Galaxy client has not yet been built and will be built now."
     fi
+else
+    echo "The Galaxy client build is being skipped due to the SKIP_CLIENT_BUILD environment variable."
 fi
 
 # Install node if not installed
