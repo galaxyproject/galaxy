@@ -98,6 +98,7 @@
     "gulp-uglify-es": "^1.0.4",
     "ignore-loader": "^0.1.2",
     "jshint": "^2.10.2",
+    "json-loader": "^0.5.7",
     "karma": "^1.7.1",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^2.2.0",
