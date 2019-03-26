@@ -309,6 +309,12 @@ def populate_api_routes(webapp, app):
                           controller='cloudauthz',
                           conditions=dict(method=["POST"]))
 
+    webapp.mapper.connect('delete_cloudauthz_item',
+                          '/api/cloud/authz/{encoded_authz_id}',
+                          action='delete',
+                          controller='cloudauthz',
+                          conditions=dict(method=["DELETE"]))
+
     webapp.mapper.connect('get_custom_builds_metadata',
                           '/api/histories/{id}/custom_builds_metadata',
                           controller='histories',
