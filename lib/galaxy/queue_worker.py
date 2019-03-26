@@ -349,7 +349,7 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
                 result = 'NO_OP'
         else:
             log.warning("Received a malformed task message:\n%s" % body)
-        if message.properties['reply_to']:
+        if message.properties.get('reply_to'):
             self.producer.publish(
                 {'result': result},
                 exchange='',
