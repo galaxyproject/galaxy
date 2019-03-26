@@ -9,9 +9,10 @@ from ..unittest_utils import galaxy_mock
 
 
 @contextlib.contextmanager
-def create_base_test(connection):
+def create_base_test(connection, amqp_connection=None):
     app = galaxy_mock.MockApp(database_connection=connection)
     app.config.database_connection = connection
+    app.config.amqp_internal_connection = amqp_connection or "sqlalchemy+%s" % app.config.database_connection
     yield app
 
 
@@ -21,6 +22,16 @@ def sqlite_connection():
     os.close(fd)
     yield 'sqlite:////%s' % path
     os.remove(path)
+
+
+@pytest.fixture()
+def sqlite_rabbitmq_app(sqlite_connection):
+
+    def create_app():
+        with create_base_test(sqlite_connection, amqp_connection='amqp://127.0.0.1:5672/') as app:
+            return app
+
+    return create_app
 
 
 @pytest.fixture()
@@ -44,7 +55,7 @@ def postgres_app(postgresql_proc):
     return create_app
 
 
-@pytest.fixture(params=['postgres_app', 'sqlite_app'])
+@pytest.fixture(params=['postgres_app', 'sqlite_app', 'sqlite_rabbitmq_app'])
 def database_app(request):
     if request.param == 'postgres_app':
         if not which('initdb'):
