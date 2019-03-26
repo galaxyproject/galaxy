@@ -27,7 +27,8 @@ def sqlite_connection(request):
 def sqlite_rabbitmq_app(sqlite_connection):
 
     def create_app():
-        return create_base_test(sqlite_connection, amqp_type='rabbitmq', amqp_connection='amqp://guest:guest@localhost:5672/')
+        amqp_connection = os.environ.get('GALAXY_TEST_AMQP_INTERNAL_CONNECTION')
+        return create_base_test(sqlite_connection, amqp_type='rabbitmq', amqp_connection=amqp_connection)
 
     return create_app
 
@@ -56,4 +57,7 @@ def database_app(request):
     if request.param == 'postgres_app':
         if not which('initdb'):
             pytest.skip("initdb must be on PATH for postgresql fixture")
+    if request.param == 'sqlite_rabbitmq_app':
+        if not os.environ.get('GALAXY_TEST_AMQP_INTERNAL_CONNECTION'):
+            pytest.skip("rabbitmq tests will be skipped if GALAXY_TEST_AMQP_INTERNAL_CONNECTION env var is unset")
     return request.getfixturevalue(request.param)
