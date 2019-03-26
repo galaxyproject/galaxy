@@ -44,7 +44,7 @@ let buildconfig = {
                 },
                 libs: {
                     name: "libs",
-                    test: /(node_modules|galaxy\/scripts\/(?!entry)).*\.(vue|js)$/, // .*\.(vue|js)$
+                    test: /node_modules|galaxy\/scripts\/libs/,
                     chunks: "all",
                     priority: -10
                 }
