@@ -6,6 +6,7 @@ import shutil
 import tarfile
 import tempfile
 from json import dump, dumps, load
+from uuid import uuid4
 
 import six
 from bdbag import bdbag_api as bdb
@@ -248,8 +249,6 @@ class ModelImportStore(object):
                                                                        create_dataset=True,
                                                                        flush=False,
                                                                        sa_session=self.sa_session)
-                    if 'id' in dataset_attrs and self.import_options.allow_edit:
-                        dataset_instance.id = dataset_attrs['id']
                 elif model_class == "LibraryDatasetDatasetAssociation":
                     # Create dataset and HDA.
                     dataset_instance = model.LibraryDatasetDatasetAssociation(name=dataset_attrs['name'],
@@ -266,6 +265,7 @@ class ModelImportStore(object):
                                                                               sa_session=self.sa_session)
                 else:
                     raise Exception("Unknown dataset instance type encountered")
+                self._attach_raw_id_if_editing(dataset_instance, dataset_attrs)
 
                 # Older style...
                 if 'uuid' in dataset_attrs:
@@ -418,7 +418,11 @@ class ModelImportStore(object):
                     if 'hda' in element_attrs:
                         hda_attrs = element_attrs['hda']
                         hda_key = hda_attrs[object_key]
-                        hda = object_import_tracker.hdas_by_key[hda_key]
+                        hdas_by_key = object_import_tracker.hdas_by_key
+                        if hda_key in hdas_by_key:
+                            hda = hdas_by_key[hda_key]
+                        else:
+                            raise KeyError("Failed to find exported hda with key [%s] of type [%s] in [%s]" % (hda_key, object_key, hdas_by_key))
                         dce.hda = hda
                     elif 'child_collection' in element_attrs:
                         dce.child_collection = import_collection(element_attrs['child_collection'])
@@ -442,6 +446,7 @@ class ModelImportStore(object):
                 # create collection
                 dc = model.DatasetCollection(collection_type=collection_attrs['type'])
                 dc.populated_state = collection_attrs["populated_state"]
+                self._attach_raw_id_if_editing(dc, collection_attrs)
                 # TODO: element_count...
                 materialize_elements(dc)
 
@@ -458,8 +463,7 @@ class ModelImportStore(object):
                                                                  visible=True,
                                                                  name=collection_attrs['display_name'],
                                                                  implicit_output_name=collection_attrs.get("implicit_output_name"))
-                if 'id' in collection_attrs and self.import_options.allow_edit:
-                    hdca.id = collection_attrs['id']
+                self._attach_raw_id_if_editing(hdca, collection_attrs)
 
                 hdca.history = history
                 if new_history and self.trust_hid(collection_attrs):
@@ -473,6 +477,10 @@ class ModelImportStore(object):
             else:
                 assert 'id' in collection_attrs
                 object_import_tracker.hdcas_by_id[collection_attrs['id']] = hdca
+
+    def _attach_raw_id_if_editing(self, obj, attrs):
+        if self.sessionless and 'id' in attrs and self.import_options.allow_edit:
+            obj.id = attrs['id']
 
     def _import_collection_implicit_input_associations(self, object_import_tracker, collections_attrs):
         object_key = self.object_key
@@ -932,9 +940,14 @@ class DirectoryModelExportStore(ModelExportStore):
 
         if app is not None:
             self.app = app
-            self.security = app.security
+            security = app.security
+            sessionless = False
         else:
-            self.security = IdEncodingHelper(id_secret="randomdoesntmatter")
+            sessionless = True
+            security = IdEncodingHelper(id_secret="randomdoesntmatter")
+
+        self.sessionless = sessionless
+        self.security = security
 
         self.export_directory = export_directory
         self.serialization_options = model.SerializationOptions(
@@ -1101,7 +1114,16 @@ class DirectoryModelExportStore(ModelExportStore):
         self.included_collections.append(collection)
 
     def add_dataset(self, dataset, include_files=True):
-        self.included_datasets[dataset.id] = (dataset, include_files)
+        dataset_id = dataset.id
+        if dataset_id is None:
+            # Better be a sessionless export, just assign a random ID
+            # won't be able to de-duplicate datasets. This could be fixed
+            # by using object identity or attaching something to the object
+            # like temp_id used in serialization.
+            assert self.sessionless
+            dataset_id = uuid4().hex
+
+        self.included_datasets[dataset_id] = (dataset, include_files)
 
     def _finalize(self):
         export_directory = self.export_directory
