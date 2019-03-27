@@ -3755,7 +3755,7 @@ pipes or periods (e.g. ``.``).]]></xs:documentation>
     <xs:attribute name="when_empty">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[Action to take when output
-is empty. Can currently be ``hide`` or ``delete`` elements.]]></xs:documentation>
+is empty. Can currently be ``hide`` or ``delete``.]]></xs:documentation>
       </xs:annotation>
       <xs:simpleType>
         <xs:restriction base="xs:string">
@@ -3764,7 +3764,6 @@ is empty. Can currently be ``hide`` or ``delete`` elements.]]></xs:documentation
         </xs:restriction>
       </xs:simpleType>
     </xs:attribute>
-
   </xs:attributeGroup>
 
   <xs:attributeGroup name="OutputDataAttributes">
