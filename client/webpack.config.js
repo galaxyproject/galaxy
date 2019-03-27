@@ -20,6 +20,7 @@ let buildconfig = {
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
+        publicPath: "/static/scripts/bundled/",
         filename: "[name].bundled.js",
         chunkFilename: "[name].chunk.js"
     },
@@ -43,7 +44,7 @@ let buildconfig = {
                 },
                 libs: {
                     name: "libs",
-                    test: /(node_modules|galaxy\/scripts\/(?!entry)).*\.(vue|js)$/, // .*\.(vue|js)$
+                    test: /node_modules[\\/](?!(handsontable|pikaday|moment)[\\/])|galaxy\/scripts\/libs/,
                     chunks: "all",
                     priority: -10
                 }
