@@ -182,6 +182,7 @@ class ModelImportStore(object):
         object_key = self.object_key
 
         for dataset_attrs in datasets_attrs:
+
             def handle_dataset_object_edit(dataset_instance):
                 if "dataset" in dataset_attrs:
                     assert self.import_options.allow_dataset_object_edit
@@ -225,7 +226,16 @@ class ModelImportStore(object):
                 ]
                 for attribute in attributes:
                     if attribute in dataset_attrs:
-                        setattr(hda, attribute, dataset_attrs[attribute])
+                        value = dataset_attrs[attribute]
+                        if attribute == "metadata":
+                            def remap_objects(p, k, obj):
+                                if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
+                                    return (k, model.MetadataFile(dataset=hda, uuid=obj["uuid"]))
+                                return (k, obj)
+
+                            value = remap(value, remap_objects)
+
+                        setattr(hda, attribute, value)
 
                 handle_dataset_object_edit(hda)
                 self._flush()
@@ -950,7 +960,7 @@ class ModelExportStore(object):
 
 class DirectoryModelExportStore(ModelExportStore):
 
-    def __init__(self, export_directory, app=None, for_edit=False, serialize_dataset_objects=None, export_files=None):
+    def __init__(self, export_directory, app=None, for_edit=False, serialize_dataset_objects=None, export_files=None, strip_metadata_files=True):
         if not os.path.exists(export_directory):
             os.makedirs(export_directory)
 
@@ -969,6 +979,7 @@ class DirectoryModelExportStore(ModelExportStore):
         self.serialization_options = model.SerializationOptions(
             for_edit=for_edit,
             serialize_dataset_objects=serialize_dataset_objects,
+            strip_metadata_files=strip_metadata_files,
             serialize_files_handler=self,
         )
         self.export_files = export_files

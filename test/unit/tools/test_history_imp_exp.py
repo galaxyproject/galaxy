@@ -604,8 +604,8 @@ def _assert_distinct(l):
     assert len(l) == len(set(l))
 
 
-def _create_datasets(sa_session, history, n):
-    return [model.HistoryDatasetAssociation(extension="txt", history=history, create_dataset=True, sa_session=sa_session, hid=i + 1) for i in range(n)]
+def _create_datasets(sa_session, history, n, extension="txt"):
+    return [model.HistoryDatasetAssociation(extension=extension, history=history, create_dataset=True, sa_session=sa_session, hid=i + 1) for i in range(n)]
 
 
 def _setup_history_for_export(history_name):

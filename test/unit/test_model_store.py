@@ -1,9 +1,10 @@
 import json
 import os
-from tempfile import mkdtemp
+from tempfile import mkdtemp, NamedTemporaryFile
 
 from galaxy import model
 from galaxy.model import store
+from galaxy.model.metadata import MetadataTempFile
 from galaxy.tools.imp_exp import unpack_tar_gz_archive
 from .tools.test_history_imp_exp import _create_datasets, _mock_app, Dummy
 
@@ -271,6 +272,33 @@ def test_import_export_edit_collection():
     sa_session.refresh(c1)
     assert c1.populated_state == model.DatasetCollection.populated_states.OK, c1.populated_state
     assert len(c1.elements) == 2
+
+
+def test_edit_metadata_files():
+    app = _mock_app(store_by="uuid")
+    sa_session = app.model.context
+
+    u = model.User(email="collection@example.com", password="password")
+    h = model.History(name="Test History", user=u)
+
+    d1 = _create_datasets(sa_session, h, 1, extension="bam")[0]
+    sa_session.add_all((h, d1))
+    sa_session.flush()
+    index = NamedTemporaryFile("w")
+    index.write("cool bam index")
+    metadata_dict = {"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index.name})}
+    d1.metadata.from_JSON_dict(json_dict=metadata_dict)
+    assert d1.metadata.bam_index
+    assert isinstance(d1.metadata.bam_index, model.MetadataFile)
+
+    temp_directory = mkdtemp()
+    with store.DirectoryModelExportStore(temp_directory, app=app, for_edit=True, strip_metadata_files=False) as export_store:
+        export_store.add_dataset(d1)
+
+    import_history = model.History(name="Test History for Import", user=u)
+    sa_session.add(import_history)
+    sa_session.flush()
+    _perform_import_from_directory(temp_directory, app, u, import_history, store.ImportOptions(allow_edit=True))
 
 
 def test_sessionless_import_edit_datasets():
