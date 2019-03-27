@@ -1163,6 +1163,7 @@ class ConnectivityTable(Tabular):
         return dumps({'ck_data': util.unicodify(ck_data_header + "\n" + ck_data_body), 'ck_index': ck_index + 1})
 
 
+@build_sniff_from_prefix
 class MatrixMarket(TabularData):
     """
     The Matrix Market (MM) exchange formats provide a simple mechanism
@@ -1198,36 +1199,8 @@ class MatrixMarket(TabularData):
     def __init__(self, **kwd):
         super(MatrixMarket, self).__init__(**kwd)
 
-    def sniff(self, filename):
-        count = 0
-        nonzeros = 0
-        with open(filename, 'r') as handle:
-            lines = handle.readlines()
-
-            if not lines[0].startswith('%%MatrixMarket matrix coordinate real general'):
-                return False
-
-            for line in lines:
-                if not line.startswith('%'):
-                    split_line = line.split()
-                    if len(split_line) != 3:
-                        return False
-                    try:
-                        int(split_line[0])
-                        int(split_line[1])
-                        float(split_line[2])
-                    except ValueError:
-                        return False
-
-                    if nonzeros == 0:
-                        nonzeros = int(split_line[2])
-                    else:
-                        count += 1
-
-        if nonzeros == count:
-            return True
-
-        return False
+    def sniff_prefix(self, file_prefix):
+        return file_prefix.startswith('%%MatrixMarket matrix coordinate real general')
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
         if dataset.has_data():
