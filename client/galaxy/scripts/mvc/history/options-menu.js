@@ -251,7 +251,7 @@ function buildMenu(isAnon, purgeAllowed, urlRoot) {
 
         if (menuOption.confirm) {
             menuOption.func = () => {
-                const galaxy_main = document.getElementById("galaxy_main");
+                const galaxy_main = window.parent.document.getElementById("galaxy_main");
                 if (confirm(menuOption.confirm) && galaxy_main){
                     galaxy_main.src = menuOption.href;
                 }
