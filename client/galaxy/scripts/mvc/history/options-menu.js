@@ -251,8 +251,9 @@ function buildMenu(isAnon, purgeAllowed, urlRoot) {
 
         if (menuOption.confirm) {
             menuOption.func = () => {
-                if (confirm(menuOption.confirm) && window.parent.frames && window.parent.frames.galaxy_main) {
-                    window.parent.frames.galaxy_main = menuOption.href;
+                const galaxy_main = document.getElementById("galaxy_main");
+                if (confirm(menuOption.confirm) && galaxy_main){
+                    galaxy_main.src = menuOption.href;
                 }
             };
         }
@@ -265,7 +266,6 @@ var create = ($button, options) => {
     var isAnon = options.anonymous === undefined ? true : options.anonymous;
     var purgeAllowed = options.purgeAllowed || false;
     var menu = buildMenu(isAnon, purgeAllowed, getAppRoot());
-    //console.debug( 'menu:', menu );
     return new PopupMenu($button, menu);
 };
 
