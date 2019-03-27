@@ -671,6 +671,16 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             states.DELETED_NEW,
         ]
 
+    def io_dicts(self):
+        inp_data = dict([(da.name, da.dataset) for da in self.input_datasets])
+        out_data = dict([(da.name, da.dataset) for da in self.output_datasets])
+        inp_data.update([(da.name, da.dataset) for da in self.input_library_datasets])
+        out_data.update([(da.name, da.dataset) for da in self.output_library_datasets])
+
+        out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in self.output_dataset_collection_instances])
+        out_collections.update([(obj.name, obj.dataset_collection) for obj in self.output_dataset_collections])
+        return inp_data, out_data, out_collections
+
     # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
     # for the mapper defined to the Job table.
     def get_external_output_metadata(self):

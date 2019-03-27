@@ -1417,15 +1417,7 @@ class JobWrapper(HasResourceParameters):
         if tool_exit_code is not None:
             job.exit_code = tool_exit_code
         # custom post process setup
-        inp_data = dict([(da.name, da.dataset) for da in job.input_datasets])
-        out_data = dict([(da.name, da.dataset) for da in job.output_datasets])
-        inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
-        out_data.update([(da.name, da.dataset) for da in job.output_library_datasets])
-
-        # TODO: eliminate overlap with tools/evaluation.py
-        out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in job.output_dataset_collection_instances])
-        out_collections.update([(obj.name, obj.dataset_collection) for obj in job.output_dataset_collections])
-
+        inp_data, out_data, out_collections = job.io_dicts()
         self.discover_outputs(job, inp_data, out_data, out_collections)
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
@@ -1519,7 +1511,7 @@ class JobWrapper(HasResourceParameters):
                 for fname in self.extra_filenames:
                     os.remove(fname)
                 self.external_output_metadata.cleanup_external_metadata(self.sa_session)
-            galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper(self.job_id).cleanup_after_job(self.sa_session)
+            galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             if delete_files:
                 self.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)

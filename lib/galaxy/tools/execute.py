@@ -10,7 +10,7 @@ import six
 import six.moves
 
 from galaxy import model
-from galaxy.dataset_collections.structure import get_structure, tool_output_to_structure
+from galaxy.model.dataset_collections.structure import get_structure, tool_output_to_structure
 from galaxy.tools.actions import filter_output, on_text_for_names, ToolExecutionCache
 from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.util import ExecutionTimer

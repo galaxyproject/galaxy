@@ -146,3 +146,42 @@ class CloudAuthzController(BaseAPIController):
             log.exception(msg_template.format("exception while creating the new cloudauthz record"))
             raise InternalServerError('An unexpected error has occurred while responding to the create request of the '
                                       'cloudauthz API.' + str(e))
+
+    @expose_api
+    def delete(self, trans, encoded_authz_id, **kwargs):
+        """
+        * DELETE /api/cloud/authz/{encoded_authz_id}
+            Marks the CloudAuthz record with the given ``encoded_authz_id`` as deleted.
+            This API does NOT remove the specified CloudAuthz record from Galaxy's database,
+            instead it will just set its deleted attribute to True, making it inaccessible to
+            cloud APIs and managers leveraging user's CloudAuthz records.
+
+        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans: Galaxy web transaction
+
+        :type  encoded_authz_id:    string
+        :param encoded_authz_id:    The encoded ID of the CloudAuthz record to be marked deleted.
+
+        :rtype  JSON
+        :return The cloudauthz record marked as deleted, serialized as a JSON object.
+        """
+
+        msg_template = "Rejected user `" + str(trans.user.id) + "`'s request to delete cloudauthz config because of {}."
+        try:
+            authz_id = self.decode_id(encoded_authz_id)
+        except Exception:
+            log.debug(msg_template.format("cannot decode authz_id `" + str(encoded_authz_id) + "`"))
+            raise MalformedId('Invalid `authz_id`!')
+
+        try:
+            cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
+            self.cloudauthz_manager.delete(cloudauthz)
+            log.debug('Deleted a cloudauthz record with id `{}` for the user id `{}` '.format(authz_id, str(trans.user.id)))
+            view = self.cloudauthz_serializer.serialize_to_view(cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
+            trans.response.status = '200'
+            return view
+        except Exception as e:
+            log.exception(msg_template.format("exception while deleting the cloudauthz record with "
+                                              "ID: `{}`.".format(encoded_authz_id)))
+            raise InternalServerError('An unexpected error has occurred while responding to the DELETE request of the '
+                                      'cloudauthz API.' + str(e))

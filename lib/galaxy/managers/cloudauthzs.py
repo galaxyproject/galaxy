@@ -12,7 +12,7 @@ from galaxy.managers import sharable
 log = logging.getLogger(__name__)
 
 
-class CloudAuthzManager(sharable.SharableModelManager):
+class CloudAuthzManager(sharable.SharableModelManager, deletable.PurgableManagerMixin):
 
     model_class = model.CloudAuthz
     foreign_key_name = 'cloudauthz'
@@ -40,7 +40,9 @@ class CloudAuthzsSerializer(base.ModelSerializer, deletable.PurgableSerializerMi
             'config',
             'authn_id',
             'last_update',
-            'last_activity'
+            'last_activity',
+            'create_time',
+            'deleted'
         ])
 
     def add_serializers(self):
@@ -59,5 +61,7 @@ class CloudAuthzsSerializer(base.ModelSerializer, deletable.PurgableSerializerMi
             'config'       : lambda i, k, **c: str(i.config),
             'authn_id'     : lambda i, k, **c: self.app.security.encode_id(i.authn_id),
             'last_update'  : lambda i, k, **c: str(i.last_update),
-            'last_activity': lambda i, k, **c: str(i.last_activity)
+            'last_activity': lambda i, k, **c: str(i.last_activity),
+            'create_time'  : lambda i, k, **c: str(i.create_time),
+            'deleted'      : lambda i, k, **c: str(i.deleted)
         })

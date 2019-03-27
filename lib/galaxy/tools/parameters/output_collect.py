@@ -8,7 +8,7 @@ from collections import namedtuple
 
 import galaxy.model
 from galaxy import util
-from galaxy.dataset_collections.structure import UninitializedTree
+from galaxy.model.dataset_collections.structure import UninitializedTree
 from galaxy.tools.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
     INPUT_DBKEY_TOKEN,

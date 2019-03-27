@@ -29,7 +29,6 @@ boltons==19.1.0
 boto3==1.9.114
 boto==2.49.0
 botocore==1.12.115
-bunch==1.0.1
 bx-python==0.8.2
 bz2file==0.98 ; python_version < '3.3'
 cachecontrol==0.11.7
@@ -175,7 +174,7 @@ svgwrite==1.2.1
 tempita==0.5.2
 tenacity==4.12.0
 typing-extensions==3.7.2
-typing==3.6.6 ; python_version < '3.6'
+typing==3.6.6 ; python_version < '3.5'
 tzlocal==1.5.1
 unicodecsv==0.14.1 ; python_version < '3.0'
 uritemplate==3.0.0

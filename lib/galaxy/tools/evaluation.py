@@ -78,13 +78,7 @@ class ToolEvaluator(object):
         visit_input_values(self.tool.inputs, incoming, validate_inputs)
 
         # Restore input / output data lists
-        inp_data = dict([(da.name, da.dataset) for da in job.input_datasets])
-        out_data = dict([(da.name, da.dataset) for da in job.output_datasets])
-        inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
-        out_data.update([(da.name, da.dataset) for da in job.output_library_datasets])
-
-        out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in job.output_dataset_collection_instances])
-        out_collections.update([(obj.name, obj.dataset_collection) for obj in job.output_dataset_collections])
+        inp_data, out_data, out_collections = job.io_dicts()
 
         if get_special:
 
