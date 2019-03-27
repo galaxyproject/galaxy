@@ -88,6 +88,26 @@ class CloudAuthzsDeserializer(base.ModelDeserializer):
         })
 
     def deserialize_and_validate_authn_id(self, item, key, val, **context):
+        """
+        Deserializes an authentication ID (authn_id), and asserts if the
+        current user can assume that authentication.
+
+        :type  item:    galaxy.model.CloudAuthz
+        :param item:    an instance of cloudauthz
+
+        :type  key:     string
+        :param key:     `authn_id` attribute of the cloudauthz object (i.e., the `item` param).
+
+        :type  val:     string
+        :param val:     the value of `authn_id` attribute of the cloudauthz object (i.e., the `item` param).
+
+        :type  context: dict
+        :param context: a dictionary object containing Galaxy `trans`.
+
+        :rtype:         string
+        :return:        decoded authentication ID.
+        """
+
         try:
             decoded_authn_id = self.app.security.decode_id(val)
         except Exception:
