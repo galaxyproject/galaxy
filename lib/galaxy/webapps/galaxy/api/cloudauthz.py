@@ -35,6 +35,7 @@ class CloudAuthzController(BaseAPIController):
         super(CloudAuthzController, self).__init__(app)
         self.cloudauthz_manager = cloudauthzs.CloudAuthzManager(app)
         self.cloudauthz_serializer = cloudauthzs.CloudAuthzsSerializer(app)
+        self.cloudauthz_deserializer = cloudauthzs.CloudAuthzsDeserializer(app)
 
     @expose_api
     def index(self, trans, **kwargs):
@@ -184,4 +185,26 @@ class CloudAuthzController(BaseAPIController):
             log.exception(msg_template.format("exception while deleting the cloudauthz record with "
                                               "ID: `{}`.".format(encoded_authz_id)))
             raise InternalServerError('An unexpected error has occurred while responding to the DELETE request of the '
+                                      'cloudauthz API.' + str(e))
+
+    @expose_api
+    def update(self, trans, encoded_authz_id, payload, **kwargs):
+        msg_template = "Rejected user `" + str(trans.user.id) + "`'s request to delete cloudauthz config because of {}."
+        try:
+            authz_id = self.decode_id(encoded_authz_id)
+        except Exception:
+            log.debug(msg_template.format("cannot decode authz_id `" + str(encoded_authz_id) + "`"))
+            raise MalformedId('Invalid `authz_id`!')
+
+        try:
+            cloudauthz_to_update = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
+            self.cloudauthz_deserializer.deserialize(cloudauthz_to_update, payload, trans=trans)
+            self.cloudauthz_serializer.serialize_to_view(cloudauthz_to_update, view='summary')
+            return self.cloudauthz_serializer.serialize_to_view(cloudauthz_to_update, view='summary')
+        except MalformedId as e:
+            raise e
+        except Exception as e:
+            log.exception(msg_template.format("exception while updating the cloudauthz record with "
+                                              "ID: `{}`.".format(encoded_authz_id)))
+            raise InternalServerError('An unexpected error has occurred while responding to the PUT request of the '
                                       'cloudauthz API.' + str(e))
