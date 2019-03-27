@@ -51,7 +51,10 @@
 
 ## Render a message
 <%def name="render_msg( msg, status='done' )">
+    <%
+        import markupsafe
+    %>
     <% status = "success" if status == "done" else status %>
     <% status = "danger" if status == "error" else status %>
-    <div class="mt-2 alert alert-${status}">${_(msg)}</div>
+    <div class="mt-2 alert alert-${markupsafe.escape(status)}">${_(markupsafe.escape(msg))}</div>
 </%def>
