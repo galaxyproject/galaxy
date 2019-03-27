@@ -69,13 +69,18 @@ class CloudAuthzController(BaseAPIController):
         :type payload: dict
         :param payload: A dictionary structure containing the following keys:
             *   provider:       the cloud-based resource provider to which this configuration belongs to.
+
             *   config:         a dictionary containing all the configuration required to request temporary credentials
-                                from the provider.
+                                from the provider. See the following page for details:
+                                https://galaxyproject.org/cloud/authnz/
+
             *   authn_id:       the (encoded) ID of a third-party authentication of a user. To have this ID, user must
                                 have logged-in to this Galaxy server using third-party identity (e.g., Google), or has
                                 associated his/her Galaxy account with a third-party OIDC-based identity. See this page:
                                 https://galaxyproject.org/admin/authentication/
+
             *   description:    [Optional] a brief description for this configuration.
+
         :param kwargs: empty dict
 
         :rtype: dict
@@ -189,6 +194,45 @@ class CloudAuthzController(BaseAPIController):
 
     @expose_api
     def update(self, trans, encoded_authz_id, payload, **kwargs):
+        """
+        * PUT /api/cloud/authz/{encoded_authz_id}
+            Updates the values for the cloudauthz configuration with the given ``encoded_authz_id``.
+
+            With this API only the following attributes of a cloudauthz configuration
+            can be updated: `authn_id`, `provider`, `config`, `deleted`.
+
+        :type  trans:               galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans:               Galaxy web transaction
+
+        :type  encoded_authz_id:    string
+        :param encoded_authz_id:    The encoded ID of the CloudAuthz record to be updated.
+
+        :type payload:              dict
+        :param payload:             A dictionary structure containing the attributes to modified with their new values.
+                                    It can contain any number of the following attributes:
+                                        *   provider:   the cloud-based resource provider
+                                                        to which this configuration belongs to.
+
+                                        *   authn_id:   the (encoded) ID of a third-party authentication of a user.
+                                                        To have this ID, user must have logged-in to this Galaxy server
+                                                        using third-party identity (e.g., Google), or has associated
+                                                        their Galaxy account with a third-party OIDC-based identity.
+                                                        See this page: https://galaxyproject.org/admin/authentication/
+
+                                                        Note: A user can associate a cloudauthz record with their own
+                                                        authentications only. If the given authentication with authn_id
+                                                        belongs to a different user, Galaxy will throw the
+                                                        ItemAccessibilityException exception.
+
+                                        *   config:     a dictionary containing all the configuration required to
+                                                        request temporary credentials from the provider.
+                                                        See the following page for details:
+                                                        https://galaxyproject.org/cloud/authnz/
+
+                                        *   deleted:    a boolean type marking the specified cloudauthz as (un)deleted.
+
+        """
+
         msg_template = "Rejected user `" + str(trans.user.id) + "`'s request to delete cloudauthz config because of {}."
         try:
             authz_id = self.decode_id(encoded_authz_id)
