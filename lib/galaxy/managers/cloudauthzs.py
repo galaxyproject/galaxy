@@ -1,10 +1,14 @@
 """
-Manager and serializer for cloud authorizations (cloudauthzs).
+Manager and (de)serializer for cloud authorizations (cloudauthzs).
 """
 
 import logging
 
 from galaxy import model
+from galaxy.exceptions import (
+    InternalServerError,
+    MalformedId
+)
 from galaxy.managers import base
 from galaxy.managers import deletable
 from galaxy.managers import sharable
@@ -65,3 +69,39 @@ class CloudAuthzsSerializer(base.ModelSerializer, deletable.PurgableSerializerMi
             'create_time'  : lambda i, k, **c: str(i.create_time),
             'deleted'      : lambda i, k, **c: str(i.deleted)
         })
+
+
+class CloudAuthzsDeserializer(base.ModelDeserializer):
+    """
+    Service object for validating and deserializing dictionaries that
+    update/alter cloudauthz configurations.
+    """
+    model_manager_class = CloudAuthzManager
+
+    def add_deserializers(self):
+        super(CloudAuthzsDeserializer, self).add_deserializers()
+        self.deserializers.update({
+            'authn_id': self.deserialize_and_validate_authn_id,
+            'provider': self.default_deserializer,
+            'config': self.default_deserializer,
+            'deleted': self.default_deserializer
+        })
+
+    def deserialize_and_validate_authn_id(self, item, key, val, **context):
+        try:
+            decoded_authn_id = self.app.security.decode_id(val)
+        except Exception:
+            log.debug("cannot decode authz_id `" + str(val) + "`")
+            raise MalformedId("Invalid `authz_id` {}!".format(val))
+
+        trans = context.get("trans")
+        if trans is None:
+            log.debug("Not found expected `trans` when deserializing CloudAuthz.")
+            raise InternalServerError
+
+        try:
+            trans.app.authnz_manager.can_user_assume_authn(trans, decoded_authn_id)
+        except Exception as e:
+            raise e
+
+        return decoded_authn_id
