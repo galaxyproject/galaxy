@@ -1721,6 +1721,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         user_id = kwd.get('user_id', None)
         repository_id = kwd.get('repository_id', None)
         changeset_revision = kwd.get('changeset_revision', None)
+        self.validate_changeset_revision(trans, changeset_revision, repository_id)
         return trans.fill_template('/webapps/tool_shed/index.mako',
                                    repository_metadata=repository_metadata,
                                    can_administer_repositories=can_administer_repositories,
@@ -2167,6 +2168,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         status = kwd.get('status', 'done')
         repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
         changeset_revision = kwd.get('changeset_revision', repository.tip(trans.app))
+        self.validate_changeset_revision(trans, changeset_revision, repository_id)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id(repository_metadata.id),
@@ -2801,13 +2803,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         avg_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, repository, webapp_model=trans.model)
         changeset_revision = kwd.get('changeset_revision', repository.tip(trans.app))
-        if not hg_util.get_changectx_for_changeset(repo, changeset_revision):
-            message = 'Invalid changeset revision'
-            return trans.response.send_redirect(web.url_for(controller='repository',
-                                                            action='index',
-                                                            repository_id=id,
-                                                            message=message,
-                                                            status='error'))
+        self.validate_changeset_revision(trans, changeset_revision, id)
         repository.share_url = repository_util.generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=changeset_revision)
         repository.clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(trans.user, repository)
         display_reviews = kwd.get('display_reviews', False)
@@ -2902,6 +2898,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         tool_lineage = []
         tool = None
         guid = None
+        self.validate_changeset_revision(trans, changeset_revision, repository_id)
         revision_label = hg_util.get_revision_label(trans.app, repository, changeset_revision, include_date=False)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
         if repository_metadata:
@@ -2989,3 +2986,16 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                    metadata=metadata,
                                    message=message,
                                    status=status)
+
+    def validate_changeset_revision(self, trans, changeset_revision, repository_id):
+        """In case changeset revision is invalid send them to the repository page"""
+        if changeset_revision:
+            repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
+            repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
+            if not hg_util.get_changectx_for_changeset(repo, changeset_revision):
+                message = 'Invalid changeset revision'
+                return trans.response.send_redirect(web.url_for(controller='repository',
+                                                                action='index',
+                                                                repository_id=repository_id,
+                                                                message=message,
+                                                                status='error'))
