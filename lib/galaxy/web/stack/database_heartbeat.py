@@ -7,9 +7,7 @@ from galaxy.model.orm.now import now
 
 class DatabaseHeartbeat(object):
 
-    def __init__(self, sa_session, server_name=None, application_stack=None, heartbeat_interval=60):
-        self.sa_session = sa_session
-        self._server_name = server_name
+    def __init__(self, application_stack, heartbeat_interval=60):
         self.application_stack = application_stack
         self.heartbeat_interval = heartbeat_interval
         self.exit = threading.Event()
@@ -17,9 +15,13 @@ class DatabaseHeartbeat(object):
         self.active = False
 
     @property
+    def sa_session(self):
+        return self.application_stack.app.model.context
+
+    @property
     def server_name(self):
         # Application stack manipulates server name after forking
-        return self.application_stack.app.config.server_name if self.application_stack else self._server_name
+        return self.application_stack.app.config.server_name
 
     def start(self):
         if not self.active:

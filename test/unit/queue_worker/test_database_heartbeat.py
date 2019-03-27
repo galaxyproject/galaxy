@@ -3,6 +3,7 @@ import time
 
 import pytest
 
+from galaxy.web.stack import application_stack_instance
 from galaxy.web.stack.database_heartbeat import DatabaseHeartbeat
 
 
@@ -14,8 +15,10 @@ def heartbeat_app(database_app):
 
 @contextlib.contextmanager
 def setup_heartbeat_app(app):
-    app.config.server_name = 'test_queue_worker'
-    app.database_heartbeat = DatabaseHeartbeat(sa_session=app.model.context, server_name=app.config.server_name, heartbeat_interval=0.1)
+    app.config.server_name = 'test_heartbeat'
+    app.config.attach_to_pools = False
+    app.application_stack = application_stack_instance(app=app)
+    app.database_heartbeat = DatabaseHeartbeat(application_stack=app.application_stack, heartbeat_interval=0.1)
     yield app
     app.database_heartbeat.shutdown()
 

@@ -86,7 +86,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
         check_migrate_tools = self.config.check_migrate_tools
-        self._configure_models(check_migrate_databases=True, check_migrate_tools=check_migrate_tools, config_file=config_file)
+        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, check_migrate_tools=check_migrate_tools, config_file=config_file)
 
         # Manage installed tool shed repositories.
         self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager(self)
@@ -228,7 +228,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self._configure_signal_handlers(handlers)
 
         self.database_heartbeat = DatabaseHeartbeat(
-            sa_session=self.model.context,
             application_stack=self.application_stack
         )
         self.application_stack.register_postfork_function(self.database_heartbeat.start)

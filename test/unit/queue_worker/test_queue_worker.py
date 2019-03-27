@@ -43,7 +43,7 @@ def setup_queue_worker_test(app):
     app.config.attach_to_pools = False
     app.amqp_internal_connection_obj = connection_from_config(app.config)
     app.application_stack = application_stack_instance(app=app)
-    app.database_heartbeat = DatabaseHeartbeat(sa_session=app.model.context, application_stack=app.application_stack, heartbeat_interval=10)
+    app.database_heartbeat = DatabaseHeartbeat(application_stack=app.application_stack, heartbeat_interval=10)
     app.database_heartbeat.start()
     time.sleep(0.2)
     app.control_worker = GalaxyQueueWorker(app=app, task_mapping=control_message_to_task)
