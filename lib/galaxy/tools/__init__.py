@@ -1716,6 +1716,28 @@ class Tool(Dictifiable):
     def exec_after_process(self, app, inp_data, out_data, param_dict, job=None):
         pass
 
+    def handle_outputs_when_empty(self, app, out_data, out_collections):
+        for key, value in self.outputs.items():
+            if value.when_empty:
+                data = out_data.get(key, None)
+                if data and data.get_total_size() == 0:
+                    if value.when_empty == 'hide':
+                        data.visible = False
+                        log.debug('Hiding empty output dataset: %s', data)
+                    if value.when_empty == 'delete':
+                        data.deleted = True
+                        log.debug('Deleting empty output dataset: %s', data)
+        for key, value in self.output_collections.items():
+            if value.when_empty:
+                collection = out_collections.get(key, None)
+                if collection and not collection.dataset_instances:
+                    if value.when_empty == 'hide':
+                        collection.visible = False
+                        log.debug('Hiding empty output collection: %s', collection)
+                    if value.when_empty == 'delete':
+                        collection.deleted = True
+                        log.debug('Deleting empty output collection: %s', collection)
+
     def job_failed(self, job_wrapper, message, exception=False):
         """
         Called when a job has failed

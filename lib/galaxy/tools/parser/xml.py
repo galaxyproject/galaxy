@@ -277,6 +277,7 @@ class XmlToolSource(ToolSource):
             name = collection_elem.get("name")
             label = xml_text(collection_elem, "label")
             default_format = collection_elem.get("format", "data")
+            when_empty = collection_elem.get('when_empty', None)
             collection_type = collection_elem.get("type", None)
             collection_type_source = collection_elem.get("type_source", None)
             collection_type_from_rules = collection_elem.get("type_from_rules", None)
@@ -310,6 +311,7 @@ class XmlToolSource(ToolSource):
                 inherit_metadata=inherit_metadata,
                 default_format_source=default_format_source,
                 default_metadata_source=default_metadata_source,
+                when_empty=when_empty
             )
             outputs[output_collection.name] = output_collection
 
@@ -378,6 +380,7 @@ class XmlToolSource(ToolSource):
         output.filters = data_elem.findall('filter')
         output.tool = tool
         output.from_work_dir = data_elem.get("from_work_dir", None)
+        output.when_empty = data_elem.get("when_empty", None)
         output.hidden = string_as_bool(data_elem.get("hidden", ""))
         output.actions = ToolOutputActionGroup(output, data_elem.find('actions'))
         output.dataset_collector_descriptions = dataset_collector_descriptions_from_elem(data_elem, legacy=self.legacy_defaults)
