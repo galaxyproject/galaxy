@@ -2,26 +2,27 @@
 GIS classes
 """
 
-import data
 import os
 import sys
-
-from galaxy.datatypes import metadata
+import logging
+from galaxy.datatypes import data
 from galaxy.datatypes.metadata import MetadataElement
 
 
 verbose = False
+gal_Log = logging.getLogger(__name__)
+
 
 # The base class for all GIS data
-class GIS( data.Data ):
+class GIS(data.Data):
     """
     base class to use for gis datatypes
     """
 
-    def __init__( self, **kwd ):
-        data.Data.__init__( self, **kwd )
+    def __init__(self, **kwd):
+        data.Data.__init__(self, **kwd)
 
-    def set_peek( self, dataset, is_multi_byte=False ):
+    def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = 'GIS data'
@@ -30,27 +31,25 @@ class GIS( data.Data ):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def get_mime( self ):
+    def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'data/GIS'
 
 
 # The shapefile class
-class Shapefile( GIS ):
+class Shapefile(GIS):
     """
     Shapefile data
     derived from Data - composite datatype elements
     stored in extra files path
     """
-    #http://en.wikipedia.org/wiki/Shapefile
+#    http://en.wikipedia.org/wiki/Shapefile
 
-    MetadataElement( name="base_name", desc="base name for all transformed versions of this dataset", default="Shapefile", readonly=True, set_in_upload=True)
+    MetadataElement(name="base_name", desc="base name for all transformed versions of this dataset", default="Shapefile", readonly=True, set_in_upload=True)
 
     composite_type = 'auto_primary_file'
     file_ext = "shp"
     allow_datatype_change = False
-
-
 
     def generate_primary_file(self, dataset=None):
         rval = ['<html><head><title>Shapefile Galaxy Composite Dataset </title></head><p/>']
@@ -67,7 +66,6 @@ class Shapefile( GIS ):
         rval.append('</ul></div></html>')
         return "\n".join(rval)
 
-
     def regenerate_primary_file(self, dataset):
         """
         cannot do this until we are setting metadata
@@ -83,7 +81,6 @@ class Shapefile( GIS ):
         with open(dataset.file_name, 'w') as f:
             f.write("\n".join(rval))
             f.write('\n')
-
 
     def set_meta(self, dataset, **kwd):
         """
@@ -117,11 +114,9 @@ class Shapefile( GIS ):
             dataset.blurb = 'Composite file - shapefile Galaxy toolkit'
         return True
 
-
-    def __init__( self, **kwd ):
-        GIS.__init__( self, **kwd )
-        self.add_composite_file( 'shapefile.shp',  description = 'Geometry File', is_binary = True, optional = False )
-        self.add_composite_file( 'shapefile.shx',  description = 'Geometry index File', is_binary = True, optional = False )
-        self.add_composite_file( 'shapefile.dbf',  description = 'Database File', is_binary = True, optional = False )
-#        self.add_composite_file( 'shapefile.prj',  description = 'Coordinate system informations', is_binary = True, optional = True )
-
+    def __init__(self, **kwd):
+        GIS.__init__(self, **kwd)
+        self.add_composite_file('shapefile.shp', description='Geometry File', is_binary=True, optional=False)
+        self.add_composite_file('shapefile.shx', description='Geometry index File', is_binary=True, optional=False)
+        self.add_composite_file('shapefile.dbf', description='Database File', is_binary=True, optional=False)
+#        self.add_composite_file('shapefile.prj', description='Coordinate system informations', is_binary=True, optional=True)
