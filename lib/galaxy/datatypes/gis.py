@@ -3,8 +3,9 @@ GIS classes
 """
 
 import os
-import sys
 import logging
+import sys
+
 from galaxy.datatypes import data
 from galaxy.datatypes.metadata import MetadataElement
 
