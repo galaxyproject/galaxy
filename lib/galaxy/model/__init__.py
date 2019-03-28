@@ -2404,8 +2404,10 @@ class DatasetInstance(object):
 
     def set_dataset_state(self, state):
         if self.raw_set_dataset_state(state):
-            object_session(self).add(self.dataset)
-            object_session(self).flush()  # flush here, because hda.flush() won't flush the Dataset object
+            sa_session = object_session(self)
+            if sa_session:
+                object_session(self).add(self.dataset)
+                object_session(self).flush()  # flush here, because hda.flush() won't flush the Dataset object
     state = property(get_dataset_state, set_dataset_state)
 
     def get_file_name(self):
