@@ -153,7 +153,11 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
 
     def external_metadata_set_successfully(self, dataset, name, sa_session, working_directory):
         metadata_results_path = os.path.join(working_directory, "metadata", "metadata_results_%s" % name)
-        return self._metadata_results_from_file(dataset, metadata_results_path)
+        try:
+            return self._metadata_results_from_file(dataset, metadata_results_path)
+        except Exception:
+            # if configured we need to try setting metadata internally
+            return False
 
 
 class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
