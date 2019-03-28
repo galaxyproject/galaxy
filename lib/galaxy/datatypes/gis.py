@@ -2,8 +2,8 @@
 GIS classes
 """
 
-import os
 import logging
+import os
 import sys
 
 from galaxy.datatypes import data
