@@ -580,13 +580,38 @@ class ModelImportStore(object):
 
     def _import_jobs(self, object_import_tracker, history):
         object_key = self.object_key
+
+        def _find_hda(input_key):
+            hda = None
+            if input_key in object_import_tracker.hdas_by_key:
+                hda = object_import_tracker.hdas_by_key[input_key]
+            if input_key in object_import_tracker.hda_copied_from_sinks:
+                hda = object_import_tracker.hdas_by_key[object_import_tracker.hda_copied_from_sinks[input_key]]
+            return hda
+
+        def _find_hdca(input_key):
+            hdca = None
+            if input_key in object_import_tracker.hdcas_by_key:
+                hdca = object_import_tracker.hdcas_by_key[input_key]
+            if input_key in object_import_tracker.hdca_copied_from_sinks:
+                hdca = object_import_tracker.hdca_copied_from_sinks[input_key]
+            return hdca
+
         #
         # Create jobs.
         #
         jobs_attrs = self.jobs_properties()
-
         # Create each job.
         for job_attrs in jobs_attrs:
+            if 'id' in job_attrs:
+                # only thing we allow editing currently is associations for incoming jobs.
+                assert self.import_options.allow_edit
+                assert not self.sessionless
+                job = self.sa_session.query(model.Job).get(job_attrs["id"])
+                self._connect_job_io(job, job_attrs, _find_hda, _find_hdca)
+                self._flush()
+                continue
+
             imported_job = model.Job()
             imported_job.user = self.user
             imported_job.history = history
@@ -619,22 +644,6 @@ class ModelImportStore(object):
                 pass
             self._session_add(imported_job)
             self._flush()
-
-            def _find_hda(input_key):
-                hda = None
-                if input_key in object_import_tracker.hdas_by_key:
-                    hda = object_import_tracker.hdas_by_key[input_key]
-                if input_key in object_import_tracker.hda_copied_from_sinks:
-                    hda = object_import_tracker.hdas_by_key[object_import_tracker.hda_copied_from_sinks[input_key]]
-                return hda
-
-            def _find_hdca(input_key):
-                hdca = None
-                if input_key in object_import_tracker.hdcas_by_key:
-                    hdca = object_import_tracker.hdcas_by_key[input_key]
-                if input_key in object_import_tracker.hdca_copied_from_sinks:
-                    hdca = object_import_tracker.hdca_copied_from_sinks[input_key]
-                return hdca
 
             # Connect jobs to input and output datasets.
             params = self._normalize_job_parameters(imported_job, job_attrs, _find_hda, _find_hdca)
@@ -964,6 +973,8 @@ class DirectoryModelExportStore(ModelExportStore):
         self.collections_attrs = []
         self.dataset_id_to_path = {}
 
+        self.job_output_dataset_associations = {}
+
     def serialize_files(self, dataset, as_dict):
         if self.export_files is None:
             return None
@@ -1036,7 +1047,7 @@ class DirectoryModelExportStore(ModelExportStore):
         self.dataset_id_to_path[dataset.dataset.id] = (as_dict.get("file_name"), as_dict.get("extra_files_path"))
 
     def exported_key(self, obj):
-        return self.security.encode_id(obj.id, kind='model_export')
+        return self.serialization_options.get_identifier(self.security, obj)
 
     def __enter__(self):
         return self
@@ -1108,6 +1119,12 @@ class DirectoryModelExportStore(ModelExportStore):
                 collect_datasets(folder)
 
         collect_datasets(library.root_folder)
+
+    def add_job_output_dataset_associations(self, job_id, name, dataset_instance):
+        job_output_dataset_associations = self.job_output_dataset_associations
+        if job_id not in job_output_dataset_associations:
+            job_output_dataset_associations[job_id] = {}
+        job_output_dataset_associations[job_id][name] = dataset_instance
 
     def add_dataset_collection(self, collection):
         self.collections_attrs.append(collection)
@@ -1259,6 +1276,14 @@ class DirectoryModelExportStore(ModelExportStore):
             job_attrs['implicit_output_dataset_collection_mapping'] = implicit_output_dataset_collection_mapping
 
             jobs_attrs.append(job_attrs)
+
+        for job_id, job_output_dataset_associations in self.job_output_dataset_associations.items():
+            output_dataset_mapping = {}
+            for name, dataset in job_output_dataset_associations.items():
+                if name not in output_dataset_mapping:
+                    output_dataset_mapping[name] = []
+                output_dataset_mapping[name].append(self.exported_key(dataset))
+            jobs_attrs.append({"id": job_id, 'output_dataset_mapping': output_dataset_mapping})
 
         icjs_attrs = []
         for icj_id, icj in implicit_collection_jobs_dict.items():
