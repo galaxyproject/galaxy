@@ -34,10 +34,17 @@ class Uploader(object):
         self.gi = galaxy.GalaxyInstance(url=url, key=api)
         libs = self.gi.libraries.get_libraries(library_id=library_id,
                                         name=library_name)
+
+        # TODO libs also contains deleted libraries even if it should not
+        # https://github.com/galaxyproject/bioblend/issues/239 fixed by
+        # https://github.com/galaxyproject/bioblend/pull/273
+        # remove if bioblend>0.12 is released
+        libs = [d for d in libs if not d['deleted']]
+
         if len(libs) == 0:
             raise Exception("Unknown library [%s,%s]" % (library_id, library_name))
         elif len(libs) > 1:
-            raise Exception("Ambiguous library [%s,%s]" % (library_id, library_name))
+            raise Exception("Ambiguous libraries for [%s,%s]: %s" % (library_id, library_name, libs))
         else:
             libs = libs[0]
         self.library_id = libs['id']
@@ -48,7 +55,6 @@ class Uploader(object):
         self.folder_id = libs['root_folder_id']
         self.should_link = should_link
         self.non_local = non_local
-        self.root_folder = root_folder
         self.dbkey = dbkey
         self.preserve_dirs = preserve_dirs
         self.tag_using_filenames = tag_using_filenames
