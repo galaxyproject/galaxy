@@ -204,15 +204,15 @@ class Uploader(object):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent('''
-        Upload files or directories into a data library.
+        Takes one or more path given as positional arguments (or via stdin) and uploads |
+        the files or directories contained therein into a data library.
 
-        If PATH/TO/FILE_OR_DIR is given on stdin the contents of
-        ROOT_FOLDER/PATH/TO/FILE_OR_DIR will be uploaded to PATH/TO/FILE_OR_DIR
-        in the specified folder and libary. If ROOT_FOLDER is empty, then
-        the path should be absolute. Data sets and folders will only be
-        created in the library if they are not present yet. If --preserve_dirs
-        is set then the structure in ROOT_FOLDER/PATH/TO/FILE_OR_DIR will be
-        preserved in the libary.'''))
+        The contents of path (PATH/TO/FILE_OR_DIR) will be uploaded to
+        PATH/TO/FILE_OR_DIR in the specified folder (-f/-F) and libary (-l/-L). Note that
+        the path can be given relative to the current working directory. Data sets and
+        folders will only be created in the library if they are not present yet. If
+        --preserve_dirs is set then the structure in PATH/TO/FILE_OR_DIR will be preserved
+        in the libary.'''))
 
     parser.add_argument("-u", "--url", dest="url", required=True, help="Galaxy URL")
     parser.add_argument("-a", "--api", dest="api", required=True, help="API Key")
@@ -220,9 +220,10 @@ if __name__ == '__main__':
     libparser = parser.add_mutually_exclusive_group(required=True)
     libparser.add_argument("-l", "--lib", dest="library_id", help="Library ID")
     libparser.add_argument("-L", "--library_name", help="Library name")
-    parser.add_argument("-f", "--folder", dest="folder_id",
+    folderparser = parser.add_mutually_exclusive_group(required=False)
+    folderparser.add_argument("-f", "--folder", dest="folder_id",
                         help="Folder ID. If not specified upload to root folder of the library or the folder specified with --folder_name.")
-    parser.add_argument("-F", "--folder_name", help="Folder to upload to, can be a path")
+    folderparser.add_argument("-F", "--folder_name", help="Folder to upload to, can be a path")
 
     parser.add_argument("--nonlocal", dest="non_local", action="store_true", default=False,
                         help="Set this flag if you are NOT running this script on your Galaxy head node with access to the full filesystem")
