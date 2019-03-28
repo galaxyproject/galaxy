@@ -100,8 +100,7 @@ class AuthnzManager(object):
     def _parse_idp_config(self, config_xml):
         rtv = {
             'client_id': config_xml.find('client_id').text,
-            'client_secret': config_xml.find('client_secret').text,
-            'redirect_uri': config_xml.find('redirect_uri').text}
+            'client_secret': config_xml.find('client_secret').text}
         if config_xml.find('prompt') is not None:
             rtv['prompt'] = config_xml.find('prompt').text
         return rtv
@@ -113,11 +112,12 @@ class AuthnzManager(object):
             if v == provider:
                 return k.lower()
 
-    def _get_authnz_backend(self, provider):
+    def _get_authnz_backend(self, provider, request):
         unified_provider_name = self._unify_provider_name(provider)
         if unified_provider_name in self.oidc_backends_config:
             provider = unified_provider_name
             try:
+                self.oidc_backends_config[provider]['redirect_uri'] = self.get_callback_url(request.host_url, provider)
                 return True, "", PSAAuthnz(provider, self.oidc_config, self.oidc_backends_config[provider])
             except Exception as e:
                 log.exception('An error occurred when loading PSAAuthnz')
@@ -130,7 +130,7 @@ class AuthnzManager(object):
     def _extend_cloudauthz_config(self, cloudauthz, request, sa_session, user_id):
         config = copy.deepcopy(cloudauthz.config)
         if cloudauthz.provider == "aws":
-            success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
+            success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider, request)
             strategy = Strategy(request, None, Storage, backend.config)
             on_the_fly_config(sa_session)
             try:
@@ -146,6 +146,10 @@ class AuthnzManager(object):
                     err_msg="An error occurred getting your ID token. {}. If the problem persists, please "
                             "contact Galaxy admin.".format(msg))
         return config
+
+    @classmethod
+    def get_callback_url(cls, host_url, provider):
+        return "{}/authnz/{}/callback".format(host_url, provider)
 
     @staticmethod
     def can_user_assume_authn(trans, authn_id):
@@ -199,7 +203,7 @@ class AuthnzManager(object):
         :return: an identity provider specific authentication redirect URI.
         """
         try:
-            success, message, backend = self._get_authnz_backend(provider)
+            success, message, backend = self._get_authnz_backend(provider, trans.request)
             if success is False:
                 return False, message, None
             return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans)
@@ -210,7 +214,7 @@ class AuthnzManager(object):
 
     def callback(self, provider, state_token, authz_code, trans, login_redirect_url):
         try:
-            success, message, backend = self._get_authnz_backend(provider)
+            success, message, backend = self._get_authnz_backend(provider, trans.request)
             if success is False:
                 return False, message, (None, None)
             return True, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
@@ -221,7 +225,7 @@ class AuthnzManager(object):
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None):
         try:
-            success, message, backend = self._get_authnz_backend(provider)
+            success, message, backend = self._get_authnz_backend(provider, trans.request)
             if success is False:
                 return False, message, None
             return backend.disconnect(provider, trans, disconnect_redirect_url)
