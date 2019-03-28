@@ -718,6 +718,7 @@
     <datatype extension="ideaspre" type="galaxy.datatypes.genetics:IdeasPre" display_in_upload="true"/>
     <!-- End IDEAS datatypes -->
     <datatype extension="sbml" type="galaxy.datatypes.xml:Sbml" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="shp" type="galaxy.datatypes.gis:Shapefile" display_in_upload="true"/>
   </registration>
   <sniffers>
     <!--
