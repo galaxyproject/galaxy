@@ -97,10 +97,12 @@ Direct Commit Access
 
 A *committer* may only commit directly to the Galaxy repository (i.e. outside of
 a pull request and not following the procedures described below) the following
-two categories of changes:
+four categories of changes:
 
 * Patches for serious security vulnerabilities.
 * Cherry-picking and/or merging of existing approved commits to other branches.
+* Documentation-only changes.
+* Tests.
 
 
 Release branches
