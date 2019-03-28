@@ -36,6 +36,7 @@ PACKAGES = [
     'galaxy.datatypes.util',
     'galaxy.datatypes.test',
     'galaxy.model',
+    'galaxy.model.dataset_collections',
     'galaxy.model.migrate',
     'galaxy.model.orm',
     'galaxy.model.tool_shed_install',
