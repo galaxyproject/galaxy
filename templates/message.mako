@@ -1,4 +1,6 @@
 <%!
+    import bleach
+
     def inherit(context):
         if context.get('use_panels'):
             if context.get('webapp'):
@@ -53,7 +55,13 @@
 
 ## Render a message
 <%def name="render_msg( msg, status='done' )">
-    <% status = "success" if status == "done" else status %>
-    <% status = "danger" if status == "error" else status %>
-    <div class="message mt-2 alert alert-${status}">${_(msg)}</div>
+    <%
+        if status == "done":
+            status = "success"
+        elif status == "error":
+            status = "danger"
+        if status not in ("danger", "info", "success", "warning"):
+            status = "info"
+    %>
+    <div class="message mt-2 alert alert-${status}">${_(bleach.clean(msg))}</div>
 </%def>
