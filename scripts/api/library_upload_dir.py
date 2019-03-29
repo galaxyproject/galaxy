@@ -82,14 +82,16 @@ class Uploader(object):
         contents of the data library, and then filter out things that are
         interesting to us based on a folder prefix.
         """
-
+        print("###prepopulate_memo")
         existing = self.gi.libraries.show_library(self.library_id, contents=True)
+        print("existing %s"%existing)
 
         uploading_to = [x for x in existing if x['id'] == self.folder_id]
         if len(uploading_to) == 0:
             raise Exception("Unknown folder [%s] in library [%s]" %
                             (self.folder_id, self.library_id))
         else:
+            print("uploading_to %s"%(uploading_to))
             uploading_to = uploading_to[0]
 
         for x in existing:
@@ -101,6 +103,7 @@ class Uploader(object):
             if name_part.startswith('/'):
                 name_part = name_part[1:]
             self.memo_path[name_part] = x['id']
+        print("self.memo_path"%(self.memo_path))
 
     def memoized_path(self, path_parts, base_folder=None):
         """Get the folder ID for a given folder path specified by path_parts.
@@ -111,6 +114,7 @@ class Uploader(object):
         previously existing paths and will not respect those. TODO: handle
         existing paths.
         """
+        print("###memoized_path")
         if base_folder is None:
             base_folder = self.folder_id
         dropped_prefix = []
@@ -185,8 +189,8 @@ class Uploader(object):
             # So that we can check if it really needs to be uploaded.
             already_uploaded = memo_key in self.memo_path.keys()
             fid = self.memoized_path(basepath, base_folder=self.folder_id)
+            print("%s %s"%( memo_key, self.memo_path))
             print('[%s/%s] %s/%s uploaded=%s' % (idx + 1, len(all_files), fid, fname, already_uploaded))
-
             if not already_uploaded:
                 if self.non_local:
                     self.gi.libraries.upload_file_from_local_path(
@@ -196,6 +200,7 @@ class Uploader(object):
                         dbkey=self.dbkey
                     )
                 else:
+                    print("libid %s\npath %s\nfolderid %s\nlink %s\npreserve %s\ntag %s"%(self.library_id,path,fid,self.dbkey,'link_to_files' if self.should_link else 'copy_files',self.preserve_dirs,self.tag_using_filenames))
                     self.gi.libraries.upload_from_galaxy_filesystem(
                         library_id=self.library_id,
                         filesystem_paths=path,
