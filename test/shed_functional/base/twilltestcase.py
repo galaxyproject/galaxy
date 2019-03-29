@@ -29,7 +29,7 @@ import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
 import galaxy.webapps.tool_shed.util.hgweb_config
 from base.testcase import FunctionalTestCase  # noqa: I100,I201,I202
-from galaxy.util import unicodify  # noqa: I201
+from galaxy.util import smart_str, unicodify  # noqa: I201
 from galaxy.web import security  # noqa: I201
 from tool_shed.util import hg_util, xml_util
 from tool_shed.util.encoding_util import tool_shed_encode
@@ -465,11 +465,9 @@ class ShedTwillTestCase(FunctionalTestCase):
         return self.wait_for(lambda: self.get_running_datasets(), **kwds)
 
     def write_temp_file(self, content, suffix='.html'):
-        fd, fname = tempfile.mkstemp(suffix=suffix, prefix='twilltestcase-')
-        f = os.fdopen(fd, "w")
-        f.write(content)
-        f.close()
-        return fname
+        with tempfile.NamedTemporaryFile(suffix=suffix, prefix='twilltestcase-', delete=False) as fh:
+            fh.write(smart_str(content))
+        return fh.name
 
     def add_repository_review_component(self, **kwd):
         params = {
