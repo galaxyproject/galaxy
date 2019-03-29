@@ -53,19 +53,23 @@
 
 ## Render large message.
 <%def name="render_large_message( message, status )">
-    <div class="${status}messagelarge" style="margin: 1em">${_(message)}</div>
+    <%
+        if status not in ("done", "info", "error", "warning"):
+            status = "infomessagelarge"
+        else:
+            status = status + "messagelarge"
+    %>
+    <div class="${status}" style="margin: 1em">${_(bleach.clean(message))}</div>
 </%def>
 
 ## Render a message
 <%def name="render_msg( msg, status='done' )">
     <%
-        if status == "done":
-            status = "success"
-        elif status == "error":
-            status = "danger"
-        if status not in ("danger", "info", "success", "warning"):
-            status = "info"
+        if status not in ("done", "info", "error", "warning"):
+            status = "infomessage"
+        else:
+            status = status + "message"
     %>
-    <div class="${status}message">${_(bleach.clean(msg))}</div>
+    <div class="${status}">${_(bleach.clean(msg))}</div>
 </%def>
 
