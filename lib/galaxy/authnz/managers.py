@@ -147,8 +147,8 @@ class AuthnzManager(object):
                             "contact Galaxy admin.".format(msg))
         return config
 
-    @classmethod
-    def get_callback_url(cls, host_url, provider):
+    @staticmethod
+    def get_callback_url(host_url, provider):
         return "{}/authnz/{}/callback".format(host_url, provider)
 
     @staticmethod
