@@ -1522,7 +1522,10 @@ class JobWrapper(HasResourceParameters):
             log.exception("Unable to cleanup job %d", self.job_id)
 
     def _collect_extra_files(self, dataset, job_working_directory):
-        temp_file_path = os.path.join(job_working_directory, "dataset_%s_files" % (dataset.id))
+        object_store = self.app.object_store
+        store_by = getattr(object_store, "store_by", "id")
+        file_name = "dataset_%s_files" % getattr(dataset, store_by)
+        temp_file_path = os.path.join(job_working_directory, file_name)
         extra_dir = None
         try:
             # This skips creation of directories - object store
