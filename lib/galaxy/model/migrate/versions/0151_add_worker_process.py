@@ -13,6 +13,7 @@ from sqlalchemy import (
     TEXT,
 )
 
+from galaxy.model.migrate.versions.util import create_table, drop_table
 from galaxy.model.orm.now import now
 
 log = logging.getLogger(__name__)
@@ -31,23 +32,9 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print(__doc__)
     metadata.reflect()
-    _create(WorkerProcess_table)
+    create_table(WorkerProcess_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    _drop(WorkerProcess_table)
-
-
-def _create(table):
-    try:
-        table.create()
-    except Exception:
-        log.exception("Creating %s table failed.", table.name)
-
-
-def _drop(table):
-    try:
-        table.drop()
-    except Exception:
-        log.exception("Dropping %s table failed.", table.name)
+    drop_table(WorkerProcess_table)
