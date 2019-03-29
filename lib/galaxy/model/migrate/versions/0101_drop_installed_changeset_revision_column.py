@@ -9,6 +9,8 @@ import sys
 from sqlalchemy import MetaData, Table
 from sqlalchemy.exc import NoSuchTableError
 
+from galaxy.model.migrate.versions.util import drop_column
+
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
@@ -21,8 +23,8 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         ToolDependency_table = Table("tool_dependency", metadata, autoload=True)
@@ -30,11 +32,7 @@ def upgrade(migrate_engine):
         ToolDependency_table = None
         log.debug("Failed loading table tool_dependency")
     if ToolDependency_table is not None:
-        try:
-            col = ToolDependency_table.c.installed_changeset_revision
-            col.drop()
-        except Exception:
-            log.exception("Dropping column 'installed_changeset_revision' from tool_dependency table failed.")
+        drop_column('installed_changeset_revision', ToolDependency_table)
 
 
 def downgrade(migrate_engine):

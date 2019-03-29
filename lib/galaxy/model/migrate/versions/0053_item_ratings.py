@@ -7,6 +7,8 @@ import logging
 
 from sqlalchemy import Column, ForeignKey, Index, Integer, MetaData, Table
 
+from galaxy.model.migrate.versions.util import create_table, drop_table
+
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
@@ -44,15 +46,11 @@ VisualizationRatingAssociation_table = Table("visualization_rating_association",
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Create history_rating_association table.
-    try:
-        HistoryRatingAssociation_table.create()
-    except Exception:
-        log.exception("Creating history_rating_association table failed.")
+    create_table(HistoryRatingAssociation_table)
 
     # Create history_dataset_association_rating_association table.
     try:
@@ -69,55 +67,17 @@ def upgrade(migrate_engine):
         else:
             log.exception("Creating history_dataset_association_rating_association table failed.")
 
-    # Create stored_workflow_rating_association table.
-    try:
-        StoredWorkflowRatingAssociation_table.create()
-    except Exception:
-        log.exception("Creating stored_workflow_rating_association table failed.")
-
-    # Create page_rating_association table.
-    try:
-        PageRatingAssociation_table.create()
-    except Exception:
-        log.exception("Creating page_rating_association table failed.")
-
-    # Create visualization_rating_association table.
-    try:
-        VisualizationRatingAssociation_table.create()
-    except Exception:
-        log.exception("Creating visualization_rating_association table failed.")
+    create_table(StoredWorkflowRatingAssociation_table)
+    create_table(PageRatingAssociation_table)
+    create_table(VisualizationRatingAssociation_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Drop history_rating_association table.
-    try:
-        HistoryRatingAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping history_rating_association table failed.")
-
-    # Drop history_dataset_association_rating_association table.
-    try:
-        HistoryDatasetAssociationRatingAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping history_dataset_association_rating_association table failed.")
-
-    # Drop stored_workflow_rating_association table.
-    try:
-        StoredWorkflowRatingAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping stored_workflow_rating_association table failed.")
-
-    # Drop page_rating_association table.
-    try:
-        PageRatingAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping page_rating_association table failed.")
-
-    # Drop visualization_rating_association table.
-    try:
-        VisualizationRatingAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping visualization_rating_association table failed.")
+    drop_table(VisualizationRatingAssociation_table)
+    drop_table(PageRatingAssociation_table)
+    drop_table(StoredWorkflowRatingAssociation_table)
+    drop_table(HistoryDatasetAssociationRatingAssociation_table)
+    drop_table(HistoryRatingAssociation_table)

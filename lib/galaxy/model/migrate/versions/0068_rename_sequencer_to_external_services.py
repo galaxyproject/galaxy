@@ -15,28 +15,19 @@ from migrate import ForeignKeyConstraint
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
 from sqlalchemy.exc import NoSuchTableError
 
-# Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrate.versions.util import nextval
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
-def nextval(migrate_engine, table, col='id'):
-    if migrate_engine.name in ['postgres', 'postgresql']:
-        return "nextval('%s_%s_seq')" % (table, col)
-    elif migrate_engine.name in ['mysql', 'sqlite']:
-        return "null"
-    else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
-
-
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
-    # Load existing tables
+    metadata.bind = migrate_engine
     metadata.reflect()
+
     # create the column. Call it external_services_id as the table 'sequencer' is
     # going to be renamed to 'external_service'
     try:
@@ -137,8 +128,8 @@ def upgrade(migrate_engine):
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    # Load existing tables
     metadata.reflect()
+
     # load sequencer & request_type table
     try:
         RequestType_table = Table("request_type", metadata, autoload=True)
