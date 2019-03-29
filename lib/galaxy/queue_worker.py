@@ -307,8 +307,9 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         self.connection = app.amqp_internal_connection_obj
         self.app = app
         self.task_mapping = task_mapping
-        self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(self.app.config)
-        self.control_queues = [self.exchange_queue, self.direct_queue]
+        self.exchange_queue = None
+        self.direct_queue = None
+        self.control_queues = []
         # Delete messages for the current workers' control queues on startup
         for q in self.control_queues:
             q(self.connection).delete()
@@ -319,7 +320,10 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         return galaxy.queues.all_control_queues_for_declare(self.app.config, self.app.application_stack)
 
     def bind_and_start(self):
+        # This is post-forking, so we got the correct sever name
         log.info("Binding and starting galaxy control worker for %s", self.app.config.server_name)
+        self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(self.app.config)
+        self.control_queues = [self.exchange_queue, self.direct_queue]
         self.start()
 
     def get_consumers(self, Consumer, channel):
