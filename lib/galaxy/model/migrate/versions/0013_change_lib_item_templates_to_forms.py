@@ -52,8 +52,8 @@ LibraryDatasetDatasetInfoAssociation_table = Table('library_dataset_dataset_info
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     # Load existing tables
     metadata.reflect()
     # Drop all of the original library_item_info tables

@@ -8,6 +8,8 @@ import logging
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table
 
+from galaxy.model.migrate.versions.util import create_table, drop_table
+
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -32,36 +34,19 @@ SampleRunAssociation_table = Table("sample_run_association", metadata,
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        Run_table.create()
-    except Exception:
-        log.exception("Creating Run_table table failed.")
-    try:
-        RequestTypeRunAssociation_table.create()
-    except Exception:
-        log.exception("Creating RequestTypeRunAssociation table failed.")
-    try:
-        SampleRunAssociation_table.create()
-    except Exception:
-        log.exception("Creating SampleRunAssociation table failed.")
+
+    create_table(Run_table)
+    create_table(RequestTypeRunAssociation_table)
+    create_table(SampleRunAssociation_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    # Load existing tables
     metadata.reflect()
-    try:
-        SampleRunAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping SampleRunAssociation table failed.")
-    try:
-        RequestTypeRunAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping RequestTypeRunAssociation table failed.")
-    try:
-        Run_table.drop()
-    except Exception:
-        log.exception("Dropping Run_table table failed.")
+
+    drop_table(SampleRunAssociation_table)
+    drop_table(RequestTypeRunAssociation_table)
+    drop_table(Run_table)

@@ -7,6 +7,8 @@ import logging
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table
 
+from galaxy.model.migrate.versions.util import create_table, drop_table
+
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
@@ -17,19 +19,15 @@ PasswordResetToken_table = Table("password_reset_token", metadata,
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        PasswordResetToken_table.create()
-    except Exception:
-        log.exception("Creating %s table failed.", PasswordResetToken_table.name)
+
+    create_table(PasswordResetToken_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        PasswordResetToken_table.drop()
-    except Exception:
-        log.exception("Dropping %s table failed.", PasswordResetToken_table.name)
+
+    drop_table(PasswordResetToken_table)

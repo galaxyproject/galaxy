@@ -9,6 +9,8 @@ import sys
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table
 
+from galaxy.model.migrate.versions.util import create_table, drop_table
+
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -35,20 +37,15 @@ GenomeIndexToolData_table = Table("genome_index_tool_data", metadata,
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
-
+    metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        GenomeIndexToolData_table.create()
-    except Exception:
-        log.exception("Creating genome_index_tool_data table failed.")
+
+    create_table(GenomeIndexToolData_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        GenomeIndexToolData_table.drop()
-    except Exception:
-        log.exception("Dropping genome_index_tool_data table failed.")
+
+    drop_table(GenomeIndexToolData_table)

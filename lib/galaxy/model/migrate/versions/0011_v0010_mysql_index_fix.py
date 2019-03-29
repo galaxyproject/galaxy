@@ -35,8 +35,8 @@ HistoryDatasetAssociationDisplayAtAuthorization_table = Table("history_dataset_a
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     if migrate_engine.name == 'mysql':
         # Load existing tables
         metadata.reflect()

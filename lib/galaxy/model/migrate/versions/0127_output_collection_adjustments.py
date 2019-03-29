@@ -8,6 +8,7 @@ import logging
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table, TEXT, Unicode
 
 from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrate.versions.util import add_column, create_table, drop_column, drop_table
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -27,23 +28,20 @@ TABLES = [
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     for table in TABLES:
-        __create(table)
+        create_table(table)
 
-    try:
-        dataset_collection_table = Table("dataset_collection", metadata, autoload=True)
-        # need server_default because column in non-null
-        populated_state_column = Column('populated_state', TrimmedString(64), default='ok', server_default="ok", nullable=False)
-        populated_state_column.create(dataset_collection_table)
+    dataset_collection_table = Table("dataset_collection", metadata, autoload=True)
+    # need server_default because column in non-null
+    populated_state_column = Column('populated_state', TrimmedString(64), default='ok', server_default="ok", nullable=False)
+    add_column(populated_state_column, dataset_collection_table)
 
-        populated_message_column = Column('populated_state_message', TEXT, nullable=True)
-        populated_message_column.create(dataset_collection_table)
-    except Exception:
-        log.exception("Creating dataset collection populated column failed.")
+    populated_message_column = Column('populated_state_message', TEXT, nullable=True)
+    add_column(populated_message_column, dataset_collection_table)
 
 
 def downgrade(migrate_engine):
@@ -51,27 +49,8 @@ def downgrade(migrate_engine):
     metadata.reflect()
 
     for table in TABLES:
-        __drop(table)
+        drop_table(table)
 
-    try:
-        dataset_collection_table = Table("dataset_collection", metadata, autoload=True)
-        populated_state_column = dataset_collection_table.c.populated_state
-        populated_state_column.drop()
-        populated_message_column = dataset_collection_table.c.populated_state_message
-        populated_message_column.drop()
-    except Exception:
-        log.exception("Dropping dataset collection populated_state/ column failed.")
-
-
-def __create(table):
-    try:
-        table.create()
-    except Exception:
-        log.exception("Creating %s table failed.", table.name)
-
-
-def __drop(table):
-    try:
-        table.drop()
-    except Exception:
-        log.exception("Dropping %s table failed.", table.name)
+    dataset_collection_table = Table("dataset_collection", metadata, autoload=True)
+    drop_column('populated_state', dataset_collection_table)
+    drop_column('populated_state_message', dataset_collection_table)
