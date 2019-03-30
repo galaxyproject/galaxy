@@ -94,6 +94,8 @@ class PSAAuthnz(IdentityProvider):
         self.config['DISCONNECT_PIPELINE'] = DISCONNECT_PIPELINE
         self.config[setting_name('AUTHENTICATION_BACKENDS')] = (BACKENDS[provider],)
 
+        self.config['VERIFY_SSL'] = oidc_config.get("VERIFY_SSL")
+
         # The following config sets PSA to call the `_login_user` function for
         # logging in a user. If this setting is set to false, the `_login_user`
         # would not be called, and as a result Galaxy would not know who is
