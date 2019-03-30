@@ -24,6 +24,7 @@ from .psa_authnz import (
     Storage,
     Strategy
 )
+from galaxy.util import string_as_bool
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +61,10 @@ class AuthnzManager(object):
                               " found these attributes: `{}`; skipping this node.".format(child.attrib))
                     continue
                 try:
-                    func = getattr(importlib.import_module('__builtin__'), child.get('Type'))
+                    if child.get('Type') == "bool":
+                        func = string_as_bool
+                    else:
+                        func = getattr(importlib.import_module('__builtin__'), child.get('Type'))
                 except AttributeError:
                     log.error("The value of attribute `Type`, `{}`, is not a valid built-in type;"
                               " skipping this node").format(child.get('Type'))
