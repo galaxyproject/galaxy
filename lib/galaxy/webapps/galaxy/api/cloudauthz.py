@@ -18,6 +18,7 @@ from galaxy.exceptions import (
     RequestParameterMissingException
 )
 from galaxy.managers import cloudauthzs
+from galaxy.util import string_as_bool
 from galaxy.web import (
     _future_expose_api as expose_api
 )
@@ -37,7 +38,7 @@ class CloudAuthzController(BaseAPIController):
         self.cloudauthz_serializer = cloudauthzs.CloudAuthzsSerializer(app)
 
     @expose_api
-    def index(self, trans, **kwargs):
+    def index(self, trans, deleted="False", **kwargs):
         """
         * GET /api/cloud/authz
             Lists all the cloud authorizations user has defined.
@@ -45,13 +46,22 @@ class CloudAuthzController(BaseAPIController):
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
+        :type   deleted:    boolean
+        :param  deleted:    True: show only deleted cloudauthz configurations;
+                            False: show only non-deleted cloudauthz configurations.
+
         :param kwargs: empty dict
 
         :rtype: list of dict
         :return: a list of cloud authorizations (each represented in key-value pair format) defined for the user.
         """
+        if string_as_bool(deleted):
+            cloudauthzs = trans.user.deleted_cloudauthzs
+        else:
+            cloudauthzs = trans.user.active_cloudauthzs
+
         rtv = []
-        for cloudauthz in trans.user.cloudauthz:
+        for cloudauthz in cloudauthzs:
             rtv.append(self.cloudauthz_serializer.serialize_to_view(
                 cloudauthz, user=trans.user, trans=trans, **self._parse_serialization_params(kwargs, 'summary')))
         return rtv
