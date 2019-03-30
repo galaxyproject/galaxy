@@ -28,7 +28,7 @@ def test_database_heartbeat(heartbeat_app):
     assert len(active_processes) == 0
     heartbeat_app.database_heartbeat.start()
     # thread needs to start
-    time.sleep(0.2)
+    time.sleep(0.5)
     active_processes = heartbeat_app.database_heartbeat.get_active_processes()
     assert len(active_processes) == 1
     process = active_processes[0]
