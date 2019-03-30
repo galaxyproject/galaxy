@@ -1766,9 +1766,8 @@ mapper(model.User, model.User.table, properties=dict(
                 (not_(model.CloudAuthz.table.c.deleted)))),
     deleted_cloudauthzs=relation(
         model.CloudAuthz,
-        primaryjoin=(
-                (model.CloudAuthz.table.c.user_id == model.User.table.c.id) &
-                (model.CloudAuthz.table.c.deleted))),
+        primaryjoin=((model.CloudAuthz.table.c.user_id == model.User.table.c.id) &
+                     model.CloudAuthz.table.c.deleted)),
 ))
 
 mapper(model.PasswordResetToken, model.PasswordResetToken.table,
