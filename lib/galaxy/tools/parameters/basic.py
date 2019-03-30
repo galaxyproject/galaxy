@@ -820,6 +820,8 @@ class SelectToolParameter(ToolParameter):
             return self.options.get_options(trans, other_values)
         elif self.dynamic_options:
             call_other_values = self._get_dynamic_options_call_other_values(trans, other_values)
+            # add __tool_directory__ to dynamic options global namespace
+            self.tool.code_namespace['__tool_directory__'] = self.tool.tool_dir
             try:
                 return eval(self.dynamic_options, self.tool.code_namespace, call_other_values)
             except Exception as e:
