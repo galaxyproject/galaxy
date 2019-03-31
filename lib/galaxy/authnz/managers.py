@@ -17,6 +17,7 @@ from cloudauthz.exceptions import (
 
 from galaxy import exceptions
 from galaxy import model
+from galaxy.util import string_as_bool
 from galaxy.util import unicodify
 from .custos_authnz import CustosAuthnz
 from .psa_authnz import (
@@ -26,7 +27,6 @@ from .psa_authnz import (
     Storage,
     Strategy
 )
-from galaxy.util import string_as_bool
 
 log = logging.getLogger(__name__)
 
