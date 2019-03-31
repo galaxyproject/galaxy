@@ -305,14 +305,14 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         log.info("Initializing %s Galaxy Queue Worker on %s", app.config.server_name, util.mask_password_from_url(app.config.amqp_internal_connection))
         self.daemon = True
         self.connection = app.amqp_internal_connection_obj
+        # Force connection instead of lazy-connecting the first time it is required.
+        # Fixes `'kombu.transport.sqlalchemy.Message' is not mapped` error.
+        self.connection.connect()
         self.app = app
         self.task_mapping = task_mapping
         self.exchange_queue = None
         self.direct_queue = None
         self.control_queues = []
-        # Delete messages for the current workers' control queues on startup
-        for q in self.control_queues:
-            q(self.connection).delete()
 
     @property
     def declare_queues(self):
@@ -324,6 +324,9 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         log.info("Binding and starting galaxy control worker for %s", self.app.config.server_name)
         self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(self.app.config)
         self.control_queues = [self.exchange_queue, self.direct_queue]
+        # Delete messages for the current workers' control queues on startup
+        for q in self.control_queues:
+            q(self.connection).delete()
         self.start()
 
     def get_consumers(self, Consumer, channel):
