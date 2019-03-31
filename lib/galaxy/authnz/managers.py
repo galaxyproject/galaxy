@@ -17,6 +17,7 @@ from cloudauthz.exceptions import (
 
 from galaxy import exceptions
 from galaxy import model
+from galaxy.util import string_as_bool
 from .psa_authnz import (
     BACKENDS_NAME,
     on_the_fly_config,
@@ -24,7 +25,6 @@ from .psa_authnz import (
     Storage,
     Strategy
 )
-from galaxy.util import string_as_bool
 
 log = logging.getLogger(__name__)
 
