@@ -104,6 +104,7 @@ class DependencyResolversView(object):
         return list(removed_environments)
 
     def install_dependencies(self, requirements, **kwds):
+        kwds['install'] = True
         return self._dependency_manager._requirements_to_dependencies_dict(requirements, **kwds)
 
     def install_dependency(self, index=None, **payload):

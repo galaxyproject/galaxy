@@ -270,7 +270,7 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-DOCKER_DEFAULT_IMAGE='mvdbeek/testing-base:19.01.3'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:19.01.0'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"

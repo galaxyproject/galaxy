@@ -91,6 +91,7 @@
   <tool file="column_param.xml" />
   <tool file="column_param_configfile.xml" />
   <tool file="column_multi_param.xml" />
+  <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
   <tool file="sam_to_unsorted_bam.xml" />

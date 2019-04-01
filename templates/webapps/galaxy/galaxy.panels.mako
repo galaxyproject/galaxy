@@ -140,6 +140,8 @@
             | ${self.galaxy_config['title']}
             %endif
         </title>
+        ## relative href for site root
+        <link rel="index" href="${ h.url_for( '/' ) }"/>
 
         ${self.stylesheets()}
         ${self.javascripts()}

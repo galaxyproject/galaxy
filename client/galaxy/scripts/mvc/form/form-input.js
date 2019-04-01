@@ -201,7 +201,7 @@ export default Backbone.View.extend({
             .append(
                 $("<div/>")
                     .addClass("ui-form-field")
-                    .append($("<span/>").addClass("ui-form-info form-text text-muted"))
+                    .append($("<span/>").addClass("ui-form-info form-text text-muted mt-2"))
                     .append($("<div/>").addClass("ui-form-backdrop"))
             )
             .append($("<div/>").addClass("ui-form-preview"));

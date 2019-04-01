@@ -267,8 +267,7 @@ export default FormBase.extend({
     /** Templates */
     _templateHelp: function(options) {
         var $tmpl = $("<div/>")
-            .addClass("form-help")
-            .addClass("form-text")
+            .addClass("form-help form-text mt-4")
             .append(options.help);
         $tmpl.find("a").attr("target", "_blank");
         $tmpl.find("img").each(function() {

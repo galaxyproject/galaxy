@@ -4035,7 +4035,7 @@ class Workflow(Dictifiable, RepresentById):
         top_level_workflow = self
         if self.stored_workflow is None:
             # TODO: enforce this at creation...
-            assert len(self.parent_workflow_steps) == 1
+            assert len(set(w.uuid for w in self.parent_workflow_steps)) == 1
             return self.parent_workflow_steps[0].workflow.top_level_workflow
         return top_level_workflow
 

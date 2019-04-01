@@ -645,8 +645,19 @@ export default Backbone.View.extend({
             url: `${getAppRoot()}api/workflows/build_module`,
             data: request_data,
             success: function(data) {
+                const Galaxy = getGalaxyInstance();
                 node.init_field_data(data);
                 node.update_field_data(data);
+                // Post init/update, for new modules we want to default to
+                // nodes being outputs
+                // TODO: Overhaul the handling of all this when we modernize
+                // the editor, replace callout image manipulation with a simple
+                // class toggle, etc.
+                $.each(node.output_terminals, (ot_id, ot) => {
+                    node.addWorkflowOutput(ot.name);
+                    var callout = $(node.element).find(`.callout.${ot.name.replace(/(?=[()])/g, "\\")}`);
+                    callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+                });
                 self.workflow.activate_node(node);
             }
         });

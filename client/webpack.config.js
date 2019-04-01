@@ -97,7 +97,7 @@ let buildconfig = {
                     loader: "file-loader",
                     options: {
                         outputPath: "assets",
-                        publicPath: "/static/scripts/bundled/assets/"
+                        publicPath: "../scripts/bundled/assets/"
                     }
                 }
             },
