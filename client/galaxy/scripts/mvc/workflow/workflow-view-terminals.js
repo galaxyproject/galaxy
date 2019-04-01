@@ -4,9 +4,6 @@ import Backbone from "backbone";
 import Terminals from "mvc/workflow/workflow-terminals";
 import Connector from "mvc/workflow/workflow-connector";
 
-import * as Toastr from "libs/toastr";
-
-
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
 
@@ -113,31 +110,36 @@ var BaseInputTerminalView = TerminalView.extend({
             this.$el.removeClass("can-accept");
             this.reason = connectionAcceptable.reason;
         }
+
         return true;
     },
     onDropStart: function(e, d) {
         if (d.proxy.terminal) {
             if(this.$el.hasClass('can-accept')) {
                 d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
+                d.proxy.dropTooltip = '';
             } else {
                 d.proxy.terminal.connectors[0].inner_color = "#fe7f02";
+                if (this.reason) {
+                    d.proxy.dropTooltip = this.reason;
+                    $(d.proxy).tooltip("show");
+                } else {
+                    d.proxy.dropTooltip = '';
+                }
             }
         }
     },
     onDropEnd: function(e, d) {
         if (d.proxy.terminal) {
             d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
+            d.proxy.dropTooltip = '';
         }
     },
     onDrop: function(e, d) {
+        $(d.proxy).tooltip("dispose");
         if(this.$el.hasClass('can-accept')) {
             const terminal = this.el.terminal;
             new Connector(d.drag.terminal, terminal).redraw();
-        } else {
-            const reason = this.reason;
-            if (reason) {
-                Toastr.warning(this.reason);
-            }
         }
     },
     onHover: function() {
@@ -249,7 +251,13 @@ var BaseOutputTerminalView = TerminalView.extend({
         var h = $("<div class='drag-terminal'/>")
             .appendTo("#canvas-container")
             .get(0);
+
+        h.dropTooltip = ''
+
         // Terminal and connection to display noodle while dragging
+        $(h).tooltip({title: function() {
+            return h.dropTooltip || '';
+        }});
         h.terminal = new Terminals.OutputTerminal({ element: h });
         var c = new Connector();
         c.dragging = true;
