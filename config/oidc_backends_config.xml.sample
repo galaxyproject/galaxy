@@ -42,7 +42,7 @@ Some examples:
 - using localhost to authenticate with Google:
     http://localhost:8080/authnz/google/callback
 
-- using localhost to authenticat with Globus:
+- using localhost to authenticate with Globus:
     http://localhost:8080/authnz/globus/callback
 
 - using an instance hosted at `https://usegalaxy.org` with Google:
