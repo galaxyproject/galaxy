@@ -121,7 +121,7 @@ def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, 
     repo_path = repository.repo_path(app)
     changeset_tups = []
     for repository_metadata in metadata_revisions:
-        if repository_metadata.numeric_revision == -1:
+        if repository_metadata.numeric_revision == -1 or repository_metadata.numeric_revision is None:
             try:
                 rev = hg_util.changeset2rev(repo_path, repository_metadata.changeset_revision)
                 repository_metadata.numeric_revision = rev
