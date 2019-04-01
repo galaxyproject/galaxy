@@ -1,4 +1,6 @@
 <%!
+    import bleach
+
     def inherit(context):
         if context.get('use_panels'):
             if context.get('webapp'):
@@ -51,12 +53,23 @@
 
 ## Render large message.
 <%def name="render_large_message( message, status )">
-    <div class="${status}messagelarge" style="margin: 1em">${_(message)}</div>
+    <%
+        if status not in ("done", "info", "error", "warning"):
+            status = "infomessagelarge"
+        else:
+            status = status + "messagelarge"
+    %>
+    <div class="${status}" style="margin: 1em">${_(bleach.clean(message))}</div>
 </%def>
 
 ## Render a message
 <%def name="render_msg( msg, status='done' )">
-    <div class="${status}message">${_(msg)}</div>
-    <br/>
+    <%
+        if status not in ("done", "info", "error", "warning"):
+            status = "infomessage"
+        else:
+            status = status + "message"
+    %>
+    <div class="${status}">${_(bleach.clean(msg))}</div>
 </%def>
 
