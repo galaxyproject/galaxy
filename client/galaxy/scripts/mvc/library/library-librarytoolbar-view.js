@@ -2,7 +2,7 @@ import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import _l from "utils/localization";
-import mod_toastr from "toastr";
+import Toastr from "toastr";
 import mod_library_model from "mvc/library/library-model";
 import { getGalaxyInstance } from "app";
 
@@ -106,18 +106,18 @@ var LibraryToolbarView = Backbone.View.extend({
                     self.modal.hide();
                     self.clearLibraryModal();
                     Galaxy.libraries.libraryListView.render();
-                    mod_toastr.success("Library created.");
+                    Toastr.success("Library created.");
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        mod_toastr.error(response.responseJSON.err_msg);
+                        Toastr.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occurred.");
+                        Toastr.error("An error occurred.");
                     }
                 }
             });
         } else {
-            mod_toastr.error("Library's name is missing.");
+            Toastr.error("Library's name is missing.");
         }
         return false;
     },

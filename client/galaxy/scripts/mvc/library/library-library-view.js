@@ -3,7 +3,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import mod_toastr from "toastr";
+import Toastr from "toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_select from "mvc/ui/ui-select";
 
@@ -40,13 +40,13 @@ var LibraryView = Backbone.View.extend({
             error: function(model, response) {
                 let Galaxy = getGalaxyInstance();
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
+                    Toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
                     });
                 } else {
-                    mod_toastr.error("An error occurred. Click this to go back.", "", {
+                    Toastr.error("An error occurred. Click this to go back.", "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
@@ -83,7 +83,7 @@ var LibraryView = Backbone.View.extend({
                 });
             })
             .fail(() => {
-                mod_toastr.error("An error occurred while attempting to fetch library permissions.");
+                Toastr.error("An error occurred while attempting to fetch library permissions.");
             });
 
         $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
@@ -188,10 +188,10 @@ var LibraryView = Backbone.View.extend({
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
-                mod_toastr.success("The dataset is now private to you.");
+                Toastr.success("The dataset is now private to you.");
             })
             .fail(() => {
-                mod_toastr.error("An error occurred while attempting to make dataset private.");
+                Toastr.error("An error occurred while attempting to make dataset private.");
             });
     },
 
@@ -203,10 +203,10 @@ var LibraryView = Backbone.View.extend({
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
-                mod_toastr.success("Access to this dataset is now unrestricted.");
+                Toastr.success("Access to this dataset is now unrestricted.");
             })
             .fail(() => {
-                mod_toastr.error("An error occurred while attempting to make dataset unrestricted.");
+                Toastr.error("An error occurred while attempting to make dataset unrestricted.");
             });
     },
 
@@ -236,10 +236,10 @@ var LibraryView = Backbone.View.extend({
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
-                mod_toastr.success("Permissions saved.");
+                Toastr.success("Permissions saved.");
             })
             .fail(() => {
-                mod_toastr.error("An error occurred while attempting to set library permissions.");
+                Toastr.error("An error occurred while attempting to set library permissions.");
             });
     },
 
