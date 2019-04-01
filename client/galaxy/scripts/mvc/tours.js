@@ -14,6 +14,9 @@ import "libs/bootstrap-tour";
 // bootstrap-tour configures a window.Tour object; keep a local ref.
 let Tour = window.Tour;
 
+// For buttons to show, we need to add them to bootstrap/popper's sanitizing filters.
+$.fn.tooltip.Constructor.Default.whiteList.button = [];
+
 var gxy_root = getAppRoot();
 
 const TOURPAGE_TEMPLATE = `
