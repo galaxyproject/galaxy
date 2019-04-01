@@ -101,7 +101,7 @@ var BaseInputTerminalView = TerminalView.extend({
         // Accept a dragable if it is an output terminal and has a
         // compatible type
         var connectionAcceptable = $(d.drag).hasClass("output-terminal") && terminal.canAccept(d.drag.terminal);
-        if(connectionAcceptable.canAccept) {
+        if (connectionAcceptable.canAccept) {
             this.$el.addClass("can-accept");
             this.$el.removeClass("cannot-accept");
             this.reason = null;
@@ -115,16 +115,16 @@ var BaseInputTerminalView = TerminalView.extend({
     },
     onDropStart: function(e, d) {
         if (d.proxy.terminal) {
-            if(this.$el.hasClass('can-accept')) {
+            if (this.$el.hasClass("can-accept")) {
                 d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
-                d.proxy.dropTooltip = '';
+                d.proxy.dropTooltip = "";
             } else {
                 d.proxy.terminal.connectors[0].inner_color = "#fe7f02";
                 if (this.reason) {
                     d.proxy.dropTooltip = this.reason;
                     $(d.proxy).tooltip("show");
                 } else {
-                    d.proxy.dropTooltip = '';
+                    d.proxy.dropTooltip = "";
                 }
             }
         }
@@ -132,12 +132,12 @@ var BaseInputTerminalView = TerminalView.extend({
     onDropEnd: function(e, d) {
         if (d.proxy.terminal) {
             d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
-            d.proxy.dropTooltip = '';
+            d.proxy.dropTooltip = "";
         }
     },
     onDrop: function(e, d) {
         $(d.proxy).tooltip("dispose");
-        if(this.$el.hasClass('can-accept')) {
+        if (this.$el.hasClass("can-accept")) {
             const terminal = this.el.terminal;
             new Connector(d.drag.terminal, terminal).redraw();
         }
@@ -252,12 +252,14 @@ var BaseOutputTerminalView = TerminalView.extend({
             .appendTo("#canvas-container")
             .get(0);
 
-        h.dropTooltip = ''
+        h.dropTooltip = "";
 
         // Terminal and connection to display noodle while dragging
-        $(h).tooltip({title: function() {
-            return h.dropTooltip || '';
-        }});
+        $(h).tooltip({
+            title: function() {
+                return h.dropTooltip || "";
+            }
+        });
         h.terminal = new Terminals.OutputTerminal({ element: h });
         var c = new Connector();
         c.dragging = true;

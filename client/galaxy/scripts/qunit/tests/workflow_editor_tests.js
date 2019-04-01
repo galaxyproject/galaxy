@@ -1000,7 +1000,10 @@ QUnit.module("terminal mapping logic", {
             outputTerminal = output;
         }
 
-        assert.ok(inputTerminal.attachable(outputTerminal).canAccept, "Cannot attach " + outputTerminal + " to " + inputTerminal);
+        assert.ok(
+            inputTerminal.attachable(outputTerminal).canAccept,
+            "Cannot attach " + outputTerminal + " to " + inputTerminal
+        );
 
         // Go further... make sure datatypes are being enforced
         inputTerminal.datatypes = ["bam"];

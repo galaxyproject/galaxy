@@ -5,8 +5,10 @@ import Backbone from "backbone";
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
 
-const COLLECTION_MAPPING_INCOMPATIBLE_OUTPUT = "This connection would change how this tool is being mapped over, but mapping is already constrained in an incompatible way by outputs. Disconnecting target step's outputs may fix this.";
-const COLLECTION_MAPPING_INCOMPATIBLE_INPUT = "This connection would change how this tool is being mapped over, but mapping is already constrained in an incompatible way by inputs. Disconnecting target step's conflicting inputs may fix this.";
+const COLLECTION_MAPPING_INCOMPATIBLE_OUTPUT =
+    "This connection would change how this tool is being mapped over, but mapping is already constrained in an incompatible way by outputs. Disconnecting target step's outputs may fix this.";
+const COLLECTION_MAPPING_INCOMPATIBLE_INPUT =
+    "This connection would change how this tool is being mapped over, but mapping is already constrained in an incompatible way by inputs. Disconnecting target step's conflicting inputs may fix this.";
 
 function CollectionTypeDescription(collectionType) {
     this.collectionType = collectionType;
@@ -254,7 +256,10 @@ var BaseInputTerminal = Terminal.extend({
     },
     canAccept: function(other) {
         if (this._inputFilled()) {
-            return new ConnectionAcceptable(false, "Input already filled with another connection, delete it before connecting another output.");
+            return new ConnectionAcceptable(
+                false,
+                "Input already filled with another connection, delete it before connecting another output."
+            );
         } else {
             return this.attachable(other);
         }
@@ -380,7 +385,10 @@ var BaseInputTerminal = Terminal.extend({
                 }
             }
         }
-        return new ConnectionAcceptable(false, `Effective output data type(s) [${cat_outputs}] do not appear to match input type(s) [${this.datatypes}].`);
+        return new ConnectionAcceptable(
+            false,
+            `Effective output data type(s) [${cat_outputs}] do not appear to match input type(s) [${this.datatypes}].`
+        );
     },
     _otherCollectionType: function(other) {
         var otherCollectionType = NULL_COLLECTION_TYPE_DESCRIPTION;
@@ -418,10 +426,16 @@ var InputTerminal = BaseInputTerminal.extend({
         if (otherCollectionType.isCollection) {
             if (this.multiple) {
                 if (this.connected() && !this._collectionAttached()) {
-                    return new ConnectionAcceptable(false, "Cannot attach collections to data parameters with individual data inputs already attached.");
+                    return new ConnectionAcceptable(
+                        false,
+                        "Cannot attach collections to data parameters with individual data inputs already attached."
+                    );
                 }
                 if (otherCollectionType.collectionType.endsWith("paired")) {
-                    return new ConnectionAcceptable(false, "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way.");
+                    return new ConnectionAcceptable(
+                        false,
+                        "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way."
+                    );
                 }
             }
             if (thisMapOver.isCollection && thisMapOver.canMatch(otherCollectionType)) {
@@ -454,7 +468,7 @@ var InputParameterTerminal = BaseInputTerminal.extend({
         BaseInputTerminal.prototype.connect.call(this, connector);
     },
     attachable: function(other) {
-        return new ConnectionAcceptable(this.type == other.attributes.type, '');
+        return new ConnectionAcceptable(this.type == other.attributes.type, "");
     }
 });
 
