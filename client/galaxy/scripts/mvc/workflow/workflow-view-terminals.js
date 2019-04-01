@@ -4,6 +4,9 @@ import Backbone from "backbone";
 import Terminals from "mvc/workflow/workflow-terminals";
 import Connector from "mvc/workflow/workflow-connector";
 
+import * as Toastr from "libs/toastr";
+
+
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
 
@@ -100,11 +103,25 @@ var BaseInputTerminalView = TerminalView.extend({
         var terminal = this.el.terminal;
         // Accept a dragable if it is an output terminal and has a
         // compatible type
-        return $(d.drag).hasClass("output-terminal") && terminal.canAccept(d.drag.terminal);
+        var connectionAcceptable = $(d.drag).hasClass("output-terminal") && terminal.canAccept(d.drag.terminal);
+        if(connectionAcceptable.canAccept) {
+            this.$el.addClass("can-accept");
+            this.$el.removeClass("cannot-accept");
+            this.reason = null;
+        } else {
+            this.$el.addClass("cannot-accept");
+            this.$el.removeClass("can-accept");
+            this.reason = connectionAcceptable.reason;
+        }
+        return true;
     },
     onDropStart: function(e, d) {
         if (d.proxy.terminal) {
-            d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
+            if(this.$el.hasClass('can-accept')) {
+                d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
+            } else {
+                d.proxy.terminal.connectors[0].inner_color = "#fe7f02";
+            }
         }
     },
     onDropEnd: function(e, d) {
@@ -113,8 +130,15 @@ var BaseInputTerminalView = TerminalView.extend({
         }
     },
     onDrop: function(e, d) {
-        var terminal = this.el.terminal;
-        new Connector(d.drag.terminal, terminal).redraw();
+        if(this.$el.hasClass('can-accept')) {
+            const terminal = this.el.terminal;
+            new Connector(d.drag.terminal, terminal).redraw();
+        } else {
+            const reason = this.reason;
+            if (reason) {
+                Toastr.warning(this.reason);
+            }
+        }
     },
     onHover: function() {
         let element = this.el;

@@ -32,7 +32,7 @@ $.extend(Connector.prototype, {
         $(this.canvas).remove();
     },
     destroyIfInvalid: function(warn) {
-        if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1)) {
+        if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1).canAccept) {
             if (warn) {
                 Toastr.warning("Destroying a connection because collection type has changed.");
             }
