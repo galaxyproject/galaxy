@@ -136,11 +136,11 @@ class BaseJobRunner(object):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run.
         """
         put_timer = ExecutionTimer()
-        job_wrapper.enqueue()
-        self.mark_as_queued(job_wrapper)
-        log.debug("Job [%s] queued %s" % (job_wrapper.job_id, put_timer))
+        job_wrapper.mark_as_dispatched()
+        self.enqueue(job_wrapper)
+        log.debug("Job [%s] dispatched %s" % (job_wrapper.job_id, put_timer))
 
-    def mark_as_queued(self, job_wrapper):
+    def enqueue(self, job_wrapper):
         self.work_queue.put((self.queue_job, job_wrapper))
 
     def shutdown(self):
@@ -213,7 +213,8 @@ class BaseJobRunner(object):
             if self.app.config.cleanup_job in ("always", "onsuccess"):
                 job_wrapper.cleanup()
             return False
-        elif job_state != model.Job.states.QUEUED:
+        # TODO: is this ok?
+        elif job_state != model.Job.states.DISPATCHED:
             log.info("(%s) Job is in state %s, skipping execution" % (job_id, job_state))
             # cleanup may not be safe in all states
             return False

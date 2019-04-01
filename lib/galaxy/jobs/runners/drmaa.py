@@ -43,6 +43,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         runner_param_specs = {
             'drmaa_library_path': dict(map=str, default=os.environ.get('DRMAA_LIBRARY_PATH', None))}
         for retry_exception in RETRY_EXCEPTIONS_LOWER:
+            # TODO: update?
             runner_param_specs[retry_exception + '_state'] = dict(map=str, valid=lambda x: x in (model.Job.states.OK, model.Job.states.ERROR), default=model.Job.states.OK)
             runner_param_specs[retry_exception + '_retries'] = dict(map=int, valid=lambda x: int >= 0, default=0)
 
@@ -214,14 +215,15 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             if external_job_id is None:
                 job_wrapper.fail("(%s) could not queue job" % galaxy_id_tag)
                 return
-        log.info("(%s) queued as %s" % (galaxy_id_tag, external_job_id))
+        log.info("(%s) submitted as %s" % (galaxy_id_tag, external_job_id))
+        job_wrapper.change_state(model.Job.states.SUBMITTED, flush=False)
 
         # store runner information for tracking if Galaxy restarts
         job_wrapper.set_job_destination(job_destination, external_job_id)
 
         # Store DRM related state information for job
         ajs.job_id = external_job_id
-        ajs.old_state = 'new'
+        ajs.old_state = model.Job.states.SUBMITTED
         ajs.job_destination = job_destination
 
         # Add to our 'queue' of jobs to monitor
@@ -371,6 +373,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         ajs.command_line = job.get_command_line()
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
+        # TODO: update here?
         if job.state == model.Job.states.RUNNING:
             log.debug("(%s/%s) is still in running state, adding to the DRM queue" % (job.id, job.get_job_runner_external_id()))
             ajs.old_state = drmaa.JobState.RUNNING

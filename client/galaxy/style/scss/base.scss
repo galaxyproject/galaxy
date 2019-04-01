@@ -1174,6 +1174,21 @@ ul.manage-table-actions li {
     background: $state-default-bg;
 }
 
+.state-color-waiting {
+    border-color: $state-default-border;
+    background: $state-default-bg;
+}
+
+.state-color-dispatched {
+    border-color: $state-default-border;
+    background: $state-default-bg;
+}
+
+.state-color-submitted {
+    border-color: $state-default-border;
+    background: $state-default-bg;
+}
+
 .state-color-queued {
     border-color: $state-default-border;
     background: $state-default-bg;

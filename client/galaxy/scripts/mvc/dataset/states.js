@@ -6,7 +6,13 @@ var STATES = {
     // NOT ready states
     /** is uploading and not ready */
     UPLOAD: "upload",
-    /** the job that will produce the dataset queued in the runner */
+    /** the job that will produce the dataset is being held due to concurrency limits */
+    LIMITED: "limited",
+    /** the job that will produce the dataset is dispatched to the runner */
+    DISPATCHED: "dispatched",
+    /** the job that will produce the dataset has been submitted to the executing resource */
+    SUBMITTED: "submitted",
+    /** the job that will produce the dataset is queued on the executing resource */
     QUEUED: "queued",
     /** the job that will produce the dataset is running */
     RUNNING: "running",
@@ -14,8 +20,10 @@ var STATES = {
     SETTING_METADATA: "setting_metadata",
 
     // ready states
-    /** was created without a tool */
+    /** just created and not yet picked up by a handler, or waiting for terminal inputs */
     NEW: "new",
+    /** waiting for terminal inputs (db-skip-locked or db-transaction-isolation only) */
+    WAITING: "waiting",
     /** has no data */
     EMPTY: "empty",
     /** has successfully completed running */
@@ -44,7 +52,17 @@ STATES.READY_STATES = [
     STATES.ERROR
 ];
 
-STATES.NOT_READY_STATES = [STATES.UPLOAD, STATES.QUEUED, STATES.RUNNING, STATES.SETTING_METADATA, STATES.NEW];
+STATES.NOT_READY_STATES = [
+    STATES.UPLOAD,
+    STATES.LIMITED,
+    STATES.DISPATCHED,
+    STATES.SUBMITTED,
+    STATES.QUEUED,
+    STATES.RUNNING,
+    STATES.SETTING_METADATA,
+    STATES.WAITING,
+    STATES.NEW
+];
 
 //==============================================================================
 export default STATES;

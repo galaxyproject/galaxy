@@ -159,6 +159,33 @@
         }
     }
 
+    &.state-waiting {
+        background: $state-default-bg;
+        .state-icon {
+            &:before {
+                content: $fa-var-clock-o;
+            }
+        }
+    }
+
+    &.state-dispatched {
+        background: $state-default-bg;
+        .state-icon {
+            &:before {
+                content: $fa-var-clock-o;
+            }
+        }
+    }
+
+    &.state-submitted {
+        background: $state-default-bg;
+        .state-icon {
+            &:before {
+                content: $fa-var-clock-o;
+            }
+        }
+    }
+
     &.state-queued {
         background: $state-default-bg;
         .state-icon {

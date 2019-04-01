@@ -604,9 +604,13 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     _text_metric = JobMetricText
 
     states = Bunch(NEW='new',
+                   NOT_READY='not_ready',
                    RESUBMITTED='resubmitted',
                    UPLOAD='upload',
                    WAITING='waiting',
+                   LIMITED='limited',
+                   DISPATCHED='dispatched',
+                   SUBMITTED='submitted',
                    QUEUED='queued',
                    RUNNING='running',
                    OK='ok',
@@ -621,9 +625,13 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     #: job states where the job hasn't finished and the model may still change
     non_ready_states = [
         states.NEW,
+        states.NOT_READY,
         states.RESUBMITTED,
         states.UPLOAD,
         states.WAITING,
+        states.LIMITED,
+        states.DISPATCHED,
+        states.SUBMITTED,
         states.QUEUED,
         states.RUNNING,
     ]
@@ -1025,7 +1033,11 @@ class Task(JobLike, RepresentById):
     _text_metric = TaskMetricText
 
     states = Bunch(NEW='new',
+                   NOT_READY='not_ready',
                    WAITING='waiting',
+                   LIMITED='limited',
+                   DISPATCHED='dispatched',
+                   SUBMITTED='submitted',
                    QUEUED='queued',
                    RUNNING='running',
                    OK='ok',
@@ -1328,7 +1340,10 @@ class JobExportHistoryArchive(RepresentById):
 
     @property
     def preparing(self):
-        return self.job.state in [Job.states.RUNNING, Job.states.QUEUED, Job.states.WAITING]
+        return self.job.state in [
+            Job.states.RUNNING, Job.states.QUEUED, Job.states.NOT_READY, Job.states.WAITING, Job.states.LIMITED,
+            Job.states.DISPATCHED, Job.states.SUBMITTED,
+        ]
 
     @property
     def export_name(self):
@@ -1967,6 +1982,10 @@ class StorableObject(object):
 class Dataset(StorableObject, RepresentById):
     states = Bunch(NEW='new',
                    UPLOAD='upload',
+                   WAITING='waiting',
+                   LIMITED='limited',
+                   DISPATCHED='dispatched',
+                   SUBMITTED='submitted',
                    QUEUED='queued',
                    RUNNING='running',
                    OK='ok',

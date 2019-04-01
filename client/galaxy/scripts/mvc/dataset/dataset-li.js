@@ -481,8 +481,14 @@ DatasetListItemView.prototype.templates = (() => {
         ],
         "dataset"
     );
+    // TODO: if grabbing not enabled and state = NEW then it's either unhandled or not ready
+    //       if grabbing enabled and state = NEW then it's unhandled
     summaryTemplates[STATES.NEW] = BASE_MVC.wrapTemplate(
         ["<div>", _l("This is a new dataset and not all of its data are available yet"), "</div>"],
+        "dataset"
+    );
+    summaryTemplates[STATES.WAITING] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("Not all of the input datasets needed to run this dataset's job are available yet"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.NOT_VIEWABLE] = BASE_MVC.wrapTemplate(
@@ -493,12 +499,24 @@ DatasetListItemView.prototype.templates = (() => {
         ["<div>", _l("The job creating this dataset was cancelled before completion"), "</div>"],
         "dataset"
     );
+    summaryTemplates[STATES.LIMITED] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("This dataset's job is waiting to run because the limit of concurrent queued or running jobs has been reached"), "</div>"],
+        "dataset"
+    );
+    summaryTemplates[STATES.DISPATCHED] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("This dataest's job is being prepared for submission"), "</div>"],
+        "dataset"
+    );
+    summaryTemplates[STATES.SUBMITTED] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("This dataset's job has been submitted but has not yet been assigned a position in the queue"), "</div>"],
+        "dataset"
+    );
     summaryTemplates[STATES.QUEUED] = BASE_MVC.wrapTemplate(
-        ["<div>", _l("This job is waiting to run"), "</div>"],
+        ["<div>", _l("This dataset's job is queued and waiting to run"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.RUNNING] = BASE_MVC.wrapTemplate(
-        ["<div>", _l("This job is currently running"), "</div>"],
+        ["<div>", _l("This dataest's job is currently running"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.UPLOAD] = BASE_MVC.wrapTemplate(

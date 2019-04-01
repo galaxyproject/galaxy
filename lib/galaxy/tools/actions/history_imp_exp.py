@@ -30,7 +30,7 @@ class ImportHistoryToolAction(ToolAction):
         job.tool_id = tool.id
         job.user_id = trans.user.id
         start_job_state = job.state  # should be job.states.NEW
-        job.state = job.states.WAITING  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
+        job.state = job.states.NOT_READY    # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         trans.sa_session.add(job)
         trans.sa_session.flush()  # ensure job.id are available
 
@@ -99,7 +99,7 @@ class ExportHistoryToolAction(ToolAction):
             # If this is an actual user, run the job as that individual.  Otherwise we're running as guest.
             job.user_id = trans.user.id
         start_job_state = job.state  # should be job.states.NEW
-        job.state = job.states.WAITING  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
+        job.state = job.states.NOT_READY    # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         trans.sa_session.add(job)
 
         # Create dataset that will serve as archive.
