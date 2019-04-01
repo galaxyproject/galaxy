@@ -5,7 +5,8 @@ import Backbone from "backbone";
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
 
-const COLLECTION_MAPPING_INCOMPATIBLE = "This connection would change how this tool is being mapped over, but mapping is already constrained in an incompatible way by outputs. Disconnecting outputs may fix this."
+const COLLECTION_MAPPING_INCOMPATIBLE_OUTPUT = "This connection would change how this tool is being mapped over, but mapping is already constrained in an incompatible way by outputs. Disconnecting target step's outputs may fix this.";
+const COLLECTION_MAPPING_INCOMPATIBLE_INPUT = "This connection would change how this tool is being mapped over, but mapping is already constrained in an incompatible way by inputs. Disconnecting target step's conflicting inputs may fix this.";
 
 function CollectionTypeDescription(collectionType) {
     this.collectionType = collectionType;
@@ -431,7 +432,11 @@ var InputTerminal = BaseInputTerminal.extend({
                 if (mappingConstraints.every(_.bind(otherCollectionType.canMatch, otherCollectionType))) {
                     return this._producesAcceptableDatatype(other);
                 } else {
-                    return new ConnectionAcceptable(false, COLLECTION_MAPPING_INCOMPATIBLE);
+                    if (thisMapOver.isCollection) {
+                        return new ConnectionAcceptable(false, COLLECTION_MAPPING_INCOMPATIBLE_OUTPUT);
+                    } else {
+                        return new ConnectionAcceptable(false, COLLECTION_MAPPING_INCOMPATIBLE_INPUT);
+                    }
                 }
             }
         } else if (thisMapOver.isCollection) {
@@ -533,18 +538,18 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
                 // Otherwise we need to mapOver
             } else if (thisMapOver.isCollection) {
                 // In this case, mapOver already set and we didn't match skipping...
-                return new ConnectionAcceptable(false, COLLECTION_MAPPING_INCOMPATIBLE);
+                return new ConnectionAcceptable(false, COLLECTION_MAPPING_INCOMPATIBLE_OUTPUT);
             } else if (_.some(this.collectionTypes, collectionType => otherCollectionType.canMapOver(collectionType))) {
                 var effectiveMapOver = this._effectiveMapOver(other);
                 if (!effectiveMapOver.isCollection) {
-                    return new ConnectionAcceptable(false, COLLECTION_MAPPING_INCOMPATIBLE);
+                    return new ConnectionAcceptable(false, COLLECTION_MAPPING_INCOMPATIBLE_INPUT);
                 }
                 //  Need to check if this would break constraints...
                 var mappingConstraints = this._mappingConstraints();
                 if (mappingConstraints.every(effectiveMapOver.canMatch)) {
                     return this._producesAcceptableDatatype(other);
                 } else {
-                    return new ConnectionAcceptable(false, COLLECTION_MAPPING_INCOMPATIBLE);
+                    return new ConnectionAcceptable(false, COLLECTION_MAPPING_INCOMPATIBLE_INPUT);
                 }
             } else {
                 return new ConnectionAcceptable(false, "Incompatible collection type(s) for attachment.");
