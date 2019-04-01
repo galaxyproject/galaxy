@@ -5,7 +5,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import mod_utils from "utils/utils";
-import Toastr from "toastr";
+import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import mod_select from "mvc/ui/ui-select";
 import LIST_CREATOR from "mvc/collection/list-collection-creator";
@@ -190,21 +190,21 @@ var FolderToolbarView = Backbone.View.extend({
             folder.save(folderDetails, {
                 success: function(folder) {
                     Galaxy.modal.hide();
-                    Toastr.success("Folder created.");
+                    Toast.success("Folder created.");
                     folder.set({ type: "folder" });
                     Galaxy.libraries.folderListView.collection.add(folder);
                 },
                 error: function(model, response) {
                     Galaxy.modal.hide();
                     if (typeof response.responseJSON !== "undefined") {
-                        Toastr.error(response.responseJSON.err_msg);
+                        Toast.error(response.responseJSON.err_msg);
                     } else {
-                        Toastr.error("An error occurred.");
+                        Toast.error("An error occurred.");
                     }
                 }
             });
         } else {
-            Toastr.error("Folder's name is missing.");
+            Toast.error("Folder's name is missing.");
         }
         return false;
     },
@@ -226,7 +226,7 @@ var FolderToolbarView = Backbone.View.extend({
         var $checkedValues = this.findCheckedRows();
         var template = this.templateImportIntoHistoryModal();
         if ($checkedValues.length === 0) {
-            Toastr.info("You must select some datasets first.");
+            Toast.info("You must select some datasets first.");
         } else {
             var promise = this.fetchUserHistories();
             promise
@@ -250,9 +250,9 @@ var FolderToolbarView = Backbone.View.extend({
                 })
                 .fail((model, response) => {
                     if (typeof response.responseJSON !== "undefined") {
-                        Toastr.error(response.responseJSON.err_msg);
+                        Toast.error(response.responseJSON.err_msg);
                     } else {
-                        Toastr.error("An error occurred.");
+                        Toast.error("An error occurred.");
                     }
                 });
         }
@@ -273,7 +273,7 @@ var FolderToolbarView = Backbone.View.extend({
                     this.processImportToHistory(new_history.id, new_history.name);
                 })
                 .fail((xhr, status, error) => {
-                    Toastr.error("An error occurred.");
+                    Toast.error("An error occurred.");
                 })
                 .always(() => {
                     this.modal.enableButton("Import");
@@ -366,9 +366,9 @@ var FolderToolbarView = Backbone.View.extend({
                 .appendTo("body")
                 .submit()
                 .remove();
-            Toastr.info("Your download will begin soon.");
+            Toast.info("Your download will begin soon.");
         } else {
-            Toastr.error("An error occurred.");
+            Toast.error("An error occurred.");
         }
     },
 
@@ -405,9 +405,9 @@ var FolderToolbarView = Backbone.View.extend({
             })
             .fail((model, response) => {
                 if (typeof response.responseJSON !== "undefined") {
-                    Toastr.error(response.responseJSON.err_msg);
+                    Toast.error(response.responseJSON.err_msg);
                 } else {
-                    Toastr.error("An error occurred.");
+                    Toast.error("An error occurred.");
                 }
             });
     },
@@ -589,12 +589,12 @@ var FolderToolbarView = Backbone.View.extend({
             error: (model, response) => {
                 if (typeof response.responseJSON !== "undefined") {
                     if (response.responseJSON.err_code === 404001) {
-                        Toastr.warning(response.responseJSON.err_msg);
+                        Toast.warning(response.responseJSON.err_msg);
                     } else {
-                        Toastr.error(response.responseJSON.err_msg);
+                        Toast.error(response.responseJSON.err_msg);
                     }
                 } else {
-                    Toastr.error("An error occurred.");
+                    Toast.error("An error occurred.");
                 }
             }
         });
@@ -616,7 +616,7 @@ var FolderToolbarView = Backbone.View.extend({
         var paths = $("textarea#import_paths").val();
         var valid_paths = [];
         if (!paths) {
-            Toastr.info("Please enter a path relative to Galaxy root.");
+            Toast.info("Please enter a path relative to Galaxy root.");
         } else {
             this.modal.disableButton("Import");
             paths = paths.split("\n");
@@ -706,7 +706,7 @@ var FolderToolbarView = Backbone.View.extend({
         var selection_type = selected_nodes[0].type;
         var paths = [];
         if (selected_nodes.length < 1) {
-            Toastr.info("Please select some items first.");
+            Toast.info("Please select some items first.");
         } else {
             this.modal.disableButton("Import");
             for (let i = selected_nodes.length - 1; i >= 0; i--) {
@@ -769,9 +769,9 @@ var FolderToolbarView = Backbone.View.extend({
             },
             error: (model, response) => {
                 if (typeof response.responseJSON !== "undefined") {
-                    Toastr.error(response.responseJSON.err_msg);
+                    Toast.error(response.responseJSON.err_msg);
                 } else {
-                    Toastr.error("An error occurred.");
+                    Toast.error("An error occurred.");
                 }
             }
         });
@@ -786,7 +786,7 @@ var FolderToolbarView = Backbone.View.extend({
         var history_item_types = [];
         var items_to_add = [];
         if (checked_hdas.length < 1) {
-            Toastr.info("You must select some datasets first.");
+            Toast.info("You must select some datasets first.");
         } else {
             this.modal.disableButton("Add");
             checked_hdas.each(function() {
@@ -831,15 +831,15 @@ var FolderToolbarView = Backbone.View.extend({
         var popped_item = history_item_set.pop();
         if (typeof popped_item == "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
-                Toastr.success("Selected datasets imported into history. Click this to start analyzing it.", "", {
+                Toast.success("Selected datasets imported into history. Click this to start analyzing it.", "", {
                     onclick: () => {
                         window.location = getAppRoot();
                     }
                 });
             } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number) {
-                Toastr.error("There was an error and no datasets were imported into history.");
+                Toast.error("There was an error and no datasets were imported into history.");
             } else if (this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number) {
-                Toastr.warning(
+                Toast.warning(
                     "Some of the datasets could not be imported into history. Click this to see what was imported.",
                     "",
                     {
@@ -882,10 +882,10 @@ var FolderToolbarView = Backbone.View.extend({
         let popped_item = options.paths.pop();
         if (typeof popped_item === "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
-                Toastr.success("Selected files imported into the current folder");
+                Toast.success("Selected files imported into the current folder");
                 Galaxy.modal.hide();
             } else {
-                Toastr.error("An error occurred.");
+                Toast.error("An error occurred.");
             }
             return true;
         }
@@ -932,11 +932,11 @@ var FolderToolbarView = Backbone.View.extend({
         let popped_item = options.paths.pop();
         if (typeof popped_item == "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
-                Toastr.success("Selected folders and their contents imported into the current folder.");
+                Toast.success("Selected folders and their contents imported into the current folder.");
                 Galaxy.modal.hide();
             } else {
                 // TODO better error report
-                Toastr.error("An error occurred.");
+                Toast.error("An error occurred.");
             }
             return true;
         }
@@ -977,11 +977,11 @@ var FolderToolbarView = Backbone.View.extend({
         var popped_item = hdas_set.pop();
         if (typeof popped_item == "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
-                Toastr.success("Selected datasets from history added to the folder");
+                Toast.success("Selected datasets from history added to the folder");
             } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number) {
-                Toastr.error("There was an error and no datasets were added to the folder.");
+                Toast.error("There was an error and no datasets were added to the folder.");
             } else if (this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number) {
-                Toastr.warning("Some of the datasets could not be added to the folder");
+                Toast.warning("Some of the datasets could not be added to the folder");
             }
             Galaxy.modal.hide();
             return this.added_hdas;
@@ -1016,13 +1016,13 @@ var FolderToolbarView = Backbone.View.extend({
         var item_to_delete = items_to_delete.pop();
         if (typeof item_to_delete === "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
-                Toastr.success("Selected items were deleted.");
+                Toast.success("Selected items were deleted.");
             } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number) {
-                Toastr.error(
+                Toast.error(
                     "There was an error and no items were deleted. Please make sure you have sufficient permissions."
                 );
             } else if (this.options.chain_call_control.failed_number < this.options.chain_call_control.total_number) {
-                Toastr.warning(
+                Toast.warning(
                     "Some of the items could not be deleted. Please make sure you have sufficient permissions."
                 );
             }
@@ -1081,7 +1081,7 @@ var FolderToolbarView = Backbone.View.extend({
         var folder_ids = [];
         var $checkedValues = this.findCheckedRows();
         if ($checkedValues.length === 0) {
-            Toastr.info("You must select at least one item for deletion.");
+            Toast.info("You must select at least one item for deletion.");
         } else {
             var template = this.templateDeletingItemsProgressBar();
             this.modal = Galaxy.modal;
@@ -1153,9 +1153,9 @@ var FolderToolbarView = Backbone.View.extend({
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        Toastr.error(response.responseJSON.err_msg);
+                        Toast.error(response.responseJSON.err_msg);
                     } else {
-                        Toastr.error("An error occurred.");
+                        Toast.error("An error occurred.");
                     }
                 }
             });
@@ -1199,7 +1199,7 @@ var FolderToolbarView = Backbone.View.extend({
                 break;
             default:
                 Galaxy.libraries.library_router.back();
-                Toastr.error("Invalid import source.");
+                Toast.error("Invalid import source.");
                 break;
         }
     },
@@ -1334,11 +1334,11 @@ var FolderToolbarView = Backbone.View.extend({
         if (new_history_name !== "") {
             this.createNewHistory(new_history_name)
                 .done(new_history => {
-                    Toastr.success("History created");
+                    Toast.success("History created");
                     this.collectionImport(collection_elements, new_history.id, new_history.name);
                 })
                 .fail((xhr, status, error) => {
-                    Toastr.error("An error occurred.");
+                    Toast.error("An error occurred.");
                 });
         } else {
             let selected_history_id = this.select_collection_history.value();

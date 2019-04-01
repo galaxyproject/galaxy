@@ -2,7 +2,7 @@ import $ from "jquery";
 import _ from "libs/underscore";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
-import Toastr from "toastr";
+import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_libraryrow_view from "mvc/library/library-libraryrow-view";
 
@@ -37,9 +37,9 @@ var LibraryListView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    Toastr.error(response.responseJSON.err_msg);
+                    Toast.error(response.responseJSON.err_msg);
                 } else {
-                    Toastr.error("An error occurred.");
+                    Toast.error("An error occurred.");
                 }
             }
         });
@@ -147,9 +147,9 @@ var LibraryListView = Backbone.View.extend({
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        Toastr.error(response.responseJSON.err_msg);
+                        Toast.error(response.responseJSON.err_msg);
                     } else {
-                        Toastr.error("An error occurred.");
+                        Toast.error("An error occurred.");
                     }
                 }
             });
