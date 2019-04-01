@@ -4,7 +4,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import * as Toastr from "toastr";
+import Toastr from "toastr";
 import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";
 import _l from "utils/localization";

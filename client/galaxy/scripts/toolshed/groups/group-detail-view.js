@@ -1,7 +1,7 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
-import * as Toastr from "toastr";
+import Toastr from "toastr";
 import mod_group_model from "toolshed/groups/group-model";
 
 // toolshed group detail view

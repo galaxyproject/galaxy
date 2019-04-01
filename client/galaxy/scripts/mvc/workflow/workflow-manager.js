@@ -1,6 +1,6 @@
 import $ from "jquery";
 import Connector from "mvc/workflow/workflow-connector";
-import * as Toastr from "toastr";
+import Toastr from "toastr";
 
 class Workflow {
     constructor(app, canvas_container) {
