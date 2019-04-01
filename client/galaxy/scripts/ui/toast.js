@@ -4,6 +4,4 @@ import Toastr from "toastr";
 // against when converting over to either boostrap-specific or vue-based
 // toasts.
 
-const Toast = Toastr;
-
-export default Toast;
+export const Toast = Toastr;
