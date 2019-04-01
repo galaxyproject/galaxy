@@ -802,10 +802,13 @@ class Text(Data):
         """
         data_lines = 0
         with compression_utils.get_fileobj(dataset.file_name) as in_file:
-            for line in in_file:
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    data_lines += 1
+            try:
+                for line in in_file:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        data_lines += 1
+            except Exception:
+                pass
         return data_lines
 
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True):
