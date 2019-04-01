@@ -1,6 +1,8 @@
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import _l from "utils/localization";
-import Utils from "utils/utils";
+// import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Vue from "vue";
 import ListCollectionCreator from "mvc/collection/list-collection-creator";
@@ -19,7 +21,7 @@ var View = Backbone.View.extend({
         const view = this;
 
         // create insert new list element button
-        this.browse_button = new Ui.ButtonIcon({
+        this.browse_button = new Ui.Button({
             title: _l("Edit"),
             icon: "fa fa-edit",
             tooltip: _l("Edit Rules"),
@@ -59,7 +61,7 @@ var View = Backbone.View.extend({
 
     _fetcCollectionAndEdit: function() {
         const view = this;
-        const url = `${Galaxy.root}api/dataset_collections/${view.target.id}?instance_type=history`;
+        const url = `${getAppRoot()}api/dataset_collections/${view.target.id}?instance_type=history`;
         axios
             .get(url)
             .then(response => this._showCollection(response))
@@ -96,9 +98,9 @@ var View = Backbone.View.extend({
     /** Main Template */
     _template: function(options) {
         return `
-            <div class="ui-rules-edit">
+            <div class="ui-rules-edit clearfix">
                 <span class="ui-rules-preview" />
-                <span class="ui-rules-edit-button" />
+                <span class="ui-rules-edit-button float-left" />
             </div>
         `;
     },

@@ -1,16 +1,17 @@
-<tool id="Grouping1" name="Group" version="2.1.1">
+<tool id="Grouping1" name="Group" version="2.1.3">
   <description>data by a column and perform aggregate operation on other columns.</description>
-  <command interpreter="python">
-    grouping.py 
-      "${out_file1}"
-      "${input1}"
-      "${groupcol}"
-      "${ignorecase}"
-      "${ignorelines}"
+  <requirements>
+    <requirement type="package" version="1.15.4">numpy</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+  python '$__tool_directory__/grouping.py'
+      '${out_file1}'
+      '${input1}'
+      '${groupcol}'
+      '${ignorecase}'
+      '${ignorelines}'
       #for $op in $operations
-       '${op.optype}
-        ${op.opcol}
-        ${op.opround}'
+        '${op.optype},${op.opcol},${op.opround},${op.opdefault}'
       #end for
   </command>
   <inputs>
@@ -57,45 +58,129 @@
          <option value="no">NO</option>
          <option value="yes">YES</option>
        </param>
+       <param name="opdefault" type="float" optional="true" label="Replace non numeric data" help="leave empty for no replacements. Will replace, e.g., empty cells and text cells."/>
     </repeat>
   </inputs>
   <outputs>
     <data format="tabular" name="out_file1" />
   </outputs>
-  <requirements>
-    <requirement type="python-module">numpy</requirement>
-  </requirements>
   <tests>
     <!-- Test valid data -->
     <test>
       <param name="input1" value="1.bed"/>
       <param name="groupcol" value="1"/>
       <param name="ignorecase" value="true"/>
-      <param name="optype" value="mean"/>
-      <param name="opcol" value="2"/>
-      <param name="opround" value="no"/>
+      <repeat name="operations">
+        <param name="optype" value="mean"/>
+        <param name="opcol" value="2"/>
+        <param name="opround" value="no"/>
+      </repeat>
       <output name="out_file1" file="groupby_out1.dat"/>
     </test>
-    <!-- Long case but test framework doesn't allow yet
-    <test>
-      <param name="input1" value="1.bed"/>
-      <param name="groupcol" value="1"/>
-      <param name="ignorecase" value="false"/>
-      <param name="operations" value='[{"opcol": "2", "__index__": 0, "optype": "mean", "opround": "no"}, {"opcol": "2", "__index__": 1, "optype": "median", "opround": "no"}, {"opcol": "6", "__index__": 2, "optype": "mode", "opround": "no"}, {"opcol": "2", "__index__": 3, "optype": "max", "opround": "no"}, {"opcol": "2", "__index__": 4, "optype": "min", "opround": "no"}, {"opcol": "2", "__index__": 5, "optype": "sum", "opround": "no"}, {"opcol": "1", "__index__": 6, "optype": "length", "opround": "no"}, {"opcol": "1", "__index__": 7, "optype": "unique", "opround": "no"}, {"opcol": "1", "__index__": 8, "optype": "cat", "opround": "no"}, {"opcol": "6", "__index__": 9, "optype": "cat_uniq", "opround": "no"}, {"opcol": "2", "__index__": 10, "optype": "random", "opround": "no"}, {"opcol": "2", "__index__": 11, "optype": "std", "opround": "no"}]'/>
-      <output name="out_file1" file="groupby_out3.tabular"/>
-    </test>
-    -->
-    <!-- Test data with an invalid value in a column. Can't do it because test framework doesn't allow testing of errors
+    <!-- Test with an empty first field-->
     <test>
       <param name="input1" value="1.tabular"/>
       <param name="groupcol" value="1"/>
       <param name="ignorecase" value="true"/>
-      <param name="optype" value="mean"/>
-      <param name="opcol" value="2"/>
-      <param name="opround" value="no"/>
+      <repeat name="operations">
+        <param name="optype" value="cat_uniq"/>
+        <param name="opcol" value="1"/>
+        <param name="opround" value="no"/>
+      </repeat>
       <output name="out_file1" file="groupby_out2.dat"/>
     </test>
-     -->
+    <test>
+      <param name="input1" value="1.bed"/>
+      <param name="groupcol" value="1"/>
+      <param name="ignorecase" value="false"/>
+      <repeat name="operations">
+        <param name="optype" value="mean"/>
+        <param name="opcol" value="2"/>
+        <param name="opround" value="no"/>
+      </repeat>
+      <repeat name="operations">
+        <param name="optype" value="median"/>
+        <param name="opcol" value="2"/>
+        <param name="opround" value="no"/>
+      </repeat>
+      <repeat name="operations">
+        <param name="optype" value="mode"/>
+        <param name="opcol" value="6"/>
+        <param name="opround" value="no"/>
+      </repeat>
+      <repeat name="operations">
+        <param name="optype" value="max"/>
+        <param name="opcol" value="2"/>
+        <param name="opround" value="no"/>
+      </repeat>
+      <repeat name="operations">
+        <param name="optype" value="min"/>
+        <param name="opcol" value="2"/>
+        <param name="opround" value="no"/>
+      </repeat>
+      <repeat name="operations">
+        <param name="optype" value="sum"/>
+        <param name="opcol" value="2"/>
+        <param name="opround" value="no"/>
+      </repeat>
+      <repeat name="operations">
+        <param name="optype" value="length"/>
+        <param name="opcol" value="1"/>
+        <param name="opround" value="no"/>
+      </repeat>
+      <repeat name="operations">
+        <param name="optype" value="unique"/>
+        <param name="opcol" value="1"/>
+        <param name="opround" value="no"/>
+      </repeat>
+      <repeat name="operations">
+        <param name="optype" value="cat"/>
+        <param name="opcol" value="1"/>
+        <param name="opround" value="no"/>
+      </repeat>
+      <repeat name="operations">
+        <param name="optype" value="cat_uniq"/>
+        <param name="opcol" value="6"/>
+        <param name="opround" value="no"/>
+      </repeat>
+        <repeat name="operations">
+        <param name="optype" value="random"/>
+        <param name="opcol" value="2"/>
+        <param name="opround" value="no"/>
+      </repeat>
+      <repeat name="operations">
+        <param name="optype" value="std"/>
+        <param name="opcol" value="2"/>
+        <param name="opround" value="no"/>
+      </repeat>
+      <output name="out_file1" file="groupby_out3.tabular" compare="sim_size"/>
+    </test>
+    <!-- test failure for non-numeric data -->
+    <test expect_exit_code="1" expect_failure="true">
+      <param name="input1" value="1.tabular"/>
+      <param name="groupcol" value="1"/>
+      <param name="ignorecase" value="true"/>
+      <repeat name="operations">
+        <param name="optype" value="mean"/>
+        <param name="opcol" value="2"/>
+        <param name="opround" value="no"/>
+      </repeat>
+      <assert_stderr>
+          <has_text text="non float value 'hap' found in colum 2"/>
+      </assert_stderr>
+    </test>
+    <test>
+      <param name="input1" value="1.tabular"/>
+      <param name="groupcol" value="1"/>
+      <param name="ignorecase" value="true"/>
+      <repeat name="operations">
+        <param name="optype" value="mean"/>
+        <param name="opcol" value="2"/>
+        <param name="opround" value="no"/>
+        <param name="opdefault" value="0"/>
+      </repeat>
+      <output name="out_file1" file="groupby_out4.tabular"/>
+    </test>
   </tests>
   <help>
 

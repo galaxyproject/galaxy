@@ -240,7 +240,7 @@ def parse_requirements_from_xml(xml_root):
     if requirements_elem is not None:
         container_elems = requirements_elem.findall('container')
 
-    containers = map(container_from_element, container_elems)
+    containers = [container_from_element(c) for c in container_elems]
 
     return requirements, containers
 

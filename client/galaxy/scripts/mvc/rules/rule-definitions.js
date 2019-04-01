@@ -1,3 +1,4 @@
+import _ from "underscore";
 import _l from "utils/localization";
 import pyre from "pyre-to-regexp";
 
@@ -204,7 +205,7 @@ const RULES = {
         init: (component, rule) => {
             if (!rule) {
                 component.addColumnGroupTagValueValue = null;
-                component.addColumnGroupTagValueDefault = '';
+                component.addColumnGroupTagValueDefault = "";
             } else {
                 component.addColumnGroupTagValueValue = rule.value;
                 component.addColumnGroupTagValueDefault = rule.default_value;
@@ -224,7 +225,7 @@ const RULES = {
                 let groupTagValue = rule.default_value;
                 for (let index in tags) {
                     const tag = tags[index];
-                    if ( tag.indexOf(groupTagPrefix) == 0 ) {
+                    if (tag.indexOf(groupTagPrefix) == 0) {
                         groupTagValue = tag.substr(groupTagPrefix.length);
                         break;
                     }
@@ -346,7 +347,7 @@ const RULES = {
         },
         save: (component, rule) => {
             rule.target_column = component.addColumnSubstrTarget;
-            rule.length = component.addColumnSubstrLength;
+            rule.length = parseInt(component.addColumnSubstrLength);
             rule.substr_type = component.addColumnSubstrType;
         },
         apply: (rule, data, sources, columns) => {
@@ -476,13 +477,13 @@ const RULES = {
                 component.addFilterCountWhich = "first";
                 component.addFilterCountInvert = false;
             } else {
-                component.addFilterCountN = rule.count;
+                component.addFilterCountN = parseInt(rule.count);
                 component.addFilterCountWhich = rule.which;
                 component.addFilterCountInvert = rule.inverse;
             }
         },
         save: (component, rule) => {
-            rule.count = component.addFilterCountN;
+            rule.count = parseInt(component.addFilterCountN);
             rule.which = component.addFilterCountWhich;
             rule.invert = component.addFilterCountInvert;
         },
@@ -860,8 +861,8 @@ const colHeadersFor = function(data, columns) {
     }
 };
 
-const applyRules = function(data, sources, columns, rules, colHeadersPerRule) {
-    var colHeadersPerRule = colHeadersPerRule || [];
+const applyRules = function(data, sources, columns, rules, headersPerRule = []) {
+    let colHeadersPerRule = Array.from(headersPerRule);
     let hasRuleError = false;
     for (var ruleIndex in rules) {
         const ruleHeaders = colHeadersFor(data, columns);
@@ -888,7 +889,7 @@ const applyRules = function(data, sources, columns, rules, colHeadersPerRule) {
             columns = res.columns || columns;
         }
     }
-    return { data, sources, columns };
+    return { data, sources, columns, colHeadersPerRule };
 };
 
 export default {

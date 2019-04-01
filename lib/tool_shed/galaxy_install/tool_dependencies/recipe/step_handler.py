@@ -768,7 +768,7 @@ class RegexReplace(RecipeStep):
 
     def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
                      install_environment, work_dir, current_dir=None, initial_download=False):
-        """
+        r"""
         Search and replace text in a file using regular expressions. Since this class is not used in the initial
         download stage, no recipe step filtering is performed here, and None values are always returned for
         filtered_actions and dir.

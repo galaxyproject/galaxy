@@ -1,8 +1,10 @@
 /** Contains helpers to limit/lazy load views for backbone views */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 
 export default Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         this.$container = options.$container;
         this.collection = options.collection;
         this.new_content = options.new_content;
@@ -10,7 +12,8 @@ export default Backbone.View.extend({
         this.content_list = {};
         this.$message = $("<div/>")
             .addClass("ui-limitloader")
-            .append(`...only the first ${this.max} entries are visible.`);
+            .append(`...only the first ${this.max} entries are visible.`)
+            .hide();
         this.$container.append(this.$message);
         this.listenTo(this.collection, "reset", this._reset, this);
         this.listenTo(this.collection, "add", this._refresh, this);
@@ -49,7 +52,8 @@ export default Backbone.View.extend({
         if (!this._done()) {
             for (var i in this.collection.models) {
                 var model = this.collection.models[i];
-                var view = this.content_list[model.id];
+                // TODO: View is unused here.
+                //var view = this.content_list[model.id];
                 if (!this.content_list[model.id]) {
                     var content = this.new_content(model);
                     this.content_list[model.id] = content;

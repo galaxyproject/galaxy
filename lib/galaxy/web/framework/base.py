@@ -369,7 +369,7 @@ class Request(webob.Request):
         Create a new request wrapping the WSGI environment `environ`
         """
         #  self.environ = environ
-        webob.Request.__init__(self, environ, charset='utf-8', decode_param_names=False)
+        webob.Request.__init__(self, environ, charset='utf-8')
     # Properties that are computed and cached on first use
 
     @lazy_property
@@ -499,12 +499,12 @@ def send_file(start_response, trans, body):
     return body
 
 
-def iterate_file(file):
+def iterate_file(fh):
     """
     Progressively return chunks from `file`.
     """
     while 1:
-        chunk = file.read(CHUNK_SIZE)
+        chunk = fh.read(CHUNK_SIZE)
         if not chunk:
             break
         yield chunk

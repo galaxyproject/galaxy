@@ -19,15 +19,15 @@ ${render_galaxy_repository_actions( repository )}
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormTitle">Tool shed repository '${repository.name|h}' tool dependencies</div>
+<div class="card">
+    <div class="card-header">Tool shed repository '${repository.name|h}' tool dependencies</div>
         <%
             can_install = False
             can_uninstall = False
         %>
         <br/><br/>
         <table class="grid">
-            <tr><th  bgcolor="#D8D8D8">Name</th><th  bgcolor="#D8D8D8">Version</th><th  bgcolor="#D8D8D8">Type</th><th bgcolor="#D8D8D8">Status</th><th bgcolor="#D8D8D8">Error</th></tr>
+            <tr><th>Name</th><th>Version</th><th>Type</th><th>Status</th><th>Error</th></tr>
             %for tool_dependency in repository.tool_dependencies:
                 <%
                     if tool_dependency.error_message:

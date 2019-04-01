@@ -1,26 +1,14 @@
 ~~~~~~~~~~~~~~~
-``filter-with``
-~~~~~~~~~~~~~~~
-
-:Description:
-    If running behind a proxy server and Galaxy is served from a
-    subdirectory, enable the proxy-prefix filter and set the prefix in
-    the [filter:proxy-prefix] section above.
-:Default: ``proxy-prefix``
-:Type: str
-
-
-~~~~~~~~~~~~~~~
 ``cookie_path``
 ~~~~~~~~~~~~~~~
 
 :Description:
-    If proxy-prefix is enabled and you're running more than one Galaxy
-    instance behind one hostname, you will want to set this to the
-    same path as the prefix in the filter above.  This value becomes
-    the "path" attribute set in the cookie so the cookies from each
-    instance will not clobber each other.
-:Default: ``None``
+    When running multiple Galaxy instances under separate URL prefixes
+    on a single hostname, you will want to set this to the same path
+    as the prefix set in the uWSGI "mount" configuration option above.
+    This value becomes the "path" attribute set in the cookie so the
+    cookies from one instance will not clobber those from another.
+:Default: ````
 :Type: str
 
 
@@ -109,7 +97,7 @@
     on an existing template database. This will set that. This is
     probably only useful for testing but documentation is included
     here for completeness.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -173,7 +161,9 @@
 ~~~~~~~~~~~~~
 
 :Description:
-    Dataset files are stored in this directory.
+    Where dataset files are stored. It must accessible at the same
+    path on any cluster nodes that will run Galaxy jobs, unless using
+    Pulsar.
 :Default: ``database/files``
 :Type: str
 
@@ -183,7 +173,9 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Temporary files are stored in this directory.
+    Where temporary files are stored. It must accessible at the same
+    path on any cluster nodes that will run Galaxy jobs, unless using
+    Pulsar.
 :Default: ``database/tmp``
 :Type: str
 
@@ -208,13 +200,12 @@
 :Description:
     Enable / disable checking if any tools defined in the above non-
     shed tool_config_files (i.e., tool_conf.xml) have been migrated
-    from the Galaxy code distribution to the Tool Shed.  This setting
-    should generally be set to False only for development Galaxy
-    environments that are often rebuilt from scratch where migrated
-    tools do not need to be available in the Galaxy tool panel.  If
-    the following setting remains commented, the default setting will
-    be True.
-:Default: ``true``
+    from the Galaxy code distribution to the Tool Shed. This
+    functionality is largely untested in modern Galaxy releases and
+    has serious issues such as #7273 and the possibility of slowing
+    down Galaxy startup, so the default and recommended value is
+    False.
+:Default: ``false``
 :Type: bool
 
 
@@ -330,10 +321,20 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    conda channels to enable by default (http://conda.pydata.org/docs
-    /custom-channels.html)
-:Default: ``iuc,bioconda,conda-forge,defaults``
+    conda channels to enable by default (https://conda.io/docs/user-
+    guide/tasks/manage-channels.html)
+:Default: ``iuc,conda-forge,bioconda,defaults``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``conda_use_local``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Use locally-built conda packages.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -435,13 +436,12 @@
     Set to True to enable monitoring of tools and tool directories
     listed in any tool config file specified in tool_config_file
     option. If changes are found, tools are automatically reloaded.
-    Watchdog ( https://pypi.python.org/pypi/watchdog ) must be
-    installed and available to Galaxy to use this option. Other
-    options include 'auto' which will attempt to watch tools if the
-    watchdog library is available but won't fail to load Galaxy if it
-    is not and 'polling' which will use a less efficient monitoring
-    scheme that may work in wider range of scenarios than the watchdog
-    default.
+    Watchdog ( https://pypi.org/project/watchdog/ ) must be installed
+    and available to Galaxy to use this option. Other options include
+    'auto' which will attempt to watch tools if the watchdog library
+    is available but won't fail to load Galaxy if it is not and
+    'polling' which will use a less efficient monitoring scheme that
+    may work in wider range of scenarios than the watchdog default.
 :Default: ``false``
 :Type: str
 
@@ -487,7 +487,7 @@
     Enable Galaxy to fetch Docker containers registered with quay.io
     generated from tool requirements resolved through conda. These
     containers (when available) have been generated using mulled -
-    https://github.com/mulled. These containers are highly beta and
+    https://github.com/mulled . These containers are highly beta and
     availability will vary by tool. This option will additionally only
     be used for job destinations with Docker enabled.
 :Default: ``false``
@@ -503,7 +503,7 @@
     container resolvers to use when discovering containers for Galaxy.
     If this is set to None, the default containers loaded is
     determined by enable_beta_mulled_containers.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -512,12 +512,12 @@
 ~~~~~~~~~~~~~~~~~~
 
 :Description:
-    involucro is a tool used to build Docker containers for tools from
-    Conda dependencies referenced in tools as `requirement`s. The
-    following path is the location of involucro on the Galaxy host.
-    This is ignored if the relevant container resolver isn't enabled,
-    and will install on demand unless involucro_auto_init is set to
-    False.
+    involucro is a tool used to build Docker or Singularity containers
+    for tools from Conda dependencies referenced in tools as
+    `requirement`s. The following path is the location of involucro on
+    the Galaxy host. This is ignored if the relevant container
+    resolver isn't enabled, and will install on demand unless
+    involucro_auto_init is set to False.
 :Default: ``database/dependencies/involucro``
 :Type: str
 
@@ -527,10 +527,22 @@
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Install involucro as needed to build Docker containers for tools.
-    Ignored if relevant container resolver is not used.
+    Install involucro as needed to build Docker or Singularity
+    containers for tools. Ignored if relevant container resolver is
+    not used.
 :Default: ``true``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~
+``mulled_channels``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Conda channels to use when building Docker or Singularity
+    containers using involucro.
+:Default: ``conda-forge,bioconda``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -634,7 +646,7 @@
     shed_tool_data_path directories. If changes in tool data table
     files are found, the tool data tables for that data manager are
     automatically reloaded. Watchdog (
-    https://pypi.python.org/pypi/watchdog ) must be installed and
+    https://pypi.org/project/watchdog/ ) must be installed and
     available to Galaxy to use this option. Other options include
     'auto' which will attempt to use the watchdog library if it is
     available but won't fail to load Galaxy if it is not and 'polling'
@@ -677,6 +689,19 @@
     definitions to one file).
 :Default: ``config/datatypes_conf.xml``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``sniff_compressed_dynamic_datatypes_default``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable sniffing of compressed datatypes. This can be
+    configured/overridden on a per-datatype basis in the
+    datatypes_conf.xml file. With this option set to False the
+    compressed datatypes will be unpacked before sniffing.
+:Default: ``true``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -842,7 +867,7 @@
     Time to sleep between checks if check_job_script_integrity is
     enabled (in seconds).
 :Default: ``0.25``
-:Type: str
+:Type: float
 
 
 ~~~~~~~~~~~~~~~~~~~~~
@@ -900,22 +925,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~
-``collect_outputs_from``
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Tools with a number of outputs not known until runtime can write
-    these outputs to a directory for collection by Galaxy when the job
-    is done. Previously, this directory was new_file_path, but using
-    one global directory can cause performance problems, so using
-    job_working_directory ('.' or cwd when a job is run) is
-    encouraged.  By default, both are checked to avoid breaking
-    existing tools.
-:Default: ``new_file_path,job_working_directory``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``object_store_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -924,6 +933,18 @@
     Configuration file for the object store If this is set and exists,
     it overrides any other objectstore settings.
 :Default: ``config/object_store_conf.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_store_by``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    What Dataset attribute is used to reference files in an
+    ObjectStore implementation, default is 'id' but can also be set to
+    'uuid' for more de-centralized usage.
+:Default: ``id``
 :Type: str
 
 
@@ -938,7 +959,7 @@
     needs to send mail through an SMTP server, which you may define
     here (host:port). Galaxy will automatically try STARTTLS but will
     continue upon failure.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -950,7 +971,7 @@
     If your SMTP server requires a username and password, you can
     provide them here (password in cleartext here, but if your server
     supports STARTTLS it will be sent over the network encrypted).
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -962,7 +983,7 @@
     If your SMTP server requires a username and password, you can
     provide them here (password in cleartext here, but if your server
     supports STARTTLS it will be sent over the network encrypted).
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1000,7 +1021,7 @@
     disabled if no address is set.  Also this email is shown as a
     contact to user in case of Galaxy misconfiguration and other
     events user may encounter.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1014,7 +1035,7 @@
     resets. We recommend using string in the following format: Galaxy
     Project <galaxy-no-reply@example.com> If not configured, '<galaxy-
     no-reply@HOSTNAME>' will be used.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1077,7 +1098,7 @@
     Activation grace period (in hours).  Activation is not forced
     (login is not disabled) until grace period has passed.  Users
     under grace period can't run jobs. Enter 0 to disable grace
-    period. Users with OpenID logins have grace period forever.
+    period.
 :Default: ``3``
 :Type: int
 
@@ -1125,7 +1146,7 @@
 :Description:
     You can enter tracking code here to track visitor's behavior
     through your Google Analytics account.  Example: UA-XXXXXXXX-Y
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1187,7 +1208,7 @@
 
 :Description:
     Show a message box under the masthead.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1196,7 +1217,8 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Show a message box under the masthead.
+    Class of the message box under the masthead. Possible values are:
+    'info' (the default), 'warning', 'error', 'done'.
 :Default: ``info``
 :Type: str
 
@@ -1207,7 +1229,7 @@
 
 :Description:
     Append "/{brand}" to the "Galaxy" text in the masthead.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1219,11 +1241,22 @@
     Format string used when showing date and time information. The
     string may contain: - the directives used by Python
     time.strftime() function (see
-    https://docs.python.org/2/library/time.html#time.strftime ), -
+    https://docs.python.org/library/time.html#time.strftime ), -
     $locale (complete format string for the server locale), - $iso8601
     (complete format string as specified by ISO 8601 international
     standard).
 :Default: ``$locale (UTC)``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``user_preferences_extra_conf_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Location of the configuration file containing extra user
+    preferences.
+:Default: ``config/user_preferences_extra_conf.yml``
 :Type: str
 
 
@@ -1297,6 +1330,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~
+``helpsite_url``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    The URL linked by the "Galaxy Help" link in the "Help" menu.
+:Default: ````
+:Type: str
+
+
 ~~~~~~~~~~~~
 ``wiki_url``
 ~~~~~~~~~~~~
@@ -1313,58 +1356,8 @@
 
 :Description:
     The URL linked by the "Support" link in the "Help" menu.
-:Default: ``https://galaxyproject.org/support``
+:Default: ``https://galaxyproject.org/support/``
 :Type: str
-
-
-~~~~~~~~~~~~~~~
-``biostar_url``
-~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~
-``biostar_key_name``
-~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~
-``biostar_key``
-~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``biostar_enable_bug_reports``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ``true``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``biostar_never_authenticate``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~
@@ -1427,7 +1420,7 @@
     The URL linked by the "Terms and Conditions" link in the "Help"
     menu, as well as on the user registration and login forms and in
     the activation emails.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1563,9 +1556,10 @@
 
 :Description:
     For help on configuring the Advanced proxy features, see:
-    http://usegalaxy.org/production  Apache can handle file downloads
-    (Galaxy-to-user) via mod_xsendfile.  Set this to True to inform
-    Galaxy that mod_xsendfile is enabled upstream.
+    https://docs.galaxyproject.org/en/master/admin/production.html
+    Apache can handle file downloads (Galaxy-to-user) via
+    mod_xsendfile.  Set this to True to inform Galaxy that
+    mod_xsendfile is enabled upstream.
 :Default: ``false``
 :Type: bool
 
@@ -1579,7 +1573,7 @@
     Redirect.  This should be set to the path defined in the nginx
     config as an internal redirect with access to Galaxy's data files
     (see documentation linked above).
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1622,7 +1616,7 @@
     explained in detail in the documentation linked above.  The upload
     store is a temporary directory in which files uploaded by the
     upload module will be placed.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1634,7 +1628,7 @@
     This value overrides the action set on the file upload form, e.g.
     the web path where the nginx_upload_module has been configured to
     intercept upload requests.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1647,7 +1641,7 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1660,7 +1654,7 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1818,7 +1812,7 @@
     Galaxy instead of a JSON or SQLite file for IPC. If you do not
     specify this, it will be set randomly for you. You should set this
     if you are managing the proxy manually.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1839,8 +1833,8 @@
 
 :Description:
     Verbosity of console log messages.  Acceptable values can be found
-    here: https://docs.python.org/2/library/logging.html#logging-
-    levels A custom debug level of "TRACE" is available for even more
+    here: https://docs.python.org/library/logging.html#logging-levels
+    A custom debug level of "TRACE" is available for even more
     verbosity.
 :Default: ``DEBUG``
 :Type: str
@@ -1856,7 +1850,7 @@
     defined by the `log_level` configuration option. Configuration is
     described in the documentation at:
     https://docs.galaxyproject.org/en/master/admin/config_logging.html
-:Default: ``galaxy.config.LOGGING_CONFIG_DEFAULT``
+:Default: ``None``
 :Type: map
 
 
@@ -1991,9 +1985,8 @@
     comma separated list of hostname strings or regular expressions
     beginning and ending with /. E.g.
     mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/ See:
-    https://developer.mozilla.org/en-
-    US/docs/Web/HTTP/Access_control_CORS
-:Default: ``None``
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+:Default: ````
 :Type: str
 
 
@@ -2062,9 +2055,8 @@
 
 :Description:
     Enable live debugging in your browser.  This should NEVER be
-    enabled on a public site.  Enabled in the sample config for
-    development.
-:Default: ``true``
+    enabled on a public site.
+:Default: ``false``
 :Type: bool
 
 
@@ -2075,9 +2067,15 @@
 :Description:
     When stopping Galaxy cleanly, how much time to give various
     monitoring/polling threads to finish before giving up on joining
-    them. Set to 0 to disable this and restore the pre-18.01 default
-    behavior.
-:Default: ``5``
+    them. Set to 0 to disable this and terminate without waiting.
+    Among others, these threads include the job handler workers, which
+    are responsible for preparing/submitting and collecting/finishing
+    jobs, and which can cause job errors if not shut down cleanly. If
+    using supervisord, consider also increasing the value of
+    `stopwaitsecs`. If using job handler mules, consider also setting
+    the `mule-reload-mercy` uWSGI option. See the Galaxy Admin
+    Documentation for more.
+:Default: ``30``
 :Type: int
 
 
@@ -2127,7 +2125,7 @@
     middleware and errors will be sent to the indicated sentry
     instance.  This connection string is available in your sentry
     instance under <project_name> -> Settings -> API Keys.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2141,7 +2139,7 @@
     server (above, sentry_dsn).  A value of '0' is disabled.  For
     example, you would set this to .005 to log all queries taking
     longer than 5 milliseconds.
-:Default: ``0``
+:Default: ``0.0``
 :Type: float
 
 
@@ -2210,7 +2208,7 @@
 :Description:
     Add an option to the library upload form which allows
     administrators to upload a directory of files.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2225,7 +2223,7 @@
     admin user's Galaxy login ( email ).  The non-admin user is
     restricted to uploading files or sub-directories of files
     contained in their directory.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2253,7 +2251,7 @@
     *any* user with library import permissions can import from
     anywhere in these directories (assuming they are able to create
     symlinks to them).
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2325,7 +2323,7 @@
     higher the boost, the more importance the scoring algorithm gives
     to the given field.  Section refers to the tool group in the tool
     panel.  Rest of the fields are tool's attributes.
-:Default: ``9``
+:Default: ``9.0``
 :Type: float
 
 
@@ -2338,7 +2336,7 @@
     higher the boost, the more importance the scoring algorithm gives
     to the given field.  Section refers to the tool group in the tool
     panel.  Rest of the fields are tool's attributes.
-:Default: ``3``
+:Default: ``3.0``
 :Type: float
 
 
@@ -2351,7 +2349,7 @@
     higher the boost, the more importance the scoring algorithm gives
     to the given field.  Section refers to the tool group in the tool
     panel.  Rest of the fields are tool's attributes.
-:Default: ``2``
+:Default: ``2.0``
 :Type: float
 
 
@@ -2364,7 +2362,7 @@
     higher the boost, the more importance the scoring algorithm gives
     to the given field.  Section refers to the tool group in the tool
     panel.  Rest of the fields are tool's attributes.
-:Default: ``1``
+:Default: ``1.0``
 :Type: float
 
 
@@ -2377,7 +2375,7 @@
     higher the boost, the more importance the scoring algorithm gives
     to the given field.  Section refers to the tool group in the tool
     panel.  Rest of the fields are tool's attributes.
-:Default: ``5``
+:Default: ``5.0``
 :Type: float
 
 
@@ -2478,8 +2476,8 @@
     User authentication can be delegated to an upstream proxy server
     (usually Apache).  The upstream proxy should set a REMOTE_USER
     header in the request. Enabling remote user disables regular
-    logins.  For more information, see:
-    https://galaxyproject.org/admin/config/apache-proxy
+    logins.  For more information, see: https://docs.galaxyproject.org
+    /en/master/admin/special_topics/apache.html
 :Default: ``false``
 :Type: bool
 
@@ -2493,7 +2491,7 @@
     method just returns bare usernames, set a default mail domain to
     be appended to usernames, to become your Galaxy usernames (email
     addresses).
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2535,7 +2533,7 @@
 :Description:
     If use_remote_user is enabled, you can set this to a URL that will
     log your users out.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2575,7 +2573,7 @@
     the Admin section of the server, and will have access to create
     users, groups, roles, libraries, and more.  For more information,
     see:   https://galaxyproject.org/admin/
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2760,33 +2758,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``tool_submission_burst_threads``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Set the following to a number of threads greater than 1 to spawn a
-    Python task queue for dealing with large tool submissions (either
-    through the tool form or as part of an individual workflow step
-    across large collection). This affects workflow scheduling and web
-    processes, not job handlers. This is a beta option and should not
-    be used in production.
-:Default: ``1``
-:Type: int
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``tool_submission_burst_at``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If tool_submission_burst_threads is set to a number greater than
-    1, this is the number of jobs to schedule at which the task queue
-    will be created.
-:Default: ``10``
-:Type: int
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_beta_workflow_modules``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2794,6 +2765,17 @@
 :Description:
     Enable beta workflow modules that should not yet be considered
     part of Galaxy's stable API.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_workflow_format``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable import and export of workflows as Galaxy Format 2
+    workflows.
 :Default: ``false``
 :Type: bool
 
@@ -2881,7 +2863,7 @@
     alchemy session between workflow invocation scheduling iterations.
     Set to -1 to disable any such maximum (the default).
 :Default: ``-1``
-:Type: str
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2893,39 +2875,6 @@
     particular history
 :Default: ``false``
 :Type: bool
-
-
-~~~~~~~~~~~~~~~~~
-``enable_openid``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable authentication via OpenID.  Allows users to log in to their
-    Galaxy account by authenticating with an OpenID provider.
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~
-``openid_config_file``
-~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If OpenID is enabled, this configuration file specifies providers
-    to use. Falls back to the .sample variant in config if default
-    does not exist.
-:Default: ``config/openid_conf.xml``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``openid_consumer_cache_path``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If OpenID is enabled, consumer cache directory to use.
-:Default: ``database/openid_consumer_cache``
-:Type: str
 
 
 ~~~~~~~~~~~~~~~
@@ -2977,7 +2926,7 @@
 :Description:
     Optional list of email addresses of API users who can make calls
     on behalf of other users.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -3044,7 +2993,7 @@
     following two options. This should point to a directory containing
     subdirectories matching users' identifier (defaults to e-mail),
     where Galaxy will look for files.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -3055,7 +3004,7 @@
 :Description:
     This should be the hostname of your FTP server, which will be
     provided to users in the help text.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -3190,7 +3139,7 @@
     you can separate Galaxy into multiple processes.  There are more
     than one way to do this, and they are explained in detail in the
     documentation:
-    https://galaxyproject.org/admin/config/performance/scaling  By
+    https://docs.galaxyproject.org/en/master/admin/scaling.html  By
     default, Galaxy manages and executes jobs from within a single
     process and notifies itself of new jobs via in-memory queues.
     Jobs are run locally on the system on which Galaxy is started.
@@ -3228,10 +3177,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    In multiprocess configurations, notification between processes
-    about new jobs must be done via the database.  In single process
-    configurations, this can be done in memory, which is a bit
-    quicker.
+    This option is deprecated, use the `mem-self` handler assignment
+    option in the job configuration instead.
 :Default: ``true``
 :Type: bool
 
@@ -3375,7 +3322,7 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) this script is used to run the
     job script Galaxy generates for a tool execution.
 :Default: ``sudo -E scripts/drmaa_external_runner.py --assign_all_groups``
@@ -3388,7 +3335,7 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) this script is used to kill
     such jobs by Galaxy (e.g. if the user cancels the job).
 :Default: ``sudo -E scripts/drmaa_external_killer.py``
@@ -3401,7 +3348,7 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) this script is used transfer
     permissions back and forth between the Galaxy user and the user
     that is running the job.
@@ -3415,7 +3362,7 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) Galaxy can extract the user
     name from the email address (actually the local-part before the @)
     or the username which are both stored in the Galaxy data base. The
@@ -3444,7 +3391,7 @@
     environment prior to running tools.  This can be especially useful
     for running jobs as the actual user, to remove the need to
     configure each user's environment individually.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -3590,7 +3537,7 @@
 :Description:
     The base module(s) that are searched for modules for toolbox
     filtering (https://galaxyproject.org/user-defined-toolbox-
-    filters/) producedures.
+    filters/) functions.
 :Default: ``galaxy.tools.toolbox.filters,galaxy.tools.filters``
 :Type: str
 
@@ -3653,6 +3600,18 @@
     that should be always available.
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~
+``use_pbkdf2``
+~~~~~~~~~~~~~~
+
+:Description:
+    Allow disabling pbkdf2 hashing of passwords for legacy situations.
+    This should normally be left enabled unless there is a specific
+    reason to disable it.
+:Default: ``true``
+:Type: bool
 
 
 

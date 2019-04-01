@@ -1,6 +1,9 @@
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
+
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
-import * as Toastr from "libs/toastr";
 
 function CollectionTypeDescription(collectionType) {
     this.collectionType = collectionType;
@@ -131,6 +134,9 @@ var Terminal = Backbone.Model.extend({
         if (this.node) {
             this.node.markChanged();
             this.resetMappingIfNeeded();
+            if (!connector.dragging) {
+                connector.handle2.resetCollectionTypeSource();
+            }
         }
     },
     redraw: function() {
@@ -151,14 +157,21 @@ var Terminal = Backbone.Model.extend({
         });
     },
     setMapOver: function(val) {
+        let output_val = val;
         if (this.multiple) {
-            return; // Cannot set this to be multirun...
+            // emulate list input
+            let description = new CollectionTypeDescription("list");
+            if (val.collectionType === description.collectionType) {
+                // No mapping over necessary
+                return;
+            }
+            output_val = val.effectiveMapOver ? val.effectiveMapOver(description) : val;
         }
 
         if (!this.mapOver().equal(val)) {
             this.terminalMapping.setMapOver(val);
             _.each(this.node.output_terminals, outputTerminal => {
-                outputTerminal.setMapOver(val);
+                outputTerminal.setMapOver(output_val);
             });
         }
     },
@@ -174,6 +187,17 @@ var Terminal = Backbone.Model.extend({
     },
     resetMapping: function() {
         this.terminalMapping.disableMapOver();
+    },
+
+    resetCollectionTypeSource: function() {
+        let node = this.node;
+        _.each(node.output_terminals, function(output_terminal) {
+            let type_source = output_terminal.attributes.collection_type_source;
+            if (type_source && output_terminal.attributes.collection_type) {
+                output_terminal.attributes.collection_type = null;
+                output_terminal.update(output_terminal.attributes);
+            }
+        });
     },
 
     resetMappingIfNeeded: function() {} // Subclasses should override this...
@@ -390,11 +414,8 @@ var InputTerminal = BaseInputTerminal.extend({
                     // collection (yet...)
                     return false;
                 }
-                if (otherCollectionType.rank == 1) {
-                    return this._producesAcceptableDatatype(other);
-                } else {
-                    // TODO: Allow subcollection mapping over this as if it were
-                    // a list collection input.
+                if (otherCollectionType.collectionType.endsWith("paired")) {
+                    // shouldn't process pairs in multiple="true" input
                     return false;
                 }
             }
@@ -418,10 +439,23 @@ var InputTerminal = BaseInputTerminal.extend({
     }
 });
 
+var InputParameterTerminal = BaseInputTerminal.extend({
+    update: function(input) {
+        this.type = input.type;
+    },
+    connect: function(connector) {
+        BaseInputTerminal.prototype.connect.call(this, connector);
+    },
+    attachable: function(other) {
+        return this.type == other.attributes.type;
+    }
+});
+
 var InputCollectionTerminal = BaseInputTerminal.extend({
     update: function(input) {
         this.multiple = false;
         this.collection = true;
+        this.collection_type = input.collection_type;
         this.datatypes = input.extensions;
         var collectionTypes = [];
         if (input.collection_types) {
@@ -438,6 +472,24 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
         var other = connector.handle1;
         if (!other) {
             return;
+        } else {
+            let node = this.node;
+            _.each(node.output_terminals, function(output_terminal) {
+                if (output_terminal.attributes.collection_type_source && !connector.dragging) {
+                    if (other.isMappedOver()) {
+                        if (other.isCollection) {
+                            output_terminal.attributes.collection_type = other.terminalMapping.mapOver.append(
+                                other.collectionType
+                            ).collectionType;
+                        } else {
+                            output_terminal.attributes.collection_type = other.terminalMapping.mapOver.collectionType;
+                        }
+                    } else {
+                        output_terminal.attributes.collection_type = other.attributes.collection_type;
+                    }
+                    output_terminal.update(output_terminal.attributes);
+                }
+            });
         }
 
         var effectiveMapOver = this._effectiveMapOver(other);
@@ -523,20 +575,25 @@ var OutputCollectionTerminal = Terminal.extend({
             newCollectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
         }
 
-        if (newCollectionType.collectionType != this.collectionType.collectionType) {
-            _.each(this.connectors, connector => {
-                // TODO: consider checking if connection valid before removing...
-                Toastr.warning("Destroying a connection because collection type has changed.");
-                connector.destroy();
+        let oldCollectionType = this.collectionType;
+        this.collectionType = newCollectionType;
+        // we need to iterate over a copy, as we slice this.connectors in the process of destroying connections
+        var connectors = this.connectors.slice(0);
+        if (newCollectionType.collectionType != oldCollectionType.collectionType) {
+            _.each(connectors, connector => {
+                connector.destroyIfInvalid(true);
             });
         }
-        this.collectionType = newCollectionType;
     }
 });
 
+var OutputParameterTerminal = Terminal.extend({});
+
 export default {
     InputTerminal: InputTerminal,
+    InputParameterTerminal: InputParameterTerminal,
     OutputTerminal: OutputTerminal,
+    OutputParameterTerminal: OutputParameterTerminal,
     InputCollectionTerminal: InputCollectionTerminal,
     OutputCollectionTerminal: OutputCollectionTerminal,
     TerminalMapping: TerminalMapping,

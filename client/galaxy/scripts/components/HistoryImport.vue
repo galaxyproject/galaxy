@@ -3,17 +3,14 @@
         <b-card title="Import a history from an archive">
             <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
             <p>Please provide a Galaxy history export URL or a history file.</p>
-            <b-form-group label="Archived History URL">
-                <b-form-input type="url" v-model="sourceURL"/>
-            </b-form-group>
-            <b-form-group label="Archived History File">
-                <b-form-file v-model="sourceFile"/>
-            </b-form-group>
+            <b-form-group label="Archived History URL"> <b-form-input type="url" v-model="sourceURL" /> </b-form-group>
+            <b-form-group label="Archived History File"> <b-form-file v-model="sourceFile" /> </b-form-group>
             <b-button type="submit">Import history</b-button>
         </b-card>
     </b-form>
 </template>
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
@@ -43,15 +40,15 @@ export default {
                 formData.append("archive_file", this.sourceFile);
                 formData.append("archive_source", this.sourceURL);
                 axios
-                    .post(`${Galaxy.root}api/histories`, formData)
+                    .post(`${getAppRoot()}api/histories`, formData)
                     .then(response => {
-                        window.location = `${Galaxy.root}histories/list?message=${
+                        window.location = `${getAppRoot()}histories/list?message=${
                             response.data.message
                         }&status=success`;
                     })
                     .catch(error => {
                         let message = error.response.data && error.response.data.err_msg;
-                        this.errorMessage = message || "Import failed for unkown reason.";
+                        this.errorMessage = message || "Import failed for an unknown reason.";
                     });
             }
         }

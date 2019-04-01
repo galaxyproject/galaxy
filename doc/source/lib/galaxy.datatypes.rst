@@ -19,6 +19,22 @@ Subpackages
 Submodules
 ----------
 
+galaxy\.datatypes\.annotation module
+------------------------------------
+
+.. automodule:: galaxy.datatypes.annotation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.datatypes\.anvio module
+-------------------------------
+
+.. automodule:: galaxy.datatypes.anvio
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.datatypes\.assembly module
 ----------------------------------
 
@@ -115,6 +131,14 @@ galaxy\.datatypes\.interval module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.datatypes\.isa module
+-----------------------------
+
+.. automodule:: galaxy.datatypes.isa
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.datatypes\.metadata module
 ----------------------------------
 
@@ -159,6 +183,22 @@ galaxy\.datatypes\.ngsindex module
 ----------------------------------
 
 .. automodule:: galaxy.datatypes.ngsindex
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.datatypes\.phylip module
+--------------------------------
+
+.. automodule:: galaxy.datatypes.phylip
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.datatypes\.plant\_tribes module
+---------------------------------------
+
+.. automodule:: galaxy.datatypes.plant_tribes
     :members:
     :undoc-members:
     :show-inheritance:
@@ -231,6 +271,14 @@ galaxy\.datatypes\.triples module
 ---------------------------------
 
 .. automodule:: galaxy.datatypes.triples
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.datatypes\.upload\_util module
+--------------------------------------
+
+.. automodule:: galaxy.datatypes.upload_util
     :members:
     :undoc-members:
     :show-inheritance:

@@ -24,7 +24,6 @@ from galaxy.managers import (
     api_keys,
     base as managers_base,
     configuration,
-    tags,
     users,
     workflows
 )
@@ -32,7 +31,8 @@ from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
     HistoryDatasetAssociation,
-    LibraryDatasetDatasetAssociation
+    LibraryDatasetDatasetAssociation,
+    tags,
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.dictifiable import Dictifiable
@@ -57,7 +57,7 @@ SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 def _is_valid_slug(slug):
     """ Returns true if slug is valid. """
 
-    VALID_SLUG_RE = re.compile("^[a-z0-9\-]+$")
+    VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
     return VALID_SLUG_RE.match(slug)
 
 
@@ -177,9 +177,9 @@ class BaseUIController(BaseController):
             log.exception("Exception in get_object check for %s %s:", class_name, str(id))
             raise Exception('Server error retrieving %s id ( %s ).' % (class_name, str(id)))
 
-    def message_exception(self, trans, message):
+    def message_exception(self, trans, message, sanitize=True):
         trans.response.status = 400
-        return {'err_msg': util.sanitize_text(message)}
+        return {'err_msg': util.sanitize_text(message) if sanitize else message}
 
 
 class BaseAPIController(BaseController):
@@ -259,15 +259,28 @@ class JSAppLauncher(BaseUIController):
         self.config_serializer = configuration.ConfigSerializer(app)
         self.admin_config_serializer = configuration.AdminConfigSerializer(app)
 
+    def _check_require_login(self, trans):
+        if self.app.config.require_login and self.user_manager.is_anonymous(trans.user):
+            # TODO: this doesn't properly redirect when login is done
+            # (see webapp __ensure_logged_in_user for the initial redirect - not sure why it doesn't redirect to login?)
+            login_url = web.url_for(controller="root", action="login")
+            trans.response.send_redirect(login_url)
+
     @web.expose
     def client(self, trans, **kwd):
         """
-        Endpoint for clientside routes.  Currently a passthrough to index
-        (minus kwargs) though we can differentiate it more in the future.
+        Endpoint for clientside routes.  This ships the primary SPA client.
+
         Should not be used with url_for -- see
         (https://github.com/galaxyproject/galaxy/issues/1878) for why.
         """
-        return self.index(trans)
+        self._check_require_login(trans)
+        return self._bootstrapped_client(trans, **kwd)
+
+    def _bootstrapped_client(self, trans, app_name='analysis', **kwd):
+        js_options = self._get_js_options(trans)
+        js_options['config'].update(self._get_extended_config(trans))
+        return self.template(trans, app_name, options=js_options, **kwd)
 
     def _get_js_options(self, trans, root=None):
         """
@@ -285,6 +298,30 @@ class JSAppLauncher(BaseUIController):
             'session_csrf_token' : trans.session_csrf_token,
         }
         return js_options
+
+    def _get_extended_config(self, trans):
+        config = {
+            'active_view'                   : 'analysis',
+            'enable_cloud_launch'           : trans.app.config.get_bool('enable_cloud_launch', False),
+            'enable_webhooks'               : True if trans.app.webhooks_registry.webhooks else False,
+            # TODO: next two should be redundant - why can't we build one from the other?
+            'toolbox'                       : trans.app.toolbox.to_dict(trans, in_panel=False),
+            'toolbox_in_panel'              : trans.app.toolbox.to_dict(trans),
+            'message_box_visible'           : trans.app.config.message_box_visible,
+            'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active
+        }
+
+        # TODO: move to user
+        stored_workflow_menu_entries = config['stored_workflow_menu_entries'] = []
+        for menu_item in getattr(trans.user, 'stored_workflow_menu_entries', []):
+            stored_workflow_menu_entries.append({
+                'encoded_stored_workflow_id': trans.security.encode_id(menu_item.stored_workflow_id),
+                'stored_workflow': {
+                    'name': util.unicodify(menu_item.stored_workflow.name)
+                }
+            })
+
+        return config
 
     def _get_site_configuration(self, trans):
         """
@@ -337,32 +374,6 @@ class Datatype(object):
 #
 # -- Mixins for working with Galaxy objects. --
 #
-
-
-class CreatesUsersMixin(object):
-    """
-    Mixin centralizing logic for user creation between web and API controller.
-
-    Web controller handles additional features such e-mail subscription, activation,
-    user forms, etc.... API created users are much more vanilla for the time being.
-    """
-
-    def create_user(self, trans, email, username, password):
-        user = trans.app.model.User(email=email)
-        user.set_password_cleartext(password)
-        user.username = username
-        if trans.app.config.user_activation_on:
-            user.active = False
-        else:
-            user.active = True  # Activation is off, every new user is active by default.
-        trans.sa_session.add(user)
-        trans.sa_session.flush()
-        trans.app.security_agent.create_private_user_role(user)
-        if trans.webapp.name == 'galaxy':
-            # We set default user permissions, before we log in and set the default history permissions
-            trans.app.security_agent.user_set_default_permissions(user,
-                                                                  default_access_private=trans.app.config.new_user_dataset_access_role_default_private)
-        return user
 
 
 class CreatesApiKeysMixin(object):
@@ -431,7 +442,7 @@ class UsesLibraryMixin(object):
 
     def get_library(self, trans, id, check_ownership=False, check_accessible=True):
         l = self.get_object(trans, id, 'Library')
-        if check_accessible and not (trans.user_is_admin() or trans.app.security_agent.can_access_library(trans.get_current_user_roles(), l)):
+        if check_accessible and not (trans.user_is_admin or trans.app.security_agent.can_access_library(trans.get_current_user_roles(), l)):
             error("LibraryFolder is not accessible to the current user")
         return l
 
@@ -462,8 +473,8 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
     def can_current_user_add_to_library_item(self, trans, item):
         if not trans.user:
             return False
-        return ((trans.user_is_admin()) or
-                (trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item)))
+        return (trans.user_is_admin or
+                trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item))
 
     def check_user_can_add_to_library_item(self, trans, item, check_accessible=True):
         """
@@ -475,7 +486,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
             return False
 
         current_user_roles = trans.get_current_user_roles()
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             return True
 
         if check_accessible:
@@ -1237,19 +1248,21 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         session.flush()
         return imported_stored
 
-    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True):
+    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True, fill_defaults=False):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
         # TODO: replace this method with direct access to manager.
         workflow_contents_manager = workflows.WorkflowContentsManager(self.app)
-        created_workflow = workflow_contents_manager.build_workflow_from_dict(
+        raw_workflow_description = workflow_contents_manager.ensure_raw_description(data)
+        created_workflow = workflow_contents_manager.build_workflow_from_raw_description(
             trans,
-            data,
+            raw_workflow_description,
             source=source,
             add_to_menu=add_to_menu,
             publish=publish,
             exact_tools=exact_tools,
+            fill_defaults=fill_defaults,
         )
         return created_workflow.stored_workflow, created_workflow.missing_tools
 
@@ -1399,18 +1412,25 @@ class SharableMixin(object):
 
     @web.expose_api
     def sharing(self, trans, id, payload=None, **kwd):
+        skipped = False
         class_name = self.manager.model_class.__name__
         item = self.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
         if payload and payload.get("action"):
             action = payload.get("action")
             if action == "make_accessible_via_link":
                 self._make_item_accessible(trans.sa_session, item)
+                if hasattr(item, "has_possible_members") and item.has_possible_members and payload.get("make_members_public", False):
+                    shared, skipped = self._make_members_public(trans, item)
             elif action == "make_accessible_and_publish":
                 self._make_item_accessible(trans.sa_session, item)
+                if hasattr(item, "has_possible_members") and item.has_possible_members and payload.get("make_members_public", False):
+                    shared, skipped = self._make_members_public(trans, item)
                 item.published = True
             elif action == "publish":
                 if item.importable:
                     item.published = True
+                    if hasattr(item, "has_possible_members") and item.has_possible_members and payload.get("make_members_public", False):
+                        shared, skipped = self._make_members_public(trans, item)
                 else:
                     raise exceptions.MessageException("%s not importable." % class_name)
             elif action == "disable_link_access":
@@ -1435,7 +1455,29 @@ class SharableMixin(object):
         item_dict = self.serializer.serialize_to_view(item,
             user=trans.user, trans=trans, default_view="sharing")
         item_dict["users_shared_with"] = [{"id": self.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
+        if skipped:
+            item_dict["skipped"] = True
         return item_dict
+
+    def _make_members_public(self, trans, item):
+        """ Make the non-purged datasets in history public
+        Performs pemissions check.
+        """
+        # TODO eventually we should handle more classes than just History
+        skipped = False
+        for hda in item.activatable_datasets:
+            dataset = hda.dataset
+            if not trans.app.security_agent.dataset_is_public(dataset):
+                if trans.app.security_agent.can_manage_dataset(trans.user.all_roles(), dataset):
+                    try:
+                        trans.app.security_agent.make_dataset_public(hda.dataset)
+                    except Exception:
+                        log.warning("Unable to make dataset with id: %s public", dataset.id)
+                        skipped = True
+                else:
+                    log.warning("User without permissions tried to make dataset with id: %s public", dataset.id)
+                    skipped = True
+        return item, skipped
 
     # -- Abstract methods. --
 
@@ -1509,8 +1551,8 @@ class UsesTagsMixin(SharableItemSecurityMixin):
         return self.get_tag_handler(trans)._get_item_tag_assoc(user, tagged_item, tag_name)
 
     def set_tags_from_list(self, trans, item, new_tags_list, user=None):
-        tags_manager = tags.GalaxyTagManager(trans.app.model.context)
-        return tags_manager.set_tags_from_list(user, item, new_tags_list)
+        tag_handler = tags.GalaxyTagHandler(trans.app.model.context)
+        return tag_handler.set_tags_from_list(user, item, new_tags_list)
 
     def get_user_tags_used(self, trans, user=None):
         """

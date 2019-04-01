@@ -24,6 +24,7 @@
     <tool file="genomespace/genomespace_push.xml" />
   </section>
   <section id="send" name="Send Data">
+    <tool file="cloud/send.xml" />
     <tool file="genomespace/genomespace_exporter.xml" />
   </section>
   <section id="collection_operations" name="Collection Operations">
@@ -120,10 +121,6 @@
     <tool file="phenotype_association/linkToGProfile.xml" />
     <tool file="phenotype_association/linkToDavid.xml" />
     <tool file="phenotype_association/ldtools.xml" />
-    <tool file="phenotype_association/pass.xml" />
-    <tool file="phenotype_association/gpass.xml" />
-    <tool file="phenotype_association/beam.xml" />
-    <tool file="phenotype_association/lps.xml" />
     <tool file="phenotype_association/master2pg.xml" />
   </section>
 </toolbox>

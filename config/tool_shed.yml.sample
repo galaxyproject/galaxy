@@ -29,6 +29,9 @@ uwsgi:
   # Mapping to serve the remainder of the static content.
   static-map: /static=static
 
+  # Mapping to serve the favicon.
+  static-map: /favicon.ico=static/favicon.ico
+
   # Enable the master process manager. Disabled by default for maximum
   # compatibility with CTRL+C, but should be enabled for use with
   # --daemon and/or production deployments.
@@ -44,6 +47,14 @@ uwsgi:
   # The entry point which returns the web application (e.g. Galaxy,
   # Reports, etc.) that you are loading.
   module: galaxy.webapps.tool_shed.buildapp:uwsgi_app()
+
+  # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
+  # URL prefix. Cannot be used together with 'module:' above.
+  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
+
+  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-
+  # points. Set this to true if a URL prefix is used.
+  manage-script-name: false
 
   # It is usually a good idea to set this to ``true`` if processes is
   # greater than 1.
@@ -70,7 +81,7 @@ uwsgi:
 tool_shed:
 
   # Verbosity of console log messages.  Acceptable values can be found
-  # here: https://docs.python.org/2/library/logging.html#logging-levels
+  # here: https://docs.python.org/library/logging.html#logging-levels
   #log_level: DEBUG
 
   # By default, the Tool Shed uses a SQLite database at
@@ -84,11 +95,10 @@ tool_shed:
   # installation directory.
   #hgweb_config_dir: null
 
-  # Where tool shed repositories are stored.
+  # Where Tool Shed repositories are stored.
   #file_path: database/community_files
 
-  # Temporary storage for additional datasets, this should be shared
-  # through the cluster
+  # Where temporary files are stored.
   #new_file_path: database/tmp
 
   # File containing old-style genome builds
@@ -97,10 +107,9 @@ tool_shed:
   # Format string used when showing date and time information. The
   # string may contain: - the directives used by Python time.strftime()
   # function (see
-  # https://docs.python.org/2/library/time.html#time.strftime ), -
-  # $locale (complete format string for the server locale), - $iso8601
-  # (complete format string as specified by ISO 8601 international
-  # standard).
+  # https://docs.python.org/library/time.html#time.strftime ), - $locale
+  # (complete format string for the server locale), - $iso8601 (complete
+  # format string as specified by ISO 8601 international   standard).
   #pretty_datetime_format: $locale (UTC)
 
   # -- Repository and Tool search Using the script located at
@@ -165,8 +174,8 @@ tool_shed:
   # User authentication can be delegated to an upstream proxy server
   # (usually Apache).  The upstream proxy should set a REMOTE_USER
   # header in the request. Enabling remote user disables regular logins.
-  # For more information, see:
-  # https://wiki.galaxyproject.org/Admin/Config/ApacheProxy
+  # For more information, see: https://galaxyproject.org/admin/config
+  # /apache-external-user-auth/
   #use_remote_user: false
 
   # If use_remote_user is enabled, anyone who can log in to the Galaxy
@@ -205,7 +214,7 @@ tool_shed:
   #use_printdebug: true
 
   # NEVER enable this on a public site (even test or QA)
-  #use_interactive: true
+  #use_interactive: false
 
   # Administrative users - set this to a comma-separated list of valid
   # Tool Shed users (email addresses).  These users will have access to
@@ -223,10 +232,10 @@ tool_shed:
   # Allow administrators to delete accounts.
   #allow_user_deletion: false
 
-  # For use by email messages sent from the tool shed
+  # For use by email messages sent from the Tool Shed.
   #smtp_server: smtp.your_tool_shed_server
 
-  # For use by email messages sent from the tool shed
+  # For use by email messages sent from the Tool Shed.
   #email_from: your_tool_shed_email@server
 
   # If your SMTP server requires a username and password, you can
@@ -244,7 +253,7 @@ tool_shed:
   #smtp_ssl: false
 
   # The URL linked by the "Support" link in the "Help" menu.
-  #support_url: 'https://wiki.galaxyproject.org/Support'
+  #support_url: 'https://galaxyproject.org/support/'
 
   # Address to join mailing list
   #mailing_join_addr: galaxy-announce-join@bx.psu.edu
@@ -265,7 +274,8 @@ tool_shed:
   # Show a message box under the masthead.
   #message_box_content: null
 
-  # Show a message box under the masthead.
+  # Class of the message box under the masthead. Possible values are:
+  # 'info' (the default), 'warning', 'error', 'done'.
   #message_box_class: info
 
   # Serving static files (needed if running standalone)
@@ -297,9 +307,10 @@ tool_shed:
   #enable_beta_gdpr: false
 
   # For help on configuring the Advanced proxy features, see:
-  # http://usegalaxy.org/production  Apache can handle file downloads
-  # (Galaxy-to-user) via mod_xsendfile.  Set this to True to inform
-  # Galaxy that mod_xsendfile is enabled upstream.
+  # https://docs.galaxyproject.org/en/master/admin/production.html
+  # Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile.
+  # Set this to True to inform Galaxy that mod_xsendfile is enabled
+  # upstream.
   #apache_xsendfile: false
 
   # The same download handling can be done by nginx using X-Accel-
@@ -340,16 +351,12 @@ tool_shed:
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
 
-  # If proxy-prefix is enabled and you're running more than one Galaxy
-  # instance behind one hostname, you will want to set this to the same
-  # path as the prefix in the filter above.  This value becomes the
-  # "path" attribute set in the cookie so the cookies from each instance
-  # will not clobber each other.
+  # When running multiple Tool Shed instances under separate URL
+  # prefixes on a single hostname, you will want to set this to the same
+  # path as the prefix set in the uWSGI "mount" configuration option
+  # above. This value becomes the "path" attribute set in the cookie so
+  # the cookies from one instance will not clobber those from another.
   #cookie_path: null
-
-  # Enable authentication via OpenID.  Allows users to log in to their
-  # Galaxy account by authenticating with an OpenID provider.
-  #enable_openid: false
 
   # Turn on logging of user actions to the database.  Actions currently
   # logged are grid views, tool searches, and use of "recently" used

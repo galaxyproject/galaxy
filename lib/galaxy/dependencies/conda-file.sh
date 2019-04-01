@@ -6,7 +6,7 @@
 #
 # You should use this script like so:
 #
-# conda create --override-channels -c bioconda -c conda-forge -c defaults \
+# conda create --override-channels -c conda-forge -c bioconda -c defaults \
 #     -n <env> --file <(lib/galaxy/dependencies/conda-file.sh) python=2.7
 
 here=$(dirname $0)
@@ -19,7 +19,7 @@ fi
 
 printf "Filtering out Galaxy requirements not available from Conda:" >&2
 egrep -iv $( \
-    conda create --override-channels -c bioconda -c conda-forge -c defaults \
+    conda create --override-channels -c conda-forge -c bioconda -c defaults \
         -n _gx_test_env --dry-run --file <(sed 's/;.*//' $here/pinned-requirements.txt) python=2.7 2>&1 \
         | grep '^\s*-' | grep -v https: | awk '{print $NF}' | paste -s -d'|' \
 ) $here/pinned-requirements.txt | sed 's/;.*//'

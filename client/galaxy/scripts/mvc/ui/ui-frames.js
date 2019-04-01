@@ -1,9 +1,9 @@
 /** Frame view */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
 import _l from "utils/localization";
-import * as Backbone from "backbone";
-import * as _ from "underscore";
-/* global $ */
-/* global Galaxy */
+import { getGalaxyInstance } from "app";
 
 var FrameView = Backbone.View.extend({
     initialize: function(options) {
@@ -40,7 +40,7 @@ var FrameView = Backbone.View.extend({
     render: function() {
         var self = this;
         var options = this.model.attributes;
-        this.$title.html(options.title || "");
+        this.$title.html(_.escape(options.title) || "");
         this.$header.find(".f-icon-left").remove();
         _.each(options.menu, option => {
             var $option = $("<div/>")
@@ -156,6 +156,7 @@ var View = Backbone.View.extend({
      *              argument that is the frame's content DOM element
      */
     add: function(options) {
+        let Galaxy = getGalaxyInstance();
         if (this.frame_counter >= this.options.frame_max) {
             Galaxy.modal.show({
                 title: _l("Warning"),

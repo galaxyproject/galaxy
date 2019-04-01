@@ -36,8 +36,8 @@ class Newick_Parser(Base_Parser):
         return self.phyloTree.generateJsonableDict()
 
     def cleanNewickString(self, rawNewick):
-        """removing semi colon, and illegal json characters (\,',") and white spaces"""
-        return re.sub(r'\s|;|\"|\'|\\', '', rawNewick)
+        r"""removing semi colon, and illegal json characters (\,',") and white spaces"""
+        return re.sub(r'\s|;|\"|\'|\\', r'', rawNewick)
 
     def _makeNodesFromString(self, string, depth):
         """elements separated by comma could be empty"""

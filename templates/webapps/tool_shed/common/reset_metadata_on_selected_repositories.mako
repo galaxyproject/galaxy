@@ -34,7 +34,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Reset all metadata on each selected repository</div>
         <%
-            if trans.user_is_admin():
+            if trans.user_is_admin:
                 controller = 'admin'
                 action = 'reset_metadata_on_selected_repositories_in_tool_shed'
             else:

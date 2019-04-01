@@ -307,7 +307,7 @@
 
 <%def name="body()">
     <div style="overflow: auto; height: 100%;">
-        <div class="page-container" style="padding: 10px;">
+        <div class="page-container p-2">
             ${self.render_header()}
             <h2>${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'</h2>
             <hr/>

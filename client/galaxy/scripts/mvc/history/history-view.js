@@ -1,9 +1,11 @@
-import * as _ from "underscore";
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import LIST_VIEW from "mvc/list/list-view";
-import HISTORY_MODEL from "mvc/history/history-model";
-import HISTORY_CONTENTS from "mvc/history/history-contents";
-import History from "mvc/history/history-model";
+import { History } from "mvc/history/history-model";
+import { HistoryContents } from "mvc/history/history-contents";
 import HDA_LI from "mvc/history/hda-li";
 import HDCA_LI from "mvc/history/hdca-li";
 import ERROR_MODAL from "mvc/ui/error-modal";
@@ -13,9 +15,6 @@ import HistoryViewEdit from "mvc/history/history-view-edit";
 import HistoryCopyDialog from "mvc/history/copy-dialog";
 import "ui/search-input";
 import "ui/mode-button";
-
-/* global $ */
-/* global Galaxy */
 
 /* =============================================================================
 TODO:
@@ -39,7 +38,7 @@ var HistoryView = _super.extend(
         /** class to use for constructing the HDCA views */
         HDCAViewClass: HDCA_LI.HDCAListItemView,
         /** class to used for constructing collection of sub-view models */
-        collectionClass: HISTORY_CONTENTS.HistoryContents,
+        collectionClass: HistoryContents,
         /** key of attribute in model to assign to this.collection */
         modelCollectionKey: "contents",
 
@@ -107,7 +106,7 @@ var HistoryView = _super.extend(
         loadHistory: function(historyId, options, contentsOptions) {
             contentsOptions = _.extend(contentsOptions || { silent: true });
             this.info("loadHistory:", historyId, options, contentsOptions);
-            this.setModel(new HISTORY_MODEL.History({ id: historyId }));
+            this.setModel(new History({ id: historyId }));
 
             contentsOptions.silent = true;
             this.trigger("loading");
@@ -636,34 +635,33 @@ export function historyEntry(options) {
     $("#switch").click(function() {
         //##HACK:ity hack hack
         //##TODO: remove when out of iframe
-        var hview =
-            Galaxy.currHistoryPanel || (window.top.Galaxy && window.top.Galaxy.currHistoryPanel)
-                ? window.top.Galaxy.currHistoryPanel
-                : null;
+        let Galaxy = getGalaxyInstance();
+        var hview = Galaxy.currHistoryPanel ? Galaxy.currHistoryPanel : null;
         if (hview) {
             hview.switchToHistory("${ history[ 'id' ] }");
         } else {
             window.location = "${ switch_to_url }";
         }
     });
-    // use_panels effects where the the center_panel() is rendered:
+    // use_panels affects where the the center_panel() is rendered:
     //  w/o it renders to the body, w/ it renders to #center - we need to adjust a few things for scrolling to work
     if (options.hasMasthead) {
         $("#center").addClass("flex-vertical-container");
     }
 
     let viewClass = options.userIsOwner ? HistoryViewEdit.HistoryViewEdit : HistoryView.HistoryView;
-    let historyModel = new History.History(options.historyJSON);
+    let history = new History(options.historyJSON);
 
     // attach the copy dialog to the import button now that we have a history
     $("#import").click(function() {
-        HistoryCopyDialog(historyModel, {
+        let Galaxy = getGalaxyInstance();
+        HistoryCopyDialog(history, {
             useImport: true,
             // use default datasets option to match the toggle-deleted button
             allDatasets: $("#toggle-deleted").modeButton("getMode").mode === "showing_deleted"
         }).done(function() {
             if (window === window.parent) {
-                window.location = Galaxy.root;
+                window.location = getAppRoot();
             } else if (Galaxy.currHistoryPanel) {
                 Galaxy.currHistoryPanel.loadCurrentHistory();
             }
@@ -678,13 +676,13 @@ export function historyEntry(options) {
                   return this.$el.parent();
               }
             : undefined,
-        model: historyModel,
+        model: history,
         show_deleted: options.showDeletedJson,
         show_hidden: options.showHiddenJson,
         purgeAllowed: options.allow_user_dataset_purge
     });
     historyView.trigger("loading");
-    historyModel
+    history
         .fetchContents({ silent: true })
         .fail(function() {
             alert("Galaxy history failed to load");

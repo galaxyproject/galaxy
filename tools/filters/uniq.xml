@@ -1,6 +1,10 @@
-<tool id="Count1" name="Count" version="1.0.2">
+<tool id="Count1" name="Count" version="1.0.3">
   <description>occurrences of each record</description>
-  <command interpreter="python">uniq.py -i $input -o $out_file1 -c "$column" -d $delim -s $sorting</command>
+    <requirements>
+        <requirement type="package" version="8.30">coreutils</requirement>
+        <requirement type="package" version="3.7">python</requirement>
+    </requirements>
+  <command>python '$__tool_directory__/uniq.py' -i '$input' -o '$out_file1' -c '$column' -d $delim -s $sorting</command>
   <inputs>
     <param name="input" type="data" format="tabular" label="from dataset" help="Dataset missing? See TIP below"/>
     <param name="column" type="data_column" data_ref="input" multiple="True" numerical="False" label="Count occurrences of values in column(s)" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />

@@ -57,11 +57,19 @@ class DataManagers(object):
                 tool_path = '.'
             self.tool_path = tool_path
         for data_manager_elem in root.findall('data_manager'):
-            self.load_manager_from_elem(data_manager_elem, tool_path=self.tool_path)
+            if not self.load_manager_from_elem(data_manager_elem, tool_path=self.tool_path):
+                # Wasn't able to load manager, could happen when galaxy is managed by planemo.
+                # Fall back to loading relative to the data_manager_conf.xml file
+                tool_path = os.path.dirname(xml_filename)
+                self.load_manager_from_elem(data_manager_elem, tool_path=tool_path)
 
     def load_manager_from_elem(self, data_manager_elem, tool_path=None, add_manager=True):
         try:
             data_manager = DataManager(self, data_manager_elem, tool_path=tool_path)
+        except IOError as e:
+            if e.errno == errno.ENOENT:
+                # File does not exist
+                return None
         except Exception as e:
             log.error("Error loading data_manager '%s':\n%s" % (e, util.xml_to_string(data_manager_elem)))
             return None
@@ -260,12 +268,13 @@ class DataManager(object):
     def id(self):
         return self.guid or self.declared_id  # if we have a guid, we will use that as the data_manager id
 
-    def load_tool(self, tool_filename, guid=None, data_manager_id=None, tool_shed_repository_id=None):
+    def load_tool(self, tool_filename, guid=None, data_manager_id=None, tool_shed_repository_id=None, tool_shed_repository=None):
         toolbox = self.data_managers.app.toolbox
         tool = toolbox.load_hidden_tool(tool_filename,
                                         guid=guid,
                                         data_manager_id=data_manager_id,
                                         repository_id=tool_shed_repository_id,
+                                        tool_shed_repository=tool_shed_repository,
                                         use_cached=True)
         self.data_managers.app.toolbox.data_manager_tools[tool.id] = tool
         self.tool = tool
@@ -355,16 +364,16 @@ class DataManager(object):
             if source is None:
                 source = source_base_path
             else:
-                source = fill_template(source, GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd)
+                source = fill_template(source, GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd).strip()
             if move_dict['source_value']:
-                source = os.path.join(source, fill_template(move_dict['source_value'], GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd))
+                source = os.path.join(source, fill_template(move_dict['source_value'], GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd).strip())
             target = move_dict['target_base']
             if target is None:
                 target = self.data_managers.app.config.galaxy_data_manager_data_path
             else:
-                target = fill_template(target, GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd)
+                target = fill_template(target, GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd).strip()
             if move_dict['target_value']:
-                target = os.path.join(target, fill_template(move_dict['target_value'], GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd))
+                target = os.path.join(target, fill_template(move_dict['target_value'], GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd).strip())
 
             if move_dict['type'] == 'file':
                 dirs = os.path.split(target)[0]
@@ -388,7 +397,7 @@ class DataManager(object):
         if data_table_name in self.value_translation_by_data_table_column and column_name in self.value_translation_by_data_table_column[data_table_name]:
             for value_translation in self.value_translation_by_data_table_column[data_table_name][column_name]:
                 if isinstance(value_translation, string_types):
-                    value = fill_template(value_translation, GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd)
+                    value = fill_template(value_translation, GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path, **kwd).strip()
                 else:
                     value = value_translation(value)
         return value

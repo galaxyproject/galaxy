@@ -1,15 +1,15 @@
+# Location of virtualenv used for development.
+VENV?=.venv
+# Source virtualenv to execute command (flake8, sphinx, twine, etc...)
+IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 RELEASE_CURR:=16.01
-RELEASE_CURR_MINOR_NEXT:=$(shell expr `awk '$$1 == "VERSION_MINOR" {print $$NF}' lib/galaxy/version.py | tr -d \" | sed 's/None/0/;s/dev/0/;' ` + 1)
+RELEASE_CURR_MINOR_NEXT:=$(shell $(IN_VENV) python scripts/bootstrap_history.py --print-next-minor-version)
 RELEASE_NEXT:=16.04
 # TODO: This needs to be updated with create_release_rc
 #RELEASE_NEXT_BRANCH:=release_$(RELEASE_NEXT)
 RELEASE_NEXT_BRANCH:=dev
 RELEASE_UPSTREAM:=upstream
 MY_UPSTREAM:=origin
-# Location of virtualenv used for development.
-VENV?=.venv
-# Source virtualenv to execute command (flake8, sphinx, twine, etc...)
-IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/webapps/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 DOCS_DIR=doc
@@ -27,7 +27,6 @@ docs: ## Generate HTML documentation.
 #   $ ./scripts/common_startup.sh
 #   $ . .venv/bin/activate
 #   $ pip install -r lib/galaxy/dependencies/dev-requirements.txt
-# You also need to install pandoc separately.
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
@@ -141,7 +140,7 @@ ifndef YARN
 	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
 	false;
 else
-	cd client && yarn install --network-timeout 120000 --check-files
+	cd client && yarn install --network-timeout 300000 --check-files
 endif
 	
 
@@ -160,13 +159,11 @@ client-format: node-deps ## Reformat client code
 client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
 
-_client-test-mocha:  ## Run mocha tests via karma
-	cd client && GALAXY_TEST_FRAMEWORK=mocha yarn run test
+client-test: node-deps  ## Run JS unit tests via Karma
+	cd client && yarn run test
 
-_client-test-qunit:  ## Run qunit tests via karma
-	cd client && GALAXY_TEST_FRAMEWORK=qunit yarn run test
-
-client-test: client _client-test-mocha _client-test-qunit ## Run JS unit tests via Karma
+client-eslint: node-deps  ## Run client linting
+	cd client && yarn run eslint
 
 client-test-watch: client ## Watch and run qunit tests on changes via Karma
 	cd client && yarn run test-watch

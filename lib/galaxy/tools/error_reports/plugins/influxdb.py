@@ -11,7 +11,7 @@ except ImportError:
     influxdb = None
 
 from galaxy.util import unicodify
-from ..plugins import ErrorPlugin
+from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
 

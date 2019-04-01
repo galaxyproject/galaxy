@@ -25,7 +25,7 @@ from bx.cookbook import doc_optparse
 from galaxy.util.ucsc import UCSCLimitException, UCSCOutWrapper
 
 
-class PositionalScoresOnDisk:
+class PositionalScoresOnDisk(object):
     fmt = 'f'
     fmt_size = struct.calcsize(fmt)
     default_value = float('nan')

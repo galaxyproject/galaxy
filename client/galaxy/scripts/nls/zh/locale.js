@@ -1,5 +1,5 @@
 /** zh localization */
-/* by steven shen */
+/* any suggestions, please contact me: ishenweiyan@qq.com */
 define({
     // ----------------------------------------------------------------------------- masthead
     "Analyze Data": "数据分析",
@@ -12,7 +12,7 @@ define({
     Pages: "已发布的页面",
     Visualization: "可视化",
     "New Track Browser": "创建 Track Browser",
-    "Saved Visualizations": "已保存的保存",
+    "Saved Visualizations": "已保存的可视化",
     "Interactive Environments": "交互式环境",
     Admin: "管理员",
     Help: "帮助",

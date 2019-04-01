@@ -22,6 +22,7 @@ import tempfile
 import threading
 import time
 import unicodedata
+import xml.dom.minidom
 from datetime import datetime
 from hashlib import md5
 from os.path import relpath
@@ -34,6 +35,10 @@ except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
     grp = None
 
+from boltons.iterutils import (
+    default_enter,
+    remap,
+)
 from six import binary_type, iteritems, PY2, string_types, text_type
 from six.moves import email_mime_multipart, email_mime_text, xrange, zip
 from six.moves.urllib import (
@@ -217,6 +222,11 @@ def parse_xml(fname):
     tree = ElementTree.ElementTree()
     try:
         root = tree.parse(fname, parser=ElementTree.XMLParser(target=DoctypeSafeCallbackTarget()))
+        for elem in root.iter('*'):
+            if elem.text is not None:
+                elem.text = elem.text.strip()
+            if elem.tail is not None:
+                elem.tail = elem.tail.strip()
     except ParseError:
         log.exception("Error parsing file %s", fname)
         raise
@@ -226,24 +236,36 @@ def parse_xml(fname):
 
 def parse_xml_string(xml_string):
     tree = ElementTree.fromstring(xml_string)
+    for elem in tree.iter('*'):
+        if elem.text is not None:
+            elem.text = elem.text.strip()
+        if elem.tail is not None:
+            elem.tail = elem.tail.strip()
     return tree
 
 
 def xml_to_string(elem, pretty=False):
-    """Returns a string from an xml tree"""
-    if pretty:
-        elem = pretty_print_xml(elem)
+    """
+    Returns a string from an xml tree.
+    """
     try:
-        if PY2:
-            return ElementTree.tostring(elem)
+        if elem is not None:
+            if PY2:
+                xml_str = ElementTree.tostring(elem, encoding='utf-8')
+            else:
+                xml_str = ElementTree.tostring(elem, encoding='unicode')
         else:
-            return ElementTree.tostring(elem, encoding='unicode')
+            xml_str = ''
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, 'text'):
-            return "<!-- %s -->\n" % (elem.text)
+            return "<!-- %s -->\n" % elem.text
         else:
             raise e
+    if xml_str and pretty:
+        pretty_string = xml.dom.minidom.parseString(xml_str).toprettyxml(indent='    ')
+        return "\n".join([line for line in pretty_string.split('\n') if not re.match(r'^[\s\\nb\']*$', line)])
+    return xml_str
 
 
 def xml_element_compare(elem1, elem2):
@@ -567,6 +589,32 @@ def sanitize_for_filename(text, default=None):
     return out
 
 
+def find_instance_nested(item, instances, match_key=None):
+    """
+    Recursively find instances from lists, dicts, tuples.
+
+    `instances` should be a tuple of valid instances
+    If match_key is given the key must match for an instance to be added to the list of found instances.
+    """
+
+    matches = []
+
+    def visit(path, key, value):
+        if isinstance(value, instances):
+            if match_key is None or match_key == key:
+                matches.append(value)
+        return key, value
+
+    def enter(path, key, value):
+        if isinstance(value, instances):
+            return None, False
+        return default_enter(path, key, value)
+
+    remap(item, visit, reraise_visit=False, enter=enter)
+
+    return matches
+
+
 def mask_password_from_url(url):
     """
     Masks out passwords from connection urls like the database connection in galaxy.ini
@@ -604,9 +652,9 @@ def ready_name_for_url(raw_name):
     """
 
     # Replace whitespace with '-'
-    slug_base = re.sub("\s+", "-", raw_name)
+    slug_base = re.sub(r"\s+", "-", raw_name)
     # Remove all non-alphanumeric characters.
-    slug_base = re.sub("[^a-zA-Z0-9\-]", "", slug_base)
+    slug_base = re.sub(r"[^a-zA-Z0-9\-]", "", slug_base)
     # Remove trailing '-'.
     if slug_base.endswith('-'):
         slug_base = slug_base[:-1]
@@ -921,7 +969,7 @@ def listify(item, do_strip=False):
 
 def commaify(amount):
     orig = amount
-    new = re.sub("^(-?\d+)(\d{3})", '\g<1>,\g<2>', amount)
+    new = re.sub(r"^(-?\d+)(\d{3})", r'\g<1>,\g<2>', amount)
     if orig == new:
         return new
     else:
@@ -1010,7 +1058,20 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
 
 def strip_control_characters(s):
     """Strip unicode control characters from a string."""
-    return "".join(c for c in unicodify(s) if unicodedata.category(c)[0] != "C")
+    return "".join(c for c in unicodify(s) if unicodedata.category(c) != "Cc")
+
+
+def strip_control_characters_nested(item):
+    """Recursively strips control characters from lists, dicts, tuples."""
+
+    def visit(path, key, value):
+        if isinstance(key, string_types):
+            key = strip_control_characters(key)
+        if isinstance(value, string_types):
+            value = strip_control_characters(value)
+        return key, value
+
+    return remap(item, visit)
 
 
 def object_to_string(obj):
@@ -1207,7 +1268,7 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
     perms = unmasked_perms & ~umask
     try:
         st = os.stat(path)
-    except OSError as e:
+    except OSError:
         log.exception('Unable to set permissions or group on %s', path)
         return
     # fix modes
@@ -1298,29 +1359,48 @@ def nice_size(size):
 
 def size_to_bytes(size):
     """
-    Returns a number of bytes if given a reasonably formatted string with the size
+    Returns a number of bytes (as integer) if given a reasonably formatted string with the size
+
+    >>> size_to_bytes('1024')
+    1024
+    >>> size_to_bytes('1.0')
+    1
+    >>> size_to_bytes('10 bytes')
+    10
+    >>> size_to_bytes('4k')
+    4096
+    >>> size_to_bytes('2.2 TB')
+    2418925581107
+    >>> size_to_bytes('.01 TB')
+    10995116277
+    >>> size_to_bytes('1.b')
+    1
+    >>> size_to_bytes('1.2E2k')
+    122880
     """
-    # Assume input in bytes if we can convert directly to an int
-    try:
-        return int(size)
-    except ValueError:
-        pass
-    # Otherwise it must have non-numeric characters
-    size_re = re.compile('([\d\.]+)\s*([tgmk]b?|b|bytes?)$')
-    size_match = re.match(size_re, size.lower())
-    assert size_match is not None
-    size = float(size_match.group(1))
-    multiple = size_match.group(2)
-    if multiple.startswith('t'):
-        return int(size * 1024 ** 4)
-    elif multiple.startswith('g'):
-        return int(size * 1024 ** 3)
-    elif multiple.startswith('m'):
-        return int(size * 1024 ** 2)
+    # The following number regexp is based on https://stackoverflow.com/questions/385558/extract-float-double-value/385597#385597
+    size_re = re.compile(r'(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
+    size_match = size_re.match(size.lower())
+    if size_match is None:
+        raise ValueError("Could not parse string '%s'" % size)
+    number = float(size_match.group("number"))
+    multiple = size_match.group("multiple")
+    if multiple == "" or multiple.startswith('b'):
+        return int(number)
     elif multiple.startswith('k'):
-        return int(size * 1024)
-    elif multiple.startswith('b'):
-        return int(size)
+        return int(number * 1024)
+    elif multiple.startswith('m'):
+        return int(number * 1024 ** 2)
+    elif multiple.startswith('g'):
+        return int(number * 1024 ** 3)
+    elif multiple.startswith('t'):
+        return int(number * 1024 ** 4)
+    elif multiple.startswith('p'):
+        return int(number * 1024 ** 5)
+    elif multiple.startswith('e'):
+        return int(number * 1024 ** 6)
+    else:
+        raise ValueError("Unknown multiplier '%s' in '%s'" % (multiple, size))
 
 
 def send_mail(frm, to, subject, body, config, html=None):
@@ -1495,7 +1575,7 @@ def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False)
 
 
 def parse_non_hex_float(s):
-    """
+    r"""
     Parse string `s` into a float but throw a `ValueError` if the string is in
     the otherwise acceptable format `\d+e\d+` (e.g. 40000000000000e5.)
 

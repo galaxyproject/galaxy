@@ -107,7 +107,7 @@ tc.agent("Mozilla/5.0 (compatible; check_galaxy/0.1)")
 tc.config('use_tidy', 0)
 
 
-class Browser:
+class Browser(object):
 
     def __init__(self):
         self.server = server

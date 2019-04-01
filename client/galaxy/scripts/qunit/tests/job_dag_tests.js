@@ -1,10 +1,17 @@
-/* global define */
+/* global QUnit */
+import _ from "underscore";
 import testApp from "qunit/test-app";
 import JobDAG from "mvc/history/job-dag";
 import testData from "qunit/test-data/job-dag-1";
-import $ from "jquery";
 
-QUnit.module("mvc/history/job-dag.js tests");
+QUnit.module("mvc/history/job-dag.js tests", {
+    beforeEach: function() {
+        testApp.create();
+    },
+    afterEach: function() {
+        testApp.destroy();
+    }
+});
 
 // ------------------------------------------------------------------------
 QUnit.test("Empty JobDAG construction", function(assert) {

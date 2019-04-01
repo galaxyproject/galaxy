@@ -53,7 +53,7 @@ def main():
     if ret == 0:
         cl = subprocess.Popen(["join", "--version"], stdout=subprocess.PIPE)
         (stdout, _) = cl.communicate()
-        version_line = stdout.split("\n")[0]
+        version_line = stdout.decode('utf-8').split("\n")[0]
         (version, _) = version_line.split()[-1].split(".")
         if int(version) >= 7:
             flags = "--nocheck-order"

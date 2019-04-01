@@ -40,9 +40,8 @@ DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
 # Conda channel order from highest to lowest, following the one used in
 # https://github.com/bioconda/bioconda-recipes/blob/master/config.yml , but
-# adding `iuc` as first channel (for Galaxy-specific packages) and `r` as last
-# (for old R packages)
-DEFAULT_ENSURE_CHANNELS = "iuc,bioconda,conda-forge,defaults"
+# adding `iuc` as first channel (for Galaxy-specific packages)
+DEFAULT_ENSURE_CHANNELS = "iuc,conda-forge,bioconda,defaults"
 CONDA_SOURCE_CMD = """[ "$CONDA_DEFAULT_ENV" = "%s" ] ||
 MAX_TRIES=3
 COUNT=0

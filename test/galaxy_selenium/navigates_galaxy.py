@@ -140,7 +140,10 @@ class NavigatesGalaxy(HasDriver):
         return wait_type.default_length * self.timeout_multiplier
 
     def sleep_for(self, wait_type):
-        time.sleep(self.wait_length(wait_type))
+        self.sleep_for_seconds(self.wait_length(wait_type))
+
+    def sleep_for_seconds(self, duration):
+        time.sleep(duration)
 
     def timeout_for(self, **kwds):
         wait_type = kwds.get("wait_type", DEFAULT_WAIT_TYPE)
@@ -242,7 +245,7 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_create_new(self):
         """Click create new and pause a bit for the history to begin to refresh."""
-        self.click_history_option('Create New')
+        self.history_click_create_new()
         self.sleep_for(WAIT_TYPES.UX_RENDER)
 
     def history_panel_wait_for_hid_ok(self, hid, allowed_force_refreshes=0):
@@ -364,22 +367,16 @@ class NavigatesGalaxy(HasDriver):
     def submit_login(self, email, password=None, assert_valid=True, retries=0):
         if password is None:
             password = self.default_password
-
         login_info = {
             'login': email,
             'password': password,
         }
-
         self.click_masthead_user()
-        self.wait_for_and_click(self.navigation.masthead.labels.login)
-
-        with self.main_panel():
-            self.sleep_for(WAIT_TYPES.UX_RENDER)
-            form = self.wait_for_visible(self.navigation.login.selectors.form)
-            self.fill(form, login_info)
-            self.snapshot("logging-in")
-            self.click_submit(form)
-
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
+        form = self.wait_for_visible(self.navigation.login.selectors.form)
+        self.fill(form, login_info)
+        self.snapshot("logging-in")
+        self.wait_for_and_click(self.navigation.login.selectors.submit)
         self.snapshot("login-submitted")
         if assert_valid:
             try:
@@ -404,26 +401,25 @@ class NavigatesGalaxy(HasDriver):
 
         self.home()
         self.click_masthead_user()
-        self.wait_for_and_click(self.navigation.masthead.labels.register)
-        with self.main_panel():
-            form = self.wait_for_visible(self.navigation.registration.selectors.form)
-            self.fill(form, dict(
-                email=email,
-                password=password,
-                username=username,
-                confirm=confirm
-            ))
-            self.wait_for_and_click(self.navigation.registration.selectors.submit)
-            # Give the browser a bit of time to submit the request.
-            # It would be good to eliminate this sleep, but it can't be because Galaxy
-            # doesn't swap the "User" menu automatically after it registers a user and
-            # and the donemessage visible comment below doesn't work when using Selenium.
-            # Something about the Selenium session or quickness of registering causes the
-            # following in the Galaxy logs which gets propaged to the GUI as a generic error:
-            # /api/histories/cfc05ccec54895e2/contents?keys=type_id%2Celement_count&order=hid&v=dev&q=history_content_type&q=deleted&q=purged&q=visible&qv=dataset_collection&qv=False&qv=False&qv=True HTTP/1.1" 403 - "http://localhost:8080/"
-            # Like the logged in user doesn't have permission to the previously anonymous user's
-            # history, it is odd but I cannot replicate this outside of Selenium.
-            time.sleep(1.35)
+        self.wait_for_and_click(self.navigation.registration.selectors.toggle)
+        form = self.wait_for_visible(self.navigation.registration.selectors.form)
+        self.fill(form, dict(
+            email=email,
+            password=password,
+            username=username,
+            confirm=confirm
+        ))
+        self.wait_for_and_click(self.navigation.registration.selectors.submit)
+        # Give the browser a bit of time to submit the request.
+        # It would be good to eliminate this sleep, but it can't be because Galaxy
+        # doesn't swap the "User" menu automatically after it registers a user and
+        # and the donemessage visible comment below doesn't work when using Selenium.
+        # Something about the Selenium session or quickness of registering causes the
+        # following in the Galaxy logs which gets propaged to the GUI as a generic error:
+        # /api/histories/cfc05ccec54895e2/contents?keys=type_id%2Celement_count&order=hid&v=dev&q=history_content_type&q=deleted&q=purged&q=visible&qv=dataset_collection&qv=False&qv=False&qv=True HTTP/1.1" 403 - "http://localhost:8080/"
+        # Like the logged in user doesn't have permission to the previously anonymous user's
+        # history, it is odd but I cannot replicate this outside of Selenium.
+        time.sleep(1.35)
 
         if assert_valid:
             # self.wait_for_selector_visible(".donemessage")
@@ -989,7 +985,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_tags(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
         tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
-        tag_spans = tag_display.find_elements_by_css_selector("span.badge-tags")
+        tag_spans = tag_display.find_elements_by_css_selector(".tag-name")
         tags = []
         for tag_span in tag_spans:
             tags.append(tag_span.text)
@@ -1028,7 +1024,7 @@ class NavigatesGalaxy(HasDriver):
         tool_link.wait_for_and_click()
 
     def tool_parameter_div(self, expanded_parameter_id):
-        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_visible()
+        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_clickable()
 
     def tool_parameter_edit_rules(self, expanded_parameter_id="rules"):
         rules_div_element = self.tool_parameter_div("rules")
@@ -1086,6 +1082,9 @@ class NavigatesGalaxy(HasDriver):
         menu_item_sizzle_selector = '#history-options-button-menu > li > a:contains("%s")' % option_label
         menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
+
+    def history_click_create_new(self):
+        self.components.history_panel.new_history_button.wait_for_and_click()
 
     def history_panel_click_copy_elements(self):
         self.click_history_option("Copy Datasets")
@@ -1255,7 +1254,7 @@ class NavigatesGalaxy(HasDriver):
             self.home()
             self.click_masthead_user()
             self.wait_for_and_click(self.navigation.masthead.labels.logout)
-            self.click_label('go to the home page')
+            self.sleep_for(WAIT_TYPES.UX_TRANSITION)
             assert not self.is_logged_in()
 
     def run_tour(self, path, skip_steps=None, sleep_on_steps=None, tour_callback=None):
@@ -1370,8 +1369,7 @@ class NavigatesGalaxy(HasDriver):
         preclick = step.get("preclick", [])
         for preclick_selector in preclick:
             print("(Pre)Clicking %s" % preclick_selector)
-            element = self.tour_wait_for_clickable_element(preclick_selector)
-            element.click()
+            self._tour_wait_for_and_click_element(preclick_selector)
 
         element_str = step.get("element", None)
         if element_str is not None:
@@ -1388,8 +1386,12 @@ class NavigatesGalaxy(HasDriver):
         postclick = step.get("postclick", [])
         for postclick_selector in postclick:
             print("(Post)Clicking %s" % postclick_selector)
-            element = self.tour_wait_for_clickable_element(postclick_selector)
-            element.click()
+            self._tour_wait_for_and_click_element(postclick_selector)
+
+    @retry_during_transitions
+    def _tour_wait_for_and_click_element(self, selector):
+        element = self.tour_wait_for_clickable_element(selector)
+        element.click()
 
     @retry_during_transitions
     def wait_for_and_click_selector(self, selector):

@@ -203,6 +203,21 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         updated_hda = self.__show(hda1).json()
         assert updated_hda["name"] == quoted_name, quoted_name
 
+        data = {
+            "dataset_id": hda1["id"],
+            "name": "moocow",
+            "dbkey": "?",
+            "annotation": None,
+            "info": "my info is",
+            "operation": "attributes"
+        }
+        update_response = self._set_edit_update(data)
+        # No key or anything supplied, expect a permission problem.
+        # A bit questionable but I think this is a 400 instead of a 403 so that
+        # we don't distinguish between this is a valid ID you don't have access to
+        # and this is an invalid ID.
+        assert update_response.status_code == 400, update_response.content
+
     def test_update_type_failures(self):
         hda1 = self._wait_for_new_hda()
         update_response = self._raw_update(hda1["id"], dict(deleted='not valid'))
@@ -212,6 +227,11 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         hda1 = self._new_dataset(self.history_id)
         self._wait_for_history(self.history_id)
         return hda1
+
+    def _set_edit_update(self, json):
+        set_edit_url = "%s/dataset/set_edit" % self.url
+        update_response = put(set_edit_url, json=json)
+        return update_response
 
     def _raw_update(self, item_id, data, admin=False, history_id=None):
         history_id = history_id or self.history_id

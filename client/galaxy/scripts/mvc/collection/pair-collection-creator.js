@@ -1,3 +1,6 @@
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import LIST_CREATOR from "mvc/collection/list-collection-creator";
 import HDCA from "mvc/history/hdca-model";
 import BASE_MVC from "mvc/base-mvc";
@@ -85,7 +88,7 @@ var PairCollectionCreator = _super.extend({
         //precondition: there are two valid elements in workingElements
         var creator = this;
 
-        var $tmp = jQuery("<div/>");
+        var $tmp = $("<div/>");
         var $list = creator.$list();
 
         // lose the original views, create the new, append all at once, then call their renders
@@ -260,6 +263,7 @@ var pairCollectionCreatorModal = function _pairCollectionCreatorModal(elements, 
  */
 function createPairCollection(contents, defaultHideSourceItems) {
     var elements = contents.toJSON();
+    const copyElements = !defaultHideSourceItems;
 
     var promise = pairCollectionCreatorModal(elements, {
         defaultHideSourceItems: defaultHideSourceItems,
@@ -268,7 +272,7 @@ function createPairCollection(contents, defaultHideSourceItems) {
                 { name: "forward", src: "hda", id: elements[0].id },
                 { name: "reverse", src: "hda", id: elements[1].id }
             ];
-            return contents.createHDCA(elements, "paired", name, hideSourceItems);
+            return contents.createHDCA(elements, "paired", name, hideSourceItems, copyElements);
         }
     });
 

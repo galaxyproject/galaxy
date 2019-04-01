@@ -57,6 +57,14 @@ galaxy\.web\.framework\.middleware\.sentry module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.web\.framework\.middleware\.sqldebug module
+---------------------------------------------------
+
+.. automodule:: galaxy.web.framework.middleware.sqldebug
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.web\.framework\.middleware\.static module
 -------------------------------------------------
 

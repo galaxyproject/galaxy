@@ -13,11 +13,17 @@ from galaxy.util import (
     plugin_config
 )
 from galaxy.util.oset import OrderedSet
+from .container_resolvers import ContainerResolver
+from .dependencies import ToolInfo
 from .requirements import (
+    ContainerDescription,
     ToolRequirement,
     ToolRequirements
 )
-from .resolvers import NullDependency
+from .resolvers import (
+    ContainerDependency,
+    NullDependency,
+)
 from .resolvers.conda import CondaDependencyResolver
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
@@ -42,19 +48,6 @@ def build_dependency_manager(config):
         dependency_manager = NullDependencyManager()
 
     return dependency_manager
-
-
-class NullDependencyManager(object):
-    dependency_resolvers = []
-
-    def uses_tool_shed_dependencies(self):
-        return False
-
-    def dependency_shell_commands(self, requirements, **kwds):
-        return []
-
-    def find_dep(self, name, version=None, type='package', **kwds):
-        return NullDependency(version=version, name=name)
 
 
 class DependencyManager(object):
@@ -82,6 +75,27 @@ class DependencyManager(object):
         self.default_base_path = os.path.abspath(default_base_path)
         self.resolver_classes = self.__resolvers_dict()
         self.dependency_resolvers = self.__build_dependency_resolvers(conf_file)
+        self._enabled_container_types = []
+        self._destination_for_container_type = {}
+
+    def set_enabled_container_types(self, container_types_to_destinations):
+        """Set the union of all enabled container types."""
+        self._enabled_container_types = [container_type for container_type in container_types_to_destinations.keys()]
+        # Just pick first enabled destination for a container type, probably covers the most common deployment scenarios
+        self._destination_for_container_type = container_types_to_destinations
+
+    def get_destination_info_for_container_type(self, container_type, destination_id=None):
+        if destination_id is None:
+            return next(iter(self._destination_for_container_type[container_type])).params
+        else:
+            for destination in self._destination_for_container_type[container_type]:
+                if destination.id == destination_id:
+                    return destination.params
+
+    @property
+    def enabled_container_types(self):
+        """Returns the union of enabled container types."""
+        return self._enabled_container_types
 
     def get_resolver_option(self, resolver, key, explicit_resolver_options={}):
         """Look in resolver-specific settings for option and then fallback to global settings.
@@ -110,7 +124,7 @@ class DependencyManager(object):
     def dependency_shell_commands(self, requirements, **kwds):
         requirements_to_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         ordered_dependencies = OrderedSet(requirements_to_dependencies.values())
-        return [dependency.shell_commands() for dependency in ordered_dependencies]
+        return [dependency.shell_commands() for dependency in ordered_dependencies if not isinstance(dependency, ContainerDependency)]
 
     def requirements_to_dependencies(self, requirements, **kwds):
         """
@@ -125,29 +139,58 @@ class DependencyManager(object):
 
         return requirement_to_dependency
 
-    def _requirements_to_dependencies_dict(self, requirements, **kwds):
+    def _requirements_to_dependencies_dict(self, requirements, search=False, **kwds):
         """Build simple requirements to dependencies dict for resolution."""
         requirement_to_dependency = OrderedDict()
-        index = kwds.get('index', None)
+        index = kwds.get('index')
+        install = kwds.get('install', False)
+        resolver_type = kwds.get('resolver_type')
         require_exact = kwds.get('exact', False)
         return_null_dependencies = kwds.get('return_null', False)
 
         resolvable_requirements = requirements.resolvable
+        tool_info = ToolInfo(requirements=resolvable_requirements)
 
         for i, resolver in enumerate(self.dependency_resolvers):
+
             if index is not None and i != index:
                 continue
 
-            if len(requirement_to_dependency) == len(resolvable_requirements):
+            if resolver_type is not None and resolver.resolver_type != resolver_type:
+                continue
+
+            _requirement_to_dependency = OrderedDict([(k, v) for k, v in requirement_to_dependency.items() if not isinstance(v, NullDependency)])
+
+            if len(_requirement_to_dependency) == len(resolvable_requirements):
                 # Shortcut - resolution complete.
                 break
 
+            if resolver.resolver_type.startswith('build_mulled') and not install:
+                # don't want to build images here
+                continue
+
             # Check requirements all at once
-            all_unmet = len(requirement_to_dependency) == 0
-            if all_unmet and hasattr(resolver, "resolve_all"):
+            all_unmet = len(_requirement_to_dependency) == 0
+            if hasattr(resolver, "resolve_all"):
+                resolve = resolver.resolve_all
+            elif isinstance(resolver, ContainerResolver):
+                if not resolver.resolver_type.startswith(('cached', 'explicit')) and not (search or install):
+                    # These would look up available containers using the quay API,
+                    # we only want to do this if we search for containers
+                    continue
+                resolve = resolver.resolve
+            else:
+                resolve = None
+            if all_unmet and resolve is not None:
                 # TODO: Handle specs.
-                dependencies = resolver.resolve_all(resolvable_requirements, **kwds)
+                dependencies = resolve(requirements=resolvable_requirements,
+                                       enabled_container_types=self.enabled_container_types,
+                                       destination_for_container_type=self.get_destination_info_for_container_type,
+                                       tool_info=tool_info,
+                                       **kwds)
                 if dependencies:
+                    if isinstance(dependencies, ContainerDescription):
+                        dependencies = [ContainerDependency(dependencies, name=r.name, version=r.version) for r in resolvable_requirements]
                     assert len(dependencies) == len(resolvable_requirements)
                     for requirement, dependency in zip(resolvable_requirements, dependencies):
                         log.debug(dependency.resolver_msg)
@@ -156,21 +199,24 @@ class DependencyManager(object):
                     # Shortcut - resolution complete.
                     break
 
-            # Check individual requirements
-            for requirement in resolvable_requirements:
-                if requirement in requirement_to_dependency:
-                    continue
+            if not isinstance(resolver, ContainerResolver):
 
-                dependency = resolver.resolve(requirement, **kwds)
-                if require_exact and not dependency.exact:
-                    continue
+                # Check individual requirements
+                for requirement in resolvable_requirements:
+                    if requirement in _requirement_to_dependency:
+                        continue
 
-                if not isinstance(dependency, NullDependency):
-                    log.debug(dependency.resolver_msg)
-                    requirement_to_dependency[requirement] = dependency
-                elif return_null_dependencies and (resolver == self.dependency_resolvers[-1] or i == index):
-                    log.debug(dependency.resolver_msg)
-                    requirement_to_dependency[requirement] = dependency
+                    dependency = resolver.resolve(requirement, **kwds)
+                    if require_exact and not dependency.exact:
+                        continue
+
+                    if not isinstance(dependency, NullDependency):
+                        log.debug(dependency.resolver_msg)
+                        requirement_to_dependency[requirement] = dependency
+                    elif return_null_dependencies:
+                        log.debug(dependency.resolver_msg)
+                        dependency.version = requirement.version
+                        requirement_to_dependency[requirement] = dependency
 
         return requirement_to_dependency
 
@@ -273,3 +319,22 @@ class CachedDependencyManager(DependencyManager):
         """
         req_hashes = self.hash_dependencies(resolved_dependencies)
         return os.path.abspath(os.path.join(self.tool_dependency_cache_dir, req_hashes))
+
+
+class NullDependencyManager(DependencyManager):
+
+    def __init__(self, default_base_path=None, conf_file=None, app_config={}):
+        self.__app_config = app_config
+        self.resolver_classes = set()
+        self.dependency_resolvers = []
+        self._enabled_container_types = []
+        self._destination_for_container_type = {}
+
+    def uses_tool_shed_dependencies(self):
+        return False
+
+    def dependency_shell_commands(self, requirements, **kwds):
+        return []
+
+    def find_dep(self, name, version=None, type='package', **kwds):
+        return NullDependency(version=version, name=name)

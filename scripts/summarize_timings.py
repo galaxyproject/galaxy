@@ -9,7 +9,7 @@ import numpy
 
 DESCRIPTION = ""
 
-TIMING_LINE_PATTERN = re.compile("\((\d+.\d+) ms\)")
+TIMING_LINE_PATTERN = re.compile(r"\((\d+.\d+) ms\)")
 
 
 def main(argv=None):

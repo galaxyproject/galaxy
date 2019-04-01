@@ -1,13 +1,26 @@
 /** Masthead Collection **/
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import _ from "underscore";
+import $ from "jquery";
+import axios from "axios";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import _l from "utils/localization";
 import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
-import _l from "utils/localization";
 import Utils from "utils/utils";
 
-/* global Galaxy */
-/* global $ */
+function logoutClick() {
+    let galaxy = getGalaxyInstance();
+    let session_csrf_token = galaxy.session_csrf_token;
+    let url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
+    axios.get(url).then(() => {
+        if (galaxy.user) {
+            galaxy.user.clearSessionStorage();
+        }
+        window.top.location.href = `${galaxy.root}login`;
+    });
+}
 
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
@@ -19,6 +32,8 @@ var Collection = Backbone.Collection.extend({
     fetch: function(options) {
         options = options || {};
         this.reset();
+
+        let Galaxy = getGalaxyInstance();
 
         //
         // Chat server tab
@@ -33,8 +48,7 @@ var Collection = Backbone.Collection.extend({
             id: "analysis",
             title: _l("Analyze Data"),
             url: "",
-            tooltip: _l("Analysis home view"),
-            target: "__use_router__"
+            tooltip: _l("Analysis home view")
         });
 
         //
@@ -127,6 +141,7 @@ var Collection = Backbone.Collection.extend({
                             };
 
                             // Galaxy.page is undefined for data libraries, workflows pages
+                            let Galaxy = getGalaxyInstance();
                             if (Galaxy.page) {
                                 Galaxy.page.masthead.collection.add(obj);
                             } else if (Galaxy.masthead) {
@@ -205,17 +220,10 @@ var Collection = Backbone.Collection.extend({
                 target: "_blank"
             });
         }
-        if (options.biostar_url) {
+        if (options.helpsite_url) {
             helpTab.menu.unshift({
-                title: _l("Ask a question"),
-                url: "biostar/biostar_question_redirect",
-                target: "_blank"
-            });
-        }
-        if (options.biostar_url) {
-            helpTab.menu.unshift({
-                title: _l("Galaxy Biostar"),
-                url: options.biostar_url_redirect,
+                title: _l("Galaxy Help"),
+                url: options.helpsite_url,
                 target: "_blank"
             });
         }
@@ -231,21 +239,8 @@ var Collection = Backbone.Collection.extend({
                     id: "user",
                     title: _l("Login or Register"),
                     cls: "loggedout-only",
-                    tooltip: _l("Account registration or login"),
-                    menu: [
-                        {
-                            title: _l("Login"),
-                            url: "user/login",
-                            target: "galaxy_main",
-                            noscratchbook: true
-                        },
-                        {
-                            title: _l("Register"),
-                            url: "user/create",
-                            target: "galaxy_main",
-                            noscratchbook: true
-                        }
-                    ]
+                    url: "login",
+                    tooltip: _l("Account registration or login")
                 };
             } else {
                 userTab = {
@@ -280,9 +275,8 @@ var Collection = Backbone.Collection.extend({
                     },
                     {
                         title: _l("Logout"),
-                        url: `user/logout?session_csrf_token=${Galaxy.session_csrf_token}`,
-                        target: "_top",
-                        divider: true
+                        divider: true,
+                        onclick: logoutClick
                     },
                     {
                         title: _l("Saved Datasets"),
@@ -409,10 +403,15 @@ var Tab = Backbone.View.extend({
                 if (options.onclick) {
                     options.onclick();
                 } else {
+                    let Galaxy = getGalaxyInstance();
                     if (options.target == "__use_router__" && typeof Galaxy.page != "undefined") {
-                        Galaxy.page.router.push(options.url);
+                        Galaxy.page.router.executeUseRouter(options.url);
                     } else {
-                        Galaxy.frame.add(options);
+                        try {
+                            Galaxy.frame.add(options);
+                        } catch (err) {
+                            console.warn("Missing frame element on galaxy instance", err);
+                        }
                     }
                 }
             });
@@ -422,7 +421,7 @@ var Tab = Backbone.View.extend({
         return $("<div/>")
             .append(
                 $("<a/>")
-                    .attr("href", Galaxy.root + url)
+                    .attr("href", getAppRoot() + url)
                     .html(label)
             )
             .html();
@@ -443,8 +442,9 @@ var Tab = Backbone.View.extend({
                 if (model.get("onclick")) {
                     model.get("onclick")();
                 } else {
+                    let Galaxy = getGalaxyInstance();
                     if (model.attributes.target == "__use_router__" && typeof Galaxy.page != "undefined") {
-                        Galaxy.page.router.push(model.attributes.url);
+                        Galaxy.page.router.executeUseRouter(model.attributes.url);
                     } else {
                         Galaxy.frame.add(model.attributes);
                     }
@@ -460,10 +460,7 @@ var Tab = Backbone.View.extend({
                 .popover({
                     html: true,
                     placement: "bottom",
-                    content: `Please ${this.buildLink("login", "user/login?use_panels=True")} or ${this.buildLink(
-                        "register",
-                        "user/create?use_panels=True"
-                    )} to use this feature.`
+                    content: `Please ${this.buildLink("login or register", "login")} to use this feature.`
                 })
                 .popover("show");
             window.setTimeout(() => {
@@ -474,7 +471,7 @@ var Tab = Backbone.View.extend({
 
     /** Url formatting */
     _formatUrl: function(url) {
-        return typeof url == "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? Galaxy.root + url : url;
+        return typeof url == "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? getAppRoot() + url : url;
     },
 
     /** body tempate */

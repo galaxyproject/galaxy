@@ -1,6 +1,11 @@
 /*
     galaxy upload plugins - requires FormData and XMLHttpRequest
 */
+
+import _ from "underscore";
+import jQuery from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+
 ($ => {
     // add event properties
     jQuery.event.props.push("dataTransfer");
@@ -111,7 +116,7 @@
             form.append("session_start", start);
             form.append("session_chunk", slicer.bind(file)(start, end));
             _uploadrequest({
-                url: `${Galaxy.root}api/uploads`,
+                url: `${getAppRoot()}api/uploads`,
                 data: form,
                 success: upload_response => {
                     var new_start = start + chunk_size;
@@ -127,7 +132,7 @@
                         };
                         data.payload.inputs = JSON.stringify(data.payload.inputs);
                         $.ajax({
-                            url: `${Galaxy.root}api/tools`,
+                            url: `${getAppRoot()}api/tools`,
                             method: "POST",
                             data: data.payload,
                             success: tool_response => {
@@ -251,18 +256,19 @@
         );
 
         // drag/drop events
-        el.on("drop", e => {
+        let element = el.get(0);
+        element.addEventListener("drop", e => {
             opts.ondragleave(e);
             if (e.dataTransfer) {
                 opts.onchange(e.dataTransfer.files);
                 e.preventDefault();
             }
         });
-        el.on("dragover", e => {
+        element.addEventListener("dragover", e => {
             e.preventDefault();
             opts.ondragover(e);
         });
-        el.on("dragleave", e => {
+        element.addEventListener("dragleave", e => {
             e.stopPropagation();
             opts.ondragleave(e);
         });

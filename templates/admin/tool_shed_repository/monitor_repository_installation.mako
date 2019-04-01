@@ -36,9 +36,9 @@
 %endif
 
 %if tool_shed_repositories:
-    <div class="toolForm">
-        <div class="toolFormTitle">Monitor installing tool shed repositories</div>
-        <div class="toolFormBody">
+    <div class="card">
+        <div class="card-header">Monitor installing tool shed repositories</div>
+        <div class="card-body overflow-auto">
             <table class="grid">
                 <tr>
                     <td>Name</td>

@@ -23,7 +23,7 @@ UPDATE_FAILED_TEMPLATE = Template(
 )
 
 
-LIST_SEP = re.compile("\s*,\s*")
+LIST_SEP = re.compile(r"\s*,\s*")
 
 
 class TestDataResolver(object):
@@ -43,9 +43,16 @@ class TestDataResolver(object):
             if not resolver.exists(name):
                 continue
             filename = resolver.path(name)
-
             if filename:
                 return os.path.abspath(filename)
+
+    def get_filecontent(self, name):
+        filename = self.get_filename(name=name)
+        with open(filename, mode='rb') as f:
+            return f.read()
+
+    def get_directory(self, name):
+        return self.get_filename(name=name)
 
 
 def build_resolver(uri, environ):

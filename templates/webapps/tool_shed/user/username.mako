@@ -5,7 +5,7 @@
     ${render_msg( message, status )}
 %endif
 
-<% is_admin = cntrller == 'admin' and trans.user_is_admin() %>
+<% is_admin = cntrller == 'admin' and trans.user_is_admin %>
 
 <h2>Manage Public Name</h2>
 <div class="toolForm">

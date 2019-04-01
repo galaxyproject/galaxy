@@ -21,12 +21,11 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css('base','jquery.rating')}
+    ${h.css('base')}
 </%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery.rating" )}
 </%def>
 
 %if message:

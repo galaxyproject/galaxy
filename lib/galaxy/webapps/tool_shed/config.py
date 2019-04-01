@@ -94,7 +94,6 @@ class Configuration(object):
         self.require_login = string_as_bool(kwargs.get("require_login", "False"))
         self.allow_user_creation = string_as_bool(kwargs.get("allow_user_creation", "True"))
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
-        self.enable_openid = string_as_bool(kwargs.get('enable_openid', False))
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
         self.template_cache = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates/community"), self.root)
         self.admin_users = kwargs.get("admin_users", "")
@@ -117,7 +116,6 @@ class Configuration(object):
         self.support_url = kwargs.get('support_url', 'https://galaxyproject.org/support')
         self.wiki_url = kwargs.get('wiki_url', 'https://galaxyproject.org/')
         self.blog_url = kwargs.get('blog_url', None)
-        self.biostar_url = kwargs.get('biostar_url', None)
         self.screencasts_url = kwargs.get('screencasts_url', None)
         self.log_events = False
         self.cloud_controller_instance = False

@@ -1,16 +1,16 @@
 <tool id="gff_filter_by_attribute" name="Filter GFF data by attribute" version="0.2">
   <description>using simple expressions</description>
-  <command interpreter="python">
-    gff_filter_by_attribute.py $input $out_file1 "$cond" '${input.metadata.attribute_types}'
+  <command>
+python '$__tool_directory__/gff_filter_by_attribute.py' '$input' '$out_file1' '$cond' '${input.metadata.attribute_types}'
   </command>
   <inputs>
-    <param format="gff" name="input" type="data" label="Filter" help="Dataset missing? See TIP below."/>
-    <param name="cond" size="40" type="text" value="gene_id=='uc002loc.1'" label="With following condition" help="Double equal signs, ==, must be used as shown above. To filter for an arbitrary string, use the Select tool.">
+    <param name="input" type="data" format="gff" label="Filter" help="Dataset missing? See TIP below." />
+    <param name="cond" type="text" value="gene_id=='uc002loc.1'" label="With following condition" help="Double equal signs, ==, must be used as shown above. To filter for an arbitrary string, use the Select tool.">
       <validator type="empty_field" message="Enter a valid filtering condition, see syntax and examples below."/>
     </param>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input"/>
+    <data name="out_file1" format="input" metadata_source="input"/>
   </outputs>
   <tests>
     <test>
@@ -31,7 +31,6 @@
   </tests>
 
   <help>
-
 .. class:: warningmark
 
 Double equal signs, ==, must be used as *"equal to"* (e.g., **c1 == 'chr22'**)
@@ -54,6 +53,5 @@ The filter tool allows you to restrict the dataset using simple conditional stat
 - When using 'equal-to' operator **double equal sign '==' must be used** ( e.g., **attribute_name=='chr1'** )
 - Non-numerical values must be included in single or double quotes ( e.g., **attribute_name=='XX22'** )
 - You can combine multiple conditional statements using **and** or **or** ( e.g., **attribute_name=='XX22' or attribute_name=='XX21'** )
-
-</help>
+  </help>
 </tool>

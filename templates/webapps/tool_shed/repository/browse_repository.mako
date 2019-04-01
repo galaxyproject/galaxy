@@ -15,12 +15,11 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "jquery.rating", "dynatree_skin/ui.dynatree" )}
+    ${h.css( "dynatree_skin/ui.dynatree" )}
 </%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery.rating", "libs/jquery/jquery-ui", "libs/jquery/jquery.cookie", "libs/jquery/jquery.dynatree" )}
     ${common_javascripts(repository)}
 </%def>
 

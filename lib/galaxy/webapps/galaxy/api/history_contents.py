@@ -448,7 +448,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             current_user_roles = trans.get_current_user_roles()
 
             def traverse(folder):
-                admin = trans.user_is_admin()
+                admin = trans.user_is_admin
                 rval = []
                 for subfolder in folder.active_folders:
                     if not admin:
@@ -634,7 +634,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def __update_dataset(self, trans, history_id, id, payload, **kwd):
         # anon user: ensure that history ids match up and the history is the current,
         #   check for uploading, and use only the subset of attribute keys manipulatable by anon users
-        anonymous_user = not trans.user_is_admin() and trans.user is None
+        anonymous_user = not trans.user_is_admin and trans.user is None
         if anonymous_user:
             hda = self.hda_manager.by_id(self.decode_id(id))
             if hda.history != trans.history:

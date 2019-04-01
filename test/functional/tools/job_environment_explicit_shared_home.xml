@@ -8,6 +8,7 @@
       echo `pwd` > '$pwd';
       echo "\$HOME" > '$home';
       echo "\$TMP"  > '$tmp';
+      echo "\$SOME_ENV_VAR" > '$some_env_var';
     ]]></command>
     <inputs>
     </inputs>
@@ -17,6 +18,7 @@
         <data name="pwd" format="txt" label="pwd" />
         <data name="home" format="txt" label="home" />
         <data name="tmp" format="txt" label="tmp" />
+        <data name="some_env_var" format="txt" label="env_var" />
     </outputs>
     <help>
     </help>

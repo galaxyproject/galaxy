@@ -1,11 +1,15 @@
 /**
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
-
-import * as _ from "libs/underscore";
+/* global ga */
+import _ from "underscore";
+import $ from "jquery";
+import d3 from "d3";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import util from "viz/trackster/util";
-import data from "mvc/dataset/data";
-import ToolForm from "mvc/tool/tool-form";
+import { DatasetCollection } from "mvc/dataset/data";
 
 /**
  * Mixin for tracking model visibility.
@@ -124,7 +128,7 @@ var Tool = Backbone.Model.extend({
         outputs: []
     },
 
-    urlRoot: `${Galaxy.root}api/tools`,
+    urlRoot: `${getAppRoot()}api/tools`,
 
     initialize: function(options) {
         // Set parameters.
@@ -270,17 +274,12 @@ var Tool = Backbone.Model.extend({
 
         // Run job and resolve run_deferred to tool outputs.
         $.when(ss_deferred.go()).then(result => {
-            run_deferred.resolve(new data.DatasetCollection(result));
+            run_deferred.resolve(new DatasetCollection(result));
         });
         return run_deferred;
     }
 });
 _.extend(Tool.prototype, VisibilityMixin);
-
-/**
- * Tool view.
- */
-var ToolView = Backbone.View.extend({});
 
 /**
  * Wrap collection of tools for fast access/manipulation.
@@ -345,6 +344,8 @@ _.extend(ToolSection.prototype, VisibilityMixin);
  * query.
  */
 var ToolSearch = Backbone.Model.extend({
+    SEARCH_RESERVED_TERMS_FAVORITES: ["#favs", "#favorites", "#favourites"],
+
     defaults: {
         search_hint_string: "search tools",
         min_chars_for_search: 3,
@@ -356,7 +357,7 @@ var ToolSearch = Backbone.Model.extend({
         clear_key: 27
     },
 
-    urlRoot: `${Galaxy.root}api/tools`,
+    urlRoot: `${getAppRoot()}api/tools`,
 
     initialize: function() {
         this.on("change:query", this.do_search);
@@ -366,6 +367,7 @@ var ToolSearch = Backbone.Model.extend({
      * Do the search and update the results.
      */
     do_search: function() {
+        let Galaxy = getGalaxyInstance();
         var query = this.attributes.query;
 
         // If query is too short, do not search.
@@ -380,26 +382,31 @@ var ToolSearch = Backbone.Model.extend({
         if (this.timer) {
             clearTimeout(this.timer);
         }
-        // Start a new ajax-request in X ms
-        $("#search-clear-btn").hide();
-        $("#search-spinner").show();
-        var self = this;
-        this.timer = setTimeout(() => {
-            // log the search to analytics if present
-            if (typeof ga !== "undefined") {
-                ga("send", "pageview", `${Galaxy.root}?q=${q}`);
-            }
-            $.get(
-                self.urlRoot,
-                { q: q },
-                data => {
-                    self.set("results", data);
-                    $("#search-spinner").hide();
-                    $("#search-clear-btn").show();
-                },
-                "json"
-            );
-        }, 400);
+        // Catch reserved words
+        if (this.SEARCH_RESERVED_TERMS_FAVORITES.indexOf(q) >= 0) {
+            this.set("results", Galaxy.user.getFavorites().tools);
+        } else {
+            // Start a new ajax-request in X ms
+            $("#search-clear-btn").hide();
+            $("#search-spinner").show();
+            var self = this;
+            this.timer = setTimeout(() => {
+                // log the search to analytics if present
+                if (typeof ga !== "undefined") {
+                    ga("send", "pageview", `${getAppRoot()}?q=${q}`);
+                }
+                $.get(
+                    self.urlRoot,
+                    { q: q },
+                    data => {
+                        self.set("results", data);
+                        $("#search-spinner").hide();
+                        $("#search-clear-btn").show();
+                    },
+                    "json"
+                );
+            }, 400);
+        }
     },
 
     clear_search: function() {
@@ -428,21 +435,21 @@ var ToolPanel = Backbone.Model.extend({
         var self = this;
 
         var // Helper to recursively parse tool panel.
-        parse_elt = elt_dict => {
-            var type = elt_dict.model_class;
-            // There are many types of tools; for now, anything that ends in 'Tool'
-            // is treated as a generic tool.
-            if (type.indexOf("Tool") === type.length - 4) {
-                return self.attributes.tools.get(elt_dict.id);
-            } else if (type === "ToolSection") {
-                // Parse elements.
-                var elems = _.map(elt_dict.elems, parse_elt);
-                elt_dict.elems = elems;
-                return new ToolSection(elt_dict);
-            } else if (type === "ToolSectionLabel") {
-                return new ToolSectionLabel(elt_dict);
-            }
-        };
+            parse_elt = elt_dict => {
+                var type = elt_dict.model_class;
+                // There are many types of tools; for now, anything that ends in 'Tool'
+                // is treated as a generic tool.
+                if (type.indexOf("Tool") === type.length - 4) {
+                    return self.attributes.tools.get(elt_dict.id);
+                } else if (type === "ToolSection") {
+                    // Parse elements.
+                    var elems = _.map(elt_dict.elems, parse_elt);
+                    elt_dict.elems = elems;
+                    return new ToolSection(elt_dict);
+                } else if (type === "ToolSectionLabel") {
+                    return new ToolSectionLabel(elt_dict);
+                }
+            };
 
         return _.map(response, parse_elt);
     },
@@ -522,6 +529,7 @@ var ToolLinkView = BaseView.extend({
         if (this.model.id === "upload1") {
             $link.find("a").on("click", e => {
                 e.preventDefault();
+                let Galaxy = getGalaxyInstance();
                 Galaxy.upload.show();
             });
         } else if (formStyle === "regular") {
@@ -529,6 +537,7 @@ var ToolLinkView = BaseView.extend({
             var self = this;
             $link.find("a").on("click", e => {
                 e.preventDefault();
+                let Galaxy = getGalaxyInstance();
                 Galaxy.router.push("/", {
                     tool_id: self.model.id,
                     version: self.model.get("version")
@@ -752,53 +761,6 @@ var ToolFormView = Backbone.View.extend({
     }
 });
 
-/**
- * Integrated tool menu + tool execution.
- */
-var IntegratedToolMenuAndView = Backbone.View.extend({
-    className: "toolMenuAndView",
-
-    initialize: function() {
-        this.tool_panel_view = new ToolPanelView({
-            collection: this.collection
-        });
-        this.tool_form_view = new ToolFormView();
-    },
-
-    render: function() {
-        // Render and append tool panel.
-        this.tool_panel_view.render();
-        this.tool_panel_view.$el.css("float", "left");
-        this.$el.append(this.tool_panel_view.$el);
-
-        // Append tool form view.
-        this.tool_form_view.$el.hide();
-        this.$el.append(this.tool_form_view.$el);
-
-        // On tool link click, show tool.
-        var self = this;
-        this.tool_panel_view.on("tool_link_click", (e, tool) => {
-            // Prevents click from activating link:
-            e.preventDefault();
-            // Show tool that was clicked on:
-            self.show_tool(tool);
-        });
-    },
-
-    /**
-     * Fetch and display tool.
-     */
-    show_tool: function(tool) {
-        var self = this;
-        tool.fetch().done(() => {
-            self.tool_form_view.model = tool;
-            self.tool_form_view.render();
-            self.tool_form_view.$el.show();
-            $("#left").width("650px");
-        });
-    }
-});
-
 // TODO: move into relevant views
 var templates = {
     // the search bar at the top of the tool panel
@@ -828,7 +790,7 @@ var templates = {
             '<a class="<%- id %> tool-link" href="<%= link %>" target="<%- target %>" minsizehint="<%- min_width %>">',
             '<span class="labels">',
             "<% _.each( labels, function( label ){ %>",
-            '<span class="badge badge-default badge-<%- label %>">',
+            '<span class="badge badge-primary badge-<%- label %>">',
             "<%- label %>",
             "</span>",
             "<% }); %>",

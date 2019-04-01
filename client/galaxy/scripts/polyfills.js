@@ -3,6 +3,9 @@
     and polyfill for non-standard features.
  */
 
+import "@babel/polyfill";
+import _ from "underscore";
+
 (() => {
     /* TODO: move to modernizr or something besides us doing this...
      * These are across all of our apps (reports, tool shed), but:
@@ -22,6 +25,8 @@
         error: function() {},
         assert: function() {}
     };
+
+    console.debug("Polyfills are running");
 
     // phantomjs: does not have the native extend fn assign
     Object.assign = Object.assign || _.extend;
@@ -63,7 +68,9 @@
             compatible: function() {
                 try {
                     return window.sessionStorage.length >= 0;
-                } catch (err) {}
+                } catch (err) {
+                    console.debug(err);
+                }
                 return false;
             }
         }
@@ -72,7 +79,7 @@
     var incompatibilities = features.filter(feature => !feature.compatible()).map(feature => feature.name);
 
     // if there are needed features missing, follow the index link to the static incompat warning
-    if (!!incompatibilities.length) {
+    if (incompatibilities.length) {
         var root = document.querySelectorAll('link[rel="index"]').item(0);
         if (root) {
             window.location = `${root.href}static/incompatible-browser.html`;

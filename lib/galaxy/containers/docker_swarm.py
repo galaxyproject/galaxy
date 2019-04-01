@@ -280,7 +280,7 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
 
     def service_tasks(self, service):
         for task_dict in self.service_ps(service.id):
-            if task_dict['NAME'].strip().startswith('\_'):
+            if task_dict['NAME'].strip().startswith(r'\_'):
                 continue    # historical task
             yield DockerTask.from_cli(self, task_dict, service=service)
 

@@ -61,6 +61,8 @@ def commit_changeset(repo_path, full_path_to_changeset, username, message):
     except Exception as e:
         error_message = "Error committing '%s' to repository: %s" % (full_path_to_changeset, e)
         if isinstance(e, subprocess.CalledProcessError):
+            if e.returncode == 1 and 'nothing changed' in e.output:
+                return
             error_message += "\nOutput was:\n%s" % e.output
         raise Exception(error_message)
 

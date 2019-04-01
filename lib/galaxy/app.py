@@ -6,6 +6,7 @@ import sys
 import time
 
 import galaxy.model
+import galaxy.model.security
 import galaxy.queues
 import galaxy.quota
 import galaxy.security
@@ -16,8 +17,8 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.libraries import LibraryManager
-from galaxy.managers.tags import GalaxyTagManager
-from galaxy.openid.providers import OpenIDProviders
+from galaxy.managers.tools import DynamicToolManager
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.tools.cache import (
     ToolCache,
@@ -36,6 +37,7 @@ from galaxy.util import (
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
+from galaxy.web import url_for
 from galaxy.web.proxy import ProxyManager
 from galaxy.web.stack import application_stack_instance
 from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
@@ -94,13 +96,14 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         # Security helper
         self._configure_security()
         # Tag handler
-        self.tag_handler = GalaxyTagManager(self.model.context)
+        self.tag_handler = GalaxyTagHandler(self.model.context)
         self.dataset_collections_service = DatasetCollectionManager(self)
         self.history_manager = HistoryManager(self)
         self.dependency_resolvers_view = DependencyResolversView(self)
         self.test_data_resolver = test_data.TestDataResolver(file_dirs=self.config.tool_test_data_directories)
         self.library_folder_manager = FolderManager()
         self.library_manager = LibraryManager()
+        self.dynamic_tool_manager = DynamicToolManager(self)
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)
@@ -154,7 +157,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.webhooks_registry = WebhooksRegistry(self.config.webhooks_dirs)
         # Load security policy.
         self.security_agent = self.model.security_agent
-        self.host_security_agent = galaxy.security.HostAgent(
+        self.host_security_agent = galaxy.model.security.HostAgent(
             model=self.security_agent.model,
             permitted_actions=self.security_agent.permitted_actions)
         # Load quota management.
@@ -164,13 +167,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
             self.quota_agent = galaxy.quota.NoQuotaAgent(self.model)
         # Heartbeat for thread profiling
         self.heartbeat = None
-        # Container for OpenID authentication routines
-        if self.config.enable_openid:
-            from galaxy.web.framework import openid_manager
-            self.openid_manager = openid_manager.OpenIDManager(self.config.openid_consumer_cache_path)
-            self.openid_providers = OpenIDProviders.from_file(self.config.openid_config_file)
-        else:
-            self.openid_providers = OpenIDProviders()
         from galaxy import auth
         self.auth_manager = auth.AuthManager(self)
         # Start the heartbeat process if configured and available (wait until
@@ -212,6 +208,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
+        # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if
+        # it becomes more commonly needed we could create a prefork function registration method like we do with
+        # postfork functions.
+        self.application_stack.init_late_prefork()
+
         self.containers = {}
         if self.config.enable_beta_containers_interface:
             self.containers = build_container_interfaces(
@@ -229,6 +230,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.application_stack.register_postfork_function(self.application_stack.start)
 
         self.model.engine.dispose()
+
+        # Inject url_for for components to more easily optionally depend
+        # on url_for.
+        self.url_for = url_for
+
         self.server_starttime = int(time.time())  # used for cachebusting
         log.info("Galaxy app startup finished %s" % self.startup_timer)
 

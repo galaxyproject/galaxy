@@ -32,34 +32,12 @@ def lint_stdio(tool_source, lint_ctx):
 
 
 def _lint_exit_code(child, lint_ctx):
-    for key, value in child.attrib.items():
-        if key == "range":
-            # TODO: validate
-            pass
-        elif key == "level":
-            _lint_level(value, lint_ctx)
-        elif key == "description":
-            pass
-        else:
+    for key in child.attrib.keys():
+        if key not in ["description", "level", "range"]:
             lint_ctx.warn("Unknown attribute [%s] encountered on exit_code tag." % key)
 
 
 def _lint_regex(child, lint_ctx):
-    for key, value in child.attrib.items():
-        if key == "source":
-            if value not in ["stderr", "stdout", "both"]:
-                lint_ctx.error("Unknown error code level encountered [%s]" % value)
-        elif key == "level":
-            _lint_level(value, lint_ctx)
-        elif key == "match":
-            # TODO: validate
-            pass
-        elif key == "description":
-            pass
-        else:
+    for key in child.attrib.keys():
+        if key not in ["description", "level", "match", "source"]:
             lint_ctx.warn("Unknown attribute [%s] encountered on regex tag." % key)
-
-
-def _lint_level(level_value, lint_ctx):
-    if level_value not in ["warning", "fatal", "log"]:
-        lint_ctx.error("Unknown error code level encountered [%s]" % level_value)

@@ -41,6 +41,14 @@ galaxy\.tools\.deps\.resolvers\.homebrew module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.tools\.deps\.resolvers\.lmod module
+-------------------------------------------
+
+.. automodule:: galaxy.tools.deps.resolvers.lmod
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.tools\.deps\.resolvers\.modules module
 ----------------------------------------------
 

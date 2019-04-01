@@ -1,8 +1,6 @@
+import $ from "jquery";
 import Connector from "mvc/workflow/workflow-connector";
 import * as Toastr from "libs/toastr";
-
-/* global $ */
-/* global Galaxy */
 
 class Workflow {
     constructor(app, canvas_container) {
@@ -14,6 +12,7 @@ class Workflow {
         this.has_changes = false;
         this.active_form_has_changes = false;
         this.workflowOutputLabels = {};
+        this.workflow_version = 0;
     }
     canLabelOutputWith(label) {
         if (label) {
@@ -91,7 +90,7 @@ class Workflow {
         var using_workflow_outputs = false;
         var has_existing_pjas = false;
         $.each(this.nodes, (k, node) => {
-            if (node.workflow_outputs && node.workflow_outputs.length > 0) {
+            if (node.type === "tool" && node.workflow_outputs && node.workflow_outputs.length > 0) {
                 using_workflow_outputs = true;
             }
             $.each(node.post_job_actions, (pja_id, pja) => {
@@ -103,43 +102,41 @@ class Workflow {
         if (using_workflow_outputs !== false || has_existing_pjas !== false) {
             // Using workflow outputs, or has existing pjas.  Remove all PJAs and recreate based on outputs.
             $.each(this.nodes, (k, node) => {
-                if (node.type === "tool") {
-                    var node_changed = false;
-                    if (node.post_job_actions === null) {
-                        node.post_job_actions = {};
-                        node_changed = true;
+                var node_changed = false;
+                if (node.post_job_actions === null) {
+                    node.post_job_actions = {};
+                    node_changed = true;
+                }
+                var pjas_to_rem = [];
+                $.each(node.post_job_actions, (pja_id, pja) => {
+                    if (pja.action_type == "HideDatasetAction") {
+                        pjas_to_rem.push(pja_id);
                     }
-                    var pjas_to_rem = [];
-                    $.each(node.post_job_actions, (pja_id, pja) => {
-                        if (pja.action_type == "HideDatasetAction") {
-                            pjas_to_rem.push(pja_id);
+                });
+                if (pjas_to_rem.length > 0) {
+                    $.each(pjas_to_rem, (i, pja_name) => {
+                        node_changed = true;
+                        delete node.post_job_actions[pja_name];
+                    });
+                }
+                if (using_workflow_outputs) {
+                    $.each(node.output_terminals, (ot_id, ot) => {
+                        var create_pja = !node.isWorkflowOutput(ot.name);
+                        if (create_pja === true) {
+                            node_changed = true;
+                            var pja = {
+                                action_type: "HideDatasetAction",
+                                output_name: ot.name,
+                                action_arguments: {}
+                            };
+                            node.post_job_actions[`HideDatasetAction${ot.name}`] = null;
+                            node.post_job_actions[`HideDatasetAction${ot.name}`] = pja;
                         }
                     });
-                    if (pjas_to_rem.length > 0) {
-                        $.each(pjas_to_rem, (i, pja_name) => {
-                            node_changed = true;
-                            delete node.post_job_actions[pja_name];
-                        });
-                    }
-                    if (using_workflow_outputs) {
-                        $.each(node.output_terminals, (ot_id, ot) => {
-                            var create_pja = !node.isWorkflowOutput(ot.name);
-                            if (create_pja === true) {
-                                node_changed = true;
-                                var pja = {
-                                    action_type: "HideDatasetAction",
-                                    output_name: ot.name,
-                                    action_arguments: {}
-                                };
-                                node.post_job_actions[`HideDatasetAction${ot.name}`] = null;
-                                node.post_job_actions[`HideDatasetAction${ot.name}`] = pja;
-                            }
-                        });
-                    }
-                    // lastly, if this is the active node, and we made changes, reload the display at right.
-                    if (this.active_node == node && node_changed === true) {
-                        this.reload_active_node();
-                    }
+                }
+                // lastly, if this is the active node, and we made changes, reload the display at right.
+                if (this.active_node == node && node_changed === true) {
+                    this.reload_active_node();
                 }
             });
         }
@@ -188,7 +185,7 @@ class Workflow {
                 id: node.id,
                 type: node.type,
                 content_id: node.content_id,
-                tool_version: node.config_form.version,
+                tool_version: node.config_form ? node.config_form.version : null,
                 tool_state: node.tool_state,
                 errors: node.errors,
                 input_connections: input_connections,
@@ -215,6 +212,7 @@ class Workflow {
         var max_id = offset;
         // First pass, nodes
         var using_workflow_outputs = false;
+        wf.workflow_version = data.version;
         $.each(data.steps, (id, step) => {
             var node = wf.app.prebuildNode(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let
@@ -263,10 +261,7 @@ class Workflow {
                     $.each(v, (l, x) => {
                         var other_node = wf.nodes[parseInt(x.id) + offset];
                         var c = new Connector();
-                        c.connect(
-                            other_node.output_terminals[x.output_name],
-                            node.input_terminals[k]
-                        );
+                        c.connect(other_node.output_terminals[x.output_name], node.input_terminals[k]);
                         c.redraw();
                     });
                 }
@@ -276,8 +271,8 @@ class Workflow {
                 $.each(node.output_terminals, (ot_id, ot) => {
                     if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
                         node.addWorkflowOutput(ot.name);
-                        var callout = $(node.element).find(`.callout.${ot.name}`);
-                        callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+                        var callout = $(node.element).find(`.callout-terminal.${ot.name.replace(/(?=[()])/g, "\\")}`);
+                        callout.find("icon").addClass("mark-terminal-active");
                         wf.has_changes = true;
                     }
                 });

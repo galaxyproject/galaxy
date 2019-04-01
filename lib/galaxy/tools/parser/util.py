@@ -1,6 +1,11 @@
+from galaxy.util.odict import odict
 from .error_level import StdioErrorLevel
 from .interface import ToolStdioExitCode
 from .interface import ToolStdioRegex
+
+
+def is_dict(item):
+    return isinstance(item, dict) or isinstance(item, odict)
 
 
 def error_on_exit_code(out_of_memory_exit_code=None):

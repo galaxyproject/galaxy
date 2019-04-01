@@ -3,6 +3,7 @@ Galaxy control queue and worker.  This is used to handle 'app' control like
 reloading the toolbox, etc., across multiple processes.
 """
 
+import importlib
 import logging
 import sys
 import threading
@@ -176,15 +177,40 @@ def rebuild_toolbox_search_index(app, **kwargs):
 
 def reload_job_rules(app, **kwargs):
     reload_timer = util.ExecutionTimer()
-    default = 'galaxy.jobs.rules'
-    rules_module_name = default
-    if app.job_config.dynamic_params is not None:
-        rules_module_name = app.job_config.dynamic_params.get('rules_module', default)
-    for name, module in sys.modules.items():
-        if (name == rules_module_name or name.startswith(rules_module_name + '.')) and ismodule(module):
-            log.debug("Reloading job rules module: %s", name)
-            reload_module(module)
+    for module in job_rule_modules(app):
+        rules_module_name = module.__name__
+        for name, module in sys.modules.items():
+            if ((name == rules_module_name or name.startswith(rules_module_name + '.'))
+                    and ismodule(module)):
+                log.debug("Reloading job rules module: %s", name)
+                reload_module(module)
     log.debug("Job rules reloaded %s", reload_timer)
+
+
+def __job_rule_module_names(app):
+    rules_module_names = set(['galaxy.jobs.rules'])
+    if app.job_config.dynamic_params is not None:
+        module_name = app.job_config.dynamic_params.get('rules_module')
+        if module_name:
+            rules_module_names.add(module_name)
+    # Also look for destination level rules_module overrides
+    for dest_tuple in app.job_config.destinations.values():
+        module_name = dest_tuple[0].params.get('rules_module')
+        if module_name:
+            rules_module_names.add(module_name)
+    return rules_module_names
+
+
+def job_rule_modules(app):
+    rules_module_list = []
+    for rules_module_name in __job_rule_module_names(app):
+        rules_module = sys.modules.get(rules_module_name, None)
+        if not rules_module:
+            # if using a non-default module, it's not imported until a JobRunnerMapper is instantiated when the first
+            # JobWrapper is created
+            rules_module = importlib.import_module(rules_module_name)
+        rules_module_list.append(rules_module)
+    return rules_module_list
 
 
 def admin_job_lock(app, **kwargs):

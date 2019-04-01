@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./run_tests.sh --dockerize --db postgres --external_tmp --clean_pyc --framework "$@"
+./run_tests.sh --dockerize --db postgres --clean_pyc --framework "$@"

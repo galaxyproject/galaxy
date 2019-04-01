@@ -1,9 +1,16 @@
-/* global define */
+/* global QUnit */
 import testApp from "qunit/test-app";
 import GRAPH from "utils/graph";
-import $ from "jquery";
 
-QUnit.module("utils/graph.js library tests");
+QUnit.module("utils/graph.js library tests", {
+    beforeEach: function() {
+        testApp.create();
+    },
+    afterEach: function() {
+        testApp.destroy();
+    }
+});
+
 ///*
 function testEmptyObject(assert, o) {
     assert.ok(typeof o === "object");

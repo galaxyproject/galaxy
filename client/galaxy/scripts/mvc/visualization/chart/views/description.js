@@ -1,5 +1,9 @@
 /** Renders the visualization header with title, logo and description. */
+
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
+
 export default Backbone.View.extend({
     initialize: function(app) {
         this.plugin = app.chart.plugin;
@@ -11,7 +15,7 @@ export default Backbone.View.extend({
     },
     render: function() {
         if (this.plugin.logo) {
-            this.$image.attr("src", Galaxy.root + this.plugin.logo);
+            this.$image.attr("src", getAppRoot() + this.plugin.logo);
             this.$title.html(this.plugin.html || "Unavailable");
             this.$text.html(Utils.linkify(this.plugin.description || ""));
             this.$el.show();
@@ -27,11 +31,11 @@ export default Backbone.View.extend({
                             <img class="charts-description-image"/>
                         </td>
                         <td>
-                            <div class="charts-description-title ui-form-info"/>
+                            <div class="charts-description-title"/>
                         </td>
                     </tr>
                     </table>
-                    <div class="charts-description-text ui-form-info"/>
+                    <div class="charts-description-text"/>
                 </div>`;
     }
 });

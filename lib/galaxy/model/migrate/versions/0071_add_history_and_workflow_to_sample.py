@@ -8,37 +8,29 @@ import logging
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
 
 from galaxy.model.custom_types import JSONType
+from galaxy.model.migrate.versions.util import add_column, drop_column
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        Sample_table = Table("sample", metadata, autoload=True)
-        c1 = Column("workflow", JSONType, nullable=True)
-        c2 = Column("history_id", Integer, ForeignKey("history.id"), nullable=True)
-        c1.create(Sample_table)
-        c2.create(Sample_table)
-        assert c1 is Sample_table.c.workflow
-        assert c2 is Sample_table.c.history_id
-    except Exception:
-        log.exception("Adding history and workflow columns to sample table failed.")
+
+    Sample_table = Table("sample", metadata, autoload=True)
+    c1 = Column("workflow", JSONType, nullable=True)
+    add_column(c1, Sample_table)
+
+    c2 = Column("history_id", Integer, ForeignKey("history.id"), nullable=True)
+    add_column(c2, Sample_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        Sample_table = Table("sample", metadata, autoload=True)
-        Sample_table.c.workflow.drop()
-    except Exception:
-        log.exception("Dropping workflow column from sample table failed.")
-    try:
-        Sample_table = Table("sample", metadata, autoload=True)
-        Sample_table.c.history_id.drop()
-    except Exception:
-        log.exception("Dropping history column from sample table failed.")
+
+    Sample_table = Table("sample", metadata, autoload=True)
+    drop_column('workflow', Sample_table)
+    drop_column('history_id', Sample_table)

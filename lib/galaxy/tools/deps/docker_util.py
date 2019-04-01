@@ -35,7 +35,7 @@ def logs_command(
     container,
     **kwds
 ):
-    return command_list("logs", **kwds)
+    return command_list("logs", [container], **kwds)
 
 
 def build_command(

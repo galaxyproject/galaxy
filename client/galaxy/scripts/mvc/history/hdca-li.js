@@ -1,9 +1,9 @@
+import _ from "underscore";
 import STATES from "mvc/dataset/states";
 import DC_LI from "mvc/collection/collection-li";
 import DC_VIEW from "mvc/collection/collection-view";
-import BASE_MVC from "mvc/base-mvc";
-import HISTORY_ITEM_LI from "mvc/history/history-item-li";
 import _l from "utils/localization";
+import { mountNametags } from "components/Nametags";
 
 //==============================================================================
 var _super = DC_LI.DCListItemView;
@@ -13,11 +13,19 @@ var HDCAListItemView = _super.extend(
     /** @lends HDCAListItemView.prototype */ {
         className: `${_super.prototype.className} history-content`,
 
+        render: function() {
+            let result = _super.prototype.render.apply(this, arguments);
+            this._mountNametags("initialize");
+            return result;
+        },
+
         /** event listeners */
         _setUpListeners: function() {
             _super.prototype._setUpListeners.call(this);
             var renderListen = (model, options) => {
-                this.render();
+                // We want this to swap immediately without extra animations.
+                this.render(0);
+                this._mountNametags("listener");
             };
             if (this.model.jobStatesSummary) {
                 this.listenTo(this.model.jobStatesSummary, "change", renderListen);
@@ -25,6 +33,15 @@ var HDCAListItemView = _super.extend(
             this.listenTo(this.model, {
                 "change:tags change:visible change:state": renderListen
             });
+        },
+
+        _mountNametags(context) {
+            let container = this.$el.find(".nametags")[0];
+            if (container) {
+                let { id, model_class, tags } = this.model.attributes;
+                let storeKey = `${model_class}-${id}`;
+                mountNametags({ storeKey, tags }, container);
+            }
         },
 
         /** Override to provide the proper collections panels as the foldout */
@@ -64,9 +81,7 @@ var HDCAListItemView = _super.extend(
 
         stateDescription: function() {
             var collection = this.model;
-            var elementCount = collection.get("element_count");
             var jobStateSource = collection.get("job_source_type");
-            var collectionType = this.model.get("collection_type");
             var collectionTypeDescription = DC_VIEW.collectionTypeDescription(collection);
             var simpleDescription = DC_VIEW.collectionDescription(collection);
             var jobStatesSummary = collection.jobStatesSummary;
@@ -138,7 +153,7 @@ HDCAListItemView.prototype.templates = (() => {
             </div>
             <div class="state-description">
             </div>
-            ${HISTORY_ITEM_LI.nametagTemplate(collection)}
+            <div class="nametags"><!-- Nametags mount here (hdca-li) --></div>
         </div>
     `;
 

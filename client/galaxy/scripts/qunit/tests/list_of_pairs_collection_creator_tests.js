@@ -1,46 +1,51 @@
-/* global define */
+/* global QUnit */
+import _ from "underscore";
+import $ from "jquery";
+// import sinon from "sinon";
 import testApp from "qunit/test-app";
 import PAIRED_COLLECTION_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
 import DATA from "qunit/test-data/paired-collection-creator.data";
-import $ from "jquery";
-import sinon from "sinon";
 
 var PCC = PAIRED_COLLECTION_CREATOR.PairedCollectionCreator;
 
-QUnit.module("Galaxy client app tests");
+QUnit.module("Galaxy client app tests", {
+    beforeEach: function() {
+        testApp.create();
+        $.fx.off = true;
+    },
+    afterEach: function() {
+        testApp.destroy();
+        $.fx.off = false;
+    }
+});
 
 // Following test no longer passes - something is wrong setting up Galaxy.root - but we have multiple Selenium tests that cover verifying
 // actual such lists are created as a result of this form. The matching stuff later on in the
 // file is better suited for unit testing I think anyway and is not covered so well by
 // functional tests.
 
-/*
-QUnit.test("Collection creation", function(assert) {
-    var pcc = new PCC({
-            datasets: DATA._1,
-            historyId: "fakeHistoryId"
-        }),
-        server = sinon.fakeServer.create();
+// QUnit.test("Collection creation", function (assert) {
+//     var pcc = new PCC({ datasets: DATA._1, historyId: "fakeHistoryId" });
+//     var server = sinon.fakeServer.create();
+//     var requestJSON;
 
-    var requestJSON;
-    server.respondWith("POST", "/api/histories/fakeHistoryId/contents/dataset_collections", function(request) {
-        requestJSON = JSON.parse(request.requestBody);
-        request.respond(
-            200,
-            { "Content-Type": "application/json" },
-            JSON.stringify({
-                fakeResponse: "yes"
-            })
-        );
-    });
+//     server.respondWith("POST", "/api/histories/fakeHistoryId/contents/dataset_collections", function (request) {
+//         requestJSON = JSON.parse(request.requestBody);
+//         request.respond(
+//             200,
+//             { "Content-Type": "application/json" },
+//             JSON.stringify({
+//                 fakeResponse: "yes"
+//             })
+//         );
+//     });
 
-    //console.debug( 'requestBody:', JSON.stringify( requestJSON, null, '  ' ) );
-    pcc.createList("Heres a collection");
-    server.respond();
-    assert.deepEqual(requestJSON, DATA._1requestJSON);
-    server.restore();
-});
-*/
+//     //console.debug( 'requestBody:', JSON.stringify( requestJSON, null, '  ' ) );
+//     pcc.createList("Heres a collection");
+//     server.respond();
+//     assert.deepEqual(requestJSON, DATA._1requestJSON);
+//     server.restore();
+// });
 
 QUnit.test("Creator base/empty construction/initializiation defaults", function(assert) {
     var pcc = new PCC([]);

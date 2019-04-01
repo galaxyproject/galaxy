@@ -1,20 +1,14 @@
 // Bootstrap variables and core framework
-@import "../../../node_modules/bootstrap/scss/_functions.scss";
-@import "galaxy_bootstrap/variables.scss";
-@import "../../../node_modules/bootstrap/scss/bootstrap.scss";
-
-// Fontawesome configuration.
-$fa-font-path: "../images/fonts";
-@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
+@import "~bootstrap/scss/_functions.scss";
+@import "theme/blue.scss";
+@import "~bootstrap/scss/bootstrap.scss";
 
 // Bootstrap-related style overrides
-@import "galaxy_bootstrap/overrides.scss";
+@import "overrides.scss";
 
-// Galaxy specific variables
-@import "galaxy_variables.scss";
-
-$white: #fff;
-$black: #000;
+// Fontawesome configuration.
+$fa-font-path: "../../../node_modules/font-awesome/fonts/";
+@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
 
 .fa-icon {
     // TODO: remove fa-icon and replace with fa
@@ -22,6 +16,8 @@ $black: #000;
 }
 
 @import "select2.scss";
+@import "jquery.rating.scss";
+
 /* fix for zero width select2 - remove when fixed there */
 .select2-minwidth {
     min-width: 256px;
@@ -33,11 +29,13 @@ $black: #000;
 @import "upload.scss";
 @import "ui.scss";
 @import "library.scss";
+@import "trackster.scss";
 @import "toastr.scss";
 @import "jstree.scss";
 @import "tour.scss";
 @import "flex.scss";
 @import "charts.scss";
+@import "message.scss";
 
 // Mixins
 @mixin user-select($select) {
@@ -73,8 +71,8 @@ $black: #000;
 }
 
 body {
-    background: $base-bg;
-    color: $base-text-color;
+    background: $body-bg;
+    color: $text-color;
     margin: 10px;
 
     // For panel layout pages
@@ -123,25 +121,19 @@ body {
 }
 
 #messagebox {
-    // position: absolute;
-    // top: $navbar-height + $layout_top_padding + 1;
-    // left: 0;
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
-    border-bottom: solid #999 1px;
+    border-bottom: solid $border-default-color 1px;
     font-size: 90%;
     display: none;
 }
 
 #inactivebox {
-    // position: absolute;
-    // top: $navbar-height + $layout_top_padding + 1;
-    // left: 0;
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
-    border-bottom: solid #999 1px;
+    border-bottom: solid $border-default-color 1px;
     font-size: 90%;
     display: none;
 }
@@ -159,13 +151,13 @@ body {
 }
 #left {
     left: 0px;
-    width: 250px;
+    width: $panel-width;
     z-index: 200;
-    border-right: solid $layout-border-color 1px;
+    border-right: $layout-border;
 }
 #center {
-    left: 250 + $border-default-color_padding;
-    right: 250 + $border-default-color_padding;
+    left: $panel-width;
+    right: $panel-width;
     overflow: hidden;
     z-index: 1;
     .center-container {
@@ -177,8 +169,9 @@ body {
             position: absolute;
             width: 100%;
             height: 100%;
-            padding: 10px;
+            padding: $margin-h $margin-v;
             overflow: auto;
+            background: $brand-white;
         }
         .center-frame {
             position: absolute;
@@ -186,13 +179,28 @@ body {
             height: 100%;
         }
     }
+    // Replaces unnecessary if/then logic in base_panels.mako
+    &:first-child {
+        left: 0;
+    }
+    &:last-child {
+        right: 0;
+    }
 }
 
 #right {
-    width: 250px;
+    width: $panel-width;
     right: 0px;
     z-index: 200;
-    border-left: solid $layout-border-color 1px;
+    border-left: $layout-border;
+}
+
+#left,
+#right,
+.unified-panel {
+    background: $panel-bg-color;
+    display: flex;
+    flex-direction: column;
 }
 
 #left,
@@ -205,75 +213,54 @@ body {
 
 .unified-panel-header {
     @extend .unselectable;
+    @extend .mx-3;
     height: $panel_header_height;
     z-index: 1000;
-    text-shadow: rgba(255, 255, 255, 0.8) 0 1px 0;
-    background: $panel-header-bg-color;
-    border-bottom: solid $layout-border-color 1px;
-    margin: 0;
-    padding: 0;
-    padding-right: 10px;
-    padding-left: 10px;
+    font-size: 1rem;
     font-weight: bold;
     display: flex;
     align-items: center;
-
     color: $panel-header-text-color;
     a {
         color: $panel-header-text-color;
     }
-    .fa {
-        font-size: 1.2em;
-    }
-
     .unified-panel-header-inner {
         width: 100%;
-        display: flex;
         align-items: center;
         justify-content: space-between;
     }
-
     .panel-header-buttons {
         order: 9999;
-    }
-
-    .panel-header-button {
-        text-decoration: none;
-        display: inline-block;
-        cursor: pointer;
-        // Fade to maroon on hover
-        &:hover {
-            color: maroon;
-            @include transition(color 0.25s linear);
-        }
-        // Bootstrap style span caret needs positioning
-        .caret {
-            margin-top: 7px;
-        }
-        // Another way to get a caret
-        &.popup {
-            padding-right: 1.75em;
-            background: url(../images/dropdownarrow.png) no-repeat right 7px;
+        float: right;
+        .panel-header-button {
+            text-align: center;
+            &:not(:last-child) {
+                @extend .mr-2;
+            }
+            &:hover {
+                color: $brand-info;
+            }
         }
     }
 }
 
+.unified-panel-controls {
+    @extend .px-3;
+}
+
 .unified-panel-footer {
     @extend .unselectable;
-    position: absolute;
-    bottom: 0;
+    position: relative;
     height: $panel_footer_height;
     line-height: $panel_footer_height;
     width: 100%;
     z-index: 1000; // Above #dd-helper
-    border-top: solid $layout-border-color 1px;
-    background: $navbar-default-bg;
-
-    color: #555;
+    border-top: $layout-border;
+    background: $panel-footer-bg-color;
+    color: $panel-header-text-color;
     a {
-        color: #555;
+        color: $panel-header-text-color;
     }
-
     .drag {
         position: absolute;
         top: 0;
@@ -282,10 +269,10 @@ body {
         text-align: center;
         height: $panel_footer_height;
         width: $panel_footer_height - 5;
-        background-image: url(../images/visualization/draggable_horizontal.png);
+        background-image: url(../../images/visualization/draggable_horizontal.png);
         background-repeat: no-repeat;
         background-position: 50% 50%;
-        cursor: w-resize;
+        cursor: col-resize;
     }
 }
 
@@ -319,14 +306,14 @@ body {
     line-height: $panel_footer_height;
     width: $panel_footer_height - 5;
     background: none;
-    border-right: solid $layout-border-color 1px;
-    border-top: solid $layout-border-color 1px;
-    background: $navbar-default-bg;
+    border-right: $layout-border;
+    border-top: $layout-border;
+    background: $panel-footer-bg-color;
     &.right {
         left: inherit;
         right: 0;
         border-right: none;
-        border-left: solid $border-default-color 1px;
+        border-left: $layout_border;
         &.right:before {
             content: "\f054";
         }
@@ -342,18 +329,14 @@ body {
 
 div.unified-panel-body {
     width: 100%;
+    height: 100%;
     padding: 0px;
     flex: 1;
+    overflow: auto;
 }
 
 div.unified-panel-body-background {
     background: none repeat scroll 0 0 $panel-bg-color;
-}
-
-#left > div.unified-panel-body,
-#right > div.unified-panel-body {
-    bottom: $panel_footer_height;
-    overflow: auto;
 }
 
 // Used for dragging panels, popup menus, to deal with capturing clicks in iframes
@@ -378,33 +361,37 @@ div.unified-panel-body-background {
     height: $panel-message-height;
     line-height: $panel-message-height;
     padding: 0px;
-    padding-left: 26px;
+    padding-left: 2.5rem;
     background-color: $state-danger-bg;
-    background-image: url(error_small.png);
+    background-image: url(../../images/error_small.png);
     background-repeat: no-repeat;
-    background-position: 6px 50%;
+    background-position: 0.5rem 50%;
 }
 
 .panel-warning-message {
-    background-image: url(warn_small.png);
+    background-image: url(../../images/warn_small.png);
     background-color: $state-warning-bg;
 }
 
 .panel-done-message {
-    background-image: url(ok_small.png);
+    background-image: url(../../images/ok_small.png);
     background-color: $state-success-bg;
 }
 
 .panel-info-message {
-    background-image: url(info_small.png);
+    background-image: url(../../images/info_icon.svg);
+    background-size: 1.5rem;
     background-color: $state-info-bg;
+    svg:path {
+        fill: black;
+    }
 }
 
 // Masthead
 #masthead {
     padding: 0;
     margin-bottom: 0px;
-    background-color: $base-color-1;
+    background-color: $brand-dark;
     height: $masthead-height;
     .navbar-nav {
         min-height: 100%;
@@ -415,19 +402,19 @@ div.unified-panel-body-background {
             display: flex;
             align-items: center;
             &.active {
-                background: black;
+                background: darken($brand-dark, 10%);
             }
             .nav-link {
                 cursor: pointer;
                 text-decoration: none;
                 &:hover {
-                    color: gold;
+                    color: $dropdown-link-active-color;
                 }
                 &.nav-icon {
                     font-size: 1.7em;
                 }
                 &.toggle {
-                    color: gold;
+                    color: $dropdown-link-active-color;
                 }
             }
             .nav-note {
@@ -436,7 +423,7 @@ div.unified-panel-body-background {
                 position: relative;
                 right: 5px;
                 top: 10px;
-                color: gold;
+                color: $dropdown-link-active-color;
                 width: 0px;
             }
         }
@@ -449,7 +436,7 @@ div.unified-panel-body-background {
         font-weight: bold;
         font-size: 20px;
         // line-height: 1;
-        color: white;
+        color: $white;
         // Override margin and padding due to shorter navbar height
         padding: 5px 20px 12px;
         margin-left: -15px;
@@ -462,7 +449,7 @@ div.unified-panel-body-background {
             border: none;
         }
         .navbar-brand-title {
-            color: white;
+            color: $white;
         }
     }
 }
@@ -548,23 +535,16 @@ div.metadataFormBody div.metadataFormTitle {
 
 div.metadataFormDisabled div.metadataFormTitle {
     background: #eee;
-    border-color: #999;
+    border-color: $border-default-color;
 }
 
 div.metadataFormDisabled {
-    border-color: #999;
+    border-color: $border-default-color;
 }
 
 div.metadataHelpBody {
     width: 100%;
     overflow: auto;
-}
-
-div.titleRow {
-    font-weight: bold;
-    border-bottom: dotted gray 1px;
-    margin-bottom: 0.5em;
-    padding-bottom: 0.25em;
 }
 
 // Forms
@@ -595,20 +575,44 @@ div.toolHelpBody {
     width: 100%;
 }
 
-// In workflow
+div.toolFormRow {
+    position: relative;
+}
 
 .toolForm.toolFormInCanvas {
-    border: solid $form-border 1px;
-    @include border-radius(2px);
-    background: $white;
-    margin: 0px;
+    @extend .card;
+    z-index: 100;
+    position: absolute;
+    border-color: $brand-primary;
     &.toolForm-active {
-        box-shadow: 0 0 0 3px $brand-primary;
-        @include border-radius(1px);
+        z-index: 1001;
+        box-shadow: 0 0 0 2px $brand-primary;
     }
     .toolFormTitle {
-        font-size: $font-size-base;
-        line-height: $line-height-base;
+        @extend .card-header;
+        @extend .py-1;
+        @extend .px-2;
+        cursor: move;
+        background: $brand-secondary;
+    }
+    .toolFormBody {
+        @extend .card-body;
+        @extend .p-0;
+        @extend .mx-2;
+        .rule {
+            height: 0;
+            border: none;
+            border-bottom: dotted black 1px;
+            margin: 0 5px;
+        }
+    }
+}
+
+.toolForm.toolFormInCanvas.tool-node-error {
+    border-color: $state-danger-border;
+    .toolFormTitle {
+        background: $state-danger-bg;
+        border-color: $state-danger-border;
     }
 }
 
@@ -633,6 +637,7 @@ div.form-body {
 }
 
 div.form-row {
+    position: relative;
     padding: 5px 10px;
 }
 
@@ -670,22 +675,6 @@ div.form-row-input label {
     display: inline;
 }
 
-div.form-row-error-message {
-    width: 300px;
-    float: left;
-    color: red;
-    font-weight: bold;
-    padding: 3px 0;
-}
-
-.form-row .help,
-.toolParamHelp {
-    color: #666;
-    a {
-        color: #666;
-    }
-}
-
 .form-row.form-actions {
     background: whiteSmoke;
     border-top: solid #ddd 1px;
@@ -695,7 +684,11 @@ div.form-row-error-message {
 }
 
 .workflow-right {
-    background: white;
+    background: $white;
+}
+
+.workflow-right .right-content {
+    margin: 3px;
 }
 
 .workflow-right .right-content .section-row {
@@ -704,7 +697,6 @@ div.form-row-error-message {
 
 // Selects
 select {
-    //border: 1px solid $input-border;
     padding: 2px;
     font-size: $font-size-base;
     line-height: $line-height-base;
@@ -733,8 +725,6 @@ input[type="text"],
 input[type="password"] {
     font-size: $font-size-base;
     line-height: $line-height-base;
-    border: 1px solid $input-border;
-    padding: 3px;
 }
 
 // Always style buttons and submits as bootstrap buttons
@@ -742,7 +732,6 @@ input[type="submit"],
 button {
     @extend .btn;
     @extend .btn-secondary;
-    // The above overrides the button variants (primary, danger, etc) because it occurs later, redefine btn-primary (bit of a hack)
     &.btn-primary {
         @extend .btn-primary;
     }
@@ -753,13 +742,14 @@ button {
     padding: 4px;
     font-size: $font-size-base;
     line-height: $line-height-base;
-    color: $gray;
-    border: 1px solid $input-border;
+    color: $text-color;
+    border: 1px solid $border-default-color;
     padding-left: 14px !important;
     padding-right: 14px;
-    margin-bottom: 0; // remove the default margin on all inputs
+    margin-bottom: 0;
     @include border-radius(14px);
     max-width: auto;
+    background: $brand-white;
 }
 .search-query:focus {
     border-color: darken(rgba(82, 168, 236, 0.8), 15%);
@@ -773,15 +763,14 @@ button {
     position: absolute;
     display: none;
     right: 6px;
-    top: 9px;
+    top: 5px;
     font-size: 1.4em;
     color: #888;
 }
 
 #tool-search {
     position: relative;
-    margin: 10px;
-
+    @extend .mb-2;
     #search-clear-btn {
         position: absolute;
         right: 6px;
@@ -803,13 +792,13 @@ button {
 .warningmessagelarge,
 .donemessagelarge,
 .infomessagelarge,
-.ui-form-help .error,
-.ui-form-help .warning,
-.ui-form-help .note {
+.form-help .error,
+.form-help .warning,
+.form-help .note {
     @extend .alert;
     min-height: 36px;
     padding-left: 52px;
-    background-image: url(error_large.png);
+    background-image: url(../../images/error_large.png);
     background-repeat: no-repeat;
     background-position: 10px 5px;
     .messagerow {
@@ -825,25 +814,18 @@ button {
 .warningmessagelarge {
     @extend .alert-warning;
     padding-left: 52px;
-    background-image: url(warn_large.png);
+    background-image: url(../../images/warn_large.png);
 }
 
 .donemessagelarge {
     @extend .alert-success;
     padding-left: 52px;
-    background-image: url(ok_large.png);
+    background-image: url(../../images/ok_large.png);
 }
 
 .infomessagelarge {
     @extend .alert-info;
-    background-image: url(info_large.png);
-}
-
-.screencastBox {
-    padding-left: 10px;
-    border-color: #aaaa66;
-    background-color: #ffffcc;
-    background-image: none;
+    background-image: url(../../images/info_large.png);
 }
 
 .errormessage,
@@ -854,44 +836,44 @@ button {
 .warningmessagesmall,
 .donemessagesmall,
 .infomessagesmall,
-.ui-form-help .error,
-.ui-form-help .warning,
-.ui-form-help .note {
+.form-help .error,
+.form-help .warning,
+.form-help .note {
     @extend .alert;
     padding: 5px;
     padding-left: 25px;
     min-height: 15px;
     //border: 1px solid $error_message_border;
     //background-color: $error_message_bg;
-    background-image: url(error_small.png);
+    background-image: url(../../images/error_small.png);
     background-repeat: no-repeat;
     background-position: 5px 6px;
 }
 
 .errormessage,
 .errormessagesmall,
-.ui-form-help .error {
+.form-help .error {
     @extend .alert-danger;
 }
 
 .warningmessage,
 .warningmessagesmall,
-.ui-form-help .warning {
+.form-help .warning {
     @extend .alert-warning;
-    background-image: url(warn_small.png);
+    background-image: url(../../images/warn_small.png);
 }
 
 .donemessage,
 .donemessagesmall {
     @extend .alert-success;
-    background-image: url(ok_small.png);
+    background-image: url(../../images/ok_small.png);
 }
 
 .infomessage,
 .infomessagesmall,
-.ui-form-help .note {
+.form-help .note {
     @extend .alert-info;
-    background-image: url(info_small.png);
+    background-image: url(../../images/info_small.png);
 }
 
 .errormark,
@@ -902,20 +884,20 @@ button {
 .err_bgr {
     padding-left: 20px;
     min-height: 15px;
-    background: url(error_small.png) no-repeat;
+    background: url(../../images/error_small.png) no-repeat;
 }
 
 .warningmark {
-    background-image: url(warn_small.png);
+    background-image: url(../../images/warn_small.png);
 }
 
 .donemark {
-    background-image: url(ok_small.png);
+    background-image: url(../../images/ok_small.png);
 }
 
 .infomark,
 .ok_bgr {
-    background-image: url(info_small.png);
+    background-image: url(../../images/info_small.png);
 }
 
 /* I think this is only used in view details */
@@ -969,7 +951,6 @@ table.colored th {
 
 table.colored tr.header {
     background: $table-heading-bg;
-    color: contrast($complement-color-3);
     background-repeat: repeat-x;
     background-position: top;
     border-bottom: solid $table-border-color 1px;
@@ -1078,7 +1059,7 @@ div.debug {
     border-collapse: separate;
 }
 .delete-search-icon {
-    background: url(../images/delete_tag_icon_gray.png) center no-repeat;
+    background: url(../../images/delete_tag_icon_gray.png) center no-repeat;
     display: inline-block;
     width: 10px;
     cursor: pointer;
@@ -1087,18 +1068,14 @@ div.debug {
     margin-left: 2px;
 }
 .search-box-input {
-    border: 0;
+    @extend .ui-input;
     float: left;
-    outline: medium none;
-    font-style: italic;
-    font-size: inherit;
 }
 .search-box {
     vertical-align: bottom;
     display: inline-block;
     padding: 0;
     white-space: nowrap;
-    // border: 1px solid #aaa;
 }
 .gray-background {
     background-color: #dddddd;
@@ -1229,38 +1206,6 @@ ul.manage-table-actions li {
     background: $state-default-bg;
 }
 
-.state-fg-new {
-    color: #ffb030;
-}
-
-.state-fg-upload {
-    color: #d090d0;
-}
-
-.state-fg-waiting {
-    color: #e8c060;
-}
-
-.state-fg-queued {
-    color: #888888;
-}
-
-.state-fg-running {
-    color: #aaaa66;
-}
-
-.state-fg-ok {
-    color: #66aa66;
-}
-
-.state-fg-error {
-    color: #aa6666;
-}
-
-.state-fg-deleted {
-    color: #3399ff;
-}
-
 // Button styles
 
 button {
@@ -1295,19 +1240,11 @@ a.action-button {
     @extend .btn-secondary;
 }
 
-//.action-button > * {
-//    vertical-align: middle;
-//}
-
 .action-button:hover {
     @extend .btn:hover;
-    //color: black;
-    //background: #dddddd;
 }
 .action-button:active {
     @extend .btn.active;
-    //color: white;
-    //background: #aaaaaa;
 }
 
 // A menu button is a button that has an attached popup menu
@@ -1327,14 +1264,6 @@ a.action-button {
     cursor: pointer;
     position: relative;
     @extend .unselectable;
-
-    // border: solid transparent 1px;
-    // -moz-border-radius: 0.25em;
-    // -webkit-border-radius: 0.25em;
-    // border-radius: 0.25em;
-
-    // padding: 1px 0.25em;
-    // margin: -1px -0.25em;
 
     a {
         text-decoration: none;
@@ -1385,28 +1314,10 @@ a.action-button {
 }
 
 .menubutton.popup.split:hover {
-    //background: url(../images/ddarrowsplit.png) no-repeat right -39px;
+    //background: url(../../images/ddarrowsplit.png) no-repeat right -39px;
 }
 
 // Popup menu styles
-
-/*
-.overlay-border {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
-    padding: 1em;
-    margin: -1em;
-    background-color: rgba(0,0,0,0.5);
-    -moz-border-radius: 1em;
-    -webkit-border-radius: 1em;
-    z-index: -1;
-}
-*/
-
-// Galaxy popup menus
 div.popmenu-wrapper {
     position: absolute;
     top: 100%;
@@ -1431,15 +1342,13 @@ ul.dropdown-menu {
         font-size: 11px;
         font-weight: bold;
         line-height: $line-height-base;
-        color: $gray-light;
+        color: $text-color;
         text-transform: uppercase;
     }
-
     li.head > a:hover {
         background: inherit;
         border-color: transparent;
     }
-
     li > a {
         @extend .dropdown-item;
     }
@@ -1526,11 +1435,8 @@ div.permissionContainer {
     cursor: pointer;
     width: 16px;
     height: 16px;
-    line-height: 8px;
-    // Fade to maroon on hover
     &:hover {
-        color: maroon;
-        @include transition(color 0.25s linear);
+        color: $brand-info;
     }
 }
 
@@ -1540,11 +1446,11 @@ div.permissionContainer {
 
 .editable-text:hover {
     cursor: text;
-    border: dotted #999999 1px;
+    border: dotted $border-default-color 1px;
 }
 
 .icon-button.multiinput {
-    background: url(../images/documents-stack.png) no-repeat;
+    background: url(../../images/documents-stack.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1552,12 +1458,12 @@ div.permissionContainer {
 }
 
 .icon-button.multiinput.disabled {
-    background: url(../images/documents-stack-faded.png) no-repeat;
+    background: url(../../images/documents-stack-faded.png) no-repeat;
     cursor: pointer;
 }
 
 .icon-button.link {
-    background: url(../images/silk/link.png) no-repeat;
+    background: url(../../images/silk/link.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1565,7 +1471,7 @@ div.permissionContainer {
 }
 
 .icon-button.link-broken {
-    background: url(../images/silk/link_break.png) no-repeat;
+    background: url(../../images/silk/link_break.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1605,7 +1511,7 @@ div.permissionContainer {
     }
     background: $panel-bg-color;
     min-height: 100%;
-    padding: 5px 10px;
+    @extend .m-3;
 }
 
 div.toolSectionPad {
@@ -1625,7 +1531,8 @@ div.toolSectionDetailsInner {
 }
 
 div.toolSectionTitle {
-    font-weight: bold;
+    font-weight: 500;
+    font-size: 1rem;
 }
 
 div.toolPanelLabel {
@@ -1637,12 +1544,9 @@ div.toolPanelLabel {
 }
 
 div.toolTitle {
-    padding-top: 5px;
-    padding-bottom: 5px;
-    margin-left: 16px;
+    margin-left: 10px;
     margin-right: 10px;
-    display: list-item;
-    list-style: square outside;
+    display: block;
     .labels {
         float: right;
         margin-left: 2px;
@@ -1652,9 +1556,15 @@ div.toolTitle {
 div a.tool-link {
     text-decoration: none;
     display: block;
+    padding-top: 5px;
+    padding-bottom: 5px;
 
     span.tool-old-link {
         text-decoration: underline;
+    }
+
+    &:hover {
+        background: darken($panel-bg-color, 5%);
     }
 }
 
@@ -1681,7 +1591,7 @@ div.toolTitleNoSection {
     height: 32px;
     width: 32px;
     display: none;
-    background: url(largespinner.gif);
+    background: url(../../images/largespinner.gif);
 }
 
 #content_table td {
@@ -1711,7 +1621,7 @@ div.toolTitleNoSection {
 
 .toolMenuAndView .toolForm {
     float: left;
-    background-color: white;
+    background-color: $white;
     margin: 10px;
 }
 
@@ -1737,14 +1647,14 @@ div.toolTitleNoSection {
 }
 
 .icon-button.general-question {
-    background: url(question-octagon-frame.png) no-repeat;
+    background: url(../../images/question-octagon-frame.png) no-repeat;
     float: right;
     margin-top: 3px;
     margin-right: 4px;
 }
 
 .icon-button.tag-question {
-    background: url(question-balloon.png) no-repeat;
+    background: url(../../images/question-balloon.png) no-repeat;
     float: right;
     margin-top: 3px;
     margin-right: 4px;
@@ -1859,11 +1769,6 @@ div.toolTitleNoSection {
     padding: 2px;
 }
 
-.communication-iframe {
-    width: 100%;
-    height: 100%;
-}
-
 .close-modal {
     float: right;
     cursor: pointer;
@@ -1939,20 +1844,133 @@ div.toolTitleNoSection {
     opacity: 1;
 }
 
-/* Temporary tag editor display; will be moved to a scoped Vue SFC upon refactoring */
-.tags-display {
-    @extend %vertical-spacing;
-    .select2-container {
-        max-height: 80px;
-        overflow: auto;
-        min-width: 0px;
-        .select2-choices {
-            border-radius: 3px;
-        }
+/* TEMPORARY, REFACTOR THIS -- This is only image-related styles from the
+ * workflow editor; everything should be moved out of the mako and into its own
+ * file */
+
+#canvas-viewport {
+    background: $workflow-editor-bg url("../../images/light_gray_grid.gif");
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    overflow: hidden;
+}
+
+.base-terminal {
+    @extend .fa;
+    @extend .fa-circle;
+    @extend .mt-1;
+    color: $white;
+    position: absolute;
+    z-index: 1500;
+    > icon {
+        @extend .fa;
+        @extend .fa-chevron-circle-right;
+        color: $brand-primary;
+        position: absolute;
+        left: 0px;
+        top: 0px;
     }
+}
+.input-terminal {
+    @extend .base-terminal;
+    left: -9px;
+}
+.output-terminal {
+    @extend .base-terminal;
+    right: -9px;
+    &:hover > icon {
+        color: $brand-success;
+    }
+}
+.input-terminal-active > icon {
+    color: $brand-success;
+}
+.drag-terminal {
+    @extend .fa;
+    @extend .fa-circle;
+    color: $brand-success;
+    position: absolute;
+    z-index: 1500;
+}
+.mark-terminal {
+    cursor: pointer;
+    color: darken($border-default-color, 20%);
+    &.mark-terminal-active {
+        color: $brand-success;
+    }
+}
+.delete-terminal {
+    @extend .btn;
+    @extend .btn-sm;
+    @extend .btn-primary;
+    @extend .fa;
+    @extend .fa-minus-circle;
+    @extend .p-1;
+    @extend .mt-1;
+    position: absolute;
+    z-index: 2500;
+    top: 0px;
+    left: -15px;
+}
+.callout-terminal {
+    position: absolute;
+}
+.workflow-overview {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    right: 0px;
+    bottom: 0px;
+    border-top: solid gray 1px;
+    border-left: solid grey 1px;
+    padding: 7px 0 0 7px;
+    background: $workflow-overview-bg no-repeat url("../../images/resizable.png");
+    z-index: 20000;
+    overflow: hidden;
+    max-width: 300px;
+    max-height: 300px;
+    min-width: 50px;
+    min-height: 50px;
 }
 
 /* For Vue */
 [v-cloak] {
     display: none;
+}
+
+/* Toolshed, reports custom styles from mako templates */
+body.toolshed {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    #left {
+        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
+    }
+    .unified-panel-body {
+        overflow: auto;
+    }
+    .toolMenu {
+        margin-left: 10px;
+    }
+}
+
+body.reports {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    #left {
+        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
+    }
+}
+
+/* Used in Galaxy IE for spinner loading TODO: Remove in IE entrypoint refactoring */
+#ie-loading-spinner {
+    position: absolute;
+    margin: auto;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url(../../images/largespinner.gif) no-repeat center center fixed;
 }

@@ -56,7 +56,7 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
 
         # should parse regex if using fwd slashes, string otherwise
         hostnames = config._parse_allowed_origin_hostnames({
-            "allowed_origin_hostnames": "/host\d{2}/,geocities.com,miskatonic.edu"
+            "allowed_origin_hostnames": r"/host\d{2}/,geocities.com,miskatonic.edu"
         })
         self.assertTrue(isinstance(hostnames[0], re._pattern_type))
         self.assertTrue(isinstance(hostnames[1], str))
@@ -80,13 +80,13 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
         self.assert_cors_header_equals(trans.response.headers, 'http://xxdarkhackerxx.disney.com')
 
         # subdomains should pass
-        trans = self._new_trans(allowed_origin_hostnames='something.com,/^[\w\.]*beep\.com/')
+        trans = self._new_trans(allowed_origin_hostnames=r'something.com,/^[\w\.]*beep\.com/')
         trans.request.headers['Origin'] = 'http://boop.beep.com'
         trans.set_cors_headers()
         self.assert_cors_header_equals(trans.response.headers, 'http://boop.beep.com')
 
         # ports should work
-        trans = self._new_trans(allowed_origin_hostnames='somethingelse.com,/^[\w\.]*beep\.com/')
+        trans = self._new_trans(allowed_origin_hostnames=r'somethingelse.com,/^[\w\.]*beep\.com/')
         trans.request.headers['Origin'] = 'http://boop.beep.com:8080'
         trans.set_cors_headers()
         self.assert_cors_header_equals(trans.response.headers, 'http://boop.beep.com:8080')
@@ -104,7 +104,7 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
         self.assert_cors_header_missing(trans.response.headers)
 
         # unicode should work
-        trans = self._new_trans(allowed_origin_hostnames='/öbb\.at/')
+        trans = self._new_trans(allowed_origin_hostnames=r'/öbb\.at/')
         trans.request.headers['Origin'] = 'http://öbb.at'
         trans.set_cors_headers()
         self.assertEqual(

@@ -36,6 +36,7 @@ DEFAULT_MODULECMD_PATH = "modulecmd"  # Just check path
 DEFAULT_MODULE_PATH = '/usr/share/modules/modulefiles'
 DEFAULT_INDICATOR = '(default)'
 DEFAULT_MODULE_PREFETCH = "true"
+DEFAULT_MAPPING_FILE = 'config/environment_modules_mapping.yml'
 UNKNOWN_FIND_BY_MESSAGE = "ModuleDependencyResolver does not know how to find modules by [%s], find_by should be one of %s"
 
 
@@ -44,6 +45,8 @@ class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
     resolver_type = "modules"
 
     def __init__(self, dependency_manager, **kwds):
+        # Mapping file management
+        self._set_default_mapping_file(kwds)
         self._setup_mapping(dependency_manager, **kwds)
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         find_by = kwds.get('find_by', 'avail')
@@ -66,6 +69,11 @@ class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
         else:
             module_path = DEFAULT_MODULE_PATH
         return module_path
+
+    def _set_default_mapping_file(self, resolver_attributes):
+        if 'mapping_files' not in resolver_attributes:
+            if exists(DEFAULT_MAPPING_FILE):
+                resolver_attributes['mapping_files'] = DEFAULT_MAPPING_FILE
 
     def resolve(self, requirement, **kwds):
         requirement = self._expand_mappings(requirement)

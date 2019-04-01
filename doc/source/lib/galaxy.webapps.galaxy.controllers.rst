@@ -33,6 +33,14 @@ galaxy\.webapps\.galaxy\.controllers\.async module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.webapps\.galaxy\.controllers\.authnz module
+---------------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.controllers.authnz
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.webapps\.galaxy\.controllers\.biostar module
 ----------------------------------------------------
 
@@ -61,22 +69,6 @@ galaxy\.webapps\.galaxy\.controllers\.error module
 --------------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.controllers.error
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy\.webapps\.galaxy\.controllers\.external\_service module
---------------------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.external_service
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy\.webapps\.galaxy\.controllers\.external\_services module
----------------------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.external_services
     :members:
     :undoc-members:
     :show-inheritance:
@@ -113,66 +105,10 @@ galaxy\.webapps\.galaxy\.controllers\.library module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.webapps\.galaxy\.controllers\.library\_admin module
------------------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.library_admin
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy\.webapps\.galaxy\.controllers\.library\_common module
-------------------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.library_common
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy\.webapps\.galaxy\.controllers\.mobile module
----------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.mobile
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy\.webapps\.galaxy\.controllers\.page module
 -------------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.controllers.page
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy\.webapps\.galaxy\.controllers\.request\_type module
-----------------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.request_type
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy\.webapps\.galaxy\.controllers\.requests module
------------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.requests
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy\.webapps\.galaxy\.controllers\.requests\_admin module
-------------------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.requests_admin
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy\.webapps\.galaxy\.controllers\.requests\_common module
--------------------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.requests_common
     :members:
     :undoc-members:
     :show-inheritance:

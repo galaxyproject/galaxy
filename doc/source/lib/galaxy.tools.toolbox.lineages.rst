@@ -25,20 +25,4 @@ galaxy\.tools\.toolbox\.lineages\.interface module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.tools\.toolbox\.lineages\.stock module
-----------------------------------------------
-
-.. automodule:: galaxy.tools.toolbox.lineages.stock
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy\.tools\.toolbox\.lineages\.tool\_shed module
----------------------------------------------------
-
-.. automodule:: galaxy.tools.toolbox.lineages.tool_shed
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 

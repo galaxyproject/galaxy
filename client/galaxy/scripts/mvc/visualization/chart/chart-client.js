@@ -1,3 +1,7 @@
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import Deferred from "utils/deferred";
 import Modal from "mvc/ui/ui-modal";
 import Ui from "mvc/ui/ui-misc";
@@ -5,14 +9,11 @@ import Chart from "mvc/visualization/chart/components/model";
 import Editor from "mvc/visualization/chart/views/editor";
 import Viewer from "mvc/visualization/chart/views/viewer";
 import Menu from "mvc/visualization/chart/views/menu";
-import * as Backbone from "backbone";
-
-/* global $ */
-/* global Galaxy */
 
 export default Backbone.View.extend({
     initialize: function(options) {
-        this.modal = (window.parent.Galaxy && window.parent.Galaxy.modal) || new Modal.View();
+        let Galaxy = getGalaxyInstance();
+        this.modal = Galaxy && Galaxy.modal ? Galaxy.modal : new Modal.View();
         this.setElement(
             $("<div/>")
                 .addClass("charts-client")
@@ -36,7 +37,7 @@ export default Backbone.View.extend({
         this.$right.append(this.message.$el).append(this.editor.$el);
         this.$buttons.append(this.menu.$el);
         $.ajax({
-            url: `${Galaxy.root}api/datasets/${options.dataset_id}`
+            url: `${getAppRoot()}api/datasets/${options.dataset_id}`
         })
             .done(dataset => {
                 this.dataset = dataset;

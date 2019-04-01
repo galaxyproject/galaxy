@@ -58,9 +58,9 @@ class BatchMiddleware(object):
     DEFAULT_CONFIG = {
         'route' : '/api/batch',
         'allowed_routes' : [
-            '^api\/users.*',
-            '^api\/histories.*',
-            '^api\/jobs.*',
+            r'^api\/users.*',
+            r'^api\/histories.*',
+            r'^api\/jobs.*',
         ]
     }
 

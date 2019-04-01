@@ -18,8 +18,8 @@ ${render_galaxy_repository_actions( repository )}
     </p> 
 </div>
   
-<div class="toolForm">
-    <div class="toolFormBody">
+<div class="card">
+    <div class="card-body">
         <form name="install_tool_dependencies_with_update" id="install_tool_dependencies_with_update" action="${h.url_for( controller='admin_toolshed', action='install_tool_dependencies_with_update' )}" method="post" >
             <input type="hidden" name="updating_repository_id" value="${updating_repository_id|h}"/>
             <input type="hidden" name="updating_to_ctx_rev" value="${updating_to_ctx_rev|h}"/>

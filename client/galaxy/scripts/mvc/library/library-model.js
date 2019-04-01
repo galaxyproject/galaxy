@@ -1,9 +1,13 @@
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import mod_util from "mvc/library/library-util";
+
 // ============================================================================
 // LIBRARY RELATED MODELS
 
 var Library = Backbone.Model.extend({
-    urlRoot: `${Galaxy.root}api/libraries/`,
+    urlRoot: `${getAppRoot()}api/libraries/`,
 
     /** based on show_deleted would this lib show in the list of lib's?
      *  @param {Boolean} show_deleted are we including deleted libraries?
@@ -18,7 +22,7 @@ var Library = Backbone.Model.extend({
 });
 
 var Libraries = Backbone.Collection.extend({
-    urlRoot: `${Galaxy.root}api/libraries`,
+    urlRoot: `${getAppRoot()}api/libraries`,
 
     model: Library,
 
@@ -64,11 +68,11 @@ var Libraries = Backbone.Collection.extend({
 var LibraryItem = Backbone.Model.extend({});
 
 var Ldda = LibraryItem.extend({
-    urlRoot: `${Galaxy.root}api/libraries/datasets/`
+    urlRoot: `${getAppRoot()}api/libraries/datasets/`
 });
 
 var FolderAsModel = LibraryItem.extend({
-    urlRoot: `${Galaxy.root}api/folders/`
+    urlRoot: `${getAppRoot()}api/folders/`
 });
 
 var Folder = Backbone.Collection.extend({
@@ -83,10 +87,11 @@ var Folder = Backbone.Collection.extend({
 var FolderContainer = Backbone.Model.extend({
     defaults: {
         folder: new Folder(),
-        urlRoot: `${Galaxy.root}api/folders/`,
+        urlRoot: `${getAppRoot()}api/folders/`,
         id: "unknown"
     },
     parse: function(obj) {
+        let Galaxy = getGalaxyInstance();
         // empty the collection
         this.get("folder").reset();
         // response is not a simple array, it contains metadata
@@ -111,11 +116,11 @@ var FolderContainer = Backbone.Model.extend({
 // TODO UNITE
 
 var HistoryItem = Backbone.Model.extend({
-    urlRoot: `${Galaxy.root}api/histories/`
+    urlRoot: `${getAppRoot()}api/histories/`
 });
 
 var HistoryContents = Backbone.Collection.extend({
-    urlRoot: `${Galaxy.root}api/histories/`,
+    urlRoot: `${getAppRoot()}api/histories/`,
     initialize: function(options) {
         this.id = options.id;
     },
@@ -126,11 +131,11 @@ var HistoryContents = Backbone.Collection.extend({
 });
 
 var GalaxyHistory = Backbone.Model.extend({
-    urlRoot: `${Galaxy.root}api/histories/`
+    urlRoot: `${getAppRoot()}api/histories/`
 });
 
 var GalaxyHistories = Backbone.Collection.extend({
-    url: `${Galaxy.root}api/histories`,
+    url: `${getAppRoot()}api/histories`,
     model: GalaxyHistory
 });
 
@@ -141,7 +146,7 @@ var GalaxyHistories = Backbone.Collection.extend({
  */
 
 var Jstree = Backbone.Model.extend({
-    urlRoot: `${Galaxy.root}api/remote_files`
+    urlRoot: `${getAppRoot()}api/remote_files`
 });
 
 export default {

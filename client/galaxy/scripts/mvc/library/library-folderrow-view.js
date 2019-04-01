@@ -1,6 +1,12 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_dataset_view from "mvc/library/library-dataset-view";
+
 var FolderRowView = Backbone.View.extend({
     events: {
         "click .undelete_dataset_btn": "undeleteDataset",
@@ -30,6 +36,7 @@ var FolderRowView = Backbone.View.extend({
         this.options = _.extend(this.options, options);
         var folder_item = this.options.model;
         var template = null;
+        let Galaxy = getGalaxyInstance();
 
         if (folder_item.get("type") === "folder" || folder_item.get("model_class") === "LibraryFolder") {
             this.options.type = "folder";
@@ -98,12 +105,14 @@ var FolderRowView = Backbone.View.extend({
 
     /* Show the page with dataset details. */
     showDatasetDetails: function() {
+        let Galaxy = getGalaxyInstance();
         Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({ id: this.id });
     },
 
     /* Undelete the dataset on server and render the row again. */
     undeleteDataset: function(event) {
         $(".tooltip").hide();
+        let Galaxy = getGalaxyInstance();
         var that = this;
         var dataset_id = $(event.target)
             .closest("tr")
@@ -119,7 +128,7 @@ var FolderRowView = Backbone.View.extend({
                 mod_toastr.success("Dataset undeleted. Click this to see it.", "", {
                     onclick: function() {
                         var folder_id = that.model.get("folder_id");
-                        window.location = `${Galaxy.root}library/list#folders/${folder_id}/datasets/${that.id}`;
+                        window.location = `${getAppRoot()}library/list#folders/${folder_id}/datasets/${that.id}`;
                     }
                 });
             },
@@ -127,7 +136,7 @@ var FolderRowView = Backbone.View.extend({
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(`Dataset was not undeleted. ${response.responseJSON.err_msg}`);
                 } else {
-                    mod_toastr.error("An error occured! Dataset was not undeleted. Please try again.");
+                    mod_toastr.error("An error occurred! Dataset was not undeleted. Please try again.");
                 }
             }
         });
@@ -135,8 +144,8 @@ var FolderRowView = Backbone.View.extend({
 
     /* Undelete the folder on server and render the row again. */
     undeleteFolder: function(event) {
+        let Galaxy = getGalaxyInstance();
         $(".tooltip").hide();
-        var that = this;
         var folder_id = $(event.target)
             .closest("tr")
             .data("id");
@@ -154,7 +163,7 @@ var FolderRowView = Backbone.View.extend({
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(`Folder was not undeleted. ${response.responseJSON.err_msg}`);
                 } else {
-                    mod_toastr.error("An error occured! Folder was not undeleted. Please try again.");
+                    mod_toastr.error("An error occurred! Folder was not undeleted. Please try again.");
                 }
             }
         });
@@ -173,6 +182,7 @@ var FolderRowView = Backbone.View.extend({
     },
 
     saveModifications: function() {
+        let Galaxy = getGalaxyInstance();
         var folder = Galaxy.libraries.folderListView.collection.get(this.$el.data("id"));
         var is_changed = false;
         var new_name = this.$el.find(".input_folder_name").val();
@@ -203,7 +213,7 @@ var FolderRowView = Backbone.View.extend({
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occured while attempting to update the folder.");
+                        mod_toastr.error("An error occurred while attempting to update the folder.");
                     }
                 }
             });

@@ -3,6 +3,13 @@
 # Refactored 2011 to use numpy instead of rpy, Kanwei Li
 """
 This tool provides the SQL "group by" functionality.
+Arguments:
+    1 output file name
+    2 input file name
+    3 grouping column
+    4 ignore case (1/0)
+    5 ascii to delete (comma separated list)
+    6... op,col,do_round,default
 """
 from __future__ import print_function
 
@@ -15,9 +22,25 @@ from itertools import groupby
 import numpy
 
 
+def float_wdefault(s, d, c):
+    """
+    convert list of strings s into list of floats
+    non convertable entries are replaced by d if d is not None (otherwise error)
+    """
+    for i in range(len(s)):
+        try:
+            s[i] = float(s[i])
+        except ValueError:
+            if d is not None:
+                s[i] = d
+            else:
+                stop_err("non float value '%s' found in colum %d" % (s[i], c))
+    return s
+
+
 def stop_err(msg):
     sys.stderr.write(msg)
-    sys.exit()
+    sys.exit(1)
 
 
 def mode(data):
@@ -38,7 +61,9 @@ def main():
     ops = []
     cols = []
     round_val = []
+    default_val = []
 
+    # remove comment lines
     if sys.argv[5] != "None":
         asciitodelete = sys.argv[5]
         if asciitodelete:
@@ -55,16 +80,20 @@ def main():
             newfile.close()
             inputfile = newinputfile
 
+    # get operations and options in separate arrays
     for var in sys.argv[6:]:
-        op, col, do_round = var.split()
+        op, col, do_round, default = var.split(',')
         ops.append(op)
         cols.append(col)
         round_val.append(do_round)
+        default_val.append(float(default) if default != '' else None)
+
     """
     At this point, ops, cols and rounds will look something like this:
     ops:  ['mean', 'min', 'c']
     cols: ['1', '3', '4']
     round_val: ['no', 'yes' 'no']
+    default_val: [0, 1, None]
     """
 
     try:
@@ -72,8 +101,8 @@ def main():
     except Exception:
         stop_err("Group column not specified.")
 
-    tmpfile = tempfile.NamedTemporaryFile()
-
+    # sort file into a temporary file
+    tmpfile = tempfile.NamedTemporaryFile(mode='r')
     try:
         """
         The -k option for the Posix sort command is as follows:
@@ -86,7 +115,7 @@ def main():
         case = ''
         if ignorecase == 1:
             case = '-f'
-        command_line = "sort -t '	' %s -k%s,%s -o %s %s" % (case, group_col + 1, group_col + 1, tmpfile.name, inputfile)
+        command_line = "sort -t $'\\t' %s -k%s,%s -o %s %s" % (case, group_col + 1, group_col + 1, tmpfile.name, inputfile)
     except Exception as exc:
         stop_err('Initialization error -> %s' % str(exc))
 
@@ -99,7 +128,7 @@ def main():
 
     def is_new_item(line):
         try:
-            item = line.strip().split("\t")[group_col]
+            item = line.split("\t")[group_col]
         except IndexError:
             stop_err("The following line didn't have %s columns: %s" % (group_col + 1, line))
 
@@ -112,7 +141,7 @@ def main():
         out_str = key
 
         for line in line_list:
-            fields = line.strip().split("\t")
+            fields = line.split("\t")
             for i, col in enumerate(cols):
                 col = int(col) - 1  # cXX from galaxy is 1-based
                 try:
@@ -141,7 +170,7 @@ def main():
             else:
                 # some kind of numpy fn
                 try:
-                    data = [float(_) for _ in data]
+                    data = float_wdefault(data, default_val[i], col + 1)
                 except ValueError:
                     sys.stderr.write("Operation %s expected number values but got %s instead.\n" % (op, data))
                     sys.exit(1)

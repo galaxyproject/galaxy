@@ -19,7 +19,7 @@ class FormDefinitionAPIController(BaseAPIController):
         GET /api/forms
         Displays a collection (list) of forms.
         """
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             trans.response.status = 403
             return "You are not authorized to view the list of forms."
         query = trans.sa_session.query(trans.app.model.FormDefinition)
@@ -46,7 +46,7 @@ class FormDefinitionAPIController(BaseAPIController):
             form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(decoded_form_definition_id)
         except Exception:
             form_definition = None
-        if not form_definition or not trans.user_is_admin():
+        if not form_definition or not trans.user_is_admin:
             trans.response.status = 400
             return "Invalid form definition id ( %s ) specified." % str(form_definition_id)
         item = form_definition.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'form_definition_current_id': trans.security.encode_id})
@@ -59,7 +59,7 @@ class FormDefinitionAPIController(BaseAPIController):
         POST /api/forms
         Creates a new form.
         """
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             trans.response.status = 403
             return "You are not authorized to create a new form."
         xml_text = payload.get('xml_text', None)

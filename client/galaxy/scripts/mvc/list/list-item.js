@@ -1,5 +1,7 @@
+import $ from "jquery";
+import Backbone from "backbone";
+import _ from "underscore";
 import BASE_MVC from "mvc/base-mvc";
-import _l from "utils/localization";
 
 var logNamespace = "list";
 //==============================================================================
@@ -142,7 +144,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
         if (!this.model.hasDetails()) {
             return this.model.fetch();
         }
-        return jQuery.when();
+        return $.when();
     },
 
     /** Inner fn called when expand (public) has fetched the details */
@@ -182,7 +184,7 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
  *
  *  Designed as a base class for history panel contents - but usable elsewhere (I hope).
  */
-var ListItemView = ExpandableView.extend(
+export var ListItemView = ExpandableView.extend(
     BASE_MVC.mixin(BASE_MVC.SelectableViewMixin, BASE_MVC.DraggableViewMixin, {
         tagName: "div",
         className: "list-item",
@@ -380,7 +382,7 @@ ListItemView.prototype.templates = (() => {
  *
  *  _renderDetails does the work of creating this.details: a sub-view that shows the nested list
  */
-var FoldoutListItemView = ListItemView.extend({
+export var FoldoutListItemView = ListItemView.extend({
     /** If 'foldout': show the sub-panel inside the expanded item
      *  If 'drilldown': only fire events and handle by pub-sub
      *      (allow the panel containing this item to attach it, hide itself, etc.)

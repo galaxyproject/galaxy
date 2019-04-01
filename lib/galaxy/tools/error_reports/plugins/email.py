@@ -5,7 +5,7 @@ import logging
 
 from galaxy.tools.errors import EmailErrorReporter
 from galaxy.util import string_as_bool
-from ..plugins import ErrorPlugin
+from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
 

@@ -1,8 +1,10 @@
 <tool id="composite_output_tests" name="composite_output_tests" version="1.0.0">
   <command>
-    mkdir $output.extra_files_path;
-    cp $input.extra_files_path/* $output.extra_files_path;
-    echo "1 2 3" > $output.extra_files_path/md5out;
+    mkdir '$output.extra_files_path';
+    mkdir '$output.extra_files_path/output';
+    cp '$input.extra_files_path'/* '$output.extra_files_path';
+    echo "1 2 3" > '$output.extra_files_path/md5out';
+    echo "1" > '$output.extra_files_path/output/1';
   </command>
   <inputs>
     <param name="input" type="data" format="velvet" label="Velvet Dataset" help="Prepared by velveth."/>
@@ -23,6 +25,7 @@
         <extra_files type="file" name="Roadmaps" value="velveth_test1/Roadmaps" />
         <extra_files type="file" name="Log" value="composite_output_expected_log" />
         <extra_files type="file" name="md5out" md5="f2b33fb7b3d0eb95090a16060e6a24f9" /><!-- md5sum of "1 2 3" -->
+        <extra_files type="directory" value="velveth_test1/output"/>
       </output>
     </test>
   </tests>

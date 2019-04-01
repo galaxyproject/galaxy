@@ -11,7 +11,7 @@
   </configfiles>
   <inputs>
     <param format="tabular" name="input" type="data" label="Filter" help="Dataset missing? See TIP below."/>
-    <param name="cond" size="40" type="text" value="c1=='chr22'" label="With following condition" help="Double equal signs, ==, must be used as shown above. To filter for an arbitrary string, use the Select tool.">
+    <param name="cond" type="text" value="c1=='chr22'" label="With following condition" help="Double equal signs, ==, must be used as shown above. To filter for an arbitrary string, use the Select tool.">
       <validator type="empty_field" message="Enter a valid filtering condition, see syntax and examples below."/>
       <sanitizer>
         <valid initial="string.printable"/>

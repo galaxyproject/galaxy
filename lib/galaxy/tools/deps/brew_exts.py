@@ -31,7 +31,7 @@ import string
 import subprocess
 import sys
 
-WHITESPACE_PATTERN = re.compile("[\s]+")
+WHITESPACE_PATTERN = re.compile(r"[\s]+")
 
 DESCRIPTION = "Script built on top of linuxbrew to operate on isolated, versioned brew installed environments."
 

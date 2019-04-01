@@ -23,7 +23,7 @@
         <test>
             <param name="input">
                 <collection type="list">
-                    <element name="forward" value="simple_line.txt" />
+                    <element name="forward" value="simple_line.txt" tags="zoo" />
                     <element name="reverse" value="simple_line_alternative.txt" />
                 </collection>
             </param>
@@ -34,7 +34,7 @@
                     <assert_contents>
                         <has_text_matching expression="^This is a line of text.\n$" />
                     </assert_contents>
-                    <metadata name="tags" value="alias:f,alias:r1,orientation:forward" />
+                    <metadata name="tags" value="alias:f,alias:r1,orientation:forward,zoo" />
                 </element>
                 <element name="reverse">
                     <assert_contents>

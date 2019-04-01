@@ -16,6 +16,7 @@ cat <<EOF
                                     can be pytest selector
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
+'${0##*/} -main'                    for running tests of tools shipped with Galaxy
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
@@ -53,7 +54,7 @@ Python testing is currently a mix of nosetests and pytest, many tests when ran
 outside this script could be executed using either. pytest and Nose use slightly
 different syntaxes for selecting subsets of tests for execution. Nose
 will allow specific tests to be selected per the documentation at
-https://nose.readthedocs.org/en/latest/usage.html#selecting-tests. The comparable
+https://nose.readthedocs.io/en/latest/usage.html#selecting-tests . The comparable
 pytest selector syntax is described at https://docs.pytest.org/en/latest/usage.html.
 
 The spots these selectors can be used is described in the above usage documentation
@@ -269,13 +270,13 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.09.0'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:19.05.0'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
+coverage_arg=""
 xunit_report_file=""
 structured_data_report_file=""
-with_framework_test_tools_arg=""
 skip_client_build="--skip-client-build"
 
 if [ "$1" = "--dockerize" ];
@@ -284,30 +285,33 @@ then
     DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
     DOCKER_RUN_EXTRA_ARGS=${DOCKER_RUN_EXTRA_ARGS:-""}
     DOCKER_IMAGE=${DOCKER_IMAGE:-${DOCKER_DEFAULT_IMAGE}}
-    if [ "$1" = "--python3" ]; then
-        DOCKER_RUN_EXTRA_ARGS="-e GALAXY_VIRTUAL_ENV=/galaxy_venv3 $DOCKER_RUN_EXTRA_ARGS"
-        shift 1
-    fi
-    if [ "$1" = "--db" ]; then
-       db_type=$2
-       shift 2
-    else
-       db_type="sqlite"
-    fi
-    if [ "$1" = "--external_tmp" ]; then
-       # If /tmp is a tmpfs there may be better performance by reusing
-       # the parent's temp file system. Also, it seems to decrease the
-       # frequency or errors such as the following:
-       # /bin/sh: 1: /tmp/tmpiWU3kJ/tmp_8zLxx/job_working_directory_mwwDmg/000/274/galaxy_274.sh: Text file busy
-       tmp=$(mktemp -d)
-       chmod 1777 $tmp
-       DOCKER_RUN_EXTRA_ARGS="-v ${tmp}:/tmp ${DOCKER_RUN_EXTRA_ARGS}"
-       shift
-    fi
+    db_type="sqlite"
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --python3)
+                DOCKER_RUN_EXTRA_ARGS="${DOCKER_RUN_EXTRA_ARGS} -e GALAXY_VIRTUAL_ENV=/galaxy_venv3"
+                shift 1
+                ;;
+            --db)
+                db_type=$2
+                shift 2
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+    # Skip client build process in the Docker container for all tests except Selenium
+    GALAXY_SKIP_CLIENT_BUILD=1
+    case "$*" in
+        *-selenium*)
+            GALAXY_SKIP_CLIENT_BUILD=0
+            ;;
+    esac
     MY_UID=$(id -u)
-    # Skip client build process in the Docker container for all tests, the Jenkins task builds the client
-    # locally before testing - you will need to do this also if using this script for Selenium testing.
-    DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=1 ${DOCKER_RUN_EXTRA_ARGS}"
+    DOCKER_RUN_EXTRA_ARGS="${DOCKER_RUN_EXTRA_ARGS} -e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD}"
+    echo "Docker version:"
+    docker --version
     echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS \
         -e "BUILD_NUMBER=$BUILD_NUMBER" \
@@ -358,7 +362,7 @@ do
           fi
           ;;
       -a|-api|--api)
-          with_framework_test_tools_arg="-with_framework_test_tools"
+          GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
           test_script="pytest"
           report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
@@ -368,9 +372,10 @@ do
               api_script="./test/api"
               shift 1
           fi
+          coverage_file="api_coverage.xml"
           ;;
       -selenium|--selenium)
-          with_framework_test_tools_arg="-with_framework_test_tools"
+          GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
           test_script="./scripts/functional_tests.py"
           report_file="./run_selenium_tests.html"
           skip_client_build=""
@@ -404,10 +409,6 @@ do
           export GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR
           shift
           ;;
-      -with_framework_test_tools|--with_framework_test_tools)
-          with_framework_test_tools_arg="-with_framework_test_tools"
-          shift
-          ;;
       --external_url)
           GALAXY_TEST_EXTERNAL=$2
           shift 2
@@ -421,19 +422,46 @@ do
           shift 2
           ;;
       -f|-framework|--framework)
+          GALAXY_TEST_TOOL_CONF="test/functional/tools/samples_tool_conf.xml"
+          marker="-m tool"
+          test_script="pytest"
           report_file="run_framework_tests.html"
+          coverage_file="framework_coverage.xml"
+          framework_test=1;
+          shift 1
+          ;;
+      -main|-main_tools|--main_tools)
+          GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,config/tool_conf.xml.main"
+          marker="-m tool"
+          test_script="pytest"
+          report_file="run_framework_tests.html"
+          coverage_file="main_tools_coverage.xml"
           framework_test=1;
           shift 1
           ;;
       -d|-data_managers|--data_managers)
+          marker="-m data_manager"
+          test_script="pytest"
+          report_file="run_data_managers_tests.html"
+          coverage_file="data_managers_coverage.xml"
           data_managers_test=1;
           shift 1
           ;;
       -m|-migrated|--migrated)
+          GALAXY_TEST_TOOL_CONF="config/migrated_tools_conf.xml"
+          marker="-m tool"
+          test_script="pytest"
+          report_file="run_migrated_tests.html"
+          coverage_file="migrated_coverage.xml"
           migrated_test=1;
           shift
           ;;
       -i|-installed|--installed)
+          GALAXY_TEST_TOOL_CONF="config/shed_tool_conf.xml"
+          marker="-m tool"
+          test_script="pytest"
+          report_file="run_installed_tests.html"
+          coverage_file="installed_coverage.xml"
           installed_test=1;
           shift
           ;;
@@ -484,16 +512,19 @@ do
           ;;
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
-          test_script="./scripts/nosetests.py"
+          test_script="pytest"
+          unit_extra='--doctest-modules --ignore lib/galaxy/web/proxy/js/node_modules/ --ignore lib/galaxy/webapps/tool_shed/controllers --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/galaxy/webapps/tool_shed/model/migrate --ignore lib/galaxy/util/jstree.py'
           if [ $# -gt 1 ]; then
-              unit_extra=$2
+              unit_extra="$unit_extra $2"
               shift 2
           else
-              unit_extra='--exclude=functional --exclude="^get" --exclude=controllers --exclude=runners --exclude dictobj --exclude=jstree lib test/unit'
+              unit_extra="$unit_extra lib test/unit"
               shift 1
           fi
+          coverage_file="unit_coverage.xml"
           ;;
       -i|-integration|--integration)
+          GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
           test_script="pytest"
           report_file="./run_integration_tests.html"
           if [ $# -gt 1 ]; then
@@ -502,6 +533,7 @@ do
           else
               integration_extra="./test/integration"
               shift 1
+          coverage_file="integration_coverage.xml"
           fi
           ;;
       --no_cleanup)
@@ -512,12 +544,6 @@ do
           GALAXY_INSTALL_TEST_NO_CLEANUP=1
           export GALAXY_INSTALL_TEST_NO_CLEANUP
           echo "Skipping Python test clean up."
-          shift
-          ;;
-      -watch|--watch)
-          # Have grunt watch test or directory for changes, only
-          # valid for javascript testing.
-          watch=1
           shift
           ;;
       --skip-venv)
@@ -578,31 +604,19 @@ fi
 
 setup_python
 
-if [ -n "$migrated_test" ] ; then
-    [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
-    extra_args="functional.test_toolbox$class -migrated"
-elif [ -n "$installed_test" ] ; then
-    [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
-    extra_args="functional.test_toolbox$class -installed"
-elif [ -n "$framework_test" ] ; then
-    [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
-    extra_args="functional.test_toolbox$class -framework"
+if [ -n "$framework_test" -o -n "$installed_test" -o -n "$migrated_test" -o -n "$data_managers_test" ] ; then
+    [ -n "$test_id" ] && selector="-k $test_id" || selector=""
+    extra_args="test/functional/test_toolbox_pytest.py $selector $marker"
 elif [ -n "$selenium_test" ] ; then
     extra_args="$selenium_script -selenium"
-elif [ -n "$data_managers_test" ] ; then
-    [ -n "$test_id" ] && class=":TestForDataManagerTool_$test_id" || class=""
-    extra_args="functional.test_data_managers$class -data_managers"
 elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
     extra_args="$api_script"
 elif [ -n "$section_id" ]; then
     extra_args=`python tool_list.py $section_id`
-elif [ -n "$test_id" ]; then
-    class=":TestForTool_$test_id"
-    extra_args="functional.test_toolbox$class"
 elif [ -n "$unit_extra" ]; then
-    extra_args="--with-doctest $unit_extra"
+    extra_args="$unit_extra"
 elif [ -n "$integration_extra" ]; then
     extra_args="$integration_extra"
 elif [ -n "$test_target" ] ; then
@@ -627,12 +641,12 @@ if [ -n "$structured_data_report_file" ]; then
 else
     structured_data_args=""
 fi
-if [ -n "$with_framework_test_tools_arg" ]; then
-    GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
-    export GALAXY_TEST_TOOL_CONF
-fi
+export GALAXY_TEST_TOOL_CONF
 if [ "$test_script" = 'pytest' ]; then
-    python -m "$test_script" -v --html "$report_file" $xunit_args $extra_args "$@"
+    if [ "$coverage_arg" = "--with_coverage" ]; then
+        coverage_arg="--cov-report term --cov-report xml:cov-unit.xml --cov=lib"
+    fi
+    "$test_script" -v --html "$report_file" $coverage_arg  $xunit_args $extra_args "$@"
 else
     python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
 fi

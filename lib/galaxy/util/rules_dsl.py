@@ -5,6 +5,8 @@ import re
 import six
 from six.moves import map
 
+from galaxy.util import strip_control_characters_nested
+
 
 def _ensure_rule_contains_keys(rule, keys):
     for key, instance_class in keys.items():
@@ -492,7 +494,7 @@ def flat_map(f, items):
 class RuleSet(object):
 
     def __init__(self, rule_set_as_dict):
-        self.raw_rules = rule_set_as_dict["rules"]
+        self.raw_rules = strip_control_characters_nested(rule_set_as_dict["rules"])
         self.raw_mapping = rule_set_as_dict.get("mapping", [])
 
     @property

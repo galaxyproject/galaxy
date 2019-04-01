@@ -1,9 +1,8 @@
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import jQuery from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 import BASE_MVC from "mvc/base-mvc";
-
-/* global Galaxy */
-/* global jQuery */
 
 //=============================================================================
 /**
@@ -29,12 +28,15 @@ var ControlledFetchCollection = Backbone.Collection.extend({
      */
     fetch: function(options) {
         options = this._buildFetchOptions(options);
+        let Galaxy = getGalaxyInstance();
         Galaxy.debug("fetch options:", options);
         return Backbone.Collection.prototype.fetch.call(this, options);
     },
 
     /** build ajax data/parameters from options */
     _buildFetchOptions: function(options) {
+        let Galaxy = getGalaxyInstance();
+
         // note: we normally want options passed in to override the defaults built here
         // so most of these fns will generate defaults
         options = _.clone(options) || {};
@@ -269,6 +271,7 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
 
     /** fetch the first 'page' of data */
     fetchFirst: function(options) {
+        let Galaxy = getGalaxyInstance();
         Galaxy.debug("ControlledFetchCollection.fetchFirst:", options);
         options = options ? _.clone(options) : {};
         this.allFetched = false;
@@ -283,6 +286,8 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
 
     /** fetch the next page of data */
     fetchMore: function(options) {
+        let Galaxy = getGalaxyInstance();
+
         Galaxy.debug("ControlledFetchCollection.fetchMore:", options);
         options = _.clone(options || {});
         var collection = this;

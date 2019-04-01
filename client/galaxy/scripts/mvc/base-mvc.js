@@ -1,5 +1,6 @@
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import addLogging from "utils/add-logging";
 import _l from "utils/localization";
 
@@ -302,7 +303,7 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */ {
         //TODO: flesh out options - show them all here
         this.HUAVOptions = {
             $elementShown: this.$el,
-            showFn: jQuery.prototype.toggle,
+            showFn: $.prototype.toggle,
             showSpeed: "fast"
         };
         _.extend(this.HUAVOptions, options || {});

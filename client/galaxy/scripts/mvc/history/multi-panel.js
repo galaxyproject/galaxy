@@ -1,7 +1,10 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
-import HISTORY_MODEL from "mvc/history/history-model";
+import { HistoryCollection } from "mvc/history/history-model";
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import historyCopyDialog from "mvc/history/copy-dialog";
@@ -9,9 +12,6 @@ import ERROR_MODAL from "mvc/ui/error-modal";
 import baseMVC from "mvc/base-mvc";
 import ajaxQueue from "utils/ajax-queue";
 import "ui/search-input";
-
-/* global $ */
-/* global Galaxy */
 
 var logNamespace = "history";
 /* ==============================================================================
@@ -317,7 +317,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         // console.log( 'setCollection:', collection );
         this.stopListening(this.collection);
 
-        this.collection = collection || new HISTORY_MODEL.HistoryCollection();
+        this.collection = collection || new HistoryCollection();
         this.setUpCollectionListeners();
 
         this.createColumns();
@@ -473,6 +473,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     /** create a column and its panel and set up any listeners to them */
     createColumn: function createColumn(history, options) {
+        let Galaxy = getGalaxyInstance();
         // options passed can be re-used, so extend them before adding the model to prevent pollution for the next
         options = _.extend({}, options, {
             model: history,
@@ -760,7 +761,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     close: function(ev) {
         //TODO: switch to pushState/router
-        window.location = Galaxy.root;
+        window.location = getAppRoot();
     },
 
     _clickToggleDeletedHistories: function(ev) {
@@ -770,9 +771,9 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     /** Include deleted histories in the collection */
     toggleDeletedHistories: function(show) {
         if (show) {
-            window.location = `${Galaxy.root}history/view_multiple?include_deleted_histories=True`;
+            window.location = `${getAppRoot()}history/view_multiple?include_deleted_histories=True`;
         } else {
-            window.location = `${Galaxy.root}history/view_multiple`;
+            window.location = `${getAppRoot()}history/view_multiple`;
         }
     },
 

@@ -1,12 +1,10 @@
-import LIST_ITEM from "mvc/list/list-item";
-import DATASET_LI from "mvc/dataset/dataset-li";
+import _ from "underscore";
+import $ from "jquery";
+import { ListItemView, FoldoutListItemView } from "mvc/list/list-item";
+import { DatasetListItemView } from "mvc/dataset/dataset-li";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
-//==============================================================================
-var FoldoutListItemView = LIST_ITEM.FoldoutListItemView;
-
-var ListItemView = LIST_ITEM.ListItemView;
 /** @class Read only view for DatasetCollection.
  */
 var DCListItemView = FoldoutListItemView.extend(
@@ -189,9 +187,9 @@ DCEListItemView.prototype.templates = (() => {
 /** @class Read only view for a DatasetCollectionElement that is also an DatasetAssociation
  *      (a dataset contained in a dataset collection).
  */
-var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend(
+var DatasetDCEListItemView = DatasetListItemView.extend(
     /** @lends DatasetDCEListItemView.prototype */ {
-        className: `${DATASET_LI.DatasetListItemView.prototype.className} dataset-collection-element`,
+        className: `${DatasetListItemView.prototype.className} dataset-collection-element`,
 
         /** set up */
         initialize: function(attributes) {
@@ -199,7 +197,7 @@ var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend(
                 this.logger = this.model.logger = attributes.logger;
             }
             this.log("DatasetDCEListItemView.initialize:", attributes);
-            DATASET_LI.DatasetListItemView.prototype.initialize.call(this, attributes);
+            DatasetListItemView.prototype.initialize.call(this, attributes);
         },
 
         /** In this override, only get details if in the ready state.
@@ -210,7 +208,7 @@ var DatasetDCEListItemView = DATASET_LI.DatasetListItemView.extend(
             if (view.model.inReadyState() && !view.model.hasDetails()) {
                 return view.model.fetch({ silent: true });
             }
-            return jQuery.when();
+            return $.when();
         },
 
         // ......................................................................... misc
@@ -239,7 +237,7 @@ DatasetDCEListItemView.prototype.templates = (() => {
         "element"
     );
 
-    return _.extend({}, DATASET_LI.DatasetListItemView.prototype.templates, {
+    return _.extend({}, DatasetListItemView.prototype.templates, {
         titleBar: titleBarTemplate
     });
 })();

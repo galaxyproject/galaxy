@@ -27,7 +27,7 @@
    {
     "name": "USER_OBJECT_ATTRIBUTE_MISSING",
     "code": 400005,
-    "message": "Attempted to create object without required attribute."
+    "message": "Attempted to create or update object without required attribute."
     },
    {
     "name": "USER_SLUG_DUPLICATE",
@@ -108,12 +108,17 @@
     "name": "ADMIN_REQUIRED",
     "code": 403006,
     "message": "Action requires admin account."
-   },   
+   },
+   {
+    "name": "USER_ACTIVATION_REQUIRED",
+    "code": 403007,
+    "message": "Action requires account activation."
+   },
    {
     "name": "USER_OBJECT_NOT_FOUND",
     "code": 404001,
     "message": "No such object found."
-   },   
+   },
    {
     "name": "DEPRECATED_API_CALL",
     "code": 404002,
@@ -138,6 +143,11 @@
     "name": "CONFIG_ERROR",
     "code": 500003,
     "message": "Error in a configuration file."
+   },
+   {
+    "name": "TOOL_EXECUTION_ERROR",
+    "code": 500004,
+    "message": "Tool execution failed due to an internal server error."
    },
    {
     "name": "NOT_IMPLEMENTED",

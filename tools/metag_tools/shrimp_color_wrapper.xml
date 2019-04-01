@@ -19,23 +19,23 @@ python '$__tool_directory__/shrimp_color_wrapper.py' '$input_target' '$input_que
             </param>
             <when value="skip" />
             <when value="full">
-                <param name="spaced_seed"                   type="text"     size="30"   value="1111001111"    label="Spaced Seed" />
-                <param name="seed_matches_per_window"       type="integer"  size="5"    value="2"               label="Seed Matches per Window" />
-                <param name="seed_hit_taboo_length"         type="integer"  size="5"    value="4"               label="Seed Hit Taboo Length" />
-                <param name="seed_generation_taboo_length"  type="integer"  size="5"    value="0"               label="Seed Generation Taboo Length" />
-                <param name="seed_window_length"            type="float"    size="10"   value="115.0"           label="Seed Window Length"          help="in percentage"/>
-                <param name="max_hits_per_read"             type="integer"  size="10"   value="100"             label="Maximum Hits per Read" />
-                <param name="max_read_length"               type="integer"  size="10"   value="1000"            label="Maximum Read Length" />
-                <param name="kmer"                          type="integer"  size="10"   value="-1"              label="Kmer Std. Deviation Limit"   help="-1 as None"/>
-                <param name="sw_match_value"                type="integer"  size="10"   value="100"             label="S-W Match Value" />
-                <param name="sw_mismatch_value"             type="integer"  size="10"   value="-150"            label="S-W Mismatch Value" />
-                <param name="sw_gap_open_ref"               type="integer"  size="10"   value="-400"            label="S-W Gap Open Penalty (Reference)" />
-                <param name="sw_gap_open_query"             type="integer"  size="10"   value="-400"            label="S-W Gap Open Penalty (Query)" />
-                <param name="sw_gap_ext_ref"                type="integer"  size="10"   value="-70"             label="S-W Gap Extend Penalty (Reference)" />
-                <param name="sw_gap_ext_query"              type="integer"  size="10"   value="-70"             label="S-W Gap Extend Penalty (Query)" />
-                <param name="sw_crossover_penalty"          type="integer"  size="10"   value="-140"            label="S-W Crossover Penalty" />
-                <param name="sw_full_hit_threshold"         type="float"    size="10"   value="68.0"            label="S-W Full Hit Threshold"      help="in percentage"/>
-                <param name="sw_vector_hit_threshold"       type="float"    size="10"   value="60.0"            label="S-W Vector Hit Threshold"    help="in percentage"/>
+                <param name="spaced_seed" type="text" value="1111001111" label="Spaced Seed" />
+                <param name="seed_matches_per_window" type="integer" value="2" label="Seed Matches per Window" />
+                <param name="seed_hit_taboo_length" type="integer" value="4" label="Seed Hit Taboo Length" />
+                <param name="seed_generation_taboo_length" type="integer" value="0" label="Seed Generation Taboo Length" />
+                <param name="seed_window_length" type="float" value="115.0" label="Seed Window Length" help="in percentage"/>
+                <param name="max_hits_per_read" type="integer" value="100" label="Maximum Hits per Read" />
+                <param name="max_read_length" type="integer" value="1000" label="Maximum Read Length" />
+                <param name="kmer" type="integer" value="-1" label="Kmer Std. Deviation Limit" help="-1 as None"/>
+                <param name="sw_match_value" type="integer" value="100" label="S-W Match Value" />
+                <param name="sw_mismatch_value" type="integer" value="-150" label="S-W Mismatch Value" />
+                <param name="sw_gap_open_ref"type="integer" value="-400" label="S-W Gap Open Penalty (Reference)" />
+                <param name="sw_gap_open_query" type="integer" value="-400" label="S-W Gap Open Penalty (Query)" />
+                <param name="sw_gap_ext_ref" type="integer" value="-70" label="S-W Gap Extend Penalty (Reference)" />
+                <param name="sw_gap_ext_query" type="integer" value="-70" label="S-W Gap Extend Penalty (Query)" />
+                <param name="sw_crossover_penalty" type="integer" value="-140" label="S-W Crossover Penalty" />
+                <param name="sw_full_hit_threshold" type="float" value="68.0" label="S-W Full Hit Threshold" help="in percentage"/>
+                <param name="sw_vector_hit_threshold" type="float" value="60.0" label="S-W Vector Hit Threshold" help="in percentage"/>
             </when>
         </conditional>
     </inputs>

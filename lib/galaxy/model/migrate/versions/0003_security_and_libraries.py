@@ -1,3 +1,5 @@
+"""
+"""
 import datetime
 import logging
 import sys
@@ -6,8 +8,8 @@ from migrate import ForeignKeyConstraint
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, MetaData, String, Table, TEXT
 from sqlalchemy.exc import NoSuchTableError
 
-# Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString
+from galaxy.model.migrate.versions.util import engine_false, localtimestamp, nextval
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
@@ -304,35 +306,9 @@ JobExternalOutputMetadata_table = Table("job_external_output_metadata", metadata
 Index("ix_jeom_library_dataset_dataset_association_id", JobExternalOutputMetadata_table.c.library_dataset_dataset_association_id)
 
 
-def engine_false(migrate_engine):
-    if migrate_engine.name in ['postgres', 'postgresql']:
-        return "FALSE"
-    elif migrate_engine.name in ['mysql', 'sqlite']:
-        return 0
-    else:
-        raise Exception('Unknown database type: %s' % migrate_engine.name)
-
-
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    # Load existing tables
     metadata.reflect()
-
-    def nextval(table, col='id'):
-        if migrate_engine.name in ['postgres', 'postgresql']:
-            return "nextval('%s_%s_seq')" % (table, col)
-        elif migrate_engine.name in ['mysql', 'sqlite']:
-            return "null"
-        else:
-            raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
-
-    def localtimestamp():
-        if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:
-            return "LOCALTIMESTAMP"
-        elif migrate_engine.name == 'sqlite':
-            return "current_date || ' ' || current_time"
-        else:
-            raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
 
     # Add 2 new columns to the galaxy_user table
     try:
@@ -470,7 +446,7 @@ def upgrade(migrate_engine):
                 "%s AS deleted " + \
                 "FROM galaxy_user " + \
                 "ORDER BY id;"
-            cmd = cmd % (nextval('role'), localtimestamp(), localtimestamp(), engine_false(migrate_engine))
+            cmd = cmd % (nextval(migrate_engine, 'role'), localtimestamp(migrate_engine), localtimestamp(migrate_engine), engine_false(migrate_engine))
             migrate_engine.execute(cmd)
             # Create private roles for each user - pass 2
             if migrate_engine.name in ['postgres', 'postgresql', 'sqlite']:
@@ -489,7 +465,7 @@ def upgrade(migrate_engine):
                 "FROM galaxy_user, role " + \
                 "WHERE galaxy_user.email = role.name " + \
                 "ORDER BY galaxy_user.id;"
-            cmd = cmd % (nextval('user_role_association'), localtimestamp(), localtimestamp())
+            cmd = cmd % (nextval(migrate_engine, 'user_role_association'), localtimestamp(migrate_engine), localtimestamp(migrate_engine))
             migrate_engine.execute(cmd)
             # Create default permissions for each user
             cmd = \
@@ -501,7 +477,7 @@ def upgrade(migrate_engine):
                 "FROM galaxy_user " + \
                 "JOIN user_role_association ON user_role_association.user_id = galaxy_user.id " + \
                 "ORDER BY galaxy_user.id;"
-            cmd = cmd % nextval('default_user_permissions')
+            cmd = cmd % nextval(migrate_engine, 'default_user_permissions')
             migrate_engine.execute(cmd)
             # Create default history permissions for each active history associated with a user
 
@@ -514,7 +490,7 @@ def upgrade(migrate_engine):
                 "FROM history " + \
                 "JOIN user_role_association ON user_role_association.user_id = history.user_id " + \
                 "WHERE history.purged = %s AND history.user_id IS NOT NULL;"
-            cmd = cmd % (nextval('default_history_permissions'), engine_false(migrate_engine))
+            cmd = cmd % (nextval(migrate_engine, 'default_history_permissions'), engine_false(migrate_engine))
             migrate_engine.execute(cmd)
             # Create "manage permissions" dataset_permissions for all activate-able datasets
             cmd = \
@@ -530,7 +506,7 @@ def upgrade(migrate_engine):
                 "JOIN dataset ON history_dataset_association.dataset_id = dataset.id " + \
                 "JOIN user_role_association ON user_role_association.user_id = history.user_id " + \
                 "WHERE dataset.purged = %s AND history.user_id IS NOT NULL;"
-            cmd = cmd % (nextval('dataset_permissions'), localtimestamp(), localtimestamp(), engine_false(migrate_engine))
+            cmd = cmd % (nextval(migrate_engine, 'dataset_permissions'), localtimestamp(migrate_engine), localtimestamp(migrate_engine), engine_false(migrate_engine))
             migrate_engine.execute(cmd)
 
 

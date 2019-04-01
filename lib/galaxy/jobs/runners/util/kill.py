@@ -23,7 +23,7 @@ def _psutil_kill_pid(pid):
     """
     try:
         parent = Process(pid)
-        for child in parent.get_children(recursive=True):
+        for child in parent.children(recursive=True):
             child.kill()
         parent.kill()
     except NoSuchProcess:

@@ -85,6 +85,12 @@ UWSGI_OPTIONS = OrderedDict([
         'default': '/static=static',
         'type': 'str',
     }),
+    ('static-map.3', {
+        'key': 'static-map',
+        'desc': """Mapping to serve the favicon.""",
+        'default': '/favicon.ico=static/favicon.ico',
+        'type': 'str',
+    }),
     ('master', {
         'desc': """Enable the master process manager. Disabled by default for maximum compatibility with CTRL+C, but should be enabled for use with --daemon and/or production deployments.""",
         'default': False,
@@ -104,6 +110,16 @@ UWSGI_OPTIONS = OrderedDict([
         'desc': """The entry point which returns the web application (e.g. Galaxy, Reports, etc.) that you are loading.""",
         'default': '$uwsgi_module',
         'type': 'str',
+    }),
+    ('#mount', {
+        'desc': """Mount the web application (e.g. Galaxy, Reports, etc.) at the given URL prefix. Cannot be used together with 'module:' above.""",
+        'default': '/galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()',
+        'type': 'str',
+    }),
+    ('manage-script-name', {
+        'desc': """Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-points. Set this to true if a URL prefix is used.""",
+        'default': False,
+        'type': 'bool',
     }),
     ('thunder-lock', {
         'desc': """It is usually a good idea to set this to ``true`` if processes is greater than 1.""",
@@ -270,8 +286,8 @@ OPTION_ACTIONS = {
     'trust_ipython_notebook_conversion': _RenameAction("trust_jupyter_notebook_conversion"),
     'enable_beta_tool_command_isolation': _DeprecatedAndDroppedAction(),
     'single_user': _ProductionUnsafe(True),
-    'tool_submission_burst_threads': _ProductionPerformance(),
-    'tool_submission_burst_at': _ProductionPerformance(),
+    'tool_submission_burst_threads': _DeprecatedAndDroppedAction(),
+    'tool_submission_burst_at': _DeprecatedAndDroppedAction(),
     'toolform_upgrade': _DeprecatedAndDroppedAction(),
 }
 
@@ -465,7 +481,7 @@ def _build_uwsgi_schema(args, app_desc):
         last_line = line
     schema = {
         "type": "map",
-        "desc": "uwsgi definition, see http://uwsgi-docs.readthedocs.io/en/latest/Options.html",
+        "desc": "uwsgi definition, see https://uwsgi-docs.readthedocs.io/en/latest/Options.html",
         "mapping": options
     }
     path = os.path.join(args.galaxy_root, UWSGI_SCHEMA_PATH)

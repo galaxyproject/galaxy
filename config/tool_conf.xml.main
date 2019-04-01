@@ -20,6 +20,7 @@
     <tool file="genomespace/genomespace_push.xml" />
   </section>
   <section id="send" name="Send Data">
+    <tool file="cloud/send.xml" />
     <tool file="genomespace/genomespace_exporter.xml" />
   </section>
   <section id="liftOver" name="Lift-Over">

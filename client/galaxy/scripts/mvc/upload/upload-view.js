@@ -1,5 +1,7 @@
-import _l from "utils/localization";
 /** Upload app contains the upload progress button and upload modal, compiles model data for API request **/
+import _l from "utils/localization";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import Modal from "mvc/ui/ui-modal";
 import Tabs from "mvc/ui/ui-tabs";
@@ -63,6 +65,7 @@ export default Backbone.View.extend({
 
     /** Show/hide upload dialog */
     show: function() {
+        let Galaxy = getGalaxyInstance();
         var self = this;
         if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
             window.setTimeout(() => {
@@ -111,6 +114,7 @@ export default Backbone.View.extend({
 
     /** Refresh user and current history */
     currentHistory: function() {
+        let Galaxy = getGalaxyInstance();
         return this.current_user && Galaxy.currHistoryPanel.model.get("id");
     },
 
@@ -150,7 +154,7 @@ export default Backbone.View.extend({
                     var prefix = `files_${index}|`;
                     inputs[`${prefix}type`] = "upload_dataset";
                     if (it.get("file_name") != "New File") {
-                        inputs[`${prefix}NAME`] = it.get("file_name")
+                        inputs[`${prefix}NAME`] = it.get("file_name");
                     }
                     inputs[`${prefix}space_to_tab`] = (it.get("space_to_tab") && "Yes") || null;
                     inputs[`${prefix}to_posix_lines`] = (it.get("to_posix_lines") && "Yes") || null;

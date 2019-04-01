@@ -17,7 +17,6 @@ from galaxy import (
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError, MessageException
 from galaxy.model import tool_shed_install as install_model
-from galaxy.tools import global_tool_errors
 from galaxy.util import (
     nice_size,
     sanitize_text,
@@ -139,7 +138,7 @@ class UserListGrid(grids.Grid):
                                               visible=False,
                                               filterable="standard"))
     global_actions = [
-        grids.GridAction("Create new user", url_args=dict(webapp="galaxy", action="create_new_user"))
+        grids.GridAction("Create new user", url_args=dict(action="users/create"))
     ]
     operations = [
         grids.GridOperation("Manage Information",
@@ -538,14 +537,22 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.require_admin
     def index(self, trans, **kwd):
+        return self.client(trans, **kwd)
+
+    @web.expose
+    @web.require_admin
+    def client(self, trans, **kwd):
+        """
+        Endpoint for admin clientside routes.
+        """
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         settings = {
-            'is_repo_installed'          : trans.install_model.context.query(trans.install_model.ToolShedRepository).first() is not None,
-            'installing_repository_ids'  : repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=True),
-            'is_tool_shed_installed'     : bool(trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds)
+            'is_repo_installed': trans.install_model.context.query(trans.install_model.ToolShedRepository).first() is not None,
+            'installing_repository_ids': repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=True),
+            'is_tool_shed_installed': bool(trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds)
         }
-        return self.template(trans, 'admin', settings=settings, message=message, status=status)
+        return self._bootstrapped_client(trans, app_name='admin', settings=settings, message=message, status=status)
 
     @web.expose
     @web.json
@@ -902,34 +909,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                    migration_stages_dict=migration_stages_dict,
                                    message=message,
                                    status=status)
-
-    @web.expose
-    @web.require_admin
-    def tool_errors(self, trans, **kwd):
-        return trans.fill_template('admin/tool_errors.mako', tool_errors=global_tool_errors.error_stack)
-
-    @web.expose
-    @web.require_admin
-    def display_applications(self, trans, **kwd):
-        return trans.fill_template('admin/view_display_applications.mako', display_applications=trans.app.datatypes_registry.display_applications)
-
-    @web.expose
-    @web.require_admin
-    def reload_display_application(self, trans, **kwd):
-        galaxy.queue_worker.send_control_task(trans.app,
-                                              'reload_display_application',
-                                              noop_self=True,
-                                              kwargs={'display_application_ids': kwd.get('id')})
-        reloaded, failed = trans.app.datatypes_registry.reload_display_applications(kwd.get('id'))
-        if not reloaded and failed:
-            return trans.show_error_message('Unable to reload any of the %i requested display applications ("%s").'
-                                            % (len(failed), '", "'.join(failed)))
-        if failed:
-            return trans.show_warn_message('Reloaded %i display applications ("%s"), but failed to reload %i display applications ("%s").'
-                                           % (len(reloaded), '", "'.join(reloaded), len(failed), '", "'.join(failed)))
-        if not reloaded:
-            return trans.show_warn_message('You need to request at least one display application to reload.')
-        return trans.show_ok_message('Reloaded %i requested display applications ("%s").' % (len(reloaded), '", "'.join(reloaded)))
 
     @web.expose
     @web.require_admin
@@ -1517,7 +1496,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         # Purging a deleted User deletes all of the following:
         # - History where user_id = User.id
         #    - HistoryDatasetAssociation where history_id = History.id
-        #    - Dataset where HistoryDatasetAssociation.dataset_id = Dataset.id
         # - UserGroupAssociation where user_id == User.id
         # - UserRoleAssociation where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
         # - UserAddress where user_id == User.id
@@ -1533,11 +1511,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 trans.sa_session.refresh(h)
                 for hda in h.active_datasets:
                     # Delete HistoryDatasetAssociation
-                    d = trans.sa_session.query(trans.app.model.Dataset).get(hda.dataset_id)
-                    # Delete Dataset
-                    if not d.deleted:
-                        d.deleted = True
-                        trans.sa_session.add(d)
                     hda.deleted = True
                     trans.sa_session.add(hda)
                 h.deleted = True
@@ -1650,11 +1623,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     % (stop_msg, self.app.config.get("support_url", "https://galaxyproject.org/support/"))
                 if trans.app.config.track_jobs_in_database:
                     job = trans.sa_session.query(trans.app.model.Job).get(job_id)
-                    job.stderr = error_msg
+                    job.job_stderr = error_msg
                     job.set_state(trans.app.model.Job.states.DELETED_NEW)
                     trans.sa_session.add(job)
                 else:
-                    trans.app.job_manager.job_stop_queue.put(job_id, error_msg=error_msg)
+                    trans.app.job_manager.stop(job, message=error_msg)
                 deleted.append(str(job_id))
         if deleted:
             msg = 'Queued job'

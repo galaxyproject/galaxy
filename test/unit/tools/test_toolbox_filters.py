@@ -14,16 +14,17 @@ def test_stock_filtering_requires_login_tools():
 
 
 def test_stock_filtering_hidden_tools():
-    filters = filter_factory({}).build_filters(mock_trans())['tool']
-    assert not is_filtered(filters, mock_trans(), mock_tool(hidden=False))
-    assert is_filtered(filters, mock_trans(), mock_tool(hidden=True))
+    trans = mock_trans()
+    filters = filter_factory({}).build_filters(trans)['tool']
+    assert not is_filtered(filters, trans, mock_tool(hidden=False))
+    assert is_filtered(filters, trans, mock_tool(hidden=True))
 
 
 def test_trackster_filtering():
-    filters = filter_factory({}).build_filters(mock_trans(), trackster=True)['tool']
-    # Ekkk... is trackster_conf broken? Why is it showing up.
-    # assert is_filtered( filters, mock_trans(), mock_tool( trackster_conf=False ) )
-    assert not is_filtered(filters, mock_trans(), mock_tool(trackster_conf=True))
+    trans = mock_trans()
+    filters = filter_factory({}).build_filters(trans, trackster=True)['tool']
+    assert is_filtered(filters, trans, mock_tool(trackster_conf=False))
+    assert not is_filtered(filters, trans, mock_tool(trackster_conf=True))
 
 
 def test_custom_filters():
@@ -57,7 +58,7 @@ def filter_factory(config_dict=None):
 
 def is_filtered(filters, trans, tool):
     context = Bunch(trans=trans)
-    return not all(map(lambda filter: filter(context, tool), filters))
+    return not all(_(context, tool) for _ in filters)
 
 
 def mock_tool(require_login=False, hidden=False, trackster_conf=False, allow_access=True):
@@ -75,7 +76,7 @@ def mock_tool(require_login=False, hidden=False, trackster_conf=False, allow_acc
 
 
 def mock_trans(has_user=True, is_admin=False):
-    trans = Bunch(user_is_admin=lambda: is_admin)
+    trans = Bunch(user_is_admin=is_admin)
     if has_user:
         trans.user = Bunch(preferences={})
     else:

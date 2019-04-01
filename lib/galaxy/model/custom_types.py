@@ -7,6 +7,7 @@ from collections import deque
 from itertools import chain
 from sys import getsizeof
 
+import numpy
 import six
 import sqlalchemy
 from sqlalchemy.ext.mutable import Mutable
@@ -25,8 +26,20 @@ from galaxy.util.aliaspickler import AliasPickleModule
 
 log = logging.getLogger(__name__)
 
-# Default JSON encoder and decoder
-json_encoder = json.JSONEncoder(sort_keys=True)
+
+class SafeJsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, numpy.int_):
+            return int(obj)
+        elif isinstance(obj, numpy.float_):
+            return float(obj)
+        elif isinstance(obj, six.binary_type):
+            return unicodify(obj)
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, obj)
+
+
+json_encoder = SafeJsonEncoder(sort_keys=True)
 json_decoder = json.JSONDecoder()
 
 # Galaxy app will set this if configured to avoid circular dependency

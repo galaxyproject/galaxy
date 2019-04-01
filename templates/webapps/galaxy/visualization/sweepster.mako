@@ -106,7 +106,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
 
-    ${h.js( "libs/jquery/jquery-ui" )}
+    ## ${h.js( "libs/jquery/jquery-ui" )}
 
     <script type="text/javascript">
         $(function() {

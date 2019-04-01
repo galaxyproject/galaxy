@@ -1,3 +1,4 @@
+import json
 import logging
 import uuid
 
@@ -100,6 +101,16 @@ def _normalize_step_parameters(steps, param_map, legacy=False, already_normalize
             param_dict = param_map.get(str(step.order_index), {})
         else:
             param_dict = _step_parameters(step, param_map, legacy=legacy)
+        if step.type == "subworkflow" and param_dict:
+            if not already_normalized:
+                raise exceptions.RequestParameterInvalidException("Specifying subworkflow step parameters requires already_normalized to be specified as true.")
+            subworkflow_param_dict = {}
+            for key, value in param_dict.items():
+                step_index, param_name = key.split("|", 1)
+                if step_index not in subworkflow_param_dict:
+                    subworkflow_param_dict[step_index] = {}
+                subworkflow_param_dict[step_index][param_name] = value
+            param_dict = _normalize_step_parameters(step.subworkflow.steps, subworkflow_param_dict, legacy=legacy, already_normalized=already_normalized)
         if param_dict:
             normalized_param_map[step.id] = param_dict
     return normalized_param_map
@@ -254,6 +265,17 @@ def build_workflow_run_configs(trans, workflow, payload):
             # inputs with referential integrity if parameters are already normalized (coming from tool form).
             normalized_inputs = {}
 
+        if param_map:
+            # disentangle raw parameter dictionaries into formal request structures if we can
+            # to setup proper WorkflowRequestToInputDatasetAssociation, WorkflowRequestToInputDatasetCollectionAssociation
+            # and WorkflowRequestInputStepParameter objects.
+            for step in workflow.steps:
+                normalized_key = step.id
+                if step.type == "parameter_input":
+                    if normalized_key in param_map:
+                        value = param_map.pop(normalized_key)
+                        normalized_inputs[normalized_key] = value["input"]
+
         steps_by_id = workflow.steps_by_id
         # Set workflow inputs.
         for key, input_dict in normalized_inputs.items():
@@ -271,23 +293,23 @@ def build_workflow_run_configs(trans, workflow, payload):
             try:
                 if input_source == 'ldda':
                     ldda = trans.sa_session.query(app.model.LibraryDatasetDatasetAssociation).get(trans.security.decode_id(input_id))
-                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset)
+                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset)
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif input_source == 'ld':
                     ldda = trans.sa_session.query(app.model.LibraryDataset).get(trans.security.decode_id(input_id)).library_dataset_dataset_association
-                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset)
+                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset)
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif input_source == 'hda':
                     # Get dataset handle, add to dict and history if necessary
                     content = trans.sa_session.query(app.model.HistoryDatasetAssociation).get(trans.security.decode_id(input_id))
-                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), content.dataset)
+                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), content.dataset)
                 elif input_source == 'uuid':
                     dataset = trans.sa_session.query(app.model.Dataset).filter(app.model.Dataset.uuid == input_id).first()
                     if dataset is None:
                         # this will need to be changed later. If federation code is avalible, then a missing UUID
                         # could be found amoung fereration partners
                         raise exceptions.RequestParameterInvalidException("Input cannot find UUID: %s." % input_id)
-                    assert trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), dataset)
+                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), dataset)
                     content = history.add_dataset(dataset)
                 elif input_source == 'hdca':
                     content = app.dataset_collections_service.get_dataset_collection_instance(trans, 'history', input_id)
@@ -383,7 +405,7 @@ def workflow_run_config_to_request(trans, run_config, workflow):
                 copy_inputs_to_history=False,
                 use_cached_job=run_config.use_cached_job,
                 inputs={},
-                param_map={},
+                param_map=run_config.param_map.get(step.order_index, {}),
                 allow_tool_state_corrections=run_config.allow_tool_state_corrections,
                 resource_params=run_config.resource_params
             )
@@ -406,6 +428,12 @@ def workflow_run_config_to_request(trans, run_config, workflow):
         )
     for step_id, content in run_config.inputs.items():
         workflow_invocation.add_input(content, step_id)
+    for step_id, param_dict in run_config.param_map.items():
+        add_parameter(
+            name=step_id,
+            value=json.dumps(param_dict),
+            type=param_types.STEP_PARAMETERS,
+        )
 
     resource_parameters = run_config.resource_params
     for key, value in resource_parameters.items():
@@ -436,6 +464,8 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
                 use_cached_job = (parameter.value == 'true')
         elif parameter_type == param_types.RESOURCE_PARAMETERS:
             resource_params[parameter.name] = parameter.value
+        elif parameter_type == param_types.STEP_PARAMETERS:
+            param_map[int(parameter.name)] = json.loads(parameter.value)
     for input_association in workflow_invocation.input_datasets:
         inputs[input_association.workflow_step_id] = input_association.dataset
     for input_association in workflow_invocation.input_dataset_collections:

@@ -1,3 +1,6 @@
+/* global $ */
+/* global toastr */
+// TODO: this file is transpiled and used directly without bundling; fix imports when that is no longer the case.
 /**
  * Internal function to remove content from the main area and add the notebook.
  * Not idempotent
@@ -18,9 +21,7 @@ export function clear_main_area() {
 }
 
 export function display_spinner() {
-    $("#main").append(
-        `<img id="spinner" src="${galaxy_root}static/style/largespinner.gif" style="position:absolute;margin:auto;top:0;left:0;right:0;bottom:0;">`
-    );
+    $("#main").append(`<div id="ie-loading-spinner"></div>`);
 }
 
 /* Create a spin_state object used by spin() and spin_again() */
@@ -120,7 +121,7 @@ export function spin(url, bool_response, success_callback, timeout_callback, err
 }
 
 /*
- * Spin on a URL forever until there is an acceptable response. 
+ * Spin on a URL forever until there is an acceptable response.
  * @param {String} url: URL to test response of. Must return a 200 (302->200 is OK).
  * @param {Boolean} bool_response: If set to `true`, do not stop spinning until the response is `true`. Otherwise, stop
  *     as soon as a successful response is received.
@@ -208,4 +209,39 @@ export function load_when_ready(url, success_callback) {
     };
     var spin_state = make_spin_state("IE container readiness");
     spin_until(url, true, messages, success_callback, spin_state);
+}
+
+/**
+ * Keep the container alive by pinging `notebookAccessURL` every 10 seconds.
+ * If the user leaves this site this function is not constantly pinging the
+ * container, the container will terminate itself.
+ */
+export function keepAlive(notebookAccessURL) {
+    var request_count = 0;
+    var interval = window.setInterval(function() {
+        $.ajax({
+            url: notebookAccessURL,
+            xhrFields: {
+                withCredentials: true
+            },
+            type: "GET",
+            timeout: 500,
+            success: function() {
+                console.log("Connected to IE, returning");
+            },
+            error: function(jqxhr, status, error) {
+                request_count++;
+                console.log("Request " + request_count);
+                if (request_count > 30) {
+                    window.clearInterval(interval);
+                    clear_main_area();
+                    toastr.error("Could not connect to IE, contact your administrator", "Error", {
+                        closeButton: true,
+                        timeOut: 20000,
+                        tapToDismiss: false
+                    });
+                }
+            }
+        });
+    }, 10000);
 }

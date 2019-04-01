@@ -53,7 +53,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         :raises: MalformedId, InconsistentDatabase, ObjectNotFound,
              InternalServerError
         """
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         deleted = kwd.get('include_deleted', 'missing')
         current_user_roles = trans.get_current_user_roles()
         try:
@@ -190,7 +190,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         :type:      list
         """
         current_user_roles = trans.get_current_user_roles()
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         content_items = []
         for subfolder in folder.folders:
             if subfolder.deleted:

@@ -15,6 +15,11 @@
         </data_source>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
+            <test test_attr="ext" result_type="datatype">graph_dot</test>
+            <to_param param_attr="id">dataset_id</to_param>
+        </data_source>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
             <test type="has_dataprovider" test_attr="datatype">node-edge</test>
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>

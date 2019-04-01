@@ -204,7 +204,7 @@ class Registry(object):
                                 fields = dtype.split(':')
                                 datatype_module = fields[0]
                                 datatype_class_name = fields[1]
-                            except Exception as e:
+                            except Exception:
                                 self.log.exception('Error parsing datatype definition for dtype %s', str(dtype))
                                 ok = False
                             if ok:
@@ -234,13 +234,13 @@ class Registry(object):
                                             module = getattr(module, mod)
                                         datatype_class = getattr(module, datatype_class_name)
                                         self.log.debug('Retrieved datatype module %s:%s from the datatype registry.' % (str(datatype_module), datatype_class_name))
-                                    except Exception as e:
+                                    except Exception:
                                         self.log.exception('Error importing datatype module %s', str(datatype_module))
                                         ok = False
                         elif type_extension is not None:
                             try:
                                 datatype_class = self.datatypes_by_extension[type_extension].__class__
-                            except Exception as e:
+                            except Exception:
                                 self.log.exception('Error determining datatype_class for type_extension %s', str(type_extension))
                                 ok = False
                         if ok:
@@ -461,7 +461,7 @@ class Registry(object):
                         datatype_module = fields[0]
                         datatype_class_name = fields[1]
                         module = None
-                    except Exception as e:
+                    except Exception:
                         self.log.exception('Error determining datatype class or module for dtype %s', str(dtype))
                         ok = False
                     if ok:
@@ -477,13 +477,13 @@ class Registry(object):
                                 module = __import__(datatype_module)
                                 for comp in datatype_module.split('.')[1:]:
                                     module = getattr(module, comp)
-                            except Exception as e:
+                            except Exception:
                                 self.log.exception("Error importing datatype class for '%s'", str(dtype))
                                 ok = False
                         if ok:
                             try:
                                 aclass = getattr(module, datatype_class_name)()
-                            except Exception as e:
+                            except Exception:
                                 self.log.exception('Error calling method %s from class %s', str(datatype_class_name), str(module))
                                 ok = False
                             if ok:
@@ -839,6 +839,7 @@ class Registry(object):
                 qualityscore.QualityScore454(),
                 sequence.Fasta(),
                 sequence.FastqSanger(),
+                sequence.FastqCSSanger(),
                 sequence.Fastq(),
                 interval.Wiggle(),
                 text.Html(),

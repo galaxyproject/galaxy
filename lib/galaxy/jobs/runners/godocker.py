@@ -160,7 +160,6 @@ class GodockerJobRunner(AsynchronousJobRunner):
             # Create an object of AsynchronousJobState and add it to the monitor queue.
             ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_id=job_id, job_destination=job_destination)
             self.monitor_queue.put(ajs)
-        return None
 
     def check_watched_item(self, job_state):
         """ Get the job current status from GoDocker
@@ -226,18 +225,19 @@ class GodockerJobRunner(AsynchronousJobRunner):
             self.mark_as_failed(job_state)
             return None
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         """ Attempts to delete a dispatched executing Job in GoDocker """
         '''This function is called by fail_job()
            where param job = self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id )
            No Return data expected
         '''
-        log.debug("STOP JOB EXECUTION OF JOB ID: " + str(job.id))
+        job_id = job_wrapper.job_id
+        log.debug("STOP JOB EXECUTION OF JOB ID: " + str(job_id))
         # Get task status from GoDocker.
-        job_status_god = self.get_task_status(job.id)
+        job_status_god = self.get_task_status(job_id)
         if job_status_god['status']['primary'] != "over":
             # Initiate a delete call,if the job is running in GoDocker.
-            self.delete_task(job.id)
+            self.delete_task(job_id)
         return None
 
     def recover(self, job, job_wrapper):

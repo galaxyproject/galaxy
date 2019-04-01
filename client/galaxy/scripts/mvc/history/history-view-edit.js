@@ -1,9 +1,11 @@
-import * as _ from "underscore";
+import _ from "underscore";
+import jQuery from "jquery";
+import { getGalaxyInstance } from "app";
 import HISTORY_VIEW from "mvc/history/history-view";
 import HDA_MODEL from "mvc/history/hda-model";
 import HDA_LI_EDIT from "mvc/history/hda-li-edit";
 import HDCA_LI_EDIT from "mvc/history/hdca-li-edit";
-import TAGS from "mvc/tag";
+import { mountModelTags } from "components/Tags";
 import ANNOTATIONS from "mvc/annotation";
 import LIST_COLLECTION_CREATOR from "mvc/collection/list-collection-creator";
 import PAIR_COLLECTION_CREATOR from "mvc/collection/pair-collection-creator";
@@ -13,9 +15,7 @@ import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import "ui/editable-text";
 
-/* global Galaxy */
-/* global jQuery */
-/* global $ */
+var $ = jQuery;
 
 /* =============================================================================
 TODO:
@@ -115,6 +115,8 @@ var HistoryViewEdit = _super.extend(
         // ------------------------------------------------------------------------ panel rendering
         /** In this override, add tag and annotation editors and a btn to toggle the selectors */
         _buildNewRender: function() {
+            var Galaxy = getGalaxyInstance();
+
             // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
             var $newRender = _super.prototype._buildNewRender.call(this);
             if (!this.model) {
@@ -153,28 +155,31 @@ var HistoryViewEdit = _super.extend(
 
         /** render the tags sub-view controller */
         _renderTags: function($where) {
-            var panel = this;
-            this.tagsEditor = new TAGS.TagsEditor({
+            let el = $where.find(".controls .tags-display")[0];
+
+            let propsData = {
                 model: this.model,
-                el: $where.find(".controls .tags-display"),
-                onshowFirstTime: function() {
-                    this.render();
-                },
-                // show hide sub-view tag editors when this is shown/hidden
-                onshow: function() {
-                    panel.toggleHDATagEditors(true, panel.fxSpeed);
-                },
-                onhide: function() {
-                    panel.toggleHDATagEditors(false, panel.fxSpeed);
-                },
-                $activator: faIconButton({
-                    title: _l("Edit history tags"),
-                    classes: "history-tag-btn",
-                    faIcon: "fa-tags",
-                    tooltipConfig: { placement: "top" }
-                }).appendTo($where.find(".controls .actions"))
+                disabled: false,
+                context: "history-view-edit"
+            };
+
+            let vm = mountModelTags(propsData, el);
+
+            // tag icon button open/closes
+            let activator = faIconButton({
+                title: _l("Edit history tags"),
+                classes: "history-tag-btn",
+                faIcon: "fa-tags",
+                tooltipConfig: { placement: "top" }
+            }).appendTo($where.find(".controls .actions"));
+
+            activator.on("click", () => {
+                $(vm.$el).toggleClass("active");
             });
+
+            return vm;
         },
+
         /** render the annotation sub-view controller */
         _renderAnnotation: function($where) {
             var panel = this;
@@ -204,6 +209,8 @@ var HistoryViewEdit = _super.extend(
          *  In this override, make the name editable
          */
         _setUpBehaviors: function($where) {
+            var Galaxy = getGalaxyInstance();
+
             $where = $where || this.$el;
             _super.prototype._setUpBehaviors.call(this, $where);
             if (!this.model) {
@@ -334,7 +341,7 @@ var HistoryViewEdit = _super.extend(
             } else {
                 console.warn(`Unknown collectionType encountered ${collectionType}`);
             }
-            createFunc(selection, hideSourceItems).done(() => {
+            createFunc(selection, hideSourceItems).then(() => {
                 panel.model.refresh();
             });
         },
@@ -414,13 +421,13 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** toggle the visibility of each content's tagsEditor applying all the args sent to this function */
-        toggleHDATagEditors: function(showOrHide, speed) {
-            _.each(this.views, view => {
-                if (view.tagsEditor) {
-                    view.tagsEditor.toggle(showOrHide, speed);
-                }
-            });
-        },
+        // toggleHDATagEditors: function(showOrHide, speed) {
+        //     _.each(this.views, view => {
+        //         if (view.tagsEditor) {
+        //             view.tagsEditor.toggle(showOrHide, speed);
+        //         }
+        //     });
+        // },
 
         /** toggle the visibility of each content's annotationEditor applying all the args sent to this function */
         toggleHDAAnnotationEditors: function(showOrHide, speed) {
@@ -479,8 +486,7 @@ var HistoryViewEdit = _super.extend(
             this.$list().before([this._renderDropTargetHelp(), $dropTarget]);
             for (var evName in dropHandlers) {
                 if (dropHandlers.hasOwnProperty(evName)) {
-                    //console.debug( evName, dropHandlers[ evName ] );
-                    $dropTarget.on(evName, dropHandlers[evName]);
+                    $dropTarget.get(0).addEventListener(evName, dropHandlers[evName]);
                 }
             }
             return this;
@@ -547,8 +553,7 @@ var HistoryViewEdit = _super.extend(
         drop: function(ev) {
             ev.preventDefault();
             //ev.stopPropagation();
-
-            var dataTransfer = ev.originalEvent.dataTransfer;
+            var dataTransfer = ev.dataTransfer;
             var data = dataTransfer.getData("text");
 
             dataTransfer.dropEffect = "move";

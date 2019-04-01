@@ -1,8 +1,13 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 import LIST_ITEM from "mvc/list/list-item";
 import STATES from "mvc/dataset/states";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import { mountNametags } from "components/Nametags";
 
 var logNamespace = "dataset";
 /*==============================================================================
@@ -16,7 +21,7 @@ var _super = LIST_ITEM.ListItemView;
 /** @class Read only list view for either LDDAs, HDAs, or HDADCEs.
  *      Roughly, any DatasetInstance (and not a raw Dataset).
  */
-var DatasetListItemView = _super.extend(
+export var DatasetListItemView = _super.extend(
     /** @lends DatasetListItemView.prototype */ {
         _logNamespace: logNamespace,
 
@@ -36,6 +41,20 @@ var DatasetListItemView = _super.extend(
 
             /** where should pages from links be displayed? (default to new tab/window) */
             this.linkTarget = attributes.linkTarget || "_blank";
+        },
+
+        // mount new vue component for tags
+        render: function() {
+            let result = _super.prototype.render.apply(this, arguments);
+            this._mountVueNametags();
+            return result;
+        },
+
+        _mountVueNametags: function() {
+            let container = this.$(".nametags")[0];
+            let { id, model_class, tags } = this.model.attributes;
+            let storeKey = `${model_class}-${id}`;
+            mountNametags({ storeKey, tags }, container);
         },
 
         /** event listeners */
@@ -60,11 +79,11 @@ var DatasetListItemView = _super.extend(
                             self.render();
                         });
                     } else {
-                        if (_.has(model.changed, "tags") && _.keys(model.changed).length === 1) {
-                            // If only the tags have changed, rerender specifically
-                            // the titlebar region.  Otherwise default to the full
-                            // render.
-                            self.$(".nametags").html(self._renderNametags());
+                        if (_.has(self.model.changed, "tags") && _.keys(self.model.changed).length === 2) {
+                            // If only the tags and update time have changed,
+                            // rerender specifically the titlebar region.
+                            // Otherwise default to the full render.
+                            self._mountVueNametags();
                         } else {
                             self.render();
                         }
@@ -82,7 +101,7 @@ var DatasetListItemView = _super.extend(
             if (view.model.inReadyState() && !view.model.hasDetails()) {
                 return view.model.fetch({ silent: true });
             }
-            return jQuery.when();
+            return $.when();
         },
 
         // ......................................................................... removal
@@ -162,6 +181,7 @@ var DatasetListItemView = _super.extend(
                 // add frame manager option onclick event
                 var self = this;
                 displayBtnData.onclick = ev => {
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.frame && Galaxy.frame.active) {
                         // Add dataset to frames.
                         Galaxy.frame.addDataset(self.model.get("id"));
@@ -259,6 +279,7 @@ var DatasetListItemView = _super.extend(
                 target: this.linkTarget,
                 faIcon: "fa-info-circle",
                 onclick: function(ev) {
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.frame && Galaxy.frame.active) {
                         Galaxy.frame.add({
                             title: _l("Dataset details"),
@@ -319,19 +340,6 @@ var DatasetListItemView = _super.extend(
                         )}
                     </ul>
                 </div>`);
-        },
-
-        _renderNametags: function() {
-            var tpl = _.template(
-                [
-                    "<% _.each(_.sortBy(_.uniq(tags), function(x) { return x }), function(tag){ %>",
-                    '<% if (tag.indexOf("name:") == 0){ %>',
-                    '<span class="badge badge-primary badge-tags"><%- tag.slice(5) %></span>',
-                    "<% } %>",
-                    "<% }); %>"
-                ].join("")
-            );
-            return tpl({ tags: this.model.get("tags") });
         },
 
         // ......................................................................... misc

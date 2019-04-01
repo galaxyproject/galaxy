@@ -46,7 +46,8 @@ def main():
     maf_reader.close()
     maf_writer.close()
 
-    print("Restricted to species: %s." % ", ".join(species))
+    if species:
+        print("Restricted to species: %s." % ", ".join(species))
     print("%i MAF blocks have been kept." % maf_blocks_kept)
 
 

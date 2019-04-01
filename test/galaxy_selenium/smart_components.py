@@ -62,6 +62,9 @@ class SmartTarget(object):
     def wait_for_visible(self, **kwds):
         return self._has_driver.wait_for_visible(self._target, **kwds)
 
+    def wait_for_clickable(self, **kwds):
+        return self._has_driver.wait_for_clickable(self._target, **kwds)
+
     def wait_for_text(self, **kwds):
         return self._has_driver.wait_for_visible(self._target, **kwds).text
 

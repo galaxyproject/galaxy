@@ -58,6 +58,24 @@ def _handle_pseudo_location(properties, pseduo_location):
         properties["location"] = properties["basename"]
 
 
+def abs_path_or_uri(path_or_uri, relative_to):
+    """Return an absolute path if this isn't a URI, otherwise keep the URI the same.
+    """
+    is_uri = "://" in path_or_uri
+    if not is_uri and not os.path.isabs(path_or_uri):
+        path_or_uri = os.path.join(relative_to, path_or_uri)
+    if not is_uri:
+        _ensure_file_exists(path_or_uri)
+    return path_or_uri
+
+
+def path_or_uri_to_uri(path_or_uri):
+    if "://" not in path_or_uri:
+        return "file://%s" % path_or_uri
+    else:
+        return path_or_uri
+
+
 def galactic_job_json(
     job, test_data_directory, upload_func, collection_create_func, tool_or_workflow="workflow"
 ):
@@ -73,11 +91,9 @@ def galactic_job_json(
     datasets = []
     dataset_collections = []
 
-    def upload_file(file_path, secondary_files):
-        if not os.path.isabs(file_path):
-            file_path = os.path.join(test_data_directory, file_path)
-        _ensure_file_exists(file_path)
-        target = FileUploadTarget(file_path, secondary_files)
+    def upload_file(file_path, secondary_files, **kwargs):
+        file_path = abs_path_or_uri(file_path, test_data_directory)
+        target = FileUploadTarget(file_path, secondary_files, **kwargs)
         upload_response = upload_func(target)
         dataset = upload_response["outputs"][0]
         datasets.append((dataset, target))
@@ -85,9 +101,7 @@ def galactic_job_json(
         return {"src": "hda", "id": dataset_id}
 
     def upload_tar(file_path):
-        if not os.path.isabs(file_path):
-            file_path = os.path.join(test_data_directory, file_path)
-        _ensure_file_exists(file_path)
+        file_path = abs_path_or_uri(file_path, test_data_directory)
         target = DirectoryUploadTarget(file_path)
         upload_response = upload_func(target)
         dataset = upload_response["outputs"][0]
@@ -108,6 +122,7 @@ def galactic_job_json(
         item_class = None if not is_dict else value.get("class", None)
         is_file = item_class == "File"
         is_directory = item_class == "Directory"
+        is_collection = item_class == "Collection"  # Galaxy extension.
 
         if force_to_file:
             if is_file:
@@ -128,6 +143,8 @@ def galactic_job_json(
             return replacement_file(value)
         elif is_directory:
             return replacement_directory(value)
+        elif is_collection:
+            return replacement_collection(value)
         else:
             return replacement_record(value)
 
@@ -136,6 +153,7 @@ def galactic_job_json(
         if file_path is None:
             return value
 
+        filetype = value.get('filetype', None)
         secondary_files = value.get("secondaryFiles", [])
         secondary_files_tar_path = None
         if secondary_files:
@@ -159,7 +177,7 @@ def galactic_job_json(
             tf.close()
             secondary_files_tar_path = tmp.name
 
-        return upload_file(file_path, secondary_files_tar_path)
+        return upload_file(file_path, secondary_files_tar_path, filetype=filetype)
 
     def replacement_directory(value):
         file_path = value.get("location", None) or value.get("path", None)
@@ -184,7 +202,28 @@ def galactic_job_json(
             collection_element["name"] = str(i)
             collection_element_identifiers.append(collection_element)
 
+        # TODO: handle nested lists/arrays
         collection = collection_create_func(collection_element_identifiers, "list")
+        dataset_collections.append(collection)
+        hdca_id = collection["id"]
+        return {"src": "hdca", "id": hdca_id}
+
+    def replacement_collection(value):
+        collection_element_identifiers = []
+        assert "collection_type" in value
+        assert "elements" in value
+
+        collection_type = value["collection_type"]
+        elements = value["elements"]
+
+        for element in elements:
+            dataset = replacement_item(element, force_to_file=True)
+            collection_element = dataset.copy()
+            collection_element["name"] = element["identifier"]
+            collection_element_identifiers.append(collection_element)
+
+        # TODO: handle nested lists/arrays
+        collection = collection_create_func(collection_element_identifiers, collection_type)
         dataset_collections.append(collection)
         hdca_id = collection["id"]
         return {"src": "hdca", "id": hdca_id}
@@ -231,12 +270,13 @@ def _ensure_file_exists(file_path):
 @python_2_unicode_compatible
 class FileUploadTarget(object):
 
-    def __init__(self, path, secondary_files=None):
+    def __init__(self, path, secondary_files=None, **kwargs):
         self.path = path
         self.secondary_files = secondary_files
+        self.properties = kwargs
 
     def __str__(self):
-        return "FileUploadTarget[path=%s]" % self.path
+        return "FileUploadTarget[path=%s] with %s" % (self.path, self.properties)
 
 
 @python_2_unicode_compatible

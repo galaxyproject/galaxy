@@ -282,7 +282,7 @@ def scp_transfer(transfer_job):
         # TODO: add the ability to determine progress of the copy here like we do in the http_transfer above.
         cmd = "scp %s@%s:'%s' '%s'" % (user_name,
                                        host,
-                                       file_path.replace(' ', '\ '),
+                                       file_path.replace(' ', r'\ '),
                                        fn)
         pexpect.run(cmd, events={'.ssword:*': password + '\r\n',
                                  pexpect.TIMEOUT: print_ticks},

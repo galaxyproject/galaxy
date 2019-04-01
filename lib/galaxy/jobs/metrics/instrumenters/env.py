@@ -48,7 +48,7 @@ class EnvPlugin(InstrumentPlugin):
             # We use '\n\}\n' as regex termination because shell
             # functions can be nested.
             # We use the non-greedy '.+?' because of re.DOTALL .
-            m = re.match('([^=]+)=(\(\) \{.+?\n\})\n', env_string, re.DOTALL)
+            m = re.match(r'([^=]+)=(\(\) \{.+?\n\})\n', env_string, re.DOTALL)
             if m is None:
                 m = re.match('([^=]+)=(.*)\n', env_string)
             if m is None:

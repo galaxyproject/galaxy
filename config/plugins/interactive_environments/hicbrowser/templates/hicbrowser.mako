@@ -9,7 +9,7 @@
 
     import os
     mount_path = hda.file_name
-    data_vol = ie_request.volume(mount_path, '/data/data_pack.tar.gz', how='rw')
+    data_vol = ie_request.volume(mount_path, '/data/data_pack.tar.gz', mode='rw')
 
     # Add all environment variables collected from Galaxy's IE infrastructure
     # Launch the IE.

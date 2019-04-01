@@ -11,9 +11,9 @@ Subpackages
 
 .. toctree::
 
-    galaxy.util.backports
-    galaxy.util.log
+    galaxy.util.logging
     galaxy.util.pastescript
+    galaxy.util.path
 
 Submodules
 ----------
@@ -58,6 +58,14 @@ galaxy\.util\.compression\_utils module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.util\.create\_history\_template module
+----------------------------------------------
+
+.. automodule:: galaxy.util.create_history_template
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.util\.dbkeys module
 ---------------------------
 
@@ -82,18 +90,18 @@ galaxy\.util\.expressions module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.util\.filelock module
------------------------------
+galaxy\.util\.facts module
+--------------------------
 
-.. automodule:: galaxy.util.filelock
+.. automodule:: galaxy.util.facts
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy\.util\.handlers module
+galaxy\.util\.filelock module
 -----------------------------
 
-.. automodule:: galaxy.util.handlers
+.. automodule:: galaxy.util.filelock
     :members:
     :undoc-members:
     :show-inheritance:
@@ -154,10 +162,10 @@ galaxy\.util\.lazy\_process module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.util\.multi\_byte module
---------------------------------
+galaxy\.util\.monitors module
+-----------------------------
 
-.. automodule:: galaxy.util.multi_byte
+.. automodule:: galaxy.util.monitors
     :members:
     :undoc-members:
     :show-inheritance:
@@ -218,10 +226,34 @@ galaxy\.util\.properties module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.util\.renamed\_temporary\_file module
+---------------------------------------------
+
+.. automodule:: galaxy.util.renamed_temporary_file
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.util\.rules\_dsl module
+-------------------------------
+
+.. automodule:: galaxy.util.rules_dsl
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.util\.sanitize\_html module
 -----------------------------------
 
 .. automodule:: galaxy.util.sanitize_html
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.util\.script module
+---------------------------
+
+.. automodule:: galaxy.util.script
     :members:
     :undoc-members:
     :show-inheritance:
@@ -290,6 +322,14 @@ galaxy\.util\.template module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.util\.tool\_version module
+----------------------------------
+
+.. automodule:: galaxy.util.tool_version
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.util\.topsort module
 ----------------------------
 
@@ -310,6 +350,14 @@ galaxy\.util\.validation module
 -------------------------------
 
 .. automodule:: galaxy.util.validation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.util\.watcher module
+----------------------------
+
+.. automodule:: galaxy.util.watcher
     :members:
     :undoc-members:
     :show-inheritance:

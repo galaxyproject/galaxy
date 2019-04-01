@@ -17,4 +17,12 @@ galaxy\.actions\.admin module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.actions\.library module
+-------------------------------
+
+.. automodule:: galaxy.actions.library
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

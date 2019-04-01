@@ -1,6 +1,9 @@
 /**
     This class creates input elements. New input parameter types should be added to the types dictionary.
 */
+import $ from "jquery";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import SelectContent from "mvc/ui/ui-select-content";
@@ -9,6 +12,7 @@ import SelectFtp from "mvc/ui/ui-select-ftp";
 import SelectGenomeSpace from "mvc/ui/ui-select-genomespace";
 import RulesEdit from "mvc/ui/ui-rules-edit";
 import ColorPicker from "mvc/ui/ui-color-picker";
+
 // create form view
 export default Backbone.Model.extend({
     /** Available parameter types */
@@ -25,6 +29,7 @@ export default Backbone.Model.extend({
         boolean: "_fieldBoolean",
         drill_down: "_fieldDrilldown",
         color: "_fieldColor",
+        group_tag: "_fieldSelect",
         hidden: "_fieldHidden",
         hidden_data: "_fieldHidden",
         baseurl: "_fieldHidden",
@@ -37,6 +42,7 @@ export default Backbone.Model.extend({
 
     /** Returns an input field for a given field type */
     create: function(input_def) {
+        let Galaxy = getGalaxyInstance();
         var fieldClass = this.types[input_def.type];
         var field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
         if (!field) {
@@ -120,7 +126,7 @@ export default Backbone.Model.extend({
     /** Text input field */
     _fieldText: function(input_def) {
         // field replaces e.g. a select field
-        if (input_def.options && input_def.data) {
+        if (input_def.data_ref || (input_def.options && input_def.data)) {
             input_def.area = input_def.multiple;
             if (Utils.isEmpty(input_def.value)) {
                 input_def.value = null;

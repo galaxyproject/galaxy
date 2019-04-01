@@ -14,7 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 UNSPECIFIED_TIMEOUT = object()
 
 
-class HasDriver:
+class HasDriver(object):
     TimeoutException = TimeoutException
 
     def assert_xpath(self, xpath):

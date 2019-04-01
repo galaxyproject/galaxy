@@ -85,15 +85,17 @@ class Json(Text):
         if file_prefix.file_size < 50000 and not file_prefix.truncated:
             # If the file is small enough - don't guess just check.
             try:
-                json.loads(file_prefix.contents_header)
+                item = json.loads(file_prefix.contents_header)
+                # exclude simple types, must set format in these cases
+                assert isinstance(item, (list, dict))
                 return True
             except Exception:
                 return False
         else:
             start = file_prefix.string_io().read(100).strip()
             if start:
-                # simple types are valid JSON as well - but would such a file
-                # be interesting as JSON in Galaxy?
+                # simple types are valid JSON as well,
+                # but if necessary format has to be set explicitly
                 return start.startswith("[") or start.startswith("{")
             return False
 
@@ -102,6 +104,30 @@ class Json(Text):
             return dataset.peek
         except Exception:
             return "JSON file (%s)" % (nice_size(dataset.get_size()))
+
+
+class ExpressionJson(Json):
+    """ Represents the non-data input or output to a tool or workflow.
+    """
+    file_ext = "json"
+    MetadataElement(name="json_type", default=None, desc="JavaScript or JSON type of expression", readonly=True, visible=True, no_value=None)
+
+    def set_meta(self, dataset, **kwd):
+        """
+        """
+        json_type = "null"
+        with open(dataset.file_name) as f:
+            obj = json.load(f)
+            if isinstance(obj, int):
+                json_type = "int"
+            elif isinstance(obj, float):
+                json_type = "float"
+            elif isinstance(obj, list):
+                json_type = "list"
+            elif isinstance(obj, dict):
+                json_type = "object"
+
+        dataset.metadata.json_type = json_type
 
 
 @build_sniff_from_prefix
@@ -182,6 +208,7 @@ class Biom1(Json):
     MetadataElement(name="table_type", default="", desc="table_type", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="")
     MetadataElement(name="table_id", default=None, desc="table_id", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=None)
     MetadataElement(name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="table_column_metadata_headers", default=[], desc="table_column_metadata_headers", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=[])
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(Biom1, self).set_peek(dataset)
@@ -250,10 +277,19 @@ class Biom1(Json):
                                          ('table_columns', 'columns')]:
                     try:
                         metadata_value = json_dict.get(b_name, None)
+                        if b_name == "columns" and metadata_value:
+                            keep_columns = set()
+                            for column in metadata_value:
+                                for k, v in column['metadata'].items():
+                                    if v is not None:
+                                        keep_columns.add(k)
+                            final_list = sorted(list(keep_columns))
+                            dataset.metadata.table_column_metadata_headers = final_list
                         if b_name in b_transform:
                             metadata_value = b_transform[b_name](metadata_value)
                         setattr(dataset.metadata, m_name, metadata_value)
                     except Exception:
+                        log.exception("Something in the metadata detection for biom1 went wrong.")
                         pass
 
 
@@ -416,7 +452,7 @@ class SnpEffDb(Text):
             with gzip.open(path, 'rb') as fh:
                 buf = fh.read(100)
                 lines = buf.splitlines()
-                m = re.match('^(SnpEff)\s+(\d+\.\d+).*$', lines[0].strip())
+                m = re.match(r'^(SnpEff)\s+(\d+\.\d+).*$', lines[0].strip())
                 if m:
                     snpeff_version = m.groups()[0] + m.groups()[1]
         except Exception:

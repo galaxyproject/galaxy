@@ -44,7 +44,7 @@ class GroupsController(BaseAPIController):
         """
         group_dicts = []
         deleted = util.asbool(deleted)
-        if deleted and not trans.user_is_admin():
+        if deleted and not trans.user_is_admin:
             raise AdminRequiredException('Only administrators can query deleted groups.')
         for group in self.group_manager.list(trans, deleted):
             group_dicts.append(self._populate(trans, group))

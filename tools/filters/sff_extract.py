@@ -1139,7 +1139,7 @@ def launch_ssaha(linker_fname, query_fname, output_fh):
             print("ok.")
     except Exception:
         print("\n")
-        raise RuntimeError('An error occured during the SSAHA2 execution, aborting.')
+        raise RuntimeError('An error occurred during the SSAHA2 execution, aborting.')
 
 
 def read_ssaha_data(ssahadata_fh):
@@ -1180,7 +1180,7 @@ def read_ssaha_data(ssahadata_fh):
 #
 ##########################################################################
 
-class Fasta:
+class Fasta(object):
     def __init__(self, name, sequence):
         self.name = name
         self.sequence = sequence

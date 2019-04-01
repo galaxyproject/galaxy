@@ -33,7 +33,10 @@ from galaxy.tools.wrappers import (
     SelectToolParameterWrapper,
     ToolParameterValueWrapper,
 )
-from galaxy.util import unicodify
+from galaxy.util import (
+    find_instance_nested,
+    unicodify,
+)
 from galaxy.util.bunch import Bunch
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.object_wrapper import wrap_with_safe_string
@@ -75,13 +78,7 @@ class ToolEvaluator(object):
         visit_input_values(self.tool.inputs, incoming, validate_inputs)
 
         # Restore input / output data lists
-        inp_data = dict([(da.name, da.dataset) for da in job.input_datasets])
-        out_data = dict([(da.name, da.dataset) for da in job.output_datasets])
-        inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
-        out_data.update([(da.name, da.dataset) for da in job.output_library_datasets])
-
-        out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in job.output_dataset_collection_instances])
-        out_collections.update([(obj.name, obj.dataset_collection) for obj in job.output_dataset_collections])
+        inp_data, out_data, out_collections = job.io_dicts()
 
         if get_special:
 
@@ -280,17 +277,20 @@ class ToolEvaluator(object):
         #        another reason for this?
         # - Only necessary when self.check_values is False (==external dataset
         #   tool?: can this be abstracted out as part of being a datasouce tool?)
-        # - But we still want (ALWAYS) to wrap input datasets (this should be
-        #   checked to prevent overhead of creating a new object?)
-        # Additionally, datasets go in the param dict. We wrap them such that
-        # if the bare variable name is used it returns the filename (for
-        # backwards compatibility). We also add any child datasets to the
-        # the param dict encoded as:
-        #   "_CHILD___{dataset_name}___{child_designation}",
-        # but this should be considered DEPRECATED, instead use:
-        #   $dataset.get_child( 'name' ).filename
+        # For now we try to not wrap unnecessarily, but this should be untangled at some point.
         for name, data in input_datasets.items():
             param_dict_value = param_dict.get(name, None)
+            if data and param_dict_value is None:
+                # We may have a nested parameter that is not fully prefixed.
+                # We try recovering from param_dict, but tool authors should really use fully-qualified
+                # variables
+                wrappers = find_instance_nested(param_dict,
+                                                instances=(DatasetFilenameWrapper, DatasetListWrapper),
+                                                match_key=name)
+                if len(wrappers) == 1:
+                    wrapper = wrappers[0]
+                    param_dict[name] = wrapper
+                    continue
             if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
@@ -374,7 +374,7 @@ class ToolEvaluator(object):
 
         param_dict['__tool_directory__'] = self.compute_environment.tool_directory()
         param_dict['__get_data_table_entry__'] = get_data_table_entry
-
+        param_dict['__local_working_directory__'] = self.local_working_directory
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper(self.app)
         # More convienent access to app.config.new_file_path; we don't need to

@@ -2,6 +2,8 @@ import json
 import logging
 import os
 
+from six.moves.urllib.parse import urljoin
+
 from galaxy import util
 from galaxy.util.odict import odict
 from galaxy.web import url_for
@@ -140,7 +142,7 @@ def get_non_shed_tool_panel_configs(app):
     config_filenames = []
     for config_filename in app.config.tool_configs:
         # Any config file that includes a tool_path attribute in the root tag set like the following is shed-related.
-        # <toolbox tool_path="../shed_tools">
+        # <toolbox tool_path="database/shed_tools">
         tree, error_message = xml_util.parse_xml(config_filename)
         if tree is None:
             continue
@@ -240,6 +242,16 @@ def get_tool_shed_url_from_tool_shed_registry(app, tool_shed):
             return shed_url
     # The tool shed from which the repository was originally installed must no longer be configured in tool_sheds_conf.xml.
     return None
+
+
+def get_tool_shed_repository_url(app, tool_shed, owner, name):
+    tool_shed_url = get_tool_shed_url_from_tool_shed_registry(app, tool_shed)
+    if tool_shed_url:
+        # Append a slash to the tool shed URL, because urlparse.urljoin will eliminate
+        # the last part of a URL if it does not end with a forward slash.
+        tool_shed_url = '%s/' % tool_shed_url
+        return urljoin(tool_shed_url, 'view/%s/%s' % (owner, name))
+    return tool_shed_url
 
 
 def get_user_by_username(app, username):

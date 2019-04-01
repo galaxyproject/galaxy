@@ -2,8 +2,8 @@ import json
 import logging
 import os
 
-from galaxy.dataset_collections.structure import UninitializedTree
 from galaxy.exceptions import RequestParameterMissingException
+from galaxy.model.dataset_collections.structure import UninitializedTree
 from galaxy.tools.actions import upload_common
 from galaxy.util import ExecutionTimer
 from galaxy.util.bunch import Bunch
@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 class BaseUploadToolAction(ToolAction):
 
     def execute(self, tool, trans, incoming={}, history=None, **kwargs):
+        trans.check_user_activation()
         dataset_upload_inputs = []
         for input_name, input in tool.inputs.items():
             if input.type == "upload_dataset":

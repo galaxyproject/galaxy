@@ -1,8 +1,10 @@
 /**
     This class creates a form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections.
 */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import Utils from "utils/utils";
-import Ui from "mvc/ui/ui-misc";
 import Portlet from "mvc/ui/ui-portlet";
 import Repeat from "mvc/form/form-repeat";
 import InputElement from "mvc/form/form-input";
@@ -27,7 +29,7 @@ var View = Backbone.View.extend({
 
     /** Add a new input element */
     add: function(input) {
-        var input_def = jQuery.extend({}, input);
+        var input_def = $.extend({}, input);
         input_def.id = Utils.uid();
         this.app.input_list[input_def.id] = input_def;
         switch (input_def.type) {
@@ -59,7 +61,7 @@ var View = Backbone.View.extend({
                 var sub_section = new View(this.app, {
                     inputs: input_def.cases[i].inputs
                 });
-                this._append(sub_section.$el.addClass("ui-form-section"), `${input_def.id}-section-${i}`);
+                this._append(sub_section.$el.addClass("ui-portlet-section pl-2"), `${input_def.id}-section-${i}`);
             }
             field.model.set("onchange", value => {
                 var selectedCase = self.app.data.matchCase(input_def, value);
@@ -148,7 +150,7 @@ var View = Backbone.View.extend({
         portlet.append(new View(this.app, { inputs: input_def.inputs }).$el);
         portlet.append(
             $("<div/>")
-                .addClass("ui-form-info")
+                .addClass("form-text text-muted")
                 .html(input_def.help)
         );
         this.app.on("expand", input_id => {
@@ -175,6 +177,7 @@ var View = Backbone.View.extend({
             text_value: input_def.text_value,
             collapsible_value: input_def.collapsible_value,
             collapsible_preview: input_def.collapsible_preview,
+            connectable: input_def.connectable,
             help: input_def.help,
             argument: input_def.argument,
             disabled: input_def.disabled,

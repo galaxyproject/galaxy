@@ -85,7 +85,7 @@ def test_raw_object_wrapper():
 
 @with_mock_tool
 def test_input_value_wrapper(tool):
-    parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" size="4" value="10" min="0" />'))
+    parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" value="10" min="0" />'))
     wrapper = InputValueWrapper(parameter, "5")
     assert str(wrapper) == "5"
 

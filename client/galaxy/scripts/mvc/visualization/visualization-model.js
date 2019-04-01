@@ -1,7 +1,6 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
-
-/* global Galaxy */
+import _ from "underscore";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 
 //==============================================================================
 /** @class Model for a saved Galaxy visualization.
@@ -23,7 +22,7 @@ export var Visualization = Backbone.Model.extend(
         /** override urlRoot to handle prefix */
         urlRoot: function() {
             var apiUrl = "api/visualizations";
-            return Galaxy.root + apiUrl;
+            return getAppRoot() + apiUrl;
         },
 
         /** Set up the model, determine if accessible, bind listeners
@@ -90,7 +89,7 @@ export var VisualizationCollection = Backbone.Collection.extend(
         //logger              : console,
 
         url: function() {
-            return `${Galaxy.root}api/visualizations`;
+            return `${getAppRoot()}api/visualizations`;
         },
 
         /** Set up.

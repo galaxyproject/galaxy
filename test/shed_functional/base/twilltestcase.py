@@ -29,8 +29,8 @@ import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
 import galaxy.webapps.tool_shed.util.hgweb_config
 from base.testcase import FunctionalTestCase  # noqa: I100,I201,I202
-from galaxy.util import unicodify  # noqa: I201
-from galaxy.web import security  # noqa: I201
+from galaxy.security import idencoding  # noqa: I201
+from galaxy.util import smart_str, unicodify  # noqa: I201
 from tool_shed.util import hg_util, xml_util
 from tool_shed.util.encoding_util import tool_shed_encode
 from . import common, test_db_util
@@ -52,7 +52,7 @@ class ShedTwillTestCase(FunctionalTestCase):
 
     def setUp(self):
         # Security helper
-        self.security = security.SecurityHelper(id_secret='changethisinproductiontoo')
+        self.security = idencoding.IdEncodingHelper(id_secret='changethisinproductiontoo')
         self.history_id = None
         self.hgweb_config_dir = os.environ.get('TEST_HG_WEB_CONFIG_DIR')
         self.hgweb_config_manager = galaxy.webapps.tool_shed.util.hgweb_config.HgWebConfigManager()
@@ -465,11 +465,9 @@ class ShedTwillTestCase(FunctionalTestCase):
         return self.wait_for(lambda: self.get_running_datasets(), **kwds)
 
     def write_temp_file(self, content, suffix='.html'):
-        fd, fname = tempfile.mkstemp(suffix=suffix, prefix='twilltestcase-')
-        f = os.fdopen(fd, "w")
-        f.write(content)
-        f.close()
-        return fname
+        with tempfile.NamedTemporaryFile(suffix=suffix, prefix='twilltestcase-', delete=False) as fh:
+            fh.write(smart_str(content))
+        return fh.name
 
     def add_repository_review_component(self, **kwd):
         params = {
@@ -785,33 +783,13 @@ class ShedTwillTestCase(FunctionalTestCase):
 
     def create_user_in_galaxy(self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', redirect=''):
         params = {
-            'cntrller': cntrller,
-            'use_panels': False
+            'username': username,
+            'email': email,
+            'password': password,
+            'confirm': password,
+            'session_csrf_token': self.galaxy_token()
         }
-        self.visit_galaxy_url('/user/create', params=params)
-        self.submit_form('1', 'create_user_button', email=email, password=password, confirm=password, username=username, redirect=redirect)
-        previously_created = False
-        username_taken = False
-        invalid_username = False
-        try:
-            self.check_page_for_string("Created new user account")
-        except Exception:
-            try:
-                # May have created the account in a previous test run...
-                self.check_page_for_string("User with that email already exists")
-                previously_created = True
-            except Exception:
-                try:
-                    self.check_page_for_string('Public name is taken; please choose another')
-                    username_taken = True
-                except Exception:
-                    try:
-                        # Note that we're only checking if the usr name is >< 4 chars here...
-                        self.check_page_for_string('Public name must be at least 4 characters in length')
-                        invalid_username = True
-                    except Exception:
-                        pass
-        return previously_created, username_taken, invalid_username
+        self.visit_galaxy_url('/user/create', params=params, allowed_codes=[200, 400])
 
     def deactivate_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
         params = {
@@ -863,7 +841,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.visit_galaxy_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def display_installed_manage_data_manager_page(self, installed_repository, data_manager_names=None, strings_displayed=None, strings_not_displayed=None):
+    def display_installed_jobs_list_page(self, installed_repository, data_manager_names=None, strings_displayed=None, strings_not_displayed=None):
         data_managers = installed_repository.metadata.get('data_manager', {}).get('data_managers', {})
         if data_manager_names:
             if not isinstance(data_manager_names, list):
@@ -876,7 +854,7 @@ class ShedTwillTestCase(FunctionalTestCase):
             params = {
                 'id': data_managers[data_manager_name]['guid']
             }
-            self.visit_galaxy_url('/data_manager/manage_data_manager', params=params)
+            self.visit_galaxy_url('/data_manager/jobs_list', params=params)
             self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_installed_repository_manage_page(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
@@ -1070,19 +1048,7 @@ class ShedTwillTestCase(FunctionalTestCase):
             strings_displayed.append('Reviews were saved')
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def galaxy_login(self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='', logout_first=True):
-        if logout_first:
-            self.galaxy_logout()
-        previously_created, username_taken, invalid_username = \
-            self.create_user_in_galaxy(email=email, password=password, username=username, redirect=redirect)
-        if previously_created:
-            params = {
-                'use_panels': False
-            }
-            self.visit_galaxy_url('/user/login', params=params)
-            self.submit_form('1', 'login_button', login=email, redirect=redirect, password=password)
-
-    def galaxy_logout(self):
+    def galaxy_token(self):
         self.visit_galaxy_url("/")
         html = self.last_page()
         token_def_index = html.find("session_csrf_token")
@@ -1090,8 +1056,21 @@ class ShedTwillTestCase(FunctionalTestCase):
         token_quote_start_index = html.find('"', token_sep_index)
         token_quote_end_index = html.find('"', token_quote_start_index + 1)
         token = html[(token_quote_start_index + 1):token_quote_end_index]
-        self.visit_galaxy_url("/user/logout", params=dict(session_csrf_token=token))
-        self.check_page_for_string("You have been logged out")
+        return token
+
+    def galaxy_login(self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='', logout_first=True):
+        if logout_first:
+            self.galaxy_logout()
+        self.create_user_in_galaxy(email=email, password=password, username=username, redirect=redirect)
+        params = {
+            "login": email,
+            "password": password,
+            "session_csrf_token": self.galaxy_token()
+        }
+        self.visit_galaxy_url('/user/login', params=params)
+
+    def galaxy_logout(self):
+        self.visit_galaxy_url("/user/logout", params=dict(session_csrf_token=self.galaxy_token()))
         tc.browser.cj.clear()
 
     def generate_complex_dependency_xml(self, filename, filepath, repository_tuples, package, version):
@@ -1390,7 +1369,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in
         # group(2), and the reinstalling flag in group(3) and pass them to the manage_repositories method in the Galaxy
         # admin_toolshed controller.
-        install_parameters = re.search('initiate_repository_installation\( "([^"]+)", "([^"]+)", "([^"]+)" \);', html)
+        install_parameters = re.search(r'initiate_repository_installation\( "([^"]+)", "([^"]+)", "([^"]+)" \);', html)
         if install_parameters:
             iri_ids = install_parameters.group(1)
             # In some cases, the returned iri_ids are of the form: "[u'<encoded id>', u'<encoded id>']"
@@ -2048,9 +2027,9 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.visit_galaxy_url('/admin_toolshed/view_workflow', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def visit_galaxy_url(self, url, params=None, doseq=False):
+    def visit_galaxy_url(self, url, params=None, doseq=False, allowed_codes=[200]):
         url = '%s%s' % (self.galaxy_url, url)
-        self.visit_url(url, params=params, doseq=doseq)
+        self.visit_url(url, params=params, doseq=doseq, allowed_codes=allowed_codes)
 
     def wait_for_repository_installation(self, repository_ids):
         final_states = [galaxy_model.ToolShedRepository.installation_status.ERROR,

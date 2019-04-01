@@ -1,4 +1,4 @@
-import * as Backbone from "backbone";
+import Backbone from "backbone";
 import Utils from "utils/utils";
 import { Visualization } from "mvc/visualization/visualization-model";
 export default Backbone.Model.extend({

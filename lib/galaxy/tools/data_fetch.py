@@ -17,6 +17,7 @@ from galaxy.datatypes.upload_util import (
 )
 from galaxy.util import in_directory
 from galaxy.util.compression_utils import CompressedFile
+from galaxy.util.hash_util import HASH_NAMES, memory_bound_hexdigest
 
 DESCRIPTION = """Data Import Script"""
 
@@ -60,16 +61,16 @@ def _fetch_target(upload_config, target):
         items = None
         if elements_from:
             if elements_from == "archive":
-                decompressed_directory = _decompress_target(target_or_item)
+                decompressed_directory = _decompress_target(upload_config, target_or_item)
                 items = _directory_to_items(decompressed_directory)
             elif elements_from == "bagit":
-                _, elements_from_path = _has_src_to_path(target_or_item)
+                _, elements_from_path = _has_src_to_path(upload_config, target_or_item, is_dataset=False)
                 items = _bagit_to_items(elements_from_path)
             elif elements_from == "bagit_archive":
-                decompressed_directory = _decompress_target(target_or_item)
+                decompressed_directory = _decompress_target(upload_config, target_or_item)
                 items = _bagit_to_items(decompressed_directory)
             elif elements_from == "directory":
-                _, elements_from_path = _has_src_to_path(target_or_item)
+                _, elements_from_path = _has_src_to_path(upload_config, target_or_item, is_dataset=False)
                 items = _directory_to_items(elements_from_path)
             else:
                 raise Exception("Unknown elements from type encountered [%s]" % elements_from)
@@ -92,7 +93,19 @@ def _fetch_target(upload_config, target):
     def _resolve_src(item):
         converted_path = None
 
-        name, path = _has_src_to_path(item)
+        name, path = _has_src_to_path(upload_config, item, is_dataset=True)
+        sources = []
+
+        url = item.get("url")
+        if url:
+            sources.append({"source_uri": url})
+        hashes = []
+        for hash_function in HASH_NAMES:
+            hash_value = item.get(hash_function)
+            if hash_value:
+                hashes.append({"hash_function": hash_function, "hash_value": hash_value})
+                _handle_hash_validation(upload_config, hash_function, hash_value, path)
+
         dbkey = item.get("dbkey", "?")
         requested_ext = item.get("ext", "auto")
         info = item.get("info", None)
@@ -143,7 +156,7 @@ def _fetch_target(upload_config, target):
             # Groom the dataset content if necessary
             datatype.groom_dataset_content(path)
 
-        rval = {"name": name, "filename": path, "dbkey": dbkey, "ext": ext, "link_data_only": link_data_only}
+        rval = {"name": name, "filename": path, "dbkey": dbkey, "ext": ext, "link_data_only": link_data_only, "sources": sources, "hashes": hashes}
         if info is not None:
             rval["info"] = info
         if object_id is not None:
@@ -165,8 +178,8 @@ def _bagit_to_items(directory):
     return items
 
 
-def _decompress_target(target):
-    elements_from_name, elements_from_path = _has_src_to_path(target)
+def _decompress_target(upload_config, target):
+    elements_from_name, elements_from_path = _has_src_to_path(upload_config, target, is_dataset=False)
     temp_directory = tempfile.mkdtemp(prefix=elements_from_name, dir=".")
     decompressed_directory = CompressedFile(elements_from_path).extract(temp_directory)
     return decompressed_directory
@@ -202,13 +215,20 @@ def _directory_to_items(directory):
     return items
 
 
-def _has_src_to_path(item):
+def _has_src_to_path(upload_config, item, is_dataset=False):
     assert "src" in item, item
     src = item.get("src")
     name = item.get("name")
     if src == "url":
         url = item.get("url")
         path = sniff.stream_url_to_file(url)
+        if not is_dataset:
+            # Actual target dataset will validate and put results in dict
+            # that gets passed back to Galaxy.
+            for hash_function in HASH_NAMES:
+                hash_value = item.get(hash_function)
+                if hash_value:
+                    _handle_hash_validation(upload_config, hash_function, hash_value, path)
         if name is None:
             name = url.split("/")[-1]
     elif src == "pasted":
@@ -221,6 +241,13 @@ def _has_src_to_path(item):
         if name is None:
             name = os.path.basename(path)
     return name, path
+
+
+def _handle_hash_validation(upload_config, hash_function, hash_value, path):
+    if upload_config.validate_hashes:
+        calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=path)
+        if calculated_hash_value != hash_value:
+            raise Exception("Failed to validate upload with [%s] - expected [%s] got [%s]" % (hash_function, hash_value, calculated_hash_value))
 
 
 def _arg_parser():
@@ -240,6 +267,7 @@ class UploadConfig(object):
         self.to_posix_lines = request.get("to_posix_lines", False)
         self.space_to_tab = request.get("space_to_tab", False)
         self.auto_decompress = request.get("auto_decompress", False)
+        self.validate_hashes = request.get("validate_hashes", False)
         self.link_data_only = _link_data_only(request)
 
         self.__workdir = os.path.abspath(".")

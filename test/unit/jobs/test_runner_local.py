@@ -85,13 +85,8 @@ class TestLocalJobRunner(TestCase, UsesApp, UsesTools):
         t = threading.Thread(target=queue)
         t.start()
         external_id = self.job_wrapper.wait_for_external_id()
-        mock_job = bunch.Bunch(
-            get_external_output_metadata=lambda: None,
-            get_job_runner_external_id=lambda: str(external_id),
-            get_id=lambda: 1
-        )
         assert psutil.pid_exists(external_id)
-        runner.stop_job(mock_job)
+        runner.stop_job(self.job_wrapper)
         t.join(1)
         assert not psutil.pid_exists(external_id)
 
@@ -139,8 +134,9 @@ class MockJobWrapper(object):
         self.requires_setting_metadata = True
         self.job_destination = bunch.Bunch(id="default", params={})
         self.galaxy_lib_dir = os.path.abspath("lib")
+        self.job = model.Job()
         self.job_id = 1
-        self.external_id = None
+        self.job.id = 1
         self.output_paths = ['/tmp/output1.dat']
         self.mock_metadata_path = os.path.abspath(os.path.join(test_directory, "METADATA_SET"))
         self.metadata_command = "touch %s" % self.mock_metadata_path
@@ -161,10 +157,10 @@ class MockJobWrapper(object):
         return "ok"
 
     def wait_for_external_id(self):
-        """Test method for waiting til an external id has been registered."""
+        """Test method for waiting until an external id has been registered."""
         external_id = None
         for i in range(50):
-            external_id = self.external_id
+            external_id = self.job.job_runner_external_id
             if external_id:
                 break
             time.sleep(.1)
@@ -174,7 +170,7 @@ class MockJobWrapper(object):
         self.prepare_called = True
 
     def set_job_destination(self, job_destination, external_id):
-        self.external_id = external_id
+        self.job.job_runner_external_id = external_id
 
     def get_command_line(self):
         return self.command_line
@@ -192,7 +188,7 @@ class MockJobWrapper(object):
         return []
 
     def get_job(self):
-        return model.Job()
+        return self.job
 
     def setup_external_metadata(self, **kwds):
         return self.metadata_command
@@ -217,3 +213,6 @@ class MockJobWrapper(object):
 
     def home_directory(self):
         return None
+
+    def reclaim_ownership(self):
+        pass

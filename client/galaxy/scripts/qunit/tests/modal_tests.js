@@ -1,8 +1,7 @@
-/* global define */
-
+/* global QUnit */
+import $ from "jquery";
 import testApp from "qunit/test-app";
 import GalaxyModal from "mvc/ui/ui-modal";
-import $ from "jquery";
 
 QUnit.module("Modal dialog test", {
     beforeEach: function() {
@@ -23,6 +22,7 @@ QUnit.module("Modal dialog test", {
     afterEach: function() {
         $.fx.off = false;
         testApp.destroy();
+        this.app.$el.remove();
     }
 });
 

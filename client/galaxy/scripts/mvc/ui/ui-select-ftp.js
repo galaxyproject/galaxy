@@ -1,6 +1,8 @@
-// dependencies
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 import List from "mvc/ui/ui-list";
+
 /**
  * FTP file selector
  */
@@ -25,7 +27,7 @@ var View = Backbone.View.extend({
 
         // initial fetch of ftps
         Utils.get({
-            url: `${Galaxy.root}api/remote_files`,
+            url: `${getAppRoot()}api/remote_files`,
             success: function(response) {
                 var data = [];
                 for (var i in response) {

@@ -18,11 +18,11 @@ _:  # global stuff
 
   messages:
     selectors:
-      all: '[class*="message"]'
-      error: '.errormessage'
+      all: '[class*="alert"]'
+      error: '.alert-danger'
       warning: '.alert-warning'
-      done: '.donemessage'
-      info: '.infomessage'
+      done: '.alert-success'
+      info: '.alert-info'
       donelarge: '.donemessagelarge'
       infolarge: '.infomessagelarge'
 
@@ -57,8 +57,6 @@ masthead:
     admin: 'Admin'
 
     # user menu
-    register: 'Register'
-    login: 'Login'
     logout: 'Logout'
     custom_builds: 'Custom Builds'
     saved_histories: 'Saved Histories'
@@ -145,6 +143,7 @@ history_panel:
     options_button: '#history-options-button'
     options_button_icon: '#history-options-button span.fa-cog'
     options_menu: '#history-options-button-menu'
+    new_history_button: '#history-new-button'
     multi_view_button: '#history-view-multi-button'
 
     pagination_pages: '.list-pagination .pages'
@@ -205,18 +204,22 @@ histories:
 
 login:
   selectors:
-     form: 'form#login'
+    form: 'form#login'
+    submit:
+      type: xpath
+      selector: "//button[@name='login']"
 
 registration:
   selectors:
-    form: '#registration'
+    toggle: '#register-toggle'
+    form: 'form#registration'
     submit:
       type: xpath
-      selector: "//input[@value='Submit']"
+      selector: "//button[@name='create']"
 
 tool_form:
   selectors:
-    options: '#options .dropdown-toggle'
+    options: '#options [data-toggle="dropdown"]'
     execute: 'button#execute'
     citations: '.citations-formatted'
     reference: '.citations-formatted .formatted-reference'
@@ -235,8 +238,11 @@ workflows:
 
 workflow_run:
 
-  selectors: 
-    input_div: "[step-label='${label}'] .select2-container"
+  selectors:
+    input_div: "[step-label='${label}']"
+    input_data_div: "[step-label='${label}'] .select2-container"
+    # TODO: put step labels in the DOM ideally
+    subworkflow_step_icon: ".portlet-title-icon.fa-sitemap + span"
 
 workflow_editor:
 
@@ -262,12 +268,15 @@ workflow_editor:
     tool_menu_section_link: '#title___workflow__${section_name}__ a span'
     tool_menu_item_link: 'a#tool-menu-${section_name}-${item_name}'
 
+    connect_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-connected-icon'
+    collapse_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-collapsible-icon'
+
     label_input: "[tour_id='__label'] input"
     annotation_input: "[tour_id='__annotation'] textarea"
 
     connector_for: "canvas[handle1-id='${source_id}'][handle2-id='${sink_id}']"
 
-    connector_destroy_callout: '.callout .fa-times'
+    connector_destroy_callout: '.delete-terminal'
 
 tour:
   popover:
@@ -293,7 +302,6 @@ admin:
       quotas: '#admin-link-quotas'
       groups: '#admin-link-groups'
       roles: '#admin-link-roles'
-      api_keys: '#admin-link-api-keys'
       impersonate: '#admin-link-impersonate'
 
   selectors:
@@ -302,11 +310,21 @@ admin:
     data_tables_grid: '#data-tables-grid'
     display_applications_grid: '#display-applications-grid'
     update_jobs: 'form[name="jobs"]'
-    data_managers_title: '#data-managers-title'
+    dm_title: '#data-managers-title'
+    dm_data_managers_card: '#data-managers-card'
+    dm_jobs_button: '#${data_manager}-jobs'
+    dm_jobs_breadcrumb: '#breadcrumb'
+    dm_jobs_table: '#jobs-table'
+    dm_job: '#job-${job_id}'
+    dm_job_breadcrumb: '#breadcrumb'
+    dm_job_data_manager_card: '#data-manager-card'
+    dm_job_data_card: '#data-card-${hda_index}'
+    dm_table_button: '#${data_table}-table'
+    dm_table_card: '#data-table-card'
     users_grid: '#users-grid'
     users_grid_create_button: '.manage-table-actions .action-button'
     groups_grid_create_button: '.manage-table-actions .action-button'
-    registration_form: 'form[name="registration"]'
+    registration_form: 'form#registration'
     groups_grid: '#groups-grid'
     roles_grid: '#roles-grid'
     groups_create_view: '#create-group'

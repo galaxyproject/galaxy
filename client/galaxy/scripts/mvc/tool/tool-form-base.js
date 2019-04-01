@@ -1,16 +1,23 @@
-import _l from "utils/localization";
 /**
     This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 */
-import Utils from "utils/utils";
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import _l from "utils/localization";
+// import Utils from "utils/utils";
 import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
 import Webhooks from "mvc/webhooks";
 import Citations from "components/Citations.vue";
 import Vue from "vue";
+import axios from "axios";
+
 export default FormBase.extend({
     initialize: function(options) {
+        let Galaxy = getGalaxyInstance();
         var self = this;
         this.deferred = new Deferred();
         FormBase.prototype.initialize.call(this, options);
@@ -19,8 +26,8 @@ export default FormBase.extend({
         this._update(this.model.get("initialmodel"));
 
         // listen to history panel
-        if (this.model.get("listen_to_history") && parent.Galaxy && parent.Galaxy.currHistoryPanel) {
-            this.listenTo(parent.Galaxy.currHistoryPanel.collection, "change", () => {
+        if (this.model.get("listen_to_history") && Galaxy && Galaxy.currHistoryPanel) {
+            this.listenTo(Galaxy.currHistoryPanel.collection, "change", () => {
                 self.model.get("onchange")();
             });
         }
@@ -53,6 +60,7 @@ export default FormBase.extend({
         this.$el.off().hide();
         this.deferred.execute(() => {
             FormBase.prototype.remove.call(self);
+            let Galaxy = getGalaxyInstance();
             Galaxy.emit.debug("tool-form-base::_destroy()", "Destroy view.");
         });
     },
@@ -67,12 +75,13 @@ export default FormBase.extend({
                 `<b>${options.name}</b> ${options.description} (Galaxy Version ${options.version})`,
             operations: !options.hide_operations && this._operations(),
             onchange: function() {
+                let Galaxy = getGalaxyInstance();
                 self.deferred.reset();
                 self.deferred.execute(process => {
                     self.model.get("postchange")(process, self);
                     if (self.model.get("listen_to_history")) {
                         process.then(() => {
-                            self.stopListening(parent.Galaxy.currHistoryPanel.collection);
+                            self.stopListening(Galaxy.currHistoryPanel.collection);
                         });
                     }
                 });
@@ -82,10 +91,16 @@ export default FormBase.extend({
         if (!this.model.get("collapsible")) {
             this.$el.append(
                 $("<div/>")
-                    .addClass("ui-margin-top-large")
+                    .addClass("mt-2")
                     .append(this._footer())
             );
         }
+        options.tool_errors &&
+            this.message.update({
+                status: "danger",
+                message: options.tool_errors,
+                persistent: true
+            });
         this.show_message &&
             this.message.update({
                 status: "success",
@@ -99,13 +114,51 @@ export default FormBase.extend({
     _operations: function() {
         var self = this;
         var options = this.model.attributes;
+        let Galaxy = getGalaxyInstance();
+
+        // Buttons for adding and removing favorite.
+        let in_favorites = Galaxy.user.getFavorites().tools.indexOf(options.id) >= 0;
+        var favorite_button = new Ui.Button({
+            icon: "fa-star-o",
+            title: options.narrow ? null : "Favorite",
+            tooltip: "Add to favorites",
+            visible: !Galaxy.user.isAnonymous() && !in_favorites,
+            onclick: () => {
+                axios
+                    .put(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, { object_id: options.id })
+                    .then(response => {
+                        favorite_button.hide();
+                        remove_favorite_button.show();
+                        Galaxy.user.updateFavorites("tools", response.data);
+                    });
+            }
+        });
+
+        var remove_favorite_button = new Ui.Button({
+            icon: "fa-star",
+            title: options.narrow ? null : "Added",
+            tooltip: "Remove from favorites",
+            visible: !Galaxy.user.isAnonymous() && in_favorites,
+            onclick: () => {
+                axios
+                    .delete(
+                        `${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools/${encodeURIComponent(options.id)}`
+                    )
+                    .then(response => {
+                        remove_favorite_button.hide();
+                        favorite_button.show();
+                        Galaxy.user.updateFavorites("tools", response.data);
+                    });
+            }
+        });
 
         // button for version selection
         var versions_button = new Ui.ButtonMenu({
             icon: "fa-cubes",
-            title: (!options.narrow && "Versions") || null,
+            title: options.narrow ? null : "Versions",
             tooltip: "Select another tool version"
         });
+
         if (!options.sustain_version && options.versions && options.versions.length > 1) {
             for (var i in options.versions) {
                 var version = options.versions[i];
@@ -131,32 +184,16 @@ export default FormBase.extend({
         var menu_button = new Ui.ButtonMenu({
             id: "options",
             icon: "fa-caret-down",
-            title: (!options.narrow && "Options") || null,
+            title: options.narrow ? null : "Options",
             tooltip: "View available options"
         });
-        if (options.biostar_url) {
-            menu_button.addMenu({
-                icon: "fa-question-circle",
-                title: "Question?",
-                onclick: function() {
-                    window.open(`${options.biostar_url}/p/new/post/`);
-                }
-            });
-            menu_button.addMenu({
-                icon: "fa-search",
-                title: _l("Search"),
-                onclick: function() {
-                    window.open(`${options.biostar_url}/local/search/page/?q=${options.name}`);
-                }
-            });
-        }
         menu_button.addMenu({
             icon: "fa-share",
             title: _l("Share"),
             onclick: function() {
                 prompt(
                     "Copy to clipboard: Ctrl+C, Enter",
-                    `${window.location.origin + Galaxy.root}root?tool_id=${options.id}`
+                    `${window.location.origin + getAppRoot()}root?tool_id=${options.id}`
                 );
             }
         });
@@ -167,7 +204,7 @@ export default FormBase.extend({
                 icon: "fa-download",
                 title: _l("Download"),
                 onclick: function() {
-                    window.location.href = `${Galaxy.root}api/tools/${options.id}/download`;
+                    window.location.href = `${getAppRoot()}api/tools/${options.id}/download`;
                 }
             });
         }
@@ -227,7 +264,9 @@ export default FormBase.extend({
 
         return {
             menu: menu_button,
-            versions: versions_button
+            versions: versions_button,
+            favorite: favorite_button,
+            remove_favorite: remove_favorite_button
         };
     },
 
@@ -252,13 +291,13 @@ export default FormBase.extend({
     /** Templates */
     _templateHelp: function(options) {
         var $tmpl = $("<div/>")
-            .addClass("ui-form-help")
+            .addClass("form-help form-text mt-4")
             .append(options.help);
         $tmpl.find("a").attr("target", "_blank");
         $tmpl.find("img").each(function() {
             var img_src = $(this).attr("src");
             if (img_src.indexOf("admin_toolshed") !== -1) {
-                $(this).attr("src", Galaxy.root + img_src);
+                $(this).attr("src", getAppRoot() + img_src);
             }
         });
         return $tmpl;

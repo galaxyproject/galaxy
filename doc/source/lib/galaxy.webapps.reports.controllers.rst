@@ -49,14 +49,6 @@ galaxy\.webapps\.reports\.controllers\.root module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.webapps\.reports\.controllers\.sample\_tracking module
---------------------------------------------------------------
-
-.. automodule:: galaxy.webapps.reports.controllers.sample_tracking
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy\.webapps\.reports\.controllers\.system module
 ----------------------------------------------------
 

@@ -7,6 +7,7 @@ import os
 import tarfile
 import zipfile
 
+from galaxy.util.path import safe_relpath
 from .checkers import (
     bz2,
     is_bz2,
@@ -34,23 +35,20 @@ def get_fileobj_raw(filename, mode="r", compressed_formats=None):
         compressed_formats = ['bz2', 'gzip', 'zip']
     # Remove 't' from mode, which may cause an error for compressed files
     mode = mode.replace('t', '')
-    # the various compression readers don't support 'U' mode,
-    # so we open in 'r'.
+    # 'U' mode is deprecated, we open in 'r'.
     if mode == 'U':
-        cmode = 'r'
-    else:
-        cmode = mode
+        mode = 'r'
     compressed_format = None
     if 'gzip' in compressed_formats and is_gzip(filename):
-        fh = gzip.GzipFile(filename, cmode)
+        fh = gzip.GzipFile(filename, mode)
         compressed_format = 'gzip'
     elif 'bz2' in compressed_formats and is_bz2(filename):
-        fh = bz2.BZ2File(filename, cmode)
+        fh = bz2.BZ2File(filename, mode)
         compressed_format = 'bz2'
     elif 'zip' in compressed_formats and zipfile.is_zipfile(filename):
         # Return fileobj for the first file in a zip file.
-        with zipfile.ZipFile(filename, cmode) as zh:
-            fh = zh.open(zh.namelist()[0], cmode)
+        with zipfile.ZipFile(filename, mode) as zh:
+            fh = zh.open(zh.namelist()[0], mode)
         compressed_format = 'zip'
     elif 'b' in mode:
         return compressed_format, open(filename, mode)
@@ -63,6 +61,10 @@ def get_fileobj_raw(filename, mode="r", compressed_formats=None):
 
 
 class CompressedFile(object):
+
+    @staticmethod
+    def can_decompress(file_path):
+        return tarfile.is_tarfile(file_path) or zipfile.is_zipfile(file_path)
 
     def __init__(self, file_path, mode='r'):
         if tarfile.is_tarfile(file_path):
@@ -90,7 +92,7 @@ class CompressedFile(object):
                 extraction_path = os.path.join(path, self.file_name)
                 if not os.path.exists(extraction_path):
                     os.makedirs(extraction_path)
-                self.archive.extractall(extraction_path)
+                self.archive.extractall(extraction_path, members=self.safemembers())
         else:
             # Get the common prefix for all the files in the archive. If the common prefix ends with a slash,
             # or self.isdir() returns True, the archive contains a single directory with the desired contents.
@@ -103,7 +105,7 @@ class CompressedFile(object):
                 extraction_path = os.path.join(path, self.file_name)
                 if not os.path.exists(extraction_path):
                     os.makedirs(extraction_path)
-            self.archive.extractall(extraction_path)
+            self.archive.extractall(extraction_path, members=self.safemembers())
         # Since .zip files store unix permissions separately, we need to iterate through the zip file
         # and set permissions on extracted members.
         if self.file_type == 'zip':
@@ -119,6 +121,23 @@ class CompressedFile(object):
                     else:
                         log.warning("Unable to change permission on extracted file '%s' as it does not exist" % absolute_filepath)
         return os.path.abspath(os.path.join(extraction_path, common_prefix))
+
+    def safemembers(self):
+        members = self.archive
+        if self.file_type == "tar":
+            for finfo in members:
+                if not safe_relpath(finfo.name):
+                    raise Exception(finfo.name + " is blocked (illegal path).")
+                elif (finfo.issym() or finfo.islnk()) and not safe_relpath(finfo.linkname):
+                    raise Exception(finfo.name + " is blocked.")
+                else:
+                    yield finfo
+        elif self.file_type == "zip":
+            for name in members.namelist():
+                if not safe_relpath(name):
+                    raise Exception(name + " is blocked (illegal path).")
+                else:
+                    yield name
 
     def getmembers_tar(self):
         return self.archive.getmembers()

@@ -1,8 +1,4 @@
-//import $ from "jquery";
-// TODO:  This manipulates whatever jquery is available -- needs restructuring,
-// or removal (jquery plugins are a bad design choice for us at this point)
-// It is *only* used in the scatterplot viz, so this is safe.
-/* global $ */
+import $ from "jquery";
 
 //==============================================================================
 /** Column selection using the peek display as the control.
@@ -259,21 +255,21 @@ function peekColumnSelector(options) {
     var $peektable = $peek.find("table");
 
     var // get the size of the tables - width and height, number of comment rows
-    columnCount = $peektable.find("th").length;
+        columnCount = $peektable.find("th").length;
 
     var rowCount = $peektable.find("tr").length;
 
     var // get the rows containing text starting with the comment char (also make them grey)
-    $commentRows = $peektable.find("td[colspan]").map(function(e, i) {
-        var $this = $(this);
-        if ($this.text() && $this.text().match(new RegExp(`^${options.commentChar}`))) {
-            return $(this)
-                .css("color", "grey")
-                .parent()
-                .get(0);
-        }
-        return null;
-    });
+        $commentRows = $peektable.find("td[colspan]").map(function(e, i) {
+            var $this = $(this);
+            if ($this.text() && $this.text().match(new RegExp(`^${options.commentChar}`))) {
+                return $(this)
+                    .css("color", "grey")
+                    .parent()
+                    .get(0);
+            }
+            return null;
+        });
 
     // should comment rows in the peek be hidden?
     if (options.hideCommentRows) {
@@ -299,7 +295,7 @@ function peekColumnSelector(options) {
         var $this = $(this);
 
         var // can be '1.name' or '1'
-        text = $this.text().replace(/^\d+\.*/, "");
+            text = $this.text().replace(/^\d+\.*/, "");
 
         var name = options.columnNames[i] || text;
         $this.attr(`data-${COLUMN_NAME_DATA_KEY}`, name).text(i + 1 + (name ? `.${name}` : ""));

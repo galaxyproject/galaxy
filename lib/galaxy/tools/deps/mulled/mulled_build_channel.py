@@ -38,8 +38,6 @@ from .util import quay_versions, version_sorted
 def _fetch_repo_data(args):
     repo_data = args.repo_data
     channel = args.channel
-    if repo_data is None:
-        repo_data = "%s-repodata.json" % channel
     if not os.path.exists(repo_data):
         platform_tag = 'osx-64' if sys.platform == 'darwin' else 'linux-64'
         subprocess.check_call([
@@ -87,8 +85,8 @@ def get_pkg_names(args):
 
 def add_channel_arguments(parser):
     """Add arguments only used if running mulled over a whole conda channel."""
-    parser.add_argument('--repo-data', dest='repo_data', default=None,
-                        help='Published repository data (will be fetched from --channel if not available and written). Defaults to [channel_name]-repodata.json.')
+    parser.add_argument('--repo-data', dest='repo_data', required=True,
+                        help='Published repository data. If you want to build all containers for bioconda, this parameter needs to be set to "bioconda"')
     parser.add_argument('--diff-hours', dest='diff_hours', default="25",
                         help='If finding all recently changed recipes, use this number of hours.')
     parser.add_argument('--recipes-dir', dest="recipes_dir", default="./bioconda-recipes")

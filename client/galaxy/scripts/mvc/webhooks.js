@@ -1,8 +1,10 @@
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 
 const Webhooks = Backbone.Collection.extend({
     url: function() {
-        return `${Galaxy.root}api/webhooks`;
+        return `${getAppRoot()}api/webhooks`;
     }
 });
 

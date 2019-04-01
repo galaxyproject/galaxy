@@ -1,6 +1,12 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload/loadConfig";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_select from "mvc/ui/ui-select";
+
 var FolderView = Backbone.View.extend({
     el: "#center",
 
@@ -20,6 +26,7 @@ var FolderView = Backbone.View.extend({
     },
 
     fetchFolder: function(options) {
+        let Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         this.model = new mod_library_model.FolderAsModel({
             id: this.options.id
@@ -50,6 +57,7 @@ var FolderView = Backbone.View.extend({
     },
 
     showPermissions: function(options) {
+        let Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         $(".tooltip").remove();
 
@@ -61,7 +69,7 @@ var FolderView = Backbone.View.extend({
         this.$el.html(template({ folder: this.model, is_admin: is_admin }));
 
         var self = this;
-        $.get(`${Galaxy.root}api/folders/${self.id}/permissions?scope=current`)
+        $.get(`${getAppRoot()}api/folders/${self.id}/permissions?scope=current`)
             .done(fetched_permissions => {
                 self.prepareSelectBoxes({
                     fetched_permissions: fetched_permissions
@@ -112,7 +120,7 @@ var FolderView = Backbone.View.extend({
             placeholder: "Click to select a role",
             container: self.$el.find(`#${id}`),
             ajax: {
-                url: `${Galaxy.root}api/folders/${self.id}/permissions?scope=available`,
+                url: `${getAppRoot()}api/folders/${self.id}/permissions?scope=available`,
                 dataType: "json",
                 quietMillis: 100,
                 data: function(term, page) {
@@ -176,7 +184,7 @@ var FolderView = Backbone.View.extend({
         var add_ids = this._extractIds(this.addSelectObject.$el.select2("data"));
         var manage_ids = this._extractIds(this.manageSelectObject.$el.select2("data"));
         var modify_ids = this._extractIds(this.modifySelectObject.$el.select2("data"));
-        $.post(`${Galaxy.root}api/folders/${self.id}/permissions?action=set_permissions`, {
+        $.post(`${getAppRoot()}api/folders/${self.id}/permissions?action=set_permissions`, {
             "add_ids[]": add_ids,
             "manage_ids[]": manage_ids,
             "modify_ids[]": modify_ids

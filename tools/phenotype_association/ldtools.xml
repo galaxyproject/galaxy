@@ -1,8 +1,10 @@
 <tool id="hgv_ldtools" name="LD" version="1.0.0">
   <description>linkage disequilibrium and tag SNPs</description>
-
-  <command interpreter="bash">
-    ldtools_wrapper.sh rsquare=$rsquare freq=$freq input=$input output=$output
+  <requirements>
+    <requirement type="package" version="2.7">python</requirement>
+  </requirements>
+  <command detect_errors="exit_code">
+'$__tool_directory__/ldtools_wrapper.sh' rsquare=$rsquare freq=$freq input='$input' output='$output'
   </command>
 
   <inputs>

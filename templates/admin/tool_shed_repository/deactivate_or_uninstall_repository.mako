@@ -20,12 +20,12 @@ else:
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
+<div class="card">
 <form name="deactivate_or_uninstall_repository" id="deactivate_or_uninstall_repository" action="${ h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository' ) }" method="post" >
 %for repository in repositories:
     <input type="hidden" name="id" value="${ trans.security.encode_id( repository.id ) | h }" />
-    <div class="toolFormTitle">${repository.name|h}</div>
-    <div class="toolFormBody">
+    <div class="card-header">${repository.name|h}</div>
+    <div class="card-body">
             <div class="form-row">
                 <label>Description:</label>
                 ${repository.description|h}

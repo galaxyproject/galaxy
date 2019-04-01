@@ -54,7 +54,7 @@ time it starts up and be configured to use it by default.
 
 The long answer is that Galaxy's tool dependency resolution is managed via
 ``dependency_resolvers_conf.xml`` configuration file. This configuration
-file is discussed in detail in the :ref:`Dependency Resolvers <dependency_resolvers>`
+file is discussed in detail in the :doc:`Dependency Resolvers <dependency_resolvers>`
 documentation. Most Galaxy administrators will be using Galaxy's default dependency
 resolvers configuration file (``config/dependency_resolvers_conf.xml.sample``). With
 release 16.04, Galaxy has enabled Conda dependency resolution by default when
@@ -68,7 +68,7 @@ entry should remain first. This means that tools that have specified Tool Shed p
 as their dependencies will work without a change.
 
 The most common configuration settings related to Conda are listed in Table 1.
-See `galaxy.yml.sample`_ for the complete list.
+See :doc:`Configuration Options <options>` for the complete list.
 
 +-------------------------+------------------------------------+---------------------------+
 | Setting                 | Default setting                    | Meaning                   |
@@ -105,7 +105,7 @@ handle these dependencies for you, but admins are not required to use Galaxy for
 dependency management.
 
 There are a few config options in the ``galaxy.yml`` file (see Table 1 or
-`galaxy.yml.sample`_ for more information), but by default Galaxy will install
+:doc:`Configuration Options <options>` for more information), but by default Galaxy will install
 Conda (the package manager) and the required packages in the
 ``<tool_dependency_dir>/_conda/`` directory. In this directory, Galaxy will
 create an ``envs`` folder with all of the environments managed by Galaxy. Each
@@ -203,7 +203,7 @@ The order in which resolvers are tried is listed in the
 -  Conda packages
 
 The first system that satisfies a requirement will be used. See
-`resolver docs`_ for detailed documentation.
+:doc:`Dependency Resolvers <dependency_resolvers>` for detailed documentation.
 
 This however is not recommended, ideally tools will target and test
 against Conda for all dependencies. Also resolving all requirements
@@ -227,9 +227,9 @@ Admin panel (under Tool Management → Manage dependencies).
 The simple answer is: you don't need to do much to make Conda work for a tool.
 
 The ``<requirement>`` tag in the tool XML file is enough. The name and the
-version should correspond to a Conda package in the ``default``, ``r``,
-``bioconda`` or ``iuc`` Conda channel (you can extend this list if you
-like in your ``galaxy.yml`` ). If this is the case you are ready to go. Read
+version should correspond to a Conda package in one of the enabled channels
+(which are specified by the ``conda_ensure_channels`` directive in
+``galaxy.yml`` ). If this is the case you are ready to go. Read
 more about `Conda channels`_  and browse their packages on https://anaconda.org/ url followed by the channel name (e.g.
 `https://anaconda.org/bioconda <https://anaconda.org/bioconda>`__
 ).
@@ -258,7 +258,7 @@ With Conda package manager installed on your system, run:
 
 .. code-block:: bash
 
-   $ conda search <package_name> -c bioconda -c iuc
+   $ conda search <package_name> -c iuc -c conda-forge -c bioconda
 
 This will search in all channels that are activated by default in
 Galaxy. If you find your package, you are ready to go. If not please
@@ -404,17 +404,15 @@ you let Galaxy install Conda prior to the release of 17.01 you probably have ver
 The command can obviously be adapted to install any version of Conda.
 
 
-.. _Conda documentation: http://conda.pydata.org/docs/building/build.html
-.. _Conda quick-start: http://conda.pydata.org/docs/get-started.html
+.. _Conda documentation: https://conda.io/docs/
+.. _Conda quick-start: https://conda.io/docs/user-guide/getting-started.html
 .. _ansible role: https://github.com/galaxyproject/ansible-galaxy-tools
 .. _BioBlend: https://github.com/galaxyproject/bioblend
-.. _resolver docs: https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
-.. _Conda channels: http://conda.pydata.org/docs/custom-channels.html
-.. _create a Conda package: http://conda.pydata.org/docs/building/recipe.html#conda-recipe-files-overview
+.. _Conda channels: https://conda.io/docs/user-guide/tasks/manage-channels.html
+.. _create a Conda package: https://conda.io/docs/user-guide/tasks/build-packages/recipe.html
 .. _submit: https://bioconda.github.io/#step-4-join-the-team
 .. _BioConda: https://bioconda.github.io
 .. _contact with the IUC: https://gitter.im/galaxy-iuc/iuc
-.. _galaxy.yml.sample: https://docs.galaxyproject.org/en/master/admin/options.html
 .. _Pull Request #3106: https://github.com/galaxyproject/galaxy/pull/3106
 .. _Pull Request #3348: https://github.com/galaxyproject/galaxy/pull/3348
 .. _Pull Request #3391: https://github.com/galaxyproject/galaxy/pull/3391

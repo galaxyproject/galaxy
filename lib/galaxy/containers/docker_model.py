@@ -189,7 +189,7 @@ class DockerService(Container):
     def from_cli(cls, interface, s, task_list):
         service = cls(interface, s['ID'], name=s['NAME'], image=s['IMAGE'])
         for task_dict in task_list:
-            if task_dict['NAME'].strip().startswith('\_'):
+            if task_dict['NAME'].strip().startswith(r'\_'):
                 continue    # historical task
             service.task_add(DockerTask.from_cli(interface, task_dict, service=service))
         return service

@@ -163,7 +163,7 @@ def query(tool_id=None, user=None, like=None, source='metrics',
 
     if like:
         query_tool_id = '%%/%s/%%' % tool_id
-    elif '/' in tool_id and not re.match('\d+\.\d+', tool_id.split('/')[-1]):
+    elif '/' in tool_id and not re.match(r'\d+\.\d+', tool_id.split('/')[-1]):
         query_tool_id = '%s%%' % tool_id
         like = True
     else:

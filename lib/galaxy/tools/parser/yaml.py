@@ -5,13 +5,13 @@ from .interface import PageSource
 from .interface import PagesSource
 from .interface import ToolSource
 from .output_actions import ToolOutputActionGroup
-from .output_collection_def import dataset_collector_descriptions_from_list
+from .output_collection_def import dataset_collector_descriptions_from_output_dict
 from .output_objects import (
     ToolOutput,
     ToolOutputCollection,
     ToolOutputCollectionStructure,
 )
-from .util import error_on_exit_code
+from .util import error_on_exit_code, is_dict
 
 
 class YamlToolSource(ToolSource):
@@ -54,6 +54,9 @@ class YamlToolSource(ToolSource):
     def parse_command(self):
         return self.root_dict.get("command")
 
+    def parse_expression(self):
+        return self.root_dict.get("expression")
+
     def parse_environment_variables(self):
         return []
 
@@ -93,7 +96,7 @@ class YamlToolSource(ToolSource):
             if output_type == "data":
                 output_defs.append(self._parse_output(tool, name, output_dict))
             elif output_type == "collection":
-                output_collection_defs.append(self._parse_output(tool, name, output_dict))
+                output_collection_defs.append(self._parse_output_collection(tool, name, output_dict))
             else:
                 message = "Unknown output_type [%s] encountered." % output_type
                 raise Exception(message)
@@ -123,7 +126,7 @@ class YamlToolSource(ToolSource):
         output.hidden = output_dict.get("hidden", "")
         # TODO: implement tool output action group fixes
         output.actions = ToolOutputActionGroup(output, None)
-        output.dataset_collector_descriptions = self._dataset_collector_descriptions(output_dict)
+        output.dataset_collector_descriptions = dataset_collector_descriptions_from_output_dict(output_dict)
         return output
 
     def _parse_output_collection(self, tool, name, output_dict):
@@ -141,7 +144,7 @@ class YamlToolSource(ToolSource):
         default_format_source = output_dict.get("format_source", None)
         default_metadata_source = output_dict.get("metadata_source", "")
         filters = []
-        dataset_collector_descriptions = self._dataset_collector_descriptions(output_dict)
+        dataset_collector_descriptions = dataset_collector_descriptions_from_output_dict(output_dict)
 
         structure = ToolOutputCollectionStructure(
             collection_type=collection_type,
@@ -162,12 +165,6 @@ class YamlToolSource(ToolSource):
         )
         return output_collection
 
-    def _dataset_collector_descriptions(self, discover_datasets_dicts):
-        if _is_dict(discover_datasets_dicts):
-            discover_datasets_dicts = [discover_datasets_dicts]
-        dataset_collector_descriptions = dataset_collector_descriptions_from_list(discover_datasets_dicts)
-        return dataset_collector_descriptions
-
     def parse_tests_to_dict(self):
         tests = []
         rval = dict(
@@ -185,7 +182,7 @@ class YamlToolSource(ToolSource):
 
 def _parse_test(i, test_dict):
     inputs = test_dict["inputs"]
-    if _is_dict(inputs):
+    if is_dict(inputs):
         new_inputs = []
         for key, value in inputs.items():
             new_inputs.append({"name": key, "value": value, "attributes": {}})
@@ -194,9 +191,9 @@ def _parse_test(i, test_dict):
     outputs = test_dict["outputs"]
 
     new_outputs = []
-    if _is_dict(outputs):
+    if is_dict(outputs):
         for key, value in outputs.items():
-            if _is_dict(value):
+            if is_dict(value):
                 attributes = value
                 file = attributes.get("file")
             else:
@@ -243,10 +240,6 @@ def _parse_test(i, test_dict):
     return test_dict
 
 
-def _is_dict(item):
-    return isinstance(item, dict) or isinstance(item, odict)
-
-
 def __to_test_assert_list(assertions):
     def expand_dict_form(item):
         key, value = item
@@ -254,7 +247,7 @@ def __to_test_assert_list(assertions):
         new_value["that"] = key
         return new_value
 
-    if _is_dict(assertions):
+    if is_dict(assertions):
         assertions = map(expand_dict_form, assertions.items())
 
     assert_list = []

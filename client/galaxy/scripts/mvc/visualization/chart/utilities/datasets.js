@@ -1,8 +1,7 @@
 /** This class handles, formats and caches datasets. */
+import _ from "underscore";
+import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
-import * as _ from "underscore";
-
-/* global Galaxy */
 
 /** Assists in assigning the viewport panels */
 var requestPanels = function(options) {
@@ -75,7 +74,7 @@ var request = function(options) {
     }
     // Fetch data columns into dataset object
     Utils.get({
-        url: Galaxy.root + "api/datasets/" + dataset_id,
+        url: getAppRoot() + "api/datasets/" + dataset_id,
         data: {
             data_type: "raw_data",
             provider: "dataset-column",

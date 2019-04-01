@@ -612,7 +612,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
     @web.require_login("view or manage repository")
     def view_or_manage_repository(self, trans, **kwd):
         repository = repository_util.get_repository_in_tool_shed(trans.app, kwd['id'])
-        if trans.user_is_admin() or repository.user == trans.user:
+        if trans.user_is_admin or repository.user == trans.user:
             return trans.response.send_redirect(web.url_for(controller='repository',
                                                             action='manage_repository',
                                                             **kwd))

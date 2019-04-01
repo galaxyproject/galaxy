@@ -18,6 +18,7 @@ CREATE_VENV=1
 REPLACE_PIP=$SET_VENV
 COPY_SAMPLE_FILES=1
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
+NODE_VERSION=${GALAXY_NODE_VERSION:-"$(cat client/.node_version)"}
 
 for arg in "$@"; do
     [ "$arg" = "--skip-eggs" ] && FETCH_WHEELS=0
@@ -69,14 +70,14 @@ in_conda_env() {
 }
 
 if [ $COPY_SAMPLE_FILES -eq 1 ]; then
-	# Create any missing config/location files
-	for sample in $SAMPLES; do
-		file=${sample%.sample}
-	    if [ ! -f "$file" -a -f "$sample" ]; then
-	        echo "Initializing $file from $(basename "$sample")"
-	        cp "$sample" "$file"
-	    fi
-	done
+    # Create any missing config/location files
+    for sample in $SAMPLES; do
+        file=${sample%.sample}
+        if [ ! -f "$file" -a -f "$sample" ]; then
+            echo "Initializing $file from $(basename "$sample")"
+            cp "$sample" "$file"
+        fi
+    done
 fi
 
 # remove problematic cached files
@@ -89,43 +90,42 @@ if command -v git >/dev/null && [ -d .git ]; then
     GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
     case $GIT_BRANCH in
         release_*|master)
-            # All non-release branches should build the client as necessary
-            SKIP_CLIENT_BUILD=1
+            # All branches should now build the client as necessary, turn this
+            # back into an if?  Or is there more we need to do here?
             ;;
         *)
-            # Ensure nodeenv is installed
             DEV_WHEELS=1
             # SKIP_CLIENT_BUILD will default to false, but can be overridden by the command line argument
             ;;
     esac
 else
     GIT_BRANCH=0
-    DEV_WHEELS=1
 fi
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 # GALAXY_CONDA_ENV is not set here because we don't want to execute the Galaxy version check if we don't need to
 
 if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
-    if [ ! -d "$GALAXY_VIRTUAL_ENV" ]
-    then
+    if [ ! -d "$GALAXY_VIRTUAL_ENV" ]; then
         # Locate `conda` and set $CONDA_EXE (if needed). If `python` is Conda Python and $GALAXY_VIRTUAL_ENV does not
         # exist, virtualenv will not be used. setup_python calls this as well but in this case we need it done
         # beforehand.
         set_conda_exe
         if [ -n "$CONDA_EXE" ]; then
-            echo "Found Conda, virtualenv will not be used."
-            echo "To use a virtualenv instead, create one with a non-Conda Python 2.7 at $GALAXY_VIRTUAL_ENV"
-            : ${GALAXY_CONDA_ENV:="_galaxy_$(get_galaxy_major_version)"}
+            echo "Found Conda, will set up a virtualenv using conda."
+            echo "To use a virtualenv instead, create one with a non-Conda Python at $GALAXY_VIRTUAL_ENV"
+            : ${GALAXY_CONDA_ENV:="_galaxy_"}
             if [ "$CONDA_DEFAULT_ENV" != "$GALAXY_CONDA_ENV" ]; then
                 if ! check_conda_env "$GALAXY_CONDA_ENV"; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --name "$GALAXY_CONDA_ENV" 'python=2.7' 'pip>=9'
+                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=2.7' 'pip>=9' 'virtualenv>=16'
                     unset __CONDA_INFO
                 fi
+                conda_activate
             fi
+            virtualenv "$GALAXY_VIRTUAL_ENV"
         else
             # If .venv does not exist, and there is no conda available, attempt to create it.
             # Ensure Python is a supported version before creating .venv
@@ -136,9 +136,9 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
             if command -v virtualenv >/dev/null; then
                 virtualenv -p "$(command -v python)" "$GALAXY_VIRTUAL_ENV"
             else
-                vvers=13.1.2
-                vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
-                vsha="aabc8ef18cddbd8a2a9c7f92bc43e2fea54b1147330d65db920ef3ce9812e3dc"
+                vvers=16.1.0
+                vurl="https://files.pythonhosted.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
+                vsha=f899fafcd92e1150f40c8215328be38ff24b519cd95357fa6e78e006c7638208
                 vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
                 vsrc="$vtmp/$(basename $vurl)"
                 # SSL certificates are not checked to prevent problems with messed
@@ -150,12 +150,16 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
                 elif command -v wget >/dev/null; then
                     wget --no-check-certificate -O "$vsrc" "$vurl"
                 else
-                    python -c "import urllib; urllib.urlretrieve('$vurl', '$vsrc')"
+                    python -c "try:
+    from urllib import urlretrieve
+except:
+    from urllib.request import urlretrieve
+urlretrieve('$vurl', '$vsrc')"
                 fi
                 echo "Verifying $vsrc checksum is $vsha"
                 python -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
                 tar zxf "$vsrc" -C "$vtmp"
-                python "$vtmp/virtualenv-$vvers/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
+                python "$vtmp/virtualenv-$vvers/src/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
                 rm -rf "$vtmp"
             fi
         fi
@@ -206,10 +210,12 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
         # If git is not used and static/client_build_hash.txt is present, next
         # client rebuilds must be done manually by the admin
         if [ "$GIT_BRANCH" = "0" ]; then
+            echo "Skipping Galaxy client build because git is not in use and the client build state cannot be compared against local changes.  If you have made local modifications, then manual client builds will be required."
             SKIP_CLIENT_BUILD=1
         else
             # Check if anything has changed in client/ since the last build
             if git diff --quiet $(cat static/client_build_hash.txt) -- client/; then
+                echo "The Galaxy client build is up to date and will not be rebuilt at this time."
                 SKIP_CLIENT_BUILD=1
             else
                 echo "The Galaxy client is out of date and will be built now."
@@ -218,16 +224,27 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     else
         echo "The Galaxy client has not yet been built and will be built now."
     fi
+else
+    echo "The Galaxy client build is being skipped due to the SKIP_CLIENT_BUILD environment variable."
+fi
+
+# Install node if not installed
+if [ -n "$VIRTUAL_ENV" ]; then
+    if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v$NODE_VERSION" ]; then
+        echo "Installing node into $VIRTUAL_ENV with nodeenv."
+        nodeenv -n $NODE_VERSION -p
+    fi
+elif [ -n "$CONDA_DEFAULT_ENV" -a -n "$CONDA_EXE" ]; then
+    if ! in_conda_env "$(command -v node)"; then
+        echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
+        $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name $CONDA_DEFAULT_ENV node=$NODE_VERSION
+    fi
 fi
 
 # Build client if necessary.
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     # Ensure dependencies are installed
     if [ -n "$VIRTUAL_ENV" ]; then
-        if ! in_venv "$(command -v node)"; then
-            echo "Installing node into $VIRTUAL_ENV with nodeenv."
-            nodeenv -n 9.11.1 -p
-        fi
         if ! in_venv "$(command -v yarn)"; then
             echo "Installing yarn into $VIRTUAL_ENV with npm."
             npm install --global yarn
@@ -240,13 +257,16 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     else
         echo "WARNING: Galaxy client build needed but there is no virtualenv enabled. Build may fail."
     fi
-
     # Build client
-    if ! make client; then
-        echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
+    cd client
+    if yarn install --network-timeout 300000 --check-files; then
+        if ! yarn run build-production-maps; then
+            echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
+            exit 1
+        fi
+    else
+        echo "ERROR: Galaxy client dependency installation failed. See ./client/README.md for more information, including how to get help."
         exit 1
     fi
-else
-    echo "Regenerating static plugin directories."
-    python ./scripts/plugin_staging.py
+    cd -
 fi

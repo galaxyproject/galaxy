@@ -13,17 +13,3 @@ sanitization:
     tools:
         - __SET_METADATA__
         - upload1
-    # Or you can blacklist individual parameters from being submitted, e.g. if
-    # you have API keys as a tool parameter.
-    tool_params:
-        # Or to blacklist under a specific tool, just specify the ID
-        some_tool_id:
-            - dbkey
-            # If you need to specify a parameter multiple levels deep, you can
-            # do that as well. Currently we only support blacklisting via the
-            # full path, rather than just a path component. So everything under
-            # `path.to.parameter` will be blacklisted.
-            - path.to.parameter
-            # However you could not do "parameter" and have everything under
-            # `path.to.parameter` be removed.
-            # Repeats are rendered as an *, e.g.: repeat_name.*.values

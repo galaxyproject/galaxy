@@ -1,5 +1,7 @@
 /** This renders the content of the settings popup, allowing users to specify flags i.e. for space-to-tab conversion **/
-import Utils from "utils/utils";
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 export default Backbone.View.extend({
     options: {
         class_check: "fa-check-square-o",
@@ -17,13 +19,12 @@ export default Backbone.View.extend({
     },
 
     initialize: function(options) {
-        var self = this;
         this.model = options.model;
         this.setElement($("<div/>").addClass("upload-settings"));
         this.$el.append($("<div/>").addClass("upload-settings-cover"));
         this.$el.append(
             $("<table/>")
-                .addClass("upload-settings-table ui-table-striped")
+                .addClass("upload-settings-table grid")
                 .append("<tbody/>")
         );
         this.$cover = this.$(".upload-settings-cover");
@@ -37,16 +38,15 @@ export default Backbone.View.extend({
         this.$table.empty();
         _.each(this.options.parameters, parameter => {
             var $checkbox = $("<div/>")
-                .addClass(`upload-${parameter.id} upload-icon-button fa`)
-                .addClass((self.model.get(parameter.id) && self.options.class_check) || self.options.class_uncheck)
+                .addClass(`upload-${parameter.id} fa`)
+                .addClass((self.model.get(parameter.id) && self.options.class_check) || self.options.class_uncheck);
+            let $row = $("<tr/>")
+                .append($("<td/>").append($checkbox))
+                .append($("<td/>").append(parameter.title))
                 .on("click", () => {
                     self.model.get("enabled") && self.model.set(parameter.id, !self.model.get(parameter.id));
                 });
-            self.$table.append(
-                $("<tr/>")
-                    .append($("<td/>").append($checkbox))
-                    .append($("<td/>").append(parameter.title))
-            );
+            self.$table.append($row);
         });
         this.$cover[(this.model.get("enabled") && "hide") || "show"]();
     }
