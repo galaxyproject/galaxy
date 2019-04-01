@@ -123,6 +123,7 @@ class YamlToolSource(ToolSource):
         output.filters = []
         output.tool = tool
         output.from_work_dir = output_dict.get("from_work_dir", None)
+        output.when_empty = output_dict.get("when_empty", None)
         output.hidden = output_dict.get("hidden", "")
         # TODO: implement tool output action group fixes
         output.actions = ToolOutputActionGroup(output, None)
@@ -143,6 +144,7 @@ class YamlToolSource(ToolSource):
             inherit_metadata = output_dict.get("inherit_metadata", None)
         default_format_source = output_dict.get("format_source", None)
         default_metadata_source = output_dict.get("metadata_source", "")
+        when_empty = output_dict.get("when_empty", None)
         filters = []
         dataset_collector_descriptions = dataset_collector_descriptions_from_output_dict(output_dict)
 
@@ -162,6 +164,7 @@ class YamlToolSource(ToolSource):
             inherit_metadata=inherit_metadata,
             default_format_source=default_format_source,
             default_metadata_source=default_metadata_source,
+            when_empty=when_empty,
         )
         return output_collection
 

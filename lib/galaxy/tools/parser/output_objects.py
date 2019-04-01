@@ -4,13 +4,14 @@ from galaxy.util.odict import odict
 
 class ToolOutputBase(Dictifiable):
 
-    def __init__(self, name, label=None, filters=None, hidden=False):
+    def __init__(self, name, label=None, filters=None, hidden=False, when_empty=None):
         super(ToolOutputBase, self).__init__()
         self.name = name
         self.label = label
         self.filters = filters or []
         self.hidden = hidden
         self.collection = False
+        self.when_empty = when_empty
 
     def to_dict(self, view='collection', value_mapper=None, app=None):
         return super(ToolOutputBase, self).to_dict(view=view, value_mapper=value_mapper)
@@ -28,8 +29,8 @@ class ToolOutput(ToolOutputBase):
 
     def __init__(self, name, format=None, format_source=None, metadata_source=None,
                  parent=None, label=None, filters=None, actions=None, hidden=False,
-                 implicit=False):
-        super(ToolOutput, self).__init__(name, label=label, filters=filters, hidden=hidden)
+                 implicit=False, when_empty=False):
+        super(ToolOutput, self).__init__(name, label=label, filters=filters, hidden=hidden, when_empty=when_empty)
         self.output_type = "data"
         self.format = format
         self.format_source = format_source
@@ -122,9 +123,10 @@ class ToolOutputCollection(ToolOutputBase):
         default_format_source=None,
         default_metadata_source=None,
         inherit_format=False,
-        inherit_metadata=False
+        inherit_metadata=False,
+        when_empty=None
     ):
-        super(ToolOutputCollection, self).__init__(name, label=label, filters=filters, hidden=hidden)
+        super(ToolOutputCollection, self).__init__(name, label=label, filters=filters, hidden=hidden, when_empty=when_empty)
         self.output_type = "collection"
         self.collection = True
         self.default_format = default_format
