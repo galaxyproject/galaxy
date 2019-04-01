@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Boolean, Column, DateTime, MetaData, Table
+from sqlalchemy import Column, DateTime, MetaData, Table
 
 from galaxy.model.migrate.versions.util import add_column, drop_column
 
