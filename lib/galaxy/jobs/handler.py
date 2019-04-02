@@ -127,6 +127,9 @@ class JobHandlerQueue(Monitors):
             .limit(self.app.job_config.handler_max_grab)
         if method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
             subq = subq.with_for_update(skip_locked=True)
+        # Updating the state to waiting here does not add an entry to the job_state_history table, which is not a
+        # problem per se but it's not ideal. We could do it with an upsert but I'd prefer to keep this query as simple
+        # as possible.
         self.__grab_query = model.Job.table.update() \
             .returning(model.Job.table.c.id) \
             .where(model.Job.table.c.id.in_(subq)) \
@@ -174,6 +177,7 @@ class JobHandlerQueue(Monitors):
                        model.Job.states.RUNNING)
         else:
             in_list = (model.Job.states.NEW,
+                       model.Job.states.WAITING,
                        model.Job.states.DISPATCHED,
                        model.Job.states.SUBMITTED,
                        model.Job.states.QUEUED,
@@ -190,7 +194,8 @@ class JobHandlerQueue(Monitors):
                         (model.Job.handler == self.app.config.server_name)).all()
 
         for job in jobs_at_startup:
-            # TODO: use dispatched state here?
+            # We could use the new granular job states below but the current logic also accurately identifies what to do
+            # with a job in any state on startup
             if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
                 log.warning("(%s) Tool '%s' removed from tool config, unable to recover job" % (job.id, job.tool_id))
                 self.job_wrapper(job).fail('This tool was disabled before the job completed.  Please contact your Galaxy administrator.')
@@ -199,7 +204,7 @@ class JobHandlerQueue(Monitors):
                 log.debug("(%s) Job runner assigned but no external ID recorded, adding to the job handler queue" % job.id)
                 job.job_runner_name = None
                 if self.track_jobs_in_database:
-                    job.set_state(model.Job.states.NEW)
+                    job.set_state(model.Job.states.WAITING)
                 else:
                     self.queue.put((job.id, job.tool_id))
             elif job.job_runner_name is not None and job.job_runner_external_id is not None and job.destination_id is None:
@@ -215,7 +220,7 @@ class JobHandlerQueue(Monitors):
                 # Never (fully) dispatched
                 log.debug("(%s) No job runner assigned and job still in '%s' state, adding to the job handler queue" % (job.id, job.state))
                 if self.track_jobs_in_database:
-                    job.set_state(model.Job.states.NEW)
+                    job.set_state(model.Job.states.WAITING)
                 else:
                     self.queue.put((job.id, job.tool_id))
             else:
