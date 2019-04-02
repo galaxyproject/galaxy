@@ -226,23 +226,13 @@ class CondorJobRunner(AsynchronousJobRunner):
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         # TODO Check if we need any changes here
-        job_id = job.get_job_runner_external_id()
+        cjs = self._recover_async_job_state(job, job_wrapper, cls=CondorJobState)
         galaxy_id_tag = job_wrapper.get_id_tag()
-        if job_id is None:
-            self.put(job_wrapper)
-            return
-        cjs = CondorJobState(job_wrapper=job_wrapper, files_dir=self.app.config.cluster_files_directory)
-        cjs.job_id = str(job_id)
-        cjs.command_line = job.get_command_line()
-        cjs.job_wrapper = job_wrapper
-        cjs.job_destination = job_wrapper.job_destination
         cjs.user_log = os.path.join(self.app.config.cluster_files_directory, 'galaxy_%s.condor.log' % galaxy_id_tag)
         cjs.register_cleanup_file_attribute('user_log')
-        if job.state == model.Job.states.RUNNING:
-            log.debug("(%s/%s) is still in running state, adding to the DRM queue" % (job.id, job.job_runner_external_id))
-            cjs.running = True
-            self.monitor_queue.put(cjs)
-        elif job.state == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in DRM queued state, adding to the DRM queue" % (job.id, job.job_runner_external_id))
-            cjs.running = False
+        if getattr(cjs, 'fail_job', False):
+            log.error("(%s) Failing job due to job state recovery error", job.id, job.state)
+            self.mark_as_failed(cjs)
+        else:
+            log.debug("(%s/%s) Job recovered in '%s' state, adding to the runner monitor queue", job.id, cjs.job_id, job.state)
             self.monitor_queue.put(cjs)

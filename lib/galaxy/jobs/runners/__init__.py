@@ -138,7 +138,7 @@ class BaseJobRunner(object):
         put_timer = ExecutionTimer()
         job_wrapper.mark_as_dispatched()
         self.enqueue(job_wrapper)
-        log.debug("Job [%s] dispatched %s" % (job_wrapper.job_id, put_timer))
+        log.debug("(%s) Job dispatched in %s" % (job_wrapper.job_id, put_timer))
 
     def enqueue(self, job_wrapper):
         self.work_queue.put((self.queue_job, job_wrapper))
@@ -213,9 +213,8 @@ class BaseJobRunner(object):
             if self.app.config.cleanup_job in ("always", "onsuccess"):
                 job_wrapper.cleanup()
             return False
-        # TODO: is this ok?
         elif job_state != model.Job.states.DISPATCHED:
-            log.info("(%s) Job is in state %s, skipping execution" % (job_id, job_state))
+            log.warning("(%s) Job is in state '%s', skipping execution" % (job_id, job_state))
             # cleanup may not be safe in all states
             return False
 
@@ -453,7 +452,7 @@ class BaseJobRunner(object):
     def mark_as_resubmitted(self, job_state, info=None):
         job_state.job_wrapper.mark_as_resubmitted(info=info)
         if not self.app.config.track_jobs_in_database:
-            job_state.job_wrapper.change_state(model.Job.states.QUEUED)
+            job_state.job_wrapper.change_state(model.Job.states.WAITING)
             self.app.job_manager.job_handler.dispatcher.put(job_state.job_wrapper)
 
     def _job_io_for_db(self, stream):
@@ -773,3 +772,25 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
 
     def mark_as_failed(self, job_state):
         self.work_queue.put((self.fail_job, job_state))
+
+    def _recover_async_job_state(self, job, job_wrapper, cls=AsynchronousJobState):
+        """Recovers jobs still in the submitted/queued/running state when Galaxy started"""
+        assert job.state in (model.Job.states.SUBMITTED, model.Job.states.QUEUED, model.Job.states.RUNNING), \
+            "(%s) Cannot recover job in '%s' state, this is a bug" % (job.id, job.state)
+        job_id = job.get_job_runner_external_id()
+        ajs = cls(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
+        ajs.job_id = job_id and str(job_id)
+        ajs.command_line = job.get_command_line()
+        ajs.job_wrapper = job_wrapper
+        ajs.job_destination = job_wrapper.job_destination
+        if job_id is None:
+            # this should not occur (the external id should be set at the same time the state is updated)
+            log.error("(%s) Recovered job in '%s' state but no job_runner_external_id set", job.id, job.state)
+            ajs.fail_job = True
+            ajs.stop_job = False
+            ajs.fail_message = "Galaxy could not recover this job upon server restart, please try running it again" \
+                               " and report it to the Galaxy administrators using the bug icon"
+        else:
+            ajs.old_state = job.state
+            ajs.running = job.state == model.Job.states.RUNNING
+        return ajs

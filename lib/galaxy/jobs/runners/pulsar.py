@@ -588,7 +588,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         job_state = self._job_state(job, job_wrapper)
         job_wrapper.command_line = job.get_command_line()
         state = job.get_state()
-        if state in [model.Job.states.RUNNING, model.Job.states.QUEUED]:
+        if state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.SUBMITTED]:
             log.debug("(Pulsar/%s) is still in running state, adding to the Pulsar queue" % (job.id))
             job_state.old_state = True
             job_state.running = state == model.Job.states.RUNNING

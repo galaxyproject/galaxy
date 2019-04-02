@@ -43,7 +43,6 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         runner_param_specs = {
             'drmaa_library_path': dict(map=str, default=os.environ.get('DRMAA_LIBRARY_PATH', None))}
         for retry_exception in RETRY_EXCEPTIONS_LOWER:
-            # TODO: update?
             runner_param_specs[retry_exception + '_state'] = dict(map=str, valid=lambda x: x in (model.Job.states.OK, model.Job.states.ERROR), default=model.Job.states.OK)
             runner_param_specs[retry_exception + '_retries'] = dict(map=int, valid=lambda x: int >= 0, default=0)
 
@@ -364,25 +363,17 @@ class DRMAAJobRunner(AsynchronousJobRunner):
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
-        job_id = job.get_job_runner_external_id()
-        if job_id is None:
-            self.put(job_wrapper)
-            return
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
-        ajs.job_id = str(job_id)
-        ajs.command_line = job.get_command_line()
-        ajs.job_wrapper = job_wrapper
-        ajs.job_destination = job_wrapper.job_destination
-        # TODO: update here?
-        if job.state == model.Job.states.RUNNING:
-            log.debug("(%s/%s) is still in running state, adding to the DRM queue" % (job.id, job.get_job_runner_external_id()))
-            ajs.old_state = drmaa.JobState.RUNNING
-            ajs.running = True
-            self.monitor_queue.put(ajs)
-        elif job.get_state() == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in DRM queued state, adding to the DRM queue" % (job.id, job.get_job_runner_external_id()))
-            ajs.old_state = drmaa.JobState.QUEUED_ACTIVE
-            ajs.running = False
+        ajs = self._recover_async_job_state(job, job_wrapper)
+        if getattr(ajs, 'fail_job', False):
+            log.error("(%s) Failing job due to job state recovery error", job.id, job.state)
+            self.mark_as_failed(ajs)
+        else:
+            log.debug("(%s/%s) Job recovered in '%s' state, adding to the runner monitor queue", job.id, ajs.job_id, job.state)
+            ajs.old_state = {
+                model.Job.states.SUBMITTED: drmaa.JobState.QUEUED_ACTIVE,
+                model.Job.states.QUEUED: drmaa.JobState.QUEUED_ACTIVE,
+                model.Job.states.RUNNING: drmaa.JobState.RUNNING,
+            }[job.state]
             self.monitor_queue.put(ajs)
 
     def store_jobtemplate(self, job_wrapper, jt):

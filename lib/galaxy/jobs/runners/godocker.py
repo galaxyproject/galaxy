@@ -157,6 +157,8 @@ class GodockerJobRunner(AsynchronousJobRunner):
             job_wrapper.fail("Not submitted")
         else:
             log.debug("Starting queue_job for job " + job_id)
+            # store runner information for tracking if Galaxy restarts
+            job_wrapper.set_job_destination(job_destination, job_id)
             # Create an object of AsynchronousJobState and add it to the monitor queue.
             ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_id=job_id, job_destination=job_destination)
             self.monitor_queue.put(ajs)
@@ -245,22 +247,17 @@ class GodockerJobRunner(AsynchronousJobRunner):
         """ This method is called by galaxy at the time of startup.
             Jobs in Running & Queued status in galaxy are put in the monitor_queue by creating an AsynchronousJobState object
         """
-        job_id = job_wrapper.job_id
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
-        ajs.job_id = str(job_id)
-        ajs.job_destination = job_wrapper.job_destination
-        job_wrapper.command_line = job.command_line
-        ajs.job_wrapper = job_wrapper
-        if job.state == model.Job.states.RUNNING:
-            log.debug("(%s/%s) is still in running state, adding to the god queue" % (job.id, job.get_job_runner_external_id()))
-            ajs.old_state = 'R'
-            ajs.running = True
-            self.monitor_queue.put(ajs)
-
-        elif job.state == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in god queued state, adding to the god queue" % (job.id, job.get_job_runner_external_id()))
-            ajs.old_state = 'Q'
-            ajs.running = False
+        ajs = self._recover_async_job_state(job, job_wrapper)
+        if getattr(ajs, 'fail_job', False):
+            log.error("(%s) Failing job due to job state recovery error", job.id, job.state)
+            self.mark_as_failed(ajs)
+        else:
+            log.debug("(%s/%s) Job recovered in '%s' state, adding to the runner monitor queue", job.id, ajs.job_id, job.state)
+            ajs.old_state = {
+                model.Job.states.SUBMITTED: 'Q',
+                model.Job.states.QUEUED: 'Q',
+                model.Job.states.RUNNING: 'R',
+            }[job.state]
             self.monitor_queue.put(ajs)
 
     # Helper functions
