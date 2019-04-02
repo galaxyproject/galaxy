@@ -1310,6 +1310,11 @@ var FolderToolbarView = Backbone.View.extend({
         this.collectionType = collectionType;
     },
 
+    /**
+     * Note: The collection creation process expects ldda_ids as ids
+     * in the collection_elements array but we operate on ld_ids in libraries.
+     * The code below overwrites the id with ldda_id for this reason.
+     */
     showColectionBuilder: function(checked_items) {
         let Galaxy = getGalaxyInstance();
         let collection_elements = [];
@@ -1318,16 +1323,18 @@ var FolderToolbarView = Backbone.View.extend({
             for (let i = checked_items.length - 1; i >= 0; i--) {
                 let collection_item = {};
                 let dataset = Galaxy.libraries.folderListView.folder_container.get("folder").get(checked_items[i]);
-                collection_item.id = checked_items[i];
+                collection_item.id = dataset.get("ldda_id");
                 collection_item.name = dataset.get("name");
                 collection_item.deleted = dataset.get("deleted");
                 collection_item.state = dataset.get("state");
                 collection_elements.push(collection_item);
             }
         } else if (elements_source === "folder") {
-            collection_elements = new Backbone.Collection(
-                Galaxy.libraries.folderListView.folder_container.get("folder").where({ type: "file" })
-            ).toJSON();
+            let all_datasets = Galaxy.libraries.folderListView.folder_container.get("folder").where({ type: "file" })
+            collection_elements = new Backbone.Collection(all_datasets).toJSON();
+            for (var i = collection_elements.length - 1; i >= 0; i--) {
+                collection_elements[i].id = collection_elements[i].ldda_id;
+            }
         }
         let new_history_name = this.modal.$("input[name=history_name]").val();
         if (new_history_name !== "") {
