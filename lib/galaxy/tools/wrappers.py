@@ -108,7 +108,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
         return getattr(self.value, key)
 
     def __int__(self):
-        return int(str(self))
+        return int(float(self))
 
     def __float__(self):
         return float(str(self))
