@@ -173,6 +173,12 @@ class UsesCreateAndUpdateTime(object):
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
+class WorkerProcess(UsesCreateAndUpdateTime):
+
+    def __init__(self, server_name):
+        self.server_name = server_name
+
+
 def cached_id(galaxy_model_object):
     """Get model object id attribute without a firing a database query.
 
