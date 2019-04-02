@@ -6,13 +6,12 @@ import logging
 
 from galaxy import model
 from galaxy.managers import base
-from galaxy.managers import deletable
 from galaxy.managers import sharable
 
 log = logging.getLogger(__name__)
 
 
-class CloudAuthzManager(sharable.SharableModelManager, deletable.PurgableManagerMixin):
+class CloudAuthzManager(sharable.SharableModelManager):
 
     model_class = model.CloudAuthz
     foreign_key_name = 'cloudauthz'
@@ -21,7 +20,7 @@ class CloudAuthzManager(sharable.SharableModelManager, deletable.PurgableManager
         super(CloudAuthzManager, self).__init__(app, *args, **kwargs)
 
 
-class CloudAuthzsSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
+class CloudAuthzsSerializer(base.ModelSerializer):
     """
     Interface/service object for serializing cloud authorizations (cloudauthzs) into dictionaries.
     """
@@ -41,13 +40,11 @@ class CloudAuthzsSerializer(base.ModelSerializer, deletable.PurgableSerializerMi
             'authn_id',
             'last_update',
             'last_activity',
-            'create_time',
-            'deleted'
+            'create_time'
         ])
 
     def add_serializers(self):
         super(CloudAuthzsSerializer, self).add_serializers()
-        deletable.PurgableSerializerMixin.add_serializers(self)
 
         # Arguments of the following lambda functions:
         # i  : an instance of galaxy.model.CloudAuthz.
@@ -62,6 +59,5 @@ class CloudAuthzsSerializer(base.ModelSerializer, deletable.PurgableSerializerMi
             'authn_id'     : lambda i, k, **c: self.app.security.encode_id(i.authn_id),
             'last_update'  : lambda i, k, **c: str(i.last_update),
             'last_activity': lambda i, k, **c: str(i.last_activity),
-            'create_time'  : lambda i, k, **c: str(i.create_time),
-            'deleted'      : lambda i, k, **c: str(i.deleted)
+            'create_time'  : lambda i, k, **c: str(i.create_time)
         })

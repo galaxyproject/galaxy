@@ -142,8 +142,7 @@ model.CloudAuthz.table = Table(
     Column('last_update', DateTime),
     Column('last_activity', DateTime),
     Column('description', TEXT),
-    Column('create_time', DateTime, default=now),
-    Column('deleted', Boolean, default=False))
+    Column('create_time', DateTime, default=now))
 
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,
