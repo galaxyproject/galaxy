@@ -960,6 +960,12 @@ def populate_api_routes(webapp, app):
                           action='status',
                           conditions=dict(method=["GET"]))
 
+    webapp.mapper.connect('tool_shed_repository',
+                          '/api/tool_shed_repositories/:id/purge',
+                          controller='tool_shed_repositories',
+                          action='purge_repository',
+                          conditions=dict(method=["GET", "POST"]))
+
     webapp.mapper.connect('install_repository',
                           '/api/tool_shed_repositories',
                           controller='tool_shed_repositories',

@@ -704,6 +704,45 @@ class ToolShedRepositoriesController(BaseAPIController):
         # Display the list of repaired repositories.
         return tool_shed_repositories
 
+    @expose_api
+    @web.require_admin
+    def purge_repository(self, trans, id=None, **kwd):
+        """
+        Purge a "white ghost" repository from the database.
+
+        GET /api/tool_shed_repositories/{id}/purge
+
+        :param id:  encoded repository id. Either id or name, owner, changeset_revision and tool_shed_url need to be supplied
+        :param kwd: 'name'   : Repository name
+                    'owner'  : Repository owner
+                    'changeset_revision': Changeset revision to uninstall
+                    'tool_shed_url'     : Tool Shed URL
+        """
+        if id:
+            try:
+                repository = repository_util.get_tool_shed_repository_by_id(self.app, id)
+            except ValueError:
+                raise HTTPBadRequest(detail="No repository with id '%s' found" % id)
+        else:
+            tsr_arguments = ['name', 'owner', 'changeset_revision', 'tool_shed_url']
+            try:
+                tsr_arguments = {key: kwd[key] for key in tsr_arguments}
+            except KeyError as e:
+                raise HTTPBadRequest(detail="Missing required parameter '%s'" % e.args[0])
+            repository = repository_util.get_installed_repository(app=self.app,
+                                                                  tool_shed=tsr_arguments['tool_shed_url'],
+                                                                  name=tsr_arguments['name'],
+                                                                  owner=tsr_arguments['owner'],
+                                                                  changeset_revision=tsr_arguments['changeset_revision'])
+            if not repository:
+                raise HTTPBadRequest(detail="Repository not found")
+        irm = InstalledRepositoryManager(app=self.app)
+        status, message = irm.purge_repository(repository)
+        if status != 'error':
+            return {'message': 'The repository named %s has been purged:\n%s' % (repository.name, message)}
+        else:
+            raise Exception('Attempting to purge tool dependencies for repository named %s resulted in errors: %s' % (repository.name, message))
+
     def __parse_repository_from_payload(self, payload, include_changeset=False):
         # Get the information about the repository to be installed from the payload.
         tool_shed_url = payload.get('tool_shed_url', '')
