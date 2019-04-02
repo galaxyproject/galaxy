@@ -569,7 +569,7 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
                 return new ConnectionAcceptable(false, "Incompatible collection type(s) for attachment.");
             }
         } else {
-            return new ConnectionAcceptable(false, "Cannot attach a data output to a collection output.");
+            return new ConnectionAcceptable(false, "Cannot attach a data output to a collection input.");
         }
     }
 });
