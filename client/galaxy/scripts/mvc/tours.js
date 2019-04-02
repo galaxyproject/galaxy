@@ -15,7 +15,7 @@ import "libs/bootstrap-tour";
 let Tour = window.Tour;
 
 // For buttons to show, we need to add them to bootstrap/popper's sanitizing filters.
-$.fn.tooltip.Constructor.Default.whiteList.button = ['data-role'];
+$.fn.tooltip.Constructor.Default.whiteList.button = ["data-role"];
 
 var gxy_root = getAppRoot();
 

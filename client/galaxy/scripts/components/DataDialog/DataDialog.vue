@@ -1,12 +1,7 @@
 <template>
     <b-modal class="data-dialog-modal" v-if="modalShow" visible ok-only ok-title="Close">
         <template slot="modal-header">
-            <b-input-group>
-                <b-input v-model="filter" placeholder="Type to Search" />
-                <b-input-group-append>
-                    <b-btn :disabled="!filter" @click="filter = ''">Clear</b-btn>
-                </b-input-group-append>
-            </b-input-group>
+            <data-dialog-search v-model="filter" />
         </template>
         <b-alert v-if="errorMessage" variant="danger" show v-html="errorMessage" />
         <div v-else>
@@ -14,7 +9,7 @@
                 <b-table
                     small
                     hover
-                    :items="formatedItems"
+                    :items="items"
                     :fields="fields"
                     :filter="filter"
                     :per-page="perPage"
@@ -60,7 +55,7 @@
                 <div class="fa fa-caret-left mr-1" />
                 Back
             </b-btn>
-            <b-btn size="sm" class="float-right ml-1" variant="primary" @click="done" :disabled="values.length === 0">
+            <b-btn size="sm" class="float-right ml-1" variant="primary" @click="finalize" :disabled="!hasValues">
                 Ok
             </b-btn>
             <b-btn size="sm" class="float-right" @click="modalShow = false"> Cancel </b-btn>
@@ -69,14 +64,19 @@
 </template>
 
 <script>
-import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
+import DataDialogSearch from "./DataDialogSearch.vue";
+import { isDataset } from "./utilities.js";
+import { Model } from "./model.js";
+import { Services } from "./services.js";
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        "data-dialog-search": DataDialogSearch
+    },
     props: {
         callback: {
             type: Function,
@@ -116,184 +116,73 @@ export default {
                 }
             },
             filter: null,
-            historyId: null,
             items: [],
             modalShow: true,
-            navigation: [],
             nItems: 0,
             optionsShow: false,
             perPage: 100,
-            undoShow: false,
-            values: {}
+            undoShow: false
         };
     },
-    computed: {
-        /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
-        formatedItems() {
-            for (let item of this.items) {
-                if (this.isDataset(item)) {
-                    let key = item.id;
-                    item._rowVariant = this.values[key] ? "success" : "default";
-                } else {
-                    item._rowVariant = "active";
-                }
-            }
-            return this.items;
-        }
-    },
     created: function() {
-        this.galaxy = getGalaxyInstance();
+        this.services = new Services();
+        this.model = new Model({ multiple: this.multiple, format: this.format });
         this.load();
     },
     methods: {
         /** Returns true if the item is a dataset entry **/
-        isDataset: function(item) {
-            return item.history_content_type == "dataset" || item.type == "file";
+        isDataset: isDataset,
+        /** Returns true if records have been added to the model **/
+        hasValues: function() {
+            return this.model.count() > 0;
         },
         /** Resets pagination when a filter/search word is entered **/
         filtered: function(items) {
             this.nItems = items.length;
             this.currentPage = 1;
         },
+        /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
+        formatRows() {
+            for (let item of this.items) {
+                let _rowVariant = "active";
+                if (isDataset(item)) {
+                    _rowVariant = this.model.exists(item.id) ? "success" : "default";
+                }
+                Vue.set(item, "_rowVariant", _rowVariant);
+            }
+        },
         /** Collects selected datasets in value array **/
         clicked: function(record) {
-            if (this.isDataset(record)) {
-                if (!this.multiple) {
-                    this.values = {};
-                }
-                let key = record.id;
-                if (!this.values[key]) {
-                    this.values[key] = record;
+            if (isDataset(record)) {
+                this.model.add(record);
+                if (this.multiple) {
+                    this.formatRows();
                 } else {
-                    delete this.values[key];
-                }
-                this.values = Object.assign({}, this.values);
-                if (!this.multiple) {
-                    this.done();
+                    this.finalize();
                 }
             }
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
-        done: function() {
-            let results = [];
-            Object.values(this.values).forEach(v => {
-                let value = null;
-                if (this.format) {
-                    value = v[this.format];
-                } else {
-                    value = v;
-                }
-                results.push(value);
-            });
-            if (results.length > 0 && !this.multiple) {
-                results = results[0];
-            }
+        finalize: function() {
+            let results = this.model.finalize();
             this.modalShow = false;
             this.callback(results);
         },
-        /** Returns the default url i.e. the url of the current history **/
-        getHistoryUrl: function() {
-            let historyId = this.galaxy.currHistoryPanel && this.galaxy.currHistoryPanel.model.id;
-            if (historyId) {
-                return `${this.galaxy.root}api/histories/${historyId}/contents?deleted=false`;
-            }
-        },
-        /** Build record url **/
-        addHostToUrl: function(url) {
-            return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${url}`;
-        },
-        /** Populate record data from raw record source **/
-        populateRecord: function(record) {
-            record.details = record.extension || record.description;
-            record.time = record.update_time || record.create_time;
-            if (record.time) {
-                record.time = record.time.substring(0, 16).replace("T", " ");
-            }
-            if (record.model_class == "Library") {
-                record.url = `${this.galaxy.root}api/libraries/${record.id}/contents`;
-                return record;
-            } else if (record.hid) {
-                record.name = `${record.hid}: ${record.name}`;
-                record.download = this.addHostToUrl(`${record.url}/display`);
-                return record;
-            } else if (record.type == "file") {
-                if (record.name && record.name[0] === "/") {
-                    record.name = record.name.substring(1);
-                }
-                let url = `${this.galaxy.root}api/libraries/datasets/download/uncompressed?ld_ids=${record.id}`;
-                record.download = this.addHostToUrl(url);
-                return record;
-            }
-        },
-        /** Traverese raw records from server response **/
-        getItems: function(data) {
-            let items = [];
-            if (this.library && this.navigation.length == 0) {
-                items.push({
-                    name: "Data Libraries",
-                    url: `${this.galaxy.root}api/libraries`
-                });
-            }
-            let stack = [data];
-            while (stack.length > 0) {
-                let root = stack.pop();
-                if (Array.isArray(root)) {
-                    root.forEach(element => {
-                        stack.push(element);
-                    });
-                } else if (root.elements) {
-                    stack.push(root.elements);
-                } else if (root.object) {
-                    stack.push(root.object);
-                } else {
-                    let record = this.populateRecord(root);
-                    if (record) {
-                        items.push(record);
-                    }
-                }
-            }
-            return items;
-        },
-        /** Returns and tracks urls for data drilling **/
-        getUrl: function(url) {
-            if (url) {
-                this.navigation.push(url);
-            } else {
-                this.navigation.pop();
-                let navigationLength = this.navigation.length;
-                if (navigationLength > 0) {
-                    url = this.navigation[navigationLength - 1];
-                } else {
-                    url = this.getHistoryUrl();
-                }
-            }
-            return url;
-        },
-        /** Performs server request to retrieve raw data records **/
+        /** Performs server request to retrieve data records **/
         load: function(url) {
-            url = this.getUrl(url);
             this.filter = null;
             this.optionsShow = false;
-            this.undoShow = this.navigation.length > 0;
-            if (url) {
-                axios
-                    .get(url)
-                    .then(response => {
-                        this.items = this.getItems(response.data);
-                        this.filtered(this.items);
-                        this.optionsShow = true;
-                    })
-                    .catch(e => {
-                        if (e.response) {
-                            this.errorMessage =
-                                e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
-                        } else {
-                            this.errorMessage = "Server unavailable.";
-                        }
-                    });
-            } else {
-                this.errorMessage = "Datasets not available.";
-            }
+            this.undoShow = !this.services.atRoot();
+            this.services
+                .getData(url)
+                .then(items => {
+                    this.items = items;
+                    this.filtered(this.items);
+                    this.optionsShow = true;
+                })
+                .catch(errorMessage => {
+                    this.errorMessage = errorMessage;
+                });
         }
     }
 };
