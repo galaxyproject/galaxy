@@ -1883,8 +1883,11 @@ div.toolTitleNoSection {
         color: $brand-success;
     }
 }
-.input-terminal-active > icon {
+.input-terminal-active.can-accept > icon {
     color: $brand-success;
+}
+.input-terminal-active.cannot-accept > icon {
+    color: $brand-warning;
 }
 .drag-terminal {
     @extend .fa;
