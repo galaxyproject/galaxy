@@ -504,7 +504,7 @@ DatasetListItemView.prototype.templates = (() => {
         "dataset"
     );
     summaryTemplates[STATES.DISPATCHED] = BASE_MVC.wrapTemplate(
-        ["<div>", _l("This dataest's job is being prepared for submission"), "</div>"],
+        ["<div>", _l("This dataset's job is being prepared for submission"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.SUBMITTED] = BASE_MVC.wrapTemplate(
@@ -516,7 +516,7 @@ DatasetListItemView.prototype.templates = (() => {
         "dataset"
     );
     summaryTemplates[STATES.RUNNING] = BASE_MVC.wrapTemplate(
-        ["<div>", _l("This dataest's job is currently running"), "</div>"],
+        ["<div>", _l("This dataset's job is currently running"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.UPLOAD] = BASE_MVC.wrapTemplate(
