@@ -216,10 +216,9 @@ export function load_when_ready(url, success_callback) {
  * If the user leaves this site this function is not constantly pinging the
  * container, the container will terminate itself.
  */
-export function keepAlive(notebookAccessURL){
-
+export function keepAlive(notebookAccessURL) {
     var request_count = 0;
-    var interval = window.setInterval(function(){
+    var interval = window.setInterval(function() {
         $.ajax({
             url: notebookAccessURL,
             xhrFields: {
@@ -227,20 +226,20 @@ export function keepAlive(notebookAccessURL){
             },
             type: "GET",
             timeout: 500,
-            success: function(){
+            success: function() {
                 console.log("Connected to IE, returning");
             },
-            error: function(jqxhr, status, error){
+            error: function(jqxhr, status, error) {
                 request_count++;
                 console.log("Request " + request_count);
-                if(request_count > 30){
+                if (request_count > 30) {
                     window.clearInterval(interval);
                     clear_main_area();
-                    toastr.error(
-                        "Could not connect to IE, contact your administrator",
-                        "Error",
-                        {'closeButton': true, 'timeOut': 20000, 'tapToDismiss': false}
-                    );
+                    toastr.error("Could not connect to IE, contact your administrator", "Error", {
+                        closeButton: true,
+                        timeOut: 20000,
+                        tapToDismiss: false
+                    });
                 }
             }
         });

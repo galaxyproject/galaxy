@@ -173,6 +173,12 @@ class UsesCreateAndUpdateTime(object):
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
+class WorkerProcess(UsesCreateAndUpdateTime):
+
+    def __init__(self, server_name):
+        self.server_name = server_name
+
+
 def cached_id(galaxy_model_object):
     """Get model object id attribute without a firing a database query.
 
@@ -3560,14 +3566,13 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         self.populated_state = DatasetCollection.populated_states.FAILED
         self.populated_state_message = message
 
-    def finalize(self):
+    def finalize(self, collection_type_description):
         # All jobs have written out their elements - everything should be populated
         # but might not be - check that second case! (TODO)
         self.mark_as_populated()
-        if self.has_subcollections:
-            # THIS IS WRONG - SHOULD ONLY BE TO THE DEPTH OF THE MAP OVER.
+        if self.has_subcollections and collection_type_description.has_subcollections():
             for element in self.elements:
-                element.child_collection.finalize()
+                element.child_collection.finalize(collection_type_description.child_collection_type_description())
 
     @property
     def dataset_instances(self):

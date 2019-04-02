@@ -10,6 +10,8 @@ from migrate import ForeignKeyConstraint
 from sqlalchemy import Column, Integer, MetaData, Table
 from sqlalchemy.exc import NoSuchTableError
 
+from galaxy.model.migrate.versions.util import add_column, drop_column
+
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
@@ -22,9 +24,8 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
-    # Load existing tables
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         User_table = Table("galaxy_user", metadata, autoload=True)
@@ -32,19 +33,15 @@ def upgrade(migrate_engine):
         User_table = None
         log.debug("Failed loading table galaxy_user")
     if User_table is not None:
-        try:
-            col = Column("form_values_id", Integer, index=True)
-            col.create(User_table, index_name='ix_user_form_values_id')
-            assert col is User_table.c.form_values_id
-        except Exception:
-            log.exception("Adding column 'form_values_id' to galaxy_user table failed.")
+        col = Column("form_values_id", Integer, index=True)
+        add_column(col, User_table, index_name='ix_user_form_values_id')
         try:
             FormValues_table = Table("form_values", metadata, autoload=True)
         except NoSuchTableError:
             FormValues_table = None
             log.debug("Failed loading table form_values")
         if migrate_engine.name != 'sqlite':
-            # Add 1 foreign key constraint to the form_values table
+            # Add 1 foreign key constraint to the galaxy_user table
             if User_table is not None and FormValues_table is not None:
                 try:
                     cons = ForeignKeyConstraint([User_table.c.form_values_id],
@@ -58,4 +55,6 @@ def upgrade(migrate_engine):
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    pass
+    metadata.reflect()
+
+    drop_column('form_values_id', 'galaxy_user', metadata)

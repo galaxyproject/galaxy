@@ -151,10 +151,7 @@ class CloudAuthzController(BaseAPIController):
     def delete(self, trans, encoded_authz_id, **kwargs):
         """
         * DELETE /api/cloud/authz/{encoded_authz_id}
-            Marks the CloudAuthz record with the given ``encoded_authz_id`` as deleted.
-            This API does NOT remove the specified CloudAuthz record from Galaxy's database,
-            instead it will just set its deleted attribute to True, making it inaccessible to
-            cloud APIs and managers leveraging user's CloudAuthz records.
+            Deletes the CloudAuthz record with the given ``encoded_authz_id`` from database.
 
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
@@ -175,7 +172,8 @@ class CloudAuthzController(BaseAPIController):
 
         try:
             cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
-            self.cloudauthz_manager.delete(cloudauthz)
+            trans.sa_session.delete(cloudauthz)
+            trans.sa_session.flush()
             log.debug('Deleted a cloudauthz record with id `{}` for the user id `{}` '.format(authz_id, str(trans.user.id)))
             view = self.cloudauthz_serializer.serialize_to_view(cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
             trans.response.status = '200'

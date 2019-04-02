@@ -1,8 +1,9 @@
+from .registry import DATASET_COLLECTION_TYPES_REGISTRY
 
 
 class CollectionTypeDescriptionFactory(object):
 
-    def __init__(self, type_registry):
+    def __init__(self, type_registry=DATASET_COLLECTION_TYPES_REGISTRY):
         # taking in type_registry though not using it, because we will someday
         # I think.
         self.type_registry = type_registry
@@ -136,3 +137,6 @@ def map_over_collection_type(mapped_over_collection_type, target_collection_type
             target_collection_type = target_collection_type.collection_type
 
         return "%s:%s" % (mapped_over_collection_type, target_collection_type)
+
+
+COLLECTION_TYPE_DESCRIPTION_FACTORY = CollectionTypeDescriptionFactory()

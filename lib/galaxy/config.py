@@ -173,6 +173,7 @@ class Configuration(object):
 
         self.version_major = VERSION_MAJOR
         # Database related configuration
+        self.check_migrate_databases = kwargs.get('check_migrate_databases', True)
         self.database = resolve_path(kwargs.get("database_file", "database/universe.sqlite"), self.root)
         self.database_connection = kwargs.get("database_connection", False)
         self.database_engine_options = get_database_engine_options(kwargs)

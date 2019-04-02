@@ -314,7 +314,9 @@ class ExecutionTracker(object):
                     implicit_collection_jobs = implicit_collection.implicit_collection_jobs
                     implicit_collection_jobs.populated_state = "ok"
                     trans.sa_session.add(implicit_collection_jobs)
-                implicit_collection.collection.finalize()
+                implicit_collection.collection.finalize(
+                    collection_type_description=self.collection_info.structure.collection_type_description
+                )
                 trans.sa_session.add(implicit_collection.collection)
         trans.sa_session.flush()
 
