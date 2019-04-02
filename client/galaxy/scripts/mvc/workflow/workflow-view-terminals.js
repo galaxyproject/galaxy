@@ -130,13 +130,13 @@ var BaseInputTerminalView = TerminalView.extend({
         }
     },
     onDropEnd: function(e, d) {
+        d.proxy.dropTooltip = "";
         if (d.proxy.terminal) {
             d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
-            d.proxy.dropTooltip = "";
         }
     },
     onDrop: function(e, d) {
-        $(d.proxy).tooltip("dispose");
+        d.proxy.dropTooltip = "";
         if (this.$el.hasClass("can-accept")) {
             const terminal = this.el.terminal;
             new Connector(d.drag.terminal, terminal).redraw();
@@ -275,6 +275,7 @@ var BaseOutputTerminalView = TerminalView.extend({
         if (connector) {
             connector.destroy();
         }
+        $(d.proxy).tooltip("dispose");
         $(d.proxy).remove();
         $(d.available).removeClass("input-terminal-active");
         $("#canvas-container")
