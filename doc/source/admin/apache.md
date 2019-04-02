@@ -235,6 +235,12 @@ previous section:
         #module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
     ```
 
+    ```eval_rst
+    .. note:: Older versions of Galaxy required you to set the ``cookie_path`` option. This is no longer necessary as of
+       Galaxy release 19.05 as it is now set automatically, but the (now undocumented) option still remains and
+       overrides the automatic setting. If you have this option set, unset it unless you know what you're doing.
+    ```
+
    Be sure to consult the [Scaling and Load Balancing](scaling.md) documentation, other options unrelated to proxying
    should also be set in the `uwsgi` section of the config.
 
