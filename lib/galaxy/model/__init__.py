@@ -173,6 +173,12 @@ class UsesCreateAndUpdateTime(object):
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
+class WorkerProcess(UsesCreateAndUpdateTime):
+
+    def __init__(self, server_name):
+        self.server_name = server_name
+
+
 def cached_id(galaxy_model_object):
     """Get model object id attribute without a firing a database query.
 
@@ -550,6 +556,24 @@ class PasswordResetToken(object):
         self.expiration_time = galaxy.model.orm.now.now() + timedelta(hours=24)
 
 
+class DynamicTool(Dictifiable):
+    dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
+    dict_element_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
+
+    def __init__(self, tool_format=None, tool_id=None, tool_version=None,
+                 uuid=None, active=True, hidden=True, value=None):
+        self.tool_format = tool_format
+        self.tool_id = tool_id
+        self.tool_version = tool_version
+        self.active = active
+        self.hidden = hidden
+        self.value = value
+        if uuid is None:
+            self.uuid = uuid4()
+        else:
+            self.uuid = UUID(str(uuid))
+
+
 class BaseJobMetric(object):
 
     def __init__(self, plugin, metric_name, metric_value):
@@ -652,6 +676,16 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             states.DELETED,
             states.DELETED_NEW,
         ]
+
+    def io_dicts(self):
+        inp_data = dict([(da.name, da.dataset) for da in self.input_datasets])
+        out_data = dict([(da.name, da.dataset) for da in self.output_datasets])
+        inp_data.update([(da.name, da.dataset) for da in self.input_library_datasets])
+        out_data.update([(da.name, da.dataset) for da in self.output_library_datasets])
+
+        out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in self.output_dataset_collection_instances])
+        out_collections.update([(obj.name, obj.dataset_collection) for obj in self.output_dataset_collections])
+        return inp_data, out_data, out_collections
 
     # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
     # for the mapper defined to the Job table.
@@ -3493,14 +3527,13 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         self.populated_state = DatasetCollection.populated_states.FAILED
         self.populated_state_message = message
 
-    def finalize(self):
+    def finalize(self, collection_type_description):
         # All jobs have written out their elements - everything should be populated
         # but might not be - check that second case! (TODO)
         self.mark_as_populated()
-        if self.has_subcollections:
-            # THIS IS WRONG - SHOULD ONLY BE TO THE DEPTH OF THE MAP OVER.
+        if self.has_subcollections and collection_type_description.has_subcollections():
             for element in self.elements:
-                element.child_collection.finalize()
+                element.child_collection.finalize(collection_type_description.child_collection_type_description())
 
     @property
     def dataset_instances(self):
@@ -4133,6 +4166,7 @@ class WorkflowStep(RepresentById):
         self.tool_id = None
         self.tool_inputs = None
         self.tool_errors = None
+        self.dynamic_tool = None
         self.position = None
         self.inputs = []
         self.config = None
@@ -4140,6 +4174,10 @@ class WorkflowStep(RepresentById):
         self.uuid = uuid4()
         self.workflow_outputs = []
         self._input_connections_by_name = None
+
+    @property
+    def tool_uuid(self):
+        return self.dynamic_tool and self.dynamic_tool.uuid
 
     def get_input(self, input_name):
         for step_input in self.inputs:

@@ -20,10 +20,7 @@
         ${h.javascript_link( app_root + "aequatus-vis/scripts/jquery/js/jquery.svg.js" )}
         ${h.javascript_link( app_root + "aequatus-vis/scripts/jquery/js/jquery-migrate-1.4.1.min.js" )}
         ${h.javascript_link( app_root + "aequatus-vis/scripts/scriptaculous/prototype.js" )}
-
-
-## install shared libraries
-        ${h.js( 'libs/d3')}
+        ${h.javascript_link( app_root + "scripts/d3.min.js" )}
 
 ## aequatus-vis
         ${h.javascript_link( app_root + "aequatus-vis/scripts/init.js" )}

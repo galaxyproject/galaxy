@@ -54,6 +54,9 @@ class YamlToolSource(ToolSource):
     def parse_command(self):
         return self.root_dict.get("command")
 
+    def parse_expression(self):
+        return self.root_dict.get("expression")
+
     def parse_environment_variables(self):
         return []
 

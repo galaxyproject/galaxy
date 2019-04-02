@@ -11,8 +11,8 @@ import tool_shed.repository_types.registry
 from galaxy import tools
 from galaxy.config import configure_logging
 from galaxy.model.tags import CommunityTagHandler
+from galaxy.security import idencoding
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.web import security
 from galaxy.web.stack import application_stack_instance
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
 from . import config
@@ -51,8 +51,7 @@ class UniverseApplication(object):
         self.model = mapping.init(self.config.file_path,
                                   db_url,
                                   self.config.database_engine_options)
-        # Initialize the Tool Shed security helper.
-        self.security = security.SecurityHelper(id_secret=self.config.id_secret)
+        self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
         # initialize the Tool Shed tag handler.
         self.tag_handler = CommunityTagHandler(self)
         # Initialize the Tool Shed tool data tables.  Never pass a configuration file here

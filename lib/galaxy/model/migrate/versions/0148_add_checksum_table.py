@@ -57,8 +57,8 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     try:
-        dataset_source_table.drop()
-        dataset_hash_table.drop()
         dataset_source_hash_table.drop()
+        dataset_hash_table.drop()
+        dataset_source_table.drop()
     except Exception:
         log.exception("Dropping dataset source and hash tables failed.")

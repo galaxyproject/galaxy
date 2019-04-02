@@ -13,7 +13,6 @@ import sys
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
 from sqlalchemy.exc import NoSuchTableError
 
-# Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import TrimmedString
 
 now = datetime.datetime.utcnow
@@ -45,10 +44,10 @@ UserAddress_table = Table("user_address", metadata,
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
-    # Load existing tables
+    metadata.bind = migrate_engine
     metadata.reflect()
+
     # Add all of the new tables above
     try:
         UserAddress_table.create()
@@ -76,8 +75,8 @@ def upgrade(migrate_engine):
         Request_table = None
         log.debug("Failed loading table request")
     if Request_table is not None:
+        # SQLAlchemy Migrate has a bug when dropping a boolean column in SQLite
         if migrate_engine.name != 'sqlite':
-            # DBTODO drop from table doesn't work in sqlite w/ sqlalchemy-migrate .6+
             Request_table.c.submitted.drop()
         col = Column("state", TrimmedString(255), index=True)
         col.create(Request_table, index_name='ix_request_state')
@@ -85,5 +84,4 @@ def upgrade(migrate_engine):
 
 
 def downgrade(migrate_engine):
-    metadata.bind = migrate_engine
     pass

@@ -143,6 +143,7 @@ history_panel:
     options_button: '#history-options-button'
     options_button_icon: '#history-options-button span.fa-cog'
     options_menu: '#history-options-button-menu'
+    new_history_button: '#history-new-button'
     multi_view_button: '#history-view-multi-button'
 
     pagination_pages: '.list-pagination .pages'
@@ -237,7 +238,7 @@ workflows:
 
 workflow_run:
 
-  selectors: 
+  selectors:
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .select2-container"
     # TODO: put step labels in the DOM ideally

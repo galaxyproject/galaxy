@@ -173,6 +173,7 @@ class Configuration(object):
 
         self.version_major = VERSION_MAJOR
         # Database related configuration
+        self.check_migrate_databases = kwargs.get('check_migrate_databases', True)
         self.database = resolve_path(kwargs.get("database_file", "database/universe.sqlite"), self.root)
         self.database_connection = kwargs.get("database_connection", False)
         self.database_engine_options = get_database_engine_options(kwargs)
@@ -313,6 +314,7 @@ class Configuration(object):
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             preserve_python_environment = "legacy_only"
         self.preserve_python_environment = preserve_python_environment
+        self.nodejs_path = kwargs.get("nodejs_path", None)
         # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
         # should probably drop the backward compatiblity to save the path check.
         self.container_image_cache_path = self.resolve_path(kwargs.get("container_image_cache_path", "database/container_images"))
@@ -1047,6 +1049,8 @@ class ConfiguresGalaxyMixin(object):
 
         self.citations_manager = CitationsManager(self)
 
+        from galaxy.managers.tools import DynamicToolManager
+        self.dynamic_tools_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
         tool_configs = self.config.tool_configs
@@ -1124,8 +1128,8 @@ class ConfiguresGalaxyMixin(object):
         self.object_store = build_object_store_from_config(self.config, **kwds)
 
     def _configure_security(self):
-        from galaxy.web import security
-        self.security = security.SecurityHelper(id_secret=self.config.id_secret)
+        from galaxy.security import idencoding
+        self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
 
     def _configure_tool_shed_registry(self):
         import tool_shed.tool_shed_registry

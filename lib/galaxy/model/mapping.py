@@ -40,11 +40,19 @@ from galaxy.model.base import ModelMapping
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from galaxy.security import GalaxyRBACAgent
+from galaxy.model.security import GalaxyRBACAgent
 
 log = logging.getLogger(__name__)
 
 metadata = MetaData()
+
+
+model.WorkerProcess.table = Table(
+    'worker_process',
+    metadata,
+    Column('server_name', Text, primary_key=True),
+    Column("update_time", DateTime, default=now, onupdate=now),
+)
 
 
 model.User.table = Table(
@@ -133,13 +141,32 @@ model.CloudAuthz.table = Table(
     Column('tokens', JSONType),
     Column('last_update', DateTime),
     Column('last_activity', DateTime),
-    Column('description', TEXT))
+    Column('description', TEXT),
+    Column('create_time', DateTime, default=now))
 
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,
     Column("token", String(32), primary_key=True, unique=True, index=True),
     Column("expiration_time", DateTime),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
+
+
+model.DynamicTool.table = Table(
+    "dynamic_tool", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("uuid", UUIDType()),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, index=True, default=now, onupdate=now),
+    Column("tool_id", Unicode(255)),
+    Column("tool_version", Unicode(255)),
+    Column("tool_format", Unicode(255)),
+    Column("tool_path", Unicode(255)),
+    Column("tool_directory", Unicode(255)),
+    Column("hidden", Boolean, default=True),
+    Column("active", Boolean, default=True),
+    Column("value", JSONType()),
+)
+
 
 model.History.table = Table(
     "history", metadata,
@@ -548,6 +575,7 @@ model.Job.table = Table(
     Column("library_folder_id", Integer, ForeignKey("library_folder.id"), index=True),
     Column("tool_id", String(255)),
     Column("tool_version", TEXT, default="1.0.0"),
+    Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), index=True, nullable=True),
     Column("state", String(64), index=True),
     Column("info", TrimmedString(255)),
     Column("copied_from_job_id", Integer, nullable=True),
@@ -917,6 +945,7 @@ model.WorkflowStep.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("workflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=False),
     Column("subworkflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=True),
+    Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), index=True, nullable=True),
     Column("type", String(64)),
     Column("tool_id", TEXT),
     Column("tool_version", TEXT),
@@ -1463,12 +1492,73 @@ model.APIKeys.table = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("key", TrimmedString(32), index=True, unique=True))
 
+CleanupEvent_table = Table("cleanup_event", metadata,
+                           Column("id", Integer, primary_key=True),
+                           Column("create_time", DateTime, default=now),
+                           Column("message", TrimmedString(1024)))
+
+CleanupEventDatasetAssociation_table = Table("cleanup_event_dataset_association", metadata,
+                                             Column("id", Integer, primary_key=True),
+                                             Column("create_time", DateTime, default=now),
+                                             Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                             Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True))
+
+CleanupEventMetadataFileAssociation_table = Table("cleanup_event_metadata_file_association", metadata,
+                                                  Column("id", Integer, primary_key=True),
+                                                  Column("create_time", DateTime, default=now),
+                                                  Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                  Column("metadata_file_id", Integer, ForeignKey("metadata_file.id"), index=True))
+
+CleanupEventHistoryAssociation_table = Table("cleanup_event_history_association", metadata,
+                                             Column("id", Integer, primary_key=True),
+                                             Column("create_time", DateTime, default=now),
+                                             Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                             Column("history_id", Integer, ForeignKey("history.id"), index=True))
+
+CleanupEventHistoryDatasetAssociationAssociation_table = Table("cleanup_event_hda_association", metadata,
+                                                               Column("id", Integer, primary_key=True),
+                                                               Column("create_time", DateTime, default=now),
+                                                               Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                               Column("hda_id", Integer, ForeignKey("history_dataset_association.id"), index=True))
+
+CleanupEventLibraryAssociation_table = Table("cleanup_event_library_association", metadata,
+                                             Column("id", Integer, primary_key=True),
+                                             Column("create_time", DateTime, default=now),
+                                             Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                             Column("library_id", Integer, ForeignKey("library.id"), index=True))
+
+CleanupEventLibraryFolderAssociation_table = Table("cleanup_event_library_folder_association", metadata,
+                                                   Column("id", Integer, primary_key=True),
+                                                   Column("create_time", DateTime, default=now),
+                                                   Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                   Column("library_folder_id", Integer, ForeignKey("library_folder.id"), index=True))
+
+CleanupEventLibraryDatasetAssociation_table = Table("cleanup_event_library_dataset_association", metadata,
+                                                    Column("id", Integer, primary_key=True),
+                                                    Column("create_time", DateTime, default=now),
+                                                    Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                    Column("library_dataset_id", Integer, ForeignKey("library_dataset.id"), index=True))
+
+CleanupEventLibraryDatasetDatasetAssociationAssociation_table = Table("cleanup_event_ldda_association", metadata,
+                                                                      Column("id", Integer, primary_key=True),
+                                                                      Column("create_time", DateTime, default=now),
+                                                                      Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                                      Column("ldda_id", Integer, ForeignKey("library_dataset_dataset_association.id"), index=True))
+
+CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table = Table("cleanup_event_icda_association", metadata,
+                                                                           Column("id", Integer, primary_key=True),
+                                                                           Column("create_time", DateTime, default=now),
+                                                                           Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                                           Column("icda_id", Integer, ForeignKey("implicitly_converted_dataset_association.id"), index=True))
+
 
 # With the tables defined we can define the mappers and setup the
 # relationships between the model objects.
 def simple_mapping(model, **kwds):
     mapper(model, model.table, properties=kwds)
 
+
+simple_mapping(model.WorkerProcess)
 
 mapper(model.FormValues, model.FormValues.table, properties=dict(
     form_definition=relation(model.FormDefinition,
@@ -1521,6 +1611,8 @@ mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
 ))
 
 mapper(model.ValidationError, model.ValidationError.table)
+
+simple_mapping(model.DynamicTool)
 
 simple_mapping(model.HistoryDatasetAssociation,
     dataset=relation(model.Dataset,
@@ -2246,8 +2338,11 @@ mapper(model.Workflow, model.Workflow.table, properties=dict(
 
 mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
     subworkflow=relation(model.Workflow,
-        primaryjoin=((model.Workflow.table.c.id == model.WorkflowStep.table.c.subworkflow_id)),
+        primaryjoin=(model.Workflow.table.c.id == model.WorkflowStep.table.c.subworkflow_id),
         backref="parent_workflow_steps"),
+    dynamic_tool=relation(model.DynamicTool,
+        primaryjoin=(model.DynamicTool.table.c.id == model.WorkflowStep.table.c.dynamic_tool_id),
+        backref="workflow_steps"),
     tags=relation(model.WorkflowStepTagAssociation,
         order_by=model.WorkflowStepTagAssociation.table.c.id,
         backref="workflow_steps"),
