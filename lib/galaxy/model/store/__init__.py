@@ -417,12 +417,19 @@ class ModelImportStore(object):
                                                          element_identifier=element_attrs['element_identifier'])
                     if 'hda' in element_attrs:
                         hda_attrs = element_attrs['hda']
-                        hda_key = hda_attrs[object_key]
-                        hdas_by_key = object_import_tracker.hdas_by_key
-                        if hda_key in hdas_by_key:
-                            hda = hdas_by_key[hda_key]
+                        if object_key in hda_attrs:
+                            hda_key = hda_attrs[object_key]
+                            hdas_by_key = object_import_tracker.hdas_by_key
+                            if hda_key in hdas_by_key:
+                                hda = hdas_by_key[hda_key]
+                            else:
+                                raise KeyError("Failed to find exported hda with key [%s] of type [%s] in [%s]" % (hda_key, object_key, hdas_by_key))
                         else:
-                            raise KeyError("Failed to find exported hda with key [%s] of type [%s] in [%s]" % (hda_key, object_key, hdas_by_key))
+                            hda_id = hda_attrs["id"]
+                            hdas_by_id = object_import_tracker.hdas_by_id
+                            if hda_id not in hdas_by_id:
+                                raise Exception("Failed to find HDA with id [%s] in [%s]" % (hda_id, hdas_by_id))
+                            hda = hdas_by_id[hda_id]
                         dce.hda = hda
                     elif 'child_collection' in element_attrs:
                         dce.child_collection = import_collection(element_attrs['child_collection'])
