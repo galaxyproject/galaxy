@@ -28,7 +28,6 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
                        direction: {owner: 'asc', description: 'asc', name: 'asc'}};
         sorting.class[this.params.sort_key] = (this.params.sort_order == 'desc' ? 'fa-sort-down' : 'fa-sort-up');
         sorting.direction[this.params.sort_key] = (this.params.sort_order == 'asc' ? 'desc' : 'asc');
-        var current_page = this.params.page;
         var previous_page = Math.max(this.params.page - 1, 1);
         var pages = parseInt((this.model.models[0].get('repository_count')) % 25) + 1;
         var next_page = Math.min(parseInt(this.params.page) + 1, pages);
