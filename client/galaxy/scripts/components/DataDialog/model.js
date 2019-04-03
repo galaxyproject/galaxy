@@ -10,11 +10,15 @@ export class Model {
         if (!this.multiple) {
             this.values = {};
         }
-        let key = record.id;
-        if (!this.values[key]) {
-            this.values[key] = record;
+        let key = record && record.id;
+        if (key) {
+            if (!this.values[key]) {
+                this.values[key] = record;
+            } else {
+                delete this.values[key];
+            }
         } else {
-            delete this.values[key];
+            throw "Invalid record with no <id>.";
         }
     }
 
