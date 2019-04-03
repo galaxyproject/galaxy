@@ -17,8 +17,6 @@ from ..authnz import IdentityProvider
 log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = 'custos-state'
 NONCE_COOKIE_NAME = 'custos-nonce'
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CA_CERTFILE = os.path.join(BASE_DIR, "incommon_rsa_server_ca.pem")
 
 
 class CustosAuthnz(IdentityProvider):
@@ -29,6 +27,7 @@ class CustosAuthnz(IdentityProvider):
         self.config['client_id'] = oidc_backend_config['client_id']
         self.config['client_secret'] = oidc_backend_config['client_secret']
         self.config['redirect_uri'] = oidc_backend_config['redirect_uri']
+        self.config['ca_bundle'] = oidc_backend_config.get('ca_bundle', None)
         self.config['extra_params'] = {
             'kc_idp_hint': oidc_backend_config.get('idphint', 'cilogon')
         }
@@ -189,7 +188,6 @@ class CustosAuthnz(IdentityProvider):
     def _get_well_known_uri_for_provider_and_realm(self, provider, realm):
         # TODO: Look up this URL from a Python library
         if provider == 'custos':
-            self.config['ca_bundle'] = CA_CERTFILE
             return "{}/realms/{}/.well-known/openid-configuration".format(self.config["url"], realm)
         else:
             raise Exception("Unknown Custos provider name: {}".format(provider))
@@ -204,8 +202,8 @@ class CustosAuthnz(IdentityProvider):
 
     def _get_verify_param(self):
         """Return 'ca_bundle' if 'verify_ssl' is true and 'ca_bundle' is configured."""
-        # in requests_oauthlib, the verify param can either bea boolean or a CA bundle path
-        if 'ca_bundle' in self.config and self.config['verify_ssl']:
+        # in requests_oauthlib, the verify param can either be a boolean or a CA bundle path
+        if self.config['ca_bundle'] is not None and self.config['verify_ssl']:
             return self.config['ca_bundle']
         else:
             return self.config['verify_ssl']

@@ -123,6 +123,8 @@ class AuthnzManager(object):
             rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
         if config_xml.find('idphint') is not None:
             rtv['idphint'] = config_xml.find('idphint').text
+        if config_xml.find('ca_bundle') is not None:
+            rtv['ca_bundle'] = config_xml.find('ca_bundle').text
         return rtv
 
     def _unify_provider_name(self, provider):
