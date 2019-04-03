@@ -114,6 +114,7 @@ class AuthnzManager(object):
 
     def _parse_custos_config(self, config_xml):
         rtv = {
+            'url': config_xml.find('url').text,
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
             'redirect_uri': config_xml.find('redirect_uri').text,
