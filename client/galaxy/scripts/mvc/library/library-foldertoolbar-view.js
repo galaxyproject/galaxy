@@ -1331,7 +1331,7 @@ var FolderToolbarView = Backbone.View.extend({
                 collection_elements.push(collection_item);
             }
         } else if (elements_source === "folder") {
-            let all_datasets = Galaxy.libraries.folderListView.folder_container.get("folder").where({ type: "file" })
+            let all_datasets = Galaxy.libraries.folderListView.folder_container.get("folder").where({ type: "file" });
             collection_elements = new Backbone.Collection(all_datasets).toJSON();
             for (var i = collection_elements.length - 1; i >= 0; i--) {
                 collection_elements[i].id = collection_elements[i].ldda_id;
