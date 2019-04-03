@@ -332,8 +332,10 @@ class ModelImportStore(object):
 
                             if file_list:
                                 for extra_file in file_list:
+                                    store_by = self.object_store.store_by
+                                    dir_name = 'dataset_%s_files' % getattr(dataset_instance.dataset, store_by)
                                     self.object_store.update_from_file(
-                                        dataset_instance.dataset, extra_dir='dataset_%s_files' % dataset_instance.dataset.id,
+                                        dataset_instance.dataset, extra_dir=dir_name,
                                         alt_name=extra_file, file_name=os.path.join(self.archive_dir, dataset_extra_files_path, extra_file),
                                         create=True)
                         dataset_instance.dataset.set_total_size()  # update the filesize record in the database
