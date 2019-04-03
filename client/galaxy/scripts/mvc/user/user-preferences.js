@@ -90,6 +90,13 @@ var Model = Backbone.Model.extend({
                 submit_title: "Create a new key",
                 submit_icon: "fa-check"
             },
+            cloud_auth: {
+                title: _l("Manage Cloud Authorization"),
+                description: _l("Add or modify the configuration that grants Galaxy to access your cloud-based resources."),
+                icon: "fa-cloud",
+                submit_title: "Create a new key",
+                submit_icon: "fa-check"
+            },
             toolbox_filters: {
                 title: _l("Manage Toolbox filters"),
                 description: _l("Customize your Toolbox by displaying or omitting sets of Tools."),
@@ -166,6 +173,7 @@ var View = Backbone.View.extend({
             self._addLink("permissions");
             self._addLink("make_data_private");
             self._addLink("api_key");
+            self._addLink("cloud_auth");
             if (config.has_user_tool_filters) {
                 self._addLink("toolbox_filters");
             }

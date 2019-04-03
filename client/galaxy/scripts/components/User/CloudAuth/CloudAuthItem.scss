@@ -1,0 +1,70 @@
+@import "scss/theme/blue.scss";
+@import "scss/mixins";
+@import "./operations";
+
+
+.cloud-auth-key {
+
+    header hgroup {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+
+        h4 {
+            cursor: pointer;
+            user-select: none;
+            margin-bottom: 0;
+        }
+    }
+
+    form {
+        .custom-select {
+            background: none; // removes wierd double arrows on select
+        }
+        footer {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-end;
+        }
+    }
+
+
+    // icon menu
+
+    .operations {
+        .save a {
+            @include fontawesome($fa-var-save)
+        }
+        .delete a {
+            @include fontawesome($fa-var-times);
+        }
+        .details a {
+            @include fontawesome($fa-var-window-minimize);
+            &:hover {
+                @include fontawesome($fa-var-window-maximize);
+            }
+        }
+    }
+
+
+    // reverse icons when key is expanded
+
+    &.expanded .details a {
+        @include fontawesome($fa-var-window-maximize);
+        &:hover {
+            @include fontawesome($fa-var-window-minimize);
+        }
+    }
+
+
+    // save disk changes color based on form valid/dirty
+
+    &.valid .save a {
+        color: $state-success-text;
+    }
+    &:not(.valid) .save a {
+        color: $state-danger-text;
+    }
+
+}

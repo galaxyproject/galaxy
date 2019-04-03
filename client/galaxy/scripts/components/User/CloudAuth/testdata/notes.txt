@@ -1,0 +1,31 @@
+/authnz
+
+// options for authn dropdown
+
+[
+    {"id": "f597429621d6eb2b", "provider": "google-openidconnect"},
+    {"id": "f597429621d6eb2b", "provider": "google-openidconnect"},
+    {"id": "f597429621d6eb2b", "provider": "google-openidconnect"},
+    {"id": "f597429621d6eb2b", "provider": "google-openidconnect"},
+    {"id": "f597429621d6eb2b", "provider": "google-openidconnect"}
+]
+
+{
+  "provider": "aws",
+  "authn_id":"f2db41e1fa331b3e",
+  "description": "asdfasdf",
+  "config": {
+      "role_arn": "arn:aws:iam::347162595075:role/CloudAuthzTests"
+  }
+}
+
+{
+  "provider": "azure",
+  "authn_id": "f2db41e1fa331b3e",
+  "description": "asdfasdf",
+  "config": {
+    'tenant_id': TENANT_ID,
+    'client_id': CLIENT_ID,
+    'client_secret': CLIENT_SECRET
+  }
+}

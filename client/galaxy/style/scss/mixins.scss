@@ -1,3 +1,8 @@
+$fa-font-path: "~font-awesome/fonts/";
+@import "~font-awesome/scss/font-awesome.scss";
+@import "~font-awesome/scss/_mixins";
+
+
 // Utility mixin expands to container edges
 @mixin fill() {
     position: relative;
@@ -27,5 +32,55 @@
 
     &::-webkit-scrollbar {
         display: none;
+    }
+}
+
+@mixin scrollMe() {
+    overflow-x: hidden;
+    overflow-y: scroll;
+    &::-webkit-scrollbar { 
+        display: none; 
+    }
+}
+
+// top selector fixed, bottom list scrolls
+@mixin scrollingListLayout($fixedTop, $listRegion) {
+    @include fill();
+
+    display: flex;
+    flex-direction: column;
+
+    #{$fixedTop} {
+        flex-grow: 0;
+    }
+    
+    #{$listRegion} {
+        flex-grow: 1;
+        @include scrollMe(); 
+    }
+}
+
+
+// Removes browser formatting of lists
+
+@mixin list_reset() {
+    list-style: none;
+    padding: 0 0 0 0;
+    margin: 0 0 0 0;
+}
+
+
+// font awesome as a mixin
+// icon variables come from ~font-awesome/scss/_variables.scss
+
+@mixin fontawesome($icon) {
+    @include fa-icon();
+    &:before { 
+        content: $icon;
+    }
+    span {
+        // Span for text readers
+        // <a><span>Label</span></a>
+        @include sr-only();
     }
 }

@@ -1,0 +1,30 @@
+/**
+I put the styles for this little icon menu in its own file because 
+I think this should probably become its own general component 
+
+TODO: Build operations menu component for reuse wherever we do little
+icon doodads
+*/
+
+// TODO: Show this to Sam, this is what I need to import
+// to use ml-2 because our own base.scss is not importable
+@import "~bootstrap/scss/functions";
+@import "~bootstrap/scss/variables";
+@import "~bootstrap/scss/mixins";
+@import "~bootstrap/scss/utilities/spacing";
+
+@import "scss/theme/blue.scss";
+@import "scss/mixins";
+
+
+.operations {
+    margin-bottom: 0;
+
+    ul {
+        @include list_reset();
+        display: flex;
+        li:not(:first-child) {
+            @extend .ml-2; // terrible
+        }
+    }
+}

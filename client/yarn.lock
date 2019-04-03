@@ -6501,6 +6501,11 @@ ignore@^4.0.6:
   resolved "https://registry.yarnpkg.com/ignore/-/ignore-4.0.6.tgz#750e3db5862087b4737ebac8207ffd1ef27b25fc"
   integrity sha512-cyFDKrqc/YdcWFniJhzI42+AzS+gNwmUzOSFcRCQYwySuBBBy/KjuxWLZ/FHEH6Moq1NizMOBWyTcv8O4OZIMg==
 
+imask@^4.1.5:
+  version "4.1.5"
+  resolved "https://registry.yarnpkg.com/imask/-/imask-4.1.5.tgz#9942993ece68b7b33d03e12781a7401b1207e52c"
+  integrity sha512-n9e3KkJxe6YZKueT02I8/tXpC0vzxmSzoBB5BPi6OPq0rp7qOZfXN5777Dkw6WEYRswlsxm+7pl7WocsG0LWyA==
+
 immer@1.10.0:
   version "1.10.0"
   resolved "https://registry.yarnpkg.com/immer/-/immer-1.10.0.tgz#bad67605ba9c810275d91e1c2a47d4582e98286d"

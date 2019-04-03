@@ -1,0 +1,38 @@
+[
+    {
+        "authn_id": "f2db41e1fa331b3e",
+        "user_id": "f2db41e1fa331b3e",
+        "last_update": "2019-03-24 23:29:10.939661",
+        "last_activity": "2019-03-24 23:29:10.939670",
+        "provider": "aws",
+        "model_class": "CloudAuthz",
+        "config": {
+            "role_arn": "asdfadfasdf"
+        },
+        "id": "ebfb8f50c6abde6d"
+    },
+    {
+        "authn_id": "f2db41e1fa331b3e",
+        "user_id": "f2db41e1fa331b3e",
+        "last_update": "2019-03-24 23:25:51.678020",
+        "last_activity": "2019-03-24 23:25:51.678030",
+        "provider": "aws",
+        "model_class": "CloudAuthz",
+        "config": {
+            "role_arn": "asdfadfasdf"
+        },
+        "id": "1cd8e2f6b131e891"
+    },
+    {
+        "authn_id": "f2db41e1fa331b3e",
+        "user_id": "f2db41e1fa331b3e",
+        "last_update": "2019-03-23 15:43:14.511896",
+        "last_activity": "2019-03-23 15:43:14.511905",
+        "provider": "aws",
+        "model_class": "CloudAuthz",
+        "config": {
+            "role_arn": "asdfadfasdf"
+        },
+        "id": "f597429621d6eb2b"
+    }
+]

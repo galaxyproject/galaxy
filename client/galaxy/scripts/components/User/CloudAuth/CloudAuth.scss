@@ -1,0 +1,61 @@
+@import "scss/mixins";
+@import "./operations";
+
+
+// General Layout
+
+.cloud-auth {
+
+    // header sticks, bottom part scrolls
+    @include scrollingListLayout("header", ".scroll-container");    
+
+    // title left, icons right
+    .cloud-auth-title {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    // menu
+    .operations {
+        .help a {
+            @include fontawesome($fa-var-info-circle);
+        }
+        .filter a {
+            @include fontawesome($fa-var-filter);
+        }
+        .create a {
+            @include fontawesome($fa-var-plus);
+        }
+    }
+}
+
+
+// Transitions
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity .5s;
+}
+
+.fade-enter, 
+.fade-leave-to {
+    opacity: 0;
+}
+
+
+// Unhose base.scss hacks
+
+.cloud-auth div.form-row label {
+    font-weight: 400;
+}
+
+#deleteCredentialModal {
+    .modal-body {
+        display: none;
+    }
+    .modal-dialog {
+        max-width: 300px; 
+    }
+}
