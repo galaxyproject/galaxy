@@ -15,16 +15,16 @@
                                     v-b-tooltip.hover 
                                     aria-label="Save Key"
                                     title="Save Key">
-                                    <span>Save</span>
+                                    <span>Save Key</span>
                                 </a>
                             </li>
                         </transition>
                         <li class="delete">
                             <a @click.prevent="$emit('delete', credential)"
                                 v-b-tooltip.hover 
-                                aria-label="Delete this key" 
-                                title="Delete this key">
-                                <span>Delete</span>
+                                aria-label="Delete Key" 
+                                title="Delete Key">
+                                <span>Delete Key</span>
                             </a>
                         </li>
                         <li class="details">
@@ -41,7 +41,7 @@
         </header>
 
         <credential-form v-if="expanded"
-            class="mt-4 pt-4 border-top"
+            class="border-top"
             v-model="credential" 
             @click.self="expand()"
             @save="$emit('save', credential)"
@@ -52,7 +52,6 @@
 
 <script>
 
-import Vue from "vue";
 import { Credential } from "./model";
 import CredentialForm from "./CredentialForm";
 
@@ -69,7 +68,16 @@ export default {
             return { loading, expanded, valid, dirty, collapsed: !expanded };
         },
         variant() {
-            return this.expanded ? "" : "primary";
+            if (this.expanded) {
+                return "";
+            }
+            if (this.credential.dirty) {
+                return "warning";
+            }
+            if (!this.credential.valid) {
+                return "danger";
+            }
+            return "primary";
         },
         expanded() {
             return this.credential.expanded;

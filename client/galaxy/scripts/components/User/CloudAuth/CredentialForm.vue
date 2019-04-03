@@ -41,15 +41,16 @@
         
         <credential-config v-model="credential.config" />
 
-        <footer>
-            <b-button type="cancel"
+        <footer class="border-top">
+            <b-button variant="secondary"
                 @click.prevent="$emit('delete', credential)">
                 Delete Key
             </b-button>
-            <b-button type="submit" 
-                aria-label="Save Key"
+            <b-button aria-label="Save Key"
+                :variant="saveButtonVariant"
+                :disabled="saveButtonDisabled"
                 @click.prevent="$emit('save', credential)">
-                Save This Key
+                {{ saveButtonTitle }}
             </b-button>
         </footer>
 
@@ -86,6 +87,25 @@ export default {
         },
         config() {
             return this.credential.config;
+        },
+        loading() {
+            return this.credential.loading;
+        },
+        saveButtonDisabled() {
+            return !(this.credential.valid && this.credential.dirty);
+        },
+        saveButtonVariant() {
+            return this.saveButtonDisabled ? "secondary" : "primary";
+        },
+        saveButtonTitle() {
+            return this.loading ? "Saving Key..." : "Save Key";
+        }
+    },
+    watch: {
+        loading: {
+            handler(newLoading, oldLoading) {
+                console.log('newLoading', newLoading);
+            }
         }
     },
     created() {

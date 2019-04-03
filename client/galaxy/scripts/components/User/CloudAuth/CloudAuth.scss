@@ -15,18 +15,31 @@
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
-    }
+    
+    
+        // menu
+        .operations {
 
-    // menu
-    .operations {
-        .help a {
-            @include fontawesome($fa-var-info-circle);
-        }
-        .filter a {
-            @include fontawesome($fa-var-filter);
-        }
-        .create a {
-            @include fontawesome($fa-var-plus);
+            li {
+                a, a::before {
+                    font-size: 1rem;
+                    color: $gray-400;
+                }
+                a.active::before, 
+                a:hover::before {
+                    color: $brand-primary;
+                }
+            }
+            
+            .cloudKeyHelp a {
+                @include fontawesome($fa-var-info-circle);
+            }
+            .cloudKeyFilter a {
+                @include fontawesome($fa-var-filter);
+            }
+            .createCloudKey a {
+                @include fontawesome($fa-var-plus);
+            }
         }
     }
 }

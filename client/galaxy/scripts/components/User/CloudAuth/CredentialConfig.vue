@@ -12,7 +12,7 @@
                 v-model="config[fieldName]"
                 :mask="field.mask" 
                 :placeholder="field.placeholder"
-                :maxlength="field.maxlength"
+                :maxlength="field.maxlength || Math.Infinity"
                 :state="config.fieldValid(fieldName)"
                 trim />
 

@@ -24,7 +24,7 @@ icon doodads
         @include list_reset();
         display: flex;
         li:not(:first-child) {
-            @extend .ml-2; // terrible
+            @extend .ml-2;
         }
     }
 }

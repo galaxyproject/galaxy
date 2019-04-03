@@ -1,3 +1,10 @@
+// TODO: Show this to Sam, this is what I need to import
+// to use ml-2 because our own base.scss is not importable
+@import "~bootstrap/scss/functions";
+@import "~bootstrap/scss/variables";
+@import "~bootstrap/scss/mixins";
+@import "~bootstrap/scss/utilities/spacing";
+
 @import "scss/theme/blue.scss";
 @import "scss/mixins";
 @import "./operations";
@@ -19,13 +26,27 @@
     }
 
     form {
+        @extend .my-3;
+        @extend .pt-3;
+
         .custom-select {
             background: none; // removes wierd double arrows on select
         }
+        
+        // Undo butchering from base.css
+        .form-row {
+            display: flex;
+        }
+
         footer {
             display: flex;
             flex-direction: row;
             justify-content: flex-end;
+            @extend .pt-3;
+
+            button:not(:first-child) {
+                @extend .ml-1;
+            }
         }
     }
 
@@ -60,11 +81,11 @@
 
     // save disk changes color based on form valid/dirty
 
-    &.valid .save a {
-        color: $state-success-text;
-    }
-    &:not(.valid) .save a {
-        color: $state-danger-text;
-    }
+    // &.valid .save a {
+    //     color: $state-success-text;
+    // }
+    // &:not(.valid) .save a {
+    //     color: $state-danger-text;
+    // }
 
 }

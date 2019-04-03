@@ -6,23 +6,25 @@
                 <h1>Manage Cloud Authorization</h1>
                 <nav class="operations">
                     <ul>
-                        <li class="help">
-                            <a @click.prevent="showHelp = !showHelp"
+                        <li class="cloudKeyHelp">
+                            <a :class="{ active: showHelp }"
+                                @click.prevent="showHelp = !showHelp"
                                 v-b-tooltip.hover 
                                 aria-label="Instructions"
                                 title="Instructions">
                                 <span>Instructions</span>
                             </a>
                         </li>
-                        <li class="filter">
-                            <a @click.prevent="showFilter = !showFilter"
+                        <li class="cloudKeyFilter">
+                            <a :class="{ active: showFilter }"
+                                @click.prevent="showFilter = !showFilter"
                                 v-b-tooltip.hover 
                                 aria-label="Filter Results" 
                                 title="Filter Results">
                                 <span>Filter</span>
                             </a>
                         </li>
-                        <li class="create">
+                        <li class="createCloudKey">
                             <a @click.prevent="onCreate"
                                 v-b-tooltip.hover 
                                 aria-label="Create New Key"
@@ -75,7 +77,7 @@
         <b-modal id="deleteCredentialModal" ref="deleteModal" 
             title="Delete Item?" size="sm"
             @ok="onConfirmDelete"
-            @cancel="onCancelDelete">
+            @cancel="clearDoomedItem">
         </b-modal>
 
     </section>
@@ -97,8 +99,10 @@ export default {
             items: [],
             filter: "",
             showHelp: true,
-            showFilter: false,
-            loading: false
+            showFilter: true,
+            loading: false,
+            currentItem: null,
+            doomedItem: null
         }
     },
     computed: {
@@ -120,7 +124,9 @@ export default {
     },
     methods: {
         onCreate() {
-            this.addItem(Credential.create());
+            let newItem = Credential.create();
+            newItem.expanded = true;
+            this.addItem(newItem);
         },
         onSave(item) {
             if (!item.valid) {
@@ -139,7 +145,12 @@ export default {
             // bootstrapVue modal v-model property is bugged
             // so need to set and retrieve the doomed item manually
             this.doomedItem = doomed;
-            this.$refs.deleteModal.show();
+            if (doomed.id) {
+                this.$refs.deleteModal.show();
+            } else {
+                this.removeItem(doomed);
+                this.clearDoomedItem();
+            }
         },
         onConfirmDelete() {
 
@@ -151,10 +162,10 @@ export default {
                 .catch(err => console.warn('bad delete', err))
                 .finally(() => {
                     doomed.loading = false;
-                    this.onCancelDelete();
+                    this.clearDoomedItem();
                 });
         },
-        onCancelDelete() {
+        clearDoomedItem() {
             this.doomedItem = null;
         },
         onExpand(credential, { expanded }) {
