@@ -24,4 +24,9 @@ export class UrlTracker {
         }
         return url;
     }
+
+    /** Returns true if the last data is at navigation root **/
+    atRoot() {
+        return this.navigation.length == 0;
+    }
 }

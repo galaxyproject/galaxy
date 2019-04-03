@@ -36,11 +36,6 @@ export class Services {
         });
     }
 
-    /** Returns true if the last data is at navigation root **/
-    atRoot() {
-        return this.navigation.length == 0;
-    }
-
     /** Build record url **/
     addHostToUrl(url) {
         return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${url}`;

@@ -48,14 +48,19 @@ describe("utilities.js/UrlTracker", () => {
         let urlTracker = new UrlTracker("url_initial");
         let url = urlTracker.getUrl();
         expect(url).to.equals("url_initial");
+        expect(urlTracker.atRoot()).to.equals(true);
         url = urlTracker.getUrl("url_1");
         expect(url).to.equals("url_1");
+        expect(urlTracker.atRoot()).to.equals(false);
         url = urlTracker.getUrl("url_2");
         expect(url).to.equals("url_2");
+        expect(urlTracker.atRoot()).to.equals(false);
         url = urlTracker.getUrl();
         expect(url).to.equals("url_1");
+        expect(urlTracker.atRoot()).to.equals(false);
         url = urlTracker.getUrl();
         expect(url).to.equals("url_initial");
+        expect(urlTracker.atRoot()).to.equals(true);
     });
 });
 
