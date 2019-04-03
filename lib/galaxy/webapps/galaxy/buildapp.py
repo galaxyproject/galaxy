@@ -309,6 +309,12 @@ def populate_api_routes(webapp, app):
                           controller='cloudauthz',
                           conditions=dict(method=["POST"]))
 
+    webapp.mapper.connect('delete_cloudauthz_item',
+                          '/api/cloud/authz/{encoded_authz_id}',
+                          action='delete',
+                          controller='cloudauthz',
+                          conditions=dict(method=["DELETE"]))
+
     webapp.mapper.connect('get_custom_builds_metadata',
                           '/api/histories/{id}/custom_builds_metadata',
                           controller='histories',
@@ -338,6 +344,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{id:.+?}/build_dependency_cache', action='build_dependency_cache', controller="tools", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/tools/{id:.+?}', action='show', controller="tools")
     webapp.mapper.resource('tool', 'tools', path_prefix='/api')
+    webapp.mapper.resource('dynamic_tools', 'dynamic_tools', path_prefix='/api')
 
     webapp.mapper.connect('/api/dependency_resolvers/clean', action="clean", controller="tool_dependencies", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies", conditions=dict(method=["GET"]))

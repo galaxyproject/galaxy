@@ -31,7 +31,6 @@ var LibraryDatasetView = Backbone.View.extend({
         "click .toolbtn_save_permissions": "savePermissions",
         "click .toolbtn_save_modifications": "saveModifications",
         "click .toolbtn_detect_datatype": "detectDatatype"
-
     },
 
     // genome select
@@ -400,9 +399,9 @@ var LibraryDatasetView = Backbone.View.extend({
         return select_options;
     },
 
-    detectDatatype: function(options){
+    detectDatatype: function(options) {
         let ld = this.model;
-        ld.set("file_ext", 'auto');
+        ld.set("file_ext", "auto");
         this._submitModification(ld);
     },
 
@@ -450,21 +449,21 @@ var LibraryDatasetView = Backbone.View.extend({
         }
     },
 
-    _submitModification(library_dataset){
+    _submitModification(library_dataset) {
         library_dataset.save(null, {
-                patch: true,
-                success: library_dataset => {
-                    this.render();
-                    mod_toastr.success("Changes to library dataset saved.");
-                },
-                error: function(model, response) {
-                    if (typeof response.responseJSON !== "undefined") {
-                        mod_toastr.error(response.responseJSON.err_msg);
-                    } else {
-                        mod_toastr.error("An error occurred while attempting to update the library dataset.");
-                    }
+            patch: true,
+            success: library_dataset => {
+                this.render();
+                mod_toastr.success("Changes to library dataset saved.");
+            },
+            error: function(model, response) {
+                if (typeof response.responseJSON !== "undefined") {
+                    mod_toastr.error(response.responseJSON.err_msg);
+                } else {
+                    mod_toastr.error("An error occurred while attempting to update the library dataset.");
                 }
-            });
+            }
+        });
     },
 
     copyToClipboard: function(e) {

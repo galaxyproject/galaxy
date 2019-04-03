@@ -149,6 +149,13 @@ def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, t
             trans.install_model.context.flush()
 
 
+def count_repositories_in_category(app, category_id):
+    sa_session = app.model.context.current
+    return sa_session.query(app.model.RepositoryCategoryAssociation) \
+                     .filter(app.model.RepositoryCategoryAssociation.table.c.category_id == app.security.decode_id(category_id)) \
+                     .count()
+
+
 def generate_tool_guid(repository_clone_url, tool):
     """
     Generate a guid for the installed tool.  It is critical that this guid matches the guid for

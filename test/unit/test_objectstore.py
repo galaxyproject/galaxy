@@ -740,7 +740,7 @@ def test_config_parse_azure():
 
 
 class TestConfig(object):
-    def __init__(self, config_str, clazz=None):
+    def __init__(self, config_str=DISK_TEST_CONFIG, clazz=None):
         self.temp_directory = mkdtemp()
         if config_str.startswith("<"):
             config_file = "store.xml"

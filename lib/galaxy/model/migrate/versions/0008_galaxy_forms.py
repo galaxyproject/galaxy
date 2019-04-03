@@ -103,12 +103,11 @@ SampleEvent_table = Table('sample_event', metadata,
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
-    # Load existing tables
+    metadata.bind = migrate_engine
     metadata.reflect()
+
     # Add all of the new tables above
-#    metadata.create_all()
     try:
         FormDefinitionCurrent_table.create()
     except Exception:
@@ -155,8 +154,8 @@ def upgrade(migrate_engine):
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    # Load existing tables
     metadata.reflect()
+
     try:
         FormDefinition_table.drop()
     except Exception:

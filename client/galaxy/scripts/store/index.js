@@ -4,10 +4,14 @@
 
 import Vue from "vue";
 import Vuex from "vuex";
-import { gridSearchStore as gridSearch } from "./gridSearchStore";
+import { gridSearchStore } from "./gridSearchStore";
+import { tagStore } from "./tagStore";
 
 Vue.use(Vuex);
 
 export default new Vuex.Store({
-    modules: { gridSearch }
+    modules: {
+        gridSearch: gridSearchStore,
+        tags: tagStore
+    }
 });

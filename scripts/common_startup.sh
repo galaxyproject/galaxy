@@ -210,10 +210,12 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
         # If git is not used and static/client_build_hash.txt is present, next
         # client rebuilds must be done manually by the admin
         if [ "$GIT_BRANCH" = "0" ]; then
+            echo "Skipping Galaxy client build because git is not in use and the client build state cannot be compared against local changes.  If you have made local modifications, then manual client builds will be required."
             SKIP_CLIENT_BUILD=1
         else
             # Check if anything has changed in client/ since the last build
             if git diff --quiet $(cat static/client_build_hash.txt) -- client/; then
+                echo "The Galaxy client build is up to date and will not be rebuilt at this time."
                 SKIP_CLIENT_BUILD=1
             else
                 echo "The Galaxy client is out of date and will be built now."
@@ -222,16 +224,27 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     else
         echo "The Galaxy client has not yet been built and will be built now."
     fi
+else
+    echo "The Galaxy client build is being skipped due to the SKIP_CLIENT_BUILD environment variable."
+fi
+
+# Install node if not installed
+if [ -n "$VIRTUAL_ENV" ]; then
+    if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v$NODE_VERSION" ]; then
+        echo "Installing node into $VIRTUAL_ENV with nodeenv."
+        nodeenv -n $NODE_VERSION -p
+    fi
+elif [ -n "$CONDA_DEFAULT_ENV" -a -n "$CONDA_EXE" ]; then
+    if ! in_conda_env "$(command -v node)"; then
+        echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
+        $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name $CONDA_DEFAULT_ENV node=$NODE_VERSION
+    fi
 fi
 
 # Build client if necessary.
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     # Ensure dependencies are installed
     if [ -n "$VIRTUAL_ENV" ]; then
-        if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v$NODE_VERSION" ]; then
-            echo "Installing node into $VIRTUAL_ENV with nodeenv."
-            nodeenv -n $NODE_VERSION -p
-        fi
         if ! in_venv "$(command -v yarn)"; then
             echo "Installing yarn into $VIRTUAL_ENV with npm."
             npm install --global yarn
@@ -256,7 +269,4 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
         exit 1
     fi
     cd -
-else
-    echo "Regenerating static plugin directories."
-    python ./scripts/plugin_staging.py
 fi

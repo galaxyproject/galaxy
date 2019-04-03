@@ -22,7 +22,6 @@ export default Backbone.View.extend({
 
     // Initialize
     initialize: function(grid_config) {
-        console.log("Grid initialize", grid_config, this);
         this.grid = new GridModel();
         this.title = grid_config.title;
         this.active_tab = grid_config.active_tab;

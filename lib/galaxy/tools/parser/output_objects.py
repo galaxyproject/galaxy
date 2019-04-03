@@ -24,12 +24,13 @@ class ToolOutput(ToolOutputBase):
       (format, metadata_source, parent)
     """
 
-    dict_collection_visible_keys = ['name', 'format', 'label', 'hidden']
+    dict_collection_visible_keys = ['name', 'format', 'label', 'hidden', 'output_type']
 
     def __init__(self, name, format=None, format_source=None, metadata_source=None,
                  parent=None, label=None, filters=None, actions=None, hidden=False,
                  implicit=False):
         super(ToolOutput, self).__init__(name, label=label, filters=filters, hidden=hidden)
+        self.output_type = "data"
         self.format = format
         self.format_source = format_source
         self.metadata_source = metadata_source
@@ -70,6 +71,27 @@ class ToolOutput(ToolOutputBase):
         return as_dict
 
 
+class ToolExpressionOutput(ToolOutputBase):
+    dict_collection_visible_keys = ('name', 'format', 'label', 'hidden', 'output_type')
+
+    def __init__(self, name, output_type, from_expression,
+                 label=None, filters=None, actions=None, hidden=False):
+        super(ToolExpressionOutput, self).__init__(name, label=label, filters=filters, hidden=hidden)
+        self.output_type = output_type  # JSON type...
+        self.from_expression = from_expression
+        self.format = "expression.json"  # galaxy.datatypes.text.ExpressionJson.file_ext
+
+        self.format_source = None
+        self.metadata_source = None
+        self.parent = None
+        self.actions = actions
+
+        # Initialize default values
+        self.change_format = []
+        self.implicit = False
+        self.from_work_dir = None
+
+
 class ToolOutputCollection(ToolOutputBase):
     """
     Represents a HistoryDatasetCollectionAssociation of output datasets produced
@@ -85,6 +107,7 @@ class ToolOutputCollection(ToolOutputBase):
       </collection>
     <outputs>
     """
+    dict_collection_visible_keys = ('name', 'format', 'label', 'hidden', 'output_type')
 
     dict_collection_visible_keys = ['name', 'default_format', 'label', 'hidden', 'inherit_format', 'inherit_metadata']
 
@@ -102,6 +125,7 @@ class ToolOutputCollection(ToolOutputBase):
         inherit_metadata=False
     ):
         super(ToolOutputCollection, self).__init__(name, label=label, filters=filters, hidden=hidden)
+        self.output_type = "collection"
         self.collection = True
         self.default_format = default_format
         self.structure = structure

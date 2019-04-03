@@ -10,8 +10,8 @@ from json import loads
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table, TEXT
 
-# Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import _sniffnfix_pg9_hex, TrimmedString
+from galaxy.model.migrate.versions.util import localtimestamp, nextval
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
@@ -23,24 +23,6 @@ handler.setFormatter(formatter)
 log.addHandler(handler)
 
 metadata = MetaData()
-
-
-def nextval(migrate_engine, table, col='id'):
-    if migrate_engine.name in ['postgres', 'postgresql']:
-        return "nextval('%s_%s_seq')" % (table, col)
-    elif migrate_engine.name in ['mysql', 'sqlite']:
-        return "null"
-    else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
-
-
-def localtimestamp(migrate_engine):
-    if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:
-        return "LOCALTIMESTAMP"
-    elif migrate_engine.name == 'sqlite':
-        return "current_date || ' ' || current_time"
-    else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
 
 
 ToolVersion_table = Table("tool_version", metadata,
@@ -57,12 +39,10 @@ ToolVersionAssociation_table = Table("tool_version_association", metadata,
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
-
-    ToolIdGuidMap_table = Table("tool_id_guid_map", metadata, autoload=True)
-
+    metadata.bind = migrate_engine
     metadata.reflect()
+
     # Create the tables.
     try:
         ToolVersion_table.create()
@@ -90,6 +70,7 @@ def upgrade(migrate_engine):
                 count += 1
     print("Added %d rows to the new tool_version table." % count)
     # Drop the tool_id_guid_map table since the 2 new tables render it unnecessary.
+    ToolIdGuidMap_table = Table("tool_id_guid_map", metadata, autoload=True)
     try:
         ToolIdGuidMap_table.drop()
     except Exception:

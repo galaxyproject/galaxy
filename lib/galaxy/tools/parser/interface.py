@@ -88,6 +88,11 @@ class ToolSource(object):
         """ Return string contianing command to run.
         """
 
+    def parse_expression(self):
+        """ Return string contianing command to run.
+        """
+        return None
+
     @abstractmethod
     def parse_environment_variables(self):
         """ Return environment variable templates to expose.

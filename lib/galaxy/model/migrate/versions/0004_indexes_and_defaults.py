@@ -1,7 +1,11 @@
+"""
+"""
 import logging
 import sys
 
 from sqlalchemy import Index, MetaData, Table
+
+from galaxy.model.migrate.versions.util import engine_false
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -14,21 +18,12 @@ log.addHandler(handler)
 metadata = MetaData()
 
 
-def engine_false(migrate_engine):
-    if migrate_engine.name in ['postgres', 'postgresql']:
-        return "FALSE"
-    elif migrate_engine.name in ['mysql', 'sqlite']:
-        return 0
-    else:
-        raise Exception('Unknown database type: %s' % migrate_engine.name)
-
-
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
+    metadata.reflect()
+
     User_table = Table("galaxy_user", metadata, autoload=True)
     HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
-    # Load existing tables
-    metadata.reflect()
     # Add 2 indexes to the galaxy_user table
     i = Index('ix_galaxy_user_deleted', User_table.c.deleted)
     try:
@@ -60,5 +55,4 @@ def upgrade(migrate_engine):
 
 
 def downgrade(migrate_engine):
-    metadata.bind = migrate_engine
     pass

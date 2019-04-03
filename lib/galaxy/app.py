@@ -17,6 +17,7 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.libraries import LibraryManager
+from galaxy.managers.tools import DynamicToolManager
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.tools.cache import (
@@ -39,6 +40,7 @@ from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.web import url_for
 from galaxy.web.proxy import ProxyManager
 from galaxy.web.stack import application_stack_instance
+from galaxy.web.stack.database_heartbeat import DatabaseHeartbeat
 from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
 from galaxy.webhooks import WebhooksRegistry
 from tool_shed.galaxy_install import (
@@ -84,7 +86,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
         check_migrate_tools = self.config.check_migrate_tools
-        self._configure_models(check_migrate_databases=True, check_migrate_tools=check_migrate_tools, config_file=config_file)
+        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, check_migrate_tools=check_migrate_tools, config_file=config_file)
 
         # Manage installed tool shed repositories.
         self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager(self)
@@ -102,6 +104,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.test_data_resolver = test_data.TestDataResolver(file_dirs=self.config.tool_test_data_directories)
         self.library_folder_manager = FolderManager()
         self.library_manager = LibraryManager()
+        self.dynamic_tool_manager = DynamicToolManager(self)
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)
@@ -224,6 +227,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
             handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
         self._configure_signal_handlers(handlers)
 
+        self.database_heartbeat = DatabaseHeartbeat(
+            application_stack=self.application_stack
+        )
+        self.application_stack.register_postfork_function(self.database_heartbeat.start)
+
         # Start web stack message handling
         self.application_stack.register_postfork_function(self.application_stack.start)
 
@@ -244,6 +252,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         except Exception as e:
             exception = exception or e
             log.exception("Failed to shutdown configuration watchers cleanly")
+        try:
+            self.database_heartbeat.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown database heartbeat cleanly")
         try:
             self.workflow_scheduling_manager.shutdown()
         except Exception as e:
