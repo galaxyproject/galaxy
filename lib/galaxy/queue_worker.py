@@ -117,9 +117,9 @@ class ControlTask(object):
                         self.connection.drain_events(timeout=timeout)
                 return self.response
         except socket.timeout:
-            log.exception("Error waiting for task: '%s' sent with routing key '%s'", (payload, routing_key))
+            log.exception("Error waiting for task: '%s' sent with routing key '%s'", payload, routing_key)
         except Exception:
-            log.exception("Error queueing async task: '%s'. for %s", (payload, routing_key))
+            log.exception("Error queueing async task: '%s'. for %s", payload, routing_key)
 
 
 # Tasks -- to be reorganized into a separate module as appropriate.  This is
