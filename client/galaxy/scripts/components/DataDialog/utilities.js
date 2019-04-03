@@ -1,15 +1,11 @@
-/** Returns true if the item is a dataset entry **/
-export function isDataset(item) {
-    return item.history_content_type == "dataset" || item.type == "file";
-}
-
+/** This helps track urls for data drilling **/
 export class UrlTracker {
-    constructor(rootUrl) {
-        this.rootUrl = rootUrl;
+    constructor(root) {
+        this.root = root;
         this.navigation = [];
     }
 
-    /** Returns and tracks urls for data drilling **/
+    /** Returns urls for data drilling **/
     getUrl(url) {
         if (url) {
             this.navigation.push(url);
@@ -19,7 +15,7 @@ export class UrlTracker {
             if (navigationLength > 0) {
                 url = this.navigation[navigationLength - 1];
             } else {
-                url = this.rootUrl;
+                url = this.root;
             }
         }
         return url;

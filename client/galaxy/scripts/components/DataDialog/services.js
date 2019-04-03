@@ -1,25 +1,14 @@
-import { getGalaxyInstance } from "app";
 import axios from "axios";
-import { UrlTracker } from "./utilities";
 
+/** Data populator traverses raw server responses **/
 export class Services {
-    constructor() {
-        this.galaxy = getGalaxyInstance();
-        this.urlTracker = new UrlTracker(this.getHistoryUrl());
+    constructor(options = {}) {
+        this.root = options.root;
+        this.host = options.host;
     }
 
-    /** Returns the default url i.e. the url of the current history **/
-    getHistoryUrl() {
-        let historyId = this.galaxy.currHistoryPanel && this.galaxy.currHistoryPanel.model.id;
-        if (historyId) {
-            return `${this.galaxy.root}api/histories/${historyId}/contents?deleted=false`;
-        }
-    }
-
-    /** Get raw data **/
-    getData(url) {
+    get(url) {
         return new Promise((resolve, reject) => {
-            url = this.urlTracker.getUrl(url);
             axios
                 .get(url)
                 .then(response => {
@@ -27,7 +16,7 @@ export class Services {
                     resolve(items);
                 })
                 .catch(e => {
-                    let errorMessage = "Datasets not available.";
+                    let errorMessage = "Request failed.";
                     if (e.response) {
                         errorMessage = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
                     }
@@ -36,44 +25,9 @@ export class Services {
         });
     }
 
-    /** Build record url **/
-    addHostToUrl(url) {
-        return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${url}`;
-    }
-
-    /** Populate record data from raw record source **/
-    populateRecord(record) {
-        record.details = record.extension || record.description;
-        record.time = record.update_time || record.create_time;
-        if (record.time) {
-            record.time = record.time.substring(0, 16).replace("T", " ");
-        }
-        if (record.model_class == "Library") {
-            record.url = `${this.galaxy.root}api/libraries/${record.id}/contents`;
-            return record;
-        } else if (record.hid) {
-            record.name = `${record.hid}: ${record.name}`;
-            record.download = this.addHostToUrl(`${record.url}/display`);
-            return record;
-        } else if (record.type == "file") {
-            if (record.name && record.name[0] === "/") {
-                record.name = record.name.substring(1);
-            }
-            let url = `${this.galaxy.root}api/libraries/datasets/download/uncompressed?ld_ids=${record.id}`;
-            record.download = this.addHostToUrl(url);
-            return record;
-        }
-    }
-
-    /** Traverese raw records from server response **/
+    /** Returns the formatted results **/
     getItems(data) {
         let items = [];
-        if (this.library && this.services.atRoot()) {
-            items.push({
-                name: "Data Libraries",
-                url: `${this.galaxy.root}api/libraries`
-            });
-        }
         let stack = [data];
         while (stack.length > 0) {
             let root = stack.pop();
@@ -86,12 +40,37 @@ export class Services {
             } else if (root.object) {
                 stack.push(root.object);
             } else {
-                let record = this.populateRecord(root);
+                let record = this.getRecord(root);
                 if (record) {
                     items.push(record);
                 }
             }
         }
         return items;
+    }
+
+    /** Populate record data from raw record source **/
+    getRecord(record) {
+        record.details = record.extension || record.description;
+        record.time = record.update_time || record.create_time;
+        record.isDataset = record.history_content_type == "dataset" || record.type == "file";
+        if (record.time) {
+            record.time = record.time.substring(0, 16).replace("T", " ");
+        }
+        if (record.model_class == "Library") {
+            record.url = `${this.root}api/libraries/${record.id}/contents`;
+            return record;
+        } else if (record.hid) {
+            record.name = `${record.hid}: ${record.name}`;
+            record.download = `${this.host}${record.url}/display`;
+            return record;
+        } else if (record.type == "file") {
+            if (record.name && record.name[0] === "/") {
+                record.name = record.name.substring(1);
+            }
+            let url = `${this.root}api/libraries/datasets/download/uncompressed?ld_ids=${record.id}`;
+            record.download = `${this.host}url`;
+            return record;
+        }
     }
 }

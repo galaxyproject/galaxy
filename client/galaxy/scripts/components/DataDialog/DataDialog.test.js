@@ -3,10 +3,17 @@ import { mount } from "@vue/test-utils";
 import DataDialog from "./DataDialog.vue";
 import { __RewireAPI__ as rewire } from "./DataDialog";
 import { Model } from "./model.js";
-import { isDataset, UrlTracker } from "./utilities.js";
+import { isDataset, DataPopulator, UrlTracker } from "./utilities.js";
+
+const mockOptions = {
+    callback: () => {},
+    host: "host",
+    root: "root",
+    history: "history"
+};
 
 describe("model.js", () => {
-    let result = null
+    let result = null;
     it("Model operations for single, no format", () => {
         let model = new Model();
         try {
@@ -73,21 +80,43 @@ describe("utilities.js/isDataset", () => {
     });
 });
 
+describe("utilities.js/DataPopulator", () => {
+    it("Test data population from raw data", () => {
+        let rawData = {
+            hid: 1,
+            name: "name_1",
+            url: "/url_1"
+        };
+        let dataPopulator = new DataPopulator(mockOptions);
+        let items = dataPopulator.get(rawData);
+        expect(items.length).to.equals(1);
+        let first = items[0];
+        expect(first.name).to.equals("1: name_1");
+        expect(first.download).to.equals("host/url_1/display");
+    });
+});
+
 describe("DataDialog.vue", () => {
     let stub;
     let wrapper;
     let emitted;
 
-    let mockAxios = {
-        get: () => null
-    };
-
-    let mockGetGalaxyInstanceNoHistory = () => {
-        return {};
+    let mockServices = class {
+        get(url) {
+            return new Promise((resolve, reject) => {
+                resolve([
+                    {
+                        id: 1,
+                        hid: 1,
+                        name: "name_1"
+                    }
+                ]);
+            });
+        }
     };
 
     beforeEach(() => {
-        rewire.__Rewire__("axios", mockAxios);
+        rewire.__Rewire__("Services", mockServices);
     });
 
     afterEach(() => {
@@ -95,16 +124,17 @@ describe("DataDialog.vue", () => {
     });
 
     it("loads correctly, shows alert", () => {
-        //rewire.__Rewire__("getGalaxyInstance", mockGetGalaxyInstanceNoHistory);
         wrapper = mount(DataDialog, {
-            propsData: {
-                callback: () => {}
-            }
+            propsData: mockOptions
         });
         emitted = wrapper.emitted();
         expect(wrapper.classes()).contain("data-dialog-modal");
-        expect(wrapper.find(".alert").text()).to.equals("Datasets not available.");
+        expect(wrapper.find(".fa-spinner").text()).to.equals("");
         expect(wrapper.find(".btn-secondary").text()).to.equals("Clear");
-        expect(wrapper.find(".btn-primary").text()).to.equals("Close");
+        expect(wrapper.find(".btn-primary").text()).to.equals("Ok");
+        wrapper.vm.$nextTick(() => {
+            console.log(wrapper.vm.$el);
+            expect(wrapper.find(".fa-copy").length).to.equals(10);
+        });
     });
 });

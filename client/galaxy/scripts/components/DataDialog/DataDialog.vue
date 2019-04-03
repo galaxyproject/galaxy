@@ -5,49 +5,14 @@
         </template>
         <b-alert v-if="errorMessage" variant="danger" show v-html="errorMessage" />
         <div v-else>
-            <div v-if="optionsShow">
-                <b-table
-                    small
-                    hover
-                    :items="items"
-                    :fields="fields"
-                    :filter="filter"
-                    :per-page="perPage"
-                    :current-page="currentPage"
-                    @row-clicked="clicked"
-                    @filtered="filtered"
-                >
-                    <template slot="name" slot-scope="data">
-                        <i v-if="isDataset(data.item)" class="fa fa-file-o" /> <i v-else class="fa fa-copy" />
-                        {{ data.value ? data.value : "-" }}
-                    </template>
-                    <template slot="details" slot-scope="data">
-                        {{ data.value ? data.value : "-" }}
-                    </template>
-                    <template slot="time" slot-scope="data">
-                        {{ data.value ? data.value : "-" }}
-                    </template>
-                    <template slot="arrow" slot-scope="data">
-                        <b-button
-                            variant="link"
-                            size="sm"
-                            class="py-0"
-                            v-if="!isDataset(data.item)"
-                            @click.stop="load(data.item.url)"
-                        >
-                            View
-                        </b-button>
-                    </template>
-                </b-table>
-                <div v-if="nItems === 0">
-                    <div v-if="filter">
-                        No search results found for: <b>{{ this.filter }}</b
-                        >.
-                    </div>
-                    <div v-else>No entries.</div>
-                </div>
-                <b-pagination v-if="nItems > perPage" v-model="currentPage" :per-page="perPage" :total-rows="nItems" />
-            </div>
+            <data-dialog-table
+                v-if="optionsShow"
+                :items="items"
+                :multiple="multiple"
+                :filter="filter"
+                @clicked="clicked"
+                @load="load"
+            />
             <div v-else><span class="fa fa-spinner fa-spin" /> <span>Please wait...</span></div>
         </div>
         <div v-if="!errorMessage" slot="modal-footer" class="w-100">
@@ -55,7 +20,7 @@
                 <div class="fa fa-caret-left mr-1" />
                 Back
             </b-btn>
-            <b-btn size="sm" class="float-right ml-1" variant="primary" @click="finalize" :disabled="!hasValues">
+            <b-btn size="sm" class="float-right ml-1" variant="primary" @click="finalize" :disabled="!hasValue">
                 Ok
             </b-btn>
             <b-btn size="sm" class="float-right" @click="modalShow = false"> Cancel </b-btn>
@@ -67,7 +32,8 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import DataDialogSearch from "./DataDialogSearch.vue";
-import { isDataset } from "./utilities.js";
+import DataDialogTable from "./DataDialogTable.vue";
+import { UrlTracker } from "./utilities.js";
 import { Model } from "./model.js";
 import { Services } from "./services.js";
 
@@ -75,7 +41,8 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        "data-dialog-search": DataDialogSearch
+        "data-dialog-search": DataDialogSearch,
+        "data-dialog-table": DataDialogTable
     },
     props: {
         callback: {
@@ -93,59 +60,48 @@ export default {
         library: {
             type: Boolean,
             default: true
+        },
+        root: {
+            type: String,
+            required: true
+        },
+        host: {
+            type: String,
+            required: true
+        },
+        history: {
+            type: String,
+            required: true
         }
     },
     data() {
         return {
-            currentPage: 1,
             errorMessage: null,
-            fields: {
-                name: {
-                    sortable: true
-                },
-                details: {
-                    sortable: true
-                },
-                time: {
-                    sortable: true
-                },
-                arrow: {
-                    label: "",
-                    sortable: false,
-                    class: "text-right"
-                }
-            },
             filter: null,
             items: [],
             modalShow: true,
-            nItems: 0,
             optionsShow: false,
-            perPage: 100,
-            undoShow: false
+            undoShow: false,
+            hasValue: false,
+            oldnewItems: false
         };
     },
     created: function() {
-        this.services = new Services();
+        this.services = new Services({ root: this.root, host: this.host });
+        this.urlTracker = new UrlTracker(this.getHistoryUrl());
         this.model = new Model({ multiple: this.multiple, format: this.format });
         this.load();
     },
     methods: {
-        /** Returns true if the item is a dataset entry **/
-        isDataset: isDataset,
-        /** Returns true if records have been added to the model **/
-        hasValues: function() {
-            return this.model.count() > 0;
-        },
-        /** Resets pagination when a filter/search word is entered **/
-        filtered: function(items) {
-            this.nItems = items.length;
-            this.currentPage = 1;
+        /** Returns the default url i.e. the url of the current history **/
+        getHistoryUrl: function() {
+            return `${this.root}api/histories/${this.history}/contents?deleted=false`;
         },
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
         formatRows() {
             for (let item of this.items) {
                 let _rowVariant = "active";
-                if (isDataset(item)) {
+                if (item.isDataset) {
                     _rowVariant = this.model.exists(item.id) ? "success" : "default";
                 }
                 Vue.set(item, "_rowVariant", _rowVariant);
@@ -153,8 +109,9 @@ export default {
         },
         /** Collects selected datasets in value array **/
         clicked: function(record) {
-            if (isDataset(record)) {
+            if (record.isDataset) {
                 this.model.add(record);
+                this.hasValue = this.model.count() > 0;
                 if (this.multiple) {
                     this.formatRows();
                 } else {
@@ -170,14 +127,21 @@ export default {
         },
         /** Performs server request to retrieve data records **/
         load: function(url) {
+            url = this.urlTracker.getUrl(url);
             this.filter = null;
             this.optionsShow = false;
-            this.undoShow = !this.services.atRoot();
+            this.undoShow = !this.urlTracker.atRoot();
             this.services
-                .getData(url)
+                .get(url)
                 .then(items => {
+                    if (this.library && this.urlTracker.atRoot()) {
+                        items.unshift({
+                            name: "Data Libraries",
+                            url: `${this.root}api/libraries`
+                        });
+                    }
                     this.items = items;
-                    this.filtered(this.items);
+                    this.formatRows();
                     this.optionsShow = true;
                 })
                 .catch(errorMessage => {
