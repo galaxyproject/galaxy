@@ -802,6 +802,9 @@ class Text(Data):
         """
         data_lines = 0
         with compression_utils.get_fileobj(dataset.file_name) as in_file:
+            # FIXME: Potential encoding issue can prevent the ability to iterate over lines
+            # causing set_meta process to fail otherwise OK jobs. A better solution than
+            # a silent try/except is desirable.
             try:
                 for line in in_file:
                     line = line.strip()
