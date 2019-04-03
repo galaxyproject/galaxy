@@ -25,6 +25,7 @@ class CustosAuthnz(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config):
         self.config = {'provider': provider.lower()}
         self.config['verify_ssl'] = oidc_config['VERIFY_SSL']
+        self.config['url'] = oidc_backend_config['url']
         self.config['client_id'] = oidc_backend_config['client_id']
         self.config['client_secret'] = oidc_backend_config['client_secret']
         self.config['redirect_uri'] = oidc_backend_config['redirect_uri']
@@ -191,7 +192,7 @@ class CustosAuthnz(IdentityProvider):
         # TODO: Look up this URL from a Python library
         if provider == 'custos':
             self.config['ca_bundle'] = CA_CERTFILE
-            return "https://iam.scigap.org/auth/realms/{}/.well-known/openid-configuration".format(realm)
+            return "{}/realms/{}/.well-known/openid-configuration".format(self.config["url"], realm)
         else:
             raise Exception("Unknown Custos provider name: {}".format(provider))
 
