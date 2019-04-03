@@ -802,10 +802,16 @@ class Text(Data):
         """
         data_lines = 0
         with compression_utils.get_fileobj(dataset.file_name) as in_file:
-            for line in in_file:
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    data_lines += 1
+            # FIXME: Potential encoding issue can prevent the ability to iterate over lines
+            # causing set_meta process to fail otherwise OK jobs. A better solution than
+            # a silent try/except is desirable.
+            try:
+                for line in in_file:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        data_lines += 1
+            except Exception:
+                pass
         return data_lines
 
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True):
