@@ -18,6 +18,7 @@ from six.moves.queue import (
 
 import galaxy.jobs
 from galaxy import model
+from galaxy.job_execution.output_collect import default_exit_code_file, read_exit_code_from
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
@@ -544,7 +545,7 @@ class JobState(object):
                 self.job_file = JobState.default_job_file(files_dir, id_tag)
                 self.output_file = os.path.join(files_dir, 'galaxy_%s.o' % id_tag)
                 self.error_file = os.path.join(files_dir, 'galaxy_%s.e' % id_tag)
-                self.exit_code_file = os.path.join(files_dir, 'galaxy_%s.ec' % id_tag)
+                self.exit_code_file = default_exit_code_file(files_dir, id_tag)
             job_name = 'g%s' % id_tag
             if self.job_wrapper.tool.old_id:
                 job_name += '_%s' % self.job_wrapper.tool.old_id
@@ -556,27 +557,8 @@ class JobState(object):
     def default_job_file(files_dir, id_tag):
         return os.path.join(files_dir, 'galaxy_%s.sh' % id_tag)
 
-    @staticmethod
-    def default_exit_code_file(files_dir, id_tag):
-        return os.path.join(files_dir, 'galaxy_%s.ec' % id_tag)
-
     def read_exit_code(self):
-        try:
-            # This should be an 8-bit exit code, but read ahead anyway:
-            exit_code_str = open(self.exit_code_file, "r").read(32)
-        except Exception:
-            # By default, the exit code is 0, which typically indicates success.
-            exit_code_str = "0"
-
-        try:
-            # Decode the exit code. If it's bogus, then just use 0.
-            exit_code = int(exit_code_str)
-        except ValueError:
-            galaxy_id_tag = self.job_wrapper.get_id_tag()
-            log.warning("(%s) Exit code '%s' invalid. Using 0." % (galaxy_id_tag, exit_code_str))
-            exit_code = 0
-
-        return exit_code
+        return read_exit_code_from(self.exit_code_file, self.job_wrapper.get_id_tag())
 
     def cleanup(self):
         for file in [getattr(self, a) for a in self.cleanup_file_attributes if hasattr(self, a)]:
