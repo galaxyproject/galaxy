@@ -2084,10 +2084,10 @@ test_data: {}
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         content = self.dataset_populator.get_history_dataset_content(history_id)
         lines = content.split("\n")
-        assert len(lines) == 3
+        assert len(lines) == 4
         str_43 = lines[0]
-        str_4point14 = lines[1]
-        assert lines[2] == ""
+        str_4point14 = lines[2]
+        assert lines[3] == ""
         assert int(str_43) == 43
         assert abs(float(str_4point14) - 4.14) < .0001
 
