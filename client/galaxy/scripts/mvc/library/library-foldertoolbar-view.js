@@ -1258,7 +1258,7 @@ var FolderToolbarView = Backbone.View.extend({
             body: template({ selected_datasets: checked_items.dataset_ids.length }),
             buttons: {
                 Continue: () => {
-                    this.showColectionBuilder(checked_items.dataset_ids);
+                    this.showCollectionBuilder(checked_items.dataset_ids);
                 },
                 Close: () => {
                     Galaxy.modal.hide();
@@ -1316,7 +1316,7 @@ var FolderToolbarView = Backbone.View.extend({
      * in the collection_elements array but we operate on ld_ids in libraries.
      * The code below overwrites the id with ldda_id for this reason.
      */
-    showColectionBuilder: function(checked_items) {
+    showCollectionBuilder: function(checked_items) {
         let Galaxy = getGalaxyInstance();
         let collection_elements = [];
         let elements_source = this.modal.$('input[type="radio"]:checked').val();
@@ -1331,7 +1331,7 @@ var FolderToolbarView = Backbone.View.extend({
                 collection_elements.push(collection_item);
             }
         } else if (elements_source === "folder") {
-            let all_datasets = Galaxy.libraries.folderListView.folder_container.get("folder").where({ type: "file" })
+            let all_datasets = Galaxy.libraries.folderListView.folder_container.get("folder").where({ type: "file" });
             collection_elements = new Backbone.Collection(all_datasets).toJSON();
             for (var i = collection_elements.length - 1; i >= 0; i--) {
                 collection_elements[i].id = collection_elements[i].ldda_id;
