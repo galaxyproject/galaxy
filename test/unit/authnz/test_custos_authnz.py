@@ -105,7 +105,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         custos_authnz._get_userinfo = get_userinfo
 
     def mockRequest(self, url, resp):
-        def get(x):
+        def get(x, **kwargs):
             assert x == url
             return Response()
 
@@ -229,6 +229,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
         self.custos_authnz = custos_authnz.CustosAuthnz('Custos', {
             'VERIFY_SSL': True
         }, {
+            'url': self._get_base_idp_url(),
             'client_id': 'test-client-id',
             'client_secret': 'test-client-secret',
             'redirect_uri': 'http://localhost/auth/callback',
