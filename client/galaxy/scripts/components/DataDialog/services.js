@@ -1,10 +1,11 @@
 import { getGalaxyInstance } from "app";
 import axios from "axios";
+import { UrlTracker } from "./utilities";
 
 export class Services {
     constructor() {
         this.galaxy = getGalaxyInstance();
-        this.navigation = [];
+        this.urlTracker = new UrlTracker(this.getHistoryUrl());
     }
 
     /** Returns the default url i.e. the url of the current history **/
@@ -15,26 +16,10 @@ export class Services {
         }
     }
 
-    /** Returns and tracks urls for data drilling **/
-    getUrl(url) {
-        if (url) {
-            this.navigation.push(url);
-        } else {
-            this.navigation.pop();
-            let navigationLength = this.navigation.length;
-            if (navigationLength > 0) {
-                url = this.navigation[navigationLength - 1];
-            } else {
-                url = this.getHistoryUrl();
-            }
-        }
-        return url;
-    }
-
     /** Get raw data **/
     getData(url) {
         return new Promise((resolve, reject) => {
-            url = this.getUrl(url);
+            url = this.urlTracker.getUrl(url);
             axios
                 .get(url)
                 .then(response => {

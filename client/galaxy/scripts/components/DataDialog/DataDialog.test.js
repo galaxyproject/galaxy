@@ -3,6 +3,7 @@ import { mount } from "@vue/test-utils";
 import DataDialog from "./DataDialog.vue";
 import { __RewireAPI__ as rewire } from "./DataDialog";
 import { Model } from "./model.js";
+import { isDataset, UrlTracker } from "./utilities.js";
 
 describe("model.js", () => {
     let result = null
@@ -39,6 +40,31 @@ describe("model.js", () => {
         expect(model.count()).to.equals(1);
         result = model.finalize();
         expect(result[0]).to.equals("tag_2");
+    });
+});
+
+describe("utilities.js/UrlTracker", () => {
+    it("Test url tracker", () => {
+        let urlTracker = new UrlTracker("url_initial");
+        let url = urlTracker.getUrl();
+        expect(url).to.equals("url_initial");
+        url = urlTracker.getUrl("url_1");
+        expect(url).to.equals("url_1");
+        url = urlTracker.getUrl("url_2");
+        expect(url).to.equals("url_2");
+        url = urlTracker.getUrl();
+        expect(url).to.equals("url_1");
+        url = urlTracker.getUrl();
+        expect(url).to.equals("url_initial");
+    });
+});
+
+describe("utilities.js/isDataset", () => {
+    it("Test dataset identifier", () => {
+        expect(isDataset({})).to.equals(false);
+        expect(isDataset({ history_content_type: "dataset" })).to.equals(true);
+        expect(isDataset({ history_content_type: "xyz" })).to.equals(false);
+        expect(isDataset({ type: "file" })).to.equals(true);
     });
 });
 
