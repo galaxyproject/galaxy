@@ -142,7 +142,6 @@ model.CustosAuthnzToken.table = Table(
     Column('refresh_token', Text),
     Column("expiration_time", DateTime),
     Column("refresh_expiration_time", DateTime),
-    Column('raw_token', JSONType, nullable=True),
     UniqueConstraint("user_id", "external_user_id", "provider"),
     UniqueConstraint("external_user_id", "provider"),
 )

@@ -8,8 +8,6 @@ import logging
 from sqlalchemy import (Column, DateTime, ForeignKey, Integer, MetaData,
                         String, Table, Text, UniqueConstraint)
 
-from galaxy.model.custom_types import JSONType
-
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
@@ -24,7 +22,6 @@ CustosAuthnzToken_table = Table(
     Column('refresh_token', Text),
     Column("expiration_time", DateTime),
     Column("refresh_expiration_time", DateTime),
-    Column('raw_token', JSONType, nullable=True),
     UniqueConstraint("user_id", "external_user_id", "provider"),
     UniqueConstraint("external_user_id", "provider"),
 )

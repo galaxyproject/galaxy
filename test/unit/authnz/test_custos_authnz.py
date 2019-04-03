@@ -319,7 +319,6 @@ class CustosAuthnzTestCase(unittest.TestCase):
         expected_refresh_expiration_time = datetime.now() + timedelta(seconds=self.test_refresh_expires_in)
         refresh_expiration_timedelta = expected_refresh_expiration_time - added_custos_authnz_token.refresh_expiration_time
         self.assertTrue(refresh_expiration_timedelta.total_seconds() < 1)
-        self.assertEqual(self._raw_token, added_custos_authnz_token.raw_token)
         self.assertEqual(self.custos_authnz.config['provider'], added_custos_authnz_token.provider)
         self.assertTrue(self.trans.sa_session.flush_called)
 
@@ -361,7 +360,6 @@ class CustosAuthnzTestCase(unittest.TestCase):
         old_refresh_token = "old-refresh-token"
         old_expiration_time = datetime.now() - timedelta(days=1)
         old_refresh_expiration_time = datetime.now() - timedelta(hours=3)
-        old_raw_token = "{}"
         existing_custos_authnz_token = CustosAuthnzToken(
             user=User(email=self.test_email, username=self.test_username),
             external_user_id=self.test_user_id,
@@ -371,7 +369,6 @@ class CustosAuthnzTestCase(unittest.TestCase):
             refresh_token=old_refresh_token,
             expiration_time=old_expiration_time,
             refresh_expiration_time=old_refresh_expiration_time,
-            raw_token=old_raw_token,
         )
 
         self.trans.sa_session._query.custos_authnz_token = existing_custos_authnz_token
@@ -411,8 +408,6 @@ class CustosAuthnzTestCase(unittest.TestCase):
         refresh_expiration_timedelta = expected_refresh_expiration_time - session_custos_authnz_token.refresh_expiration_time
         self.assertTrue(refresh_expiration_timedelta.total_seconds() < 1)
         self.assertNotEqual(old_refresh_expiration_time, session_custos_authnz_token.refresh_expiration_time)
-        self.assertEqual(self._raw_token, session_custos_authnz_token.raw_token)
-        self.assertNotEqual(old_raw_token, session_custos_authnz_token.raw_token)
         self.assertTrue(self.trans.sa_session.flush_called)
 
     def test_disconnect(self):
@@ -425,7 +420,6 @@ class CustosAuthnzTestCase(unittest.TestCase):
             refresh_token=self.test_refresh_token,
             expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
             refresh_expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
-            raw_token="{}",
         )
         self.trans.user = custos_authnz_token.user
         self.trans.user.custos_auth = [custos_authnz_token]
@@ -460,7 +454,6 @@ class CustosAuthnzTestCase(unittest.TestCase):
             refresh_token=self.test_refresh_token,
             expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
             refresh_expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
-            raw_token="{}",
         )
         custos_authnz_token2 = CustosAuthnzToken(
             user=self.trans.user,
@@ -471,7 +464,6 @@ class CustosAuthnzTestCase(unittest.TestCase):
             refresh_token=self.test_refresh_token,
             expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
             refresh_expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
-            raw_token="{}",
         )
         self.trans.user.custos_auth = [custos_authnz_token1, custos_authnz_token2]
 

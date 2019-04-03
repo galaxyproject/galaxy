@@ -5139,7 +5139,7 @@ class UserAuthnzToken(UserMixin, RepresentById):
 
 class CustosAuthnzToken(RepresentById):
 
-    def __init__(self, user, external_user_id, provider, access_token, id_token, refresh_token, expiration_time, refresh_expiration_time, raw_token):
+    def __init__(self, user, external_user_id, provider, access_token, id_token, refresh_token, expiration_time, refresh_expiration_time):
         self.id = None
         # 'user' is a backref to model.User
         self.user = user
@@ -5150,7 +5150,6 @@ class CustosAuthnzToken(RepresentById):
         self.refresh_token = refresh_token
         self.expiration_time = expiration_time
         self.refresh_expiration_time = refresh_expiration_time
-        self.raw_token = raw_token
 
 
 class CloudAuthz(RepresentById):

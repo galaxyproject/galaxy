@@ -99,15 +99,13 @@ class CustosAuthnz(IdentityProvider):
                                    id_token=id_token,
                                    refresh_token=refresh_token,
                                    expiration_time=expiration_time,
-                                   refresh_expiration_time=refresh_expiration_time,
-                                   raw_token=token)
+                                   refresh_expiration_time=refresh_expiration_time)
         else:
             custos_authnz_token.access_token = access_token
             custos_authnz_token.id_token = id_token
             custos_authnz_token.refresh_token = refresh_token
             custos_authnz_token.expiration_time = expiration_time
             custos_authnz_token.refresh_expiration_time = refresh_expiration_time
-            custos_authnz_token.raw_token = token
         trans.sa_session.add(custos_authnz_token)
         trans.sa_session.flush()
         return login_redirect_url, custos_authnz_token.user
