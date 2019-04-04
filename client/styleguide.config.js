@@ -1,12 +1,16 @@
-let path = require("path");
-let glob = require("glob");
+const path = require("path");
+const glob = require("glob");
+const merge = require("webpack-merge");
 
 let webpackConfig = require("./webpack.config.js");
 
+const fileLoaderTest = /\.(png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)(\?.*$|$)/;
+
 // Clear existing .scss rule(s) out of webpack config, we need special handling
 // here.
+// TODO: reimplement using smart merge w/ replacement strategy via webpack-merge
 webpackConfig.module.rules = webpackConfig.module.rules.filter(rule => {
-    return rule.test.toString() != /\.scss$/.toString();
+    return rule.test.toString() != /\.scss$/.toString() && rule.test.toString() != fileLoaderTest.toString();
 });
 
 webpackConfig.module.rules.push({
@@ -16,7 +20,7 @@ webpackConfig.module.rules.push({
             loader: "style-loader"
         },
         {
-            loader: "css-loader",
+            loader: "css-loader"
         },
         {
             loader: "sass-loader",
@@ -27,13 +31,16 @@ webpackConfig.module.rules.push({
     ]
 });
 
-webpackConfig.module.rules.push({ test: /\.(png|jpg|gif|eot|ttf|woff|woff2|svg)$/, use: ["file-loader"] });
+const fileLoaderConfigRule = { rules: [{ test: fileLoaderTest, use: ["file-loader"] }] };
 
-sections = [];
+webpackConfig.module = merge.smart(webpackConfig.module, fileLoaderConfigRule);
+webpackConfig.output.publicPath = "";
+
+const sections = [];
 
 glob("./galaxy/docs/galaxy-*.md", (err, files) => {
     files.forEach(file => {
-        name = file.match(/galaxy-(\w+).md/)[1];
+        const name = file.match(/galaxy-(\w+).md/)[1];
         sections.push({ name: "Galaxy " + name, content: file });
     });
 }),
