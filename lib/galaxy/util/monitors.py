@@ -30,6 +30,10 @@ class Monitors(object):
         self._start = start
         register_postfork_function(self.start_monitoring)
 
+    def _init_noop_monitor(self):
+        self.sleeper = None
+        self.monitor_join = False
+
     def start_monitoring(self):
         if self._start:
             self.monitor_thread.start()
@@ -42,7 +46,8 @@ class Monitors(object):
 
     def shutdown_monitor(self):
         self.stop_monitoring()
-        self.sleeper.wake()
+        if self.sleeper is not None:
+            self.sleeper.wake()
         if self.monitor_join:
             log.debug("Joining monitor thread")
             self.monitor_thread.join(self.monitor_join_sleep)
