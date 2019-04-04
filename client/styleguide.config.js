@@ -5,8 +5,8 @@ let webpackConfig = require("./webpack.config.js");
 
 // Clear existing .scss rule(s) out of webpack config, we need special handling
 // here.
-webpackConfig.module.rules = webpackConfig.module.rules.filter(value => {
-    return value.test.toString() != /\.scss$/.toString();
+webpackConfig.module.rules = webpackConfig.module.rules.filter(rule => {
+    return rule.test.toString() != /\.scss$/.toString();
 });
 
 webpackConfig.module.rules.push({
