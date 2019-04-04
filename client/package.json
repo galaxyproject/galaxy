@@ -117,7 +117,7 @@
     "store": "^2.0.12",
     "style-loader": "^0.23.1",
     "vue-loader": "^15.7.0",
-    "vue-styleguidist": "^3.11.0",
+    "vue-styleguidist": "^3.11.4",
     "vue-template-compiler": "^2.6.10",
     "webpack": "^4.29.6",
     "webpack-cli": "^3.3.0",
