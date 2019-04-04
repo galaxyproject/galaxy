@@ -12,7 +12,7 @@ export async function listCredentials() {
     let url = getUrl("api/cloud/authz");
     let response = await axios.get(url);
     if (response.status != 200) {
-        throw new Error("Bad mojo");
+        throw new Error("Unexpected response from listing.");
     }
     return response.data.map(Credential.create);
 }

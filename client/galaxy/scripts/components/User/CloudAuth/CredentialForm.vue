@@ -81,9 +81,8 @@ export default {
         },
         // transformed for bootstrap component
         resourceProviderOptions() {
-            let opts = Array.from(ResourceProviders.entries())
+            return Array.from(ResourceProviders.entries())
                 .map(([value, o]) => ({ value, text: o.label }));
-            return opts;
         },
         config() {
             return this.credential.config;
@@ -99,13 +98,6 @@ export default {
         },
         saveButtonTitle() {
             return this.loading ? "Saving Key..." : "Save Key";
-        }
-    },
-    watch: {
-        loading: {
-            handler(newLoading, oldLoading) {
-                console.log('newLoading', newLoading);
-            }
         }
     },
     created() {

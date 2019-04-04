@@ -1,3 +1,4 @@
+/* global describe, it, assert */
 import { AzureConfig } from "./AzureConfig";
 
 describe("AzureConfig", () => {

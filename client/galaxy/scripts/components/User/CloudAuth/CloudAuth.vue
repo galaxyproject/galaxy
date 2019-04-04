@@ -2,6 +2,12 @@
     <section class="cloud-auth pt-1">
         <header>
 
+            <b-alert dismissible fade variant="warning"
+                :show="errorMessage !== null"
+                @dismissed="errorMessage = null">
+                {{ errorMessage }}
+            </b-alert>
+
             <hgroup class="cloud-auth-title">
                 <h1>Manage Cloud Authorization</h1>
                 <nav class="operations">
@@ -68,16 +74,16 @@
                         class="mb-1"
                         @delete="onDelete"
                         @save="onSave"
-                        @expand="onExpand(credential, $event)" />
+                        @expand="expand(credential, $event)" />
                 </transition-group>
-
             </b-list-group>
         </div>
 
-        <b-modal id="deleteCredentialModal" ref="deleteModal" 
-            title="Delete Item?" size="sm"
-            @ok="onConfirmDelete"
-            @cancel="clearDoomedItem">
+        <b-modal v-model="hasDoomed" centered
+            id="deleteCredentialModal" ref="deleteModal" 
+            title="Delete Key?" size="sm"
+            @ok="deleteKey"
+            @cancel="doomedItem = null">
         </b-modal>
 
     </section>
@@ -101,20 +107,25 @@ export default {
             showHelp: true,
             showFilter: true,
             loading: false,
-            currentItem: null,
-            doomedItem: null
+            doomedItem: null,
+            errorMessage: null
         }
     },
     computed: {
         filteredItems() {
-            return this.items
-                .filter(o => o.filter(this.filter));
+            return this.items.filter(o => o.match(this.filter));
         },
         filterDescription() {
             return `${this.filteredItems.length} matches out of ${this.items.length} items`;
         },
         deleteButtonVariant() {
             return this.showDeleted ? "primary": "secondary";
+        },
+        hasDoomed: {
+            get() { return this.doomedItem !== null; },
+            // This setter is here because vue-bootstrap modal
+            // tries to set this property for unfathomable reasons
+            set() {}
         }
     },
     watch: {
@@ -123,9 +134,15 @@ export default {
         }
     },
     methods: {
+        loadCredentials(params = {}) {
+            this.loading = true;
+            svc.listCredentials(params)
+                .then(items => this.items = items)
+                .catch(this.setError("Unable to load cloud keys."))
+                .finally(() => this.loading = false);
+        },
         onCreate() {
-            let newItem = Credential.create();
-            newItem.expanded = true;
+            let newItem = Credential.create({ expanded: true });
             this.addItem(newItem);
         },
         onSave(item) {
@@ -138,37 +155,28 @@ export default {
                     item.id = result.id;
                     item.updateState();
                 })
-                .catch(err => console.warn('bad save', err))
+                .catch(this.setError("Unable to save key."))
                 .finally(() => item.loading = false);
         },
         onDelete(doomed) {
-            // bootstrapVue modal v-model property is bugged
-            // so need to set and retrieve the doomed item manually
             this.doomedItem = doomed;
             if (doomed.id) {
                 this.$refs.deleteModal.show();
             } else {
                 this.removeItem(doomed);
-                this.clearDoomedItem();
+                this.doomedItem = null;
             }
         },
-        onConfirmDelete() {
-
-            let doomed = this.doomedItem;
-            doomed.loading = true;
-
-            svc.deleteCredential(doomed)
-                .then(() => this.removeItem(doomed))
-                .catch(err => console.warn('bad delete', err))
+        deleteKey() {
+            // Called when the modal is closed with an "OK"
+            svc.deleteCredential(this.doomedItem)
+                .then(() => this.removeItem(this.doomedItem))
+                .catch(this.setError("Unable to delete cloud key."))
                 .finally(() => {
-                    doomed.loading = false;
-                    this.clearDoomedItem();
+                    this.doomedItem = null;
                 });
         },
-        clearDoomedItem() {
-            this.doomedItem = null;
-        },
-        onExpand(credential, { expanded }) {
+        expand(credential, { expanded }) {
             credential.expanded = expanded;
             if (expanded) {
                 this.items.filter(i => i !== credential)
@@ -181,12 +189,11 @@ export default {
         removeItem(item) {
             this.items = this.items.filter(o => o !== item);
         },
-        loadCredentials(params = {}) {
-            this.loading = true;
-            svc.listCredentials(params)
-                .then(items => this.items = items)
-                .catch(err => console.warn("bad load", err))
-                .finally(() => this.loading = false);
+        setError(msg) {
+            return (err) => {
+                this.errorMessage = msg;
+                console.warn(err);
+            }
         }
     },
     created() {

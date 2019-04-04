@@ -58,8 +58,8 @@ export class Credential extends BaseModel {
 
     // Methods
     
-    filter(searchText = "") {
-        // TODO: better text filtering
+    match(searchText = "") {
+        // TODO: more robust object matching?
         return searchText.length 
             ? this.title.includes(searchText) : true;
     }
