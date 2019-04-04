@@ -1,5 +1,4 @@
 import { Credential } from "./Credential";
-import { ResourceProviders } from "./ResourceProviders";
 
 describe("Credential model", () => {
 

@@ -60,8 +60,7 @@ export class Credential extends BaseModel {
     
     match(searchText = "") {
         // TODO: more robust object matching?
-        return searchText.length 
-            ? this.title.includes(searchText) : true;
+        return searchText.length ? this.title.includes(searchText) : true;
     }
 
 

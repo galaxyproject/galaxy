@@ -92,5 +92,3 @@ export default {
 }
 
 </script>
-
-<style lang="scss" src="./CloudAuthItem.scss"></style>

@@ -1,5 +1,26 @@
+@import "~bootstrap/scss/functions";
+@import "~bootstrap/scss/variables";
+@import "~bootstrap/scss/mixins";
+@import "~bootstrap/scss/utilities/spacing";
+
+@import "scss/theme/blue.scss";
 @import "scss/mixins";
-@import "./operations";
+
+
+// TODO: build reusable icon menu? Maybe make into a component?
+// The existing one has lots of reusability problems
+
+.operations {
+    margin-bottom: 0;
+
+    ul {
+        @include list_reset();
+        display: flex;
+        li:not(:first-child) {
+            @extend .ml-2;
+        }
+    }
+}
 
 
 // General Layout
@@ -7,7 +28,7 @@
 .cloud-auth {
 
     // header sticks, bottom part scrolls
-    @include scrollingListLayout("header", ".scroll-container");    
+    @include scrollingListLayout("header", ".scroll-container");
 
     // title left, icons right
     .cloud-auth-title {
@@ -17,7 +38,7 @@
         align-items: center;
     
     
-        // menu
+        // top icon menu
         .operations {
 
             li {
@@ -45,6 +66,87 @@
 }
 
 
+// Single list item
+
+.cloud-auth-key {
+
+    header hgroup {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        
+        > * {
+            margin-bottom: 0;
+        }
+    }
+
+    form {
+        @extend .my-3;
+        @extend .pt-3;
+
+        // removes wierd double arrows on select
+        .custom-select {
+            background: none; 
+        }
+        
+        // Undo butchering from base.css so side-by-side labels work
+        .form-row {
+            display: flex;
+            input, select {
+                max-width: none;
+            }
+            label {
+                font-weight: 400;
+            }
+        }
+
+        // button list at bottom of form
+        footer {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-end;
+            @extend .pt-3;
+
+            button:not(:first-child) {
+                @extend .ml-1;
+            }
+        }
+    }
+
+
+    // icon menu
+
+    .operations {
+        .save a {
+            @include fontawesome($fa-var-save)
+        }
+        .delete a {
+            @include fontawesome($fa-var-times);
+        }
+        .details a {
+            @include fontawesome($fa-var-window-minimize);
+            &:hover {
+                @include fontawesome($fa-var-window-maximize);
+            }
+        }
+    }
+
+
+    // reverse icons when key is expanded
+
+    &.expanded .details a {
+        @include fontawesome($fa-var-window-maximize);
+        &:hover {
+            @include fontawesome($fa-var-window-minimize);
+        }
+    }
+
+}
+
+
 // Transitions
 
 .fade-enter-active,
@@ -58,11 +160,7 @@
 }
 
 
-// Unhose base.scss hacks
-
-.cloud-auth div.form-row label {
-    font-weight: 400;
-}
+// Delete modal
 
 #deleteCredentialModal {
     .modal-body {

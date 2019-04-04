@@ -1,5 +1,5 @@
 <template>
-    <section class="cloud-auth pt-1">
+    <section class="cloud-auth">
         <header>
 
             <b-alert dismissible fade variant="warning"
@@ -58,7 +58,7 @@
             </transition>
 
             <b-button-group class="mb-4">
-                <button variant="success" @click="onCreate">
+                <button name="createNewKey" @click="onCreate">
                     Create New Authorization Key
                 </button>
             </b-button-group>
@@ -92,9 +92,13 @@
 
 <script>
 
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import CloudAuthItem from "./CloudAuthItem";
 import { Credential } from "./model";
 import svc from "./model/service";
+
+Vue.use(BootstrapVue);
 
 export default {
     components: {
@@ -105,7 +109,7 @@ export default {
             items: [],
             filter: "",
             showHelp: true,
-            showFilter: true,
+            showFilter: false,
             loading: false,
             doomedItem: null,
             errorMessage: null

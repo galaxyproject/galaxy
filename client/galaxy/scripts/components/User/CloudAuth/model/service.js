@@ -21,7 +21,7 @@ export async function getCredential(id) {
     let url = getUrl("api/cloud/authz/${id}");
     let response = await axios.get(url);
     if (response.status != 200) {
-        throw new Error("Bad load");
+        throw new Error("Unexpected response loading key.");
     }
     return Credential.create(response.data);
 }
@@ -30,7 +30,7 @@ export async function saveCredential(newItem) {
     let model = Credential.create(newItem);
     let response = await saveOrUpdate(model);
     if (response.status != 200) {
-        throw new Error("bad save");
+        throw new Error("Save failure.");
     }
     return Credential.create(response.data);
 }
@@ -47,7 +47,7 @@ export async function deleteCredential(doomed) {
         let url = getUrl(`api/cloud/authz/${doomed.id}`);
         let response = await axios.delete(url);
         if (response.status != 200) {
-            throw new Error("Bad delete");
+            throw new Error("Delete failure.");
         }
     }
     return model;

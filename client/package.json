@@ -23,6 +23,7 @@
     "bootstrap-vue": "^2.0.0-rc.16",
     "d3": "3",
     "decode-uri-component": "^0.2.0",
+    "flush-promises": "^1.0.2",
     "font-awesome": "^4.7.0",
     "handsontable": "^2.0.0",
     "imask": "^4.1.5",
