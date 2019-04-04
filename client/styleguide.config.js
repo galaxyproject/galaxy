@@ -17,12 +17,6 @@ webpackConfig.module.rules.push({
         },
         {
             loader: "css-loader",
-            options: {
-                alias: {
-                    "../images": path.resolve(__dirname, "../static/images"),
-                    ".": path.resolve(__dirname, "../static/style/blue")
-                }
-            }
         },
         {
             loader: "sass-loader",
