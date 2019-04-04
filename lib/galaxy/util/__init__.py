@@ -1525,7 +1525,7 @@ galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 def galaxy_directory():
     root_path = os.path.abspath(galaxy_root_path)
-    if os.path.basename(root_path) == "projects":
+    if os.path.basename(root_path) == "packages":
         root_path = os.path.abspath(os.path.join(root_path, ".."))
     return root_path
 
