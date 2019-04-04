@@ -372,7 +372,9 @@ class Data(object):
             return smart_str(data)
         if filename and filename != "index":
             # For files in extra_files_path
-            file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
+            store_by = data.dataset.object_store.store_by
+            extra_dir = 'dataset_%s_files' % getattr(data.dataset, store_by)
+            file_path = trans.app.object_store.get_filename(data.dataset, extra_dir=extra_dir, alt_name=filename)
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
                     with tempfile.NamedTemporaryFile(mode='w', delete=False, dir=trans.app.config.new_file_path, prefix='gx_html_autocreate_') as tmp_fh:
