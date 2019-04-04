@@ -16,7 +16,6 @@ class Monitors(object):
     def _init_monitor_thread(self, name, target_name=None, target=None, start=False, config=None):
         self.monitor_join_sleep = getattr(config, "monitor_thread_join_timeout", DEFAULT_MONITOR_THREAD_JOIN_TIMEOUT)
         self.monitor_join = self.monitor_join_sleep > 0
-        self.monitor_sleeper = Sleeper()
         self.monitor_running = True
 
         if target is not None:
