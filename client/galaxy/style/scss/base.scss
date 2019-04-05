@@ -7,8 +7,8 @@
 @import "overrides.scss";
 
 // Fontawesome configuration.
-$fa-font-path: "../../../node_modules/font-awesome/fonts/";
-@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
+$fa-font-path: "~font-awesome/fonts/";
+@import "~font-awesome/scss/font-awesome.scss";
 
 .fa-icon {
     // TODO: remove fa-icon and replace with fa
