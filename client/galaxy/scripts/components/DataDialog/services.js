@@ -53,7 +53,7 @@ export class Services {
     getRecord(record) {
         record.details = record.extension || record.description;
         record.time = record.update_time || record.create_time;
-        record.isDataset = record.history_content_type == "dataset" || record.type == "file";
+        record.isDataset = this.isDataset(record);
         if (record.time) {
             record.time = record.time.substring(0, 16).replace("T", " ");
         }
@@ -68,9 +68,13 @@ export class Services {
             if (record.name && record.name[0] === "/") {
                 record.name = record.name.substring(1);
             }
-            let url = `${this.root}api/libraries/datasets/download/uncompressed?ld_ids=${record.id}`;
-            record.download = `${this.host}url`;
+            record.download = `${this.host}${this.root}api/libraries/datasets/download/uncompressed?ld_ids=${record.id}`;
             return record;
         }
+    }
+
+    /** Checks if record is a dataset or drillable **/
+    isDataset(record) {
+        return record.history_content_type == "dataset" || record.type == "file";
     }
 }

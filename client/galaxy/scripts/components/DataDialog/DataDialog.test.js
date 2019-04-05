@@ -3,7 +3,9 @@ import { mount } from "@vue/test-utils";
 import DataDialog from "./DataDialog.vue";
 import { __RewireAPI__ as rewire } from "./DataDialog";
 import { Model } from "./model.js";
-import { isDataset, DataPopulator, UrlTracker } from "./utilities.js";
+import { UrlTracker } from "./utilities.js";
+import { Services } from "./services";
+import Vue from "vue";
 
 const mockOptions = {
     callback: () => {},
@@ -71,24 +73,28 @@ describe("utilities.js/UrlTracker", () => {
     });
 });
 
-describe("utilities.js/isDataset", () => {
+describe("services/Services:isDataset", () => {
     it("Test dataset identifier", () => {
-        expect(isDataset({})).to.equals(false);
-        expect(isDataset({ history_content_type: "dataset" })).to.equals(true);
-        expect(isDataset({ history_content_type: "xyz" })).to.equals(false);
-        expect(isDataset({ type: "file" })).to.equals(true);
+        let services = new Services(mockOptions);
+        expect(services.isDataset({})).to.equals(false);
+        expect(services.isDataset({ history_content_type: "dataset" })).to.equals(true);
+        expect(services.isDataset({ history_content_type: "xyz" })).to.equals(false);
+        expect(services.isDataset({ type: "file" })).to.equals(true);
+        expect(services.getRecord({ hid: 1, history_content_type: "dataset" }).isDataset).to.equals(true);
+        expect(services.getRecord({ hid: 2, history_content_type: "xyz" }).isDataset).to.equals(false);
+        expect(services.getRecord({ type: "file" }).isDataset).to.equals(true);
     });
 });
 
-describe("utilities.js/DataPopulator", () => {
+describe("services.js/Services", () => {
     it("Test data population from raw data", () => {
         let rawData = {
             hid: 1,
             name: "name_1",
             url: "/url_1"
         };
-        let dataPopulator = new DataPopulator(mockOptions);
-        let items = dataPopulator.get(rawData);
+        let services = new Services(mockOptions);
+        let items = services.getItems(rawData);
         expect(items.length).to.equals(1);
         let first = items[0];
         expect(first.name).to.equals("1: name_1");
@@ -101,16 +107,32 @@ describe("DataDialog.vue", () => {
     let wrapper;
     let emitted;
 
-    let mockServices = class {
-        get(url) {
-            return new Promise((resolve, reject) => {
-                resolve([
+    let rawData = [
                     {
                         id: 1,
                         hid: 1,
-                        name: "name_1"
+                        name: "dataset_1",
+                        history_content_type: "dataset"
+                    },
+                    {
+                        id: 2,
+                        name: "dataset_2",
+                        type: "file"
+                    },
+                    {
+                        id: 3,
+                        hid: 3,
+                        name: "collection_1",
+                        history_content_type: "dataset_collection"
                     }
-                ]);
+                ];
+
+    let mockServices = class {
+        get(url) {
+            let services = new Services(mockOptions);
+            let items = services.getItems(rawData);
+            return new Promise((resolve, reject) => {
+                resolve(items);
             });
         }
     };
@@ -132,9 +154,26 @@ describe("DataDialog.vue", () => {
         expect(wrapper.find(".fa-spinner").text()).to.equals("");
         expect(wrapper.find(".btn-secondary").text()).to.equals("Clear");
         expect(wrapper.find(".btn-primary").text()).to.equals("Ok");
-        wrapper.vm.$nextTick(() => {
-            console.log(wrapper.vm.$el);
-            expect(wrapper.find(".fa-copy").length).to.equals(10);
+        expect(wrapper.contains(".fa-spinner")).to.equals(true);
+        return Vue.nextTick().then(() => {
+            expect(wrapper.findAll(".fa-copy").length).to.equals(2);
+            expect(wrapper.findAll(".fa-file-o").length).to.equals(2);
+        });
+    });
+
+    it("loads correctly, shows datasets and folders", () => {
+        wrapper = mount(DataDialog, {
+            propsData: mockOptions
+        });
+        emitted = wrapper.emitted();
+        expect(wrapper.classes()).contain("data-dialog-modal");
+        expect(wrapper.find(".fa-spinner").text()).to.equals("");
+        expect(wrapper.find(".btn-secondary").text()).to.equals("Clear");
+        expect(wrapper.find(".btn-primary").text()).to.equals("Ok");
+        expect(wrapper.contains(".fa-spinner")).to.equals(true);
+        return Vue.nextTick().then(() => {
+            expect(wrapper.findAll(".fa-copy").length).to.equals(2);
+            expect(wrapper.findAll(".fa-file-o").length).to.equals(2);
         });
     });
 });
