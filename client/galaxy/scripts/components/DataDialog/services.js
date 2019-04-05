@@ -68,7 +68,9 @@ export class Services {
             if (record.name && record.name[0] === "/") {
                 record.name = record.name.substring(1);
             }
-            record.download = `${this.host}${this.root}api/libraries/datasets/download/uncompressed?ld_ids=${record.id}`;
+            record.download = `${this.host}${this.root}api/libraries/datasets/download/uncompressed?ld_ids=${
+                record.id
+            }`;
             return record;
         }
     }

@@ -108,24 +108,24 @@ describe("DataDialog.vue", () => {
     let emitted;
 
     let rawData = [
-                    {
-                        id: 1,
-                        hid: 1,
-                        name: "dataset_1",
-                        history_content_type: "dataset"
-                    },
-                    {
-                        id: 2,
-                        name: "dataset_2",
-                        type: "file"
-                    },
-                    {
-                        id: 3,
-                        hid: 3,
-                        name: "collection_1",
-                        history_content_type: "dataset_collection"
-                    }
-                ];
+        {
+            id: 1,
+            hid: 1,
+            name: "dataset_1",
+            history_content_type: "dataset"
+        },
+        {
+            id: 2,
+            name: "dataset_2",
+            type: "file"
+        },
+        {
+            id: 3,
+            hid: 3,
+            name: "collection_1",
+            history_content_type: "dataset_collection"
+        }
+    ];
 
     let mockServices = class {
         get(url) {
