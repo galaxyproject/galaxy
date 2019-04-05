@@ -106,16 +106,10 @@
         }
     }
 
-    &.state-waiting {
-        background: $state-default-bg;
-        .state-icon {
-            &:before {
-                content: $fa-var-clock-o;
-            }
-        }
-    }
-
-    &.state-dispatched {
+    &.state-waiting,
+    &.state-dispatched,
+    &.state-submitted,
+    &.state-queued {
         background: $state-default-bg;
         .state-icon {
             &:before {
@@ -128,25 +122,7 @@
         background: $state-paused-bg;
         .state-icon {
             &:before {
-                content: $fa-var-pause-circle;
-            }
-        }
-    }
-
-    &.state-submitted {
-        background: $state-default-bg;
-        .state-icon {
-            &:before {
-                content: $fa-var-clock-o;
-            }
-        }
-    }
-
-    &.state-queued {
-        background: $state-default-bg;
-        .state-icon {
-            &:before {
-                content: $fa-var-clock-o;
+                content: $fa-var-hand-paper-o;
             }
         }
     }

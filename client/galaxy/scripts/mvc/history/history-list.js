@@ -11,6 +11,15 @@ import { History } from "mvc/history/history-model";
 import historyCopyDialog from "mvc/history/copy-dialog";
 import LoadingIndicator from "ui/loading-indicator";
 
+const active_state_display_grouping = {
+    ok: ["ok"],
+    running: ["running"],
+    queued: ["queued", "dispatched", "submitted"],
+    new: ["new"],
+    error: ["error"],
+    limited: ["limited"]
+};
+
 var HistoryGridView = GridView.extend({
     initialize: function(grid_config) {
         this.ajaxQueue = new AjaxQueue.AjaxQueue();
@@ -29,16 +38,20 @@ var HistoryGridView = GridView.extend({
                     const options = {};
                     options.url = url;
                     options.type = "GET";
-                    options.success = req => {
-                        const contentsStates = req.contents_states;
+                    options.success = response => {
+                        console.debug(response);
+                        const contentsStates = response.contents_states;
                         let stateHtml = "";
-                        for (let state of ["ok", "running", "queued", "new", "error"]) {
-                            const stateCount = contentsStates[state];
+                        Object.keys(active_state_display_grouping).forEach(state => {
+                            let stateCount = 0;
+                            active_state_display_grouping[state].forEach(substate => {
+                                stateCount += contentsStates[substate] || 0;
+                            });
                             if (stateCount) {
                                 stateHtml += `<div class="count-box state-color-${state}" title="Datasets in ${state} state">${stateCount}</div> `;
                             }
-                        }
-                        const contentsActive = req.contents_active;
+                        });
+                        const contentsActive = response.contents_active;
                         const deleted = contentsActive.deleted;
                         if (deleted) {
                             stateHtml += `<div class="count-box state-color-deleted" title="Deleted datasets">${deleted}</div> `;
@@ -48,7 +61,7 @@ var HistoryGridView = GridView.extend({
                             stateHtml += `<div class="count-box state-color-hidden" title="Hidden datasets">${hidden}</div> `;
                         }
                         $(`.delayed-value-datasets_by_state[data-id='${historyId}']`).html(stateHtml);
-                        $(`.delayed-value-disk_size[data-id='${historyId}']`).html(req.nice_size);
+                        $(`.delayed-value-disk_size[data-id='${historyId}']`).html(response.nice_size);
                     };
                     var xhr = $.ajax(options);
                     return xhr;
