@@ -177,6 +177,15 @@
         }
     }
 
+    &.state-limited{
+        background: $state-paused-bg;
+        .state-icon {
+            &:before {
+                content: $fa-var-pause-circle;
+            }
+        }
+    }
+
     &.state-submitted {
         background: $state-default-bg;
         .state-icon {
@@ -207,7 +216,7 @@
         background: $state-paused-bg;
         .state-icon {
             &:before {
-                content: $fa-var-pause;
+                content: $fa-var-pause-circle;
             }
         }
     }
