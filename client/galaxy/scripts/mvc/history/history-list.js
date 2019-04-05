@@ -39,7 +39,6 @@ var HistoryGridView = GridView.extend({
                     options.url = url;
                     options.type = "GET";
                     options.success = response => {
-                        console.debug(response);
                         const contentsStates = response.contents_states;
                         let stateHtml = "";
                         Object.keys(active_state_display_grouping).forEach(state => {
