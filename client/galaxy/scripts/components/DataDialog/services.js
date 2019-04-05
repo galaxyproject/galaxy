@@ -20,7 +20,7 @@ export class Services {
                     if (e.response) {
                         errorMessage = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
                     }
-                    reject(e);
+                    reject(errorMessage);
                 });
         });
     }
