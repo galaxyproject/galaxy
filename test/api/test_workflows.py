@@ -3067,7 +3067,6 @@ steps:
             inputs = {
                 '0': self._ds_entry(hda),
             }
-            workflow_request = {}
             workflow_request = {"replacement_params": dumps(dict(numlines=3))}
             invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs=inputs, request=workflow_request)
 
