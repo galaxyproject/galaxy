@@ -1204,6 +1204,11 @@ ul.manage-table-actions li {
     background: $state-success-bg;
 }
 
+.state-color-paused {
+    border-color: $state-paused-border;
+    background: $state-paused-bg;
+}
+
 .state-color-error {
     border-color: $state-danger-border;
     background: $state-danger-bg;

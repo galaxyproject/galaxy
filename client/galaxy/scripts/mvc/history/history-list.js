@@ -17,7 +17,7 @@ const active_state_display_grouping = {
     queued: ["queued", "dispatched", "submitted"],
     new: ["new"],
     error: ["error"],
-    limited: ["limited"]
+    paused: ["paused", "limited"]
 };
 
 var HistoryGridView = GridView.extend({
