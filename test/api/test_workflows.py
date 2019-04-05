@@ -3048,6 +3048,38 @@ steps:
         self.__assert_lines_hid_line_count_is(history_id, 3, 5)
 
     @skip_without_tool("random_lines1")
+    def test_integer_param_replacement(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  test_input: data
+steps:
+  first:
+    tool_id: random_lines1
+    state:
+      num_lines: ${numlines}
+      input:
+        $link: test_input
+""", round_trip_format_conversion=True)
+        with self.dataset_populator.test_history() as history_id:
+            hda = self.dataset_populator.new_dataset(history_id, content="\n".join(str(_) for _ in range(10)))
+            self.dataset_populator.wait_for_history(history_id)
+            inputs = {
+                '0': self._ds_entry(hda),
+            }
+            workflow_request = {}
+            workflow_request = {"replacement_params": dumps(dict(numlines=3))}
+            invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs=inputs, request=workflow_request)
+
+            time.sleep(2)
+            self.dataset_populator.wait_for_history(history_id)
+            self.__review_paused_steps(workflow_id, invocation_id, order_index=2, action=True)
+
+            self.workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id)
+            time.sleep(1)
+            self.__assert_lines_hid_line_count_is(history_id, 2, 3)
+
+    @skip_without_tool("random_lines1")
     def test_run_replace_params_by_uuid(self):
         workflow_request, history_id = self._setup_random_x2_workflow("test_for_replace_tool_params")
         workflow_request["parameters"] = dumps({
