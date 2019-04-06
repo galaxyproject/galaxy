@@ -2193,14 +2193,6 @@ mapping:
         desc: |
           Enable access to post-authentication options via OpenID.
 
-      openid_config_file:
-        type: str
-        default: config/openid_conf.xml
-        required: false
-        desc: |
-          If OpenID is enabled, this configuration file specifies providers to use.
-          Falls back to the .sample variant in config if default does not exist.
-
       openid_consumer_cache_path:
         type: str
         default: database/openid_consumer_cache

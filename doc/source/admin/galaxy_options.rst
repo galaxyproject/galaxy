@@ -2953,18 +2953,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~
-``openid_config_file``
-~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If OpenID is enabled, this configuration file specifies providers
-    to use. Falls back to the .sample variant in config if default
-    does not exist.
-:Default: ``config/openid_conf.xml``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``openid_consumer_cache_path``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1435,11 +1435,6 @@ galaxy:
   # Enable access to post-authentication options via OpenID.
   #enable_openid: false
 
-  # If OpenID is enabled, this configuration file specifies providers to
-  # use. Falls back to the .sample variant in config if default does not
-  # exist.
-  #openid_config_file: config/openid_conf.xml
-
   # If OpenID is enabled, consumer cache directory to use.
   #openid_consumer_cache_path: database/openid_consumer_cache
 
