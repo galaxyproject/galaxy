@@ -2948,8 +2948,7 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable authentication via OpenID.  Allows users to log in to their
-    Galaxy account by authenticating with an OpenID provider.
+    Enable access to post-authentication options via OpenID.
 :Default: ``false``
 :Type: bool
 
