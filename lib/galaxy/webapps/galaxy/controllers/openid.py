@@ -63,11 +63,8 @@ class OpenID(BaseUIController):
             return trans.show_error_message("OpenID authentication is not enabled in this instance of Galaxy. %s" % return_link)
         consumer = self.openid_manager.get_consumer(trans)
         info = consumer.complete(kwd, trans.request.url)
-        display_identifier = info.getDisplayIdentifier()
         openid_provider = kwd.get('openid_provider', None)
         if info.status == self.openid_manager.SUCCESS:
-            if info.endpoint.canonicalID:
-                display_identifier = info.endpoint.canonicalID
             openid_provider_obj = self.openid_providers.get(openid_provider)
             openid_provider_obj.post_authentication(trans, self.openid_manager, info)
             return trans.show_message("Processed OpenID authentication. %s" % return_link)
