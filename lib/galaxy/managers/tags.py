@@ -198,7 +198,7 @@ class TagManager(object):
             if tag.value is not None:
                 tag_str += ":" + tag.user_value
             tags_str_list.append(tag_str)
-        return ", ".join(tags_str_list)
+        return ",".join(tags_str_list)
 
     def get_tag_by_id(self, tag_id):
         """Get a Tag object from a tag id."""
