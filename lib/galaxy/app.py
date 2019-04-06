@@ -19,6 +19,7 @@ from galaxy.managers.histories import HistoryManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.openid.providers import OpenIDProviders
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.tools.cache import (
     ToolCache,
@@ -38,6 +39,7 @@ from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.web import url_for
+from galaxy.web.framework import openid_manager
 from galaxy.web.proxy import ProxyManager
 from galaxy.web.stack import application_stack_instance
 from galaxy.web.stack.database_heartbeat import DatabaseHeartbeat
@@ -168,6 +170,9 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
             self.quota_agent = galaxy.quota.NoQuotaAgent(self.model)
         # Heartbeat for thread profiling
         self.heartbeat = None
+        if self.config.enable_openid:
+            self.openid_manager = openid_manager.OpenIDManager(self.config.openid_consumer_cache_path)
+            self.openid_providers = OpenIDProviders.from_file(self.config.openid_config_file)
         from galaxy import auth
         self.auth_manager = auth.AuthManager(self)
         # Start the heartbeat process if configured and available (wait until

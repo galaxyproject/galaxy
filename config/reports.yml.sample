@@ -95,7 +95,7 @@ reports:
   # Galaxy instances, so sqlite (and the default value below) is not
   # supported. An SQLAlchemy connection string should be used specify an
   # external database.
-  #database_connection: 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
+  #database_connection: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
   # Where dataset files are stored.
   #file_path: database/files
