@@ -174,7 +174,9 @@ var View = Backbone.View.extend({
             self._addLink("permissions");
             self._addLink("make_data_private");
             self._addLink("api_key");
-            self._addLink("genomespace");
+            if (config.enable_openid) {
+                self._addLink("genomespace");
+            }
             if (config.has_user_tool_filters) {
                 self._addLink("toolbox_filters");
             }
