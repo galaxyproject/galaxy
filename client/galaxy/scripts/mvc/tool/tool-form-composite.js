@@ -688,6 +688,7 @@ var View = Backbone.View.extend({
             wait_text: "Sending...",
             percentage: -1
         });
+        this.execute_btn.$el.addClass("float-right mt-3")
         if (this.wp_form) {
             this.wp_form.portlet[enabled ? "enable" : "disable"]();
         }
