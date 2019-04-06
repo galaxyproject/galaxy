@@ -17,8 +17,7 @@ from optparse import OptionParser
 
 
 def stop_err(msg):
-    sys.stderr.write("%s\n" % msg)
-    sys.exit()
+    sys.exit(msg)
 
 
 def main():
@@ -42,18 +41,18 @@ def main():
         # sed header
         if header_lines > 0:
             sed_header = "sed -n '1,%dp' %s > %s" % (header_lines, input, output)
-            subprocess.call(sed_header, shell=True)
+            subprocess.check_call(sed_header, shell=True)
 
         # grep comments
         grep_comments = "(grep '^#' %s) >> %s" % (input, output)
-        subprocess.call(grep_comments, shell=True)
+        subprocess.check_call(grep_comments, shell=True)
 
         # grep and sort columns
         sed_header_restore = ""
         if header_lines > 0:
             sed_header_restore = "sed '1,%dd' | " % (header_lines)
         sort_columns = "(cat %s | %s grep '^[^#]' | sort -f -t '\t' %s) >> %s" % (input, sed_header_restore, ' '.join(key), output)
-        subprocess.call(sort_columns, shell=True)
+        subprocess.check_call(sort_columns, shell=True)
 
     except Exception as ex:
         stop_err('Error running sorter.py\n' + str(ex))
