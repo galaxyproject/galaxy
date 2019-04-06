@@ -5,40 +5,40 @@
         <requirement type="package" version="2.14">grep</requirement>
         <requirement type="package" version="4.4">sed</requirement>
     </requirements>
-    <command detect_errors="aggressive">
-        python '$__tool_directory__/sorter.py'
+    <command detect_errors="exit_code">
+python '$__tool_directory__/sorter.py'
 
-        --input='$input'
-        --output='$out_file1'
+--input='$input'
+--output='$out_file1'
 
-        #if (str($style) == 'num'):
-            #set $style = 'n'
-        #elif (str($style) == 'gennum'):
-            #set $style = 'g'
-        #else:
-            #set $style = ''
-        #end if
+#if (str($style) == 'num'):
+    #set $style = 'n'
+#elif (str($style) == 'gennum'):
+    #set $style = 'g'
+#else:
+    #set $style = ''
+#end if
 
-        #set $order = '' if (str($order) == 'ASC') else 'r'
+#set $order = '' if (str($order) == 'ASC') else 'r'
 
-        --key=${column},${column}${style}${order}
+--key=${column},${column}${style}${order}
 
 
-        #for $col in $column_set:
-            #set $other_column = str($col.other_column)
+#for $col in $column_set:
+    #set $other_column = str($col.other_column)
 
-            #if (str($col.other_style) == 'num'):
-                #set $other_style = 'n'
-            #elif (str($col.other_style) == 'gennum'):
-                #set $other_style = 'g'
-            #else:
-                #set $other_style = ''
-            #end if
+    #if (str($col.other_style) == 'num'):
+        #set $other_style = 'n'
+    #elif (str($col.other_style) == 'gennum'):
+        #set $other_style = 'g'
+    #else:
+        #set $other_style = ''
+    #end if
 
-            #set $other_order = '' if (str($col.other_order) == "ASC") else 'r'
-            --key=${other_column},${other_column}${other_style}${other_order}
-        #end for
-        --header $header_lines
+    #set $other_order = '' if (str($col.other_order) == "ASC") else 'r'
+    --key=${other_column},${other_column}${other_style}${other_order}
+#end for
+--header $header_lines
     </command>
     <inputs>
         <param format="tabular" name="input" type="data" label="Sort Dataset" />
