@@ -50,7 +50,7 @@ class TagManager(object):
 
     def remove_tags_from_list(self, user, item, tag_to_remove_list):
         tag_to_remove_set = set(tag_to_remove_list)
-        tags_set = set(self.get_tags_str(item.tags).split(','))
+        tags_set = set([_.strip() for _ in self.get_tags_str(item.tags).split(',')])
         if item.tags:
             tags_set -= tag_to_remove_set
         return self.set_tags_from_list(user, item, tags_set)
@@ -198,7 +198,7 @@ class TagManager(object):
             if tag.value is not None:
                 tag_str += ":" + tag.user_value
             tags_str_list.append(tag_str)
-        return ",".join(tags_str_list)
+        return ", ".join(tags_str_list)
 
     def get_tag_by_id(self, tag_id):
         """Get a Tag object from a tag id."""
