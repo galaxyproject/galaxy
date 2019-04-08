@@ -131,6 +131,21 @@ model.UserAuthnzToken.table = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
+model.CustosAuthnzToken.table = Table(
+    "custos_authnz_token", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('user_id', Integer, ForeignKey("galaxy_user.id")),
+    Column('external_user_id', String(64)),
+    Column('provider', String(255)),
+    Column('access_token', Text),
+    Column('id_token', Text),
+    Column('refresh_token', Text),
+    Column("expiration_time", DateTime),
+    Column("refresh_expiration_time", DateTime),
+    UniqueConstraint("user_id", "external_user_id", "provider"),
+    UniqueConstraint("external_user_id", "provider"),
+)
+
 model.CloudAuthz.table = Table(
     "cloudauthz", metadata,
     Column('id', Integer, primary_key=True),
@@ -1600,6 +1615,12 @@ mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
     user=relation(model.User,
                   primaryjoin=(model.UserAuthnzToken.table.c.user_id == model.User.table.c.id),
                   backref='social_auth')
+))
+
+mapper(model.CustosAuthnzToken, model.CustosAuthnzToken.table, properties=dict(
+    user=relation(model.User,
+                  primaryjoin=(model.CustosAuthnzToken.table.c.user_id == model.User.table.c.id),
+                  backref='custos_auth')
 ))
 
 mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(

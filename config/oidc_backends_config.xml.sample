@@ -84,4 +84,20 @@ Please mind `http` and `https`.
 
         <prompt>consent</prompt>
     </provider>
+
+    <provider name="Custos">
+        <url> ... </url>
+        <client_id> ... </client_id>
+        <client_secret> ... </client_secret>
+        <redirect_uri>http://localhost:8000/authnz/custos/callback</redirect_uri>
+
+        <realm> ... </realm>
+        <!-- (Optional) Trusted CA certificate file or directory to use when verify Custos authorization server.
+             See http://docs.python-requests.org/en/master/user/advanced/#ssl-cert-verification for more information. -->
+        <!-- <ca_bundle>/path/to/ca_bundle</ca_bundle> -->
+        <!-- (Optional) Override the default Custos well-known URL to point to a different instance -->
+        <!-- <well_known_oidc_config_uri>https://.../.well-known/openid-configuration</well_known_oidc_config_uri> -->
+        <!-- (Optional) Override the default idp hint -->
+        <!-- <idphint>cilogon</idphint> -->
+    </provider>
 </OIDC>
