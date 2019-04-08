@@ -2,7 +2,6 @@ const path = require("path");
 const fs = require("fs");
 const del = require("del");
 const { src, dest, series, parallel } = require("gulp");
-const uglify = require("gulp-uglify-es").default;
 
 const paths = {
     node_modules: "./node_modules",
