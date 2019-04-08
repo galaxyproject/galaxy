@@ -27,6 +27,7 @@ def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
+
     try:
         User_table = Table("galaxy_user", metadata, autoload=True)
     except NoSuchTableError:
@@ -34,7 +35,7 @@ def upgrade(migrate_engine):
         log.debug("Failed loading table galaxy_user")
     if User_table is not None:
         col = Column("form_values_id", Integer, index=True)
-        add_column(col, User_table, index_name='ix_user_form_values_id')
+        add_column(col, User_table, index_name='ix_galaxy_user_form_values_id')
         try:
             FormValues_table = Table("form_values", metadata, autoload=True)
         except NoSuchTableError:
