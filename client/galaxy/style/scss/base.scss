@@ -1912,7 +1912,7 @@ div.toolTitleNoSection {
 }
 
 /* Toolshed, reports custom styles from mako templates */
-body.toolshed {
+body.toolshed, body.reports {
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -1924,15 +1924,6 @@ body.toolshed {
     }
     .toolMenu {
         margin-left: 10px;
-    }
-}
-
-body.reports {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    #left {
-        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
     }
 }
 
