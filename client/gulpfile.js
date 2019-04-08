@@ -52,12 +52,6 @@ function fonts() {
     );
 }
 
-function libs() {
-    return src(paths.libs)
-        .pipe(uglify())
-        .pipe(dest("../static/scripts/libs/"));
-}
-
 function stagePlugins() {
     return src(paths.plugin_dirs).pipe(dest("../static/plugins/"));
 }
@@ -67,7 +61,6 @@ function cleanPlugins() {
 }
 
 module.exports.fonts = fonts;
-module.exports.libs = libs;
 module.exports.stageLibs = stageLibs;
 module.exports.cleanPlugins = cleanPlugins;
 module.exports.plugins = series(cleanPlugins, stagePlugins);
