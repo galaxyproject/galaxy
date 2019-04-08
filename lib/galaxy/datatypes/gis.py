@@ -4,7 +4,6 @@ GIS classes
 
 import logging
 import os
-import sys
 
 from galaxy.datatypes import data
 from galaxy.datatypes.metadata import MetadataElement
@@ -19,9 +18,6 @@ class GIS(data.Data):
     """
     base class to use for gis datatypes
     """
-
-    def __init__(self, **kwd):
-        data.Data.__init__(self, **kwd)
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
@@ -46,7 +42,7 @@ class Shapefile(GIS):
     """
 #    http://en.wikipedia.org/wiki/Shapefile
 
-    MetadataElement(name="base_name", desc="base name for all transformed versions of this dataset", default="Shapefile", readonly=True, set_in_upload=True)
+    MetadataElement(name="base_name", desc="base name for all transformed versions of this dataset", default="Shapefile", readonly=True, set_in_upload=True, optional=True)
 
     composite_type = 'auto_primary_file'
     file_ext = "shp"
@@ -75,7 +71,7 @@ class Shapefile(GIS):
         flist = os.listdir(shp)
         rval = ['<html><head><title>Files for Composite Dataset %s</title></head><body><p/>Composite %s contains:<p/><ul>' % (dataset.name, dataset.name)]
         for i, fname in enumerate(flist):
-            sfname = os.path.split(fname)[-1]
+            sfname = os.path.basename(fname)
             f, e = os.path.splitext(fname)
             rval.append('<li><a href="%s">%s</a></li>' % (sfname, sfname))
         rval.append('</ul></body></html>')
@@ -83,41 +79,54 @@ class Shapefile(GIS):
             f.write("\n".join(rval))
             f.write('\n')
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, overwrite=True, **kwd):
         """
 
         """
         GIS.set_meta(self, dataset, **kwd)
-        if not kwd.get('overwrite'):
+        if not overwrite:
             if verbose:
                 gal_Log.debug('@@@ shapefile set_meta called with overwrite = False')
             return True
-        try:
-            shp = dataset.extra_files_path
-        except Exception:
-            if verbose:
-                gal_Log.debug('@@@shapefile set_meta failed %s - dataset %s has no shp ?' % (sys.exc_info()[0], dataset.name))
-            return False
-        try:
-            flist = os.listdir(shp)
-        except Exception:
-            if verbose:
-                gal_Log.debug('@@@shapefile set_meta failed %s - dataset %s has no shp ?' % (sys.exc_info()[0], dataset.name))
-            return False
+        shp = dataset.extra_files_path
+        flist = os.listdir(shp)
         if len(flist) == 0:
             if verbose:
                 gal_Log.debug('@@@shapefile set_meta failed - %s shp %s is empty?' % (dataset.name, shp))
+            raise Exception('@@@shapefile set_meta failed - %s shp %s is empty?' % (dataset.name, shp))
             return False
         self.regenerate_primary_file(dataset)
-        if not dataset.info:
-            dataset.info = 'Galaxy genotype datatype object'
-        if not dataset.blurb:
-            dataset.blurb = 'Composite file - shapefile Galaxy toolkit'
         return True
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        """Set the peek and blurb text."""
+        if not dataset.dataset.purged:
+            dataset.peek = "Shapefile data"
+            dataset.blurb = "Shapefile data"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset):
+        """Create HTML content, used for displaying peek."""
+        try:
+            return dataset.peek
+        except Exception:
+            return "Shapefile data"
 
     def __init__(self, **kwd):
         GIS.__init__(self, **kwd)
-        self.add_composite_file('shapefile.shp', description='Geometry File', is_binary=True, optional=False)
-        self.add_composite_file('shapefile.shx', description='Geometry index File', is_binary=True, optional=False)
-        self.add_composite_file('shapefile.dbf', description='Database File', is_binary=True, optional=False)
-#        self.add_composite_file('shapefile.prj', description='Coordinate system informations', is_binary=True, optional=True)
+        self.add_composite_file('shapefile.shp', description='Geometry File .shp', is_binary=True, optional=False)
+        self.add_composite_file('shapefile.shx', description='Geometry index File .shx', is_binary=True, optional=False)
+        self.add_composite_file('shapefile.dbf', description='Database File .dbf', is_binary=True, optional=False)
+#        self.add_composite_file('shapefile.sbn', description='Spatial index of the features .sbn', is_binary=True, optional=True)
+#        self.add_composite_file('shapefile.sbx', description='Spatial index of the features .sbx', is_binary=True, optional=True)
+#        self.add_composite_file('shapefile.fbn', description='Spatial index of the features that are read-only .fbn', is_binary=True, optional=True)
+#        self.add_composite_file('shapefile.fbx', description='Spatial index of the features that are read-only .fbx', is_binary=True, optional=True)
+#        self.add_composite_file('shapefile.ain', description='Attribute index .ain', is_binary=True, optional=True)
+#        self.add_composite_file('shapefile.aih', description='Attribute index .aih', is_binary=True, optional=True)
+#        self.add_composite_file('shapefile.atx', description='Attribute index for the dbf file .atx', is_binary=True, optional=True)
+#        self.add_composite_file('shapefile.ixs', description='Geocoding index .ixs', is_binary=True, optional=True)
+#        self.add_composite_file('shapefile.mxs', description='Geocoding index (ODB format) .mxs', is_binary=True, optional=True)
+#        self.add_composite_file('shapefile.prj', description='Projection description .prj', is_binary=True, optional=True)
+#        self.add_composite_file('shapefile.xml', description='Geospatial metadata .xml', is_binary=False, optional=True)
