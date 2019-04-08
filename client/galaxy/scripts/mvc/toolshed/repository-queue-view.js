@@ -33,20 +33,23 @@ var View = Backbone.View.extend({
 
     bindEvents: function() {
         $(".install_one").on("click", ev => {
-            var repository_metadata = this.loadFromQueue($(ev.target).attr("data-repokey"));
+            let repository_metadata = this.loadFromQueue($(ev.target).attr("data-repokey"));
             this.installFromQueue(repository_metadata, $(ev.target).attr("data-repokey"));
         });
         $(".remove_one").on("click", ev => {
-            var queue_key = $(ev.target).attr("data-repokey");
-            var repo_queue = JSON.parse(window.localStorage.repositories);
+            let queue_key = $(ev.target).attr("data-repokey");
+            let repo_queue = JSON.parse(window.localStorage.repositories);
             if (repo_queue.hasOwnProperty(queue_key)) {
-                var repository_id = repo_queue[queue_key].repository.id;
+                this.removeRow(repo_queue[queue_key].id);
                 delete repo_queue[queue_key];
-                $(`#queued_repository_${repository_id}`).remove();
             }
             window.localStorage.repositories = JSON.stringify(repo_queue);
         });
         $("#clear_queue").on("click", () => {
+            let repo_queue = JSON.parse(window.localStorage.repositories);
+            for (let [key, value] of Object.entries(repo_queue)){
+                this.removeRow(repo_queue[key].id);
+            }
             window.localStorage.repositories = "{}";
         });
         $("#from_workflow").on("click", () => {
@@ -55,6 +58,10 @@ var View = Backbone.View.extend({
                 replace: true
             });
         });
+    },
+
+    removeRow: function(row_id){
+        $(`#queued_repository_${row_id}`).remove();
     },
 
     installFromQueue: function(repository_metadata, queue_key) {
