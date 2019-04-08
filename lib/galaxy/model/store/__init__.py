@@ -343,7 +343,10 @@ class ModelImportStore(object):
 
                 if model_class == "HistoryDatasetAssociation" and self.user:
                     add_item_annotation(self.sa_session, self.user, dataset_instance, dataset_attrs['annotation'])
-                    # TODO: Set tags.
+                    tag_list = dataset_attrs.get('tags')
+                    if tag_list:
+                        tag_handler = model.tags.GalaxyTagHandler(sa_session=self.sa_session)
+                        tag_handler.set_tags_from_list(user=self.user, item=dataset_instance, new_tags_list=tag_list)
 
                 if self.app:
                     self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
