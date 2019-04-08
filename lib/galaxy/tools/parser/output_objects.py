@@ -283,7 +283,7 @@ class ToolOutputCollectionStructure(object):
             'collection_type_source': self.collection_type_source,
             'collection_type_from_rules': self.collection_type_from_rules,
             'structured_like': self.structured_like,
-            'discover_datasets': list(map(lambda d: d.to_dict(), self.dataset_collector_descriptions)),
+            'discover_datasets': [d.to_dict() for d in self.dataset_collector_descriptions],
         }
 
     @staticmethod
