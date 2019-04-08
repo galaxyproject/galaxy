@@ -4,15 +4,7 @@ import _l from "utils/localization";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
 
-var View = Backbone.View.extend({
-    defaults: {
-        tool_sheds: [
-            {
-                url: "https://toolshed.g2.bx.psu.edu/",
-                name: "Galaxy Main Tool Shed"
-            }
-        ]
-    },
+var ShedListView = Backbone.View.extend({
 
     initialize: function(options) {
         this.options = _.defaults(this.options || {}, this.defaults);
@@ -37,29 +29,24 @@ var View = Backbone.View.extend({
 
     templateToolshedList: _.template(
         [
-            '<div class="unified-panel-header" id="panel_header" unselectable="on">',
-            '<div class="unified-panel-header-inner"><%= title %><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
-            "</div>",
-            '<div class="unified-panel-body" id="list_toolsheds">',
-            '<div class="form-row">',
-            '<table class="grid">',
+            "<div class='shed-style-container'>",
+            "<div class='header'>",
+            "<h2 style='float:left;'>",
+            _l("Configured Tool Sheds"),
+            "</h2>",
+            "<span style='float:right;'><a href='#/queue'>Repository Queue (<%= queue %>)</a></span>",
+            "</div'>",
+            "<div style='clear:both;'>",
             "<% _.each(tool_sheds, function(shed) { %>",
-            '<tr class="libraryTitle">',
-            "<td>",
-            '<div style="float: left; margin-left: 1px;" class="menubutton split">',
-            '<a class="view-info shed-selector" href="#/categories/s/<%= shed.get("url") %>"><%= shed.get("name") %></a>',
-            "</div>",
-            "</td>",
-            "</tr>",
+                "<div>",
+                "<a href='#/categories/s/<%= shed.get('url') %>'><%= shed.get('name') %></a>",
+                "</div>",
             "<% }); %>",
-            "</table>",
             "</div>",
-            '<div style="clear: both"></div>',
-            "</div>"
         ].join("")
     )
 });
 
 export default {
-    ShedListView: View
+    ShedListView: ShedListView
 };

@@ -14,9 +14,11 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
         this.model = new toolshed_model.CategoryCollection();
         this.listenTo(this.model, "sync", this.render);
         var shed = params.tool_shed.replace(/\//g, "%2f");
-        this.model.url += `?tool_shed_url=${shed}&category_id=${params.category_id}&sort_key=${
-            params.sort_key
-        }&sort_order=${params.sort_order}&page=${params.page}`;
+        this.model.url += `?tool_shed_url=${shed}`
+        this.model.url +=`&category_id=${params.category_id}`
+        this.model.url +=`&sort_key=${params.sort_key}`
+        this.model.url +=`&sort_order=${params.sort_order}`
+        this.model.url +=`&page=${params.page}`;
         this.model.tool_shed = shed;
         this.model.category = params.category_id;
         this.model.fetch();
