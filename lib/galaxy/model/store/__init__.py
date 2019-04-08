@@ -1006,23 +1006,23 @@ class DirectoryModelExportStore(ModelExportStore):
                     shutil.copyfile(src, dest)
 
         export_directory = self.export_directory
-        if dataset.id in self.included_datasets:
-            _, include_files = self.included_datasets[dataset.id]
-            if not include_files:
-                return
 
-            file_name, extra_files_path = None, None
-            try:
-                _file_name = dataset.file_name
-                if os.path.exists(_file_name):
-                    file_name = _file_name
-            except ObjectNotFound:
-                pass
+        _, include_files = self.included_datasets[dataset.id]
+        if not include_files:
+            return
 
-            if dataset.extra_files_path_exists():
-                extra_files_path = dataset.extra_files_path
-            else:
-                pass
+        file_name, extra_files_path = None, None
+        try:
+            _file_name = dataset.file_name
+            if os.path.exists(_file_name):
+                file_name = _file_name
+        except ObjectNotFound:
+            pass
+
+        if dataset.extra_files_path_exists():
+            extra_files_path = dataset.extra_files_path
+        else:
+            pass
 
         dir_name = 'datasets'
         dir_path = os.path.join(export_directory, dir_name)
