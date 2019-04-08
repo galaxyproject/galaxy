@@ -2943,6 +2943,26 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~
+``enable_openid``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable access to post-authentication options via OpenID.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``openid_consumer_cache_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If OpenID is enabled, consumer cache directory to use.
+:Default: ``database/openid_consumer_cache``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``enable_tool_tags``
 ~~~~~~~~~~~~~~~~~~~~
