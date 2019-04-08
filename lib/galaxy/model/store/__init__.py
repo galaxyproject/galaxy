@@ -19,6 +19,7 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util import in_directory
 from galaxy.util.bunch import Bunch
+from galaxy.util.path import safe_walk
 from ..item_attrs import add_item_annotation, get_item_annotation_str
 from ... import model
 
@@ -325,18 +326,19 @@ class ModelImportStore(object):
                         # Import additional files if present. Histories exported previously might not have this attribute set.
                         dataset_extra_files_path = dataset_attrs.get('extra_files_path', None)
                         if dataset_extra_files_path:
-                            try:
-                                file_list = os.listdir(os.path.join(self.archive_dir, dataset_extra_files_path))
-                            except OSError:
-                                file_list = []
-
-                            if file_list:
-                                for extra_file in file_list:
-                                    store_by = self.object_store.store_by
-                                    dir_name = 'dataset_%s_files' % getattr(dataset_instance.dataset, store_by)
+                            store_by = self.object_store.store_by
+                            dir_name = 'dataset_%s_files' % getattr(dataset_instance.dataset, store_by)
+                            dataset_extra_files_path = os.path.join(self.archive_dir, dataset_extra_files_path)
+                            for root, dirs, files in safe_walk(dataset_extra_files_path):
+                                extra_dir = os.path.join(dir_name, root.replace(dataset_extra_files_path, '', 1).lstrip(os.path.sep))
+                                extra_dir = os.path.normpath(extra_dir)
+                                for extra_file in files:
+                                    source = os.path.join(root, extra_file)
+                                    if not in_directory(source, self.archive_dir):
+                                        raise MalformedContents("Invalid dataset path: %s" % source)
                                     self.object_store.update_from_file(
-                                        dataset_instance.dataset, extra_dir=dir_name,
-                                        alt_name=extra_file, file_name=os.path.join(self.archive_dir, dataset_extra_files_path, extra_file),
+                                        dataset_instance.dataset, extra_dir=extra_dir,
+                                        alt_name=extra_file, file_name=source,
                                         create=True)
                         dataset_instance.dataset.set_total_size()  # update the filesize record in the database
 
