@@ -918,8 +918,14 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
     if format_source is not None and format_source in input_datasets:
         try:
             input_dataset = input_datasets[output.format_source]
-            input_extension = input_dataset.ext
-            ext = input_extension
+            if input_dataset.implicitly_converted_parent_datasets:
+                # implicitly_converted_parent_datasets is a list of ImplicitlyConvertedDatasetAssociation
+                # objects, and their type is the target_ext, so this should be correct even if there
+                # are multiple ImplicitlyConvertedDatasetAssociation objects (meaning 2 datasets had been converted
+                # to produce a dataset with the required datatype)
+                ext = input_dataset.implicitly_converted_parent_datasets[0].type
+            else:
+                ext = input_dataset.ext
         except Exception:
             pass
     elif format_source is not None:
