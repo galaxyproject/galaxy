@@ -725,7 +725,7 @@ def _copied_from_object_key(copied_from_chain, objects_by_key):
 
 
 class ObjectImportTracker(object):
-    """Keep track or new and existing imported objects.
+    """Keep track of new and existing imported objects.
 
     Needed to re-establish connections and such in multiple passes.
     """
@@ -957,13 +957,21 @@ class ModelExportStore(object):
         """Export store should be used as context manager."""
 
     @abc.abstractmethod
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_val, exc_tb):
         """Export store should be used as context manager."""
 
 
 class DirectoryModelExportStore(ModelExportStore):
 
     def __init__(self, export_directory, app=None, for_edit=False, serialize_dataset_objects=None, export_files=None, strip_metadata_files=True):
+        """
+        :param export_directory: path to export directory. Will be created if it does not exist.
+        :param app: Galaxy App or app-like object. Must be provided if `for_edit` and/or `serialize_dataset_objects` are True
+        :param for_edit: Allow modifying existing HDA and dataset metadata during import.
+        :param serialize_dataset_objects: If True will encode IDs using the host secret. Defaults `for_edit`.
+        :param export_files: How files should be exported, can be 'symlink', 'copy' or None, in which case files
+                             will not be serialized.
+        """
         if not os.path.exists(export_directory):
             os.makedirs(export_directory)
 
@@ -1327,6 +1335,7 @@ class DirectoryModelExportStore(ModelExportStore):
         if exc_type is None:
             self._finalize()
         # http://effbot.org/zone/python-with-statement.htm
+        # Ignores TypeError exceptions
         return isinstance(exc_val, TypeError)
 
 
