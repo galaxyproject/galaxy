@@ -222,6 +222,7 @@ var View = Backbone.View.extend({
     _renderHeader: function() {
         var self = this;
         this.execute_btn = new Ui.Button({
+            id: "run-workflow",
             icon: "fa-check",
             title: _l("Run workflow"),
             cls: "btn btn-primary",
@@ -233,7 +234,7 @@ var View = Backbone.View.extend({
             .addClass("h4")
             .empty()
             .append(`<b>Workflow: ${this.model.get("name")}<b>`)
-            .append(this.execute_btn.$el.addClass("float-right mt-3"));
+            .append(this.execute_btn.$el);
     },
 
     /** Render message */
@@ -688,7 +689,6 @@ var View = Backbone.View.extend({
             wait_text: "Sending...",
             percentage: -1
         });
-        this.execute_btn.$el.addClass("float-right mt-3")
         if (this.wp_form) {
             this.wp_form.portlet[enabled ? "enable" : "disable"]();
         }
