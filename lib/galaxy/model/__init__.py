@@ -2073,8 +2073,12 @@ class DefaultHistoryPermissions(RepresentById):
 
 class StorableObject(object):
 
-    def __init__(self, id, **kwargs):
+    def __init__(self, id, uuid):
         self.id = id
+        if uuid is None:
+            self.uuid = uuid4()
+        else:
+            self.uuid = UUID(str(uuid))
 
 
 class Dataset(StorableObject, RepresentById):
@@ -2125,7 +2129,7 @@ class Dataset(StorableObject, RepresentById):
     engine = None
 
     def __init__(self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, uuid=None):
-        super(Dataset, self).__init__(id=id)
+        super(Dataset, self).__init__(id=id, uuid=uuid)
         self.state = state
         self.deleted = False
         self.purged = False
@@ -2136,10 +2140,6 @@ class Dataset(StorableObject, RepresentById):
         self.file_size = file_size
         self.sources = []
         self.hashes = []
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
 
     def in_ready_state(self):
         return self.state in self.ready_states
@@ -5133,8 +5133,8 @@ class WorkflowInvocationStepOutputDatasetCollectionAssociation(Dictifiable, Repr
 
 class MetadataFile(StorableObject, RepresentById):
 
-    def __init__(self, dataset=None, name=None):
-        super(MetadataFile, self).__init__(id=None)
+    def __init__(self, dataset=None, name=None, uuid=None):
+        super(MetadataFile, self).__init__(id=None, uuid=uuid)
         if isinstance(dataset, HistoryDatasetAssociation):
             self.history_dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
@@ -5143,17 +5143,21 @@ class MetadataFile(StorableObject, RepresentById):
 
     @property
     def file_name(self):
-        assert self.id is not None, "ID must be set before filename used (commit the object)"
         # Ensure the directory structure and the metadata file object exist
         try:
             da = self.history_dataset or self.library_dataset
             if self.object_store_id is None and da is not None:
                 self.object_store_id = da.dataset.object_store_id
-            if not da.dataset.object_store.exists(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id):
-                da.dataset.object_store.create(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id)
-            path = da.dataset.object_store.get_filename(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id)
+            object_store = da.dataset.object_store
+            store_by = object_store.store_by
+            identifier = getattr(self, store_by)
+            alt_name = "metadata_%s.dat" % identifier
+            if not object_store.exists(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name):
+                object_store.create(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name)
+            path = object_store.get_filename(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name)
             return path
         except AttributeError:
+            assert self.id is not None, "ID must be set before MetadataFile used without an HDA/LDDA (commit the object)"
             # In case we're not working with the history_dataset
             path = os.path.join(Dataset.file_path, '_metadata_files', *directory_hash_id(self.id))
             # Create directory if it does not exist

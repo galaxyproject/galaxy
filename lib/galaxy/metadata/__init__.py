@@ -133,6 +133,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             "datatypes_config": datatypes_config,
             "max_metadata_value_size": max_metadata_value_size,
             "outputs": outputs,
+            "object_store_store_by": galaxy.model.Dataset.object_store.store_by,
         }
         with open(metadata_params_path, "w") as f:
             json.dump(metadata_params, f)

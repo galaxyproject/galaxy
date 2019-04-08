@@ -1123,6 +1123,7 @@ model.MetadataFile.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, index=True, default=now, onupdate=now),
     Column("object_store_id", TrimmedString(255), index=True),
+    Column("uuid", UUIDType(), index=True),
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False))
 
