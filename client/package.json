@@ -91,7 +91,6 @@
     "expose-loader": "^0.7.5",
     "file-loader": "^3.0.1",
     "gulp": "^4.0.0",
-    "gulp-babel": "^8.0.0",
     "gulp-uglify-es": "^1.0.4",
     "ignore-loader": "^0.1.2",
     "json-loader": "^0.5.7",
