@@ -14,7 +14,9 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
         this.model = new toolshed_model.CategoryCollection();
         this.listenTo(this.model, "sync", this.render);
         var shed = params.tool_shed.replace(/\//g, "%2f");
-        this.model.url += `?tool_shed_url=${shed}&category_id=${params.category_id}&sort_key=${params.sort_key}&sort_order=${params.sort_order}&page=${params.page}`;
+        this.model.url += `?tool_shed_url=${shed}&category_id=${params.category_id}&sort_key=${
+            params.sort_key
+        }&sort_order=${params.sort_order}&page=${params.page}`;
         this.model.tool_shed = shed;
         this.model.category = params.category_id;
         this.model.fetch();
@@ -24,18 +26,21 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
         this.options = _.defaults(this.options || {}, options);
         var category_contents_template = this.templateCategoryContents;
         var page_navigation_template = this.templatePageNavigation;
-        var sorting = {class: {owner: 'fa-sort', description: 'fa-sort', name: 'fa-sort'},
-                       direction: {owner: 'asc', description: 'asc', name: 'asc'}};
-        sorting.class[this.params.sort_key] = (this.params.sort_order == 'desc' ? 'fa-sort-down' : 'fa-sort-up');
-        sorting.direction[this.params.sort_key] = (this.params.sort_order == 'asc' ? 'desc' : 'asc');
+        var sorting = {
+            class: { owner: "fa-sort", description: "fa-sort", name: "fa-sort" },
+            direction: { owner: "asc", description: "asc", name: "asc" }
+        };
+        sorting.class[this.params.sort_key] = this.params.sort_order == "desc" ? "fa-sort-down" : "fa-sort-up";
+        sorting.direction[this.params.sort_key] = this.params.sort_order == "asc" ? "desc" : "asc";
         var previous_page = Math.max(this.params.page - 1, 1);
-        var pages = parseInt((this.model.models[0].get('repository_count')) % 25) + 1;
+        var pages = parseInt(this.model.models[0].get("repository_count") % 25) + 1;
         var next_page = Math.min(parseInt(this.params.page) + 1, pages);
         var pagination_params = {
             page: this.params.page,
             next: next_page,
             previous: previous_page,
-            pages: pages};
+            pages: pages
+        };
         if (pages > 5) {
             var page = parseInt(this.params.page);
             var page_slice = Array();
@@ -45,7 +50,7 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
             for (i = slice_start; i <= slice_end; i++) {
                 page_slice.push(i);
             }
-            pagination_params['page_slice'] = page_slice;
+            pagination_params["page_slice"] = page_slice;
         }
         this.$el.html(
             category_contents_template({
@@ -85,19 +90,23 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
                 });
             }
         });
-        $('.fa-fw').on("click", (ev) => {
+        $(".fa-fw").on("click", ev => {
             var parameters = {};
-            parameters.field = $(ev.target).attr('data-field');
-            parameters.direction = $(ev.target).attr('data-direction');
-            var new_route = `category/s/${this.model.tool_shed}/c/${this.model.category}/k/${parameters.field}/p/${this.params.page}/t/${parameters.direction}`
+            parameters.field = $(ev.target).attr("data-field");
+            parameters.direction = $(ev.target).attr("data-direction");
+            var new_route = `category/s/${this.model.tool_shed}/c/${this.model.category}/k/${parameters.field}/p/${
+                this.params.page
+            }/t/${parameters.direction}`;
             Backbone.history.navigate(new_route, {
                 trigger: true,
                 replace: true
             });
         });
-        $('.pagenav').on("click", (ev) => {
-            var page = $(ev.target).attr('data-page');
-            var new_route = `category/s/${this.model.tool_shed}/c/${this.model.category}/k/${this.params.sort_key}/p/${page}/t/${this.params.sort_order}`;
+        $(".pagenav").on("click", ev => {
+            var page = $(ev.target).attr("data-page");
+            var new_route = `category/s/${this.model.tool_shed}/c/${this.model.category}/k/${
+                this.params.sort_key
+            }/p/${page}/t/${this.params.sort_order}`;
             Backbone.history.navigate(new_route, {
                 trigger: true,
                 replace: true
@@ -114,45 +123,45 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
             "<% } else { %>",
             '<a data-page="1" class="pagenav-inactive fa fa-fast-backward" />',
             '<a data-page="<%= previous %>" class="pagenav-inactive fa fa-step-backward" />',
-            '<% } %>',
-            '<% if (pages > 5) { %>',
-            '<% if (page != 1) { %>',
+            "<% } %>",
+            "<% if (pages > 5) { %>",
+            "<% if (page != 1) { %>",
             '<a data-page="1" class="pagenav fa"><a>1</a>',
-            '<% if (page != 2) { %>',
+            "<% if (page != 2) { %>",
             '<a class="fa">&hellip;</a>',
-            '<% } %>',
-            '<% } else { %>',
+            "<% } %>",
+            "<% } else { %>",
             '<a data-page="1" class="pagenav-inactive fa"><a>1</a>',
-            '<% } %>',
-            '<% _.each(page_slice, function(i) { %>',
-            '<% if (i == page) { %>',
+            "<% } %>",
+            "<% _.each(page_slice, function(i) { %>",
+            "<% if (i == page) { %>",
             '<a data-page="<%= i %>" class="fa"><strong><%= i %></strong></a>',
-            '<% } else { %>',
+            "<% } else { %>",
             '<a data-page="<%= i %>" class="pagenav fa"><%= i %></a>',
-            '<% } %>',
-            '<% }); %>',
-            '<% var last_pages = [pages - 2, pages - 1, pages]; %>',
-            '<% if (last_pages.indexOf(parseInt(page)) == -1) { %>',
+            "<% } %>",
+            "<% }); %>",
+            "<% var last_pages = [pages - 2, pages - 1, pages]; %>",
+            "<% if (last_pages.indexOf(parseInt(page)) == -1) { %>",
             '<a class="fa">&hellip;</a>',
             '<a data-page="<%= pages %>" class="pagenav fa"><%= pages %></a>',
-            '<% } %>',
-            '<% } else { %>',
-            '<% for (i = 1; i <= pages; i++) { %>',
-            '<% if (i == page) { %>',
+            "<% } %>",
+            "<% } else { %>",
+            "<% for (i = 1; i <= pages; i++) { %>",
+            "<% if (i == page) { %>",
             '<a data-page="<%= i %>" class="fa"><strong><%= i %></strong></a>',
-            '<% } else { %>',
+            "<% } else { %>",
             '<a data-page="<%= i %>" class="pagenav fa"><%= i %></a>',
-            '<% } %>',
-            '<% } %>',
-            '<% } %>',
-            '<% if (page < pages) { %>',
+            "<% } %>",
+            "<% } %>",
+            "<% } %>",
+            "<% if (page < pages) { %>",
             '<a data-page="<%= next %>" class="pagenav fa fa-step-forward" />',
             '<a data-page="<%= pages %>" class="pagenav fa fa-fast-forward" />',
             "<% } else { %>",
             '<a data-page="<%= next %>" class="pagenav-inactive fa fa-step-forward" />',
             '<a data-page="<%= pages %>" class="pagenav-inactive fa fa-fast-forward" />',
-            '<% } %>',
-            '</div>'
+            "<% } %>",
+            "</div>"
         ].join("")
     ),
 
@@ -175,7 +184,7 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
             "</span>",
             "</div>",
             "<% if (category.get('repository_count') > 25) { %>",
-            '<%= page_navigation %>',
+            "<%= page_navigation %>",
             "<% } %>",
             '<div style="clear: both; margin-top: 1em;">',
             '<table class="grid table-striped">',

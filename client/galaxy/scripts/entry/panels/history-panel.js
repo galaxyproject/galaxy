@@ -8,8 +8,8 @@ import CurrentHistoryView from "mvc/history/history-view-edit-current";
 /** the right hand panel in the analysis page that shows the current history */
 var HistoryPanel = Backbone.View.extend({
     initialize: function(page, options) {
-        let Galaxy = getGalaxyInstance();
-        let self = this;
+        const Galaxy = getGalaxyInstance();
+        const panelHeaderButtons = [];
 
         this.userIsAnonymous = Galaxy.user.isAnonymous();
         this.allow_user_dataset_purge = options.config.allow_user_dataset_purge;
@@ -32,19 +32,34 @@ var HistoryPanel = Backbone.View.extend({
             title: _l("Refresh history"),
             cls: "panel-header-button",
             icon: "fa fa-refresh",
-            onclick: function() {
-                self.historyView.loadCurrentHistory();
+            onclick: () => {
+                this.historyView.loadCurrentHistory();
             }
         });
-        this.buttonNew = new Ui.ButtonLink({
-            id: "history-new-button",
-            title: _l("Create new history"),
+        panelHeaderButtons.push(this.buttonRefresh);
+
+        if (!this.userIsAnonymous){
+            this.buttonNew = new Ui.ButtonLink({
+                id: "history-new-button",
+                title: _l("Create new history"),
+                cls: "panel-header-button",
+                icon: "fa fa-plus",
+                onclick: function() {
+                    Galaxy.currHistoryPanel.createNewHistory();
+                }
+            });
+            panelHeaderButtons.push(this.buttonNew);
+        }
+
+        this.buttonViewMulti = new Ui.ButtonLink({
+            id: "history-view-multi-button",
+            title: _l("View all histories"),
             cls: "panel-header-button",
-            icon: "fa fa-plus",
-            onclick: function() {
-                Galaxy.currHistoryPanel.createNewHistory();
-            }
+            icon: "fa fa-columns",
+            href: `${this.root}history/view_multiple`
         });
+        panelHeaderButtons.push(this.buttonViewMulti);
+
         this.buttonOptions = new Ui.ButtonLink({
             id: "history-options-button",
             title: _l("History options"),
@@ -53,19 +68,13 @@ var HistoryPanel = Backbone.View.extend({
             icon: "fa fa-cog",
             href: `${this.root}root/history_options`
         });
-        this.buttonViewMulti = new Ui.ButtonLink({
-            id: "history-view-multi-button",
-            title: _l("View all histories"),
-            cls: "panel-header-button",
-            icon: "fa fa-columns",
-            href: `${this.root}history/view_multiple`
-        });
+        panelHeaderButtons.push(this.buttonOptions);
 
         this.model = new Backbone.Model({
             // define components
             cls: "history-right-panel",
             title: _l("History"),
-            buttons: [this.buttonRefresh, this.buttonNew, this.buttonOptions, this.buttonViewMulti]
+            buttons: panelHeaderButtons
         });
 
         // build body template and connect history view

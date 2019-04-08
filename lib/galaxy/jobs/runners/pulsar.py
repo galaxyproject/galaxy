@@ -752,6 +752,8 @@ class PulsarMQJobRunner(PulsarJobRunner):
     def _monitor(self):
         # This is a message queue driven runner, don't monitor
         # just setup required callback.
+        self._init_noop_monitor()
+
         self.client_manager.ensure_has_status_update_callback(self.__async_update)
         self.client_manager.ensure_has_ack_consumers()
 

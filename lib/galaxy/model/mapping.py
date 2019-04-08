@@ -1150,6 +1150,7 @@ model.MetadataFile.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, index=True, default=now, onupdate=now),
     Column("object_store_id", TrimmedString(255), index=True),
+    Column("uuid", UUIDType(), index=True),
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False))
 
@@ -2232,7 +2233,7 @@ mapper(model.Job, model.Job.table, properties=dict(
     # user=relation( model.User.mapper ),
     user=relation(model.User),
     galaxy_session=relation(model.GalaxySession),
-    history=relation(model.History),
+    history=relation(model.History, backref="jobs"),
     library_folder=relation(model.LibraryFolder, lazy=True),
     parameters=relation(model.JobParameter, lazy=True),
     input_datasets=relation(model.JobToInputDatasetAssociation),

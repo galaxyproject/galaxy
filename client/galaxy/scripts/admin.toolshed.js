@@ -71,15 +71,18 @@ var GalaxyAdminToolshedApp = Backbone.View.extend({
                 tool_shed: tool_shed.replace(/\//g, "%2f")
             });
         });
-        this.admin_toolshed_router.on("route:repositories", (tool_shed, category_id, sort_key='name', page=1, sort_order='asc') => {
-            Galaxy.admintoolshedapp.adminShedCategoryView = new mod_repositories_view.Category({
-                tool_shed: tool_shed.replace(/\//g, "%2f"),
-                category_id: category_id,
-                page: page,
-                sort_order: sort_order,
-                sort_key: sort_key
-            });
-        });
+        this.admin_toolshed_router.on(
+            "route:repositories",
+            (tool_shed, category_id, sort_key = "name", page = 1, sort_order = "asc") => {
+                Galaxy.admintoolshedapp.adminShedCategoryView = new mod_repositories_view.Category({
+                    tool_shed: tool_shed.replace(/\//g, "%2f"),
+                    category_id: category_id,
+                    page: page,
+                    sort_order: sort_order,
+                    sort_key: sort_key
+                });
+            }
+        );
         this.admin_toolshed_router.on("route:repository", (tool_shed, repository_id) => {
             Galaxy.admintoolshedapp.adminRepositoryView = new mod_repository_view.RepoDetails({
                 tool_shed: tool_shed.replace(/\//g, "%2f"),

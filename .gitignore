@@ -150,10 +150,10 @@ client/styleguide
 # webpack stats
 client/webpack-stats.json
 
-# Projects
-projects/*/build
-projects/*/dist
-projects/*/*.egg-info
+# packages
+packages/*/build
+packages/*/dist
+packages/*/*.egg-info
 
 # Misc
 *.orig
