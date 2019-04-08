@@ -106,6 +106,14 @@ var Model = Backbone.Model.extend({
                     Galaxy.page.router.push(`${getAppRoot()}custom_builds`);
                 }
             },
+            genomespace: {
+                title: _l("Request GenomeSpace token"),
+                description: _l("Requests token through OpenID."),
+                icon: "fa-openid",
+                onclick: function() {
+                    window.location.href = `${getAppRoot()}openid/openid_auth?openid_provider=genomespace`;
+                }
+            },
             logout: {
                 title: _l("Sign out"),
                 description: _l("Click here to sign out of all sessions."),
@@ -166,6 +174,9 @@ var View = Backbone.View.extend({
             self._addLink("permissions");
             self._addLink("make_data_private");
             self._addLink("api_key");
+            if (config.enable_openid) {
+                self._addLink("genomespace");
+            }
             if (config.has_user_tool_filters) {
                 self._addLink("toolbox_filters");
             }

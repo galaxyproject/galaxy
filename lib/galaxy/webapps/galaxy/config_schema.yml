@@ -2186,6 +2186,20 @@ mapping:
           need to bootstrap Galaxy, you probably do not want to set this on public
           servers.
 
+      enable_openid:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable access to post-authentication options via OpenID.
+
+      openid_consumer_cache_path:
+        type: str
+        default: database/openid_consumer_cache
+        required: false
+        desc: |
+          If OpenID is enabled, consumer cache directory to use.
+
       enable_tool_tags:
         type: bool
         default: false

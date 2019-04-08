@@ -1665,9 +1665,6 @@ simple_mapping(model.HistoryDatasetAssociation,
     implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id ==
                      model.HistoryDatasetAssociation.table.c.id)),
-    implicitly_converted_parent_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_id ==
-                     model.HistoryDatasetAssociation.table.c.id)),
     tags=relation(model.HistoryDatasetAssociationTagAssociation,
         order_by=model.HistoryDatasetAssociationTagAssociation.table.c.id,
         backref='history_tag_associations'),
@@ -1748,10 +1745,12 @@ mapper(model.ImplicitlyConvertedDatasetAssociation, model.ImplicitlyConvertedDat
                      model.LibraryDatasetDatasetAssociation.table.c.id)),
     dataset_ldda=relation(model.LibraryDatasetDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_id ==
-                     model.LibraryDatasetDatasetAssociation.table.c.id)),
+                     model.LibraryDatasetDatasetAssociation.table.c.id),
+        backref="implicitly_converted_parent_datasets"),
     dataset=relation(model.HistoryDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_id ==
-                     model.HistoryDatasetAssociation.table.c.id))
+                     model.HistoryDatasetAssociation.table.c.id),
+        backref="implicitly_converted_parent_datasets")
 ))
 
 mapper(model.History, model.History.table, properties=dict(
