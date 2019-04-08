@@ -3,7 +3,6 @@ const fs = require("fs");
 const del = require("del");
 const { src, dest, series, parallel } = require("gulp");
 const uglify = require("gulp-uglify-es").default;
-const babel = require("gulp-babel");
 
 const paths = {
     node_modules: "./node_modules",
@@ -59,18 +58,17 @@ function libs() {
         .pipe(dest("../static/scripts/libs/"));
 }
 
-function plugins() {
+function stagePlugins() {
     return src(paths.plugin_dirs).pipe(dest("../static/plugins/"));
 }
 
-function clean() {
-    //Wipe out all scripts that aren't handled by webpack
-    return del(["../static/scripts/**/*.js", "!../static/scripts/bundled/**.*.js"], { force: true });
+function cleanPlugins() {
+    return del(["../static/plugins/{visualizations,interactive_environments}/*"], { force: true });
 }
 
 module.exports.fonts = fonts;
 module.exports.libs = libs;
-module.exports.clean = clean;
 module.exports.stageLibs = stageLibs;
-module.exports.plugins = plugins;
-module.exports.default = parallel(stageLibs, fonts, plugins);
+module.exports.cleanPlugins = cleanPlugins;
+module.exports.plugins = series(cleanPlugins, stagePlugins);
+module.exports.default = parallel(stageLibs, fonts, module.exports.plugins);
