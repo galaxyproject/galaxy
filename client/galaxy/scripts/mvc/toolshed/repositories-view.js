@@ -83,7 +83,7 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
                 });
             },
             minLength: 3,
-            select: function(event, ui) {
+            select: (event, ui) => {
                 var tsr_id = ui.item.value;
                 var new_route = `repository/s/${this.model.tool_shed}/r/${tsr_id}`;
                 Backbone.history.navigate(new_route, {
