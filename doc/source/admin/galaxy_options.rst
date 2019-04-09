@@ -2769,13 +2769,14 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_workflow_format``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_export_format2_default``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable import and export of workflows as Galaxy Format 2
-    workflows.
+    Export of workflows as Galaxy Format 2 instead of GA workflows by
+    default. The default value of this configuration variable will
+    switch to True in 19.09.
 :Default: ``false``
 :Type: bool
 
