@@ -17,7 +17,7 @@ var ShedListView = Backbone.View.extend({
 
     render: function(options) {
         this.options = _.defaults(this.options || {}, options, this.defaults);
-        var toolshed_list_template = this.templateToolshedList;
+        var toolshed_list_template = this.templateToolshedList();
         this.$el.html(
             toolshed_list_template({
                 title: _l("Configured Galaxy Tool Sheds"),
@@ -25,26 +25,29 @@ var ShedListView = Backbone.View.extend({
                 queue: toolshed_util.queueLength()
             })
         );
+        $("#center").css("overflow", "auto");
     },
 
-    templateToolshedList: _.template(
-        [
-            "<div class='shed-style-container'>",
-            "<div class='header'>",
-            "<h2 style='float:left;'>",
-            _l("Configured Tool Sheds"),
-            "</h2>",
-            "<span style='float:right;'><a href='#/queue'>Repository Queue (<%= queue %>)</a></span>",
-            "</div'>",
-            "<div style='clear:both;'>",
-            "<% _.each(tool_sheds, function(shed) { %>",
-                "<div>",
-                "<a href='#/categories/s/<%= shed.get('url') %>'><%= shed.get('name') %></a>",
+    templateToolshedList: function() {
+        return _.template(
+            [
+                "<div class='shed-style-container'>",
+                "<div class='header'>",
+                "<h2>",
+                _l("Configured Tool Sheds"),
+                "</h2>",
+                "<span><a href='#/queue'>Repository Queue (<%= queue %>)</a></span>",
+                "<div style='clear:both;'></div>",
+                "</div'>", // end header
+                "<% _.each(tool_sheds, function(shed) { %>",
+                    "<div>",
+                    "<a href='#/categories/s/<%= shed.get('url') %>'><%= shed.get('name') %></a>",
+                    "</div>",
+                "<% }); %>",
                 "</div>",
-            "<% }); %>",
-            "</div>",
-        ].join("")
-    )
+            ].join("")
+        );
+    }
 });
 
 export default {
