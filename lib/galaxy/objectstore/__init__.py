@@ -237,7 +237,12 @@ class ObjectStore(object):
         }
 
     def _get_object_id(self, obj):
-        return getattr(obj, self.store_by)
+        if hasattr(obj, self.store_by):
+            return getattr(obj, self.store_by)
+        else:
+            # job's don't have uuids, so always use ID in this case when creating
+            # job working directories.
+            return obj.id
 
 
 class DiskObjectStore(ObjectStore):

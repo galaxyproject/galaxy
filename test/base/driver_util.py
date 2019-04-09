@@ -207,7 +207,6 @@ def setup_galaxy_config(
         cleanup_job='onsuccess',
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
-        enable_beta_workflow_format=True,
         expose_dataset_path=True,
         file_path=file_path,
         ftp_upload_purge=False,
@@ -235,6 +234,7 @@ def setup_galaxy_config(
         webhooks_dir=TEST_WEBHOOKS_DIR,
         logging=LOGGING_CONFIG_DEFAULT,
         monitor_thread_join_timeout=5,
+        object_store_store_by="uuid",
     )
     config.update(database_conf(tmpdir, prefer_template_database=prefer_template_database))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))

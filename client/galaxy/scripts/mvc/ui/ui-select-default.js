@@ -213,9 +213,11 @@ var View = Backbone.View.extend({
                             filteredTags.slice(0, 5),
                             (memo, tag) => {
                                 const tagColors = keyedColorScheme(tag.slice(5));
-                                return `${memo}&nbsp;<div style="background-color: ${tagColors.primary}; color: ${tagColors.contrasting}; border: 1px solid ${tagColors.darker}" class="badge badge-primary badge-tags">${_.escape(
-                                    tag
-                                )}</div>`;
+                                return `${memo}&nbsp;<div style="background-color: ${tagColors.primary}; color: ${
+                                    tagColors.contrasting
+                                }; border: 1px solid ${
+                                    tagColors.darker
+                                }" class="badge badge-primary badge-tags">${_.escape(tag)}</div>`;
                             },
                             ""
                         )}

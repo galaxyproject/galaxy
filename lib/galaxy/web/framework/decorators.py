@@ -17,7 +17,7 @@ from galaxy.web.framework import url_for
 
 log = logging.getLogger(__name__)
 
-JSON_CONTENT_TYPE = "application/json"
+JSON_CONTENT_TYPE = "application/json; charset=UTF-8"
 JSONP_CONTENT_TYPE = "application/javascript"
 JSONP_CALLBACK_KEY = 'callback'
 

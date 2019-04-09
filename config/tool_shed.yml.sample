@@ -89,7 +89,7 @@ tool_shed:
   # string to specify an external database instead.  This string takes
   # many options which are explained in detail in the config file
   # documentation.
-  #database_connection: 'sqlite:///./database/community.sqlite?isolation_level=IMMEDIATE'
+  #database_connection: sqlite:///./database/community.sqlite?isolation_level=IMMEDIATE
 
   # Where the hgweb.config file is stored. The default is the Galaxy
   # installation directory.
@@ -253,7 +253,7 @@ tool_shed:
   #smtp_ssl: false
 
   # The URL linked by the "Support" link in the "Help" menu.
-  #support_url: 'https://galaxyproject.org/support/'
+  #support_url: https://galaxyproject.org/support/
 
   # Address to join mailing list
   #mailing_join_addr: galaxy-announce-join@bx.psu.edu

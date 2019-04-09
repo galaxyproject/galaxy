@@ -2769,13 +2769,14 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_workflow_format``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_export_format2_default``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable import and export of workflows as Galaxy Format 2
-    workflows.
+    Export of workflows as Galaxy Format 2 instead of GA workflows by
+    default. The default value of this configuration variable will
+    switch to True in 19.09.
 :Default: ``false``
 :Type: bool
 
@@ -2940,6 +2941,26 @@
     set this if you need to bootstrap Galaxy, you probably do not want
     to set this on public servers.
 :Default: ``changethis``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~
+``enable_openid``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable access to post-authentication options via OpenID.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``openid_consumer_cache_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If OpenID is enabled, consumer cache directory to use.
+:Default: ``database/openid_consumer_cache``
 :Type: str
 
 
