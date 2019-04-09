@@ -42,6 +42,8 @@ class GFFInterval(GenomicInterval):
         self.score = self.fields[self.score_col]
 
         # GFF attributes.
+        if 8 >= self.nfields:
+            raise MissingFieldError("No field for attribute column (8)")
         self.attributes = parse_gff_attributes(fields[8])
 
     def copy(self):
