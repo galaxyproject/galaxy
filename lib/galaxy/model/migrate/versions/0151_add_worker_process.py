@@ -29,12 +29,15 @@ WorkerProcess_table = Table(
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
+
     create_table(WorkerProcess_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
+    metadata.reflect()
+
     drop_table(WorkerProcess_table)
