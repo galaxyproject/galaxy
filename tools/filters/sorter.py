@@ -45,7 +45,7 @@ def main():
 
         # grep comments
         grep_comments = "(grep '^#' %s) >> %s" % (input, output)
-        subprocess.check_call(grep_comments, shell=True)
+        subprocess.call(grep_comments, shell=True)
 
         # grep and sort columns
         sed_header_restore = ""
