@@ -42,9 +42,7 @@ def main():
             # sed header
             if header_lines > 0:
                 sed_header = ['sed', '-n', "1,%dp" % header_lines, input]
-                exit_code = subprocess.call(sed_header, stdout=out)
-                if exit_code:
-                    stop_err('Capturing header lines failed')
+                subprocess.check_call(sed_header, stdout=out)
 
             # grep comments
             grep_comments = ['grep', '^#', input]
