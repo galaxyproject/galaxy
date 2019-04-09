@@ -9,7 +9,12 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, Me
 from sqlalchemy.exc import NoSuchTableError
 
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString
-from galaxy.model.migrate.versions.util import engine_false, localtimestamp, nextval
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    engine_false,
+    localtimestamp,
+    nextval
+)
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
@@ -317,18 +322,10 @@ def upgrade(migrate_engine):
         User_table = None
         log.debug("Failed loading table galaxy_user")
     if User_table is not None:
-        try:
-            col = Column('deleted', Boolean, index=True, default=False)
-            col.create(User_table, index_name='ix_user_deleted')
-            assert col is User_table.c.deleted
-        except Exception:
-            log.exception("Adding column 'deleted' to galaxy_user table failed.")
-        try:
-            col = Column('purged', Boolean, index=True, default=False)
-            col.create(User_table, index_name='ix_user_purged')
-            assert col is User_table.c.purged
-        except Exception:
-            log.exception("Adding column 'purged' to galaxy_user table failed.")
+        col = Column('deleted', Boolean, index=True, default=False)
+        add_column(col, User_table, index_name='ix_galaxy_user_deleted')
+        col = Column('purged', Boolean, index=True, default=False)
+        add_column(col, User_table, index_name='ix_galaxy_user_purged')
     # Add 1 new column to the history_dataset_association table
     try:
         HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
@@ -512,8 +509,8 @@ def upgrade(migrate_engine):
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    # Load existing tables
     metadata.reflect()
+
     # NOTE: all new data added in the upgrade method is eliminated here via table drops
     # Drop 1 foreign key constraint from the metadata_file table
     try:
