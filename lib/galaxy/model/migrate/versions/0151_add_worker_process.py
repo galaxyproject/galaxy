@@ -10,8 +10,8 @@ from sqlalchemy import (
     DateTime,
     Integer,
     MetaData,
+    String,
     Table,
-    Text,
     UniqueConstraint,
 )
 
@@ -26,8 +26,8 @@ WorkerProcess_table = Table(
     'worker_process',
     metadata,
     Column("id", Integer, primary_key=True),
-    Column("server_name", Text, index=True),
-    Column("hostname", Text),
+    Column("server_name", String(255), index=True),
+    Column("hostname", String(255)),
     Column("update_time", DateTime, default=now, onupdate=now),
     UniqueConstraint('server_name', 'hostname'),
 )
