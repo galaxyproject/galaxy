@@ -144,8 +144,6 @@ class _SpalnDb(Data):
 
 class SpalnNuclDb(_SpalnDb):
     file_ext = "spalndbnp"
-    allow_datatype_change = False
-    composite_type = "basic"
 
     def __init__(self, **kwd):
         super(SpalnNuclDb, self).__init__(**kwd)
