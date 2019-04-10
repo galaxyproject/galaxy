@@ -56,7 +56,7 @@ export default {
     },
     data() {
         let galaxy = getGalaxyInstance();
-        let oidc_idps = Object.keys(galaxy.config.oidc).filter(function(key) { return galaxy.config.oidc[key]; });
+        let oidc_idps = galaxy.config.oidc;
         // Icons to use for each IdP
         let oidc_idps_icons = {'google': 'fa fa-google'};
         // Add default icons to IdPs without icons
