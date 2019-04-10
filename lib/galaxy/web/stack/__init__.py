@@ -324,7 +324,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
             parser = nice_config_parser(config_file)
             if not parser.has_section(config_section) and parser.has_section('app:main'):
                 kwds['config_section'] = 'app:main'
-        kwds['config_file'] = config_file
+        kwds['config_file'] = unicodify(config_file)
         return kwds
 
     @classmethod
