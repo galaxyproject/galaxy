@@ -59,7 +59,7 @@
                                     :href="dataManagerGroup[0]['toolUrl']"
                                     target="_blank"
                                 >
-                                    Tool
+                                    Tool v{{ dataManagerGroup[0]['toolVersion'] }}
                                 </b-button>
                                 <b-button
                                     :id="kebabCase(dataManagerGroup[0]['name']) + '-jobs'"
@@ -71,7 +71,7 @@
                                     Jobs
                                 </b-button>
                             </b-button-group>
-                            <b-button-group v-else>
+                            <b-button-group v-else-if="dataManagerGroup.length > 1">
                                 <b-dropdown variant="primary" :id="kebabCase(dataManagerGroup[0]['name'])" text="Tool">
                                     <b-dropdown-item
                                         v-for="(dataManager, dindex) in dataManagerGroup"
@@ -79,7 +79,7 @@
                                         :href="dataManager['toolUrl']"
                                         target="_blank"
                                     >
-                                        {{ "v" + dataManager["version"] }}
+                                        {{ "v" + dataManager["version"] + ": Tool v" + dataManager["toolVersion"]  }}
                                     </b-dropdown-item>
                                 </b-dropdown>
                                 <b-dropdown :id="kebabCase(dataManagerGroup[0]['name']) + '-jobs'" text="Jobs">
@@ -91,7 +91,7 @@
                                             params: { id: encodeURIComponent(dataManager['id']) }
                                         }"
                                     >
-                                        {{ "v" + dataManager["version"] }}
+                                        {{ "v" + dataManager["version"] + ": Tool v" + dataManager["toolVersion"]  }}
                                     </b-dropdown-item>
                                 </b-dropdown>
                             </b-button-group>

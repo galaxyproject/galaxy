@@ -32,7 +32,8 @@ class DataManager(BaseUIController):
                                       key=lambda d: d_key(d.id, d.version))
         data_managers = []
         for _, group in itertools.groupby(sorted_data_managers, key=lambda d: d_key(d.id, d.version)):
-            data_managers.append([{'toolUrl': web.url_for(controller='root',
+            data_managers.append([{'toolVersion': data_manager.tool.version,
+                                   'toolUrl': web.url_for(controller='root',
                                                           tool_id=data_manager.tool.id),
                                    'id': data_manager.id,
                                    'name': data_manager.name,
