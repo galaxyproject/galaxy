@@ -12,6 +12,7 @@ from sqlalchemy import (
     MetaData,
     Table,
     Text,
+    UniqueConstraint,
 )
 
 from galaxy.model.migrate.versions.util import create_table, drop_table
@@ -28,6 +29,7 @@ WorkerProcess_table = Table(
     Column("server_name", Text, index=True),
     Column("hostname", Text),
     Column("update_time", DateTime, default=now, onupdate=now),
+    UniqueConstraint('server_name', 'hostname'),
 )
 
 

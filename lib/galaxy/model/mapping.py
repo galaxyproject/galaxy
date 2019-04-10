@@ -54,6 +54,7 @@ model.WorkerProcess.table = Table(
     Column("server_name", Text, index=True),
     Column("hostname", Text),
     Column("update_time", DateTime, default=now, onupdate=now),
+    UniqueConstraint('server_name', 'hostname'),
 )
 
 model.User.table = Table(
