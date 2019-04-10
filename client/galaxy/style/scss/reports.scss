@@ -1,21 +1,5 @@
 // ############################################################# Reports Webapp
 
-// ======================================================== Left ==============
-.reports-panel-container {
-    position: absolute;
-    /*From base.scss, top should be $panel_header_height*/
-    top: 30px;
-    bottom: 10px;
-    overflow: scroll;
-    width: 100%;
-    padding: 10px;
-}
-#reports_home {
-    position: relative;
-    top: -7px;
-    float: right;
-}
-
 // ======================================================== SparkLines ========
 #spark_time_select {
     display: inline-block;
