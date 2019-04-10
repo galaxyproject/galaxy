@@ -34,7 +34,7 @@ def send_local_control_task(app, task, kwargs={}):
     log.info("Queuing async task %s for %s." % (task, app.config.server_name))
     payload = {'task': task,
                'kwargs': kwargs}
-    routing_key = 'control.%s' % app.config.server_name
+    routing_key = 'control.%s@%s' % (app.config.server_name, socket.gethostname())
     control_task = ControlTask(app.control_worker)
     control_task.send_task(payload, routing_key, local=True, get_response=False)
 
@@ -317,7 +317,7 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
     @property
     def declare_queues(self):
         # dynamically produce queues, allows addressing all known processes at a given time
-        return galaxy.queues.all_control_queues_for_declare(self.app.config, self.app.application_stack)
+        return galaxy.queues.all_control_queues_for_declare(self.app.application_stack)
 
     def bind_and_start(self):
         # This is post-forking, so we got the correct sever name

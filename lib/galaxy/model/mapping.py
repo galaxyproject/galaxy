@@ -50,10 +50,11 @@ metadata = MetaData()
 model.WorkerProcess.table = Table(
     'worker_process',
     metadata,
-    Column('server_name', Text, primary_key=True),
+    Column("id", Integer, primary_key=True),
+    Column("server_name", Text, index=True),
+    Column("hostname", Text),
     Column("update_time", DateTime, default=now, onupdate=now),
 )
-
 
 model.User.table = Table(
     "galaxy_user", metadata,
