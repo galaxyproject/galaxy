@@ -111,6 +111,16 @@ UWSGI_OPTIONS = OrderedDict([
         'default': '$uwsgi_module',
         'type': 'str',
     }),
+    ('#mount', {
+        'desc': """Mount the web application (e.g. Galaxy, Reports, etc.) at the given URL prefix. Cannot be used together with 'module:' above.""",
+        'default': '/galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()',
+        'type': 'str',
+    }),
+    ('manage-script-name', {
+        'desc': """Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-points. Set this to true if a URL prefix is used.""",
+        'default': False,
+        'type': 'bool',
+    }),
     ('thunder-lock', {
         'desc': """It is usually a good idea to set this to ``true`` if processes is greater than 1.""",
         'default': False,
@@ -276,8 +286,8 @@ OPTION_ACTIONS = {
     'trust_ipython_notebook_conversion': _RenameAction("trust_jupyter_notebook_conversion"),
     'enable_beta_tool_command_isolation': _DeprecatedAndDroppedAction(),
     'single_user': _ProductionUnsafe(True),
-    'tool_submission_burst_threads': _ProductionPerformance(),
-    'tool_submission_burst_at': _ProductionPerformance(),
+    'tool_submission_burst_threads': _DeprecatedAndDroppedAction(),
+    'tool_submission_burst_at': _DeprecatedAndDroppedAction(),
     'toolform_upgrade': _DeprecatedAndDroppedAction(),
 }
 

@@ -576,51 +576,12 @@ import JobStatesModel from "mvc/history/job-states-model";
 import RuleDefs from "mvc/rules/rule-definitions";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Select2 from "components/Select2";
 
 Vue.use(BootstrapVue);
 
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
-
-// Local components...
-
-// Based on https://vuejs.org/v2/examples/select2.html but adapted to handle list values
-// with "multiple: true" set.
-const Select2 = {
-    props: ["options", "value", "placeholder"],
-    template: `<select>
-    <slot></slot>
-  </select>`,
-    mounted: function() {
-        var vm = this;
-        $(this.$el)
-            // init select2
-            .select2({ data: this.options, placeholder: this.placeholder, allowClear: this.placeholder })
-            .val(this.value)
-            .trigger("change")
-            // emit event on change.
-            .on("change", function(event) {
-                vm.$emit("input", event.val);
-            });
-    },
-    watch: {
-        value: function(value) {
-            // update value
-            $(this.$el).val(value);
-        },
-        options: function(options) {
-            // update options
-            $(this.$el)
-                .empty()
-                .select2({ data: options });
-        }
-    },
-    destroyed: function() {
-        $(this.$el)
-            .off()
-            .select2("destroy");
-    }
-};
 
 const ColumnSelector = {
     template: `

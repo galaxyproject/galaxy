@@ -1,7 +1,7 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
-import mod_toastr from "libs/toastr";
+import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_folderrow_view from "mvc/library/library-folderrow-view";
 import { getGalaxyInstance } from "app";
@@ -79,13 +79,13 @@ var FolderListView = Backbone.View.extend({
             error: function(model, response) {
                 let Galaxy = getGalaxyInstance();
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
+                    Toast.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
                     });
                 } else {
-                    mod_toastr.error("An error occurred. Click this to go back.", "", {
+                    Toast.error("An error occurred. Click this to go back.", "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
@@ -128,7 +128,7 @@ var FolderListView = Backbone.View.extend({
             if (row) {
                 row.showDatasetDetails();
             } else {
-                mod_toastr.error("Requested dataset not found. Showing folder instead.");
+                Toast.error("Requested dataset not found. Showing folder instead.");
             }
         } else {
             if (this.options.show_page === null || this.options.show_page < 1) {
@@ -410,8 +410,7 @@ var FolderListView = Backbone.View.extend({
                 "</table>",
                 '<div class="empty-folder-message" style="display:none;">',
                 "This folder is either empty or you do not have proper access permissions to see the contents. If you expected something to show up",
-                ' please consult the <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">library security wikipage</a>',
-                ' or visit the <a href="https://biostar.usegalaxy.org/" target="_blank">Galaxy support site</a>.',
+                ' please consult the <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">library security wikipage</a>.',
                 "</div>"
             ].join("")
         );

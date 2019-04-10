@@ -13,27 +13,10 @@ from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
 from sqlalchemy.exc import NoSuchTableError
 
 from galaxy.model.custom_types import JSONType
+from galaxy.model.migrate.versions.util import localtimestamp, nextval
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
-
-
-def nextval(migrate_engine, table, col='id'):
-    if migrate_engine.name in ['postgres', 'postgresql']:
-        return "nextval('%s_%s_seq')" % (table, col)
-    elif migrate_engine.name in ['mysql', 'sqlite']:
-        return "null"
-    else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
-
-
-def localtimestamp(migrate_engine):
-    if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:
-        return "LOCALTIMESTAMP"
-    elif migrate_engine.name == 'sqlite':
-        return "current_date || ' ' || current_time"
-    else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
 
 
 def get_latest_id(migrate_engine, table):
@@ -188,9 +171,10 @@ def update_sequencer_id_in_request_type(migrate_engine, request_type_id, sequenc
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
+
     try:
         RequestType_table = Table("request_type", metadata, autoload=True)
     except NoSuchTableError:
@@ -256,6 +240,7 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
+
     try:
         RequestType_table = Table("request_type", metadata, autoload=True)
     except NoSuchTableError:

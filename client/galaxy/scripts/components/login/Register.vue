@@ -33,7 +33,8 @@
                             <b-button name="create" type="submit">Create</b-button>
                         </b-card-body>
                         <b-card-footer>
-                            Already have an account? <a id="login-toggle" href="#" @click.prevent="toggleLogin">Log in here.</a>
+                            Already have an account?
+                            <a id="login-toggle" href="#" @click.prevent="toggleLogin">Log in here.</a>
                         </b-card-footer>
                     </b-card>
                 </b-form>
@@ -45,6 +46,7 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 
 Vue.use(BootstrapVue);
@@ -69,6 +71,7 @@ export default {
         }
     },
     data() {
+        let galaxy = getGalaxyInstance();
         return {
             email: null,
             password: null,
@@ -76,7 +79,8 @@ export default {
             confirm: null,
             subscribe: null,
             messageText: null,
-            messageVariant: null
+            messageVariant: null,
+            session_csrf_token: galaxy.session_csrf_token
         };
     },
     computed: {

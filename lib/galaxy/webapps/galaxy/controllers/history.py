@@ -15,7 +15,6 @@ from galaxy.model.item_attrs import (
     UsesItemRatings
 )
 from galaxy.util import listify, Params, parse_int, sanitize_text
-from galaxy.util.create_history_template import render_item
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base.controller import (
@@ -29,6 +28,7 @@ from galaxy.web.base.controller import (
     WARNING,
 )
 from galaxy.web.framework.helpers import grids, iff, time_ago
+from ._create_history_template import render_item
 
 
 log = logging.getLogger(__name__)
@@ -98,6 +98,9 @@ class HistoryListGrid(grids.Grid):
             cols_to_filter=[columns[0], columns[3]],
             key="free-text-search", visible=False, filterable="standard")
     )
+    global_actions = [
+        grids.GridAction("Import from file", dict(controller="", action="histories/import"))
+    ]
     operations = [
         grids.GridOperation("Switch", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=True),
         grids.GridOperation("View", allow_multiple=False, url_args=dict(controller="", action="histories/view")),

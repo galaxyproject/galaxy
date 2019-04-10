@@ -1,15 +1,15 @@
+# Location of virtualenv used for development.
+VENV?=.venv
+# Source virtualenv to execute command (flake8, sphinx, twine, etc...)
+IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 RELEASE_CURR:=16.01
-RELEASE_CURR_MINOR_NEXT:=$(shell python scripts/bootstrap_history.py --print-next-minor-version)
+RELEASE_CURR_MINOR_NEXT:=$(shell $(IN_VENV) python scripts/bootstrap_history.py --print-next-minor-version)
 RELEASE_NEXT:=16.04
 # TODO: This needs to be updated with create_release_rc
 #RELEASE_NEXT_BRANCH:=release_$(RELEASE_NEXT)
 RELEASE_NEXT_BRANCH:=dev
 RELEASE_UPSTREAM:=upstream
 MY_UPSTREAM:=origin
-# Location of virtualenv used for development.
-VENV?=.venv
-# Source virtualenv to execute command (flake8, sphinx, twine, etc...)
-IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/webapps/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 DOCS_DIR=doc
@@ -140,7 +140,7 @@ ifndef YARN
 	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
 	false;
 else
-	cd client && yarn install --network-timeout 120000 --check-files
+	cd client && yarn install --network-timeout 300000 --check-files
 endif
 	
 

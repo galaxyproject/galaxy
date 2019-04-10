@@ -40,7 +40,7 @@ def float_wdefault(s, d, c):
 
 def stop_err(msg):
     sys.stderr.write(msg)
-    sys.exit()
+    sys.exit(1)
 
 
 def mode(data):
@@ -115,7 +115,7 @@ def main():
         case = ''
         if ignorecase == 1:
             case = '-f'
-        command_line = "sort -t '	' %s -k%s,%s -o %s %s" % (case, group_col + 1, group_col + 1, tmpfile.name, inputfile)
+        command_line = "sort -t $'\\t' %s -k%s,%s -o %s %s" % (case, group_col + 1, group_col + 1, tmpfile.name, inputfile)
     except Exception as exc:
         stop_err('Initialization error -> %s' % str(exc))
 
@@ -128,7 +128,7 @@ def main():
 
     def is_new_item(line):
         try:
-            item = line.strip().split("\t")[group_col]
+            item = line.split("\t")[group_col]
         except IndexError:
             stop_err("The following line didn't have %s columns: %s" % (group_col + 1, line))
 

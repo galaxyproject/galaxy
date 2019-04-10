@@ -123,6 +123,12 @@ class JobsApiTestCase(api.ApiTestCase):
         job_details = show_jobs_response.json()
         self._assert_has_key(job_details, 'id', 'state', 'exit_code', 'update_time', 'create_time')
 
+        show_jobs_response = self._get("jobs/%s" % job_id, {"full": True})
+        self._assert_status_code_is(show_jobs_response, 200)
+
+        job_details = show_jobs_response.json()
+        self._assert_has_key(job_details, 'id', 'state', 'exit_code', 'update_time', 'create_time', 'stdout', 'stderr', 'job_messages')
+
     @uses_test_history(require_new=True)
     def test_show_security(self, history_id):
         self.__history_with_new_dataset(history_id)
@@ -140,6 +146,49 @@ class JobsApiTestCase(api.ApiTestCase):
 
         show_jobs_response = self._get("jobs/%s" % job_id, admin=True)
         self._assert_has_keys(show_jobs_response.json(), "command_line", "external_id")
+
+    def _run_detect_errors(self, history_id, inputs):
+        payload = self.dataset_populator.run_tool_payload(
+            tool_id='detect_errors_aggressive',
+            inputs=inputs,
+            history_id=history_id,
+        )
+        return self._post("tools", data=payload).json()
+
+    @skip_without_tool("detect_errors_aggressive")
+    def test_unhide_on_error(self):
+        with self.dataset_populator.test_history() as history_id:
+            inputs = {'error_bool': 'true'}
+            run_response = self._run_detect_errors(history_id=history_id, inputs=inputs)
+            job_id = run_response['jobs'][0]["id"]
+            self.dataset_populator.wait_for_job(job_id)
+            job = self.dataset_populator.get_job_details(job_id).json()
+            assert job['state'] == 'error'
+            dataset = self.dataset_populator.get_history_dataset_details(history_id=history_id,
+                                                                         dataset_id=run_response['outputs'][0]['id'],
+                                                                         assert_ok=False)
+            assert dataset['visible']
+
+    @skip_without_tool("detect_errors_aggressive")
+    def test_no_unhide_on_error_if_mapped_over(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca1 = self.dataset_collection_populator.create_list_in_history(history_id, contents=[("sample1-1", "1 2 3")]).json()
+            inputs = {
+                'error_bool': 'true',
+                'dataset': {
+                    'batch': True,
+                    'values': [{'src': 'hdca', 'id': hdca1['id']}],
+                }
+            }
+            run_response = self._run_detect_errors(history_id=history_id, inputs=inputs)
+            job_id = run_response['jobs'][0]["id"]
+            self.dataset_populator.wait_for_job(job_id)
+            job = self.dataset_populator.get_job_details(job_id).json()
+            assert job['state'] == 'error'
+            dataset = self.dataset_populator.get_history_dataset_details(history_id=history_id,
+                                                                         dataset_id=run_response['outputs'][0]['id'],
+                                                                         assert_ok=False)
+            assert not dataset['visible']
 
     @skip_without_tool('detect_errors_aggressive')
     def test_report_error(self):
@@ -159,7 +208,7 @@ class JobsApiTestCase(api.ApiTestCase):
     @skip_without_tool('detect_errors_aggressive')
     def test_report_error_anon(self):
         # Need to get a cookie and use that for anonymous tool runs
-        cookies = requests.get(self.galaxy_interactor.api_url.rsplit('/api', 1)[0]).cookies
+        cookies = requests.get(self.url).cookies
         payload = json.dumps({"tool_id": "detect_errors_aggressive",
                               "inputs": {"error_bool": "true"}})
         run_response = requests.post("%s/tools" % self.galaxy_interactor.api_url, data=payload, cookies=cookies).json()

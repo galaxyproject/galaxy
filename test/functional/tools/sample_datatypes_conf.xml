@@ -7,7 +7,7 @@
     <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true" />
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true" description="File must start with definition line in the following format (columns may be in any order)." >
     </datatype>
-    <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true">
+    <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" auto_compressed_types="gz" display_in_upload="true">
         <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
     </datatype>
     <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" />

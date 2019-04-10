@@ -15,7 +15,6 @@ from webob.exc import (
 
 from galaxy import (
     managers,
-    util,
     web
 )
 from galaxy.model.item_attrs import UsesAnnotations
@@ -47,31 +46,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         raise HTTPNotFound('This link may not be followed from within Galaxy.')
 
-    def _get_extended_config(self, trans):
-        app = trans.app
-        config = {
-            'active_view'                   : 'analysis',
-            'enable_cloud_launch'           : app.config.get_bool('enable_cloud_launch', False),
-            'enable_webhooks'               : True if app.webhooks_registry.webhooks else False,
-            # TODO: next two should be redundant - why can't we build one from the other?
-            'toolbox'                       : app.toolbox.to_dict(trans, in_panel=False),
-            'toolbox_in_panel'              : app.toolbox.to_dict(trans),
-            'message_box_visible'           : app.config.message_box_visible,
-            'show_inactivity_warning'       : app.config.user_activation_on and trans.user and not trans.user.active
-        }
-
-        # TODO: move to user
-        stored_workflow_menu_entries = config['stored_workflow_menu_entries'] = []
-        for menu_item in getattr(trans.user, 'stored_workflow_menu_entries', []):
-            stored_workflow_menu_entries.append({
-                'encoded_stored_workflow_id': trans.security.encode_id(menu_item.stored_workflow_id),
-                'stored_workflow': {
-                    'name': util.unicodify(menu_item.stored_workflow.name)
-                }
-            })
-
-        return config
-
     @web.expose
     def index(self, trans, tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd):
         """
@@ -91,11 +65,8 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         If m_c and m_a are present, the center panel will be loaded using the
         controller and action as a url: (e.g. 'user/dbkeys').
         """
-        if trans.app.config.require_login and self.user_manager.is_anonymous(trans.user):
-            # TODO: this doesn't properly redirect when login is done
-            # (see webapp __ensure_logged_in_user for the initial redirect - not sure why it doesn't redirect to login?)
-            login_url = web.url_for(controller="root", action="login")
-            trans.response.send_redirect(login_url)
+
+        self._check_require_login(trans)
 
         # if a history_id was sent, attempt to switch to that history
         history = trans.history
@@ -104,11 +75,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             history = self.history_manager.get_owned(unencoded_id, trans.user)
             trans.set_history(history)
 
-        # index/analysis needs an extended configuration
-        js_options = self._get_js_options(trans)
-        config = js_options['config']
-        config.update(self._get_extended_config(trans))
-        return self.template(trans, 'analysis', options=js_options)
+        return self._bootstrapped_client(trans)
 
     @web.expose
     def login(self, trans, redirect=None, **kwd):

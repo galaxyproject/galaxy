@@ -253,27 +253,11 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     @web.expose_api_anonymous
     def get_edit(self, trans, dataset_id=None, **kwd):
         """Produces the input definitions available to modify dataset attributes"""
-        message = None
         status = None
-        if dataset_id is not None:
-            id = self.decode_id(dataset_id)
-            data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-        else:
-            trans.log_event("dataset_id is None, cannot load a dataset to edit.")
-            return self.message_exception(trans, 'You must provide a dataset id to edit attributes.')
-        if data is None:
-            trans.log_event("Problem retrieving dataset id (%s)." % dataset_id)
-            return self.message_exception(trans, 'The dataset id is invalid.')
-        if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
-            trans.log_event("User attempted to edit a dataset they do not own (encoded: %s, decoded: %s)." % (dataset_id, id))
-            return self.message_exception(trans, 'The dataset id is invalid.')
-        if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
-            # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
-            # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
-            # permission.  In this case, we'll reset this permission to the hda user's private role.
-            manage_permissions_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action)
-            permissions = {manage_permissions_action : [trans.app.security_agent.get_private_user_role(data.history.user)]}
-            trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
+        data, message = self._get_dataset_for_edit(trans, dataset_id)
+        if message:
+            return message
+
         if self._can_access_dataset(trans, data):
             if data.state == trans.model.Dataset.states.UPLOAD:
                 return self.message_exception(trans, 'Please wait until this dataset finishes uploading before attempting to edit its metadata.')
@@ -418,13 +402,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     return False
             return True
 
-        message = None
         status = 'success'
-        dataset_id = payload.get('dataset_id')
         operation = payload.get('operation')
-        if dataset_id is not None:
-            id = self.decode_id(dataset_id)
-            data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
+        dataset_id = payload.get('dataset_id')
+        data, message = self._get_dataset_for_edit(trans, dataset_id)
+        if message:
+            return message
+
         if operation == 'attributes':
             # The user clicked the Save button on the 'Edit Attributes' form
             data.name = payload.get('name')
@@ -529,6 +513,28 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         else:
             return self.message_exception(trans, 'Invalid operation identifier (%s).' % operation)
         return {'status': status, 'message': sanitize_text(message)}
+
+    def _get_dataset_for_edit(self, trans, dataset_id):
+        if dataset_id is not None:
+            id = self.decode_id(dataset_id)
+            data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
+        else:
+            trans.log_event("dataset_id is None, cannot load a dataset to edit.")
+            return None, self.message_exception(trans, 'You must provide a dataset id to edit attributes.')
+        if data is None:
+            trans.log_event("Problem retrieving dataset id (%s)." % dataset_id)
+            return None, self.message_exception(trans, 'The dataset id is invalid.')
+        if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
+            trans.log_event("User attempted to edit a dataset they do not own (encoded: %s, decoded: %s)." % (dataset_id, id))
+            return None, self.message_exception(trans, 'The dataset id is invalid.')
+        if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
+            # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
+            # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
+            # permission.  In this case, we'll reset this permission to the hda user's private role.
+            manage_permissions_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action)
+            permissions = {manage_permissions_action : [trans.app.security_agent.get_private_user_role(data.history.user)]}
+            trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
+        return data, None
 
     @web.expose
     @web.json

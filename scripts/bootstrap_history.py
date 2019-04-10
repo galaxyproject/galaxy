@@ -41,10 +41,10 @@ DEVTEAM = [
     "VJalili"
 ]
 
-TEMPLATE = """
+TEMPLATE = string.Template("""
 .. to_doc
 
-%s
+${release}
 ===============================
 
 .. announce_start
@@ -74,9 +74,9 @@ Fixes
 .. bug
 
 
-.. github_links
+.. include:: ${release}_prs.rst
 
-"""
+""")
 
 ANNOUNCE_TEMPLATE = string.Template("""
 ===========================================================
@@ -119,6 +119,45 @@ Release Notes
 
 .. include:: ${release}.rst
    :start-after: announce_start
+
+.. include:: _thanks.rst
+""")
+
+ANNOUNCE_USER_TEMPLATE = string.Template("""
+===========================================================
+${month_name} 20${year} Galaxy Release (v ${release})
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Feature1**
+  Feature description.
+
+**Feature2**
+  Feature description.
+
+**Feature3**
+  Feature description.
+
+
+New Visualisations
+===========================================================
+
+New Datatypes
+===========================================================
+
+Builtin Tool Updates
+===========================================================
+
+Release Notes
+===========================================================
+
+Please see the `full release notes <${release}_announce.html>`_ for more details.
+
+.. include:: ${release}_prs.rst
 
 .. include:: _thanks.rst
 """)
@@ -223,12 +262,12 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
     - [ ] Verify release included in https://docs.galaxyproject.org/en/master/releases/index.html
     - [ ] Review announcement in https://github.com/galaxyproject/galaxy/blob/dev/doc/source/releases/${version}_announce.rst
-    - [ ] Stage announcement content (Hub, Biostars, etc.) on announce date to capture date tags. Note: all final content does not need to be completed to do this.
-    - [ ] Create hub *highlights* and post as a new "news" content item. [An Example](https://galaxyproject.org/news/2018-9-galaxy-release/).
-    - [ ] Tweet docs news *highlights* link as @galaxyproject on twitter. [An Example](https://twitter.com/galaxyproject/status/973646125633695744).
-    - [ ] Post *highlights* as type 'News' to Galaxy Biostars https://biostar.usegalaxy.org. [An Example](https://biostar.usegalaxy.org/p/27118/).
-    - [ ] Email *highlights* to [galaxy-dev](http://dev.list.galaxyproject.org/) and [galaxy-announce](http://announce.list.galaxyproject.org/) @lists.galaxyproject.org. [An Example](http://dev.list.galaxyproject.org/The-Galaxy-release-16-04-is-out-tp4669419.html)
-    - [ ] Adjust http://getgalaxy.org text and links to match current master branch by opening a PR for https://github.com/galaxyproject/galaxy-hub/
+    - [ ] Stage announcement content (Hub, Galaxy Help, etc.) on announce date to capture date tags. Note: all final content does not need to be completed to do this.
+    - [ ] Create hub *highlights* and post as a new "news" content item. [An example](https://galaxyproject.org/news/2018-9-galaxy-release/).
+    - [ ] Tweet docs news *highlights* link as @galaxyproject on twitter. [An example](https://twitter.com/galaxyproject/status/973646125633695744).
+    - [ ] Post *highlights* with tags `news` and `release` to [Galaxy Help](https://help.galaxyproject.org/). [An example](https://help.galaxyproject.org/t/galaxy-release-19-01/712).
+    - [ ] Email *highlights* to [galaxy-dev](http://dev.list.galaxyproject.org/) and [galaxy-announce](http://announce.list.galaxyproject.org/) @lists.galaxyproject.org. [An example](http://dev.list.galaxyproject.org/The-Galaxy-release-16-04-is-out-tp4669419.html)
+    - [ ] Adjust http://getgalaxy.org text and links to match current master branch by opening a PR at https://github.com/galaxyproject/galaxy-hub/
 
 - [ ] **Prepare for next release**
 
@@ -286,7 +325,7 @@ def release_issue(argv):
 def do_release(argv):
     release_name = argv[2]
     release_file = _release_file(release_name + ".rst")
-    release_info = TEMPLATE % release_name
+    release_info = TEMPLATE.safe_substitute(release=release_name)
     open(release_file, "w").write(release_info.encode("utf-8"))
     month = int(release_name.split(".")[1])
     month_name = calendar.month_name[month]
@@ -299,6 +338,14 @@ def do_release(argv):
     )
     announce_file = _release_file(release_name + "_announce.rst")
     open(announce_file, "w").write(announce_info.encode("utf-8"))
+
+    announce_user_info = ANNOUNCE_USER_TEMPLATE.substitute(
+        month_name=month_name,
+        year=year,
+        release=release_name
+    )
+    announce_user_file = _release_file(release_name + "_announce_user.rst")
+    open(announce_user_file, "w").write(announce_user_info.encode("utf-8"))
 
     next_version_params = _next_version_params(release_name)
     next_version = next_version_params["version"]
@@ -319,7 +366,7 @@ def do_release(argv):
             "number": pr.number,
             "head": pr.head,
         }
-        main([argv[0], "--release_file", "%s.rst" % release_name, "--request", as_dict, "pr" + str(pr.number)])
+        main([argv[0], "--release_file", "%s_prs.rst" % release_name, "--request", as_dict, "pr" + str(pr.number)])
 
 
 def check_release(argv):

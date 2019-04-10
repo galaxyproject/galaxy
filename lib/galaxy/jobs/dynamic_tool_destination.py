@@ -1391,7 +1391,7 @@ def map_tool_to_destination(
                                 for line in inp_db:
                                     if line[0] == ">":
                                         records += 1
-                    elif filesize_rule_present:
+                    if filesize_rule_present:
                         query_file = str(inp_data[da].file_name)
                         file_size += os.path.getsize(query_file)
             except AttributeError:

@@ -304,19 +304,20 @@ class Repository(Dictifiable):
 
 
 class RepositoryMetadata(Dictifiable):
-    dict_collection_visible_keys = ['id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
+    dict_collection_visible_keys = ['id', 'repository_id', 'numeric_revision', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
                                     'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
                                     'includes_tools_for_display_in_tool_panel', 'includes_workflows']
-    dict_element_visible_keys = ['id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
+    dict_element_visible_keys = ['id', 'repository_id', 'numeric_revision', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
                                  'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
                                  'includes_tools_for_display_in_tool_panel', 'includes_workflows', 'repository_dependencies']
 
-    def __init__(self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False,
+    def __init__(self, id=None, repository_id=None, numeric_revision=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False,
                  downloadable=False, missing_test_components=None, tools_functionally_correct=False, test_install_error=False,
                  has_repository_dependencies=False, includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False,
                  includes_workflows=False):
         self.id = id
         self.repository_id = repository_id
+        self.numeric_revision = numeric_revision
         self.changeset_revision = changeset_revision
         self.metadata = metadata
         self.tool_versions = tool_versions

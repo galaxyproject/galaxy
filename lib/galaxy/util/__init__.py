@@ -1058,7 +1058,7 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
 
 def strip_control_characters(s):
     """Strip unicode control characters from a string."""
-    return "".join(c for c in unicodify(s) if unicodedata.category(c)[0] != "C")
+    return "".join(c for c in unicodify(s) if unicodedata.category(c) != "Cc")
 
 
 def strip_control_characters_nested(item):
@@ -1524,7 +1524,10 @@ galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 
 def galaxy_directory():
-    return os.path.abspath(galaxy_root_path)
+    root_path = os.path.abspath(galaxy_root_path)
+    if os.path.basename(root_path) == "packages":
+        root_path = os.path.abspath(os.path.join(root_path, ".."))
+    return root_path
 
 
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):

@@ -690,12 +690,15 @@ class ColorToolParameter(ToolParameter):
     >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff"/>'))
     >>> print(p.name)
     _name
-    >>> print(p.to_param_dict_string("#fdeada"))
-    #fdeada
+    >>> print(p.to_param_dict_string("#ffffff"))
+    #ffffff
     >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', u'#ffffff')]
+    >>> p = ColorToolParameter(None, XML('<param name="_name" type="color"/>'))
+    >>> print(p.get_initial_value(trans, {}))
+    #000000
     >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff" rgb="True"/>'))
-    >>> print(p.to_param_dict_string("#fdeada"))
-    (253, 234, 218)
+    >>> print(p.to_param_dict_string("#ffffff"))
+    (255, 255, 255)
     >>> print(p.to_param_dict_string(None))
     Traceback (most recent call last):
         ...
@@ -703,12 +706,14 @@ class ColorToolParameter(ToolParameter):
     """
 
     def __init__(self, tool, input_source):
+        input_source = ensure_input_source(input_source)
         super(ColorToolParameter, self).__init__(tool, input_source)
-        self.value = input_source.get('value', '#fdeada')
+        self.value = input_source.get('value', '#000000')
         self.rgb = input_source.get('rgb', False)
 
     def get_initial_value(self, trans, other_values):
-        return self.value.lower()
+        if self.value is not None:
+            return self.value.lower()
 
     def to_param_dict_string(self, value, other_values={}):
         if self.rgb:
@@ -1075,6 +1080,8 @@ class SelectTagParameter(SelectToolParameter):
         # Get the value of the associated data reference (a dataset)
         history_items = other_values.get(self.data_ref, None)
         # Check if a dataset is selected
+        if is_runtime_value(history_items):
+            return []
         if not history_items:
             return []
         tags = set()
@@ -1105,7 +1112,7 @@ class SelectTagParameter(SelectToolParameter):
         return SelectToolParameter.get_initial_value(self, trans, other_values)
 
     def get_legal_values(self, trans, other_values):
-        if self.data_ref not in other_values:
+        if self.data_ref not in other_values and not trans.workflow_building_mode:
             raise ValueError("Value for associated data reference not found (data_ref).")
         return set(self.get_tag_list(other_values))
 
@@ -1715,7 +1722,7 @@ class DataToolParameter(BaseDataToolParameter):
                 self.conversions.append((name, conv_extension, [conv_type]))
 
     def from_json(self, value, trans, other_values={}):
-        if trans.workflow_building_mode is workflow_building_modes.ENABLED:
+        if trans.workflow_building_mode is workflow_building_modes.ENABLED or is_runtime_value(value):
             return None
         if not value and not self.optional:
             raise ValueError("Specify a dataset of the required format / build for parameter %s." % self.name)

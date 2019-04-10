@@ -1,10 +1,11 @@
 -i https://pypi.python.org/simple
-configparser==3.7.1 ; python_version < '3.2'
+configparser==3.7.3 ; python_version < '3.2'
 entrypoints==0.3
 enum34==1.1.6 ; python_version < '3.4'
-flake8-import-order==0.18
-flake8==3.7.3
+flake8-import-order==0.18.1
+flake8==3.7.7
+functools32==3.2.3.post2 ; python_version < '3.2'
 mccabe==0.6.1
 pycodestyle==2.5.0
-pyflakes==2.1.0
+pyflakes==2.1.1
 typing==3.6.6 ; python_version < '3.5'

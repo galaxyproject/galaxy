@@ -254,6 +254,34 @@ class BaseDatasetPopulator(object):
     def cancel_job(self, job_id):
         return self._delete("jobs/%s" % job_id)
 
+    def delete_dataset(self, history_id, content_id):
+        delete_response = self._delete("histories/%s/contents/%s" % (history_id, content_id))
+        return delete_response
+
+    def create_tool(self, representation):
+        if isinstance(representation, dict):
+            representation = json.dumps(representation)
+        payload = dict(
+            representation=representation,
+        )
+        create_response = self._post("dynamic_tools", data=payload, admin=True)
+        assert create_response.status_code == 200, create_response
+        return create_response.json()
+
+    def list_dynamic_tools(self):
+        list_response = self._get("dynamic_tools", admin=True)
+        assert list_response.status_code == 200, list_response
+        return list_response.json()
+
+    def show_dynamic_tool(self, uuid):
+        show_response = self._get("dynamic_tools/%s" % uuid, admin=True)
+        assert show_response.status_code == 200, show_response
+        return show_response.json()
+
+    def deactivate_dynamic_tool(self, uuid):
+        delete_response = self._delete("dynamic_tools/%s" % uuid, admin=True)
+        return delete_response.json()
+
     def _summarize_history(self, history_id):
         pass
 
@@ -486,6 +514,100 @@ class BaseDatasetPopulator(object):
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
+    def export_url(self, history_id, data, check_download=True):
+        url = "histories/%s/exports" % history_id
+        put_response = self._put(url, data)
+        api_asserts.assert_status_code_is(put_response, 202)
+
+        def export_ready_response():
+            put_response = self._put(url)
+            if put_response.status_code == 202:
+                return None
+            return put_response
+
+        put_response = wait_on(export_ready_response, desc="export ready")
+        api_asserts.assert_status_code_is(put_response, 200)
+        response = put_response.json()
+        api_asserts.assert_has_keys(response, "download_url")
+        download_url = response["download_url"]
+
+        if check_download:
+            self.get_export_url(download_url)
+
+        return download_url
+
+    def get_export_url(self, export_url):
+        full_download_url = "%s?key=%s" % (export_url, self._api_key)
+        download_response = self._get(full_download_url)
+        api_asserts.assert_status_code_is(download_response, 200)
+        return download_response
+
+    def import_history(self, import_data):
+        files = {}
+        archive_file = import_data.pop("archive_file", None)
+        if archive_file:
+            files["archive_file"] = archive_file
+        import_response = self._post("histories", data=import_data, files=files)
+        api_asserts.assert_status_code_is(import_response, 200)
+
+    def import_history_and_wait_for_name(self, import_data, history_name):
+        def history_names():
+            return dict((h["name"], h) for h in self.get_histories())
+
+        import_name = "imported from archive: %s" % history_name
+        assert import_name not in history_names()
+
+        self.import_history(import_data)
+
+        def has_history_with_name():
+            histories = history_names()
+            return histories.get(import_name, None)
+
+        imported_history = wait_on(has_history_with_name, desc="import history")
+        imported_history_id = imported_history["id"]
+        self.wait_for_history(imported_history_id)
+        return imported_history_id
+
+    def rename_history(self, history_id, new_name):
+        update_url = "histories/%s" % history_id
+        put_response = self._put(update_url, {"name": new_name})
+        return put_response
+
+    def get_histories(self):
+        history_index_response = self._get("histories")
+        api_asserts.assert_status_code_is(history_index_response, 200)
+        return history_index_response.json()
+
+    def wait_on_history_length(self, history_id, wait_on_history_length):
+
+        def history_has_length():
+            history_length = self.history_length(history_id)
+            return None if history_length != wait_on_history_length else True
+
+        wait_on(history_has_length, desc="import history population")
+
+    def history_length(self, history_id):
+        contents_response = self._get("histories/%s/contents" % history_id)
+        api_asserts.assert_status_code_is(contents_response, 200)
+        contents = contents_response.json()
+        return len(contents)
+
+    def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds, url, api_key):
+        # Export the history.
+        download_path = self.export_url(history_id, export_kwds, check_download=True)
+
+        # Create download for history
+        full_download_url = "%s%s?key=%s" % (url, download_path, api_key)
+
+        import_data = dict(archive_source=full_download_url, archive_type="url")
+
+        imported_history_id = self.import_history_and_wait_for_name(import_data, history_name)
+
+        if wait_on_history_length:
+            self.wait_on_history_length(imported_history_id, wait_on_history_length)
+
+        return imported_history_id
+
     def get_random_name(self, prefix=None, suffix=None, len=10):
         # stolen from navigates_galaxy.py
         return '%s%s%s' % (
@@ -500,27 +622,38 @@ class DatasetPopulator(BaseDatasetPopulator):
     def __init__(self, galaxy_interactor):
         self.galaxy_interactor = galaxy_interactor
 
-    def _post(self, route, data=None, files=None):
+    @property
+    def _api_key(self):
+        return self.galaxy_interactor.api_key
+
+    def _post(self, route, data=None, files=None, admin=False):
         if data is None:
             data = {}
 
-        files = data.get("__files", None)
-        if files is not None:
-            del data["__files"]
+        if files is None:
+            files = data.get("__files", None)
+            if files is not None:
+                del data["__files"]
 
-        return self.galaxy_interactor.post(route, data, files=files)
+        return self.galaxy_interactor.post(route, data, files=files, admin=admin)
 
-    def _get(self, route, data=None):
+    def _put(self, route, data=None):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.get(route, data=data)
+        return self.galaxy_interactor.put(route, data)
 
-    def _delete(self, route, data=None):
+    def _get(self, route, data=None, admin=False):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.delete(route, data=data)
+        return self.galaxy_interactor.get(route, data=data, admin=admin)
+
+    def _delete(self, route, data=None, admin=False):
+        if data is None:
+            data = {}
+
+        return self.galaxy_interactor.delete(route, data=data, admin=admin)
 
     def _summarize_history(self, history_id):
         self.galaxy_interactor._summarize_history(history_id)
@@ -650,13 +783,6 @@ class BaseWorkflowPopulator(object):
     def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True, client_convert=None, round_trip_format_conversion=False, raw_yaml=False):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
         workflow_populator = self
-
-        def read_test_data(test_dict):
-            test_data_resolver = TestDataResolver()
-            filename = test_data_resolver.get_filename(test_dict["value"])
-            content = open(filename, "r").read()
-            return content
-
         if client_convert is None:
             client_convert = not round_trip_format_conversion
 
@@ -726,11 +852,11 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
         self.dataset_populator = DatasetPopulator(galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(galaxy_interactor)
 
-    def _post(self, route, data=None):
+    def _post(self, route, data=None, admin=False):
         if data is None:
             data = {}
 
-        return self.galaxy_interactor.post(route, data)
+        return self.galaxy_interactor.post(route, data, admin=admin)
 
     def _get(self, route, data=None):
         if data is None:
@@ -749,6 +875,22 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
         upload_response = self._post("workflows", data=data)
         assert upload_response.status_code == 200, upload_response.content
         return upload_response.json()
+
+    def import_tool(self, tool):
+        """ Import a workflow via POST /api/workflows or
+        comparable interface into Galaxy.
+        """
+        upload_response = self._import_tool_response(tool)
+        assert upload_response.status_code == 200, upload_response
+        return upload_response.json()
+
+    def _import_tool_response(self, tool):
+        tool_str = json.dumps(tool, indent=4)
+        data = {
+            'representation': tool_str
+        }
+        upload_response = self._post("dynamic_tools", data=data, admin=True)
+        return upload_response
 
 
 class LibraryPopulator(object):
@@ -1246,24 +1388,39 @@ def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "n
 class GiPostGetMixin(object):
     """Mixin for adapting Galaxy testing populators helpers to bioblend."""
 
+    @property
+    def _api_key(self):
+        return self._gi.key
+
+    def _api_url(self):
+        return self._gi.url
+
     def _get(self, route, data=None):
         if data is None:
             data = {}
 
-        return self._gi.make_get_request(self.__url(route), data=data)
+        return self._gi.make_get_request(self._url(route), data=data)
 
     def _post(self, route, data={}):
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.post(self.__url(route), data=data)
+        return requests.post(self._url(route), data=data)
+
+    def _put(self, route, data={}):
+        data = data.copy()
+        data['key'] = self._gi.key
+        return requests.put(self._url(route), data=data)
 
     def _delete(self, route, data={}):
         data = data.copy()
         data['key'] = self._gi.key
-        return requests.delete(self.__url(route), data=data)
+        return requests.delete(self._url(route), data=data)
 
-    def __url(self, route):
-        return self._gi.url + "/" + route
+    def _url(self, route):
+        if route.startswith("/api/"):
+            route = route[len("/api/"):]
+
+        return self._api_url() + "/" + route
 
 
 class GiDatasetPopulator(BaseDatasetPopulator, GiPostGetMixin):
