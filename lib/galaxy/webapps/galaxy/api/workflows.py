@@ -797,9 +797,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         else:
             history_id = None
 
-        if stored_workflow_id is None and encoded_history_id is None:
+        if not trans.user_is_admin:
+            # We restrict the query to the current users' invocations
             user_id = trans.user.id
         else:
+            # Get all invocation if user is admin
             user_id = None
 
         invocations = self.workflow_manager.build_invocations_query(
