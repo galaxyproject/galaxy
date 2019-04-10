@@ -117,7 +117,7 @@ export default {
                 .post(`${rootUrl}authnz/${idp}/login`)
                 .then(response => {
                     if (response.data.redirect_uri) {
-                        window.location = encodeURI(response.data.redirect_uri);
+                        window.location = response.data.redirect_uri;
                     }
                     // Else do something intelligent or maybe throw an error -- what else does this endpoint possibly return?
                 })
