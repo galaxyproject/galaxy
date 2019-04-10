@@ -40,6 +40,7 @@ class AuthnzManager(object):
         :param config: sets the path for OIDC configuration
             file (e.g., oidc_backends_config.xml).
         """
+        self.app = app
         self._parse_oidc_config(oidc_config_file)
         self._parse_oidc_backends_config(oidc_backends_config_file)
 
@@ -93,9 +94,11 @@ class AuthnzManager(object):
                 if idp in BACKENDS_NAME:
                     self.oidc_backends_config[idp] = self._parse_idp_config(child)
                     self.oidc_backends_implementation[idp] = 'psa'
+                    self.app.config.oidc[idp] = True
                 elif idp == 'custos':
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = 'custos'
+                    self.app.config.oidc[idp] = True
             if len(self.oidc_backends_config) == 0:
                 raise ParseError("No valid provider configuration parsed.")
         except ImportError:
