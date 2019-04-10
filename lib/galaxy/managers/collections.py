@@ -1,10 +1,6 @@
 import logging
 
 from galaxy import model
-from galaxy.dataset_collections import builder
-from galaxy.dataset_collections.matching import MatchingCollections
-from galaxy.dataset_collections.registry import DatasetCollectionTypesRegistry
-from galaxy.dataset_collections.type_description import CollectionTypeDescriptionFactory
 from galaxy.exceptions import (
     ItemAccessibilityException,
     MessageException,
@@ -14,9 +10,13 @@ from galaxy.managers import (
     hdas,
     histories,
     lddas,
-    tags
 )
 from galaxy.managers.collections_util import validate_input_element_identifiers
+from galaxy.model import tags
+from galaxy.model.dataset_collections import builder
+from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_REGISTRY
+from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.util import (
     odict,
     validation
@@ -36,14 +36,14 @@ class DatasetCollectionManager(object):
     ELEMENTS_UNINITIALIZED = object()
 
     def __init__(self, app):
-        self.type_registry = DatasetCollectionTypesRegistry(app)
-        self.collection_type_descriptions = CollectionTypeDescriptionFactory(self.type_registry)
+        self.type_registry = DATASET_COLLECTION_TYPES_REGISTRY
+        self.collection_type_descriptions = COLLECTION_TYPE_DESCRIPTION_FACTORY
         self.model = app.model
         self.security = app.security
 
         self.hda_manager = hdas.HDAManager(app)
         self.history_manager = histories.HistoryManager(app)
-        self.tag_manager = tags.GalaxyTagManager(app.model.context)
+        self.tag_handler = tags.GalaxyTagHandler(app.model.context)
         self.ldda_manager = lddas.LDDAManager(app)
 
     def precreate_dataset_collection_instance(self, trans, parent, name, structure, implicit_inputs=None, implicit_output_name=None, tags=None):
@@ -154,7 +154,7 @@ class DatasetCollectionManager(object):
         # values.
         if isinstance(tags, list):
             assert implicit_inputs is None, implicit_inputs
-            tags = self.tag_manager.add_tags_from_list(trans.user, dataset_collection_instance, tags)
+            tags = self.tag_handler.add_tags_from_list(trans.user, dataset_collection_instance, tags)
         else:
             tags = self._append_tags(dataset_collection_instance, implicit_inputs, tags)
         return self.__persist(dataset_collection_instance, flush=flush)
@@ -239,9 +239,7 @@ class DatasetCollectionManager(object):
         return dataset_collection
 
     def collection_builder_for(self, dataset_collection):
-        collection_type = dataset_collection.collection_type
-        collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
-        return builder.BoundCollectionBuilder(dataset_collection, collection_type_description)
+        return builder.BoundCollectionBuilder(dataset_collection)
 
     def delete(self, trans, instance_type, id, recursive=False, purge=False):
         dataset_collection_instance = self.get_dataset_collection_instance(trans, instance_type, id, check_ownership=True)
@@ -284,8 +282,8 @@ class DatasetCollectionManager(object):
         if copy_elements:
             copy_kwds["element_destination"] = parent
         new_hdca = source_hdca.copy(**copy_kwds)
-        tags_str = self.tag_manager.get_tags_str(source_hdca.tags)
-        self.tag_manager.apply_item_tags(trans.get_user(), new_hdca, tags_str)
+        tags_str = self.tag_handler.get_tags_str(source_hdca.tags)
+        self.tag_handler.apply_item_tags(trans.get_user(), new_hdca, tags_str)
         parent.add_dataset_collection(new_hdca)
         trans.sa_session.add(new_hdca)
         trans.sa_session.flush()
@@ -300,7 +298,7 @@ class DatasetCollectionManager(object):
             changed['annotation'] = new_data['annotation']
         if 'tags' in new_data.keys() and trans.get_user():
             # set_tags_from_list will flush on its own, no need to add to 'changed' here and incur a second flush.
-            self.tag_manager.set_tags_from_list(trans.get_user(), dataset_collection_instance, new_data['tags'])
+            self.tag_handler.set_tags_from_list(trans.get_user(), dataset_collection_instance, new_data['tags'])
 
         if changed.keys():
             trans.sa_session.flush()
@@ -431,11 +429,11 @@ class DatasetCollectionManager(object):
                 element = hda
             if hide_source_items and self.hda_manager.get_owned(hda.id, user=trans.user, current_history=trans.history):
                 hda.visible = False
-            self.tag_manager.apply_item_tags(user=trans.user, item=element, tags_str=tag_str)
+            self.tag_handler.apply_item_tags(user=trans.user, item=element, tags_str=tag_str)
         elif src_type == 'ldda':
             element = self.ldda_manager.get(trans, encoded_id, check_accessible=True)
             element = element.to_history_dataset_association(trans.history, add_to_history=True)
-            self.tag_manager.apply_item_tags(user=trans.user, item=element, tags_str=tag_str)
+            self.tag_handler.apply_item_tags(user=trans.user, item=element, tags_str=tag_str)
         elif src_type == 'hdca':
             # TODO: Option to copy? Force copy? Copy or allow if not owned?
             element = self.__get_history_collection_instance(trans, encoded_id).collection

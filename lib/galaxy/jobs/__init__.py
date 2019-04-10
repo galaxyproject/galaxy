@@ -1296,6 +1296,7 @@ class JobWrapper(HasResourceParameters):
                         return self.fail("Job %s's output dataset(s) could not be read" % job.id)
 
         job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
+        implicit_collection_jobs = job.implicit_collection_jobs_association
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context(job_context, dataset_assoc)
             # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
@@ -1345,7 +1346,9 @@ class JobWrapper(HasResourceParameters):
                         log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, e)
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
-                    dataset.mark_unhidden()
+                    if not implicit_collection_jobs:
+                        # Only unhide dataset outputs that are not part of a implicit collection
+                        dataset.mark_unhidden()
                 elif not purged:
                     # If the tool was expected to set the extension, attempt to retrieve it
                     if dataset.ext == 'auto':
@@ -1417,15 +1420,7 @@ class JobWrapper(HasResourceParameters):
         if tool_exit_code is not None:
             job.exit_code = tool_exit_code
         # custom post process setup
-        inp_data = dict([(da.name, da.dataset) for da in job.input_datasets])
-        out_data = dict([(da.name, da.dataset) for da in job.output_datasets])
-        inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
-        out_data.update([(da.name, da.dataset) for da in job.output_library_datasets])
-
-        # TODO: eliminate overlap with tools/evaluation.py
-        out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in job.output_dataset_collection_instances])
-        out_collections.update([(obj.name, obj.dataset_collection) for obj in job.output_dataset_collections])
-
+        inp_data, out_data, out_collections = job.io_dicts()
         self.discover_outputs(job, inp_data, out_data, out_collections)
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
@@ -1519,7 +1514,7 @@ class JobWrapper(HasResourceParameters):
                 for fname in self.extra_filenames:
                     os.remove(fname)
                 self.external_output_metadata.cleanup_external_metadata(self.sa_session)
-            galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper(self.job_id).cleanup_after_job(self.sa_session)
+            galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             if delete_files:
                 self.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
@@ -1527,7 +1522,10 @@ class JobWrapper(HasResourceParameters):
             log.exception("Unable to cleanup job %d", self.job_id)
 
     def _collect_extra_files(self, dataset, job_working_directory):
-        temp_file_path = os.path.join(job_working_directory, "dataset_%s_files" % (dataset.id))
+        object_store = self.app.object_store
+        store_by = getattr(object_store, "store_by", "id")
+        file_name = "dataset_%s_files" % getattr(dataset, store_by)
+        temp_file_path = os.path.join(job_working_directory, file_name)
         extra_dir = None
         try:
             # This skips creation of directories - object store
@@ -2201,7 +2199,10 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
         return self.job_wrapper.get_version_string_path()
 
     def tool_directory(self):
-        return os.path.abspath(self.job_wrapper.tool.tool_dir)
+        tool_dir = self.job_wrapper.tool.tool_dir
+        if tool_dir is not None:
+            tool_dir = os.path.abspath(tool_dir)
+        return tool_dir
 
     def home_directory(self):
         return self.job_wrapper.home_directory()

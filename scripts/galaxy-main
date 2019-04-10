@@ -103,6 +103,7 @@ def load_galaxy_app(
         attach_to_pools=attach_to_pools,
         **kwds
     )
+    app.database_heartbeat.start()
     app.control_worker.bind_and_start()
     app.application_stack.log_startup()
     return app

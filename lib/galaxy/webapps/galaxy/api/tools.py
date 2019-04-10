@@ -453,12 +453,12 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     def create(self, trans, payload, **kwd):
         """
         POST /api/tools
-        Executes tool using specified inputs and returns tool's outputs.
         """
         tool_id = payload.get("tool_id")
+        tool_uuid = payload.get("tool_uuid")
         if tool_id in PROTECTED_TOOLS:
             raise exceptions.RequestParameterInvalidException("Cannot execute tool [%s] directly, must use alternative endpoint." % tool_id)
-        if tool_id is None:
+        if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         return self._create(trans, payload, **kwd)
 
@@ -471,7 +471,17 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         # Get tool.
         tool_version = payload.get('tool_version', None)
-        tool = trans.app.toolbox.get_tool(payload['tool_id'], tool_version) if 'tool_id' in payload else None
+        tool_id = payload.get('tool_id', None)
+        tool_uuid = payload.get('tool_uuid', None)
+        get_kwds = dict(
+            tool_id=tool_id,
+            tool_uuid=tool_uuid,
+            tool_version=tool_version,
+        )
+        if tool_id is None and tool_uuid is None:
+            raise exceptions.RequestParameterMissingException("Must specify either a tool_id or a tool_uuid.")
+
+        tool = trans.app.toolbox.get_tool(**get_kwds)
         if not tool or not tool.allow_user_access(trans.user):
             raise exceptions.MessageException('Tool not found or not accessible.')
         if trans.app.config.user_activation_on:

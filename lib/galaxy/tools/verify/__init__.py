@@ -99,10 +99,8 @@ def verify(
         if keep_outputs_dir:
             ofn = os.path.join(keep_outputs_dir, filename)
             out_dir = os.path.dirname(ofn)
-            try:
+            if not os.path.exists(out_dir):
                 os.makedirs(out_dir)
-            except OSError as e:
-                log.debug('error creating {}, possibly because directory exists: {}'.format(out_dir, str(e)))
             log.debug('keep_outputs_dir: %s, ofn: %s', keep_outputs_dir, ofn)
             try:
                 shutil.copy(temp_name, ofn)
@@ -115,8 +113,11 @@ def verify(
         try:
             compare = attributes.get('compare', 'diff')
             if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam']:
-                local_fh, temp_name = _bam_to_sam(local_name, temp_name)
-                local_name = local_fh.name
+                try:
+                    local_fh, temp_name = _bam_to_sam(local_name, temp_name)
+                    local_name = local_fh.name
+                except Exception as e:
+                    log.warning("%s. Will compare BAM files" % e)
             if compare == 'diff':
                 files_diff(local_name, temp_name, attributes=attributes)
             elif compare == 're_match':
@@ -162,11 +163,13 @@ def _bam_to_sam(local_name, temp_name):
     try:
         pysam.view('-h', '-o%s' % temp_local.name, local_name)
     except Exception as e:
-        raise Exception("Converting local (test-data) BAM to SAM failed: %s" % e)
+        msg = "Converting local (test-data) BAM to SAM failed: %s" % e
+        raise Exception(msg)
     try:
         pysam.view('-h', '-o%s' % temp_temp, temp_name)
     except Exception as e:
-        raise Exception("Converting history BAM to SAM failed: %s" % e)
+        msg = "Converting history BAM to SAM failed: %s" % e
+        raise Exception(msg)
     os.remove(temp_name)
     return temp_local, temp_temp
 

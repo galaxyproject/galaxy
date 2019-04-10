@@ -30,10 +30,11 @@ from cgi import escape
     tag_click_fn='default_tag_click_fn')">
     
     <%
+        tagged_item_id = str( trans.security.encode_id ( tagged_item.id ) )
         controller_name = get_controller_name(tagged_item)
         click_url = h.url_for( controller='/' + controller_name , action='list_published')
         community_tags = trans.app.tag_handler.get_community_tags( item=tagged_item, limit=5 )
-        
+
         ## Having trouble converting list of tags into a plain array, this just
         ## just plucks out the name
         community_tag_names = []
@@ -41,22 +42,21 @@ from cgi import escape
             community_tag_names.append(escape(tag.name))
     %>
     
-    <div id="tags-community-${controller_name}-${tagged_item.id}"></div>
+    <div id="tags-community-${controller_name}-${tagged_item_id}"></div>
 
     <script type="text/javascript">
         config.addInitialization(function(galaxy, config) {
-            var container = document.getElementById("tags-community-${controller_name}-${tagged_item.id}");
-            
-            var options = ${h.dumps(tagged_item.to_dict())};
-            options.tags = ${h.dumps(community_tag_names)};
-            options.id = String(options.id);
-            options.itemClass = options.model_class;
-            options.context = "${elt_context}";
-            options.tagClickFn = "${tag_click_fn}";
-            options.clickUrl = "${click_url}";
-            options.disabled = true;
-
-            bundleEntries.mountTaggingComponent(options, container);
+            var container = document.getElementById("tags-community-${controller_name}-${tagged_item_id}");
+            var options = {
+                tags: ${h.dumps(community_tag_names)},
+                id: "${tagged_item_id}",
+                itemClass: "${tagged_item.__class__.__name__}",
+                context: "${elt_context}",
+                tagClickFn: "${tag_click_fn}",
+                clickUrl: "${click_url}",
+                disabled: true
+            }
+            bundleEntries.mountMakoTags(options, container);
         });
     </script>
 </%def>
@@ -86,15 +86,16 @@ from cgi import escape
         config.addInitialization(function(galaxy, config) {
             var container = document.getElementById("tags-${tagged_item_id}");
 
-            var options = ${h.dumps(tagged_item.to_dict())};
-            options.tags = ${h.dumps(item_tag_names)};
-            options.id = "${tagged_item_id}";
-            options.itemClass = "${tagged_item.__class__.__name__}";
-            options.context = "${elt_context}";
-            options.tagClickFn = "${tag_click_fn}";
-            options.disabled = !${h.to_js_bool(editable)};
+            var options = {
+                id: "${tagged_item_id}",
+                context: "${elt_context}",
+                tagClickFn: "${tag_click_fn}",
+                disabled: !${h.to_js_bool(editable)},
+                itemClass: "${tagged_item.__class__.__name__}",
+                tags: ${h.dumps(item_tag_names)}
+            }
 
-            bundleEntries.mountTaggingComponent(options, container);
+            bundleEntries.mountMakoTags(options, container);
         });
     </script>
 

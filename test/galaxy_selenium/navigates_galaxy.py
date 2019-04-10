@@ -245,7 +245,7 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_create_new(self):
         """Click create new and pause a bit for the history to begin to refresh."""
-        self.click_history_option('Create New')
+        self.history_click_create_new()
         self.sleep_for(WAIT_TYPES.UX_RENDER)
 
     def history_panel_wait_for_hid_ok(self, hid, allowed_force_refreshes=0):
@@ -985,7 +985,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_tags(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
         tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
-        tag_spans = tag_display.find_elements_by_css_selector("span.badge-tags")
+        tag_spans = tag_display.find_elements_by_css_selector(".tag-name")
         tags = []
         for tag_span in tag_spans:
             tags.append(tag_span.text)
@@ -1082,6 +1082,9 @@ class NavigatesGalaxy(HasDriver):
         menu_item_sizzle_selector = '#history-options-button-menu > li > a:contains("%s")' % option_label
         menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
+
+    def history_click_create_new(self):
+        self.components.history_panel.new_history_button.wait_for_and_click()
 
     def history_panel_click_copy_elements(self):
         self.click_history_option("Copy Datasets")

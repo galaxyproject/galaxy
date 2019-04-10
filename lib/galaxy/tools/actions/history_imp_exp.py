@@ -119,8 +119,8 @@ class ExportHistoryToolAction(ToolAction):
                                                        compressed=incoming['compress'])
         trans.sa_session.add(jeha)
 
-        job_wrapper = JobExportHistoryArchiveWrapper(job)
-        cmd_line = job_wrapper.setup_job(trans, jeha, include_hidden=incoming['include_hidden'],
+        job_wrapper = JobExportHistoryArchiveWrapper(trans.app, job)
+        cmd_line = job_wrapper.setup_job(jeha, include_hidden=incoming['include_hidden'],
                                          include_deleted=incoming['include_deleted'])
 
         #

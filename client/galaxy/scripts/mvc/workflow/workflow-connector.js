@@ -1,6 +1,6 @@
 import $ from "jquery";
 
-import * as Toastr from "libs/toastr";
+import { Toast } from "ui/toast";
 
 function Connector(handle1, handle2) {
     this.canvas = null;
@@ -8,10 +8,7 @@ function Connector(handle1, handle2) {
     this.inner_color = "#FFFFFF";
     this.outer_color = "#25537b";
     if (handle1 && handle2) {
-        this.connect(
-            handle1,
-            handle2
-        );
+        this.connect(handle1, handle2);
     }
 }
 $.extend(Connector.prototype, {
@@ -35,9 +32,9 @@ $.extend(Connector.prototype, {
         $(this.canvas).remove();
     },
     destroyIfInvalid: function(warn) {
-        if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1)) {
+        if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1).canAccept) {
             if (warn) {
-                Toastr.warning("Destroying a connection because collection type has changed.");
+                Toast.warning("Destroying a connection because collection type has changed.");
             }
             this.destroy();
         }

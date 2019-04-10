@@ -24,7 +24,6 @@ from galaxy.managers import (
     api_keys,
     base as managers_base,
     configuration,
-    tags,
     users,
     workflows
 )
@@ -32,7 +31,8 @@ from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
     HistoryDatasetAssociation,
-    LibraryDatasetDatasetAssociation
+    LibraryDatasetDatasetAssociation,
+    tags,
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.dictifiable import Dictifiable
@@ -1551,8 +1551,8 @@ class UsesTagsMixin(SharableItemSecurityMixin):
         return self.get_tag_handler(trans)._get_item_tag_assoc(user, tagged_item, tag_name)
 
     def set_tags_from_list(self, trans, item, new_tags_list, user=None):
-        tags_manager = tags.GalaxyTagManager(trans.app.model.context)
-        return tags_manager.set_tags_from_list(user, item, new_tags_list)
+        tag_handler = tags.GalaxyTagHandler(trans.app.model.context)
+        return tag_handler.set_tags_from_list(user, item, new_tags_list)
 
     def get_user_tags_used(self, trans, user=None):
         """

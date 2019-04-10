@@ -39,7 +39,7 @@ def _guess_tool_provided_metadata_style(path):
         return "legacy"
 
 
-class ToolProvidedMetadata(object):
+class BaseToolProvidedMetadata(object):
 
     def get_new_datasets(self, output_name):
         """Find new datasets for dataset discovery for specified output.
@@ -92,11 +92,11 @@ class ToolProvidedMetadata(object):
         return []
 
 
-class NullToolProvidedMetadata(ToolProvidedMetadata):
+class NullToolProvidedMetadata(BaseToolProvidedMetadata):
     pass
 
 
-class LegacyToolProvidedMetadata(object):
+class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
 
     def __init__(self, meta_file, job_wrapper=None):
         self.meta_file = meta_file
@@ -167,7 +167,7 @@ class LegacyToolProvidedMetadata(object):
                 yield meta
 
 
-class ToolProvidedMetadata(object):
+class ToolProvidedMetadata(BaseToolProvidedMetadata):
 
     def __init__(self, meta_file):
         self.meta_file = meta_file

@@ -35,6 +35,7 @@ class LibraryContentsTestCase(SeleniumTestCase):
 
         self.libraries_dataset_import_from_history()
         # Need to select the right item on the dropdown
+        self.sleep_for(self.wait_types.UX_RENDER)
         self._select_history_option("dataset_add_bulk", "Unnamed history")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.libraries_dataset_import_from_history_select(["1.txt"])

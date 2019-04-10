@@ -2058,12 +2058,13 @@ mapping:
           Enable beta workflow modules that should not yet be considered part of Galaxy's
           stable API.
 
-      enable_beta_workflow_format:
+      enable_beta_export_format2_default:
         type: bool
         default: false
         required: false
         desc: |
-          Enable import and export of workflows as Galaxy Format 2 workflows.
+          Export of workflows as Galaxy Format 2 instead of GA workflows by default. The
+          default value of this configuration variable will switch to True in 19.09.
 
       force_beta_workflow_scheduled_min_steps:
         type: int
@@ -2185,6 +2186,20 @@ mapping:
           having a defined admin user in the database/config.  Only set this if you
           need to bootstrap Galaxy, you probably do not want to set this on public
           servers.
+
+      enable_openid:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable access to post-authentication options via OpenID.
+
+      openid_consumer_cache_path:
+        type: str
+        default: database/openid_consumer_cache
+        required: false
+        desc: |
+          If OpenID is enabled, consumer cache directory to use.
 
       enable_tool_tags:
         type: bool

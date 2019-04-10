@@ -17,12 +17,11 @@ from six import string_types
 from sqlalchemy.orm import object_session
 
 import galaxy.model
-from galaxy.util import (listify, string_as_bool,
+from galaxy.util import (form_builder, listify, string_as_bool,
                          stringify_dictionary_keys)
 from galaxy.util.json import safe_dumps
 from galaxy.util.object_wrapper import sanitize_lists_to_string
 from galaxy.util.odict import odict
-from galaxy.web import form_builder
 
 log = logging.getLogger(__name__)
 

@@ -203,9 +203,6 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
 # - Much more testing obviously, always more testing.
 class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
 
-    def setUp(self):
-        super(WorkflowsApiTestCase, self).setUp()
-
     def test_show_valid(self):
         workflow_id = self.workflow_populator.simple_workflow("dummy")
         workflow_id = self.workflow_populator.simple_workflow("test_regular")
@@ -384,6 +381,40 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 200)
             self._assert_user_has_workflow_with_name("imported: test_import_published_deprecated")
+
+    def test_import_export_dynamic(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  - type: input
+    label: input1
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: 0
+  - label: embed1
+    run:
+      class: GalaxyTool
+      command: echo 'hello world 2' > $output1
+      outputs:
+        output1:
+          format: txt
+  - tool_id: cat1
+    state:
+      input1:
+        $link: first_cat#out_file1
+      queries:
+        input2:
+          $link: embed1#output1
+test_data:
+  input1: "hello world"
+""")
+        downloaded_workflow = self._download_workflow(workflow_id)
+        # The _upload_yaml_workflow entry point uses an admin key, but if we try to
+        # do the raw re-import as a regular user we expect a 403 error.
+        response = self.workflow_populator.create_workflow_response(downloaded_workflow)
+        self._assert_status_code_is(response, 403)
 
     def test_import_annotations(self):
         workflow_id = self.workflow_populator.simple_workflow("test_import_annotations", publish=True)
@@ -791,12 +822,14 @@ test_data:
 """, history_id=history_id, assert_ok=False, wait=False)
             self.wait_for_invocation_and_jobs(history_id, job_summary.workflow_id, job_summary.invocation_id, assert_ok=False)
             history_contents = self.dataset_populator._get_contents_request(history_id=history_id).json()
+            first_input = history_contents[1]
+            assert first_input['history_content_type'] == 'dataset'
             paused_dataset = history_contents[-1]
             failed_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=5, assert_ok=False)
             assert paused_dataset['state'] == 'paused', paused_dataset
             assert failed_dataset['state'] == 'error', failed_dataset
             inputs = {"input1": {'values': [{'src': 'hda',
-                                             'id': history_contents[0]['id']}]
+                                             'id': first_input['id']}]
                                  },
                       "failbool": "false",
                       "rerun_remap_job_id": failed_dataset['creating_job']}
@@ -1131,6 +1164,41 @@ steps:
             identifiers = [e['element_identifier'] for e in elements]
             assert len(identifiers) == 6
             assert "oe1-ie1" in identifiers
+
+    @skip_without_tool("collection_paired_test")
+    def test_workflow_flatten_with_mapped_over_execution(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(r"""
+class: GalaxyWorkflow
+inputs:
+  input_fastqs: collection
+steps:
+  split_up:
+    tool_id: collection_split_on_column
+    in:
+      input1: input_fastqs
+  flatten:
+    tool_id: '__FLATTEN__'
+    in:
+      input: split_up/split_output
+    join_identifier: '-'
+test_data:
+  input_fastqs:
+    type: list
+    elements:
+      - identifier: samp1
+        content: "0\n1"
+""", history_id=history_id)
+            history = self._get('histories/%s/contents' % history_id).json()
+            flattened_collection = history[-1]
+            assert flattened_collection['history_content_type'] == 'dataset_collection'
+            assert flattened_collection['collection_type'] == 'list'
+            assert flattened_collection['element_count'] == 2
+            nested_collection = self.dataset_populator.get_history_collection_details(history_id, hid=3)
+            assert nested_collection['collection_type'] == 'list:list'
+            assert nested_collection['element_count'] == 1
+            assert nested_collection['elements'][0]['object']['populated']
+            assert nested_collection['elements'][0]['object']['element_count'] == 2
 
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):
@@ -1965,7 +2033,7 @@ text_input:
   type: raw
 """, history_id=history_id, wait=True, assert_ok=False)
 
-    def test_run_with_text_connection(self):
+    def test_run_with_text_input_connection(self):
         with self.dataset_populator.test_history() as history_id:
             self._run_jobs("""
 class: GalaxyWorkflow
@@ -1995,6 +2063,33 @@ text_input:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual("chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", content)
+
+    def test_run_with_numeric_input_connection(self):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+- label: forty_two
+  tool_id: expression_forty_two
+  state: {}
+- label: consume_expression_parameter
+  tool_id: cheetah_casting
+  state:
+    floattest: 3.14
+    inttest:
+      $link: forty_two#out1
+test_data: {}
+""", history_id=history_id)
+
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        content = self.dataset_populator.get_history_dataset_content(history_id)
+        lines = content.split("\n")
+        assert len(lines) == 4
+        str_43 = lines[0]
+        str_4point14 = lines[2]
+        assert lines[3] == ""
+        assert int(str_43) == 43
+        assert abs(float(str_4point14) - 4.14) < .0001
 
     @skip_without_tool('cat1')
     def test_workflow_rerun_with_use_cached_job(self):
@@ -3535,3 +3630,49 @@ input_c:
         self._assert_status_code_is(all_invocations_for_user, 200)
         invocation_ids = [i["id"] for i in all_invocations_for_user.json()]
         return invocation_ids
+
+
+class AdminWorkflowsApiTestCase(BaseWorkflowsApiTestCase):
+
+    require_admin_user = True
+
+    def test_import_export_dynamic_tools(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  - type: input
+    label: input1
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: 0
+  - label: embed1
+    run:
+      class: GalaxyTool
+      command: echo 'hello world 2' > $output1
+      outputs:
+        output1:
+          format: txt
+  - tool_id: cat1
+    state:
+      input1:
+        $link: first_cat#out_file1
+      queries:
+      - input2:
+          $link: embed1#output1
+test_data:
+  input1: "hello world"
+""")
+        downloaded_workflow = self._download_workflow(workflow_id)
+        response = self.workflow_populator.create_workflow_response(downloaded_workflow)
+        workflow_id = response.json()["id"]
+        history_id = self.dataset_populator.new_history()
+        hda1 = self.dataset_populator.new_dataset(history_id, content="Hello World Second!")
+        workflow_request = dict(
+            inputs_by="name",
+            inputs=json.dumps({'input1': self._ds_entry(hda1)}),
+        )
+        invocation_id = self.workflow_populator.invoke_workflow(history_id, workflow_id, request=workflow_request, assert_ok=True)
+        self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+        self.assertEqual("Hello World Second!\nhello world 2\n", self.dataset_populator.get_history_dataset_content(history_id, hid=4))

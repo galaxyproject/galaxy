@@ -772,45 +772,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return stored_dict
 
     @web.expose
-    @web.json
-    def import_workflow(self, trans, **kwd):
-        """
-        Import a workflow through 3rd party services, e.g. myExperiment.
-        """
-        message = ""
-        status = "done"
-        workflow_text = kwd.get('workflow_text')
-        workflow_source = kwd.get('workflow_source')
-        if workflow_text:
-            # Convert incoming workflow data from json
-            try:
-                data = json.loads(workflow_text)
-            except Exception:
-                data = None
-                message = "The data content does not appear to be a Galaxy workflow."
-                status = "error"
-                log.exception("Error importing workflow.")
-            if data:
-                # Create workflow if possible.  If a required tool is not available in the local
-                # Galaxy instance, the tool information will be available in the step_dict.
-                workflow, missing_tool_tups = self._workflow_from_dict(trans, data, source=workflow_source)
-                workflow = workflow.latest_workflow
-                # Provide user feedback and show workflow list.
-                if workflow.has_errors:
-                    message += "Imported, but some steps in this workflow have validation errors. "
-                    status = "error"
-                if workflow.has_cycles:
-                    message += "Imported, but this workflow contains cycles.  "
-                    status = "error"
-                else:
-                    message += "Workflow %s imported successfully.  " % escape(workflow.name)
-        else:
-            status = "error"
-            message = "Import request requires 'workflow_text'."
-        redirect_url = url_for('/') + 'workflows/list?status=' + status + '&message=%s' % escape(message)
-        return trans.response.send_redirect(redirect_url)
-
-    @web.expose
     def build_from_current_history(self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None):
         user = trans.get_user()
         history = trans.get_history()

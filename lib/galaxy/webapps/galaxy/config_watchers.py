@@ -20,7 +20,7 @@ from galaxy.util.watcher import (
 class ConfigWatchers(object):
     """Contains ToolConfWatcher, ToolWatcher and ToolDataWatcher objects."""
 
-    def __init__(self, app):
+    def __init__(self, app, start_thread=True):
         self.app = app
         # ToolConfWatcher objects will watch the tool_cache if the tool_cache is passed into get_tool_conf_watcher.
         # Watching the tool_cache means removing outdated items from the tool_cache.
@@ -37,7 +37,8 @@ class ConfigWatchers(object):
             self.job_rule_watcher = get_watcher(app.config, 'watch_job_rules', monitor_what_str='job rules')
         else:
             self.job_rule_watcher = get_watcher(app.config, '__invalid__')
-        self.start()
+        if start_thread:
+            self.start()
 
     def start(self):
         [self.tool_config_watcher.watch_file(config) for config in self.tool_config_paths]

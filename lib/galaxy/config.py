@@ -173,6 +173,7 @@ class Configuration(object):
 
         self.version_major = VERSION_MAJOR
         # Database related configuration
+        self.check_migrate_databases = kwargs.get('check_migrate_databases', True)
         self.database = resolve_path(kwargs.get("database_file", "database/universe.sqlite"), self.root)
         self.database_connection = kwargs.get("database_connection", False)
         self.database_engine_options = get_database_engine_options(kwargs)
@@ -201,6 +202,7 @@ class Configuration(object):
         if override_tempdir:
             tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir", None)
+        self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "database/openid_consumer_cache"), self.root)
         self.cookie_path = kwargs.get("cookie_path", "/")
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', False))
         self.enable_unique_workflow_defaults = string_as_bool(kwargs.get('enable_unique_workflow_defaults', False))
@@ -313,6 +315,7 @@ class Configuration(object):
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             preserve_python_environment = "legacy_only"
         self.preserve_python_environment = preserve_python_environment
+        self.nodejs_path = kwargs.get("nodejs_path", None)
         # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
         # should probably drop the backward compatiblity to save the path check.
         self.container_image_cache_path = self.resolve_path(kwargs.get("container_image_cache_path", "database/container_images"))
@@ -361,6 +364,7 @@ class Configuration(object):
         self.communication_server_host = kwargs.get('communication_server_host', 'http://localhost')
         self.communication_server_port = int(kwargs.get('communication_server_port', '7070'))
         self.persistent_communication_rooms = listify(kwargs.get("persistent_communication_rooms", []), do_strip=True)
+        self.enable_openid = string_as_bool(kwargs.get('enable_openid', 'False'))
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', 'False'))
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool(kwargs.get('use_tasked_jobs', False))
@@ -379,8 +383,8 @@ class Configuration(object):
         # workflows built using these modules may not function in the
         # future.
         self.enable_beta_workflow_modules = string_as_bool(kwargs.get('enable_beta_workflow_modules', 'False'))
-        # Enable use of gxformat2 workflows.
-        self.enable_beta_workflow_format = string_as_bool(kwargs.get('enable_beta_workflow_format', 'False'))
+        # Enable default export of gxformat2 workflows.
+        self.enable_beta_export_format2_default = string_as_bool(kwargs.get('enable_beta_export_format2_default', 'False'))
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))
@@ -1047,6 +1051,8 @@ class ConfiguresGalaxyMixin(object):
 
         self.citations_manager = CitationsManager(self)
 
+        from galaxy.managers.tools import DynamicToolManager
+        self.dynamic_tools_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
         tool_configs = self.config.tool_configs
@@ -1124,8 +1130,8 @@ class ConfiguresGalaxyMixin(object):
         self.object_store = build_object_store_from_config(self.config, **kwds)
 
     def _configure_security(self):
-        from galaxy.web import security
-        self.security = security.SecurityHelper(id_secret=self.config.id_secret)
+        from galaxy.security import idencoding
+        self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
 
     def _configure_tool_shed_registry(self):
         import tool_shed.tool_shed_registry
