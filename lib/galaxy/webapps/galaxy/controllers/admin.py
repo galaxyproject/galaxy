@@ -1713,7 +1713,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             selected_tool_ids = []
         if not selected_environments_to_uninstall:
             selected_environments_to_uninstall = []
-        tools_by_id = trans.app.toolbox.tools_by_id
+        tools_by_id = trans.app.toolbox.tools_by_id.copy()
         view = six.next(six.itervalues(trans.app.toolbox.tools_by_id))._view
         if selected_tool_ids:
             # install the dependencies for the tools in the selected_tool_ids list
