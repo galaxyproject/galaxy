@@ -12,6 +12,7 @@ import yaml
 from six import iteritems, string_types
 from six.moves.configparser import ConfigParser
 
+from galaxy.util import unicodify
 from galaxy.util.path import extensions, has_ext, joinext
 
 
@@ -190,6 +191,7 @@ def __find_config_files(names, exts=None, dirs=None, include_samples=False):
 
 
 def __default_properties(path):
+    path = unicodify(path)
     return {
         'here': os.path.dirname(os.path.abspath(path)),
         '__file__': os.path.abspath(path)
