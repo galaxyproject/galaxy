@@ -3222,6 +3222,9 @@ input:
         with self._different_user():
             usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, usage["id"]))
             self._assert_status_code_is(usage_details_response, 403)
+            index_response = self._get("workflows/%s/invocations" % workflow_id)
+            self._assert_status_code_is(index_response, 200)
+            assert len(index_response.json()) == 0
 
         invocation_ids = self._all_user_invocation_ids()
         assert usage["id"] in invocation_ids
