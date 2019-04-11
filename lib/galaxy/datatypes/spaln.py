@@ -7,7 +7,6 @@ import logging
 import os.path
 
 from galaxy.datatypes.data import Data
-from galaxy.datatypes.images import Html
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.util import smart_str
 
@@ -19,27 +18,63 @@ class _SpalnDb(Data):
     allow_datatype_change = False
     composite_type = "auto_primary_file"
 
-    MetadataElement(name="spalndb_name", default="spalndb", desc="DB name",
-                    readonly=True, visible=True, set_in_upload=True)
+    MetadataElement(
+        name="spalndb_name",
+        default="spalndb",
+        desc="DB name",
+        readonly=True,
+        visible=True,
+        set_in_upload=True,
+    )
 
     def __init__(self, **kwd):
         super(_SpalnDb, self).__init__(**kwd)
-        self.add_composite_file("%s.ent", is_binary=True, description="spalndb.ent", substitute_name_with_metadata="spalndb_name")
-        self.add_composite_file("%s.grp", is_binary=True, description="spalndb.grp", substitute_name_with_metadata="spalndb_name")
-        self.add_composite_file("%s.idx", is_binary=True, description="spalndb.idx", substitute_name_with_metadata="spalndb_name")
-        self.add_composite_file("%s.seq", is_binary=True, description="spalndb.seq", substitute_name_with_metadata="spalndb_name")
+        self.add_composite_file(
+            "%s.ent",
+            is_binary=True,
+            description="spalndb.ent",
+            substitute_name_with_metadata="spalndb_name",
+        )
+        self.add_composite_file(
+            "%s.grp",
+            is_binary=True,
+            description="spalndb.grp",
+            substitute_name_with_metadata="spalndb_name",
+        )
+        self.add_composite_file(
+            "%s.idx",
+            is_binary=True,
+            description="spalndb.idx",
+            substitute_name_with_metadata="spalndb_name",
+        )
+        self.add_composite_file(
+            "%s.seq",
+            is_binary=True,
+            description="spalndb.seq",
+            substitute_name_with_metadata="spalndb_name",
+        )
 
     def generate_primary_file(self, dataset=None):
-        rval = ['<html><head><title>Spaln Database</title></head><p/>']
-        rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+        rval = ["<html><head><title>Spaln Database</title></head><p/>"]
+        rval.append(
+            "<div>This composite dataset is composed of the following files:<p/><ul>"
+        )
+        for composite_name, composite_file in self.get_composite_files(
+            dataset=dataset
+        ).items():
             fn = composite_name
-            opt_text = ''
-            if composite_file.get('description'):
-                rval.append('<li><a href="%s" type="application/binary">%s (%s)</a>%s</li>' % (fn, fn, composite_file.get('description'), opt_text))
+            opt_text = ""
+            if composite_file.get("description"):
+                rval.append(
+                    '<li><a href="%s" type="application/binary">%s (%s)</a>%s</li>'
+                    % (fn, fn, composite_file.get("description"), opt_text)
+                )
             else:
-                rval.append('<li><a href="%s" type="application/binary">%s</a>%s</li>' % (fn, fn, opt_text))
-        rval.append('</ul></div></html>')
+                rval.append(
+                    '<li><a href="%s" type="application/binary">%s</a>%s</li>'
+                    % (fn, fn, opt_text)
+                )
+        rval.append("</ul></div></html>")
         return "\n".join(rval)
 
     def regenerate_primary_file(self, dataset):
@@ -48,15 +83,18 @@ class _SpalnDb(Data):
         """
         efp = dataset.extra_files_path
         flist = os.listdir(efp)
-        rval = ['<html><head><title>Files for Composite Dataset %s</title></head><body><p/>Composite %s contains:<p/><ul>' % (dataset.name, dataset.name)]
+        rval = [
+            "<html><head><title>Files for Composite Dataset %s</title></head><body><p/>Composite %s contains:<p/><ul>"
+            % (dataset.name, dataset.name)
+        ]
         for i, fname in enumerate(flist):
             sfname = os.path.split(fname)[-1]
             f, e = os.path.splitext(fname)
             rval.append('<li><a href="%s">%s</a></li>' % (sfname, sfname))
-        rval.append('</ul></body></html>')
-        with open(dataset.file_name, 'w') as f:
+        rval.append("</ul></body></html>")
+        with open(dataset.file_name, "w") as f:
             f.write("\n".join(rval))
-            f.write('\n')
+            f.write("\n")
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text."""
@@ -142,13 +180,24 @@ class _SpalnDb(Data):
                 dataset.metadata.spalndb_name = os.path.splitext(filename)[0]
         self.regenerate_primary_file(dataset)
 
+
 class SpalnNuclDb(_SpalnDb):
     file_ext = "spalndbnp"
 
     def __init__(self, **kwd):
         super(SpalnNuclDb, self).__init__(**kwd)
-        self.add_composite_file("%s.bkn", is_binary=True, description="spalndb.bkn", substitute_name_with_metadata="spalndb_name")
-        self.add_composite_file("%s.bkp", is_binary=True, description="spalndb.bkp", substitute_name_with_metadata="spalndb_name")
+        self.add_composite_file(
+            "%s.bkn",
+            is_binary=True,
+            description="spalndb.bkn",
+            substitute_name_with_metadata="spalndb_name",
+        )
+        self.add_composite_file(
+            "%s.bkp",
+            is_binary=True,
+            description="spalndb.bkp",
+            substitute_name_with_metadata="spalndb_name",
+        )
 
 
 class SpalnProtDb(_SpalnDb):
@@ -156,4 +205,9 @@ class SpalnProtDb(_SpalnDb):
 
     def __init__(self, **kwd):
         super(SpalnProtDb, self).__init__(**kwd)
-        self.add_composite_file("%s.bka", is_binary=True, description="spalndb.bka", substitute_name_with_metadata="spalndb_name")
+        self.add_composite_file(
+            "%s.bka",
+            is_binary=True,
+            description="spalndb.bka",
+            substitute_name_with_metadata="spalndb_name",
+        )
