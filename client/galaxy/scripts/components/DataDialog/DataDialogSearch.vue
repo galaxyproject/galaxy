@@ -1,8 +1,8 @@
 <template>
     <b-input-group>
-        <b-input v-model="filter" placeholder="Type to Search" />
+        <b-input v-model="value" placeholder="Type to Search" />
         <b-input-group-append>
-            <b-btn :disabled="!filter" @click="filter = ''">Clear</b-btn>
+            <b-btn :disabled="!value" @click="value = ''">Clear</b-btn>
         </b-input-group-append>
     </b-input-group>
 </template>
@@ -15,14 +15,9 @@ Vue.use(BootstrapVue);
 
 export default {
     props: ["value"],
-    data() {
-        return {
-            filter: null
-        };
-    },
     watch: {
-        filter: function(value) {
-            this.$emit("input", value);
+        value: function(new_value) {
+            this.$emit("input", new_value);
         }
     }
 };
