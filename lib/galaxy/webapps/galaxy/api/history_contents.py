@@ -641,9 +641,6 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             dataset_collection_instance = self.__get_accessible_collection(trans, hdca_id, history_id)
             rval.append(self.__collection_dict(trans, dataset_collection_instance, view="summary"))
         return rval
-        # aggregate by ids.
-        # hdas_manager.by_ids() with history or user.
-        # dataset_collection_service.by_ids() with history or user.
 
     @expose_api_anonymous
     def update(self, trans, history_id, id, payload, **kwd):
