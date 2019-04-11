@@ -37,7 +37,10 @@
                 </b-row>
             </b-container>
             <b-card-group columns>
-                <b-card no-body header="<h4>Data Managers</h4>" id="data-managers-card">
+                <b-card no-body id="data-managers-card">
+                    <h4 slot="header">
+                        Data Managers
+                    </h4>
                     <b-list-group flush>
                         <b-list-group-item v-for="(dataManagerGroup, index) in dataManagersFiltered" :key="index">
                             <div>
@@ -59,7 +62,7 @@
                                     :href="dataManagerGroup[0]['toolUrl']"
                                     target="_blank"
                                 >
-                                    Tool v{{ dataManagerGroup[0]['toolVersion'] }}
+                                    Tool v{{ dataManagerGroup[0]["toolVersion"] }}
                                 </b-button>
                                 <b-button
                                     :id="kebabCase(dataManagerGroup[0]['name']) + '-jobs'"
@@ -79,7 +82,7 @@
                                         :href="dataManager['toolUrl']"
                                         target="_blank"
                                     >
-                                        {{ "v" + dataManager["version"] + ": Tool v" + dataManager["toolVersion"]  }}
+                                        {{ "v" + dataManager["version"] + ": Tool v" + dataManager["toolVersion"] }}
                                     </b-dropdown-item>
                                 </b-dropdown>
                                 <b-dropdown :id="kebabCase(dataManagerGroup[0]['name']) + '-jobs'" text="Jobs">
@@ -91,14 +94,17 @@
                                             params: { id: encodeURIComponent(dataManager['id']) }
                                         }"
                                     >
-                                        {{ "v" + dataManager["version"] + ": Tool v" + dataManager["toolVersion"]  }}
+                                        {{ "v" + dataManager["version"] + ": Tool v" + dataManager["toolVersion"] }}
                                     </b-dropdown-item>
                                 </b-dropdown>
                             </b-button-group>
                         </b-list-group-item>
                     </b-list-group>
                 </b-card>
-                <b-card no-body header="<h4>Tool Data Tables</h4>">
+                <b-card no-body>
+                    <h4 slot="header">
+                        Tool Data Tables
+                    </h4>
                     <b-list-group flush>
                         <b-list-group-item
                             v-for="(dataTable, index) in dataTablesFiltered"
