@@ -265,8 +265,8 @@ class GalaxyInteractorApi(object):
     def __get_job_stdio(self, job_id):
         return self._get('jobs/%s?full=true' % job_id)
 
-    def new_history(self):
-        history_json = self._post("histories", {"name": "test_history"}).json()
+    def new_history(self, history_name='test_history'):
+        history_json = self._post("histories", {"name": history_name}).json()
         return history_json['id']
 
     @nottest
