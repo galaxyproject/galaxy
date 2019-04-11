@@ -889,7 +889,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         modules.sort()
         modules.reverse()
         for item in modules:
-            if item.endswith('.pyc') or item.startswith('0001_tools'):
+            if not item.endswith('.py') or item.startswith('0001_tools'):
                 continue
             module = item.replace('.py', '')
             migration_stage = int(module.replace('_tools', ''))
