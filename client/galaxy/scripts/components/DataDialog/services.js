@@ -62,7 +62,7 @@ export class Services {
             return record;
         } else if (record.hid) {
             record.name = `${record.hid}: ${record.name}`;
-            record.download = `${this.host}${record.url}/display`;
+            record.download = `${this.host}/api/histories/${record.history_id}/contents/${record.id}/display`;
             return record;
         } else if (record.type == "file") {
             if (record.name && record.name[0] === "/") {
