@@ -189,10 +189,6 @@ workflows:
           <<: *requires_get_code
       - py35_lint:
           <<: *requires_get_code
-      - py35_unit:
-          <<: *requires_get_code
-      - py35_first_startup:
-          <<: *requires_get_code
       - validate_test_tools:
           <<: *requires_get_code
       - check_py3_compatibility:
