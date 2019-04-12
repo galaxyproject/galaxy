@@ -268,7 +268,7 @@ var View = Backbone.View.extend({
                         $batchfield.hide();
                     }
                 });
-                if (cnf.showdialog) {
+                if (cnf.src == "hda") {
                     self.button_dialog.show();
                 } else {
                     self.button_dialog.hide();
@@ -354,8 +354,7 @@ var View = Backbone.View.extend({
                     },
                     {
                         multiple: cnf.multiple,
-                        format: null,
-                        library: false
+                        format: null
                     }
                 );
             }
@@ -464,7 +463,7 @@ var View = Backbone.View.extend({
                             id: new_id,
                             src: new_src,
                             hid: v.hid || "Selected",
-                            name: v.hid ? v.name : new_id,
+                            name: v.name ? v.name : new_id,
                             keep: true,
                             tags: []
                         });
