@@ -90,15 +90,16 @@ describe("services.js/Services", () => {
     it("Test data population from raw data", () => {
         let rawData = {
             hid: 1,
-            name: "name_1",
-            url: "/url_1"
+            id: 1,
+            history_id: 0,
+            name: "name_1"
         };
         let services = new Services(mockOptions);
         let items = services.getItems(rawData);
         expect(items.length).to.equals(1);
         let first = items[0];
         expect(first.name).to.equals("1: name_1");
-        expect(first.download).to.equals("host/url_1/display");
+        expect(first.download).to.equals("host/api/histories/0/contents/1/display");
     });
 });
 
