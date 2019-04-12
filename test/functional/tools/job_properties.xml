@@ -32,11 +32,14 @@
         </collection>
     </outputs>
     <tests>
+        <!-- test for assert_command, -stdout, and stderr -->
         <test expect_exit_code="0">
             <param name="thebool" value="true" />
             <output name="out_file1" file="simple_line.txt" />
             <assert_command>
                 <has_text text="really" />
+                <not_has_text text="REALLY" />
+                <has_text_matching text="r.a.ly" />
             </assert_command>
             <assert_stdout>
                 <has_line line="The bool is true" />
@@ -45,6 +48,23 @@
                 <has_line line="The bool is really true" />
             </assert_stderr>
         </test>
+        <!-- same test with negated assert conditions -> should fail (using not_has_text instead of the nonexistent not_has_line) -->
+        <test expect_exit_code="0">
+            <param name="thebool" value="true" />
+            <output name="out_file1" file="simple_line.txt" />
+            <assert_command>
+                <not_has_text text="really" />
+                <has_text text="REALLY" />
+                <has_text_matching text="R.A.LY" />
+            </assert_command>
+<!--            <assert_stdout>-->
+<!--                <not_has_text text="The bool is true" />-->
+<!--            </assert_stdout>-->
+<!--            <assert_stderr>-->
+<!--                <not_has_text text="The bool is really true" />-->
+<!--            </assert_stderr>-->
+        </test>
+        <!-- test for expected exit code -->
         <test expect_exit_code="2">
             <param name="thebool" value="false" />
             <output name="out_file1" file="simple_line_alternative.txt" />
@@ -58,6 +78,7 @@
                 <has_line line="The bool is very not true" />
             </assert_stderr>
         </test>
+        <!-- ??? -->
         <test expect_exit_code="127" expect_failure="true">
             <param name="thebool" value="true" />
             <param name="failbool" value="true" />
