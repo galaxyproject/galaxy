@@ -18,16 +18,14 @@ var Configurations = {
             icon: "fa-file-o",
             tooltip: _l("Single dataset"),
             multiple: false,
-            batch: Batch.DISABLED,
-            showdialog: true
+            batch: Batch.DISABLED
         },
         {
             src: "hda",
             icon: "fa-files-o",
             tooltip: _l("Multiple datasets"),
             multiple: true,
-            batch: Batch.LINKED,
-            showdialog: true
+            batch: Batch.LINKED
         },
         {
             src: "hdca",
@@ -43,8 +41,7 @@ var Configurations = {
             icon: "fa-files-o",
             tooltip: _l("Multiple datasets"),
             multiple: true,
-            batch: Batch.DISABLED,
-            showdialog: true
+            batch: Batch.DISABLED
         },
         {
             src: "hdca",
@@ -69,8 +66,7 @@ var Configurations = {
             icon: "fa-file-o",
             tooltip: _l("Single dataset"),
             multiple: false,
-            batch: Batch.DISABLED,
-            showdialog: true
+            batch: Batch.DISABLED
         }
     ],
     workflow_data_multiple: [
@@ -79,8 +75,7 @@ var Configurations = {
             icon: "fa-files-o",
             tooltip: _l("Multiple datasets"),
             multiple: true,
-            batch: Batch.DISABLED,
-            showdialog: true
+            batch: Batch.DISABLED
         }
     ],
     workflow_data_collection: [
@@ -98,16 +93,14 @@ var Configurations = {
             icon: "fa-file-o",
             tooltip: _l("Single dataset"),
             multiple: false,
-            batch: Batch.DISABLED,
-            showdialog: true
+            batch: Batch.DISABLED
         },
         {
             src: "hda",
             icon: "fa-files-o",
             tooltip: _l("Multiple datasets"),
             multiple: true,
-            batch: Batch.ENABLED,
-            showdialog: true
+            batch: Batch.ENABLED
         }
     ],
     module_data_collection: [
