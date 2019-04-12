@@ -36,6 +36,28 @@ class CollectionBuilder(object):
         self._collection_type_description = collection_type_description
         self._current_elements = odict()
 
+    def replace_elements_in_collection(self, template_collection, replacement_dict):
+        self._current_elements = self._replace_elements_in_collection(
+            template_collection=template_collection,
+            replacement_dict=replacement_dict,
+        )
+
+    def _replace_elements_in_collection(self, template_collection, replacement_dict):
+        elements = odict()
+        for element in template_collection.elements:
+            if element.is_collection:
+                collection_builder = CollectionBuilder(
+                    collection_type_description=self._collection_type_description.child_collection_type_description()
+                )
+                collection_builder.replace_elements_in_collection(
+                    template_collection=element.child_collection,
+                    replacement_dict=replacement_dict
+                )
+                elements[element.element_identifier] = collection_builder
+            else:
+                elements[element.element_identifier] = replacement_dict.get(element.element_object, element.element_object)
+        return elements
+
     def get_level(self, identifier):
         if not self._nested_collection:
             message_template = "Cannot add nested collection to collection of type [%s]"

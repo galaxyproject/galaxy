@@ -31,7 +31,7 @@ password_auth = True
 # host than Galaxy.
 #docker_hostname = localhost
 
-# Try to set the tempdirectory to world execute - this can fix the issue 
+# Try to set the tempdirectory to world execute - this can fix the issue
 # where 'sudo docker' is not able to mount the folder otherwise.
 # "finalize namespace chdir to /import permission denied"
 #wx_tempdir = False
@@ -45,7 +45,7 @@ password_auth = True
 # If your Docker container exposes more then one port, Galaxy needs to know to
 # which ports it needs to connect. With this option you can specify the port number
 # inside your container to which Galaxy should connect the UI.
-#docker_connect_port = None
+docker_connect_port = 80
 
 # Set the following value to false if Docker volumes between Galaxy server and Docker
 # container cannot or should not be used.

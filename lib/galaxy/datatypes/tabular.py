@@ -1161,3 +1161,67 @@ class ConnectivityTable(Tabular):
         ck_data_body = re.sub('[ ]+', '\t', ck_data_body)
 
         return dumps({'ck_data': util.unicodify(ck_data_header + "\n" + ck_data_body), 'ck_index': ck_index + 1})
+
+
+@build_sniff_from_prefix
+class MatrixMarket(TabularData):
+    """
+    The Matrix Market (MM) exchange formats provide a simple mechanism
+    to facilitate the exchange of matrix data. MM coordinate format is
+    suitable for representing sparse matrices. Only nonzero entries need
+    be encoded, and the coordinates of each are given explicitly.
+
+    The tabular file format is defined as follows::
+
+    %%MatrixMarket matrix coordinate real general <--- header line
+    %                                             <--+
+    % comments                                       |-- 0 or more comment lines
+    %                                             <--+
+        M  N  L                                   <--- rows, columns, entries
+        I1  J1  A(I1, J1)                         <--+
+        I2  J2  A(I2, J2)                            |
+        I3  J3  A(I3, J3)                            |-- L lines
+            . . .                                    |
+        IL JL  A(IL, JL)                          <--+
+
+    Indices are 1-based, i.e. A(1,1) is the first element.
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> MatrixMarket().sniff( get_test_fname( 'sequence.maf' ) )
+    False
+    >>> MatrixMarket().sniff( get_test_fname( '1.mtx' ) )
+    True
+    >>> MatrixMarket().sniff( get_test_fname( '2.mtx' ) )
+    True
+    >>> MatrixMarket().sniff( get_test_fname( '3.mtx' ) )
+    True
+    """
+    file_ext = "mtx"
+
+    def __init__(self, **kwd):
+        super(MatrixMarket, self).__init__(**kwd)
+
+    def sniff_prefix(self, file_prefix):
+        return file_prefix.startswith('%%MatrixMarket matrix coordinate')
+
+    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
+        if dataset.has_data():
+            with open(dataset.file_name) as dataset_fh:
+                comment_lines = 0
+                for i, l in enumerate(dataset_fh):
+                    if l.startswith('%'):
+                        comment_lines += 1
+                    elif self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+                        # If the dataset is larger than optional_metadata, just count comment lines.
+                        # No more comments, and the file is too big to look at the whole thing. Give up.
+                        dataset.metadata.data_lines = None
+                        break
+                if ' ' in l:
+                    dataset.metadata.delimiter = ' '
+                else:
+                    dataset.metadata.delimiter = '\t'
+                if not (self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize):
+                    dataset.metadata.data_lines = i + 1 - comment_lines
+            dataset.metadata.comment_lines = comment_lines
+            dataset.metadata.columns = 3
+            dataset.metadata.column_types = ['int', 'int', 'float']

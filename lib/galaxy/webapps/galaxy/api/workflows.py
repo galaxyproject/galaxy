@@ -420,7 +420,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def workflow_dict(self, trans, workflow_id, **kwd):
         """
         GET /api/workflows/{encoded_workflow_id}/download
+
         Returns a selected workflow as a json dictionary.
+
+        :type   style:  str
+        :param  style:  Style of export. The default is 'export', which is the meant to be used
+                        with workflow import endpoints. Other formats such as 'instance', 'editor',
+                        'run' are more tied to the GUI and should not be considered stable APIs.
+                        By default the 'export' format in 19.05 is "ga" files, in 19.09 this will
+                        become 'format2'. Style can be specified as either 'ga' or 'format2' directly
+                        to be explicit about which format to download.
         """
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
 
@@ -431,7 +440,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if download_format == 'json-download':
             sname = stored_workflow.name
             sname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in sname)[0:150]
-            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.ga"' % (sname)
+            if ret_dict.get("format-version", None) == "0.1":
+                extension = "ga"
+            else:
+                extension = "gxwf.json"
+            trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.%s"' % (sname, extension)
             trans.response.set_content_type('application/galaxy-archive')
         return ret_dict
 
@@ -588,7 +601,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         try:
             data = json.loads(archive_data)
         except Exception:
-            raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
+            if "GalaxyWorkflow" in archive_data:
+                data = {"yaml_content": archive_data}
+            else:
+                raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
         if not data:
             raise exceptions.MessageException("The data content is missing.")
         raw_workflow_description = self.__normalize_workflow(trans, data)
@@ -781,9 +797,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         else:
             history_id = None
 
-        if stored_workflow_id is None and encoded_history_id is None:
+        if not trans.user_is_admin:
+            # We restrict the query to the current users' invocations
             user_id = trans.user.id
         else:
+            # Get all invocation if user is admin
             user_id = None
 
         invocations = self.workflow_manager.build_invocations_query(

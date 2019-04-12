@@ -130,18 +130,20 @@ var PopupMenu = Backbone.View.extend({
         // function to close popup and unbind itself
         function closePopup(event) {
             $(document).off("click.close_popup");
-            if (window && window.parent !== window) {
-                try {
+            try {
+                if (window && window.parent !== window) {
                     $(window.parent.document).off("click.close_popup");
-                } catch (err) {
-                    console.debug(err);
-                }
-            } else {
-                try {
+                } else {
                     $("iframe#galaxy_main")
                         .contents()
                         .off("click.close_popup");
-                } catch (err) {
+                }
+            } catch (err) {
+                if (err instanceof DOMException) {
+                    console.debug(
+                        "Error clearing parent popups, likely cross-origin frame access from the toolshed and not problematic."
+                    );
+                } else {
                     console.debug(err);
                 }
             }
@@ -149,20 +151,22 @@ var PopupMenu = Backbone.View.extend({
         }
 
         $("html").one("click.close_popup", closePopup);
-        if (window && window.parent !== window) {
-            try {
+        try {
+            if (window && window.parent !== window) {
                 $(window.parent.document)
                     .find("html")
                     .one("click.close_popup", closePopup);
-            } catch (err) {
-                console.debug(err);
-            }
-        } else {
-            try {
+            } else {
                 $("iframe#galaxy_main")
                     .contents()
                     .one("click.close_popup", closePopup);
-            } catch (err) {
+            }
+        } catch (err) {
+            if (err instanceof DOMException) {
+                console.debug(
+                    "Error clearing parent popups, likely cross-origin frame access from the toolshed and not problematic."
+                );
+            } else {
                 console.debug(err);
             }
         }

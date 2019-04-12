@@ -1,6 +1,6 @@
 import $ from "jquery";
 
-import * as Toastr from "libs/toastr";
+import { Toast } from "ui/toast";
 
 function Connector(handle1, handle2) {
     this.canvas = null;
@@ -34,7 +34,7 @@ $.extend(Connector.prototype, {
     destroyIfInvalid: function(warn) {
         if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1).canAccept) {
             if (warn) {
-                Toastr.warning("Destroying a connection because collection type has changed.");
+                Toast.warning("Destroying a connection because collection type has changed.");
             }
             this.destroy();
         }

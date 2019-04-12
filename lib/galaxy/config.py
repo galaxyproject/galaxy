@@ -202,6 +202,7 @@ class Configuration(object):
         if override_tempdir:
             tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir", None)
+        self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "database/openid_consumer_cache"), self.root)
         self.cookie_path = kwargs.get("cookie_path", "/")
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', False))
         self.enable_unique_workflow_defaults = string_as_bool(kwargs.get('enable_unique_workflow_defaults', False))
@@ -363,6 +364,7 @@ class Configuration(object):
         self.communication_server_host = kwargs.get('communication_server_host', 'http://localhost')
         self.communication_server_port = int(kwargs.get('communication_server_port', '7070'))
         self.persistent_communication_rooms = listify(kwargs.get("persistent_communication_rooms", []), do_strip=True)
+        self.enable_openid = string_as_bool(kwargs.get('enable_openid', 'False'))
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', 'False'))
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool(kwargs.get('use_tasked_jobs', False))
@@ -381,8 +383,8 @@ class Configuration(object):
         # workflows built using these modules may not function in the
         # future.
         self.enable_beta_workflow_modules = string_as_bool(kwargs.get('enable_beta_workflow_modules', 'False'))
-        # Enable use of gxformat2 workflows.
-        self.enable_beta_workflow_format = string_as_bool(kwargs.get('enable_beta_workflow_format', 'False'))
+        # Enable default export of gxformat2 workflows.
+        self.enable_beta_export_format2_default = string_as_bool(kwargs.get('enable_beta_export_format2_default', 'False'))
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))

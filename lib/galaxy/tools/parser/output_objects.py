@@ -1,5 +1,7 @@
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.odict import odict
+from .output_actions import ToolOutputActionGroup
+from .output_collection_def import dataset_collector_descriptions_from_output_dict
 
 
 class ToolOutputBase(Dictifiable):
@@ -24,7 +26,8 @@ class ToolOutput(ToolOutputBase):
       (format, metadata_source, parent)
     """
 
-    dict_collection_visible_keys = ['name', 'format', 'label', 'hidden', 'output_type']
+    dict_collection_visible_keys = ['name', 'format', 'label', 'hidden', 'output_type', 'format_source',
+                                    'default_identifier_source', 'metadata_source', 'parent', 'count', 'from_work_dir']
 
     def __init__(self, name, format=None, format_source=None, metadata_source=None,
                  parent=None, label=None, filters=None, actions=None, hidden=False,
@@ -68,7 +71,28 @@ class ToolOutput(ToolOutputBase):
             as_dict["edam_format"] = edam_format
             edam_data = app.datatypes_registry.edam_data.get(self.format)
             as_dict["edam_data"] = edam_data
+        as_dict['discover_datasets'] = list(map(lambda d: d.to_dict(), self.dataset_collector_descriptions))
         return as_dict
+
+    @staticmethod
+    def from_dict(name, output_dict, tool=None):
+        output = ToolOutput(name)
+        output.format = output_dict.get("format", "data")
+        output.change_format = []
+        output.format_source = output_dict.get("format_source", None)
+        output.default_identifier_source = output_dict.get("default_identifier_source", None)
+        output.metadata_source = output_dict.get("metadata_source", "")
+        output.parent = output_dict.get("parent", None)
+        output.label = output_dict.get("label", None)
+        output.count = output_dict.get("count", 1)
+        output.filters = []
+        output.tool = tool
+        output.from_work_dir = output_dict.get("from_work_dir", None)
+        output.hidden = output_dict.get("hidden", "")
+        # TODO: implement tool output action group fixes
+        output.actions = ToolOutputActionGroup(output, None)
+        output.dataset_collector_descriptions = dataset_collector_descriptions_from_output_dict(output_dict)
+        return output
 
 
 class ToolExpressionOutput(ToolOutputBase):
@@ -107,9 +131,8 @@ class ToolOutputCollection(ToolOutputBase):
       </collection>
     <outputs>
     """
-    dict_collection_visible_keys = ('name', 'format', 'label', 'hidden', 'output_type')
-
-    dict_collection_visible_keys = ['name', 'default_format', 'label', 'hidden', 'inherit_format', 'inherit_metadata']
+    dict_collection_visible_keys = ['name', 'format', 'label', 'hidden', 'output_type', 'default_format',
+                                    'default_format_source', 'default_metadata_source', 'inherit_format', 'inherit_metadata']
 
     def __init__(
         self,
@@ -197,6 +220,28 @@ class ToolOutputCollection(ToolOutputBase):
             raise Exception("dataset_collector_descriptions called for output collection with static structure")
         return self.structure.dataset_collector_descriptions
 
+    def to_dict(self, view='collection', value_mapper=None, app=None):
+        as_dict = super(ToolOutputCollection, self).to_dict(view=view, value_mapper=value_mapper, app=app)
+        as_dict['structure'] = self.structure.to_dict()
+        return as_dict
+
+    @staticmethod
+    def from_dict(name, output_dict, tool=None):
+        structure = ToolOutputCollectionStructure.from_dict(output_dict["structure"])
+        rval = ToolOutputCollection(
+            name,
+            structure=structure,
+            label=output_dict.get("label", None),
+            filters=None,
+            hidden=output_dict.get("hidden", False),
+            default_format=output_dict.get("default_format", "data"),
+            default_format_source=output_dict.get("default_format_source", None),
+            default_metadata_source=output_dict.get("default_metadata_source", None),
+            inherit_format=output_dict.get("inherit_format", False),
+            inherit_metadata=output_dict.get("inherit_metadata", False),
+        )
+        return rval
+
 
 class ToolOutputCollectionStructure(object):
 
@@ -212,14 +257,14 @@ class ToolOutputCollectionStructure(object):
         self.collection_type_source = collection_type_source
         self.collection_type_from_rules = collection_type_from_rules
         self.structured_like = structured_like
-        self.dataset_collector_descriptions = dataset_collector_descriptions
+        self.dataset_collector_descriptions = dataset_collector_descriptions or []
         if collection_type and collection_type_source:
             raise ValueError("Cannot set both type and type_source on collection output.")
         if collection_type is None and structured_like is None and dataset_collector_descriptions is None and collection_type_source is None and collection_type_from_rules is None:
             raise ValueError("Output collection types must specify source of collection type information (e.g. structured_like or type_source).")
         if dataset_collector_descriptions and (structured_like or collection_type_from_rules):
             raise ValueError("Cannot specify dynamic structure (discovered_datasets) and collection type attributes structured_like or collection_type_from_rules.")
-        self.dynamic = dataset_collector_descriptions is not None
+        self.dynamic = bool(dataset_collector_descriptions)
 
     def collection_prototype(self, inputs, type_registry):
         # either must have specified structured_like or something worse
@@ -231,6 +276,26 @@ class ToolOutputCollectionStructure(object):
             collection_prototype = type_registry.prototype(collection_type)
             collection_prototype.collection_type = collection_type
         return collection_prototype
+
+    def to_dict(self):
+        return {
+            'collection_type': self.collection_type,
+            'collection_type_source': self.collection_type_source,
+            'collection_type_from_rules': self.collection_type_from_rules,
+            'structured_like': self.structured_like,
+            'discover_datasets': [d.to_dict() for d in self.dataset_collector_descriptions],
+        }
+
+    @staticmethod
+    def from_dict(as_dict):
+        structure = ToolOutputCollectionStructure(
+            collection_type=as_dict['collection_type'],
+            collection_type_source=as_dict['collection_type_source'],
+            collection_type_from_rules=as_dict['collection_type_from_rules'],
+            structured_like=as_dict['structured_like'],
+            dataset_collector_descriptions=dataset_collector_descriptions_from_output_dict(as_dict),
+        )
+        return structure
 
 
 class ToolOutputCollectionPart(object):

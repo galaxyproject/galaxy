@@ -1,10 +1,14 @@
 """
-Manager and serializer for cloud authorizations (cloudauthzs).
+Manager and (de)serializer for cloud authorizations (cloudauthzs).
 """
 
 import logging
 
 from galaxy import model
+from galaxy.exceptions import (
+    InternalServerError,
+    MalformedId
+)
 from galaxy.managers import base
 from galaxy.managers import sharable
 
@@ -55,9 +59,65 @@ class CloudAuthzsSerializer(base.ModelSerializer):
             'model_class'  : lambda *a, **c: 'CloudAuthz',
             'user_id'      : lambda i, k, **c: self.app.security.encode_id(i.user_id),
             'provider'     : lambda i, k, **c: str(i.provider),
-            'config'       : lambda i, k, **c: str(i.config),
+            'config'       : lambda i, k, **c: i.config,
             'authn_id'     : lambda i, k, **c: self.app.security.encode_id(i.authn_id),
             'last_update'  : lambda i, k, **c: str(i.last_update),
             'last_activity': lambda i, k, **c: str(i.last_activity),
             'create_time'  : lambda i, k, **c: str(i.create_time)
         })
+
+
+class CloudAuthzsDeserializer(base.ModelDeserializer):
+    """
+    Service object for validating and deserializing dictionaries that
+    update/alter cloudauthz configurations.
+    """
+    model_manager_class = CloudAuthzManager
+
+    def add_deserializers(self):
+        super(CloudAuthzsDeserializer, self).add_deserializers()
+        self.deserializers.update({
+            'authn_id': self.deserialize_and_validate_authn_id,
+            'provider': self.default_deserializer,
+            'config': self.default_deserializer,
+            'deleted': self.default_deserializer
+        })
+
+    def deserialize_and_validate_authn_id(self, item, key, val, **context):
+        """
+        Deserializes an authentication ID (authn_id), and asserts if the
+        current user can assume that authentication.
+
+        :type  item:    galaxy.model.CloudAuthz
+        :param item:    an instance of cloudauthz
+
+        :type  key:     string
+        :param key:     `authn_id` attribute of the cloudauthz object (i.e., the `item` param).
+
+        :type  val:     string
+        :param val:     the value of `authn_id` attribute of the cloudauthz object (i.e., the `item` param).
+
+        :type  context: dict
+        :param context: a dictionary object containing Galaxy `trans`.
+
+        :rtype:         string
+        :return:        decoded authentication ID.
+        """
+
+        try:
+            decoded_authn_id = self.app.security.decode_id(val)
+        except Exception:
+            log.debug("cannot decode authz_id `" + str(val) + "`")
+            raise MalformedId("Invalid `authz_id` {}!".format(val))
+
+        trans = context.get("trans")
+        if trans is None:
+            log.debug("Not found expected `trans` when deserializing CloudAuthz.")
+            raise InternalServerError
+
+        try:
+            trans.app.authnz_manager.can_user_assume_authn(trans, decoded_authn_id)
+        except Exception as e:
+            raise e
+
+        return decoded_authn_id
