@@ -10,10 +10,12 @@ import datetime
 import logging
 import sys
 
-from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, MetaData, Table
+from sqlalchemy import MetaData
 
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrate.versions.util import (
+    add_index,
+    drop_index,
+)
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
@@ -25,35 +27,19 @@ handler.setFormatter(formatter)
 log.addHandler(handler)
 metadata = MetaData()
 
-HistoryDatasetAssociationDisplayAtAuthorization_table = Table("history_dataset_association_display_at_authorization", metadata,
-                                                              Column("id", Integer, primary_key=True),
-                                                              Column("create_time", DateTime, default=now),
-                                                              Column("update_time", DateTime, index=True, default=now, onupdate=now),
-                                                              Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-                                                              Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                                                              Column("site", TrimmedString(255)))
-
 
 def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine
+    metadata.reflect()
+
     if migrate_engine.name == 'mysql':
-        # Load existing tables
-        metadata.reflect()
-        i = Index("ix_hdadaa_history_dataset_association_id", HistoryDatasetAssociationDisplayAtAuthorization_table.c.history_dataset_association_id)
-        try:
-            i.create()
-        except Exception:
-            log.exception("Adding index 'ix_hdadaa_history_dataset_association_id' to table 'history_dataset_association_display_at_authorization' table failed.")
+        add_index('ix_hdadaa_history_dataset_association_id', 'history_dataset_association_display_at_authorization', 'history_dataset_association_id', metadata)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
+    metadata.reflect()
+
     if migrate_engine.name == 'mysql':
-        # Load existing tables
-        metadata.reflect()
-        i = Index("ix_hdadaa_history_dataset_association_id", HistoryDatasetAssociationDisplayAtAuthorization_table.c.history_dataset_association_id)
-        try:
-            i.drop()
-        except Exception:
-            log.exception("Removing index 'ix_hdadaa_history_dataset_association_id' from table 'history_dataset_association_display_at_authorization' table failed.")
+        drop_index('ix_hdadaa_history_dataset_association_id', 'history_dataset_association_display_at_authorization', 'history_dataset_association_id', metadata)

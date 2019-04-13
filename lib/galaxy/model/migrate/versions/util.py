@@ -78,7 +78,7 @@ def add_column(column, table, metadata=None, **kwds):
 
 def alter_column(column_name, table, metadata=None, **kwds):
     """
-    :param table: Table to drop the column from
+    :param table: Table to alter
     :type table: :class:`Table` or str
 
     :param metadata: Needed only if ``table`` is a table name
@@ -114,7 +114,7 @@ def drop_column(column_name, table, metadata=None):
 
 def add_index(index_name, table, column_name, metadata=None):
     """
-    :param table: Table to drop the column from
+    :param table: Table to add the index to
     :type table: :class:`Table` or str
 
     :param metadata: Needed only if ``table`` is a table name
@@ -131,3 +131,24 @@ def add_index(index_name, table, column_name, metadata=None):
             log.debug("Index '%s' on column '%s' in table '%s' already exists.", index_name, column_name, table)
     except Exception:
         log.exception("Adding index '%s' on column '%s' to table '%s' failed.", index_name, column_name, table)
+
+
+def drop_index(index_name, table, column_name, metadata=None):
+    """
+    :param table: Table to drop the index from
+    :type table: :class:`Table` or str
+
+    :param metadata: Needed only if ``table`` is a table name
+    :type metadata: :class:`Metadata`
+    """
+    try:
+        if not isinstance(table, Table):
+            assert metadata is not None
+            table = Table(table, metadata, autoload=True)
+        if index_name in [ix.name for ix in table.indexes]:
+            index = Index(index_name, table.c[column_name])
+            index.drop()
+        else:
+            log.debug("Index '%s' in table '%s' does not exist.", index_name, table)
+    except Exception:
+        log.exception("Dropping index '%s' from table '%s' failed", index_name, table)

@@ -10,13 +10,21 @@ from __future__ import print_function
 import logging
 import sys
 
-from sqlalchemy import Column, ForeignKey, Index, Integer, MetaData, String, Table
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table
+)
 
 from galaxy.model.migrate.versions.util import (
     add_column,
     add_index,
     create_table,
     drop_column,
+    drop_index,
     drop_table
 )
 
@@ -62,12 +70,7 @@ def downgrade(migrate_engine):
     metadata.reflect()
 
     # Drop the ix_dataset_state index
-    Dataset_table = Table("dataset", metadata, autoload=True)
-    i = Index("ix_dataset_state", Dataset_table.c.state)
-    try:
-        i.drop()
-    except Exception:
-        log.exception("Dropping index 'ix_dataset_state' from dataset table failed.")
+    drop_index('ix_dataset_state', 'dataset', 'state', metadata)
 
     # Drop the library_folder_id column
     drop_column('library_folder_id', 'job', metadata)
