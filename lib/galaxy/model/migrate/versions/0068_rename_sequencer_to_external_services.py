@@ -11,7 +11,6 @@ from __future__ import print_function
 import datetime
 import logging
 
-from migrate import ForeignKeyConstraint
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -50,19 +49,12 @@ def upgrade(migrate_engine):
 
     # Add 'external_services_id' column to 'sample_dataset' table
     SampleDataset_table = Table("sample_dataset", metadata, autoload=True)
-    ExternalServices_table = Table("external_service", metadata, autoload=True)
-    col = Column("external_service_id", Integer, index=True)
-    add_column(col, SampleDataset_table, index_name="ix_sample_dataset_external_service_id")
+    # SQLAlchemy Migrate has a bug when adding a column with both a ForeignKey and a index in SQLite
     if migrate_engine.name != 'sqlite':
-        # Add a foreign key to the external_service table in the sample_dataset table
-        try:
-            cons = ForeignKeyConstraint([SampleDataset_table.c.external_service_id],
-                                        [ExternalServices_table.c.id],
-                                        name='sample_dataset_external_services_id_fk')
-            # Create the constraint
-            cons.create()
-        except Exception:
-            log.exception("Adding foreign key constraint 'sample_dataset_external_services_id_fk' to table 'sample_dataset' failed.")
+        col = Column("external_service_id", Integer, ForeignKey("external_service.id", name='sample_dataset_external_services_id_fk'), index=True)
+    else:
+        col = Column("external_service_id", Integer, index=True)
+    add_column(col, SampleDataset_table, index_name="ix_sample_dataset_external_service_id")
 
     # populate the column
     cmd = "SELECT sample_dataset.id, request_type.sequencer_id " \
@@ -81,6 +73,7 @@ def upgrade(migrate_engine):
 
     # rename 'sequencer_type_id' column to 'external_service_type_id' in the table 'external_service'
     # create the column as 'external_service_type_id'
+    ExternalServices_table = Table("external_service", metadata, autoload=True)
     col = Column("external_service_type_id", TrimmedString(255))
     add_column(col, ExternalServices_table)
 
