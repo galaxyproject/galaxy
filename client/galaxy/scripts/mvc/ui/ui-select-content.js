@@ -225,17 +225,22 @@ var View = Backbone.View.extend({
     value: function(new_value) {
         let galaxy = getGalaxyInstance();
         new_value !== undefined && this.model.set("value", new_value);
-        var current = this.model.get("current");
+        let current = this.model.get("current");
         if (this.config[current]) {
-            var id_list = this.fields[current].value();
+            let id_list = this.fields[current].value();
             if (id_list !== null) {
                 id_list = $.isArray(id_list) ? id_list : [id_list];
                 if (id_list.length > 0) {
-                    var result = this._batch({ values: [] });
-                    for (var i in id_list) {
-                        var details = this.cache[`${id_list[i]}_${this.config[current].src}`];
+                    let result = this._batch({ values: [] });
+                    for (let i in id_list) {
+                        let details = this.cache[`${id_list[i]}_${this.config[current].src}`];
                         if (details) {
-                            result.values.push(details);
+                            let d = Object.assign({}, details);
+                            if (d.origin) {
+                                d.id = d.id.substr(d.origin.length);
+                                d.src = d.origin;
+                            }
+                            result.values.push(d);
                         } else {
                             galaxy.emit.debug(
                                 "ui-select-content::value()",
@@ -401,6 +406,7 @@ var View = Backbone.View.extend({
                     keep: item.keep,
                     label: `${item.hid}: ${item.name}`,
                     value: item.id,
+                    origin: item.origin,
                     tags: item.tags
                 });
                 self.cache[`${item.id}_${src}`] = item;
@@ -465,6 +471,7 @@ var View = Backbone.View.extend({
                             src: new_src,
                             hid: v.hid || "Selected",
                             name: v.name ? v.name : new_id,
+                            origin: v.origin,
                             keep: true,
                             tags: []
                         });
