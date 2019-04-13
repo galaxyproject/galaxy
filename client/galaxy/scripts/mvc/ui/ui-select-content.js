@@ -178,8 +178,8 @@ var View = Backbone.View.extend({
             }
         });
 
-        // track current history elements
-        this.history = {};
+        // track current cache elements
+        this.cache = {};
 
         // add listeners
         this.listenTo(this.model, "change:data", this._changeData, this);
@@ -233,7 +233,7 @@ var View = Backbone.View.extend({
                 if (id_list.length > 0) {
                     var result = this._batch({ values: [] });
                     for (var i in id_list) {
-                        var details = this.history[`${id_list[i]}_${this.config[current].src}`];
+                        var details = this.cache[`${id_list[i]}_${this.config[current].src}`];
                         if (details) {
                             result.values.push(details);
                         } else {
@@ -403,7 +403,7 @@ var View = Backbone.View.extend({
                     value: item.id,
                     tags: item.tags
                 });
-                self.history[`${item.id}_${src}`] = item;
+                self.cache[`${item.id}_${src}`] = item;
             });
         });
         _.each(this.config, (c, i) => {
@@ -512,7 +512,7 @@ var View = Backbone.View.extend({
         var current = this.model.get("current");
         var config = this.config[current];
         if (config.src == "hdca") {
-            var hdca = this.history[`${this.fields[current].value()}_hdca`];
+            var hdca = this.cache[`${this.fields[current].value()}_hdca`];
             if (hdca && hdca.map_over_type) {
                 result["batch"] = true;
             }
