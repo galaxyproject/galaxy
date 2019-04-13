@@ -354,6 +354,7 @@ var View = Backbone.View.extend({
                     },
                     {
                         multiple: cnf.multiple,
+                        library: !cnf.multiple,
                         format: null
                     }
                 );
