@@ -249,7 +249,7 @@ class HistoriesApiTestCase(api.ApiTestCase):
         # The cleanup() method of the __IMPORT_HISTORY__ job (which is executed
         # after the job has entered its final state):
         # - creates a new dataset with 'ok' state and adds it to the history
-        # - starts a __SET_METADATA__ job to regerenate the dataset metadata, if
+        # - starts a __SET_METADATA__ job to regenerate the dataset metadata, if
         #   needed
         # We need to wait a bit for the creation of the __SET_METADATA__ job.
         time.sleep(1)
