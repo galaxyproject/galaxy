@@ -260,7 +260,6 @@ class DefaultToolAction(object):
         for data in inp_data.values():
             if not data:
                 continue
-
             for tag in data.auto_propagated_tags:
                 preserved_tags[tag.value] = tag
 
