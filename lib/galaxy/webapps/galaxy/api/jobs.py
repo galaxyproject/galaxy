@@ -14,8 +14,10 @@ from galaxy import model
 from galaxy import util
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.jobs import JobSearch
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import (
+    expose_api,
+    expose_api_anonymous,
+)
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy.work.context import WorkRequestContext

@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 
 
 class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaParamParser):
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def index(self, trans, deleted='False', **kwd):
         """
@@ -50,7 +50,7 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
             rval.append(item)
         return rval
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def show(self, trans, id, deleted='False', **kwd):
         """
@@ -61,7 +61,7 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         quota = self.get_quota(trans, id, deleted=util.string_as_bool(deleted))
         return quota.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'total_disk_usage': float})
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def create(self, trans, payload, **kwd):
         """
@@ -82,7 +82,7 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         item['message'] = message
         return item
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def update(self, trans, id, payload, **kwd):
         """
@@ -120,7 +120,7 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
             messages.append(message)
         return '; '.join(messages)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def delete(self, trans, id, **kwd):
         """
@@ -142,7 +142,7 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
             raise HTTPBadRequest(detail=str(e))
         return message
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def undelete(self, trans, id, **kwd):
         """

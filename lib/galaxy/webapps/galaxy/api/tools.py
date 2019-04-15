@@ -8,10 +8,12 @@ from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.tools import global_tool_errors
 from galaxy.util.json import safe_dumps
 from galaxy.util.odict import odict
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
-from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
+from galaxy.web import (
+    expose_api,
+    expose_api_anonymous,
+    expose_api_anonymous_and_sessionless,
+    expose_api_raw_anonymous_and_sessionless,
+)
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
 from ._fetch_util import validate_and_normalize_targets
@@ -401,7 +403,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             rval.append(citation.to_dict('bibtex'))
         return rval
 
-    @web.expose_api_raw
+    @web.legacy_expose_api_raw
     @web.require_admin
     def download(self, trans, id, **kwds):
         tool_tarball = trans.app.toolbox.package_tool(trans, id)

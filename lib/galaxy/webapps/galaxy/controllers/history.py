@@ -246,7 +246,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def list_published(self, trans, **kwargs):
         return self.published_list_grid(trans, **kwargs)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_login("work with multiple histories")
     def list(self, trans, **kwargs):
         """List all available histories"""
@@ -658,7 +658,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             user_is_owner=user_is_owner, history_dict=history_dictionary,
             user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_login("changing default permissions")
     def permissions(self, trans, payload=None, **kwd):
         """
@@ -696,7 +696,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             trans.app.security_agent.history_set_default_permissions(history, permissions)
             return {'message': 'Default history \'%s\' dataset permissions have been changed.' % history.name}
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_login("make datasets private")
     def make_private(self, trans, history_id=None, all_histories=False, **kwd):
         """
@@ -1210,7 +1210,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return
         # TODO: used in page/editor.mako
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_login("rename histories")
     def rename(self, trans, payload=None, **kwd):
         id = kwd.get('id')

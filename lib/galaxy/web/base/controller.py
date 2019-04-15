@@ -1410,7 +1410,7 @@ class SharableMixin(object):
         item.slug = new_slug
         return item.slug == cur_slug
 
-    @web.expose_api
+    @web.legacy_expose_api
     def sharing(self, trans, id, payload=None, **kwd):
         skipped = False
         class_name = self.manager.model_class.__name__

@@ -631,7 +631,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             kwd['status'] = status
         return self.user_list_grid(trans, **kwd)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def quotas_list(self, trans, payload=None, **kwargs):
         message = kwargs.get('message', '')
@@ -663,7 +663,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             kwargs['status'] = status or 'done'
         return self.quota_list_grid(trans, **kwargs)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def create_quota(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
@@ -711,7 +711,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def rename_quota(self, trans, payload=None, **kwd):
         id = kwd.get('id')
@@ -737,7 +737,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def manage_users_and_groups_for_quota(self, trans, payload=None, **kwd):
         quota_id = kwd.get('id')
@@ -773,7 +773,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def edit_quota(self, trans, payload=None, **kwd):
         id = kwd.get('id')
@@ -801,7 +801,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def set_quota_default(self, trans, payload=None, **kwd):
         id = kwd.get('id')
@@ -917,7 +917,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                    message=message,
                                    status=status)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def tool_versions_list(self, trans, **kwd):
         return self.tool_version_list_grid(trans, **kwd)
@@ -945,7 +945,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             kwargs['status'] = status
         return self.role_list_grid(trans, **kwargs)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def create_role(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
@@ -1017,7 +1017,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     message += 'One of the groups associated with this role is the newly created group with the same name.'
                 return {'message' : message}
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def rename_role(self, trans, payload=None, **kwd):
         id = kwd.get('id')
@@ -1055,7 +1055,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         trans.sa_session.flush()
             return {'message': 'Role \'%s\' has been renamed to \'%s\'.' % (old_name, new_name)}
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def manage_users_and_groups_for_role(self, trans, payload=None, **kwd):
         role_id = kwd.get('id')
@@ -1167,7 +1167,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             message += " %s " % role.name
         return (message, "done")
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def groups_list(self, trans, **kwargs):
         message = kwargs.get('message')
@@ -1189,7 +1189,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             kwargs['status'] = status
         return self.group_list_grid(trans, **kwargs)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def rename_group(self, trans, payload=None, **kwd):
         id = kwd.get('id')
@@ -1221,7 +1221,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         trans.sa_session.flush()
             return {'message': 'Group \'%s\' has been renamed to \'%s\'.' % (old_name, new_name)}
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def manage_users_and_roles_for_group(self, trans, payload=None, **kwd):
         group_id = kwd.get('id')
@@ -1260,7 +1260,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             trans.sa_session.refresh(group)
             return {'message' : 'Group \'%s\' has been updated with %d associated users and %d associated roles.' % (group.name, len(in_users), len(in_roles))}
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def create_group(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
@@ -1377,7 +1377,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                                         action='create',
                                                         cntrller='admin'))
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def reset_user_password(self, trans, payload=None, **kwd):
         users = {user_id: get_user(trans, user_id) for user_id in util.listify(kwd.get('id'))}
@@ -1551,7 +1551,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         trans.sa_session.flush()
         return ("New key '%s' generated for requested user '%s'." % (new_key.key, user.email), "done")
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def manage_roles_and_groups_for_user(self, trans, payload=None, **kwd):
         user_id = kwd.get('id')
