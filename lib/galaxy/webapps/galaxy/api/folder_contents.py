@@ -11,7 +11,7 @@ from galaxy import (
 from galaxy.managers import folders
 from galaxy.web import (
     expose_api,
-    expose_api_anonymous as expose_api_anonymous
+    expose_api_anonymous
 )
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 

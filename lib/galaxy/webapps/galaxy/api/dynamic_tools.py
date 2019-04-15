@@ -3,7 +3,7 @@ import logging
 from galaxy import util, web
 from galaxy.exceptions import ObjectNotFound
 from galaxy.web import expose_api
-from galaxy.web import expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)

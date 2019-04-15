@@ -26,9 +26,9 @@ from galaxy.util.json import safe_dumps
 from galaxy.util.streamball import StreamBall
 from galaxy.web import (
     expose_api,
-    expose_api_anonymous as expose_api_anonymous,
+    expose_api_anonymous,
     expose_api_raw,
-    expose_api_raw_anonymous as expose_api_raw_anonymous
+    expose_api_raw_anonymous
 )
 from galaxy.web.base.controller import (
     BaseAPIController,

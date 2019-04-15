@@ -29,8 +29,8 @@ from galaxy.util import (
 )
 from galaxy.web import (
     expose_api,
-    expose_api_anonymous as expose_api_anonymous,
-    expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
+    expose_api_anonymous,
+    expose_api_anonymous_and_sessionless,
     expose_api_raw,
     url_for
 )

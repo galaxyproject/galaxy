@@ -8,7 +8,7 @@ from galaxy import (
 )
 from galaxy.web import (
     expose_api,
-    expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
+    expose_api_anonymous_and_sessionless,
     require_admin as require_admin
 )
 from galaxy.web.base.controller import BaseAPIController
