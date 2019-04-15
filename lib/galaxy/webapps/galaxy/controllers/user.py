@@ -74,51 +74,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 trans.log_event("Assigning role to newly created user")
                 trans.app.security_agent.associate_user_role(user, role)
 
-    def __register(self, trans, email=None, username=None, password=None, subscribe_checked=False, **kwd):
-        """Registers a new user."""
-        email = util.restore_text(email)
-        username = util.restore_text(username)
-        status = None
-        message = None
-        is_admin = trans.user_is_admin
-        user = self.user_manager.create(email=email, username=username, password=password)
-        if subscribe_checked:
-            # subscribe user to email list
-            if trans.app.config.smtp_server is None:
-                status = "error"
-                message = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
-            else:
-                body = 'Join Mailing list.\n'
-                to = trans.app.config.mailing_join_addr
-                frm = email
-                subject = 'Join Mailing List'
-                try:
-                    util.send_mail(frm, to, subject, body, trans.app.config)
-                except Exception:
-                    log.exception('Subscribing to the mailing list has failed.')
-                    status = "warning"
-                    message = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
-        if status != "error":
-            if not is_admin:
-                # The handle_user_login() method has a call to the history_set_default_permissions() method
-                # (needed when logging in with a history), user needs to have default permissions set before logging in
-                trans.handle_user_login(user)
-                trans.log_event("User created a new account")
-                trans.log_event("User logged in")
-            if trans.app.config.user_activation_on:
-                is_activation_sent = self.user_manager.send_activation_email(trans, email, username)
-                if is_activation_sent:
-                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
-                else:
-                    status = "error"
-                    message = 'Unable to send activation email, please contact your local Galaxy administrator.'
-                    if trans.app.config.error_email_to is not None:
-                        message += ' Contact: %s' % trans.app.config.error_email_to
-        else:
-            # User activation is OFF, proceed without sending the activation email.
-            message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
-        return message, status, user, status is None
-
     def __autoregistration(self, trans, login, password, status, kwd, no_password_check=False, cntrller=None):
         """
         Does the autoregistration if enabled. Returns a message
@@ -132,22 +87,22 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             message = " ".join([validate_email(trans, kwd["email"], allow_empty=True),
                                 validate_publicname(trans, kwd["username"])]).rstrip()
             if not message:
-                message, status, user, success = self.__register(trans, **kwd)
-                if success:
-                    # The handle_user_login() method has a call to the history_set_default_permissions() method
-                    # (needed when logging in with a history), user needs to have default permissions set before logging in
-                    if not trans.user_is_admin:
-                        trans.handle_user_login(user)
-                        trans.log_event("User (auto) created a new account")
-                        trans.log_event("User logged in")
-                    if "attributes" in autoreg and "roles" in autoreg["attributes"]:
-                        self.__handle_role_and_group_auto_creation(
-                            trans, user, autoreg["attributes"]["roles"],
-                            auto_create_groups=autoreg["auto_create_groups"],
-                            auto_create_roles=autoreg["auto_create_roles"],
-                            auto_assign_roles_to_groups_only=autoreg["auto_assign_roles_to_groups_only"])
-                else:
-                    message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+                user, message = self.user_manager.register(trans, **kwd)
+                if message:
+                    # message, status, user, success
+                    return message, "error", None, False
+                # The handle_user_login() method has a call to the history_set_default_permissions() method
+                # (needed when logging in with a history), user needs to have default permissions set before logging in
+                if not trans.user_is_admin:
+                    trans.handle_user_login(user)
+                    trans.log_event("User (auto) created a new account")
+                    trans.log_event("User logged in")
+                if "attributes" in autoreg and "roles" in autoreg["attributes"]:
+                    self.__handle_role_and_group_auto_creation(
+                        trans, user, autoreg["attributes"]["roles"],
+                        auto_create_groups=autoreg["auto_create_groups"],
+                        auto_create_roles=autoreg["auto_create_roles"],
+                        auto_assign_roles_to_groups_only=autoreg["auto_assign_roles_to_groups_only"])
             else:
                 message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
         else:
