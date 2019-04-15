@@ -23,6 +23,7 @@ from galaxy import (
     model
 )
 from galaxy.managers import (
+    annotatable,
     base,
     containers,
     deletable,
@@ -431,7 +432,10 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
         return self.serialize_id(content, key, **context)
 
 
-class HistoryContentsFilters(base.ModelFilterParser, deletable.PurgableFiltersMixin, taggable.TaggableFilterMixin):
+class HistoryContentsFilters(base.ModelFilterParser,
+                             annotatable.AnnotatableFilterMixin,
+                             deletable.PurgableFiltersMixin,
+                             taggable.TaggableFilterMixin):
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
 
@@ -496,6 +500,7 @@ class HistoryContentsFilters(base.ModelFilterParser, deletable.PurgableFiltersMi
 
     def _add_parsers(self):
         super(HistoryContentsFilters, self)._add_parsers()
+        annotatable.AnnotatableFilterMixin._add_parsers(self)
         deletable.PurgableFiltersMixin._add_parsers(self)
         taggable.TaggableFilterMixin._add_parsers(self)
         self.orm_filter_parsers.update({
