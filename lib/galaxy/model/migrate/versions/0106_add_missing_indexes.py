@@ -5,9 +5,12 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Index, MetaData, Table
+from sqlalchemy import MetaData
 
-from galaxy.model.migrate.versions.util import add_index
+from galaxy.model.migrate.versions.util import (
+    add_index,
+    drop_index
+)
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -64,10 +67,5 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Drop indexes
     for ix, table, col in indexes:
-        try:
-            t = Table(table, metadata, autoload=True)
-            Index(ix, t.c[col]).drop()
-        except Exception:
-            log.exception("Unable to drop index '%s'.", ix)
+        drop_index(ix, table, col, metadata)

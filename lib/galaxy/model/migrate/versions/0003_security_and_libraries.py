@@ -11,6 +11,8 @@ from sqlalchemy.exc import NoSuchTableError
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString
 from galaxy.model.migrate.versions.util import (
     add_column,
+    add_index,
+    drop_index,
     engine_false,
     localtimestamp,
     nextval
@@ -369,17 +371,7 @@ def upgrade(migrate_engine):
         except Exception:
             log.exception("Adding column 'importable' to stored_workflow table failed.")
     # Create an index on the Job.state column - changeset 2192
-    try:
-        Job_table = Table("job", metadata, autoload=True)
-    except NoSuchTableError:
-        Job_table = None
-        log.debug("Failed loading table job")
-    if Job_table is not None:
-        try:
-            i = Index('ix_job_state', Job_table.c.state)
-            i.create()
-        except Exception:
-            log.exception("Adding index to job.state column failed.")
+    add_index('ix_job_state', 'job', 'state', metadata)
     # Add all of the new tables above
     metadata.create_all()
     # Add 1 foreign key constraint to the history_dataset_association table
@@ -678,17 +670,7 @@ def downgrade(migrate_engine):
     except Exception:
         log.exception("Dropping library_item_info_template table failed.")
     # Drop the index on the Job.state column - changeset 2192
-    try:
-        Job_table = Table("job", metadata, autoload=True)
-    except NoSuchTableError:
-        Job_table = None
-        log.debug("Failed loading table job")
-    if Job_table is not None:
-        try:
-            i = Index('ix_job_state', Job_table.c.state)
-            i.drop()
-        except Exception:
-            log.exception("Dropping index from job.state column failed.")
+    drop_index('ix_job_state', 'job', 'state', metadata)
     # Drop 1 column from the stored_workflow table - changeset 2328
     try:
         StoredWorkflow_table = Table("stored_workflow", metadata, autoload=True)
