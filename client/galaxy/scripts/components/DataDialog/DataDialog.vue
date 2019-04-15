@@ -136,7 +136,7 @@ export default {
                 .then(items => {
                     if (this.library && this.urlTracker.atRoot()) {
                         items.unshift({
-                            name: "Data Libraries",
+                            label: "Data Libraries",
                             url: `${this.root}api/libraries`
                         });
                     }

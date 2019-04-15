@@ -11,7 +11,7 @@
             @row-clicked="clicked"
             @filtered="filtered"
         >
-            <template slot="name" slot-scope="data">
+            <template slot="label" slot-scope="data">
                 <i v-if="data.item.isDataset" class="fa fa-file-o" /> <i v-else class="fa fa-copy" />
                 {{ data.value ? data.value : "-" }}
             </template>
@@ -69,7 +69,7 @@ export default {
         return {
             currentPage: 1,
             fields: {
-                name: {
+                label: {
                     sortable: true
                 },
                 details: {

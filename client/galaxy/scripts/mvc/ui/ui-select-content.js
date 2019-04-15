@@ -452,7 +452,7 @@ var View = Backbone.View.extend({
 
     /** Library datasets are displayed and selected together with history datasets **/
     _patchLibraryItems: function(v) {
-        if (v.src = "ldda") {
+        if (v.src == "ldda") {
             v.src = "hda";
             v.origin = "ldda";
             v.id = `${v.origin}${v.id}`;
