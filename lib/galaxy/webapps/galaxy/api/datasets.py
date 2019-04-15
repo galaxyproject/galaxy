@@ -66,7 +66,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         filters = self.history_contents_filters.parse_filters(filter_params)
         order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=kwd.get('order', 'create_time-dsc'))
         contents = self.history_contents_manager.contents(
-            history=None, filters=filters, limit=limit, offset=offset, order_by=order_by
+            container=None, filters=filters, limit=limit, offset=offset, order_by=order_by
         )
         return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view='summary') for content in contents]
 

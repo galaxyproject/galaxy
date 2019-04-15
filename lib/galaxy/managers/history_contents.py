@@ -247,13 +247,23 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
 
         # cycle back over the union query to create an ordered list of the objects returned in queries 2 & 3 above
         contents = []
+        filters = kwargs.get('filters') or []
+        filters = [f for f in filters if callable(f)]
         # TODO: or as generator?
         for result in contents_results:
             result_type = self._get_union_type(result)
             contents_id = self._get_union_id(result)
             content = id_map[result_type][contents_id]
-            contents.append(content)
+            if self.passes_filters(content, filters):
+                contents.append(content)
         return contents
+
+    @staticmethod
+    def passes_filters(content, filters):
+        for filter_fn in filters:
+            if not filter_fn(content):
+                return False
+        return True
 
     def _union_of_contents_query(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
         """
@@ -277,9 +287,10 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         subcontainer_query = self._contents_common_query_for_subcontainer(container.id if container else None)
         contents_query = contained_query.union(subcontainer_query)
 
-        # TODO: this needs the same fn/orm split that happens in the main query
         for orm_filter in (filters or []):
-            contents_query = contents_query.filter(orm_filter)
+            if not callable(orm_filter):
+                # skip python filters that need to be applied after the qeury
+                contents_query = contents_query.filter(orm_filter)
         contents_query = contents_query.order_by(*order_by)
 
         if limit is not None:
