@@ -562,7 +562,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         Transform inputs from the data libaray to history items.
         """
         for k, v in inputs.items():
-            new_value = self._patch_library_dataset(trans, v, target_history);
+            new_value = self._patch_library_dataset(trans, v, target_history)
             if new_value:
                 v = new_value
             elif hasattr(v, 'values'):

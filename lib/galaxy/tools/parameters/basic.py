@@ -1742,14 +1742,14 @@ class DataToolParameter(BaseDataToolParameter):
             for single_value in value:
                 if isinstance(single_value, dict) and 'src' in single_value and 'id' in single_value:
                     if single_value['src'] == 'hda':
-                        decoded_id = trans.security.decode_id(single_value['id']);
+                        decoded_id = trans.security.decode_id(single_value['id'])
                         rval.append(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(decoded_id))
                     elif single_value['src'] == 'hdca':
                         found_hdca = True
                         decoded_id = trans.security.decode_id(single_value['id'])
                         rval.append(trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(decoded_id))
                     elif single_value['src'] == 'ldda':
-                        decoded_id = trans.security.decode_id(single_value['id']);
+                        decoded_id = trans.security.decode_id(single_value['id'])
                         rval.append(trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(decoded_id))
                     else:
                         raise ValueError("Unknown input source %s passed to job submission API." % single_value['src'])
