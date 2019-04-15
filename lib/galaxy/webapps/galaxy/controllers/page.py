@@ -518,7 +518,7 @@ class PageController(BaseUIController, SharableMixin,
                  'slug'     : p.page.slug,
                  'title'    : p.page.title} for p in shared_by_others]
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_login("create pages")
     def create(self, trans, payload=None, **kwd):
         """
@@ -573,7 +573,7 @@ class PageController(BaseUIController, SharableMixin,
                 trans.sa_session.flush()
             return {'message': 'Page \'%s\' successfully created.' % p.title, 'status': 'success'}
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_login("edit pages")
     def edit(self, trans, payload=None, **kwd):
         """

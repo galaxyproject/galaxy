@@ -16,7 +16,7 @@ from galaxy.util.path import (
     safe_path,
     safe_walk
 )
-from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import expose_api
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)

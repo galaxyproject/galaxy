@@ -25,10 +25,10 @@ from galaxy.managers.jobs import fetch_job_states, summarize_jobs_to_dict
 from galaxy.util.json import safe_dumps
 from galaxy.util.streamball import StreamBall
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous as expose_api_anonymous,
-    _future_expose_api_raw as expose_api_raw,
-    _future_expose_api_raw_anonymous as expose_api_raw_anonymous
+    expose_api,
+    expose_api_anonymous as expose_api_anonymous,
+    expose_api_raw,
+    expose_api_raw_anonymous as expose_api_raw_anonymous
 )
 from galaxy.web.base.controller import (
     BaseAPIController,

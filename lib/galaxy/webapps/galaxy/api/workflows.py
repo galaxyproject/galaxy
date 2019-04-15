@@ -26,8 +26,10 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import (
+    expose_api,
+    expose_api_anonymous_and_sessionless,
+)
 from galaxy.web.base.controller import (
     BaseAPIController,
     SharableMixin,
