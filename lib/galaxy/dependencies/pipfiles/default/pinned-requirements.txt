@@ -1,8 +1,10 @@
+-i https://wheels.galaxyproject.org/simple
+--extra-index-url https://pypi.python.org/simple
 adal==1.2.1
 amqp==2.4.2
 appdirs==1.4.3
 asn1crypto==0.24.0
-avro==1.8.1; python_version < '3'
+avro==1.8.1 ; python_version < '3'
 azure-common==1.1.14
 azure-cosmosdb-nspkg==2.0.2
 azure-cosmosdb-table==1.0.4
@@ -28,7 +30,7 @@ boto3==1.9.114
 boto==2.49.0
 botocore==1.12.130
 bx-python==0.8.2
-bz2file==0.98; python_version < '3.3'
+bz2file==0.98 ; python_version < '3.3'
 cachecontrol==0.11.7
 cachetools==3.1.0
 certifi==2019.3.9
@@ -39,7 +41,7 @@ cliff==2.14.1
 cloudauthz==0.2.0
 cloudbridge==2.0.0
 cmd2==0.8.9
-contextlib2==0.5.5; python_version < '3.5'
+contextlib2==0.5.5 ; python_version < '3.5'
 cryptography==2.6.1
 cwltool==1.0.20180721142728
 debtcollector==1.21.0
@@ -65,7 +67,7 @@ gxformat2==0.8.2
 h5py==2.9.0
 httplib2==0.12.1
 idna==2.8
-ipaddress==1.0.22; python_version < '3.3'
+ipaddress==1.0.22 ; python_version < '3.3'
 isa-rwval==0.10.7
 iso8601==0.1.12
 isodate==0.6.0
@@ -77,9 +79,9 @@ keystoneauth1==3.13.1
 kombu==4.5.0
 lockfile==0.12.2
 lxml==4.3.3
-mako==1.0.8
+mako==1.0.9
 markupsafe==1.1.1
-mercurial==3.7.3; python_version < '3'
+mercurial==3.7.3 ; python_version < '3'
 mistune==0.8.4
 monotonic==1.5
 msgpack==0.6.1
@@ -111,7 +113,7 @@ parsley==1.3
 paste==3.0.8
 pastedeploy==2.0.1
 pastescript==3.1.0
-pathlib2==2.3.2; python_version < '3'
+pathlib2==2.3.2 ; python_version < '3'
 pbr==5.1.3
 prettytable==0.7.2
 prov==1.5.1
@@ -122,6 +124,7 @@ pyasn1==0.4.5
 pycparser==2.19
 pycryptodome==3.8.1
 pyeventsystem==0.1.0
+pyinotify==0.9.6 ; sys_platform != 'win32' and sys_platform != 'darwin' and sys_platform != 'sunos5'
 pyjwt==1.7.1
 pykwalify==1.7.0
 pynacl==1.3.0
@@ -138,7 +141,7 @@ python-jose==3.0.1
 python-keystoneclient==3.17.0
 python-neutronclient==6.9.0
 python-novaclient==11.0.0
-python-openid==2.2.5; python_version < '3.0'
+python-openid==2.2.5 ; python_version < '3.0'
 python-swiftclient==3.6.0
 pytz==2019.1
 pyyaml==5.1
@@ -152,18 +155,18 @@ requestsexceptions==1.4.0
 rfc3986==1.2.0
 routes==2.4.1
 rsa==4.0
-ruamel.ordereddict==0.4.13; platform_python_implementation == 'CPython' and python_version <= '2.7'
+ruamel.ordereddict==0.4.13 ; platform_python_implementation == 'CPython' and python_version <= '2.7'
 ruamel.yaml==0.15.91
 s3transfer==0.2.0
-scandir==1.10.0; python_version < '3.5'
+scandir==1.10.0 ; python_version < '3.5'
 schema-salad==2.7.20181126142424
 shellescape==3.4.1
 simplejson==3.16.0
 six==1.11.0
-social-auth-core==3.1.0
+social-auth-core[openidconnect]==3.1.0
 sqlalchemy-migrate==0.12.0
 sqlalchemy-utils==0.33.11
-sqlalchemy==1.3.2
+sqlalchemy==1.3.3
 sqlparse==0.3.0
 stevedore==1.30.1
 subprocess32==3.5.3 ; python_version < '3.0'
@@ -173,13 +176,13 @@ tenacity==4.12.0
 typing-extensions==3.7.2
 typing==3.6.6 ; python_version < '3.5'
 tzlocal==1.5.1
-unicodecsv==0.14.1; python_version < '3.0'
+unicodecsv==0.14.1 ; python_version < '3.0'
 uritemplate==3.0.0
-urllib3==1.24.1
+urllib3==1.24.1 ; python_version == '2.7'
 uwsgi==2.0.18
 vine==1.3.0
 warlock==1.3.0
-wcwidth==0.1.7; sys_platform != 'win32'
+wcwidth==0.1.7 ; sys_platform != 'win32'
 webencodings==0.5.1
 webob==1.8.5
 whoosh==2.7.4
