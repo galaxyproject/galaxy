@@ -149,28 +149,11 @@ var View = Backbone.View.extend({
                 }
             ]
         });
-        var $batch_div = $("<div/>")
-            .addClass("form-text text-muted")
-            .append($("<i/>").addClass("fa fa-sitemap"))
-            .append(
-                $("<span/>").html(
-                    "This is a batch mode input field. Separate jobs will be triggered for each dataset selection."
-                )
-            );
         this.$batch = {
-            linked: $batch_div.clone(),
-            enabled: $batch_div
+            linked: $(this._templateBatch()).clone(),
+            enabled: $(this._templateBatch())
                 .clone()
-                .append(
-                    $("<div/>")
-                        .append(
-                            $("<div/>")
-                                .addClass("ui-form-title")
-                                .html("Batch options:")
-                        )
-                        .append(this.button_product.$el)
-                )
-                .append($("<div/>").css("clear", "both"))
+                .append(this.button_product.$el)
         };
 
         // add drag-drop event handlers
@@ -186,7 +169,13 @@ var View = Backbone.View.extend({
             this.lastenter === e.target && self.$el.removeClass("ui-dragover");
         });
         element.addEventListener("drop", e => {
-            self._handleDrop(e);
+            e.preventDefault();
+            try {
+                let drop_data = JSON.parse(e.dataTransfer.getData("text"))[0];
+                this._handleDropValues(drop_data);
+            } catch (e) {
+                this._handleDropStatus("danger");
+            }
         });
 
         // track current history elements
@@ -234,7 +223,7 @@ var View = Backbone.View.extend({
 
     /** Return the currently selected dataset values */
     value: function(new_value) {
-        let Galaxy = getGalaxyInstance();
+        let galaxy = getGalaxyInstance();
         new_value !== undefined && this.model.set("value", new_value);
         var current = this.model.get("current");
         if (this.config[current]) {
@@ -248,7 +237,7 @@ var View = Backbone.View.extend({
                         if (details) {
                             result.values.push(details);
                         } else {
-                            Galaxy.emit.debug(
+                            galaxy.emit.debug(
                                 "ui-select-content::value()",
                                 `Requested details not found for '${id_list[i]}'.`
                             );
@@ -260,7 +249,7 @@ var View = Backbone.View.extend({
                 }
             }
         } else {
-            Galaxy.emit.debug("ui-select-content::value()", `Invalid value/source '${new_value}'.`);
+            galaxy.emit.debug("ui-select-content::value()", `Invalid value/source '${new_value}'.`);
         }
         return null;
     },
@@ -269,22 +258,37 @@ var View = Backbone.View.extend({
     _changeCurrent: function() {
         var self = this;
         _.each(this.fields, (field, i) => {
+            let cnf = self.config[i];
             if (self.model.get("current") == i) {
                 field.$el.show();
                 _.each(self.$batch, ($batchfield, batchmode) => {
-                    $batchfield[self.config[i].batch == batchmode ? "show" : "hide"]();
+                    if (cnf.batch == batchmode) {
+                        $batchfield.show();
+                    } else {
+                        $batchfield.hide();
+                    }
                 });
+                if (cnf.showdialog) {
+                    self.button_dialog.show();
+                } else {
+                    self.button_dialog.hide();
+                }
                 self.button_type.value(i);
             } else {
                 field.$el.hide();
             }
         });
+        if (this.fields.length > 1) {
+            this.button_type.show();
+        } else {
+            this.button_type.hide();
+        }
     },
 
     /** Change of type */
     _changeType: function() {
-        let Galaxy = getGalaxyInstance();
-        var self = this;
+        let self = this;
+        let galaxy = getGalaxyInstance();
 
         // identify selector type identifier i.e. [ flavor ]_[ type ]_[ multiple ]
         var config_id =
@@ -295,7 +299,7 @@ var View = Backbone.View.extend({
             this.config = Configurations[config_id];
         } else {
             this.config = Configurations["data"];
-            Galaxy.emit.debug("ui-select-content::_changeType()", `Invalid configuration/type id '${config_id}'.`);
+            galaxy.emit.debug("ui-select-content::_changeType()", `Invalid configuration/type id '${config_id}'.`);
         }
 
         // prepare extension component of error message
@@ -303,7 +307,7 @@ var View = Backbone.View.extend({
         var extensions = Utils.textify(this.model.get("extensions"));
         var src_labels = this.model.get("src_labels");
 
-        // build views
+        // build radio button for data selectors
         this.fields = [];
         this.button_data = [];
         _.each(this.config, (c, i) => {
@@ -329,24 +333,47 @@ var View = Backbone.View.extend({
         this.button_type = new Ui.RadioButton.View({
             value: this.model.get("current"),
             data: this.button_data,
+            cls: "mr-2",
             onchange: function(value) {
                 self.model.set("current", value);
                 self.trigger("change");
             }
         });
 
+        // build data dialog button
+        this.button_dialog = new Ui.Button({
+            icon: "fa-folder-open-o",
+            tooltip: "Browse Datasets",
+            cls: "ml-2",
+            onclick: () => {
+                let current = this.model.get("current");
+                let cnf = this.config[current];
+                galaxy.data.dialog(
+                    response => {
+                        this._handleDropValues(response, false);
+                    },
+                    {
+                        multiple: cnf.multiple,
+                        format: null,
+                        library: false
+                    }
+                );
+            }
+        });
+
         // append views
-        this.$el.empty();
-        var button_width = 0;
-        if (this.fields.length > 1) {
-            this.$el.append(this.button_type.$el);
-            button_width = `${Math.max(0, this.fields.length * 40)}px`;
-        }
+        let $fields = $("<div/>").addClass("w-100");
+        this.$el
+            .empty()
+            .addClass("d-flex flex-row")
+            .append($("<div/>").append(this.button_type.$el))
+            .append($fields)
+            .append($("<div/>").append(this.button_dialog.$el));
         _.each(this.fields, field => {
-            self.$el.append(field.$el.css({ "margin-left": button_width }));
+            $fields.append(field.$el);
         });
         _.each(this.$batch, ($batchfield, batchmode) => {
-            self.$el.append($batchfield.css({ "margin-left": button_width }));
+            $fields.append($batchfield);
         });
         this.model.set("current", 0);
         this._changeCurrent();
@@ -412,52 +439,62 @@ var View = Backbone.View.extend({
         }
     },
 
-    /** Handles drop events e.g. from history panel */
-    _handleDrop: function(ev) {
-        try {
-            var data = this.model.get("data");
-            var current = this.model.get("current");
-            var config = this.config[current];
-            var field = this.fields[current];
-            var drop_data = JSON.parse(ev.dataTransfer.getData("text"))[0];
-            var new_id = drop_data.id;
-            var new_src = drop_data.history_content_type == "dataset_collection" ? "hdca" : "hda";
-            var new_value = { id: new_id, src: new_src };
-            if (data && drop_data.history_id) {
-                if (!_.findWhere(data[new_src], new_value)) {
-                    data[new_src].push({
-                        id: new_id,
-                        src: new_src,
-                        hid: drop_data.hid || "Dropped",
-                        name: drop_data.hid ? drop_data.name : new_id,
-                        keep: true,
-                        tags: []
-                    });
+    /** Source helper matches history_content_types to source types */
+    _getSource: function(v) {
+        return v.history_content_type == "dataset_collection" ? "hdca" : "hda";
+    },
+
+    /** Add values from drag/drop */
+    _handleDropValues: function(drop_data, drop_partial = true) {
+        let data = this.model.get("data");
+        let current = this.model.get("current");
+        let config = this.config[current];
+        let field = this.fields[current];
+        if (data) {
+            let values = $.isArray(drop_data) ? drop_data : [drop_data];
+            if (values.length > 0) {
+                let data_changed = false;
+                _.each(values, v => {
+                    let new_id = v.id;
+                    let new_src = (v.src = this._getSource(v));
+                    let new_value = { id: new_id, src: new_src };
+                    if (!_.findWhere(data[new_src], new_value)) {
+                        data_changed = true;
+                        data[new_src].push({
+                            id: new_id,
+                            src: new_src,
+                            hid: v.hid || "Selected",
+                            name: v.hid ? v.name : new_id,
+                            keep: true,
+                            tags: []
+                        });
+                    }
+                });
+                if (data_changed) {
                     this._changeData();
                 }
-                if (config.src == new_src) {
+                let first_id = values[0].id;
+                let first_src = values[0].src;
+                if (config.src == first_src && drop_partial) {
                     var current_value = field.value();
                     if (current_value && config.multiple) {
-                        if (current_value.indexOf(new_id) == -1) {
-                            current_value.push(new_id);
-                        }
+                        _.each(values, v => {
+                            if (current_value.indexOf(v.id) == -1) {
+                                current_value.push(v.id);
+                            }
+                        });
                     } else {
-                        current_value = new_id;
+                        current_value = first_id;
                     }
                     field.value(current_value);
                 } else {
-                    this.model.set("value", { values: [new_value] });
+                    this.model.set("value", { values: values });
                     this.model.trigger("change:value");
                 }
                 this.trigger("change");
-                this._handleDropStatus("success");
-            } else {
-                this._handleDropStatus("danger");
             }
-        } catch (e) {
-            this._handleDropStatus("danger");
         }
-        ev.preventDefault();
+        this._handleDropStatus("success");
     },
 
     /** Highlight drag result */
@@ -487,6 +524,16 @@ var View = Backbone.View.extend({
             }
         }
         return result;
+    },
+
+    /** Template for batch mode execution options */
+    _templateBatch: function() {
+        return `<div class="form-text text-muted" style="clear: both;">
+                    <i class="fa fa-sitemap"/>
+                    <span>
+                        This is a batch mode input field. Separate jobs will be triggered for each dataset selection.
+                    </span>
+                </div>`;
     }
 });
 
