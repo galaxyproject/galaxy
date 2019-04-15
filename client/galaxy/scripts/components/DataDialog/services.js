@@ -65,9 +65,7 @@ export class Services {
             record.download = `${this.host}/api/histories/${record.history_id}/contents/${record.id}/display`;
             return record;
         } else if (record.type == "file") {
-            record.src = "hda";
-            record.origin = "ldda";
-            record.id  = `${record.origin}${record.id}`;
+            record.src = "ldda";
             if (record.name && record.name[0] === "/") {
                 record.name = record.name.substring(1);
             }

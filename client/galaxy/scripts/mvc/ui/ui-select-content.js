@@ -450,8 +450,18 @@ var View = Backbone.View.extend({
         return v.history_content_type == "dataset_collection" ? "hdca" : "hda";
     },
 
+    /** Library datasets are displayed and selected together with history datasets **/
+    _patchLibraryItems: function(v) {
+        if (v.src = "ldda") {
+            v.src = "hda";
+            v.origin = "ldda";
+            v.id = `${v.origin}${v.id}`;
+        }
+    },
+
     /** Add values from drag/drop */
     _handleDropValues: function(drop_data, drop_partial = true) {
+        let self = this;
         let data = this.model.get("data");
         let current = this.model.get("current");
         let config = this.config[current];
@@ -461,6 +471,7 @@ var View = Backbone.View.extend({
             if (values.length > 0) {
                 let data_changed = false;
                 _.each(values, v => {
+                    self._patchLibraryItems(v);
                     let new_id = v.id;
                     let new_src = (v.src = this._getSource(v));
                     let new_value = { id: new_id, src: new_src };
