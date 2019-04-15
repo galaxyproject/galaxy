@@ -565,7 +565,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             new_value = self._patch_library_dataset(trans, v, target_history)
             if new_value:
                 v = new_value
-            elif hasattr(v, 'values'):
+            elif isinstance(v, dict) and 'values' in v:
                 for index, value in enumerate(v['values']):
                     patched = self._patch_library_dataset(trans, value, target_history)
                     if patched:
