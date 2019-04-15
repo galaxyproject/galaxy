@@ -230,6 +230,8 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         # The rest of the security happens in the library_common controller.
         real_folder_id = trans.security.encode_id(parent.id)
 
+        payload['tag_using_filenames'] = util.string_as_bool(payload.get('tag_using_filenames', None))
+
         # are we copying an HDA to the library folder?
         #   we'll need the id and any message to attach, then branch to that private function
         from_hda_id, from_hdca_id, ldda_message = (payload.pop('from_hda_id', None), payload.pop('from_hdca_id', None), payload.pop('ldda_message', ''))

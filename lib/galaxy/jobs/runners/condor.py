@@ -111,6 +111,7 @@ class CondorJobRunner(AsynchronousJobRunner):
             job_wrapper,
             exit_code_path=cjs.exit_code_file,
             slots_statement=galaxy_slots_statement,
+            shell=job_wrapper.shell,
         )
         try:
             self.write_executable_script(executable, script)

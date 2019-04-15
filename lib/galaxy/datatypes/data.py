@@ -372,7 +372,9 @@ class Data(object):
             return smart_str(data)
         if filename and filename != "index":
             # For files in extra_files_path
-            file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
+            store_by = data.dataset.object_store.store_by
+            extra_dir = 'dataset_%s_files' % getattr(data.dataset, store_by)
+            file_path = trans.app.object_store.get_filename(data.dataset, extra_dir=extra_dir, alt_name=filename)
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
                     with tempfile.NamedTemporaryFile(mode='w', delete=False, dir=trans.app.config.new_file_path, prefix='gx_html_autocreate_') as tmp_fh:
@@ -430,7 +432,7 @@ class Data(object):
         else:
             trans.response.set_content_type("text/html")
             return trans.stream_template_mako("/dataset/large_file.mako",
-                                              truncated_data=open(data.file_name).read(max_peek_size),
+                                              truncated_data=open(data.file_name, 'rb').read(max_peek_size),
                                               data=data)
 
     def _yield_user_file_content(self, trans, from_dataset, filename):
@@ -802,10 +804,16 @@ class Text(Data):
         """
         data_lines = 0
         with compression_utils.get_fileobj(dataset.file_name) as in_file:
-            for line in in_file:
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    data_lines += 1
+            # FIXME: Potential encoding issue can prevent the ability to iterate over lines
+            # causing set_meta process to fail otherwise OK jobs. A better solution than
+            # a silent try/except is desirable.
+            try:
+                for line in in_file:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        data_lines += 1
+            except Exception:
+                pass
         return data_lines
 
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True):

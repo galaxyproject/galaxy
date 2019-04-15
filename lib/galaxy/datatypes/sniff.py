@@ -119,7 +119,7 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     with io.open(fd, mode="wt", encoding='utf-8') as fp:
         i = None
-        for i, line in enumerate(io.open(fname, mode="U", encoding='utf-8')):
+        for i, line in enumerate(io.open(fname, encoding='utf-8')):
             fp.write("%s\n" % line.rstrip("\r\n"))
     if i is None:
         i = 0
@@ -186,7 +186,7 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, t
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     with io.open(fd, mode="wt", encoding='utf-8') as fp:
-        for i, line in enumerate(codecs.open(fname, mode="U", encoding='utf-8')):
+        for i, line in enumerate(io.open(fname, encoding='utf-8')):
             line = line.rstrip('\r\n')
             elems = regexp.split(line)
             fp.write(u"%s\n" % '\t'.join(elems))
@@ -199,27 +199,19 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, t
 
 
 def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
+    idx = 0
     if isinstance(fname_or_file_prefix, FilePrefix):
-        idx = 0
-        for line in fname_or_file_prefix.line_iterator():
-            line = line.rstrip('\n\r')
-            if comment_designator is not None and comment_designator != '' and line.startswith(comment_designator):
-                continue
-            yield line.split(sep)
-            idx += 1
-            if idx == count:
-                break
+        file_iterator = fname_or_file_prefix.line_iterator()
     else:
-        with compression_utils.get_fileobj(fname_or_file_prefix) as in_file:
-            idx = 0
-            for line in in_file:
-                line = line.rstrip('\n\r')
-                if comment_designator is not None and comment_designator != '' and line.startswith(comment_designator):
-                    continue
-                yield line.split(sep)
-                idx += 1
-                if idx == count:
-                    break
+        file_iterator = compression_utils.get_fileobj(fname_or_file_prefix)
+    for line in file_iterator:
+        line = line.rstrip('\n\r')
+        if comment_designator is not None and comment_designator != '' and line.startswith(comment_designator):
+            continue
+        yield line.split(sep)
+        idx += 1
+        if idx == count:
+            break
 
 
 def get_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
@@ -479,6 +471,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.fastqsanger.gz')
     >>> guess_ext(fname, sniff_order)  # See test_datatype_registry for more compressed type tests.
     'fastqsanger.gz'
+    >>> fname = get_test_fname('1.mtx')
+    >>> guess_ext(fname, sniff_order)
+    'mtx'
     """
     file_prefix = FilePrefix(fname)
     file_ext = run_sniffers_raw(file_prefix, sniff_order, is_binary)

@@ -86,14 +86,16 @@
     %endif
 </%def>
 
-<%def name="render_item( workflow, steps )">
+<%def name="render_item( workflow, steps, outer_workflow=True )">
     <%
         # HACK: Rendering workflow steps requires that trans have a history; however, if its user's first visit to Galaxy is here, he won't have a history
         # and an error will occur. To prevent this error, make sure user has a history. 
         trans.get_history( most_recent=True, create=True )
     %>
+    %if outer_workflow:
     <table class="annotated-item">
         <tr><th>Step</th><th class="annotation">Annotation</th></tr>
+    %endif
         %for i, step in enumerate( steps ):
             <tr><td>
             %if step.type == 'tool' or step.type is None:
@@ -109,6 +111,25 @@
                 %else:
                   <div class="card-header">Step ${int(step.order_index)+1}: Unknown Tool with id '${step.tool_id | h}'</div>
                 %endif
+              </div>
+            %elif step.type == 'subworkflow':
+              <div class="card mt-3 mr-3">
+                  <div class="card-header">Step ${int(step.order_index)+1}: ${step.label or (step.subworkflow.name if step.subworkflow else "Missing workflow") | h}</div>
+                  <% errors = step.module.get_errors() %>
+                  %if errors:
+                    <div class="card-body">
+                      <b>Error in Subworkflow:</b>
+                      <ul>
+                        %for error in errors:
+                          <li>${error}</li>
+                        %endfor
+                      </ul>
+                    </div>
+                  %else:
+                    <div class="card-body">
+                      <table>${render_item( step.subworkflow, step.subworkflow.steps, outer_workflow=False )}</table>
+                    </div>
+                  %endif
               </div>
             %else:
             ## TODO: always input dataset?
@@ -128,5 +149,7 @@
             </td>
             </tr>
         %endfor
+    %if outer_workflow:
     </table>
+    %endif
 </%def>

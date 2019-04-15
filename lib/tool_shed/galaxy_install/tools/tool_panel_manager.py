@@ -372,7 +372,7 @@ class ToolPanelManager(object):
                                                    new_tool_panel_section_label=new_tool_panel_section_label)
         return tool_section, tool_panel_section_key
 
-    def remove_from_shed_tool_config(self, shed_tool_conf_dict, guids_to_remove):
+    def remove_from_shed_tool_config(self, shed_tool_conf_dict, metadata):
         """
         A tool shed repository is being uninstalled so change the
         shed_tool_conf file. Parse the config file to generate the entire list
@@ -380,6 +380,13 @@ class ToolPanelManager(object):
         subset of the entire list if one or more repositories have been
         deactivated.
         """
+        if 'tools' not in metadata:
+            return
+        # We need to use the tool path to uniquely identify the tools to remove,
+        # since multiple installable revisions of a repository can provide the
+        # same version of a tool (i.e. there may be another tool with the same
+        # guid that we should not remove from shed_tool_conf).
+        guid_paths_to_remove = [(_['guid'], _['tool_config']) for _ in metadata['tools']]
         shed_tool_conf = shed_tool_conf_dict['config_filename']
         tool_path = shed_tool_conf_dict['tool_path']
         config_elems = []
@@ -393,7 +400,7 @@ class ToolPanelManager(object):
                 if config_elem.tag == 'section':
                     tool_elems_to_remove = []
                     for tool_elem in config_elem:
-                        if tool_elem.get('guid') in guids_to_remove:
+                        if (tool_elem.get('guid'), tool_elem.get('file')) in guid_paths_to_remove:
                             tool_elems_to_remove.append(tool_elem)
                     for tool_elem in tool_elems_to_remove:
                         # Remove all of the appropriate tool sub-elements from the section element.
@@ -402,7 +409,7 @@ class ToolPanelManager(object):
                         # Keep a list of all empty section elements so they can be removed.
                         config_elems_to_remove.append(config_elem)
                 elif config_elem.tag == 'tool':
-                    if config_elem.get('guid') in guids_to_remove:
+                    if (tool_elem.get('guid'), tool_elem.get('file')) in guid_paths_to_remove:
                         config_elems_to_remove.append(config_elem)
             for config_elem in config_elems_to_remove:
                 config_elems.remove(config_elem)
@@ -424,18 +431,15 @@ class ToolPanelManager(object):
         # Create a list of guids for all tools that will be removed from the in-memory tool panel
         # and config file on disk.
         guids_to_remove = list(tool_panel_dict.keys())
-        self.remove_guids(guids_to_remove, shed_tool_conf, uninstall)
-
-    def remove_guids(self, guids_to_remove, shed_tool_conf, uninstall):
         toolbox = self.app.toolbox
         # Remove the tools from the toolbox's tools_by_id dictionary.
         for guid_to_remove in guids_to_remove:
             # remove_from_tool_panel to false, will handling that logic below.
             toolbox.remove_tool_by_id(guid_to_remove, remove_from_panel=False)
         shed_tool_conf_dict = self.get_shed_tool_conf_dict(shed_tool_conf)
-        # Always remove from the shed_tool_conf file on disk. Used to test for uninstall, not sure there is a legitimate use for this?!
         if uninstall:
-            self.remove_from_shed_tool_config(shed_tool_conf_dict, guids_to_remove)
+            # Remove from the shed_tool_conf file on disk.
+            self.remove_from_shed_tool_config(shed_tool_conf_dict, repository.metadata)
 
     def update_tool_panel_dict(self, tool_panel_dict, tool_panel_section_mapping, repository_tools_tups):
         for tool_guid in tool_panel_dict:

@@ -4,8 +4,8 @@ import yaml
 
 from galaxy import model
 from galaxy.model import mapping
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import bunch
-from galaxy.web.security import SecurityHelper
 
 
 class MockTrans(object):
@@ -47,7 +47,7 @@ class TestApp(object):
         )
         self.toolbox = TestToolbox()
         self.datatypes_registry = TestDatatypesRegistry()
-        self.security = SecurityHelper(id_secret="testing")
+        self.security = IdEncodingHelper(id_secret="testing")
 
 
 class TestDatatypesRegistry(object):
@@ -64,7 +64,7 @@ class TestToolbox(object):
     def __init__(self):
         self.tools = {}
 
-    def get_tool(self, tool_id, tool_version=None, exact=False):
+    def get_tool(self, tool_id, tool_version=None, exact=False, tool_uuid=None):
         # Real tool box returns None of missing tool also
         return self.tools.get(tool_id, None)
 
@@ -123,6 +123,9 @@ def yaml_to_model(has_dict, id_offset=100):
                 value = inputs
             if key == "workflow_outputs":
                 value = [partial(_dict_to_workflow_output, workflow_step)(_) for _ in value]
+            if key == 'collection_type':
+                key = 'tool_inputs'
+                value = {'collection_type': value}
             setattr(workflow_step, key, value)
         workflow.steps.append(workflow_step)
 

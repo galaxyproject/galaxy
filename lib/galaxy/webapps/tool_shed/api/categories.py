@@ -73,10 +73,16 @@ class CategoriesController(BaseAPIController):
         Return information about the provided category and the repositories in that category.
 
         :param id: the encoded id of the Category object
+        :param sort_key: the field by which the repositories should be sorted
+        :param sort_order: ascending or descending sort
+        :param page: the page number to return
 
         Example: GET localhost:9009/api/categories/f9cad7b01a472135/repositories
         """
         installable = util.asbool(kwd.get('installable', 'false'))
+        sort_key = kwd.get('sort_key', 'name')
+        sort_order = kwd.get('sort_order', 'asc')
+        page = kwd.get('page', None)
         category = suc.get_category(self.app, category_id)
         if category is None:
             category_dict = dict(message='Unable to locate category record for id %s.' % (str(id)),
@@ -84,10 +90,16 @@ class CategoriesController(BaseAPIController):
             return category_dict
         category_dict = category.to_dict(view='element',
                                          value_mapper=self.__get_value_mapper(trans))
+        category_dict['repository_count'] = suc.count_repositories_in_category(self.app, category_id)
         category_dict['url'] = web.url_for(controller='categories',
                                            action='show',
                                            id=trans.security.encode_id(category.id))
-        repositories = repository_util.get_repositories_by_category(self.app, category.id, installable=installable)
+        repositories = repository_util.get_repositories_by_category(self.app,
+                                                                    category.id,
+                                                                    installable=installable,
+                                                                    sort_order=sort_order,
+                                                                    sort_key=sort_key,
+                                                                    page=page)
         category_dict['repositories'] = repositories
         return category_dict
 

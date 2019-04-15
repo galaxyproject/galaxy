@@ -5,7 +5,7 @@
     </requirements>
     <action module="galaxy.tools.actions.metadata" class="SetMetadataToolAction"/>
     <command detect_errors="exit_code">
-"\${GALAXY_PYTHON:-python}" '${set_metadata}' ${__SET_EXTERNAL_METADATA_COMMAND_LINE__}
+cd ..; "\${GALAXY_PYTHON:-python}" '${set_metadata}' ${__SET_EXTERNAL_METADATA_COMMAND_LINE__}
     </command>
     <configfiles>
         <configfile name="set_metadata">from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()</configfile>

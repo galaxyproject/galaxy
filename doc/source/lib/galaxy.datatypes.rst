@@ -27,6 +27,14 @@ galaxy\.datatypes\.annotation module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.datatypes\.anvio module
+-------------------------------
+
+.. automodule:: galaxy.datatypes.anvio
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.datatypes\.assembly module
 ----------------------------------
 
@@ -119,6 +127,14 @@ galaxy\.datatypes\.interval module
 ----------------------------------
 
 .. automodule:: galaxy.datatypes.interval
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.datatypes\.isa module
+-----------------------------
+
+.. automodule:: galaxy.datatypes.isa
     :members:
     :undoc-members:
     :show-inheritance:

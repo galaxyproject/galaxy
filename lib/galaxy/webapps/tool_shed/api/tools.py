@@ -178,7 +178,6 @@ class ToolsController(BaseAPIController):
         tool_dict.update({
             'help'          : tool_help,
             'citations'     : bool(tool.citations),
-            'biostar_url'   : trans.app.config.biostar_url,
             'requirements'  : [{'name' : r.name, 'version' : r.version} for r in tool.requirements],
             'state_inputs'  : params_to_strings(tool.inputs, {}, trans.app),
             'display'       : tool.display_interface,

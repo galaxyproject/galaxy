@@ -104,6 +104,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/admin/data_manager{path_info:.*}', 'admin')
     webapp.add_client_route('/admin/error_stack', 'admin')
     webapp.add_client_route('/admin/users', 'admin')
+    webapp.add_client_route('/admin/users/create', 'admin')
     webapp.add_client_route('/admin/display_applications', 'admin')
     webapp.add_client_route('/admin/roles', 'admin')
     webapp.add_client_route('/admin/forms', 'admin')
@@ -215,6 +216,11 @@ def populate_api_routes(webapp, app):
                            name_prefix='history_',
                            path_prefix='/api/histories/{history_id}',
                            parent_resources=dict(member_name='history', collection_name='histories'))
+    webapp.mapper.connect("history_contents_batch_update",
+                          "/api/histories/{history_id}/contents",
+                          controller="history_contents",
+                          action="update_batch",
+                          conditions=dict(method=["PUT"]))
     webapp.mapper.connect("history_contents_display",
                           "/api/histories/{history_id}/contents/{history_content_id}/display",
                           controller="datasets",
@@ -308,6 +314,18 @@ def populate_api_routes(webapp, app):
                           controller='cloudauthz',
                           conditions=dict(method=["POST"]))
 
+    webapp.mapper.connect('delete_cloudauthz_item',
+                          '/api/cloud/authz/{encoded_authz_id}',
+                          action='delete',
+                          controller='cloudauthz',
+                          conditions=dict(method=["DELETE"]))
+
+    webapp.mapper.connect('upload_cloudauthz_item',
+                          '/api/cloud/authz/{encoded_authz_id}',
+                          action='update',
+                          controller="cloudauthz",
+                          conditions=dict(method=["PUT"]))
+
     webapp.mapper.connect('get_custom_builds_metadata',
                           '/api/histories/{id}/custom_builds_metadata',
                           controller='histories',
@@ -337,6 +355,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{id:.+?}/build_dependency_cache', action='build_dependency_cache', controller="tools", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/tools/{id:.+?}', action='show', controller="tools")
     webapp.mapper.resource('tool', 'tools', path_prefix='/api')
+    webapp.mapper.resource('dynamic_tools', 'dynamic_tools', path_prefix='/api')
 
     webapp.mapper.connect('/api/dependency_resolvers/clean', action="clean", controller="tool_dependencies", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies", conditions=dict(method=["GET"]))
@@ -694,6 +713,18 @@ def populate_api_routes(webapp, app):
                           action='delete_custom_builds',
                           conditions=dict(method=["DELETE"]))
 
+    webapp.mapper.connect('set_favorite_tool',
+                          '/api/users/{id}/favorites/{object_type}',
+                          controller='users',
+                          action='set_favorite',
+                          conditions=dict(method=["PUT"]))
+
+    webapp.mapper.connect('remove_favorite_tool',
+                          '/api/users/{id}/favorites/{object_type}/{object_id:.*?}',
+                          controller='users',
+                          action='remove_favorite',
+                          conditions=dict(method=["DELETE"]))
+
     # ========================
     # ===== WEBHOOKS API =====
     # ========================
@@ -879,6 +910,17 @@ def populate_api_routes(webapp, app):
                      controller='admin_toolshed',
                      action='display_image_in_repository',
                      repository_id=None,
+                     image_file=None)
+
+    # Do the same but without a repository id
+    webapp.add_route('/shed_tool_static/{shed}/{owner}/{repo}/{tool}/{version}/{image_file:.+?}',
+                     controller='shed_tool_static',
+                     action='index',
+                     shed=None,
+                     owner=None,
+                     repo=None,
+                     tool=None,
+                     version=None,
                      image_file=None)
 
     webapp.mapper.connect('tool_shed_contents',

@@ -6,6 +6,8 @@ from subprocess import (
 from tempfile import TemporaryFile
 from time import sleep
 
+import six
+
 from ..shell import BaseShellExec
 from ....util import (
     Bunch,
@@ -37,14 +39,17 @@ class LocalShell(BaseShellExec):
     True
     >>> exec_result.returncode == TIMEOUT_RETURN_CODE
     True
+    >>> shell.execute('echo hi').stdout == "hi\\n"
+    True
     """
 
     def __init__(self, **kwds):
         pass
 
     def execute(self, cmd, persist=False, timeout=DEFAULT_TIMEOUT, timeout_check_interval=DEFAULT_TIMEOUT_CHECK_INTERVAL, **kwds):
+        is_cmd_string = isinstance(cmd, six.string_types)
         outf = TemporaryFile()
-        p = Popen(cmd, stdin=None, stdout=outf, stderr=PIPE)
+        p = Popen(cmd, stdin=None, stdout=outf, stderr=PIPE, shell=is_cmd_string)
         # poll until timeout
 
         for i in range(int(timeout / timeout_check_interval)):

@@ -222,6 +222,11 @@ def parse_xml(fname):
     tree = ElementTree.ElementTree()
     try:
         root = tree.parse(fname, parser=ElementTree.XMLParser(target=DoctypeSafeCallbackTarget()))
+        for elem in root.iter('*'):
+            if elem.text is not None:
+                elem.text = elem.text.strip()
+            if elem.tail is not None:
+                elem.tail = elem.tail.strip()
     except ParseError:
         log.exception("Error parsing file %s", fname)
         raise
@@ -231,11 +236,18 @@ def parse_xml(fname):
 
 def parse_xml_string(xml_string):
     tree = ElementTree.fromstring(xml_string)
+    for elem in tree.iter('*'):
+        if elem.text is not None:
+            elem.text = elem.text.strip()
+        if elem.tail is not None:
+            elem.tail = elem.tail.strip()
     return tree
 
 
 def xml_to_string(elem, pretty=False):
-    """Returns a string from an xml tree"""
+    """
+    Returns a string from an xml tree.
+    """
     try:
         if elem is not None:
             if PY2:
@@ -1046,7 +1058,7 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
 
 def strip_control_characters(s):
     """Strip unicode control characters from a string."""
-    return "".join(c for c in unicodify(s) if unicodedata.category(c)[0] != "C")
+    return "".join(c for c in unicodify(s) if unicodedata.category(c) != "Cc")
 
 
 def strip_control_characters_nested(item):
@@ -1512,7 +1524,10 @@ galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 
 def galaxy_directory():
-    return os.path.abspath(galaxy_root_path)
+    root_path = os.path.abspath(galaxy_root_path)
+    if os.path.basename(root_path) == "packages":
+        root_path = os.path.abspath(os.path.join(root_path, ".."))
+    return root_path
 
 
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):

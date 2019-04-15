@@ -237,7 +237,12 @@ class ObjectStore(object):
         }
 
     def _get_object_id(self, obj):
-        return getattr(obj, self.store_by)
+        if hasattr(obj, self.store_by):
+            return getattr(obj, self.store_by)
+        else:
+            # job's don't have uuids, so always use ID in this case when creating
+            # job working directories.
+            return obj.id
 
 
 class DiskObjectStore(ObjectStore):
@@ -354,6 +359,7 @@ class DiskObjectStore(ObjectStore):
         if alt_name and not safe_relpath(alt_name):
             log.warning('alt_name would locate path outside dir: %s', alt_name)
             raise ObjectInvalid("The requested object is invalid")
+        obj_id = self._get_object_id(obj)
         if old_style:
             if extra_dir is not None:
                 path = os.path.join(base, extra_dir)
@@ -361,7 +367,6 @@ class DiskObjectStore(ObjectStore):
                 path = base
         else:
             # Construct hashed path
-            obj_id = self._get_object_id(obj)
             rel_path = os.path.join(*directory_hash_id(obj_id))
             # Create a subdirectory for the object ID
             if obj_dir:
@@ -374,6 +379,7 @@ class DiskObjectStore(ObjectStore):
                     rel_path = os.path.join(rel_path, extra_dir)
             path = os.path.join(base, rel_path)
         if not dir_only:
+            assert obj_id is not None, "The effective dataset identifier consumed by object store [%s] must be set before a path can be constructed." % (self.store_by)
             path = os.path.join(path, alt_name if alt_name else "dataset_%s.dat" % obj_id)
         return os.path.abspath(path)
 

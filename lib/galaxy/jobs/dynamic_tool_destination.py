@@ -798,7 +798,7 @@ def validate_destination(app, destination, err_message, err_message_contents,
     valid_destination = False
     suggestion = None
 
-    if destination is 'fail' and err_message is dest_err_tool_rule_dest:  # It's a tool rule that is set to fail. It's valid
+    if destination == 'fail' and err_message is dest_err_tool_rule_dest:  # It's a tool rule that is set to fail. It's valid
         valid_destination = True
     elif app is None:
         if destination in destination_list:
@@ -1391,7 +1391,7 @@ def map_tool_to_destination(
                                 for line in inp_db:
                                     if line[0] == ">":
                                         records += 1
-                    elif filesize_rule_present:
+                    if filesize_rule_present:
                         query_file = str(inp_data[da].file_name)
                         file_size += os.path.getsize(query_file)
             except AttributeError:

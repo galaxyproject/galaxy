@@ -31,8 +31,8 @@ from six import (
 from galaxy import util
 from galaxy.tools.parser.interface import TestCollectionDef, TestCollectionOutputDef
 from galaxy.util.bunch import Bunch
+from . import verify
 from .asserts import verify_assertions
-from ..verify import verify
 
 log = getLogger(__name__)
 
@@ -73,7 +73,7 @@ class OutputsDict(OrderedDict):
             return item
 
 
-def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history):
+def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history=None, force_path_paste=False):
     # Upload any needed files
     upload_waits = []
 
@@ -81,12 +81,12 @@ def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history):
 
     if UPLOAD_ASYNC:
         for test_data in all_test_data:
-            upload_waits.append(galaxy_interactor.stage_data_async(test_data, history, tool_id))
+            upload_waits.append(galaxy_interactor.stage_data_async(test_data, history, tool_id, force_path_paste=force_path_paste))
         for upload_wait in upload_waits:
             upload_wait()
     else:
         for test_data in all_test_data:
-            upload_wait = galaxy_interactor.stage_data_async(test_data, history, tool_id)
+            upload_wait = galaxy_interactor.stage_data_async(test_data, history, tool_id, force_path_paste=force_path_paste)
             upload_wait()
 
 
@@ -270,10 +270,15 @@ class GalaxyInteractorApi(object):
         return history_json['id']
 
     @nottest
+    def test_data_path(self, tool_id, filename):
+        response = self._get("tools/%s/test_data_path?filename=%s" % (tool_id, filename), admin=True)
+        return response.json()
+
+    @nottest
     def test_data_download(self, tool_id, filename, mode='file'):
         if self.supports_test_data_download:
             response = self._get("tools/%s/test_data_download?filename=%s" % (tool_id, filename), admin=True)
-            assert response.status_code == 200
+            assert response.status_code == 200, "Test file (%s) is missing. If you use planemo try --update_test_data to generate one." % filename
             if mode == 'file':
                 return response.content
             elif mode == 'directory':
@@ -284,9 +289,7 @@ class GalaxyInteractorApi(object):
                 return path
         else:
             # We can only use local data
-            response = self._get("tools/%s/test_data_path?filename=%s" % (tool_id, filename), admin=True)
-            assert response.status_code == 200
-            file_name = response.json()
+            file_name = self.test_data_path(tool_id, filename)
             if mode == 'file':
                 return open(file_name, mode='rb')
             elif mode == 'directory':
@@ -304,7 +307,7 @@ class GalaxyInteractorApi(object):
             output_id = output_data
         return output_id
 
-    def stage_data_async(self, test_data, history_id, tool_id):
+    def stage_data_async(self, test_data, history_id, tool_id, force_path_paste=False):
         fname = test_data['fname']
         tool_input = {
             "file_type": test_data['ftype'],
@@ -320,28 +323,40 @@ class GalaxyInteractorApi(object):
         if composite_data:
             files = {}
             for i, file_name in enumerate(composite_data):
-                file_content = self.test_data_download(tool_id, file_name)
-                files["files_%s|file_data" % i] = file_content
+                if force_path_paste:
+                    file_path = self.test_data_path(tool_id, file_name)
+                    tool_input.update({
+                        "files_%d|url_paste" % i: "file://" + file_path
+                    })
+                else:
+                    file_content = self.test_data_download(tool_id, file_name)
+                    files["files_%s|file_data" % i] = file_content
                 tool_input.update({
                     "files_%d|type" % i: "upload_dataset",
                 })
             name = test_data['name']
         else:
             name = fname
-            file_content = self.test_data_download(tool_id, fname)
             tool_input.update({
                 "files_0|NAME": name,
                 "files_0|type": "upload_dataset",
-
             })
-            files = {
-                "files_0|file_data": file_content,
-            }
+            files = {}
+            if force_path_paste:
+                file_name = self.test_data_path(tool_id, fname)
+                tool_input.update({
+                    "files_0|url_paste": "file://" + file_name
+                })
+            else:
+                file_content = self.test_data_download(tool_id, fname)
+                files = {
+                    "files_0|file_data": file_content
+                }
         submit_response_object = self.__submit_tool(history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files)
         if submit_response_object.status_code != 200:
             raise Exception("Request to upload dataset failed [%s]" % submit_response_object.content)
         submit_response = submit_response_object.json()
-        assert "outputs" in submit_response, "Invalid response from server [%s], expecteding outputs in response." % submit_response
+        assert "outputs" in submit_response, "Invalid response from server [%s], expecting outputs in response." % submit_response
         outputs = submit_response["outputs"]
         assert len(outputs) > 0, "Invalid response from server [%s], expecting an output dataset." % submit_response
         dataset = outputs[0]
@@ -702,7 +717,7 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
             shutil.rmtree(path)
 
 
-def verify_tool(tool_id, galaxy_interactor, resource_parameters=None, register_job_data=None, test_index=0, tool_version=None, quiet=False, test_history=None):
+def verify_tool(tool_id, galaxy_interactor, resource_parameters=None, register_job_data=None, test_index=0, tool_version=None, quiet=False, test_history=None, force_path_paste=False):
     if resource_parameters is None:
         resource_parameters = {}
     tool_test_dicts = galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
@@ -714,7 +729,7 @@ def verify_tool(tool_id, galaxy_interactor, resource_parameters=None, register_j
     if test_history is None:
         test_history = galaxy_interactor.new_history()
 
-    stage_data_in_history(galaxy_interactor, tool_id, testdef.test_data(), test_history)
+    stage_data_in_history(galaxy_interactor, tool_id, testdef.test_data(), history=test_history, force_path_paste=force_path_paste)
 
     # Once data is ready, run the tool and check the outputs - record API
     # input, job info, tool run exception, as well as exceptions related to
@@ -868,11 +883,36 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
         "stdout": "Standard output of the job",
         "stderr": "Standard error of the job",
     }
+    # TODO: Only hack the stdio like this for older profile, for newer tool profiles
+    # add some syntax for asserting job messages maybe - or just drop this because exit
+    # code and regex on stdio can be tested directly - so this is really testing Galaxy
+    # core handling more than the tool.
+    job_messages = job_stdio.get("job_messages") or []
+    stdout_prefix = ""
+    stderr_prefix = ""
+    for job_message in job_messages:
+        message_type = job_message.get("type")
+        if message_type == "regex" and job_message.get("stream") == "stderr":
+            stderr_prefix += (job_message.get("desc") or '') + "\n"
+        elif message_type == "regex" and job_message.get("stream") == "stdout":
+            stdout_prefix += (job_message.get("desc") or '') + "\n"
+        elif message_type == "exit_code":
+            stderr_prefix += (job_message.get("desc") or '') + "\n"
+        else:
+            raise Exception("Unknown job message type [%s] in [%s]" % (message_type, job_message))
+
     for what, description in other_checks.items():
         if getattr(testdef, what, None) is not None:
             try:
-                data = job_stdio[what]
-                verify_assertions(data, getattr(testdef, what))
+                raw_data = job_stdio[what]
+                assertions = getattr(testdef, what)
+                if what == "stdout":
+                    data = stdout_prefix + raw_data
+                elif what == "stderr":
+                    data = stderr_prefix + raw_data
+                else:
+                    data = raw_data
+                verify_assertions(data, assertions)
             except AssertionError as err:
                 errmsg = '%s different than expected\n' % description
                 errmsg += str(err)

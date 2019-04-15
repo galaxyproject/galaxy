@@ -295,7 +295,7 @@ class LibrariesController(BaseAPIController):
         elif action == 'remove_restrictions':
             is_public = self.library_manager.make_public(trans, library)
             if not is_public:
-                raise exceptions.InternalServerError('An error occured while making library public.')
+                raise exceptions.InternalServerError('An error occurred while making library public.')
         elif action == 'set_permissions':
 
             # ACCESS LIBRARY ROLES

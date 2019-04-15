@@ -172,7 +172,8 @@ export const getAnalysisRouter = Galaxy =>
         },
 
         show_histories: function(action_id) {
-            this.page.display(new HistoryList.View({ action_id: action_id }));
+            let view = new HistoryList.View({ action_id: action_id });
+            this.page.display(view);
         },
 
         show_history_citations: function() {

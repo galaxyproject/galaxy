@@ -126,15 +126,15 @@ class LibraryActions(object):
         return output
 
     def _get_server_dir_uploaded_datasets(self, trans, params, full_dir, import_dir_desc, library_bunch, response_code, message):
-            dir_response = self._get_server_dir_files(params, full_dir, import_dir_desc)
-            files = dir_response[0]
-            if not files:
-                return dir_response
-            uploaded_datasets = []
-            for file in files:
-                name = os.path.basename(file)
-                uploaded_datasets.append(self._make_library_uploaded_dataset(trans, params, name, file, 'server_dir', library_bunch))
-            return uploaded_datasets, 200, None
+        dir_response = self._get_server_dir_files(params, full_dir, import_dir_desc)
+        files = dir_response[0]
+        if not files:
+            return dir_response
+        uploaded_datasets = []
+        for file in files:
+            name = os.path.basename(file)
+            uploaded_datasets.append(self._make_library_uploaded_dataset(trans, params, name, file, 'server_dir', library_bunch))
+        return uploaded_datasets, 200, None
 
     def _get_server_dir_files(self, params, full_dir, import_dir_desc):
         files = []
@@ -248,7 +248,7 @@ class LibraryActions(object):
         uploaded_dataset.dbkey = params.get('dbkey', None)
         uploaded_dataset.to_posix_lines = params.get('to_posix_lines', None)
         uploaded_dataset.space_to_tab = params.get('space_to_tab', None)
-        uploaded_dataset.tag_using_filenames = params.get('tag_using_filenames', True)
+        uploaded_dataset.tag_using_filenames = params.get('tag_using_filenames', False)
         uploaded_dataset.purge_source = getattr(trans.app.config, 'ftp_upload_purge', True)
         if in_folder:
             uploaded_dataset.in_folder = in_folder

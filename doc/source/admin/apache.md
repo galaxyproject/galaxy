@@ -10,7 +10,7 @@ some of the more menial and resource-intensive tasks.
 [The Apache HTTP Server][apache] is a widely deployed and very featureful general purpose web server with mature
 proxying capabilities.
 
-Instructions for [proxying with NGINX](nginx.html), which is the proxy server used by The Galaxy Project's public
+Instructions for [proxying with NGINX](nginx.md), which is the proxy server used by The Galaxy Project's public
 servers, [usegalaxy.org][main] ("Main") and [Test][test], as well as the [Docker Galaxy project][docker-galaxy], are
 also available.
 
@@ -89,7 +89,7 @@ And on EL:
 The following configuration is not exhaustive, only the portions most relevant to serving Galaxy are shown, these should
 be incorporated with your existing/default Apache config as is appropriate for your server.  Notably, the Apache package
 you installed most likely has a multi-file config layout. If you are not already familiar with that layout and where
-best to place your configuration, you can learn more in the [Proxy Package Layouts](proxy_package_layouts.html)
+best to place your configuration, you can learn more in the [Proxy Package Layouts](proxy_package_layout)
 documentation.
 
 ```apache
@@ -172,7 +172,7 @@ SSLStaplingCache        shmcb:/var/run/ocsp(128000)
 
 Be sure to set `galaxy_root` to the path to your copy of Galaxy and modify the value of `ProxyPass /`  to match your
 uWSGI socket path. With the default configuration, uWSGI will bind to a random TCP socket, so you will need to set it to
-a fixed value as described in the [Scaling and Load Balancing](scaling.html) documentation. If using a UNIX domain
+a fixed value as described in the [Scaling and Load Balancing](scaling.md) documentation. If using a UNIX domain
 socket, be sure to pay particular attention to the discussion of users and permissions.
 
 ### Additional Notes
@@ -243,7 +243,7 @@ previous section:
    `cookie_path` should be set to prevent Galaxy's session cookies from clobbering each other if you are running more
    than one instance of Galaxy under different URL prefixes on the same hostname.
 
-   Be sure to consult the [Scaling and Load Balancing](scaling.html) documentation, other options unrelated to proxying
+   Be sure to consult the [Scaling and Load Balancing](scaling.md) documentation, other options unrelated to proxying
    should also be set in the `uwsgi` section of the config.
 
 ## Advanced Configuration Topics
@@ -252,10 +252,10 @@ previous section:
 
 Galaxy sends files (e.g. dataset downloads) by opening the file and streaming it in chunks through the proxy server.
 However, this ties up the Galaxy process, which can impact the performance of other operations (see [Production Server
-Configuration](production.html) for a more in-depth explanation).
+Configuration](production.md) for a more in-depth explanation).
 
-Apache can assume this task instead and as an added benefit, speed up downloads. This is accomplished through the use of
-`mod_xsendfile`, a 3rd-party Apache module. Dataset security is maintained in this configuration because Apache will
+Apache can assume this task instead and, as an added benefit, speed up downloads. In addition, both the IGV genome browser and JBrowse tool (run within Galaxy) require support for the HTTP *Range* header, and this is only available if the proxy serves datasets.
+This is accomplished through the use of `mod_xsendfile`, a 3rd-party Apache module. Dataset security is maintained in this configuration because Apache will
 still check with Galaxy to ensure that the requesting user has permission to access the dataset before sending it.
 
 To enable it, you must first install `mod_xsendfile`. This is usually available via your package manager
@@ -299,7 +299,7 @@ group as shown above.
 ### External user authentication
 
 - [Apache for External Authentication](https://galaxyproject.org/admin/config/apache-external-user-auth/)
-- [Built-in Galaxy External Authentication](authentication.html)
+- [Built-in Galaxy External Authentication](authentication.md)
 
 #### Display Sites
 

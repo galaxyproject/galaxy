@@ -345,9 +345,12 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
             if raw:
                 if filename and filename != 'index':
-                    file_path = trans.app.object_store.get_filename(hda.dataset,
-                                                                    extra_dir=('dataset_%s_files' % hda.dataset.id),
-                                                                    alt_name=filename)
+                    object_store = trans.app.object_store
+                    store_by = getattr(object_store, "store_by", "id")
+                    dir_name = 'dataset_%s_files' % getattr(hda.dataset, store_by)
+                    file_path = object_store.get_filename(hda.dataset,
+                                                          extra_dir=dir_name,
+                                                          alt_name=filename)
                 else:
                     file_path = hda.file_name
                 rval = open(file_path, 'rb')

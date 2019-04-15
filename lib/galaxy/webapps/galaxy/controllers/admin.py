@@ -138,7 +138,7 @@ class UserListGrid(grids.Grid):
                                               visible=False,
                                               filterable="standard"))
     global_actions = [
-        grids.GridAction("Create new user", url_args=dict(webapp="galaxy", action="create_new_user"))
+        grids.GridAction("Create new user", url_args=dict(action="users/create"))
     ]
     operations = [
         grids.GridOperation("Manage Information",
@@ -537,14 +537,22 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.require_admin
     def index(self, trans, **kwd):
+        return self.client(trans, **kwd)
+
+    @web.expose
+    @web.require_admin
+    def client(self, trans, **kwd):
+        """
+        Endpoint for admin clientside routes.
+        """
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         settings = {
-            'is_repo_installed'          : trans.install_model.context.query(trans.install_model.ToolShedRepository).first() is not None,
-            'installing_repository_ids'  : repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=True),
-            'is_tool_shed_installed'     : bool(trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds)
+            'is_repo_installed': trans.install_model.context.query(trans.install_model.ToolShedRepository).first() is not None,
+            'installing_repository_ids': repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=True),
+            'is_tool_shed_installed': bool(trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds)
         }
-        return self.template(trans, 'admin', settings=settings, message=message, status=status)
+        return self._bootstrapped_client(trans, app_name='admin', settings=settings, message=message, status=status)
 
     @web.expose
     @web.json
@@ -876,23 +884,17 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         message = escape(util.restore_text(kwd.get('message', '')))
         status = util.restore_text(kwd.get('status', 'done'))
         migration_stages_dict = odict()
-        migration_modules = []
         migration_scripts_dir = os.path.abspath(os.path.join(trans.app.config.root, 'lib', 'tool_shed', 'galaxy_install', 'migrate', 'versions'))
-        migration_scripts_dir_contents = os.listdir(migration_scripts_dir)
-        for item in migration_scripts_dir_contents:
-            if os.path.isfile(os.path.join(migration_scripts_dir, item)) and item.endswith('.py'):
-                module = item.replace('.py', '')
-                migration_modules.append(module)
-        if migration_modules:
-            migration_modules.sort()
-            # Remove the 0001_tools.py script since it is the seed.
-            migration_modules = migration_modules[1:]
-            # Reverse the list so viewing will be newest to oldest.
-            migration_modules.reverse()
-        for migration_module in migration_modules:
-            migration_stage = int(migration_module.replace('_tools', ''))
+        modules = os.listdir(migration_scripts_dir)
+        modules.sort()
+        modules.reverse()
+        for item in modules:
+            if not item.endswith('.py') or item.startswith('0001_tools'):
+                continue
+            module = item.replace('.py', '')
+            migration_stage = int(module.replace('_tools', ''))
             repo_name_dependency_tups = self.check_for_tool_dependencies(trans, migration_stage)
-            open_file_obj, file_name, description = imp.find_module(migration_module, [migration_scripts_dir])
+            open_file_obj, file_name, description = imp.find_module(module, [migration_scripts_dir])
             imported_module = imp.load_module('upgrade', open_file_obj, file_name, description)
             migration_info = imported_module.__doc__
             open_file_obj.close()
@@ -1615,7 +1617,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     % (stop_msg, self.app.config.get("support_url", "https://galaxyproject.org/support/"))
                 if trans.app.config.track_jobs_in_database:
                     job = trans.sa_session.query(trans.app.model.Job).get(job_id)
-                    job.stderr = error_msg
+                    job.job_stderr = error_msg
                     job.set_state(trans.app.model.Job.states.DELETED_NEW)
                     trans.sa_session.add(job)
                 else:
@@ -1705,7 +1707,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             selected_tool_ids = []
         if not selected_environments_to_uninstall:
             selected_environments_to_uninstall = []
-        tools_by_id = trans.app.toolbox.tools_by_id
+        tools_by_id = trans.app.toolbox.tools_by_id.copy()
         view = six.next(six.itervalues(trans.app.toolbox.tools_by_id))._view
         if selected_tool_ids:
             # install the dependencies for the tools in the selected_tool_ids list
