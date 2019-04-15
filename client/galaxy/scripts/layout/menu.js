@@ -248,7 +248,7 @@ var Collection = Backbone.Collection.extend({
                     title: _l("Login"),
                     cls: "loggedout-only",
                     tooltip: _l("Login"),
-                    url: "user/login",
+                    url: "login",
                     target: "galaxy_main",
                     noscratchbook: true
                 };
