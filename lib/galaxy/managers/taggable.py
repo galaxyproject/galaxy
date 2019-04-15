@@ -115,8 +115,9 @@ class TaggableFilterMixin(object):
         self.fn_filter_parsers.update({
             'tag': {
                 'op': {
-                    'eq'    : self.filter_has_tag,
-                    'has'   : self.filter_has_partial_tag,
+                    'eq' : self.filter_has_tag,
+                    'contains': self.filter_has_partial_tag,
+                    'has': self.filter_has_partial_tag,
                 }
             }
         })
