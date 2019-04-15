@@ -57,6 +57,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         "type_id",
         "hid",
         # joining columns
+        "extension",
         "dataset_id",
         "collection_id",
         "name",
@@ -326,6 +327,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             state=model.DatasetCollection.populated_state,
             # TODO: should be purgable? fix
             purged=literal(False),
+            extension=literal(None),
             # these are attached instead to the inner collection joined below
             create_time=model.DatasetCollection.create_time,
             update_time=model.DatasetCollection.update_time

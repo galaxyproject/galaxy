@@ -931,6 +931,7 @@ class ModelFilterParser(HasAModelManager):
             'id'            : {'op': ('in')},
             'encoded_id'    : {'column' : 'id', 'op': ('in'), 'val': self.parse_id_list},
             # dates can be directly passed through the orm into a filter (no need to parse into datetime object)
+            'extension'     : {'op': ('eq', 'like', 'in')},
             'create_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
             'update_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
         })
