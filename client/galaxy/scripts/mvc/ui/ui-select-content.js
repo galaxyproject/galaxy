@@ -235,12 +235,8 @@ var View = Backbone.View.extend({
                     for (let i in id_list) {
                         let details = this.cache[`${id_list[i]}_${this.config[current].src}`];
                         if (details) {
-                            let d = Object.assign({}, details);
-                            if (d.origin) {
-                                d.id = d.id.substr(d.origin.length);
-                                d.src = d.origin;
-                            }
-                            result.values.push(d);
+                            let unpatchedValue = this._unpatchValue(details);
+                            result.values.push(unpatchedValue);
                         } else {
                             galaxy.emit.debug(
                                 "ui-select-content::value()",
@@ -451,12 +447,22 @@ var View = Backbone.View.extend({
     },
 
     /** Library datasets are displayed and selected together with history datasets **/
-    _patchLibraryItems: function(v) {
+    _patchValue: function(v) {
         if (v.src == "ldda") {
             v.src = "hda";
             v.origin = "ldda";
             v.id = `${v.origin}${v.id}`;
         }
+    },
+
+    /** Restores original value e.g. after patching library datasets **/
+    _unpatchValue: function(v) {
+        let d = Object.assign({}, v);
+        if (d.origin) {
+            d.id = d.id.substr(d.origin.length);
+            d.src = d.origin;
+        }
+        return d;
     },
 
     /** Add values from drag/drop */
@@ -471,7 +477,7 @@ var View = Backbone.View.extend({
             if (values.length > 0) {
                 let data_changed = false;
                 _.each(values, v => {
-                    self._patchLibraryItems(v);
+                    self._patchValue(v);
                     let new_id = v.id;
                     let new_src = (v.src = this._getSource(v));
                     let new_value = { id: new_id, src: new_src };
