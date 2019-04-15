@@ -38,7 +38,7 @@ var HistoryPanel = Backbone.View.extend({
         });
         panelHeaderButtons.push(this.buttonRefresh);
 
-        if (!this.userIsAnonymous){
+        if (!this.userIsAnonymous) {
             this.buttonNew = new Ui.ButtonLink({
                 id: "history-new-button",
                 title: _l("Create new history"),

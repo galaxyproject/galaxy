@@ -25,7 +25,8 @@
                     </b-card>
                 </b-form>
                 <b-button v-for="idp in oidc_idps" :key="idp" class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                    <icon v-bind:class="oidc_idps_icons[idp]" /> Sign in with {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+                    <icon v-bind:class="oidc_idps_icons[idp]" /> Sign in with
+                    {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
                 </b-button>
             </div>
             <div v-if="show_welcome_with_login" class="col">
@@ -58,11 +59,15 @@ export default {
         let galaxy = getGalaxyInstance();
         let oidc_idps = galaxy.config.oidc;
         // Icons to use for each IdP
-        let oidc_idps_icons = {'google': 'fa fa-google'};
+        let oidc_idps_icons = { google: "fa fa-google" };
         // Add default icons to IdPs without icons
-        oidc_idps.filter(function(key) { return oidc_idps_icons[key] === undefined; }).forEach(function(idp) {
-             oidc_idps_icons[idp] = 'fa fa-id-card'
-        });
+        oidc_idps
+            .filter(function(key) {
+                return oidc_idps_icons[key] === undefined;
+            })
+            .forEach(function(idp) {
+                oidc_idps_icons[idp] = "fa fa-id-card";
+            });
         return {
             login: null,
             password: null,
@@ -75,7 +80,6 @@ export default {
             enable_oidc: galaxy.config.enable_oidc,
             oidc_idps: oidc_idps,
             oidc_idps_icons: oidc_idps_icons
-
         };
     },
     computed: {
