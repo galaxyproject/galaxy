@@ -421,14 +421,15 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/workflows/{encoded_workflow_id}/download
 
-        Returns a selected workflow as a json dictionary.
+        Returns a selected workflow.
 
         :type   style:  str
         :param  style:  Style of export. The default is 'export', which is the meant to be used
                         with workflow import endpoints. Other formats such as 'instance', 'editor',
                         'run' are more tied to the GUI and should not be considered stable APIs.
-                        By default the 'export' format in 19.05 is "ga" files, in 19.09 this will
-                        become 'format2'. Style can be specified as either 'ga' or 'format2' directly
+                        The default format for 'export' is specified by the
+                        admin with the `default_workflow_export_format` config
+                        option. Style can be specified as either 'ga' or 'format2' directly
                         to be explicit about which format to download.
         """
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
