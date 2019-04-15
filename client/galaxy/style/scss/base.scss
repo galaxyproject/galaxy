@@ -728,6 +728,11 @@ div.form-row-error-message {
     margin-top: 5px;
 }
 
+#run-workflow {
+    @include float-right;
+    @extend .mt-3;
+}
+
 .workflow-right {
     background: white;
 }
