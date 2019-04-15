@@ -36,8 +36,12 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
     def __init__(self, app):
         super(DatasetsController, self).__init__(app)
         self.hda_manager = managers.hdas.HDAManager(app)
-        self.hda_serializer = managers.hdas.HDASerializer(self.app)
+        self.hda_serializer = managers.hdas.HDASerializer(app)
+        self.hdca_serializer = managers.hdcas.HDCASerializer(app)
+        self.serializer_by_type = {'dataset': self.hda_serializer, 'dataset_collection': self.hdca_serializer}
         self.ldda_manager = managers.lddas.LDDAManager(app)
+        self.history_contents_manager = managers.history_contents.HistoryContentsManager(app)
+        self.history_contents_filters = managers.history_contents.HistoryContentsFilters(app)
 
     def _parse_serialization_params(self, kwd, default_view):
         view = kwd.get('view', None)
@@ -47,13 +51,24 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         return dict(view=view, keys=keys, default_view=default_view)
 
     @web.expose_api
-    def index(self, trans, **kwd):
+    def index(self,
+              trans,
+              limit=500,
+              offset=0,
+              **kwd):
         """
-        GET /api/datasets
-        Lists datasets.
+        GET /api/datasets/
+
+        Search datasets or collections.
         """
-        trans.response.status = 501
-        return 'not implemented'
+
+        filter_params = self.parse_filter_params(kwd)
+        filters = self.history_contents_filters.parse_filters(filter_params)
+        order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=kwd.get('order', 'create_time-dsc'))
+        contents = self.history_contents_manager.contents(
+            history=None, filters=filters, limit=limit, offset=offset, order_by=order_by
+        )
+        return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view='summary') for content in contents]
 
     @web.legacy_expose_api_anonymous
     def show(self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd):

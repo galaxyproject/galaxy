@@ -27,7 +27,8 @@ from galaxy.managers import (
     containers,
     deletable,
     hdas,
-    hdcas
+    hdcas,
+    taggable,
 )
 
 log = logging.getLogger(__name__)
@@ -271,8 +272,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         # note: I'm trying to keep these private functions as generic as possible in order to move them toward base later
 
         # query 1: create a union of common columns for which the component_classes can be filtered/limited
-        contained_query = self._contents_common_query_for_contained(container.id)
-        subcontainer_query = self._contents_common_query_for_subcontainer(container.id)
+        contained_query = self._contents_common_query_for_contained(container.id if container else None)
+        subcontainer_query = self._contents_common_query_for_subcontainer(container.id if container else None)
         contents_query = contained_query.union(subcontainer_query)
 
         # TODO: this needs the same fn/orm split that happens in the main query
@@ -300,7 +301,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             columns.append(column)
         return columns
 
-    def _contents_common_query_for_contained(self, history_id):
+    def _contents_common_query_for_contained(self, history_id=None):
         component_class = self.contained_class
         # TODO: and now a join with Dataset - this is getting sad
         columns = self._contents_common_columns(component_class,
@@ -312,7 +313,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         subquery = self._session().query(*columns)
         # for the HDA's we need to join the Dataset since it has an actual state column
         subquery = subquery.join(model.Dataset, model.Dataset.id == component_class.dataset_id)
-        subquery = subquery.filter(component_class.history_id == history_id)
+        if history_id:
+            subquery = subquery.filter(component_class.history_id == history_id)
         return subquery
 
     def _contents_common_query_for_subcontainer(self, history_id):
@@ -332,7 +334,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         # for the HDCA's we need to join the DatasetCollection since it has update/create times
         subquery = subquery.join(model.DatasetCollection,
             model.DatasetCollection.id == component_class.collection_id)
-        subquery = subquery.filter(component_class.history_id == history_id)
+        if history_id:
+            subquery = subquery.filter(component_class.history_id == history_id)
         return subquery
 
     def _get_union_type(self, union):
@@ -415,7 +418,7 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
         return self.serialize_id(content, key, **context)
 
 
-class HistoryContentsFilters(base.ModelFilterParser, deletable.PurgableFiltersMixin):
+class HistoryContentsFilters(base.ModelFilterParser, deletable.PurgableFiltersMixin, taggable.TaggableFilterMixin):
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
 
@@ -481,6 +484,7 @@ class HistoryContentsFilters(base.ModelFilterParser, deletable.PurgableFiltersMi
     def _add_parsers(self):
         super(HistoryContentsFilters, self)._add_parsers()
         deletable.PurgableFiltersMixin._add_parsers(self)
+        taggable.TaggableFilterMixin._add_parsers(self)
         self.orm_filter_parsers.update({
             'history_content_type' : {'op': ('eq')},
             'type_id'       : {'op': ('eq', 'in'), 'val': self.parse_type_id_list},
