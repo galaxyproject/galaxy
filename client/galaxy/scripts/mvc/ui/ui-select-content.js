@@ -457,12 +457,13 @@ var View = Backbone.View.extend({
 
     /** Restores original value e.g. after patching library datasets **/
     _unpatchValue: function(v) {
-        let d = Object.assign({}, v);
-        if (d.origin) {
+        if (v.origin) {
+            let d = Object.assign({}, v);
             d.id = d.id.substr(d.origin.length);
             d.src = d.origin;
+            return d;
         }
-        return d;
+        return v;
     },
 
     /** Add values from drag/drop */
