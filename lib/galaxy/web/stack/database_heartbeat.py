@@ -1,4 +1,5 @@
 import datetime
+import socket
 import threading
 
 from galaxy.model import WorkerProcess
@@ -10,6 +11,7 @@ class DatabaseHeartbeat(object):
     def __init__(self, application_stack, heartbeat_interval=60):
         self.application_stack = application_stack
         self.heartbeat_interval = heartbeat_interval
+        self.hostname = socket.gethostname()
         self.exit = threading.Event()
         self.thread = None
         self.active = False
@@ -47,9 +49,11 @@ class DatabaseHeartbeat(object):
         if self.active:
             while not self.exit.isSet():
                 worker_process = self.sa_session.query(WorkerProcess).filter_by(
-                    server_name=self.server_name).first()
+                    server_name=self.server_name,
+                    hostname=self.hostname,
+                ).first()
                 if not worker_process:
-                    worker_process = WorkerProcess(server_name=self.server_name)
+                    worker_process = WorkerProcess(server_name=self.server_name, hostname=self.hostname)
                 worker_process.update_time = now()
                 self.sa_session.add(worker_process)
                 self.sa_session.flush()

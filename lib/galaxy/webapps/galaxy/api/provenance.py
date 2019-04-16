@@ -25,24 +25,24 @@ class BaseProvenanceController(BaseAPIController):
         super(BaseProvenanceController, self).__init__(app)
         self.hda_manager = managers.hdas.HDAManager(app)
 
-    @web.expose_api
+    @web.legacy_expose_api
     def index(self, trans, **kwd):
         follow = kwd.get('follow', False)
         value = self._get_provenance(trans, self.provenance_item_class, kwd[self.provenance_item_id], follow)
         return value
 
-    @web.expose_api
+    @web.legacy_expose_api
     def show(self, trans, elem_name, **kwd):
         follow = kwd.get('follow', False)
         value = self._get_provenance(trans, self.provenance_item_class, kwd[self.provenance_item_id], follow)
         return value
 
-    @web.expose_api
+    @web.legacy_expose_api
     def create(self, trans, tag_name, payload=None, **kwd):
         payload = payload or {}
         raise HTTPNotImplemented()
 
-    @web.expose_api
+    @web.legacy_expose_api
     def delete(self, trans, tag_name, **kwd):
         raise HTTPBadRequest("Cannot Delete Provenance")
 

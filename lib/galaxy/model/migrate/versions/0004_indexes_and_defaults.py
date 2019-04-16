@@ -3,9 +3,15 @@
 import logging
 import sys
 
-from sqlalchemy import Index, MetaData, Table
+from sqlalchemy import (
+    MetaData,
+    Table
+)
 
-from galaxy.model.migrate.versions.util import engine_false
+from galaxy.model.migrate.versions.util import (
+    add_index,
+    engine_false
+)
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -23,18 +29,8 @@ def upgrade(migrate_engine):
     metadata.reflect()
 
     User_table = Table("galaxy_user", metadata, autoload=True)
-    HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
-    # Add 2 indexes to the galaxy_user table
-    i = Index('ix_galaxy_user_deleted', User_table.c.deleted)
-    try:
-        i.create()
-    except Exception:
-        log.exception("Adding index 'ix_galaxy_user_deleted' to galaxy_user table failed.")
-    i = Index('ix_galaxy_user_purged', User_table.c.purged)
-    try:
-        i.create()
-    except Exception:
-        log.exception("Adding index 'ix_galaxy_user_purged' to galaxy_user table failed.")
+    add_index('ix_galaxy_user_deleted', User_table, 'deleted')
+    add_index('ix_galaxy_user_purged', User_table, 'purged')
     # Set the default data in the galaxy_user table, but only for null values
     cmd = "UPDATE galaxy_user SET deleted = %s WHERE deleted is null" % engine_false(migrate_engine)
     try:
@@ -46,12 +42,9 @@ def upgrade(migrate_engine):
         migrate_engine.execute(cmd)
     except Exception:
         log.exception("Setting default data for galaxy_user.purged column failed.")
-    # Add 1 index to the history_dataset_association table
-    i = Index('ix_hda_copied_from_library_dataset_dataset_association_id', HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id)
-    try:
-        i.create()
-    except Exception:
-        log.exception("Adding index 'ix_hda_copied_from_library_dataset_dataset_association_id' to history_dataset_association table failed.")
+    add_index('ix_hda_copied_from_library_dataset_dataset_association_id',
+        'history_dataset_association',
+        'copied_from_library_dataset_dataset_association_id', metadata)
 
 
 def downgrade(migrate_engine):

@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 class UsersController(BaseAPIController):
     """RESTful controller for interactions with users in the Tool Shed."""
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def create(self, trans, payload, **kwd):
         """
@@ -75,7 +75,7 @@ class UsersController(BaseAPIController):
         value_mapper = {'id' : trans.security.encode_id}
         return value_mapper
 
-    @web.expose_api_anonymous
+    @web.legacy_expose_api_anonymous
     def index(self, trans, deleted=False, **kwd):
         """
         GET /api/users
@@ -95,7 +95,7 @@ class UsersController(BaseAPIController):
             user_dicts.append(user_dict)
         return user_dicts
 
-    @web.expose_api_anonymous
+    @web.legacy_expose_api_anonymous
     def show(self, trans, id, **kwd):
         """
         GET /api/users/{encoded_user_id}

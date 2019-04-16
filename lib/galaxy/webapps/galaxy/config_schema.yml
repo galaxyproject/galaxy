@@ -2058,12 +2058,13 @@ mapping:
           Enable beta workflow modules that should not yet be considered part of Galaxy's
           stable API.
 
-      enable_beta_workflow_format:
-        type: bool
-        default: false
+      default_workflow_export_format:
+        type: str
+        default: ga
         required: false
         desc: |
-          Enable import and export of workflows as Galaxy Format 2 workflows.
+          Default format for the export of workflows. Possible values are 'ga'
+          or 'format2'.
 
       force_beta_workflow_scheduled_min_steps:
         type: int

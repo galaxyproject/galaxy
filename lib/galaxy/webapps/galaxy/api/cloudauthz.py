@@ -19,7 +19,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers import cloudauthzs
 from galaxy.web import (
-    _future_expose_api as expose_api
+    expose_api
 )
 from galaxy.web.base.controller import BaseAPIController
 
@@ -35,6 +35,7 @@ class CloudAuthzController(BaseAPIController):
         super(CloudAuthzController, self).__init__(app)
         self.cloudauthz_manager = cloudauthzs.CloudAuthzManager(app)
         self.cloudauthz_serializer = cloudauthzs.CloudAuthzsSerializer(app)
+        self.cloudauthz_deserializer = cloudauthzs.CloudAuthzsDeserializer(app)
 
     @expose_api
     def index(self, trans, **kwargs):
@@ -68,13 +69,18 @@ class CloudAuthzController(BaseAPIController):
         :type payload: dict
         :param payload: A dictionary structure containing the following keys:
             *   provider:       the cloud-based resource provider to which this configuration belongs to.
+
             *   config:         a dictionary containing all the configuration required to request temporary credentials
-                                from the provider.
+                                from the provider. See the following page for details:
+                                https://galaxyproject.org/cloud/authnz/
+
             *   authn_id:       the (encoded) ID of a third-party authentication of a user. To have this ID, user must
                                 have logged-in to this Galaxy server using third-party identity (e.g., Google), or has
                                 associated his/her Galaxy account with a third-party OIDC-based identity. See this page:
                                 https://galaxyproject.org/admin/authentication/
+
             *   description:    [Optional] a brief description for this configuration.
+
         :param kwargs: empty dict
 
         :rtype: dict
@@ -182,4 +188,65 @@ class CloudAuthzController(BaseAPIController):
             log.exception(msg_template.format("exception while deleting the cloudauthz record with "
                                               "ID: `{}`.".format(encoded_authz_id)))
             raise InternalServerError('An unexpected error has occurred while responding to the DELETE request of the '
+                                      'cloudauthz API.' + str(e))
+
+    @expose_api
+    def update(self, trans, encoded_authz_id, payload, **kwargs):
+        """
+        * PUT /api/cloud/authz/{encoded_authz_id}
+            Updates the values for the cloudauthz configuration with the given ``encoded_authz_id``.
+
+            With this API only the following attributes of a cloudauthz configuration
+            can be updated: `authn_id`, `provider`, `config`, `deleted`.
+
+        :type  trans:               galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans:               Galaxy web transaction
+
+        :type  encoded_authz_id:    string
+        :param encoded_authz_id:    The encoded ID of the CloudAuthz record to be updated.
+
+        :type payload:              dict
+        :param payload:             A dictionary structure containing the attributes to modified with their new values.
+                                    It can contain any number of the following attributes:
+                                        *   provider:   the cloud-based resource provider
+                                                        to which this configuration belongs to.
+
+                                        *   authn_id:   the (encoded) ID of a third-party authentication of a user.
+                                                        To have this ID, user must have logged-in to this Galaxy server
+                                                        using third-party identity (e.g., Google), or has associated
+                                                        their Galaxy account with a third-party OIDC-based identity.
+                                                        See this page: https://galaxyproject.org/admin/authentication/
+
+                                                        Note: A user can associate a cloudauthz record with their own
+                                                        authentications only. If the given authentication with authn_id
+                                                        belongs to a different user, Galaxy will throw the
+                                                        ItemAccessibilityException exception.
+
+                                        *   config:     a dictionary containing all the configuration required to
+                                                        request temporary credentials from the provider.
+                                                        See the following page for details:
+                                                        https://galaxyproject.org/cloud/authnz/
+
+                                        *   deleted:    a boolean type marking the specified cloudauthz as (un)deleted.
+
+        """
+
+        msg_template = "Rejected user `" + str(trans.user.id) + "`'s request to delete cloudauthz config because of {}."
+        try:
+            authz_id = self.decode_id(encoded_authz_id)
+        except Exception:
+            log.debug(msg_template.format("cannot decode authz_id `" + str(encoded_authz_id) + "`"))
+            raise MalformedId('Invalid `authz_id`!')
+
+        try:
+            cloudauthz_to_update = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
+            self.cloudauthz_deserializer.deserialize(cloudauthz_to_update, payload, trans=trans)
+            self.cloudauthz_serializer.serialize_to_view(cloudauthz_to_update, view='summary')
+            return self.cloudauthz_serializer.serialize_to_view(cloudauthz_to_update, view='summary')
+        except MalformedId as e:
+            raise e
+        except Exception as e:
+            log.exception(msg_template.format("exception while updating the cloudauthz record with "
+                                              "ID: `{}`.".format(encoded_authz_id)))
+            raise InternalServerError('An unexpected error has occurred while responding to the PUT request of the '
                                       'cloudauthz API.' + str(e))

@@ -270,9 +270,6 @@ class WorkflowContentsManager(UsesAnnotations):
 
         workflow_class = as_dict.get("class", None)
         if workflow_class == "GalaxyWorkflow" or "$graph" in as_dict or "yaml_content" in as_dict:
-            if not self.app.config.enable_beta_workflow_format:
-                raise exceptions.ConfigDoesNotAllowException("Format2 workflows not enabled.")
-
             # Format 2 Galaxy workflow.
             galaxy_interface = Format2ConverterGalaxyInterface()
             import_options = ImportOptions()
@@ -444,8 +441,6 @@ class WorkflowContentsManager(UsesAnnotations):
         """
 
         def to_format_2(wf_dict, **kwds):
-            if not trans.app.config.enable_beta_workflow_format:
-                raise exceptions.ConfigDoesNotAllowException("Format2 workflows not enabled.")
             return from_galaxy_native(wf_dict, None, **kwds)
 
         if version == '':
@@ -453,6 +448,8 @@ class WorkflowContentsManager(UsesAnnotations):
         if version is not None:
             version = int(version)
         workflow = stored.get_internal_version(version)
+        if style == "export":
+            style = self.app.config.default_workflow_export_format
         if style == "editor":
             wf_dict = self._workflow_to_dict_editor(trans, stored, workflow)
         elif style == "legacy":
@@ -467,8 +464,10 @@ class WorkflowContentsManager(UsesAnnotations):
         elif style == "format2_wrapped_yaml":
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
             wf_dict = to_format_2(wf_dict, json_wrapper=True)
-        else:
+        elif style == "ga":
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
+        else:
+            raise exceptions.RequestParameterInvalidException('Unknown workflow style [%s]' % style)
         if version:
             wf_dict['version'] = version
         else:

@@ -219,8 +219,9 @@ class UsesCreateAndUpdateTime(object):
 
 class WorkerProcess(UsesCreateAndUpdateTime):
 
-    def __init__(self, server_name):
+    def __init__(self, server_name, hostname):
         self.server_name = server_name
+        self.hostname = hostname
 
 
 def cached_id(galaxy_model_object):
@@ -994,8 +995,11 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         if self.state == self.states.PAUSED:
             self.set_state(self.states.NEW)
             object_session(self).add(self)
-            for dataset in self.output_datasets:
-                dataset.info = None
+            jobs_to_resume = set()
+            for jtod in self.output_datasets:
+                jobs_to_resume.update(jtod.dataset.unpause_dependent_jobs(jobs_to_resume))
+            for job in jobs_to_resume:
+                job.resume(flush=False)
             if flush:
                 object_session(self).flush()
 
@@ -3140,6 +3144,20 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                 val = getattr(hda.datatype, name)
             rval['metadata_' + name] = val
         return rval
+
+    def unpause_dependent_jobs(self, jobs=None):
+        if self.state == self.states.PAUSED:
+            self.state = self.states.NEW
+            self.info = None
+        jobs_to_unpause = jobs or set()
+        for jtida in self.dependent_jobs:
+            if jtida.job not in jobs_to_unpause:
+                jobs_to_unpause.add(jtida.job)
+                for jtoda in jtida.job.output_datasets:
+                    jobs_to_unpause.update(
+                        jtoda.dataset.unpause_dependent_jobs(jobs=jobs_to_unpause)
+                    )
+        return jobs_to_unpause
 
     @property
     def history_content_type(self):
