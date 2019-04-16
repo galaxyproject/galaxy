@@ -190,6 +190,34 @@ class JobsApiTestCase(api.ApiTestCase):
                                                                          assert_ok=False)
             assert not dataset['visible']
 
+    @skip_without_tool('empty_output')
+    def test_common_problems(self):
+        with self.dataset_populator.test_history() as history_id:
+            empty_run_response = self.dataset_populator.run_tool(
+                tool_id='empty_output',
+                inputs={},
+                history_id=history_id,
+            )
+            empty_hda = empty_run_response["outputs"][0]
+            cat_empty_twice_run_response = self.dataset_populator.run_tool(
+                tool_id='cat1',
+                inputs={
+                    'input1': {'src': 'hda', 'id': empty_hda['id']},
+                    'queries_0|input2': {'src': 'hda', 'id': empty_hda['id']}
+                },
+                history_id=history_id,
+            )
+            empty_output_job = empty_run_response["jobs"][0]
+            cat_empty_job = cat_empty_twice_run_response["jobs"][0]
+            empty_output_common_problems_response = self._get('jobs/%s/common_problems' % empty_output_job["id"]).json()
+            cat_empty_common_problems_response = self._get('jobs/%s/common_problems' % cat_empty_job["id"]).json()
+            self._assert_has_keys(empty_output_common_problems_response, "has_empty_inputs", "has_duplicate_inputs")
+            self._assert_has_keys(cat_empty_common_problems_response, "has_empty_inputs", "has_duplicate_inputs")
+            assert not empty_output_common_problems_response["has_empty_inputs"]
+            assert cat_empty_common_problems_response["has_empty_inputs"]
+            assert not empty_output_common_problems_response["has_duplicate_inputs"]
+            assert cat_empty_common_problems_response["has_duplicate_inputs"]
+
     @skip_without_tool('detect_errors_aggressive')
     def test_report_error(self):
         with self.dataset_populator.test_history() as history_id:
