@@ -353,8 +353,7 @@ var View = Backbone.View.extend({
                 vr += `<div class="infomessagelarge">
                             <p>
                                 <a href="${response.view_result[i]}">
-                                There is a RealTimeTool result view available, click here to display. You can also click on the display eye icon (<span class="fa fa-eye"></span>)
-                                associated with the RealTimeTool Dataset to view.</a>
+                                There is a RealTimeTool result view available, click here to display.</a>
                             </p>
                             <p>
                                 You may also access all active RealTimeTools from the User menu.
