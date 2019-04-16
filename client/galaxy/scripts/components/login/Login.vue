@@ -20,7 +20,12 @@
                         </b-card-body>
                         <b-card-footer>
                             Don't have an account?
-                            <a id="register-toggle" href="#" @click.prevent="toggleLogin">Register here.</a>
+                            <span v-if="allowUserCreation">
+                                <a id="register-toggle" href="#" @click.prevent="toggleLogin">Register here.</a>
+                            </span>
+                            <span v-else>
+                                Registration for this Galaxy instance is disabled.  Please contact an administrator for assistance.
+                            </span>
                         </b-card-footer>
                     </b-card>
                 </b-form>
@@ -70,6 +75,7 @@ export default {
             provider: null,
             messageText: null,
             messageVariant: null,
+            allowUserCreation: galaxy.config.allow_user_creation,
             redirect: galaxy.params.redirect,
             session_csrf_token: galaxy.session_csrf_token,
             enable_oidc: galaxy.config.enable_oidc,
