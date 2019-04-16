@@ -59,9 +59,53 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         """
         GET /api/datasets/
 
-        Search datasets or collections.
-        """
+        Search datasets or collections using a query system
 
+        :rtype:     list
+        :returns:   dictionaries containing summary of dataset or dataset_collection information
+
+        The list returned can be filtered by using two optional parameters:
+            q:      string, generally a property name to filter by followed
+                    by an (often optional) hyphen and operator string.
+            qv:     string, the value to filter by
+
+        ..example:
+            To filter the list to only those created after 2015-01-29,
+            the query string would look like:
+                '?q=create_time-gt&qv=2015-01-29'
+
+            Multiple filters can be sent in using multiple q/qv pairs:
+                '?q=create_time-gt&qv=2015-01-29&q=name-contains&qv=experiment-1'
+
+        The list returned can be paginated using two optional parameters:
+            limit:  integer, defaults to no value and no limit (return all)
+                    how many items to return
+            offset: integer, defaults to 0 and starts at the beginning
+                    skip the first ( offset - 1 ) items and begin returning
+                    at the Nth item
+
+        ..example:
+            limit and offset can be combined. Skip the first two and return five:
+                '?limit=5&offset=3'
+
+        The list returned can be ordered using the optional parameter:
+            order:  string containing one of the valid ordering attributes followed
+                    (optionally) by '-asc' or '-dsc' for ascending and descending
+                    order respectively. Orders can be stacked as a comma-
+                    separated list of values.
+
+        ..example:
+            To sort by name descending then create time descending:
+                '?order=name-dsc,create_time'
+
+        The ordering attributes and their default orders are:
+            hid defaults to 'hid-asc'
+            create_time defaults to 'create_time-dsc'
+            update_time defaults to 'update_time-dsc'
+            name    defaults to 'name-asc'
+
+        'order' defaults to 'create_time'
+        """
         filter_params = self.parse_filter_params(kwd)
         filters = self.history_contents_filters.parse_filters(filter_params)
         order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=kwd.get('order', 'create_time-dsc'))
