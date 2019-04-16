@@ -449,12 +449,7 @@ class WorkflowContentsManager(UsesAnnotations):
             version = int(version)
         workflow = stored.get_internal_version(version)
         if style == "export":
-            # Export workflows as GA format through 19.05, in 19.09 this will become format2.
-            style = "ga"
-
-            if self.app.config.enable_beta_export_format2_default:
-                style = "format2"
-
+            style = self.app.config.default_workflow_export_format
         if style == "editor":
             wf_dict = self._workflow_to_dict_editor(trans, stored, workflow)
         elif style == "legacy":
