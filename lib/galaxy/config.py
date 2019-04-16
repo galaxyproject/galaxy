@@ -203,7 +203,7 @@ class Configuration(object):
             tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir", None)
         self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "database/openid_consumer_cache"), self.root)
-        self.cookie_path = kwargs.get("cookie_path", "/")
+        self.cookie_path = kwargs.get("cookie_path", None)
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', False))
         self.enable_unique_workflow_defaults = string_as_bool(kwargs.get('enable_unique_workflow_defaults', False))
         self.tool_path = resolve_path(kwargs.get("tool_path", "tools"), self.root)
