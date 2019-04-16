@@ -3,7 +3,10 @@ from __future__ import print_function
 import textwrap
 
 from base import api
-from base.populators import DatasetPopulator
+from base.populators import (
+    DatasetCollectionPopulator,
+    DatasetPopulator,
+)
 
 
 class DatasetsApiTestCase(api.ApiTestCase):
@@ -11,11 +14,54 @@ class DatasetsApiTestCase(api.ApiTestCase):
     def setUp(self):
         super(DatasetsApiTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
     def test_index(self):
         index_response = self._get("datasets")
         self._assert_status_code_is(index_response, 200)
+
+    def test_search_datasets(self):
+        hda_id = self.dataset_populator.new_dataset(self.history_id)['id']
+        payload = {'limit': 1, 'offset': 0}
+        index_response = self._get("datasets", payload).json()
+        assert len(index_response) == 1
+        assert index_response[0]['id'] == hda_id
+        hdca_id = self.dataset_collection_populator.create_list_in_history(self.history_id,
+                                                                           contents=["1\n2\n3"]).json()['id']
+        payload = {'limit': 3, 'offset': 0}
+        index_response = self._get("datasets", payload).json()
+        assert len(index_response) == 3
+        assert index_response[0]['id'] == hdca_id
+        assert index_response[0]['history_content_type'] == 'dataset_collection'
+        assert index_response[2]['id'] == hda_id
+        assert index_response[2]['history_content_type'] == 'dataset'
+        payload = {'limit': 2, 'offset': 0, 'q': ['history_content_type'], 'qv': ['dataset']}
+        index_response = self._get("datasets", payload).json()
+        assert index_response[1]['id'] == hda_id
+        update_payload = {
+            'name': 'crazy_new_name',
+            'tags': ['cool:new_tag', 'cool:another_tag'],
+        }
+        updated_hda = self._put("histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id), update_payload).json()
+        assert updated_hda['name'] == 'crazy_new_name'
+        assert 'cool:new_tag' in updated_hda['tags']
+        assert 'cool:another_tag' in updated_hda['tags']
+        payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type', 'tag'], 'qv': ['dataset', 'cool:new_tag']}
+        index_response = self._get("datasets", payload).json()
+        assert len(index_response) == 1
+        payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type', 'tag-contains'], 'qv': ['dataset', 'new_tag']}
+        index_response = self._get("datasets", payload).json()
+        assert len(index_response) == 1
+        payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type', 'tag-contains'], 'qv': ['dataset', 'notag']}
+        index_response = self._get("datasets", payload).json()
+        assert len(index_response) == 0
+
+    def test_invalid_search(self):
+        payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type', 'tag-invalid_op'], 'qv': ['dataset', 'notag']}
+        index_response = self._get("datasets", payload)
+        self._assert_status_code_is(index_response, 400)
+        assert index_response.json()['err_msg'] == 'bad filter'
 
     def test_show(self):
         hda1 = self.dataset_populator.new_dataset(self.history_id)
