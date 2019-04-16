@@ -168,6 +168,30 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         return job_dict
 
     @expose_api
+    def common_problems(self, trans, id, **kwd):
+        """
+        * GET /api/jobs/{id}/common_problems
+            check inputs and job for common potential problems to aid in error reporting
+        """
+        job = self.__get_job(trans, id)
+        seen_ids = set()
+        has_empty_inputs = False
+        has_duplicate_inputs = False
+        for job_input_assoc in job.input_datasets:
+            input_dataset_instance = job_input_assoc.dataset
+            if input_dataset_instance.get_total_size() == 0:
+                has_empty_inputs = True
+            input_instance_id = input_dataset_instance.id
+            if input_instance_id in seen_ids:
+                has_duplicate_inputs = True
+            else:
+                seen_ids.add(input_instance_id)
+        # TODO: check percent of failing jobs around a window on job.update_time for handler - report if high.
+        # TODO: check percent of failing jobs around a window on job.update_time for destination_id - report if high.
+        # TODO: sniff inputs (add flag to allow checking files?)
+        return {"has_empty_inputs": has_empty_inputs, "has_duplicate_inputs": has_duplicate_inputs}
+
+    @expose_api
     def inputs(self, trans, id, **kwd):
         """
         show( trans, id )
