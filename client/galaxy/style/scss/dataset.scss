@@ -118,7 +118,27 @@
         }
     }
 
-    &.state-limited{
+    &.state-dispatched {
+        .state-icon {
+            &:before {
+                -webkit-text-stroke: 1px $state-default-bg;
+            }
+        }
+    }
+
+    &.state-submitted {
+        // normal font weight
+    }
+
+    &.state-queued {
+        .state-icon {
+            &:before {
+                -webkit-text-stroke: 1px;
+            }
+        }
+    }
+
+    &.state-limited {
         background: $state-paused-bg;
         .state-icon {
             &:before {
