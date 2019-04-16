@@ -39,23 +39,48 @@ class DatasetsApiTestCase(api.ApiTestCase):
         payload = {'limit': 2, 'offset': 0, 'q': ['history_content_type'], 'qv': ['dataset']}
         index_response = self._get("datasets", payload).json()
         assert index_response[1]['id'] == hda_id
+
+    def test_search_by_tag(self):
+        hda_id = self.dataset_populator.new_dataset(self.history_id)['id']
         update_payload = {
-            'name': 'crazy_new_name',
             'tags': ['cool:new_tag', 'cool:another_tag'],
         }
-        updated_hda = self._put("histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id), update_payload).json()
-        assert updated_hda['name'] == 'crazy_new_name'
+        updated_hda = self._put(
+            "histories/{history_id}/contents/{hda_id}".format(history_id=self.history_id, hda_id=hda_id),
+            update_payload).json()
         assert 'cool:new_tag' in updated_hda['tags']
         assert 'cool:another_tag' in updated_hda['tags']
         payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type', 'tag'], 'qv': ['dataset', 'cool:new_tag']}
         index_response = self._get("datasets", payload).json()
         assert len(index_response) == 1
-        payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type', 'tag-contains'], 'qv': ['dataset', 'new_tag']}
+        payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type', 'tag-contains'],
+                   'qv': ['dataset', 'new_tag']}
         index_response = self._get("datasets", payload).json()
         assert len(index_response) == 1
         payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type', 'tag-contains'], 'qv': ['dataset', 'notag']}
         index_response = self._get("datasets", payload).json()
         assert len(index_response) == 0
+
+    def test_search_by_tool_id(self):
+        self.dataset_populator.new_dataset(self.history_id)
+        payload = {'limit': 1, 'offset': 0, 'q': ['history_content_type', 'tool_id'], 'qv': ['dataset', 'upload1']}
+        assert len(self._get("datasets", payload).json()) == 1
+        payload = {'limit': 1, 'offset': 0, 'q': ['history_content_type', 'tool_id'], 'qv': ['dataset', 'uploadX']}
+        assert len(self._get("datasets", payload).json()) == 0
+        payload = {'limit': 1, 'offset': 0, 'q': ['history_content_type', 'tool_id-contains'], 'qv': ['dataset', 'pload1']}
+        assert len(self._get("datasets", payload).json()) == 1
+        self.dataset_collection_populator.create_list_in_history(self.history_id,
+                                                                 name="search by tool id",
+                                                                 contents=["1\n2\n3"])
+        payload = {'limit': 1, 'offset': 0, 'q': ['history_content_type', 'tool_id'],
+                   'qv': ['dataset_collection', 'upload1']}
+        result = self._get("datasets", payload).json()
+        assert len(result) == 1
+        assert result[0]['name'] == 'search by tool id'
+        payload = {'limit': 1, 'offset': 0, 'q': ['history_content_type', 'tool_id'],
+                   'qv': ['dataset_collection', 'uploadX']}
+        result = self._get("datasets", payload).json()
+        assert len(result) == 0
 
     def test_invalid_search(self):
         payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type', 'tag-invalid_op'], 'qv': ['dataset', 'notag']}
