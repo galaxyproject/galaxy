@@ -62,9 +62,7 @@ var View = Backbone.View.extend({
             ${this._templateHeader()}
             <h2>Dataset Error</h2>
             <p>An error occurred while running the tool <b>${job.tool_id}</b>.</p>
-            <p>Tool execution generated the following messages:</p>
-            <pre class="code">${_.escape(job.stderr)}</pre>
-
+            ${this.job_summary(job)}
             <h3>Troubleshoot This Error</h3>
             <p>
                 There are a number of help resources to self diagnose and
@@ -83,6 +81,31 @@ var View = Backbone.View.extend({
                 better able to investigate your problem and get back to you.
             </p>`);
         this.$el.append(this._getBugFormTemplate(dataset, job));
+    },
+
+    job_summary: function(job) {
+        const tool_stderr = job.tool_stderr;
+        const job_stderr = job.job_stderr;
+        const job_messages = job.job_messages;
+        if (!tool_stderr && !job_stderr && !job_messages) {
+            return '';
+        }
+        var message = '<h3>Error Details</h3>';
+        if (job_messages) {
+            message += '<p>Execution resulted in the following messages:</p>';
+            for (let job_message of job_messages) {
+                message += `<p><pre>${_.escape(job_message['desc'])}</pre></p>`;
+            }
+        }
+        if (tool_stderr) {
+            message += '<p>Tool generated the following standard error:</p>';
+            message += `<pre class="code">${_.escape(tool_stderr)}</pre>`;
+        }
+        if (job_stderr) {
+            message += '<p>Galaxy job runner generated the following standard error:</p>';
+            message += `<pre class="code">${_.escape(job_stderr)}</pre>`;
+        }
+        return message;
     },
 
     /** Display actions messages */
