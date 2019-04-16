@@ -683,6 +683,11 @@ div.form-row-input label {
     margin-top: 5px;
 }
 
+#run-workflow {
+    @include float-right;
+    @extend .mt-3;
+}
+
 .workflow-right {
     background: $white;
 }
