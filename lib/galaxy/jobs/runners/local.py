@@ -263,31 +263,10 @@ class LocalJobRunner(BaseJobRunner):
             cont = job.container
             if cont:
                 if cont.container_type == 'docker':
-                    # Do we need to do inspect, or is only ports ok?
-                    max_command_attempts = 10 + 1
-                    inspect = None
-                    exit_code = None
-                    for i in range(1, max_command_attempts):
-                        with tempfile.TemporaryFile() as stdout_file:
-                            exit_code = subprocess.call(cont.container_info['commands']['inspect'],
-                                                    shell=True,
-                                                    stdout=stdout_file,
-                                                    env=self._environ,
-                                                    preexec_fn=os.setpgrp)
-                            if exit_code == 0:
-                                stdout_file.seek(0)
-                                inspect = stdout_file.read()
-                                break
-                        if i != max_command_attempts:
-                            t = 2 * i
-                            log.debug("Container not found during inspect check, sleeping for %s seconds.", t)
-                            sleep(t)
-                    if inspect:
-                        cont.container_info['inspect'] = json.loads(inspect)
-                    else:
-                        log.error('Unable to run inspect command (%s): %s', cont.container_info['commands']['inspect'], exit_code)
+                    # Handle getting RealTimeTool ports, if applicable
                     eps = job.realtimetool_entry_points
                     if eps:
+                        max_command_attempts = 10 + 1
                         ports_raw = None
                         for i in range(1, max_command_attempts):
                             with tempfile.TemporaryFile() as stdout_file:
