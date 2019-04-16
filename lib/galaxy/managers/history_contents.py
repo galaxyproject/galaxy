@@ -485,6 +485,19 @@ class HistoryContentsFilters(base.ModelFilterParser,
                 return sql.column('state').in_(states)
             raise_filter_err(attr, op, val, 'bad op in filter')
 
+        if attr == 'tool_id':
+            if op == 'eq':
+                cond = model.Job.table.c.tool_id == val
+            elif op == 'contains':
+                cond = model.Job.table.c.tool_id.contains(val, autoescape=True)
+            else:
+                raise_filter_err(attr, op, val, 'bad op in filter')
+            return sql.expression.and_(
+                model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,
+                model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.table.c.dataset_id,
+                cond
+            )
+
         return super(HistoryContentsFilters, self)._parse_orm_filter(attr, op, val)
 
     def decode_type_id(self, type_id):
@@ -511,6 +524,7 @@ class HistoryContentsFilters(base.ModelFilterParser,
             # 'hid-in'        : { 'op': ( 'in' ), 'val': self.parse_int_list },
             'name'          : {'op': ('eq', 'contains', 'like')},
             'state'         : {'op': ('eq', 'in')},
+            'tool_id'       : {'op': ('eq', 'contains')},
             'visible'       : {'op': ('eq'), 'val': self.parse_bool},
             'create_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
             'update_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
