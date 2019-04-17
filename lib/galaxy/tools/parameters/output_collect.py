@@ -4,11 +4,20 @@ import logging
 import operator
 import os
 import re
-from collections import namedtuple
 
 import galaxy.model
-from galaxy import util
 from galaxy.model.dataset_collections.structure import UninitializedTree
+from galaxy.model.store.discover import (
+    discover_target_directory,
+    discovered_file_for_element,
+    DiscoveredFile,
+    JsonCollectedDatasetMatch,
+    ModelPersistenceContext,
+    persist_elements_to_folder,
+    persist_hdas,
+    RegexCollectedDatasetMatch,
+    UNSET,
+)
 from galaxy.tools.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
     INPUT_DBKEY_TOKEN,
@@ -58,19 +67,6 @@ class PermissionProvider(object):
         self._security_agent.copy_dataset_permissions(init_from.dataset, primary_data.dataset)
 
 
-class UnusedPermissionProvider(object):
-
-    @property
-    def permissions(self):
-        return UNSET
-
-    def set_default_hda_permissions(self, primary_data):
-        return
-
-    def copy_dataset_permissions(self, init_from, primary_data):
-        raise NotImplementedError()
-
-
 class MetadataSourceProvider(object):
 
     def __init__(self, inp_data):
@@ -78,12 +74,6 @@ class MetadataSourceProvider(object):
 
     def get_metadata_source(self, input_name):
         return self._inp_data[input_name]
-
-
-class UnusedMetadataSourceProvider(object):
-
-    def get_metadata_source(self, input_name):
-        raise NotImplementedError()
 
 
 def collect_dynamic_outputs(
@@ -140,7 +130,7 @@ def collect_dynamic_outputs(
                     if "elements" in element:
                         add_to_discovered_files(element["elements"], parent_identifiers + [element["name"]])
                     else:
-                        discovered_file = discovered_file_for_unnamed_output(element, job_working_directory, parent_identifiers)
+                        discovered_file = discovered_file_for_element(element, job_working_directory, parent_identifiers, collector=DEFAULT_DATASET_COLLECTOR)
                         filenames[discovered_file.path] = discovered_file
 
             add_to_discovered_files(elements)
@@ -194,232 +184,6 @@ def collect_dynamic_outputs(
         except Exception:
             log.exception("Problem gathering output collection.")
             collection.handle_population_failed("Problem building datasets for collection.")
-
-
-def persist_elements_to_folder(job_context, elements, library_folder):
-    for element in elements:
-        if "elements" in element:
-            assert "name" in element
-            name = element["name"]
-            description = element.get("description")
-            nested_folder = job_context.create_library_folder(library_folder, name, description)
-            persist_elements_to_folder(job_context, element["elements"], nested_folder)
-        else:
-            discovered_file = discovered_file_for_unnamed_output(element, job_context.job_working_directory)
-            fields_match = discovered_file.match
-            designation = fields_match.designation
-            visible = fields_match.visible
-            ext = fields_match.ext
-            dbkey = fields_match.dbkey
-            info = element.get("info", None)
-            link_data = discovered_file.match.link_data
-
-            # Create new primary dataset
-            name = fields_match.name or designation
-
-            sources = fields_match.sources
-            hashes = fields_match.hashes
-
-            job_context.create_dataset(
-                ext=ext,
-                designation=designation,
-                visible=visible,
-                dbkey=dbkey,
-                name=name,
-                filename=discovered_file.path,
-                info=info,
-                library_folder=library_folder,
-                link_data=link_data,
-                sources=sources,
-                hashes=hashes,
-            )
-
-
-def persist_hdas(elements, model_create_context):
-    # discover files as individual datasets for the target history
-    datasets = []
-
-    def collect_elements_for_history(elements):
-        for element in elements:
-            if "elements" in element:
-                collect_elements_for_history(element["elements"])
-            else:
-                discovered_file = discovered_file_for_unnamed_output(element, model_create_context.job_working_directory)
-                fields_match = discovered_file.match
-                designation = fields_match.designation
-                ext = fields_match.ext
-                dbkey = fields_match.dbkey
-                info = element.get("info", None)
-                link_data = discovered_file.match.link_data
-
-                # Create new primary dataset
-                name = fields_match.name or designation
-
-                hda_id = discovered_file.match.object_id
-                primary_dataset = None
-                if hda_id:
-                    primary_dataset = model_create_context.sa_session.query(galaxy.model.HistoryDatasetAssociation).get(hda_id)
-
-                sources = fields_match.sources
-                hashes = fields_match.hashes
-
-                dataset = model_create_context.create_dataset(
-                    ext=ext,
-                    designation=designation,
-                    visible=True,
-                    dbkey=dbkey,
-                    name=name,
-                    filename=discovered_file.path,
-                    info=info,
-                    link_data=link_data,
-                    primary_data=primary_dataset,
-                    sources=sources,
-                    hashes=hashes,
-                )
-                dataset.raw_set_dataset_state('ok')
-                if not hda_id:
-                    datasets.append(dataset)
-
-    collect_elements_for_history(elements)
-    model_create_context.add_datasets_to_history(datasets)
-
-
-class ModelPersistenceContext(object):
-
-    def create_dataset(
-        self,
-        ext,
-        designation,
-        visible,
-        dbkey,
-        name,
-        filename,
-        metadata_source_name=None,
-        info=None,
-        library_folder=None,
-        link_data=False,
-        primary_data=None,
-        init_from=None,
-        dataset_attributes=None,
-        tag_list=[],
-        sources=[],
-        hashes=[],
-    ):
-        sa_session = self.sa_session
-
-        # You can initialize a dataset or initialize from a dataset but not both.
-        if init_from:
-            assert primary_data is None
-        if primary_data:
-            assert init_from is None
-
-        if metadata_source_name:
-            assert init_from is None
-        if init_from:
-            assert metadata_source_name is None
-
-        if primary_data is not None:
-            primary_data.extension = ext
-            primary_data.visible = visible
-            primary_data.dbkey = dbkey
-        else:
-            if not library_folder:
-                primary_data = galaxy.model.HistoryDatasetAssociation(extension=ext,
-                                                                      designation=designation,
-                                                                      visible=visible,
-                                                                      dbkey=dbkey,
-                                                                      create_dataset=True,
-                                                                      flush=False,
-                                                                      sa_session=sa_session)
-
-                self.persist_object(primary_data)
-                if init_from:
-                    self.permission_provider.copy_dataset_permissions(init_from, primary_data)
-                    primary_data.state = init_from.state
-                else:
-                    self.permission_provider.set_default_hda_permissions(primary_data)
-            else:
-                ld = galaxy.model.LibraryDataset(folder=library_folder, name=name)
-                ldda = galaxy.model.LibraryDatasetDatasetAssociation(name=name,
-                                                                     extension=ext,
-                                                                     dbkey=dbkey,
-                                                                     # library_dataset=ld,
-                                                                     user=self.user,
-                                                                     create_dataset=True,
-                                                                     flush=False,
-                                                                     sa_session=sa_session)
-                ld.library_dataset_dataset_association = ldda
-                ldda.raw_set_dataset_state(ldda.states.OK)
-
-                self.add_library_dataset_to_folder(library_folder, ld)
-                primary_data = ldda
-
-        for source_dict in sources:
-            source = galaxy.model.DatasetSource()
-            source.source_uri = source_dict["source_uri"]
-            primary_data.dataset.sources.append(source)
-
-        for hash_dict in hashes:
-            hash_object = galaxy.model.DatasetHash()
-            hash_object.hash_function = hash_dict["hash_function"]
-            hash_object.hash_value = hash_dict["hash_value"]
-            primary_data.dataset.hashes.append(hash_object)
-
-        self.flush()
-
-        if tag_list:
-            self.tag_handler.add_tags_from_list(self.job.user, primary_data, tag_list)
-
-        # Move data from temp location to dataset location
-        if not link_data:
-            self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
-        else:
-            primary_data.link_to(filename)
-
-        # We are sure there are no extra files, so optimize things that follow by settting total size also.
-        primary_data.set_size(no_extra_files=True)
-        # If match specified a name use otherwise generate one from
-        # designation.
-        primary_data.name = name
-
-        # Copy metadata from one of the inputs if requested.
-        if metadata_source_name:
-            metadata_source = self.metadata_source_provider.get_metadata_source(metadata_source_name)
-            primary_data.init_meta(copy_from=metadata_source)
-        elif init_from:
-            metadata_source = init_from
-            primary_data.init_meta(copy_from=init_from)
-            # when coming from primary dataset - respect pattern of output - this makes sense
-            primary_data.dbkey = dbkey
-        else:
-            primary_data.init_meta()
-
-        if info is not None:
-            primary_data.info = info
-
-        # add tool/metadata provided information
-        dataset_attributes = dataset_attributes or {}
-        if dataset_attributes:
-            # TODO: discover_files should produce a match that encorporates this -
-            # would simplify ToolProvidedMetadata interface and eliminate this
-            # crap path.
-            dataset_att_by_name = dict(ext='extension')
-            for att_set in ['name', 'info', 'ext', 'dbkey']:
-                dataset_att_name = dataset_att_by_name.get(att_set, att_set)
-                setattr(primary_data, dataset_att_name, dataset_attributes.get(att_set, getattr(primary_data, dataset_att_name)))
-
-        metadata_dict = dataset_attributes.get('metadata', None)
-        if metadata_dict:
-            if "dbkey" in dataset_attributes:
-                metadata_dict["dbkey"] = dataset_attributes["dbkey"]
-            # branch tested with tool_provided_metadata_3 / tool_provided_metadata_10
-            primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
-        else:
-            primary_data.set_meta()
-
-        primary_data.set_peek()
-
-        return primary_data
 
 
 class JobContext(ModelPersistenceContext):
@@ -685,9 +449,6 @@ def collect_primary_datasets(job_context, output, input_ext):
     return primary_datasets
 
 
-DiscoveredFile = namedtuple('DiscoveredFile', ['path', 'collector', 'match'])
-
-
 def discover_files(output_name, tool_provided_metadata, extra_file_collectors, job_working_directory, matchable):
     extra_file_collectors = extra_file_collectors
     if extra_file_collectors and extra_file_collectors[0].discover_via == "tool_provided_metadata":
@@ -702,30 +463,6 @@ def discover_files(output_name, tool_provided_metadata, extra_file_collectors, j
     else:
         for (match, collector) in walk_over_file_collectors(extra_file_collectors, job_working_directory, matchable):
             yield DiscoveredFile(match.path, collector, match)
-
-
-def discovered_file_for_unnamed_output(dataset, job_working_directory, parent_identifiers=[]):
-    extra_file_collector = DEFAULT_TOOL_PROVIDED_DATASET_COLLECTOR
-    target_directory = discover_target_directory(extra_file_collector.directory, job_working_directory)
-    filename = dataset["filename"]
-    # handle link_data_only here, verify filename is in directory if not linking...
-    if not dataset.get("link_data_only"):
-        path = os.path.join(target_directory, filename)
-        if not util.in_directory(path, target_directory):
-            raise Exception("Problem with tool configuration, attempting to pull in datasets from outside working directory.")
-    else:
-        path = filename
-    return DiscoveredFile(path, extra_file_collector, JsonCollectedDatasetMatch(dataset, extra_file_collector, filename, path=path, parent_identifiers=parent_identifiers))
-
-
-def discover_target_directory(dir_name, job_working_directory):
-    if dir_name:
-        directory = os.path.join(job_working_directory, dir_name)
-        if not util.in_directory(directory, job_working_directory):
-            raise Exception("Problem with tool configuration, attempting to pull in datasets from outside working directory.")
-        return directory
-    else:
-        return job_working_directory
 
 
 def walk_over_file_collectors(extra_file_collectors, job_working_directory, matchable):
@@ -829,99 +566,6 @@ class DatasetCollector(object):
 def _compose(f, g):
     return lambda x: f(g(x))
 
-
-class JsonCollectedDatasetMatch(object):
-
-    def __init__(self, as_dict, collector, filename, path=None, parent_identifiers=[]):
-        self.as_dict = as_dict
-        self.collector = collector
-        self.filename = filename
-        self.path = path
-        self._parent_identifiers = parent_identifiers
-
-    @property
-    def designation(self):
-        # If collecting nested collection, grab identifier_0,
-        # identifier_1, etc... and join on : to build designation.
-        element_identifiers = self.raw_element_identifiers
-        if element_identifiers:
-            return ":".join(element_identifiers)
-        elif "designation" in self.as_dict:
-            return self.as_dict.get("designation")
-        elif "name" in self.as_dict:
-            return self.as_dict.get("name")
-        else:
-            return None
-
-    @property
-    def element_identifiers(self):
-        return self._parent_identifiers + (self.raw_element_identifiers or [self.designation])
-
-    @property
-    def raw_element_identifiers(self):
-        identifiers = []
-        i = 0
-        while True:
-            key = "identifier_%d" % i
-            if key in self.as_dict:
-                identifiers.append(self.as_dict.get(key))
-            else:
-                break
-            i += 1
-
-        return identifiers
-
-    @property
-    def name(self):
-        """ Return name or None if not defined by the discovery pattern.
-        """
-        return self.as_dict.get("name")
-
-    @property
-    def dbkey(self):
-        return self.as_dict.get("dbkey", self.collector.default_dbkey)
-
-    @property
-    def ext(self):
-        return self.as_dict.get("ext", self.collector.default_ext)
-
-    @property
-    def visible(self):
-        try:
-            return self.as_dict["visible"].lower() == "visible"
-        except KeyError:
-            return self.collector.default_visible
-
-    @property
-    def link_data(self):
-        return bool(self.as_dict.get("link_data_only", False))
-
-    @property
-    def tag_list(self):
-        return self.as_dict.get("tags", [])
-
-    @property
-    def object_id(self):
-        return self.as_dict.get("object_id", None)
-
-    @property
-    def sources(self):
-        return self.as_dict.get("sources", [])
-
-    @property
-    def hashes(self):
-        return self.as_dict.get("hashes", [])
-
-
-class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):
-
-    def __init__(self, re_match, collector, filename, path=None):
-        super(RegexCollectedDatasetMatch, self).__init__(
-            re_match.groupdict(), collector, filename, path=path
-        )
-
-
-UNSET = object()
 
 DEFAULT_DATASET_COLLECTOR = DatasetCollector(DEFAULT_DATASET_COLLECTOR_DESCRIPTION)
 DEFAULT_TOOL_PROVIDED_DATASET_COLLECTOR = ToolMetadataDatasetCollector(ToolProvidedMetadataDatasetCollection())

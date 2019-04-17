@@ -99,12 +99,11 @@ def _fetch_target(upload_config, target):
         url = item.get("url")
         if url:
             sources.append({"source_uri": url})
-        hashes = []
-        for hash_function in HASH_NAMES:
-            hash_value = item.get(hash_function)
-            if hash_value:
-                hashes.append({"hash_function": hash_function, "hash_value": hash_value})
-                _handle_hash_validation(upload_config, hash_function, hash_value, path)
+        hashes = item.get("hashes", [])
+        for hash_dict in hashes:
+            hash_function = hash_dict.get("hash_function")
+            hash_value = hash_dict.get("hash_value")
+            _handle_hash_validation(upload_config, hash_function, hash_value, path)
 
         dbkey = item.get("dbkey", "?")
         requested_ext = item.get("ext", "auto")

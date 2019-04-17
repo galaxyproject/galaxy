@@ -1,5 +1,6 @@
 galaxy-objectstore
 galaxy-util
+bdbag
 bx
 h5py
 isa-rwval
