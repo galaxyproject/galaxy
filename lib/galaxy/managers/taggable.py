@@ -96,7 +96,7 @@ class TaggableDeserializerMixin(object):
 
 class TaggableFilterMixin(object):
 
-    def create_expression(self, attr, op, val):
+    def create_tag_filter(self, attr, op, val):
         target_model = getattr(model, "%sTagAssociation" % self.model_class.__name__)
         id_column = "%s_id" % target_model.table.name.rsplit('_tag_association')[0]
         if ':' not in val and op == 'eq':
@@ -119,5 +119,5 @@ class TaggableFilterMixin(object):
 
     def _add_parsers(self):
         self.orm_filter_parsers.update({
-            'tag': self.create_expression
+            'tag': self.create_tag_filter
         })

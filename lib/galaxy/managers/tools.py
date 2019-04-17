@@ -95,7 +95,7 @@ class DynamicToolManager(ModelManager):
 
 class ToolFilterMixin(object):
 
-    def create_expression(self, attr, op, val):
+    def create_tool_filter(self, attr, op, val):
         if op == 'eq':
             cond = model.Job.table.c.tool_id == val
         elif op == 'contains':
@@ -110,5 +110,5 @@ class ToolFilterMixin(object):
 
     def _add_parsers(self):
         self.orm_filter_parsers.update({
-            'tool_id': self.create_expression,
+            'tool_id': self.create_tool_filter,
         })
