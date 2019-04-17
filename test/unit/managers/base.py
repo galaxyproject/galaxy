@@ -100,7 +100,7 @@ class BaseTestCase(unittest.TestCase):
         self.assertTrue(True, 'is uuid: ' + item)
 
     def assertORMFilter(self, item, msg=None):
-        if not isinstance(item, sqlalchemy.sql.elements.BinaryExpression):
+        if not isinstance(item, (sqlalchemy.sql.elements.BinaryExpression, sqlalchemy.sql.elements.BooleanClauseList)):
             self.fail('Not an orm filter: ' + str(type(item)))
         self.assertTrue(True, msg or ('is an orm filter: ' + str(item)))
 

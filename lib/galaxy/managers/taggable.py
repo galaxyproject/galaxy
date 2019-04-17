@@ -6,6 +6,9 @@ Mixins for Taggable model managers and serializers.
 
 import logging
 
+from sqlalchemy import sql
+
+from galaxy import model
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
@@ -93,31 +96,28 @@ class TaggableDeserializerMixin(object):
 
 class TaggableFilterMixin(object):
 
-    def filter_has_partial_tag(self, item, val):
-        """
-        Return True if any tag partially contains `val`.
-        """
-        for tag_str in _tag_str_gen(item):
-            if val in tag_str:
-                return True
-        return False
-
-    def filter_has_tag(self, item, val):
-        """
-        Return True if any tag exactly equals `val`.
-        """
-        for tag_str in _tag_str_gen(item):
-            if val == tag_str:
-                return True
-        return False
+    def create_expression(self, attr, op, val):
+        target_model = getattr(model, "%sTagAssociation" % self.model_class.__name__)
+        id_column = "%s_id" % target_model.table.name.rsplit('_tag_association')[0]
+        if ':' not in val and op == 'eq':
+            # We require an exact match and the tag to look for has no user_value,
+            # so we can't just concatenate user_tname, ':' and user_vale
+            column = target_model.table.c.user_tname
+        else:
+            column = target_model.table.c.user_tname + ":" + target_model.table.c.user_value
+        if op == 'eq':
+            cond = column == val
+        elif op in ('contains', 'has'):
+            cond = column.contains(val, autoescape=True)
+        else:
+            self.raise_filter_err(attr, op, val, 'bad op in filter')
+        return sql.expression.and_(
+            # TODO: generalize to all sorts of tag associations
+            self.model_class.table.c.id == getattr(target_model.table.c, id_column),
+            cond
+        )
 
     def _add_parsers(self):
-        self.fn_filter_parsers.update({
-            'tag': {
-                'op': {
-                    'eq' : self.filter_has_tag,
-                    'contains': self.filter_has_partial_tag,
-                    'has': self.filter_has_partial_tag,
-                }
-            }
+        self.orm_filter_parsers.update({
+            'tag': self.create_expression
         })
