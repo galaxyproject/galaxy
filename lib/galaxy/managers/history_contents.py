@@ -30,6 +30,7 @@ from galaxy.managers import (
     hdas,
     hdcas,
     taggable,
+    tools
 )
 
 log = logging.getLogger(__name__)
@@ -435,15 +436,13 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
 class HistoryContentsFilters(base.ModelFilterParser,
                              annotatable.AnnotatableFilterMixin,
                              deletable.PurgableFiltersMixin,
-                             taggable.TaggableFilterMixin):
+                             taggable.TaggableFilterMixin,
+                             tools.ToolFilterMixin):
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
 
     # TODO: history_content_type filter doesn't work with psycopg2: column does not exist (even with hybrid props)
     def _parse_orm_filter(self, attr, op, val):
-
-        def raise_filter_err(attr, op, val, msg):
-            raise glx_exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
 
         # we need to use some manual/text/column fu here since some where clauses on the union don't work
         # using the model_class defined above - they need to be wrapped in their own .column()
@@ -455,48 +454,35 @@ class HistoryContentsFilters(base.ModelFilterParser,
                 return sql.column('history_content_type') == 'dataset'
             if val == 'dataset_collection':
                 return sql.column('history_content_type') == 'dataset_collection'
-            raise_filter_err(attr, op, val, 'bad op in filter')
+            self.raise_filter_err(attr, op, val, 'bad op in filter')
 
         if attr == 'type_id':
             if op == 'eq':
                 return sql.column('type_id') == val
             if op == 'in':
                 return sql.column('type_id').in_(self.parse_type_id_list(val))
-            raise_filter_err(attr, op, val, 'bad op in filter')
+            self.raise_filter_err(attr, op, val, 'bad op in filter')
 
         if attr in ('update_time', 'create_time'):
             if op == 'ge':
                 return sql.column(attr) >= self.parse_date(val)
             if op == 'le':
                 return sql.column(attr) <= self.parse_date(val)
-            raise_filter_err(attr, op, val, 'bad op in filter')
+            self.raise_filter_err(attr, op, val, 'bad op in filter')
 
         if attr == 'state':
             valid_states = model.Dataset.states.values()
             if op == 'eq':
                 if val not in valid_states:
-                    raise_filter_err(attr, op, val, 'invalid state in filter')
+                    self.raise_filter_err(attr, op, val, 'invalid state in filter')
                 return sql.column('state') == val
             if op == 'in':
                 states = [s for s in val.split(',') if s]
                 for state in states:
                     if state not in valid_states:
-                        raise_filter_err(attr, op, state, 'invalid state in filter')
+                        self.raise_filter_err(attr, op, state, 'invalid state in filter')
                 return sql.column('state').in_(states)
-            raise_filter_err(attr, op, val, 'bad op in filter')
-
-        if attr == 'tool_id':
-            if op == 'eq':
-                cond = model.Job.table.c.tool_id == val
-            elif op == 'contains':
-                cond = model.Job.table.c.tool_id.contains(val, autoescape=True)
-            else:
-                raise_filter_err(attr, op, val, 'bad op in filter')
-            return sql.expression.and_(
-                model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,
-                model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.table.c.dataset_id,
-                cond
-            )
+            self.raise_filter_err(attr, op, val, 'bad op in filter')
 
         return super(HistoryContentsFilters, self)._parse_orm_filter(attr, op, val)
 
@@ -516,6 +502,7 @@ class HistoryContentsFilters(base.ModelFilterParser,
         annotatable.AnnotatableFilterMixin._add_parsers(self)
         deletable.PurgableFiltersMixin._add_parsers(self)
         taggable.TaggableFilterMixin._add_parsers(self)
+        tools.ToolFilterMixin._add_parsers(self)
         self.orm_filter_parsers.update({
             'history_content_type' : {'op': ('eq')},
             'type_id'       : {'op': ('eq', 'in'), 'val': self.parse_type_id_list},
@@ -524,7 +511,6 @@ class HistoryContentsFilters(base.ModelFilterParser,
             # 'hid-in'        : { 'op': ( 'in' ), 'val': self.parse_int_list },
             'name'          : {'op': ('eq', 'contains', 'like')},
             'state'         : {'op': ('eq', 'in')},
-            'tool_id'       : {'op': ('eq', 'contains')},
             'visible'       : {'op': ('eq'), 'val': self.parse_bool},
             'create_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},
             'update_time'   : {'op': ('le', 'ge'), 'val': self.parse_date},

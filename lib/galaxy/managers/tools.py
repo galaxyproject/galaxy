@@ -1,6 +1,8 @@
 import logging
 from uuid import uuid4
 
+from sqlalchemy import sql
+
 from galaxy import exceptions
 from galaxy import model
 from galaxy.exceptions import DuplicatedIdentifierException
@@ -89,3 +91,24 @@ class DynamicToolManager(ModelManager):
     def deactivate(self, dynamic_tool):
         self.update(dynamic_tool, {"active": False})
         return dynamic_tool
+
+
+class ToolFilterMixin(object):
+
+    def create_expression(self, attr, op, val):
+        if op == 'eq':
+            cond = model.Job.table.c.tool_id == val
+        elif op == 'contains':
+            cond = model.Job.table.c.tool_id.contains(val, autoescape=True)
+        else:
+            self.raise_filter_err(attr, op, val, 'bad op in filter')
+        return sql.expression.and_(
+            model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,
+            model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.table.c.dataset_id,
+            cond
+        )
+
+    def _add_parsers(self):
+        self.orm_filter_parsers.update({
+            'tool_id': self.create_expression,
+        })

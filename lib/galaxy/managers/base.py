@@ -1012,6 +1012,8 @@ class ModelFilterParser(HasAModelManager):
         if not column_map:
             # no column mapping (not whitelisted)
             return None
+        if callable(column_map):
+            return column_map(attr, op, val)
         # attr must be a whitelisted column by attr name or by key passed in column_map
         # note: column_map[ 'column' ] takes precedence
         if 'column' in column_map:
@@ -1120,3 +1122,6 @@ class ModelFilterParser(HasAModelManager):
             date_string = ' '.join([group for group in match.groups() if group])
             return date_string
         raise ValueError('datetime strings must be in the ISO 8601 format and in the UTC')
+
+    def raise_filter_err(attr, op, val, msg):
+        raise exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)
