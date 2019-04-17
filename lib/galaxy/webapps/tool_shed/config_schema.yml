@@ -516,17 +516,6 @@ mapping:
           external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
-      cookie_path:
-        type: str
-        default: null
-        required: false
-        desc: |
-          When running multiple Tool Shed instances under separate URL prefixes on a
-          single hostname, you will want to set this to the same path as the prefix set
-          in the uWSGI "mount" configuration option above. This value becomes the "path"
-          attribute set in the cookie so the cookies from one instance will not clobber
-          those from another.
-
       log_actions:
         type: bool
         default: true

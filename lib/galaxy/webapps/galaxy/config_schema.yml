@@ -25,17 +25,6 @@ mapping:
     required: true
     mapping:
 
-      cookie_path:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          When running multiple Galaxy instances under separate URL prefixes on a
-          single hostname, you will want to set this to the same path as the prefix set
-          in the uWSGI "mount" configuration option above. This value becomes the "path"
-          attribute set in the cookie so the cookies from one instance will not clobber
-          those from another.
-
       database_connection:
         type: str
         default: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
@@ -2058,13 +2047,13 @@ mapping:
           Enable beta workflow modules that should not yet be considered part of Galaxy's
           stable API.
 
-      enable_beta_export_format2_default:
-        type: bool
-        default: false
+      default_workflow_export_format:
+        type: str
+        default: ga
         required: false
         desc: |
-          Export of workflows as Galaxy Format 2 instead of GA workflows by default. The
-          default value of this configuration variable will switch to True in 19.09.
+          Default format for the export of workflows. Possible values are 'ga'
+          or 'format2'.
 
       force_beta_workflow_scheduled_min_steps:
         type: int

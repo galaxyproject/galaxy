@@ -1,17 +1,3 @@
-~~~~~~~~~~~~~~~
-``cookie_path``
-~~~~~~~~~~~~~~~
-
-:Description:
-    When running multiple Galaxy instances under separate URL prefixes
-    on a single hostname, you will want to set this to the same path
-    as the prefix set in the uWSGI "mount" configuration option above.
-    This value becomes the "path" attribute set in the cookie so the
-    cookies from one instance will not clobber those from another.
-:Default: ````
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -2769,16 +2755,15 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_export_format2_default``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``default_workflow_export_format``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Export of workflows as Galaxy Format 2 instead of GA workflows by
-    default. The default value of this configuration variable will
-    switch to True in 19.09.
-:Default: ``false``
-:Type: bool
+    Default format for the export of workflows. Possible values are
+    'ga' or 'format2'.
+:Default: ``ga``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -203,7 +203,7 @@ class Configuration(object):
             tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir", None)
         self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "database/openid_consumer_cache"), self.root)
-        self.cookie_path = kwargs.get("cookie_path", "/")
+        self.cookie_path = kwargs.get("cookie_path", None)
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', False))
         self.enable_unique_workflow_defaults = string_as_bool(kwargs.get('enable_unique_workflow_defaults', False))
         self.tool_path = resolve_path(kwargs.get("tool_path", "tools"), self.root)
@@ -384,8 +384,8 @@ class Configuration(object):
         # workflows built using these modules may not function in the
         # future.
         self.enable_beta_workflow_modules = string_as_bool(kwargs.get('enable_beta_workflow_modules', 'False'))
-        # Enable default export of gxformat2 workflows.
-        self.enable_beta_export_format2_default = string_as_bool(kwargs.get('enable_beta_export_format2_default', 'False'))
+        # Default format for the export of workflows.
+        self.default_workflow_export_format = kwargs.get('default_workflow_export_format', 'ga')
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))

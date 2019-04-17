@@ -351,13 +351,6 @@ tool_shed:
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
 
-  # When running multiple Tool Shed instances under separate URL
-  # prefixes on a single hostname, you will want to set this to the same
-  # path as the prefix set in the uWSGI "mount" configuration option
-  # above. This value becomes the "path" attribute set in the cookie so
-  # the cookies from one instance will not clobber those from another.
-  #cookie_path: null
-
   # Turn on logging of user actions to the database.  Actions currently
   # logged are grid views, tool searches, and use of "recently" used
   # tools menu.  The log_events and log_actions functionality will

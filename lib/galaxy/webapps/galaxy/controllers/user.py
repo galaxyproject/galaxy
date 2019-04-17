@@ -21,7 +21,7 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname
 )
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.web import url_for
 from galaxy.web.base.controller import (
     BaseUIController,

@@ -683,6 +683,11 @@ div.form-row-input label {
     margin-top: 5px;
 }
 
+#run-workflow {
+    @include float-right;
+    @extend .mt-3;
+}
+
 .workflow-right {
     background: $white;
 }
@@ -1522,7 +1527,8 @@ div.toolSectionTitle {
 }
 
 div.toolPanelLabel {
-    @extend .m-2;
+    @extend .mt-3;
+    @extend .mb-2;
     font-weight: bold;
     color: $gray-600;
     text-transform: uppercase;

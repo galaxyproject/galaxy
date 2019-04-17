@@ -10,8 +10,8 @@ from galaxy import (
 )
 from galaxy.managers import folders
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous as expose_api_anonymous
+    expose_api,
+    expose_api_anonymous
 )
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 

@@ -152,12 +152,17 @@ class HasTags(object):
 
 class SerializationOptions(object):
 
-    def __init__(self, for_edit, serialize_dataset_objects=None, serialize_files_handler=None):
+    def __init__(self, for_edit, serialize_dataset_objects=None, serialize_files_handler=None, strip_metadata_files=None):
         self.for_edit = for_edit
         if serialize_dataset_objects is None:
             serialize_dataset_objects = for_edit
         self.serialize_dataset_objects = serialize_dataset_objects
         self.serialize_files_handler = serialize_files_handler
+        if strip_metadata_files is None:
+            # If we're editing datasets - keep MetadataFile(s) in tact. For pure export
+            # expect metadata tool to be rerun.
+            strip_metadata_files = not for_edit
+        self.strip_metadata_files = strip_metadata_files
 
     def attach_identifier(self, id_encoder, obj, ret_val):
         if self.for_edit and obj.id:
@@ -219,8 +224,9 @@ class UsesCreateAndUpdateTime(object):
 
 class WorkerProcess(UsesCreateAndUpdateTime):
 
-    def __init__(self, server_name):
+    def __init__(self, server_name, hostname):
         self.server_name = server_name
+        self.hostname = hostname
 
 
 def cached_id(galaxy_model_object):
@@ -994,8 +1000,11 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         if self.state == self.states.PAUSED:
             self.set_state(self.states.NEW)
             object_session(self).add(self)
-            for dataset in self.output_datasets:
-                dataset.info = None
+            jobs_to_resume = set()
+            for jtod in self.output_datasets:
+                jobs_to_resume.update(jtod.dataset.unpause_dependent_jobs(jobs_to_resume))
+            for job in jobs_to_resume:
+                job.resume(flush=False)
             if flush:
                 object_session(self).flush()
 
@@ -2289,6 +2298,10 @@ class Dataset(StorableObject, RepresentById):
     def serialize(self, id_encoder, serialization_options):
         # serialize Dataset objects only for jobs that can actually modify these models.
         assert serialization_options.serialize_dataset_objects
+
+        def to_int(n):
+            return int(n) if n is not None else 0
+
         rval = dict_for(
             self,
             state=self.state,
@@ -2296,9 +2309,9 @@ class Dataset(StorableObject, RepresentById):
             purged=self.purged,
             external_filename=self.external_filename,
             _extra_files_path=self._extra_files_path,
-            file_size=self.file_size,
+            file_size=to_int(self.file_size),
             object_store_id=self.object_store_id,
-            total_size=self.total_size,
+            total_size=to_int(self.total_size),
             uuid=str(self.uuid or '') or None,
             hashes=list(map(lambda h: h.serialize(id_encoder, serialization_options), self.hashes))
         )
@@ -2400,8 +2413,10 @@ class DatasetInstance(object):
 
     def set_dataset_state(self, state):
         if self.raw_set_dataset_state(state):
-            object_session(self).add(self.dataset)
-            object_session(self).flush()  # flush here, because hda.flush() won't flush the Dataset object
+            sa_session = object_session(self)
+            if sa_session:
+                object_session(self).add(self.dataset)
+                object_session(self).flush()  # flush here, because hda.flush() won't flush the Dataset object
     state = property(get_dataset_state, set_dataset_state)
 
     def get_file_name(self):
@@ -2792,6 +2807,7 @@ class DatasetInstance(object):
             serialization_options.attach_identifier(id_encoder, self, rval)
             return rval
 
+        metadata = _prepare_metadata_for_serialization(id_encoder, serialization_options, self.metadata)
         rval = dict_for(
             self,
             create_time=self.create_time.__str__(),
@@ -2801,7 +2817,7 @@ class DatasetInstance(object):
             blurb=self.blurb,
             peek=self.peek,
             extension=self.extension,
-            metadata=_prepare_metadata_for_serialization(dict(self.metadata.items())),
+            metadata=metadata,
             designation=self.designation,
             deleted=self.deleted,
             visible=self.visible,
@@ -3101,6 +3117,20 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                 val = getattr(hda.datatype, name)
             rval['metadata_' + name] = val
         return rval
+
+    def unpause_dependent_jobs(self, jobs=None):
+        if self.state == self.states.PAUSED:
+            self.state = self.states.NEW
+            self.info = None
+        jobs_to_unpause = jobs or set()
+        for jtida in self.dependent_jobs:
+            if jtida.job not in jobs_to_unpause:
+                jobs_to_unpause.add(jtida.job)
+                for jtoda in jtida.job.output_datasets:
+                    jobs_to_unpause.update(
+                        jtoda.dataset.unpause_dependent_jobs(jobs=jobs_to_unpause)
+                    )
+        return jobs_to_unpause
 
     @property
     def history_content_type(self):
@@ -5170,6 +5200,12 @@ class MetadataFile(StorableObject, RepresentById):
             # Return filename inside hashed directory
             return os.path.abspath(os.path.join(path, "metadata_%d.dat" % self.id))
 
+    def serialize(self, id_encoder, serialization_options):
+        as_dict = dict_for(self)
+        serialization_options.attach_identifier(id_encoder, self, as_dict)
+        as_dict["uuid"] = str(self.uuid or '') or None
+        return as_dict
+
 
 class FormDefinition(Dictifiable, RepresentById):
     # The following form_builder classes are supported by the FormDefinition class.
@@ -5844,11 +5880,17 @@ def copy_list(lst, *args, **kwds):
         return [el.copy(*args, **kwds) for el in lst]
 
 
-def _prepare_metadata_for_serialization(metadata):
+def _prepare_metadata_for_serialization(id_encoder, serialization_options, metadata):
     """ Prepare metatdata for exporting. """
-    for name, value in list(metadata.items()):
+    processed_metadata = {}
+    for name, value in metadata.items():
         # Metadata files are not needed for export because they can be
         # regenerated.
         if isinstance(value, MetadataFile):
-            del metadata[name]
-    return metadata
+            if serialization_options.strip_metadata_files:
+                continue
+            else:
+                value = value.serialize(id_encoder, serialization_options)
+        processed_metadata[name] = value
+
+    return processed_metadata

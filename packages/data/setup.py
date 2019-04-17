@@ -39,11 +39,13 @@ PACKAGES = [
     'galaxy.model.dataset_collections',
     'galaxy.model.migrate',
     'galaxy.model.orm',
+    'galaxy.model.store',
     'galaxy.model.tool_shed_install',
     'galaxy.security',
 ]
 ENTRY_POINTS = '''
         [console_scripts]
+        gx-build-objects=galaxy.model.store.build_objects:main
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
