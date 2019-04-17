@@ -275,6 +275,61 @@ def test_import_export_edit_collection():
     assert len(c1.elements) == 2
 
 
+def test_import_export_composite_datasets():
+    app = _mock_app()
+    sa_session = app.model.context
+
+    u = model.User(email="collection@example.com", password="password")
+    h = model.History(name="Test History", user=u)
+
+    d1 = _create_datasets(sa_session, h, 1, extension="html")[0]
+    sa_session.add_all((h, d1))
+    sa_session.flush()
+
+    primary = NamedTemporaryFile("w")
+    primary.write("cool primary file")
+    primary.flush()
+    app.object_store.update_from_file(
+        d1.dataset,
+        file_name=primary.name,
+        create=True,
+        preserve_symlinks=True
+    )
+
+    composite1 = NamedTemporaryFile("w")
+    composite1.write("cool composite file")
+    composite1.flush()
+
+    app.object_store.update_from_file(
+        d1.dataset,
+        extra_dir=os.path.normpath(os.path.join(d1.extra_files_path, "parent_dir")),
+        alt_name="child_file",
+        file_name=composite1.name,
+        create=True,
+        preserve_symlinks=True
+    )
+
+    temp_directory = mkdtemp()
+    with store.DirectoryModelExportStore(temp_directory, app=app, export_files="copy") as export_store:
+        export_store.add_dataset(d1)
+
+    import_history = model.History(name="Test History for Import", user=u)
+    sa_session.add(import_history)
+    sa_session.flush()
+    _perform_import_from_directory(temp_directory, app, u, import_history)
+    assert len(import_history.datasets) == 1
+    import_dataset = import_history.datasets[0]
+    root_extra_files_path = import_dataset.extra_files_path
+    assert len(os.listdir(root_extra_files_path)) == 1
+    assert os.listdir(root_extra_files_path)[0] == "parent_dir"
+    composite_sub_dir = os.path.join(root_extra_files_path, "parent_dir")
+    child_files = os.listdir(composite_sub_dir)
+    assert len(child_files) == 1
+    with open(os.path.join(composite_sub_dir, child_files[0]), "r") as f:
+        contents = f.read()
+        assert contents == "cool composite file"
+
+
 def test_edit_metadata_files():
     app = _mock_app(store_by="uuid")
     sa_session = app.model.context

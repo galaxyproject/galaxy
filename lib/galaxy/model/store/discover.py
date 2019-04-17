@@ -6,6 +6,7 @@ job output discovery or for persisting Galaxy model objects
 corresponding to files in other contexts.
 """
 import abc
+import logging
 import os
 from collections import namedtuple
 
@@ -16,8 +17,14 @@ from galaxy import util
 from galaxy.exceptions import (
     RequestParameterInvalidException
 )
+from galaxy.model.dataset_collections import builder
+from galaxy.util import (
+    ExecutionTimer,
+    odict
+)
 from galaxy.util.hash_util import HASH_NAME_MAP
 
+log = logging.getLogger(__name__)
 
 UNSET = object()
 
@@ -165,6 +172,86 @@ class ModelPersistenceContext(object):
 
         return primary_data
 
+    def populate_collection_elements(self, collection, root_collection_builder, filenames, name=None, metadata_source_name=None):
+        # TODO: allow configurable sorting.
+        #    <sort by="lexical" /> <!-- default -->
+        #    <sort by="reverse_lexical" />
+        #    <sort regex="example.(\d+).fastq" by="1:numerical" />
+        #    <sort regex="part_(\d+)_sample_([^_]+).fastq" by="2:lexical,1:numerical" />
+        if name is None:
+            name = "unnamed output"
+
+        element_datasets = []
+        for filename, discovered_file in filenames.items():
+            create_dataset_timer = ExecutionTimer()
+            fields_match = discovered_file.match
+            if not fields_match:
+                raise Exception("Problem parsing metadata fields for file %s" % filename)
+            element_identifiers = fields_match.element_identifiers
+            designation = fields_match.designation
+            visible = fields_match.visible
+            ext = fields_match.ext
+            dbkey = fields_match.dbkey
+            # galaxy.tools.parser.output_collection_def.INPUT_DBKEY_TOKEN
+            if dbkey == "__input__":
+                dbkey = self.input_dbkey
+
+            # Create new primary dataset
+            dataset_name = fields_match.name or designation
+
+            link_data = discovered_file.match.link_data
+            tag_list = discovered_file.match.tag_list
+
+            sources = discovered_file.match.sources
+            hashes = discovered_file.match.hashes
+
+            dataset = self.create_dataset(
+                ext=ext,
+                designation=designation,
+                visible=visible,
+                dbkey=dbkey,
+                name=dataset_name,
+                filename=filename,
+                metadata_source_name=metadata_source_name,
+                link_data=link_data,
+                tag_list=tag_list,
+                sources=sources,
+                hashes=hashes,
+            )
+            log.debug(
+                "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s] %s",
+                self.job_id(),
+                filename,
+                designation,
+                name,
+                create_dataset_timer,
+            )
+            element_datasets.append((element_identifiers, dataset))
+
+        add_datasets_timer = ExecutionTimer()
+        self.add_datasets_to_history([d for (ei, d) in element_datasets])
+        log.debug(
+            "(%s) Add dynamic collection datasets to history for output [%s] %s",
+            self.job_id(),
+            name,
+            add_datasets_timer,
+        )
+
+        for (element_identifiers, dataset) in element_datasets:
+            current_builder = root_collection_builder
+            for element_identifier in element_identifiers[:-1]:
+                current_builder = current_builder.get_level(element_identifier)
+            current_builder.add_dataset(element_identifiers[-1], dataset)
+
+            # Associate new dataset with job
+            element_identifier_str = ":".join(element_identifiers)
+            association_name = '__new_primary_file_%s|%s__' % (name, element_identifier_str)
+            self.add_output_dataset_association(association_name, dataset)
+
+            dataset.raw_set_dataset_state('ok')
+
+        self.flush()
+
     @abc.abstractproperty
     def tag_handler(self):
         """Return a galaxy.model.tags.TagHandler-like object for persisting tags."""
@@ -184,8 +271,15 @@ class ModelPersistenceContext(object):
     def create_library_folder(self, parent_folder, name, description):
         """Create a library folder ready from supplied attributes for supplied parent."""
 
+    @abc.abstractmethod
+    def add_output_dataset_association(self, name, dataset):
+        """If discovering outputs for a job, persist output dataset association."""
+
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         """Add datasets to the history this context points at."""
+
+    def job_id(self):
+        return ''
 
     def persist_object(self, obj):
         """Add the target to the persistence layer."""
@@ -289,6 +383,9 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
     def flush(self):
         """No-op for the sessionless variant of this, no database to flush."""
 
+    def add_output_dataset_association(self, name, dataset):
+        """No-op, no job context to persist this association for."""
+
 
 def persist_target_to_export_store(target_dict, export_store, object_store, work_directory):
     replace_request_syntax_sugar(target_dict)
@@ -302,7 +399,7 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
     assert "type" in destination
     destination_type = destination["type"]
 
-    assert destination_type in ["library", "hdas"]
+    assert destination_type in ["library", "hdas", "hdca"]
     if destination_type == "library":
         name = get_required_item(destination, "name", "Must specify a library name")
         description = destination.get("description", "")
@@ -318,6 +415,41 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
         export_store.export_library(library)
     elif destination_type == "hdas":
         persist_hdas(elements, model_persistence_context)
+    elif destination_type == "hdca":
+        name = get_required_item(target_dict, "name", "Must specify a HDCA name")
+        collection_type = get_required_item(target_dict, "collection_type", "Must specify an HDCA collection_type")
+        collection = galaxy.model.DatasetCollection(
+            collection_type=collection_type,
+        )
+        hdca = galaxy.model.HistoryDatasetCollectionAssociation(
+            name=name,
+            collection=collection,
+        )
+        persist_elements_to_hdca(model_persistence_context, elements, hdca)
+        export_store.add_dataset_collection(hdca)
+
+
+def persist_elements_to_hdca(model_persistence_context, elements, hdca, collector=None):
+    filenames = odict.odict()
+
+    def add_to_discovered_files(elements, parent_identifiers=[]):
+        for element in elements:
+            if "elements" in element:
+                add_to_discovered_files(element["elements"], parent_identifiers + [element["name"]])
+            else:
+                discovered_file = discovered_file_for_element(element, model_persistence_context.job_working_directory, parent_identifiers, collector=collector)
+                filenames[discovered_file.path] = discovered_file
+
+    add_to_discovered_files(elements)
+
+    collection = hdca.collection
+    collection_builder = builder.BoundCollectionBuilder(collection)
+    model_persistence_context.populate_collection_elements(
+        collection,
+        collection_builder,
+        filenames,
+    )
+    collection_builder.populate()
 
 
 def persist_elements_to_folder(model_persistence_context, elements, library_folder):

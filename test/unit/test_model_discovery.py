@@ -28,20 +28,7 @@ def test_model_create_context_persist_hdas():
     with store.DirectoryModelExportStore(temp_directory, serialize_dataset_objects=True) as export_store:
         persist_target_to_export_store(target, export_store, app.object_store, work_directory)
 
-    u = model.User(email="collection@example.com", password="password")
-    import_history = model.History(name="Test History for Import", user=u)
-
-    sa_session = app.model.context
-    sa_session.add(u)
-    sa_session.add(import_history)
-    sa_session.flush()
-
-    assert len(import_history.datasets) == 0
-
-    import_options = store.ImportOptions(allow_dataset_object_edit=True)
-    import_model_store = store.get_import_model_store_for_directory(temp_directory, app=app, user=u, import_options=import_options)
-    with import_model_store.target_history(default_history=import_history):
-        import_model_store.perform_import(import_history)
+    import_history = _import_directory_to_history(app, temp_directory, work_directory)
 
     assert len(import_history.datasets) == 1
     imported_hda = import_history.datasets[0]
@@ -131,6 +118,55 @@ def test_persist_target_library_folder():
         assert f.read().startswith("hello world\n")
 
 
+def test_persist_target_hdca():
+    work_directory = mkdtemp()
+    with open(os.path.join(work_directory, "file1.txt"), "w") as f:
+        f.write("hello world\nhello world line 2")
+    with open(os.path.join(work_directory, "file2.txt"), "w") as f:
+        f.write("file 2 contents")
+
+    target = {
+        "destination": {
+            "type": "hdca",
+        },
+        "name": "My HDCA",
+        "collection_type": "list",
+        "elements": [{
+            "filename": "file1.txt",
+            "ext": "txt",
+            "dbkey": "hg19",
+            "info": "dataset info",
+            "name": "my file",
+        }, {
+            "filename": "file2.txt",
+            "ext": "txt",
+            "dbkey": "hg18",
+            "info": "dataset info 2",
+            "name": "my file 2",
+        }]
+    }
+
+    app = _mock_app(store_by="uuid")
+    temp_directory = mkdtemp()
+    with store.DirectoryModelExportStore(temp_directory, serialize_dataset_objects=True) as export_store:
+        persist_target_to_export_store(target, export_store, app.object_store, work_directory)
+
+    import_history = _import_directory_to_history(app, temp_directory, work_directory)
+    assert len(import_history.dataset_collections) == 1
+    assert len(import_history.datasets) == 2
+
+    import_hdca = import_history.dataset_collections[0]
+    datasets = import_hdca.dataset_instances
+    assert len(datasets) == 2
+    dataset0 = datasets[0]
+    dataset1 = datasets[1]
+
+    with open(dataset0.file_name, "r") as f:
+        assert f.read().startswith("hello world\n")
+    with open(dataset1.file_name, "r") as f:
+        assert f.read().startswith("file 2 contents")
+
+
 def _assert_one_library_created(sa_session):
     all_libraries = sa_session.query(model.Library).all()
     assert len(all_libraries) == 1, len(all_libraries)
@@ -152,3 +188,23 @@ def _import_library_target(target, work_directory):
 
     sa_session = app.model.context
     return sa_session
+
+
+def _import_directory_to_history(app, target, work_directory):
+    sa_session = app.model.context
+
+    u = model.User(email="collection@example.com", password="password")
+    import_history = model.History(name="Test History for Import", user=u)
+
+    sa_session = app.model.context
+    sa_session.add_all([u, import_history])
+    sa_session.flush()
+
+    assert len(import_history.datasets) == 0
+
+    import_options = store.ImportOptions(allow_dataset_object_edit=True)
+    import_model_store = store.get_import_model_store_for_directory(target, app=app, user=u, import_options=import_options)
+    with import_model_store.target_history(default_history=import_history):
+        import_model_store.perform_import(import_history)
+
+    return import_history
