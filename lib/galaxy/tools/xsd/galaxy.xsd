@@ -5326,6 +5326,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="docker"/>
+      <xs:enumeration value="singularity"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="ToolTypeType">
