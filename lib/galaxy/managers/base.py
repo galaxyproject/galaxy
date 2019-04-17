@@ -1123,5 +1123,5 @@ class ModelFilterParser(HasAModelManager):
             return date_string
         raise ValueError('datetime strings must be in the ISO 8601 format and in the UTC')
 
-    def raise_filter_err(attr, op, val, msg):
+    def raise_filter_err(self, attr, op, val, msg):
         raise exceptions.RequestParameterInvalidException(msg, column=attr, operation=op, val=val)

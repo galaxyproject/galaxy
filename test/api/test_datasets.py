@@ -86,7 +86,7 @@ class DatasetsApiTestCase(api.ApiTestCase):
         payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type', 'tag-invalid_op'], 'qv': ['dataset', 'notag']}
         index_response = self._get("datasets", payload)
         self._assert_status_code_is(index_response, 400)
-        assert index_response.json()['err_msg'] == 'bad filter'
+        assert index_response.json()['err_msg'] == 'bad op in filter'
 
     def test_show(self):
         hda1 = self.dataset_populator.new_dataset(self.history_id)
