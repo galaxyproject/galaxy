@@ -362,6 +362,8 @@ do
           fi
           ;;
       -a|-api|--api)
+          GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE="True"  # Run these tests with a non-trivial object store.
+          export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
           GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
           test_script="pytest"
           report_file="./run_api_tests.html"
