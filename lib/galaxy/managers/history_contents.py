@@ -153,8 +153,8 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         Note: does not include deleted/hidden contents.
         """
         filters = [
-            sql.column('deleted') == false(),
-            sql.column('visible') == true()
+            base.ModelFilterParser.parsed_filter("orm", sql.column('deleted') == false()),
+            base.ModelFilterParser.parsed_filter("orm", sql.column('visible') == true())
         ]
         contents_subquery = self._union_of_contents_query(history, filters=filters).subquery()
         statement = (sql.select([sql.column('state'), func.count('*')])
@@ -250,7 +250,6 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         # cycle back over the union query to create an ordered list of the objects returned in queries 2 & 3 above
         contents = []
         filters = kwargs.get('filters') or []
-        filters = [f for f in filters if callable(f)]
         # TODO: or as generator?
         for result in contents_results:
             result_type = self._get_union_type(result)
@@ -263,8 +262,9 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
     @staticmethod
     def passes_filters(content, filters):
         for filter_fn in filters:
-            if not filter_fn(content):
-                return False
+            if filter_fn.filter_type == 'function':
+                if not filter_fn.filter(content):
+                    return False
         return True
 
     def _union_of_contents_query(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
@@ -287,12 +287,19 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         # query 1: create a union of common columns for which the component_classes can be filtered/limited
         contained_query = self._contents_common_query_for_contained(container.id if container else None)
         subcontainer_query = self._contents_common_query_for_subcontainer(container.id if container else None)
+
+        filters = filters or []
+        # Apply filters that are specific to a model
+        for orm_filter in filters:
+            if orm_filter.filter_type == "orm_function":
+                contained_query = contained_query.filter(orm_filter.filter(self.contained_class))
+                subcontainer_query = subcontainer_query.filter(orm_filter.filter(self.subcontainer_class))
         contents_query = contained_query.union(subcontainer_query)
 
-        for orm_filter in (filters or []):
-            if not callable(orm_filter):
-                # skip python filters that need to be applied after the qeury
-                contents_query = contents_query.filter(orm_filter)
+        for orm_filter in filters:
+            if orm_filter.filter_type == "orm":
+                contents_query = contents_query.filter(orm_filter.filter)
+
         contents_query = contents_query.order_by(*order_by)
 
         if limit is not None:
@@ -440,8 +447,8 @@ class HistoryContentsFilters(base.ModelFilterParser,
                              tools.ToolFilterMixin):
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
+    subcontainer_model_class = model.HistoryDatasetCollectionAssociation
 
-    # TODO: history_content_type filter doesn't work with psycopg2: column does not exist (even with hybrid props)
     def _parse_orm_filter(self, attr, op, val):
 
         # we need to use some manual/text/column fu here since some where clauses on the union don't work
@@ -449,41 +456,43 @@ class HistoryContentsFilters(base.ModelFilterParser,
         # (and some of these are *not* a normal columns (especially 'state') anyway)
         # TODO: genericize these - can probably extract a _get_column( attr, ... ) or something
         # special cases...special cases everywhere
-        if attr == 'history_content_type' and op == 'eq':
-            if val == 'dataset':
-                return sql.column('history_content_type') == 'dataset'
-            if val == 'dataset_collection':
-                return sql.column('history_content_type') == 'dataset_collection'
-            self.raise_filter_err(attr, op, val, 'bad op in filter')
+        def get_filter(attr, op, val):
+            if attr == 'history_content_type' and op == 'eq':
+                if val in ('dataset', 'dataset_collection'):
+                    return sql.column('history_content_type') == val
+                self.raise_filter_err(attr, op, val, 'bad op in filter')
 
-        if attr == 'type_id':
-            if op == 'eq':
-                return sql.column('type_id') == val
-            if op == 'in':
-                return sql.column('type_id').in_(self.parse_type_id_list(val))
-            self.raise_filter_err(attr, op, val, 'bad op in filter')
+            if attr == 'type_id':
+                if op == 'eq':
+                    return sql.column('type_id') == val
+                if op == 'in':
+                    return sql.column('type_id').in_(self.parse_type_id_list(val))
+                self.raise_filter_err(attr, op, val, 'bad op in filter')
 
-        if attr in ('update_time', 'create_time'):
-            if op == 'ge':
-                return sql.column(attr) >= self.parse_date(val)
-            if op == 'le':
-                return sql.column(attr) <= self.parse_date(val)
-            self.raise_filter_err(attr, op, val, 'bad op in filter')
+            if attr in ('update_time', 'create_time'):
+                if op == 'ge':
+                    return sql.column(attr) >= self.parse_date(val)
+                if op == 'le':
+                    return sql.column(attr) <= self.parse_date(val)
+                self.raise_filter_err(attr, op, val, 'bad op in filter')
 
-        if attr == 'state':
-            valid_states = model.Dataset.states.values()
-            if op == 'eq':
-                if val not in valid_states:
-                    self.raise_filter_err(attr, op, val, 'invalid state in filter')
-                return sql.column('state') == val
-            if op == 'in':
-                states = [s for s in val.split(',') if s]
-                for state in states:
-                    if state not in valid_states:
-                        self.raise_filter_err(attr, op, state, 'invalid state in filter')
-                return sql.column('state').in_(states)
-            self.raise_filter_err(attr, op, val, 'bad op in filter')
+            if attr == 'state':
+                valid_states = model.Dataset.states.values()
+                if op == 'eq':
+                    if val not in valid_states:
+                        self.raise_filter_err(attr, op, val, 'invalid state in filter')
+                    return sql.column('state') == val
+                if op == 'in':
+                    states = [s for s in val.split(',') if s]
+                    for state in states:
+                        if state not in valid_states:
+                            self.raise_filter_err(attr, op, state, 'invalid state in filter')
+                    return sql.column('state').in_(states)
+                self.raise_filter_err(attr, op, val, 'bad op in filter')
 
+        column_filter = get_filter(attr, op, val)
+        if column_filter is not None:
+            return self.parsed_filter(filter_type='orm', filter=column_filter)
         return super(HistoryContentsFilters, self)._parse_orm_filter(attr, op, val)
 
     def decode_type_id(self, type_id):

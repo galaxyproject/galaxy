@@ -35,6 +35,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
     def __init__(self, app):
         super(DatasetsController, self).__init__(app)
+        self.history_manager = managers.histories.HistoryManager(app)
         self.hda_manager = managers.hdas.HDAManager(app)
         self.hda_serializer = managers.hdas.HDASerializer(app)
         self.hdca_serializer = managers.hdcas.HDCASerializer(app)
@@ -55,6 +56,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
               trans,
               limit=500,
               offset=0,
+              history_id=None,
               **kwd):
         """
         GET /api/datasets/
@@ -109,8 +111,11 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         filter_params = self.parse_filter_params(kwd)
         filters = self.history_contents_filters.parse_filters(filter_params)
         order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=kwd.get('order', 'create_time-dsc'))
+        container = None
+        if history_id:
+            container = self.history_manager.get_accessible(self.decode_id(history_id), trans.user)
         contents = self.history_contents_manager.contents(
-            container=None, filters=filters, limit=limit, offset=offset, order_by=order_by
+            container=container, filters=filters, limit=limit, offset=offset, order_by=order_by
         )
         return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view='summary') for content in contents]
 

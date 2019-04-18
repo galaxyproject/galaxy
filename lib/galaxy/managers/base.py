@@ -36,8 +36,11 @@ from six import string_types
 from galaxy import exceptions
 from galaxy import model
 from galaxy.model import tool_shed_install
+from galaxy.util import namedtuple
 
 log = logging.getLogger(__name__)
+
+parsed_filter = namedtuple("ParsedFilter", "filter_type filter")
 
 
 # ==== accessors from base/controller.py
@@ -323,17 +326,15 @@ class ModelManager(object):
         if not isinstance(filters, list):
             filters = [filters]
         for filter_ in filters:
-            if self._is_fn_filter(filter_):
-                fn_filters.append(filter_)
-            else:
+            if not hasattr(filter_, 'filter_type'):
                 orm_filters.append(filter_)
+            elif filter_.filter_type == 'function':
+                fn_filters.append(filter_.filter)
+            elif filter_.filter_type == 'orm_function':
+                orm_filters.append(filter_.filter(self.model_class))
+            else:
+                orm_filters.append(filter_.filter)
         return (orm_filters, fn_filters)
-
-    def _is_fn_filter(self, filter_):
-        """
-        Returns True if `filter_` is a functional filter to be applied after the SQL query.
-        """
-        return callable(filter_)
 
     def _orm_list(self, query=None, **kwargs):
         """
@@ -380,7 +381,7 @@ class ModelManager(object):
         """
         if not ids:
             return []
-        ids_filter = self.model_class.id.in_(ids)
+        ids_filter = parsed_filter("orm", self.model_class.id.in_(ids))
         found = self.list(filters=self._munge_filters(ids_filter, filters), **kwargs)
         # TODO: this does not order by the original 'ids' array
 
@@ -899,6 +900,8 @@ class ModelFilterParser(HasAModelManager):
 
     #: model class
     model_class = None
+    subcontainer_model_class = None
+    parsed_filter = parsed_filter
 
     def __init__(self, app, **kwargs):
         """
@@ -998,7 +1001,7 @@ class ModelFilterParser(HasAModelManager):
             val = val_parser(val)
 
         # curry/partial and fold the val in there now
-        return lambda i: filter_fn(i, val)
+        return self.parsed_filter(filter_type="function", filter=lambda i: filter_fn(i, val))
 
     # ---- ORM filters
     def _parse_orm_filter(self, attr, op, val):
@@ -1013,7 +1016,7 @@ class ModelFilterParser(HasAModelManager):
             # no column mapping (not whitelisted)
             return None
         if callable(column_map):
-            return column_map(attr, op, val)
+            return self.parsed_filter(filter_type="orm_function", filter=column_map(attr, op, val))
         # attr must be a whitelisted column by attr name or by key passed in column_map
         # note: column_map[ 'column' ] takes precedence
         if 'column' in column_map:
@@ -1040,7 +1043,7 @@ class ModelFilterParser(HasAModelManager):
             val = val_parser(val)
 
         orm_filter = op(val)
-        return orm_filter
+        return self.parsed_filter(filter_type="orm", filter=orm_filter)
 
     #: these are the easier/shorter string equivalents to the python operator fn names that need '__' around them
     UNDERSCORED_OPS = ('lt', 'le', 'eq', 'ne', 'ge', 'gt')

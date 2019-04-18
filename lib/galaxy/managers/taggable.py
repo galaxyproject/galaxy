@@ -96,26 +96,36 @@ class TaggableDeserializerMixin(object):
 
 class TaggableFilterMixin(object):
 
+    valid_ops = ('eq', 'contains', 'has')
+
     def create_tag_filter(self, attr, op, val):
-        target_model = getattr(model, "%sTagAssociation" % self.model_class.__name__)
-        id_column = "%s_id" % target_model.table.name.rsplit('_tag_association')[0]
-        if ':' not in val and op == 'eq':
-            # We require an exact match and the tag to look for has no user_value,
-            # so we can't just concatenate user_tname, ':' and user_vale
-            column = target_model.table.c.user_tname
-        else:
+
+        def _create_tag_filter(model_class=None):
+            if op not in TaggableFilterMixin.valid_ops:
+                self.raise_filter_err(attr, op, val, 'bad op in filter')
+            if model_class is None:
+                return True
+            class_name = model_class.__name__
+            if class_name == 'HistoryDatasetCollectionAssociation':
+                # Unfortunately we were a little inconsistent with out naming scheme
+                class_name = 'HistoryDatasetCollection'
+            target_model = getattr(model, "%sTagAssociation" % class_name)
+            id_column = "%s_id" % target_model.table.name.rsplit('_tag_association')[0]
             column = target_model.table.c.user_tname + ":" + target_model.table.c.user_value
-        if op == 'eq':
-            cond = column == val
-        elif op in ('contains', 'has'):
-            cond = column.contains(val, autoescape=True)
-        else:
-            self.raise_filter_err(attr, op, val, 'bad op in filter')
-        return sql.expression.and_(
-            # TODO: generalize to all sorts of tag associations
-            self.model_class.table.c.id == getattr(target_model.table.c, id_column),
-            cond
-        )
+            if op == 'eq':
+                if ':' not in val:
+                    # We require an exact match and the tag to look for has no user_value,
+                    # so we can't just concatenate user_tname, ':' and user_vale
+                    cond = target_model.table.c.user_tname == val
+                else:
+                    cond = column == val
+            else:
+                cond = column.contains(val, autoescape=True)
+            return sql.expression.and_(
+                model_class.table.c.id == getattr(target_model.table.c, id_column),
+                cond
+            )
+        return _create_tag_filter
 
     def _add_parsers(self):
         self.orm_filter_parsers.update({

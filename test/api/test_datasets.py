@@ -71,12 +71,12 @@ class DatasetsApiTestCase(api.ApiTestCase):
         assert len(self._get("datasets", payload).json()) == 1
         self.dataset_collection_populator.create_list_in_history(self.history_id,
                                                                  name="search by tool id",
-                                                                 contents=["1\n2\n3"])
-        payload = {'limit': 1, 'offset': 0, 'q': ['history_content_type', 'tool_id'],
-                   'qv': ['dataset_collection', 'upload1']}
+                                                                 contents=["1\n2\n3"]).json()
+        self.dataset_populator.wait_for_history(self.history_id)
+        payload = {'limit': 10, 'offset': 0, 'history_id': self.history_id, 'q': ['name', 'tool_id'],
+                   'qv': ['search by tool id', 'upload1']}
         result = self._get("datasets", payload).json()
-        assert len(result) == 1
-        assert result[0]['name'] == 'search by tool id'
+        assert result[0]['name'] == 'search by tool id', result
         payload = {'limit': 1, 'offset': 0, 'q': ['history_content_type', 'tool_id'],
                    'qv': ['dataset_collection', 'uploadX']}
         result = self._get("datasets", payload).json()
