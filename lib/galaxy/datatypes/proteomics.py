@@ -488,7 +488,7 @@ class Analyze75(Binary):
         self.add_composite_file(
             'hdr',
             description='The Analyze75 header file.',
-            is_binary=False)
+            is_binary=True)
 
         """The image file.  Image data, whose data type and ordering are described by the header file."""
         self.add_composite_file(
@@ -500,7 +500,8 @@ class Analyze75(Binary):
         self.add_composite_file(
             't2m',
             description='The Analyze75 t2m file.',
-            optional='True', is_binary=True)
+            optional=True,
+            is_binary=True)
 
     def generate_primary_file(self, dataset=None):
         rval = ['<html><head><title>Analyze75 Composite Dataset.</title></head><p/>']

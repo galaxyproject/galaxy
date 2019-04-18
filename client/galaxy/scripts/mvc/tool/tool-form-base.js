@@ -120,32 +120,34 @@ export default FormBase.extend({
         let in_favorites = Galaxy.user.getFavorites().tools.indexOf(options.id) >= 0;
         var favorite_button = new Ui.Button({
             icon: "fa-star-o",
-            title: "Favorite",
+            title: options.narrow ? null : "Favorite",
             tooltip: "Add to favorites",
             visible: !Galaxy.user.isAnonymous() && !in_favorites,
             onclick: () => {
                 axios
-                    .put(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, {'object_id': options.id})
+                    .put(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, { object_id: options.id })
                     .then(response => {
                         favorite_button.hide();
                         remove_favorite_button.show();
-                        Galaxy.user.updateFavorites("tools", response.data)
+                        Galaxy.user.updateFavorites("tools", response.data);
                     });
             }
         });
 
         var remove_favorite_button = new Ui.Button({
             icon: "fa-star",
-            title: "Added",
+            title: options.narrow ? null : "Added",
             tooltip: "Remove from favorites",
             visible: !Galaxy.user.isAnonymous() && in_favorites,
             onclick: () => {
                 axios
-                    .delete(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools/${encodeURIComponent(options.id)}`)
+                    .delete(
+                        `${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools/${encodeURIComponent(options.id)}`
+                    )
                     .then(response => {
                         remove_favorite_button.hide();
                         favorite_button.show();
-                        Galaxy.user.updateFavorites("tools", response.data)
+                        Galaxy.user.updateFavorites("tools", response.data);
                     });
             }
         });
@@ -153,7 +155,7 @@ export default FormBase.extend({
         // button for version selection
         var versions_button = new Ui.ButtonMenu({
             icon: "fa-cubes",
-            title: (!options.narrow && "Versions") || null,
+            title: options.narrow ? null : "Versions",
             tooltip: "Select another tool version"
         });
 
@@ -182,25 +184,9 @@ export default FormBase.extend({
         var menu_button = new Ui.ButtonMenu({
             id: "options",
             icon: "fa-caret-down",
-            title: (!options.narrow && "Options") || null,
+            title: options.narrow ? null : "Options",
             tooltip: "View available options"
         });
-        if (options.biostar_url) {
-            menu_button.addMenu({
-                icon: "fa-question-circle",
-                title: "Question?",
-                onclick: function() {
-                    window.open(`${options.biostar_url}/p/new/post/`);
-                }
-            });
-            menu_button.addMenu({
-                icon: "fa-search",
-                title: _l("Search"),
-                onclick: function() {
-                    window.open(`${options.biostar_url}/local/search/page/?q=${options.name}`);
-                }
-            });
-        }
         menu_button.addMenu({
             icon: "fa-share",
             title: _l("Share"),
@@ -305,8 +291,7 @@ export default FormBase.extend({
     /** Templates */
     _templateHelp: function(options) {
         var $tmpl = $("<div/>")
-            .addClass("form-help")
-            .addClass("form-text")
+            .addClass("form-help form-text mt-4")
             .append(options.help);
         $tmpl.find("a").attr("target", "_blank");
         $tmpl.find("img").each(function() {

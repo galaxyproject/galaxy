@@ -24,7 +24,6 @@ from galaxy.managers import (
     api_keys,
     base as managers_base,
     configuration,
-    tags,
     users,
     workflows
 )
@@ -32,7 +31,8 @@ from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
     HistoryDatasetAssociation,
-    LibraryDatasetDatasetAssociation
+    LibraryDatasetDatasetAssociation,
+    tags,
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.dictifiable import Dictifiable
@@ -267,7 +267,7 @@ class JSAppLauncher(BaseUIController):
             trans.response.send_redirect(login_url)
 
     @web.expose
-    def client(self, trans, do_login_checks=False, **kwd):
+    def client(self, trans, **kwd):
         """
         Endpoint for clientside routes.  This ships the primary SPA client.
 
@@ -275,12 +275,12 @@ class JSAppLauncher(BaseUIController):
         (https://github.com/galaxyproject/galaxy/issues/1878) for why.
         """
         self._check_require_login(trans)
-        return self._bootstrapped_client(trans)
+        return self._bootstrapped_client(trans, **kwd)
 
-    def _bootstrapped_client(self, trans):
+    def _bootstrapped_client(self, trans, app_name='analysis', **kwd):
         js_options = self._get_js_options(trans)
         js_options['config'].update(self._get_extended_config(trans))
-        return self.template(trans, 'analysis', options=js_options)
+        return self.template(trans, app_name, options=js_options, **kwd)
 
     def _get_js_options(self, trans, root=None):
         """
@@ -1410,7 +1410,7 @@ class SharableMixin(object):
         item.slug = new_slug
         return item.slug == cur_slug
 
-    @web.expose_api
+    @web.legacy_expose_api
     def sharing(self, trans, id, payload=None, **kwd):
         skipped = False
         class_name = self.manager.model_class.__name__
@@ -1472,10 +1472,10 @@ class SharableMixin(object):
                     try:
                         trans.app.security_agent.make_dataset_public(hda.dataset)
                     except Exception:
-                        log.warning("Unable to make dataset with id: %s public.").format(dataset.id)
+                        log.warning("Unable to make dataset with id: %s public", dataset.id)
                         skipped = True
                 else:
-                    log.warning("User without permissions tried to make dataset with id: %s public.").format(dataset.id)
+                    log.warning("User without permissions tried to make dataset with id: %s public", dataset.id)
                     skipped = True
         return item, skipped
 
@@ -1551,8 +1551,8 @@ class UsesTagsMixin(SharableItemSecurityMixin):
         return self.get_tag_handler(trans)._get_item_tag_assoc(user, tagged_item, tag_name)
 
     def set_tags_from_list(self, trans, item, new_tags_list, user=None):
-        tags_manager = tags.GalaxyTagManager(trans.app.model.context)
-        return tags_manager.set_tags_from_list(user, item, new_tags_list)
+        tag_handler = tags.GalaxyTagHandler(trans.app.model.context)
+        return tag_handler.set_tags_from_list(user, item, new_tags_list)
 
     def get_user_tags_used(self, trans, user=None):
         """

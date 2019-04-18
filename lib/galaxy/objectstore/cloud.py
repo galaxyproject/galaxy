@@ -5,6 +5,7 @@ Object Store plugin for Cloud storage.
 import logging
 import multiprocessing
 import os
+import os.path
 import shutil
 import subprocess
 import threading
@@ -18,11 +19,11 @@ from galaxy.util import (
     umask_fix_perms,
 )
 from galaxy.util.sleeper import Sleeper
-from .s3 import CloudConfigMixin, parse_config_xml
+from .s3 import parse_config_xml
 from ..objectstore import convert_bytes, ObjectStore
 try:
-    from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
-    from cloudbridge.cloud.interfaces.exceptions import InvalidNameException
+    from cloudbridge.factory import CloudProviderFactory, ProviderList
+    from cloudbridge.interfaces.exceptions import InvalidNameException
 except ImportError:
     CloudProviderFactory = None
     ProviderList = None
@@ -33,6 +34,30 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Cloud ObjectStore is configured, but no CloudBridge dependency available."
     "Please install CloudBridge or modify ObjectStore configuration."
 )
+
+
+class CloudConfigMixin(object):
+
+    def _config_to_dict(self):
+        return {
+            "provider": self.provider,
+            "auth": self.credentials,
+            "bucket": {
+                "name": self.bucket_name,
+                "use_reduced_redundancy": self.use_rr,
+            },
+            "connection": {
+                "host": self.host,
+                "port": self.port,
+                "multipart": self.multipart,
+                "is_secure": self.is_secure,
+                "conn_path": self.conn_path,
+            },
+            "cache": {
+                "size": self.cache_size,
+                "path": self.staging_path,
+            }
+        }
 
 
 class Cloud(ObjectStore, CloudConfigMixin):
@@ -47,15 +72,13 @@ class Cloud(ObjectStore, CloudConfigMixin):
         super(Cloud, self).__init__(config, config_dict)
         self.transfer_progress = 0
 
-        auth_dict = config_dict['auth']
         bucket_dict = config_dict['bucket']
         connection_dict = config_dict.get('connection', {})
         cache_dict = config_dict['cache']
 
-        self.access_key = auth_dict.get('access_key')
-        self.secret_key = auth_dict.get('secret_key')
-
-        self.bucket = bucket_dict.get('name')
+        self.provider = config_dict["provider"]
+        self.credentials = config_dict["auth"]
+        self.bucket_name = bucket_dict.get('name')
         self.use_rr = bucket_dict.get('use_reduced_redundancy', False)
         self.max_chunk_size = bucket_dict.get('max_chunk_size', 250)
 
@@ -74,8 +97,8 @@ class Cloud(ObjectStore, CloudConfigMixin):
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
-        self._configure_connection()
-        self.bucket = self._get_bucket(self.bucket)
+        self.conn = self._get_connection(self.provider, self.credentials)
+        self.bucket = self._get_bucket(self.bucket_name)
         # Clean cache only if value is set in galaxy.ini
         if self.cache_size != -1:
             # Convert GBs to bytes for comparison
@@ -92,15 +115,128 @@ class Cloud(ObjectStore, CloudConfigMixin):
         except OSError:
             self.use_axel = False
 
-    def _configure_connection(self):
-        log.debug("Configuring AWS-S3 Connection")
-        aws_config = {'aws_access_key': self.access_key,
-                      'aws_secret_key': self.secret_key}
-        self.conn = CloudProviderFactory().create_provider(ProviderList.AWS, aws_config)
+    @staticmethod
+    def _get_connection(provider, credentials):
+        log.debug("Configuring `{}` Connection".format(provider))
+        if provider == "aws":
+            config = {"aws_access_key": credentials["access_key"],
+                      "aws_secret_key": credentials["secret_key"]}
+            connection = CloudProviderFactory().create_provider(ProviderList.AWS, config)
+        elif provider == "azure":
+            config = {"azure_subscription_id": credentials["subscription_id"],
+                      "azure_client_id": credentials["client_id"],
+                      "azure_secret": credentials["secret"],
+                      "azure_tenant": credentials["tenant"]}
+            connection = CloudProviderFactory().create_provider(ProviderList.AZURE, config)
+        elif provider == "google":
+            config = {"gcp_service_creds_file": credentials["credentials_file"]}
+            connection = CloudProviderFactory().create_provider(ProviderList.GCP, config)
+        else:
+            raise Exception("Unsupported provider `{}`.".format(provider))
+
+        # Ideally it would be better to assert if the connection is
+        # authorized to perform operations required by ObjectStore
+        # before returning it (and initializing ObjectStore); hence
+        # any related issues can be handled properly here, and ObjectStore
+        # can "trust" the connection is established.
+        #
+        # However, the mechanism implemented in Cloudbridge to assert if
+        # a user/service is authorized to perform an operation, assumes
+        # the user/service is granted with an elevated privileges, such
+        # as admin/owner-level access to all resources. For a detailed
+        # discussion see:
+        #
+        # https://github.com/CloudVE/cloudbridge/issues/135
+        #
+        # Hence, if a resource owner wants to only authorize Galaxy to r/w
+        # a bucket/container on the provider, but does not allow it to access
+        # other resources, Cloudbridge may fail asserting credentials.
+        # For instance, to r/w an Amazon S3 bucket, the resource owner
+        # also needs to authorize full access to Amazon EC2, because Cloudbridge
+        # leverages EC2-specific functions to assert the credentials.
+        #
+        # Therefore, to adhere with principle of least privilege, we do not
+        # assert credentials; instead, we handle exceptions raised as a
+        # result of signing API calls to cloud provider (e.g., GCP) using
+        # incorrect, invalid, or unauthorized credentials.
+
+        return connection
 
     @classmethod
     def parse_xml(clazz, config_xml):
-        return parse_config_xml(config_xml)
+        # The following reads common cloud-based storage configuration
+        # as implemented for the S3 backend. Hence, it also attempts to
+        # parse S3-specific configuration (e.g., credentials); however,
+        # such provider-specific configuration is overwritten in the
+        # following.
+        config = parse_config_xml(config_xml)
+
+        try:
+            provider = config_xml.attrib.get("provider")
+            if provider is None:
+                msg = "Missing `provider` attribute from the Cloud backend of the ObjectStore."
+                log.error(msg)
+                raise Exception(msg)
+            provider = provider.lower()
+            config["provider"] = provider
+
+            # Read any provider-specific configuration.
+            auth_element = config_xml.findall("auth")[0]
+            missing_config = []
+            if provider == "aws":
+                akey = auth_element.get("access_key")
+                if akey is None:
+                    missing_config.append("access_key")
+                skey = auth_element.get("secret_key")
+                if skey is None:
+                    missing_config.append("secret_key")
+
+                config["auth"] = {
+                    "access_key": akey,
+                    "secret_key": skey}
+            elif provider == "azure":
+                sid = auth_element.get("subscription_id")
+                if sid is None:
+                    missing_config.append("subscription_id")
+                cid = auth_element.get("client_id")
+                if cid is None:
+                    missing_config.append("client_id")
+                sec = auth_element.get("secret")
+                if sec is None:
+                    missing_config.append("secret")
+                ten = auth_element.get("tenant")
+                if ten is None:
+                    missing_config.append("tenant")
+                config["auth"] = {
+                    "subscription_id": sid,
+                    "client_id": cid,
+                    "secret": sec,
+                    "tenant": ten}
+            elif provider == "google":
+                cre = auth_element.get("credentials_file")
+                if not os.path.isfile(cre):
+                    msg = "The following file specified for GCP credentials not found: {}".format(cre)
+                    log.error(msg)
+                    raise IOError(msg)
+                if cre is None:
+                    missing_config.append("credentials_file")
+                config["auth"] = {
+                    "credentials_file": cre}
+            else:
+                msg = "Unsupported provider `{}`.".format(provider)
+                log.error(msg)
+                raise Exception(msg)
+
+            if len(missing_config) > 0:
+                msg = "The following configuration required for {} cloud backend " \
+                      "are missing: {}".format(provider, missing_config)
+                log.error(msg)
+                raise Exception(msg)
+            else:
+                return config
+        except Exception:
+            log.exception("Malformed ObjectStore Configuration XML -- unable to continue")
+            raise
 
     def to_dict(self):
         as_dict = super(Cloud, self).to_dict()

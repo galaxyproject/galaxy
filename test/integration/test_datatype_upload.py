@@ -4,9 +4,10 @@ import tempfile
 
 import pytest
 
-from galaxy.datatypes.registry import Registry
+from base import integration_util  # noqa: I100,I202
+from galaxy.datatypes.registry import Registry  # noqa: I201
 from galaxy.util.hash_util import md5_hash_file
-from .test_upload_configuration_options import BaseUploadContentConfigurationTestCase
+from .test_upload_configuration_options import BaseUploadContentConfigurationInstance
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 TEST_FILE_DIR = '%s/../../lib/galaxy/datatypes/test' % SCRIPT_DIRECTORY
@@ -36,22 +37,12 @@ def collect_test_data():
     return {os.path.basename(data.path): data for data in test_data_description}
 
 
-class UploadTestDatatypeDataTestCase(BaseUploadContentConfigurationTestCase):
+class UploadTestDatatypeDataTestCase(BaseUploadContentConfigurationInstance):
     framework_tool_and_types = False
     datatypes_conf_override = DATATYPES_CONFIG
 
-    def runTest(self):
-        # we don't want to run the standard unittest tests when we setup UploadTestDatatypeDataTestCase
-        pass
 
-
-@pytest.fixture(scope='module')
-def instance():
-    instance = UploadTestDatatypeDataTestCase()
-    instance.setUpClass()
-    instance.setUp()
-    yield instance
-    instance.tearDownClass()
+instance = integration_util.integration_module_instance(UploadTestDatatypeDataTestCase)
 
 
 @pytest.fixture

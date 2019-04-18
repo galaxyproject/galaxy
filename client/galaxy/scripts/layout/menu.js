@@ -14,14 +14,12 @@ function logoutClick() {
     let galaxy = getGalaxyInstance();
     let session_csrf_token = galaxy.session_csrf_token;
     let url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
-    axios
-        .get(url)
-        .then(() => {
-            if (galaxy.user) {
-                galaxy.user.clearSessionStorage();
-            }
-            window.top.location.href = `${galaxy.root}login`;
-        });
+    axios.get(url).then(() => {
+        if (galaxy.user) {
+            galaxy.user.clearSessionStorage();
+        }
+        window.top.location.href = `${galaxy.root}login`;
+    });
 }
 
 var Collection = Backbone.Collection.extend({
@@ -222,20 +220,6 @@ var Collection = Backbone.Collection.extend({
                 target: "_blank"
             });
         }
-        if (options.biostar_url) {
-            helpTab.menu.unshift({
-                title: _l("Ask a question"),
-                url: "biostar/biostar_question_redirect",
-                target: "_blank"
-            });
-        }
-        if (options.biostar_url) {
-            helpTab.menu.unshift({
-                title: _l("Galaxy Biostar"),
-                url: options.biostar_url_redirect,
-                target: "_blank"
-            });
-        }
         if (options.helpsite_url) {
             helpTab.menu.unshift({
                 title: _l("Galaxy Help"),
@@ -421,7 +405,7 @@ var Tab = Backbone.View.extend({
                 } else {
                     let Galaxy = getGalaxyInstance();
                     if (options.target == "__use_router__" && typeof Galaxy.page != "undefined") {
-                        Galaxy.page.router.push(options.url);
+                        Galaxy.page.router.executeUseRouter(options.url);
                     } else {
                         try {
                             Galaxy.frame.add(options);
@@ -460,7 +444,7 @@ var Tab = Backbone.View.extend({
                 } else {
                     let Galaxy = getGalaxyInstance();
                     if (model.attributes.target == "__use_router__" && typeof Galaxy.page != "undefined") {
-                        Galaxy.page.router.push(model.attributes.url);
+                        Galaxy.page.router.executeUseRouter(model.attributes.url);
                     } else {
                         Galaxy.frame.add(model.attributes);
                     }

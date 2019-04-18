@@ -50,7 +50,9 @@ var ToolPanel = Backbone.View.extend({
             title: _l("Show favorites"),
             icon: "fa fa-star-o",
             onclick: e => {
-                $("#tool-search-query").val("#favorites").trigger("change");
+                $("#tool-search-query")
+                    .val("#favorites")
+                    .trigger("change");
             }
         });
 

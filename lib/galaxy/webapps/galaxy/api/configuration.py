@@ -9,8 +9,8 @@ import os
 from galaxy.managers import configuration, users
 from galaxy.queue_worker import send_control_task
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
+    expose_api,
+    expose_api_anonymous_and_sessionless,
     require_admin
 )
 from galaxy.web.base.controller import BaseAPIController

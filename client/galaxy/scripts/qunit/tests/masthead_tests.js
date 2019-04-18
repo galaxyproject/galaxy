@@ -13,8 +13,6 @@ QUnit.module("Masthead test", {
             use_remote_user: "use_remote_user",
             remote_user_logout_href: "remote_user_logout_href",
             lims_doc_url: "lims_doc_url",
-            biostar_url: "biostar_url",
-            biostar_url_redirect: "biostar_url_redirect",
             support_url: "support_url",
             search_url: "search_url",
             mailing_lists: "mailing_lists",

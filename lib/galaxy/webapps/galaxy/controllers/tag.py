@@ -30,8 +30,6 @@ class TagsController(BaseUIController, UsesTagsMixin):
                                    user=trans.user,
                                    tagged_item=item,
                                    elt_context=elt_context,
-                                   in_form=False,
-                                   input_size="22",
                                    tag_click_fn="default_tag_click_fn",
                                    use_toggle_link=False)
 

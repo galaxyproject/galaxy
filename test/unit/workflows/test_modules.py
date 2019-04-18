@@ -451,7 +451,9 @@ def __mock_tool(
                                           format='input',
                                           format_source=None,
                                           change_format=[],
-                                          label=None)},
+                                          filters=[],
+                                          label=None,
+                                          output_type='data')},
         params_from_strings=mock.Mock(),
         check_and_update_param_values=mock.Mock(),
         to_json=_to_json

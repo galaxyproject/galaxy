@@ -4,9 +4,9 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 
 from __future__ import absolute_import
 
-import json
 import logging
 
+from galaxy import exceptions
 from galaxy import web
 from galaxy.web import url_for
 from galaxy.web.base.controller import JSAppLauncher
@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 
 class OIDC(JSAppLauncher):
 
+    @web.json
     @web.expose
     @web.require_login("list third-party identities")
     def index(self, trans, **kwargs):
@@ -36,6 +37,7 @@ class OIDC(JSAppLauncher):
             rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider})
         return rtv
 
+    @web.json
     @web.expose
     def login(self, trans, provider):
         if not trans.app.config.enable_oidc:
@@ -43,7 +45,10 @@ class OIDC(JSAppLauncher):
             log.debug(msg)
             return trans.show_error_message(msg)
         success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
-        return json.dumps({"redirect_uri": redirect_uri})
+        if success:
+            return {"redirect_uri": redirect_uri}
+        else:
+            raise exceptions.AuthenticationFailed(message)
 
     @web.expose
     def callback(self, trans, provider, **kwargs):

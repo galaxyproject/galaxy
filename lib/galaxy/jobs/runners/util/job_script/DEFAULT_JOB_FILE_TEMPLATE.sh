@@ -37,7 +37,5 @@ cd $working_directory
 $memory_statement
 $instrument_pre_commands
 $command
-echo $return_code > $exit_code_path
+echo $? > $exit_code_path
 $instrument_post_commands
-# exit with the exit code captured for the tool_script
-sh -c "exit $return_code"

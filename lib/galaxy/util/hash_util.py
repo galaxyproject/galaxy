@@ -17,11 +17,24 @@ BLOCK_SIZE = 1024 * 1024
 
 sha1 = hashlib.sha1
 sha256 = hashlib.sha256
+sha512 = hashlib.sha512
 sha = sha1
 md5 = hashlib.md5
 
+HASH_NAME_MAP = {
+    "MD5": md5,
+    "SHA-1": sha1,
+    "SHA-256": sha256,
+    "SHA-512": sha512,
+}
+HASH_NAMES = list(HASH_NAME_MAP.keys())
 
-def memory_bound_hexdigest(hash_func, path=None, file=None):
+
+def memory_bound_hexdigest(hash_func=None, hash_func_name=None, path=None, file=None):
+    if hash_func is None:
+        assert hash_func_name is not None
+        hash_func = HASH_NAME_MAP[hash_func_name]
+
     hasher = hash_func()
     if file is None:
         assert path is not None

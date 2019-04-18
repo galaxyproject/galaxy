@@ -17,12 +17,11 @@ from six import string_types
 from sqlalchemy.orm import object_session
 
 import galaxy.model
-from galaxy.util import (listify, string_as_bool,
+from galaxy.util import (form_builder, listify, string_as_bool,
                          stringify_dictionary_keys)
 from galaxy.util.json import safe_dumps
 from galaxy.util.object_wrapper import sanitize_lists_to_string
 from galaxy.util.odict import odict
-from galaxy.web import form_builder
 
 log = logging.getLogger(__name__)
 
@@ -569,10 +568,15 @@ class FileParameter(MetadataParameter):
         return value
 
     def new_file(self, dataset=None, **kwds):
-        if object_session(dataset):
+        # If there is a place to store the file (i.e. an object_store has been bound to
+        # Dataset) then use a MetadataFile and assume it is accessible. Otherwise use
+        # a MetadataTempFile.
+        if getattr(dataset.dataset, "object_store", False):
             mf = galaxy.model.MetadataFile(name=self.spec.name, dataset=dataset, **kwds)
-            object_session(dataset).add(mf)
-            object_session(dataset).flush()  # flush to assign id
+            sa_session = object_session(dataset)
+            if sa_session:
+                sa_session.add(mf)
+                sa_session.flush()  # flush to assign id
             return mf
         else:
             # we need to make a tmp file that is accessable to the head node,

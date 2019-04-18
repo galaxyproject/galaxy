@@ -9,7 +9,7 @@ from galaxy import (
 )
 from galaxy.tools.parameters import params_to_strings
 from galaxy.tools.repositories import ValidationContext
-from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
+from galaxy.web import expose_api_raw_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.webapps.tool_shed.search.tool_search import ToolSearch
 from tool_shed.dependencies.repository import relation_builder
@@ -178,7 +178,6 @@ class ToolsController(BaseAPIController):
         tool_dict.update({
             'help'          : tool_help,
             'citations'     : bool(tool.citations),
-            'biostar_url'   : trans.app.config.biostar_url,
             'requirements'  : [{'name' : r.name, 'version' : r.version} for r in tool.requirements],
             'state_inputs'  : params_to_strings(tool.inputs, {}, trans.app),
             'display'       : tool.display_interface,

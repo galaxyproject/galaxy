@@ -14,7 +14,7 @@ from webob.compat import cgi_FieldStorage
 
 from galaxy import datatypes, util
 from galaxy.exceptions import ConfigDoesNotAllowException, ObjectInvalid
-from galaxy.managers import tags
+from galaxy.model import tags
 from galaxy.util import unicodify
 from galaxy.util.odict import odict
 
@@ -220,7 +220,7 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
                                                             sa_session=trans.sa_session)
     if uploaded_dataset.get('tag_using_filenames', False):
         tag_from_filename = os.path.splitext(os.path.basename(uploaded_dataset.name))[0]
-        tag_manager = tags.GalaxyTagManager(trans.sa_session)
+        tag_manager = tags.GalaxyTagHandler(trans.sa_session)
         tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag_from_filename)
 
     trans.sa_session.add(ldda)
@@ -398,6 +398,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
         job.history_id = history.id
     job.tool_id = tool.id
     job.tool_version = tool.version
+    job.dynamic_tool = tool.dynamic_tool
     job.set_state(job.states.UPLOAD)
     trans.sa_session.add(job)
     trans.sa_session.flush()

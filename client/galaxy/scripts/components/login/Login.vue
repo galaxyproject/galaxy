@@ -24,12 +24,10 @@
                         </b-card-footer>
                     </b-card>
                 </b-form>
+                <b-button v-for="idp in oidc_idps" :key="idp" class="d-block mt-3" @click="submitOIDCLogin(idp)">
+                    <i v-bind:class="oidc_idps_icons[idp]" /> Sign in with {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+                </b-button>
             </div>
-            <b-card header="Other Login Options">
-                <b-form id="oidc" @submit.prevent="submitOIDCLogin()">
-                    <b-form-group> <b-button type="submit">Log in with Google</b-button> </b-form-group>
-                </b-form>
-            </b-card>
             <div v-if="show_welcome_with_login" class="col">
                 <b-embed type="iframe" :src="welcome_url" aspect="1by1" />
             </div>
@@ -58,6 +56,13 @@ export default {
     },
     data() {
         let galaxy = getGalaxyInstance();
+        let oidc_idps = galaxy.config.oidc;
+        // Icons to use for each IdP
+        let oidc_idps_icons = {'google': 'fa fa-google'};
+        // Add default icons to IdPs without icons
+        oidc_idps.filter(function(key) { return oidc_idps_icons[key] === undefined; }).forEach(function(idp) {
+             oidc_idps_icons[idp] = 'fa fa-id-card'
+        });
         return {
             login: null,
             password: null,
@@ -66,16 +71,16 @@ export default {
             messageText: null,
             messageVariant: null,
             redirect: galaxy.params.redirect,
-            session_csrf_token: galaxy.session_csrf_token
+            session_csrf_token: galaxy.session_csrf_token,
+            enable_oidc: galaxy.config.enable_oidc,
+            oidc_idps: oidc_idps,
+            oidc_idps_icons: oidc_idps_icons
+
         };
     },
     computed: {
         messageShow() {
             return this.messageText != null;
-        },
-        showOIDC() {
-            let Galaxy = getGalaxyInstance();
-            return Galaxy.config.enable_oidc == true;
         }
     },
     methods: {
@@ -106,13 +111,13 @@ export default {
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
-        submitOIDCLogin: function(method) {
+        submitOIDCLogin: function(idp) {
             let rootUrl = getAppRoot();
             axios
-                .post(`${rootUrl}authnz/google/login`)
+                .post(`${rootUrl}authnz/${idp}/login`)
                 .then(response => {
                     if (response.data.redirect_uri) {
-                        window.location = encodeURI(response.data.redirect_uri);
+                        window.location = response.data.redirect_uri;
                     }
                     // Else do something intelligent or maybe throw an error -- what else does this endpoint possibly return?
                 })

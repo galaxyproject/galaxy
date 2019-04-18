@@ -20,6 +20,7 @@ let buildconfig = {
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
+        publicPath: "/static/scripts/bundled/",
         filename: "[name].bundled.js",
         chunkFilename: "[name].chunk.js"
     },
@@ -29,7 +30,7 @@ let buildconfig = {
         alias: {
             jquery$: `${libsBase}/jquery.custom.js`,
             jqueryVendor$: `${libsBase}/jquery/jquery.js`,
-            store$: "store/dist/store.modern.js"
+            storemodern$: "store/dist/store.modern.js"
         }
     },
     optimization: {
@@ -43,7 +44,7 @@ let buildconfig = {
                 },
                 libs: {
                     name: "libs",
-                    test: /(node_modules|galaxy\/scripts\/(?!entry)).*\.(vue|js)$/, // .*\.(vue|js)$
+                    test: /node_modules[\\/](?!(handsontable|pikaday|moment)[\\/])|galaxy\/scripts\/libs/,
                     chunks: "all",
                     priority: -10
                 }
@@ -64,7 +65,22 @@ let buildconfig = {
                     libsBase
                 ],
                 loader: "babel-loader",
-                options: { babelrc: true }
+                options: {
+                    cacheDirectory: true,
+                    cacheCompression: false,
+                    presets: [
+                        ["@babel/preset-env", { modules: false }]
+                    ],
+                    plugins: [
+                        "transform-vue-template",
+                        "@babel/plugin-syntax-dynamic-import"
+                    ],
+                    ignore: [
+                        "i18n.js",
+                        "utils/localization.js",
+                        "nls/*"
+                    ]
+                }
             },
             {
                 test: `${libsBase}/jquery.custom.js`,
@@ -98,7 +114,7 @@ let buildconfig = {
                     loader: "file-loader",
                     options: {
                         outputPath: "assets",
-                        publicPath: "/static/scripts/bundled/assets/"
+                        publicPath: "../scripts/bundled/assets/"
                     }
                 }
             },
@@ -144,12 +160,15 @@ let buildconfig = {
                     },
                     {
                         loader: "sass-loader",
-                        options: { sourceMap: true }
+                        options: { 
+                            sourceMap: true,
+                            includePaths: ["galaxy/style/scss"]
+                        }
                     }
                 ]
             },
             {
-                test: /\.tmpl$/,
+                test: /\.(txt|tmpl)$/,
                 loader: "raw-loader"
             }
         ]

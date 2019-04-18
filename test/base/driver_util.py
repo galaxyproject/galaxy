@@ -25,9 +25,15 @@ from six.moves import (
     shlex_quote
 )
 from six.moves.urllib.parse import urlparse
+from sqlalchemy_utils import (
+    create_database,
+    database_exists,
+)
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT
+from galaxy.model import mapping
+from galaxy.model.tool_shed_install import mapping as toolshed_mapping
 from galaxy.tools.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
@@ -201,7 +207,6 @@ def setup_galaxy_config(
         cleanup_job='onsuccess',
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
-        enable_beta_workflow_format=True,
         expose_dataset_path=True,
         file_path=file_path,
         ftp_upload_purge=False,
@@ -229,6 +234,7 @@ def setup_galaxy_config(
         webhooks_dir=TEST_WEBHOOKS_DIR,
         logging=LOGGING_CONFIG_DEFAULT,
         monitor_thread_join_timeout=5,
+        object_store_store_by="uuid",
     )
     config.update(database_conf(tmpdir, prefer_template_database=prefer_template_database))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
@@ -311,6 +317,7 @@ def copy_database_template(source, db_path):
 def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
     """Find (and populate if needed) Galaxy database connection."""
     database_auto_migrate = False
+    check_migrate_databases = True
     dburi_var = "%s_TEST_DBURI" % prefix
     template_name = None
     if dburi_var in os.environ:
@@ -323,6 +330,12 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
             actual_db = "gxtest" + ''.join(random.choice(string.ascii_uppercase) for _ in range(10))
             actual_database_parsed = database_template_parsed._replace(path="/%s" % actual_db)
             database_connection = actual_database_parsed.geturl()
+            if not database_exists(database_connection):
+                # We pass by migrations and instantiate the current table
+                create_database(database_connection)
+                mapping.init('/tmp', database_connection, create_tables=True, map_install_models=True)
+                toolshed_mapping.init(database_connection, create_tables=True)
+                check_migrate_databases = False
     else:
         default_db_filename = "%s.sqlite" % prefix.lower()
         template_var = "%s_TEST_DB_TEMPLATE" % prefix
@@ -337,6 +350,7 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
             database_auto_migrate = True
         database_connection = 'sqlite:///%s' % db_path
     config = {
+        "check_migrate_databases": check_migrate_databases,
         "database_connection": database_connection,
         "database_auto_migrate": database_auto_migrate
     }

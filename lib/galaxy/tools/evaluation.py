@@ -78,13 +78,7 @@ class ToolEvaluator(object):
         visit_input_values(self.tool.inputs, incoming, validate_inputs)
 
         # Restore input / output data lists
-        inp_data = dict([(da.name, da.dataset) for da in job.input_datasets])
-        out_data = dict([(da.name, da.dataset) for da in job.output_datasets])
-        inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
-        out_data.update([(da.name, da.dataset) for da in job.output_library_datasets])
-
-        out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in job.output_dataset_collection_instances])
-        out_collections.update([(obj.name, obj.dataset_collection) for obj in job.output_dataset_collections])
+        inp_data, out_data, out_collections = job.io_dicts()
 
         if get_special:
 
@@ -357,7 +351,9 @@ class ToolEvaluator(object):
                 param_dict[name] = DatasetFilenameWrapper(hda)
             # Provide access to a path to store additional files
             # TODO: path munging for cluster/dataset server relocatability
-            param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, "dataset_%s_files" % (hda.dataset.id)))
+            store_by = getattr(hda.dataset.object_store, "store_by", "id")
+            file_name = "dataset_%s_files" % getattr(hda.dataset, store_by)
+            param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, file_name))
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
                 # Assume the reason we lack this output is because a filter
@@ -380,7 +376,7 @@ class ToolEvaluator(object):
 
         param_dict['__tool_directory__'] = self.compute_environment.tool_directory()
         param_dict['__get_data_table_entry__'] = get_data_table_entry
-
+        param_dict['__local_working_directory__'] = self.local_working_directory
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper(self.app)
         # More convienent access to app.config.new_file_path; we don't need to

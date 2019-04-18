@@ -76,7 +76,7 @@ class AdminToolshed(AdminGalaxy):
                                    message=message,
                                    status=status)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def browse_repositories(self, trans, **kwd):
         message = kwd.get('message', '')

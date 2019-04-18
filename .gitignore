@@ -145,9 +145,15 @@ doc/source/api/api.rst
 doc/source/api/ts_api.rst
 doc/source/dev/schema.md
 doc/source/dev/schema.rst
+client/styleguide
 
 # webpack stats
 client/webpack-stats.json
+
+# packages
+packages/*/build
+packages/*/dist
+packages/*/*.egg-info
 
 # Misc
 *.orig

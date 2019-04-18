@@ -29,7 +29,8 @@ module.exports = function (config) {
     let settings = Object.assign({}, baseKarmaConfig, {
         files: testFiles.concat(assets),
         preprocessors: preprocessors,
-        frameworks: ["polyfill", "qunit"]
+        frameworks: ["polyfill", "qunit"],
+        singleRun: true
     });
 
     config.set(settings);

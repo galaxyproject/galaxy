@@ -6,6 +6,7 @@ import hashlib
 import io
 import logging
 import os
+import os.path
 import re
 import shutil
 import tempfile
@@ -30,6 +31,7 @@ def verify(
     attributes,
     filename=None,
     get_filecontent=None,
+    get_filename=None,
     keep_outputs_dir=None,
     verify_extra_files=None,
     mode='file',
@@ -38,8 +40,16 @@ def verify(
 
     Throw an informative assertion error if any of these tests fail.
     """
-    if get_filecontent is None:
-        get_filecontent = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
+    if get_filename is None:
+        if get_filecontent is None:
+            get_filecontent = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
+
+        def get_filename(filename):
+            file_content = get_filecontent(filename)
+            local_name = make_temp_fname(fname=filename)
+            with open(local_name, 'wb') as f:
+                f.write(file_content)
+            return local_name
 
     # Check assertions...
     assertions = attributes.get("assert_list", None)
@@ -80,10 +90,7 @@ def verify(
             # filename already point to a file that exists on disk
             local_name = filename
         else:
-            file_content = get_filecontent(filename)
-            local_name = make_temp_fname(fname=filename)
-            with open(local_name, 'wb') as f:
-                f.write(file_content)
+            local_name = get_filename(filename)
         temp_name = make_temp_fname(fname=filename)
         with open(temp_name, 'wb') as f:
             f.write(output_content)
@@ -91,6 +98,9 @@ def verify(
         # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
         if keep_outputs_dir:
             ofn = os.path.join(keep_outputs_dir, filename)
+            out_dir = os.path.dirname(ofn)
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
             log.debug('keep_outputs_dir: %s, ofn: %s', keep_outputs_dir, ofn)
             try:
                 shutil.copy(temp_name, ofn)
@@ -103,8 +113,11 @@ def verify(
         try:
             compare = attributes.get('compare', 'diff')
             if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam']:
-                local_fh, temp_name = _bam_to_sam(local_name, temp_name)
-                local_name = local_fh.name
+                try:
+                    local_fh, temp_name = _bam_to_sam(local_name, temp_name)
+                    local_name = local_fh.name
+                except Exception as e:
+                    log.warning("%s. Will compare BAM files" % e)
             if compare == 'diff':
                 files_diff(local_name, temp_name, attributes=attributes)
             elif compare == 're_match':
@@ -150,11 +163,13 @@ def _bam_to_sam(local_name, temp_name):
     try:
         pysam.view('-h', '-o%s' % temp_local.name, local_name)
     except Exception as e:
-        raise Exception("Converting local (test-data) BAM to SAM failed: %s" % e)
+        msg = "Converting local (test-data) BAM to SAM failed: %s" % e
+        raise Exception(msg)
     try:
         pysam.view('-h', '-o%s' % temp_temp, temp_name)
     except Exception as e:
-        raise Exception("Converting history BAM to SAM failed: %s" % e)
+        msg = "Converting history BAM to SAM failed: %s" % e
+        raise Exception(msg)
     os.remove(temp_name)
     return temp_local, temp_temp
 

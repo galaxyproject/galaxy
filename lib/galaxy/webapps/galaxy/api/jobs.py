@@ -14,8 +14,10 @@ from galaxy import model
 from galaxy import util
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.jobs import JobSearch
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import (
+    expose_api,
+    expose_api_anonymous,
+)
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy.work.context import WorkRequestContext
@@ -134,7 +136,17 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         job_dict = self.encode_all_ids(trans, job.to_dict('element', system_details=is_admin), True)
         full_output = util.asbool(kwd.get('full', 'false'))
         if full_output:
-            job_dict.update(dict(stderr=job.stderr, stdout=job.stdout))
+
+            job_dict.update(dict(
+                tool_stdout=job.tool_stdout,
+                tool_stderr=job.tool_stderr,
+                job_stdout=job.job_stdout,
+                job_stderr=job.job_stderr,
+                stderr=job.stderr,
+                stdout=job.stdout,
+                job_messages=job.job_messages
+            ))
+
             if is_admin:
                 if job.user:
                     job_dict['user_email'] = job.user.email
@@ -156,6 +168,30 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
 
                 job_dict['job_metrics'] = [metric_to_dict(metric) for metric in job.metrics]
         return job_dict
+
+    @expose_api
+    def common_problems(self, trans, id, **kwd):
+        """
+        * GET /api/jobs/{id}/common_problems
+            check inputs and job for common potential problems to aid in error reporting
+        """
+        job = self.__get_job(trans, id)
+        seen_ids = set()
+        has_empty_inputs = False
+        has_duplicate_inputs = False
+        for job_input_assoc in job.input_datasets:
+            input_dataset_instance = job_input_assoc.dataset
+            if input_dataset_instance.get_total_size() == 0:
+                has_empty_inputs = True
+            input_instance_id = input_dataset_instance.id
+            if input_instance_id in seen_ids:
+                has_duplicate_inputs = True
+            else:
+                seen_ids.add(input_instance_id)
+        # TODO: check percent of failing jobs around a window on job.update_time for handler - report if high.
+        # TODO: check percent of failing jobs around a window on job.update_time for destination_id - report if high.
+        # TODO: sniff inputs (add flag to allow checking files?)
+        return {"has_empty_inputs": has_empty_inputs, "has_duplicate_inputs": has_duplicate_inputs}
 
     @expose_api
     def inputs(self, trans, id, **kwd):

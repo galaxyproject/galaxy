@@ -55,7 +55,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         trans.response.status = 501
         return 'not implemented'
 
-    @web.expose_api_anonymous
+    @web.legacy_expose_api_anonymous
     def show(self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd):
         """
         GET /api/datasets/{encoded_dataset_id}
@@ -98,7 +98,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             trans.response.status = 500
         return rval
 
-    @web._future_expose_api
+    @web.expose_api
     def update_permissions(self, trans, dataset_id, payload, **kwd):
         """
         PUT /api/datasets/{encoded_dataset_id}/permissions
@@ -306,7 +306,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
         return data
 
-    @web.expose_api_anonymous
+    @web.legacy_expose_api_anonymous
     def extra_files(self, trans, history_content_id, history_id, **kwd):
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/extra_files
@@ -325,7 +325,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
         return rval
 
-    @web.expose_api_raw_anonymous
+    @web.legacy_expose_api_raw_anonymous
     def display(self, trans, history_content_id, history_id,
                 preview=False, filename=None, to_ext=None, raw=False, **kwd):
         """
@@ -345,9 +345,12 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
             if raw:
                 if filename and filename != 'index':
-                    file_path = trans.app.object_store.get_filename(hda.dataset,
-                                                                    extra_dir=('dataset_%s_files' % hda.dataset.id),
-                                                                    alt_name=filename)
+                    object_store = trans.app.object_store
+                    store_by = getattr(object_store, "store_by", "id")
+                    dir_name = 'dataset_%s_files' % getattr(hda.dataset, store_by)
+                    file_path = object_store.get_filename(hda.dataset,
+                                                          extra_dir=dir_name,
+                                                          alt_name=filename)
                 else:
                     file_path = hda.file_name
                 rval = open(file_path, 'rb')
@@ -363,7 +366,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             rval = "Could not get display data for dataset: %s" % e
         return rval
 
-    @web.expose_api_raw_anonymous
+    @web.legacy_expose_api_raw_anonymous
     def get_metadata_file(self, trans, history_content_id, history_id, metadata_file=None, **kwd):
         """
         GET /api/histories/{history_id}/contents/{history_content_id}/metadata_file
@@ -384,7 +387,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             rval = "Could not get metadata for dataset: %s" % e
         return rval
 
-    @web._future_expose_api_anonymous
+    @web.expose_api_anonymous
     def converted(self, trans, dataset_id, ext, **kwargs):
         """
         converted( self, trans, dataset_id, ext, **kwargs )

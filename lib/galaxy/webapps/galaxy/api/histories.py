@@ -28,10 +28,10 @@ from galaxy.util import (
     string_as_bool
 )
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous as expose_api_anonymous,
-    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
-    _future_expose_api_raw as expose_api_raw,
+    expose_api,
+    expose_api_anonymous,
+    expose_api_anonymous_and_sessionless,
+    expose_api_raw,
     url_for
 )
 from galaxy.web.base.controller import (

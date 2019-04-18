@@ -44,7 +44,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             'drmaa_library_path': dict(map=str, default=os.environ.get('DRMAA_LIBRARY_PATH', None))}
         for retry_exception in RETRY_EXCEPTIONS_LOWER:
             runner_param_specs[retry_exception + '_state'] = dict(map=str, valid=lambda x: x in (model.Job.states.OK, model.Job.states.ERROR), default=model.Job.states.OK)
-            runner_param_specs[retry_exception + '_retries'] = dict(map=int, valid=lambda x: int >= 0, default=0)
+            runner_param_specs[retry_exception + '_retries'] = dict(map=int, valid=lambda x: int(x) >= 0, default=0)
 
         if 'runner_param_specs' not in kwargs:
             kwargs['runner_param_specs'] = dict()
@@ -152,7 +152,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             jt['nativeSpecification'] = native_spec
 
         # fill in the DRM's job run template
-        script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file)
+        script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file, shell=job_wrapper.shell)
         try:
             self.write_executable_script(ajs.job_file, script)
         except Exception:
