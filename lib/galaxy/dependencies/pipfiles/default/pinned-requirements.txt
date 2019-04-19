@@ -28,7 +28,7 @@ bleach==3.1.0
 boltons==19.1.0
 boto3==1.9.114
 boto==2.49.0
-botocore==1.12.115
+botocore==1.12.130
 bx-python==0.8.2
 bz2file==0.98 ; python_version < '3.3'
 cachecontrol==0.11.7
@@ -36,7 +36,7 @@ cachetools==3.1.0
 certifi==2019.3.9
 cffi==1.12.2
 chardet==3.0.4
-cheetah3==3.2.0
+cheetah3==3.2.1
 cliff==2.14.1
 cloudauthz==0.2.0
 cloudbridge==2.0.0
@@ -45,7 +45,7 @@ contextlib2==0.5.5 ; python_version < '3.5'
 cryptography==2.6.1
 cwltool==1.0.20180721142728
 debtcollector==1.21.0
-decorator==4.3.2
+decorator==4.4.0
 deprecated==1.2.5
 deprecation==2.0.6
 dictobj==0.4
@@ -76,10 +76,10 @@ jsonpatch==1.23
 jsonpointer==2.0
 jsonschema==2.6.0
 keystoneauth1==3.13.1
-kombu==4.4.0
+kombu==4.5.0
 lockfile==0.12.2
-lxml==4.3.2
-mako==1.0.7
+lxml==4.3.3
+mako==1.0.9
 markupsafe==1.1.1
 mercurial==3.7.3 ; python_version < '3'
 mistune==0.8.4
@@ -118,24 +118,24 @@ pbr==5.1.3
 prettytable==0.7.2
 prov==1.5.1
 psutil==5.6.1
-pulsar-galaxy-lib==0.8.3
+pulsar-galaxy-lib==0.9.0
 pyasn1-modules==0.2.4
 pyasn1==0.4.5
 pycparser==2.19
-pycryptodome==3.7.3
+pycryptodome==3.8.1
 pyeventsystem==0.1.0
 pyinotify==0.9.6 ; sys_platform != 'win32' and sys_platform != 'darwin' and sys_platform != 'sunos5'
 pyjwt==1.7.1
 pykwalify==1.7.0
 pynacl==1.3.0
 pyopenssl==19.0.0
-pyparsing==2.3.1
+pyparsing==2.4.0
 pyperclip==1.7.0
 pysam==0.15.2
 pysftp==0.2.9
 python-cinderclient==4.0.0
 python-dateutil==2.8.0
-python-genomespaceclient==1.1.0
+python-genomespaceclient==1.2.0
 python-glanceclient==2.12.0
 python-jose==3.0.1
 python-keystoneclient==3.17.0
@@ -143,7 +143,7 @@ python-neutronclient==6.9.0
 python-novaclient==11.0.0
 python-openid==2.2.5 ; python_version < '3.0'
 python-swiftclient==3.6.0
-pytz==2018.9
+pytz==2019.1
 pyyaml==5.1
 rdflib-jsonld==0.4.0
 rdflib==4.2.2
@@ -156,7 +156,7 @@ rfc3986==1.2.0
 routes==2.4.1
 rsa==4.0
 ruamel.ordereddict==0.4.13 ; platform_python_implementation == 'CPython' and python_version <= '2.7'
-ruamel.yaml==0.15.89
+ruamel.yaml==0.15.91
 s3transfer==0.2.0
 scandir==1.10.0 ; python_version < '3.5'
 schema-salad==2.7.20181126142424
@@ -180,7 +180,7 @@ unicodecsv==0.14.1 ; python_version < '3.0'
 uritemplate==3.0.0
 urllib3==1.24.1 ; python_version == '2.7'
 uwsgi==2.0.18
-vine==1.2.0
+vine==1.3.0
 warlock==1.3.0
 wcwidth==0.1.7 ; sys_platform != 'win32'
 webencodings==0.5.1

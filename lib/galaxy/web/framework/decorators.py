@@ -17,7 +17,7 @@ from galaxy.web.framework import url_for
 
 log = logging.getLogger(__name__)
 
-JSON_CONTENT_TYPE = "application/json"
+JSON_CONTENT_TYPE = "application/json; charset=UTF-8"
 JSONP_CONTENT_TYPE = "application/javascript"
 JSONP_CALLBACK_KEY = 'callback'
 
@@ -103,7 +103,7 @@ def require_admin(func):
 
 
 # ----------------------------------------------------------------------------- (original) api decorators
-def expose_api(func, to_json=True, user_required=True):
+def legacy_expose_api(func, to_json=True, user_required=True):
     """
     Expose this function via the API.
     """
@@ -197,32 +197,31 @@ def __extract_payload_from_request(trans, func, kwargs):
     return payload
 
 
-def expose_api_raw(func):
+def legacy_expose_api_raw(func):
     """
     Expose this function via the API but don't dump the results
     to JSON.
     """
-    return expose_api(func, to_json=False)
+    return legacy_expose_api(func, to_json=False)
 
 
-def expose_api_raw_anonymous(func):
+def legacy_expose_api_raw_anonymous(func):
     """
     Expose this function via the API but don't dump the results
     to JSON.
     """
-    return expose_api(func, to_json=False, user_required=False)
+    return legacy_expose_api(func, to_json=False, user_required=False)
 
 
-def expose_api_anonymous(func, to_json=True):
+def legacy_expose_api_anonymous(func, to_json=True):
     """
     Expose this function via the API but don't require a set user.
     """
-    return expose_api(func, to_json=to_json, user_required=False)
+    return legacy_expose_api(func, to_json=to_json, user_required=False)
 
 
 # ----------------------------------------------------------------------------- (new) api decorators
-# TODO: rename as expose_api and make default.
-def _future_expose_api(func, to_json=True, user_required=True, user_or_session_required=True, handle_jsonp=True):
+def expose_api(func, to_json=True, user_required=True, user_or_session_required=True, handle_jsonp=True):
     """
     Expose this function via the API.
     """
@@ -372,31 +371,31 @@ def __api_error_response(trans, **kwds):
     return safe_dumps(error_dict)
 
 
-def _future_expose_api_anonymous(func, to_json=True):
+def expose_api_anonymous(func, to_json=True):
     """
     Expose this function via the API but don't require a set user.
     """
-    return _future_expose_api(func, to_json=to_json, user_required=False)
+    return expose_api(func, to_json=to_json, user_required=False)
 
 
-def _future_expose_api_anonymous_and_sessionless(func, to_json=True):
+def expose_api_anonymous_and_sessionless(func, to_json=True):
     """
     Expose this function via the API but don't require a user or a galaxy_session.
     """
-    return _future_expose_api(func, to_json=to_json, user_required=False, user_or_session_required=False)
+    return expose_api(func, to_json=to_json, user_required=False, user_or_session_required=False)
 
 
-def _future_expose_api_raw(func):
-    return _future_expose_api(func, to_json=False, user_required=True)
+def expose_api_raw(func):
+    return expose_api(func, to_json=False, user_required=True)
 
 
-def _future_expose_api_raw_anonymous(func):
-    return _future_expose_api(func, to_json=False, user_required=False)
+def expose_api_raw_anonymous(func):
+    return expose_api(func, to_json=False, user_required=False)
 
 
-def _future_expose_api_raw_anonymous_and_sessionless(func):
+def expose_api_raw_anonymous_and_sessionless(func):
     # TODO: tool_shed api implemented JSONP first on a method-by-method basis, don't overwrite that for now
-    return _future_expose_api(
+    return expose_api(
         func,
         to_json=False,
         user_required=False,

@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 usage() {
 cat << EOF
@@ -43,7 +44,7 @@ export PIPENV_IGNORE_VIRTUALENVS=1
 for env in $ENVS; do
     cd "$THIS_DIRECTORY/$env"
     if [ "$docker" -eq 1 ]; then
-        docker run -v `pwd`:/working -t 'galaxy/update-python-dependencies'
+        docker run -v "$(pwd):/working" -t 'galaxy/update-python-dependencies'
     else
         pipenv lock -v
         pipenv lock -r > pinned-requirements.txt
@@ -70,6 +71,9 @@ for env in $ENVS; do
                 -e "s/^subprocess32==\([^ ;]\{1,\}\).*$/subprocess32==\1 ; python_version < '3.0'/" \
                 -e "s/^typing==\([^ ;]\{1,\}\).*$/typing==\1 ; python_version < '3.5'/" \
                 pinned-requirements.txt pinned-dev-requirements.txt
+    if ! grep '==' pinned-dev-requirements.txt ; then
+        rm -f pinned-dev-requirements.txt
+    fi
 done
 
 if [ "$commit" -eq 1 ]; then

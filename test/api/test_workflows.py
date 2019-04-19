@@ -738,6 +738,11 @@ steps:
           cond_param_inner: true
           input1:
             $link: 0#out_file1
+  cat:
+    tool_id: cat1
+    in:
+      input1: identifier#output1
+      queries_0|input2: identifier#output1
 """)
         with self.dataset_populator.test_history() as history_id:
             invocation_id = self.__invoke_workflow(history_id, workflow_id)
@@ -753,11 +758,14 @@ steps:
                                             inputs=inputs,
                                             history_id=history_id,
                                             assert_ok=True)
-            unpaused_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=5, wait=True, assert_ok=False)
-            assert unpaused_dataset['state'] == 'ok'
+            unpaused_dataset_1 = self.dataset_populator.get_history_dataset_details(history_id, hid=5, wait=True, assert_ok=False)
+            assert unpaused_dataset_1['state'] == 'ok'
+            self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+            unpaused_dataset_2 = self.dataset_populator.get_history_dataset_details(history_id, hid=6, wait=True, assert_ok=False)
+            assert unpaused_dataset_2['state'] == 'ok'
 
     @skip_without_tool("job_properties")
-    @skip_without_tool("identifier_collection")
+    @skip_without_tool("collection_creates_list")
     def test_workflow_resume_from_failed_step_with_hdca_input(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
@@ -767,18 +775,26 @@ steps:
     state:
       thebool: true
       failbool: true
+  list_in_list_out:
+    tool_id: collection_creates_list
+    in:
+      input1: job_props#list_output
   identifier:
     tool_id: identifier_collection
     in:
-      input1: job_props/list_output
+      input1: list_in_list_out#list_output
 """)
         with self.dataset_populator.test_history() as history_id:
             invocation_id = self.__invoke_workflow(history_id, workflow_id)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id, assert_ok=False)
             failed_dataset_one = self.dataset_populator.get_history_dataset_details(history_id, hid=1, wait=True, assert_ok=False)
             assert failed_dataset_one['state'] == 'error', failed_dataset_one
-            paused_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=5, wait=True, assert_ok=False)
-            assert paused_dataset['state'] == 'paused', paused_dataset
+            paused_colletion = self.dataset_populator.get_history_collection_details(history_id, hid=7, wait=True, assert_ok=False)
+            first_paused_element = paused_colletion['elements'][0]['object']
+            assert first_paused_element['state'] == 'paused', first_paused_element
+            dependent_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=8, wait=True,
+                                                                                   assert_ok=False)
+            assert dependent_dataset['state'] == 'paused'
             inputs = {"thebool": "false",
                       "failbool": "false",
                       "rerun_remap_job_id": failed_dataset_one['creating_job']}
@@ -786,9 +802,13 @@ steps:
                                             inputs=inputs,
                                             history_id=history_id,
                                             assert_ok=True)
-            unpaused_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=5, wait=True,
-                                                                                  assert_ok=False)
-            assert unpaused_dataset['state'] == 'ok'
+            paused_colletion = self.dataset_populator.get_history_collection_details(history_id, hid=7, wait=True, assert_ok=False)
+            first_paused_element = paused_colletion['elements'][0]['object']
+            assert first_paused_element['state'] == 'ok'
+            self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+            dependent_dataset = self.dataset_populator.get_history_dataset_details(history_id, hid=8, wait=True, assert_ok=False)
+            assert dependent_dataset['name'].startswith('identifier_collection')
+            assert dependent_dataset['state'] == 'ok'
 
     @skip_without_tool("fail_identifier")
     @skip_without_tool("identifier_collection")
@@ -1164,6 +1184,41 @@ steps:
             identifiers = [e['element_identifier'] for e in elements]
             assert len(identifiers) == 6
             assert "oe1-ie1" in identifiers
+
+    @skip_without_tool("collection_paired_test")
+    def test_workflow_flatten_with_mapped_over_execution(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(r"""
+class: GalaxyWorkflow
+inputs:
+  input_fastqs: collection
+steps:
+  split_up:
+    tool_id: collection_split_on_column
+    in:
+      input1: input_fastqs
+  flatten:
+    tool_id: '__FLATTEN__'
+    in:
+      input: split_up/split_output
+    join_identifier: '-'
+test_data:
+  input_fastqs:
+    type: list
+    elements:
+      - identifier: samp1
+        content: "0\n1"
+""", history_id=history_id)
+            history = self._get('histories/%s/contents' % history_id).json()
+            flattened_collection = history[-1]
+            assert flattened_collection['history_content_type'] == 'dataset_collection'
+            assert flattened_collection['collection_type'] == 'list'
+            assert flattened_collection['element_count'] == 2
+            nested_collection = self.dataset_populator.get_history_collection_details(history_id, hid=3)
+            assert nested_collection['collection_type'] == 'list:list'
+            assert nested_collection['element_count'] == 1
+            assert nested_collection['elements'][0]['object']['populated']
+            assert nested_collection['elements'][0]['object']['element_count'] == 2
 
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):
@@ -2049,10 +2104,10 @@ test_data: {}
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         content = self.dataset_populator.get_history_dataset_content(history_id)
         lines = content.split("\n")
-        assert len(lines) == 3
+        assert len(lines) == 4
         str_43 = lines[0]
-        str_4point14 = lines[1]
-        assert lines[2] == ""
+        str_4point14 = lines[2]
+        assert lines[3] == ""
         assert int(str_43) == 43
         assert abs(float(str_4point14) - 4.14) < .0001
 
@@ -3249,6 +3304,9 @@ input:
         with self._different_user():
             usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, usage["id"]))
             self._assert_status_code_is(usage_details_response, 403)
+            index_response = self._get("workflows/%s/invocations" % workflow_id)
+            self._assert_status_code_is(index_response, 200)
+            assert len(index_response.json()) == 0
 
         invocation_ids = self._all_user_invocation_ids()
         assert usage["id"] in invocation_ids

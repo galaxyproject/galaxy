@@ -1,5 +1,6 @@
 from galaxy import model
 from galaxy.util.odict import odict
+from .type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 
 
 def build_collection(type, dataset_instances):
@@ -34,6 +35,28 @@ class CollectionBuilder(object):
     def __init__(self, collection_type_description):
         self._collection_type_description = collection_type_description
         self._current_elements = odict()
+
+    def replace_elements_in_collection(self, template_collection, replacement_dict):
+        self._current_elements = self._replace_elements_in_collection(
+            template_collection=template_collection,
+            replacement_dict=replacement_dict,
+        )
+
+    def _replace_elements_in_collection(self, template_collection, replacement_dict):
+        elements = odict()
+        for element in template_collection.elements:
+            if element.is_collection:
+                collection_builder = CollectionBuilder(
+                    collection_type_description=self._collection_type_description.child_collection_type_description()
+                )
+                collection_builder.replace_elements_in_collection(
+                    template_collection=element.child_collection,
+                    replacement_dict=replacement_dict
+                )
+                elements[element.element_identifier] = collection_builder
+            else:
+                elements[element.element_identifier] = replacement_dict.get(element.element_object, element.element_object)
+        return elements
 
     def get_level(self, identifier):
         if not self._nested_collection:
@@ -78,10 +101,12 @@ class CollectionBuilder(object):
 class BoundCollectionBuilder(CollectionBuilder):
     """ More stateful builder that is bound to a particular model object. """
 
-    def __init__(self, dataset_collection, collection_type_description):
+    def __init__(self, dataset_collection):
         self.dataset_collection = dataset_collection
         if dataset_collection.populated:
             raise Exception("Cannot reset elements of an already populated dataset collection.")
+        collection_type = dataset_collection.collection_type
+        collection_type_description = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(collection_type)
         super(BoundCollectionBuilder, self).__init__(collection_type_description)
 
     def populate(self):

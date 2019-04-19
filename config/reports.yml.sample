@@ -80,13 +80,6 @@ uwsgi:
 
 reports:
 
-  # When running multiple Galaxy Reports instances under separate URL
-  # prefixes on a single hostname, you will want to set this to the same
-  # path as the prefix set in the uWSGI "mount" configuration option
-  # above. This value becomes the "path" attribute set in the cookie so
-  # the cookies from one instance will not clobber those from another.
-  #cookie_path: null
-
   # Verbosity of console log messages.  Acceptable values can be found
   # here: https://docs.python.org/2/library/logging.html#logging-levels
   #log_level: DEBUG
@@ -95,7 +88,7 @@ reports:
   # Galaxy instances, so sqlite (and the default value below) is not
   # supported. An SQLAlchemy connection string should be used specify an
   # external database.
-  #database_connection: 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
+  #database_connection: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
   # Where dataset files are stored.
   #file_path: database/files

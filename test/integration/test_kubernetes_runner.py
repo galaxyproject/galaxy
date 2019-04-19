@@ -125,7 +125,8 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
 
     @classmethod
     def setUpClass(cls):
-        cls.jobs_directory = tempfile.mkdtemp()
+        # realpath for docker deployed in a VM on Mac, also done in driver_util.
+        cls.jobs_directory = os.path.realpath(tempfile.mkdtemp())
         cls.volumes = [
             [cls.jobs_directory, 'jobs-directory-volume', 'jobs-directory-claim'],
             [TOOL_DIR, 'tool-directory-volume', 'tool-directory-claim'],

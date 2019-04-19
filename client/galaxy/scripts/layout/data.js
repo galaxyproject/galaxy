@@ -1,5 +1,5 @@
 import $ from "jquery";
-import DataDialog from "components/DataDialog.vue";
+import DataDialog from "components/DataDialog/DataDialog.vue";
 import Vue from "vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
@@ -10,7 +10,14 @@ export default class Data {
      * @param {function} callback - Result function called with selection
      */
     dialog(callback, options = {}) {
-        options.callback = callback;
+        let galaxy = getGalaxyInstance();
+        let host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
+        Object.assign(options, {
+            callback: callback,
+            history: galaxy.currHistoryPanel && galaxy.currHistoryPanel.model.id,
+            root: galaxy.root,
+            host: host
+        });
         var instance = Vue.extend(DataDialog);
         var vm = document.createElement("div");
         $("body").append(vm);

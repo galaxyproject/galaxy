@@ -88,7 +88,7 @@ class InteractiveEnvironmentRequest(object):
             self.attr.proxy_prefix = '/'.join(
                 (
                     '',
-                    self.attr.galaxy_config.cookie_path.strip('/'),
+                    trans.cookie_path.strip('/'),
                     self.attr.galaxy_config.dynamic_proxy_prefix.strip('/'),
                     self.attr.viz_id,
                 )

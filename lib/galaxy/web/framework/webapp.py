@@ -620,12 +620,16 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             # self.log_event( "Automatically created account '%s'", user.email )
         return user
 
+    @property
+    def cookie_path(self):
+        return self.app.config.cookie_path or url_for('/')
+
     def __update_session_cookie(self, name='galaxysession'):
         """
         Update the session cookie to match the current session.
         """
         self.set_cookie(self.security.encode_guid(self.galaxy_session.session_key),
-                        name=name, path=self.app.config.cookie_path)
+                        name=name, path=self.cookie_path)
 
     def check_user_library_import_dir(self, user):
         if getattr(self.app.config, "user_library_import_dir_auto_creation", False):

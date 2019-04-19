@@ -68,8 +68,8 @@ class BaseJobExec(object):
         """
         return None
 
-    @abstractmethod
     def parse_failure_reason(self, reason, job_id):
         """
         Parses the failure reason, assigning it against a
         """
+        return None

@@ -3,7 +3,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
-import mod_toastr from "libs/toastr";
+import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import mod_select from "mvc/ui/ui-select";
 
@@ -40,13 +40,13 @@ var FolderView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
+                    Toast.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
                     });
                 } else {
-                    mod_toastr.error("An error occurred. Click this to go back.", "", {
+                    Toast.error("An error occurred. Click this to go back.", "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
@@ -76,7 +76,7 @@ var FolderView = Backbone.View.extend({
                 });
             })
             .fail(() => {
-                mod_toastr.error("An error occurred while attempting to fetch folder permissions.");
+                Toast.error("An error occurred while attempting to fetch folder permissions.");
             });
 
         $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
@@ -193,10 +193,10 @@ var FolderView = Backbone.View.extend({
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
-                mod_toastr.success("Permissions saved.");
+                Toast.success("Permissions saved.");
             })
             .fail(() => {
-                mod_toastr.error("An error occurred while attempting to set folder permissions.");
+                Toast.error("An error occurred while attempting to set folder permissions.");
             });
     },
 

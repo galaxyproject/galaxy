@@ -25,17 +25,6 @@ mapping:
     required: true
     mapping:
 
-      cookie_path:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          When running multiple Galaxy instances under separate URL prefixes on a
-          single hostname, you will want to set this to the same path as the prefix set
-          in the uWSGI "mount" configuration option above. This value becomes the "path"
-          attribute set in the cookie so the cookies from one instance will not clobber
-          those from another.
-
       database_connection:
         type: str
         default: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
@@ -2058,12 +2047,13 @@ mapping:
           Enable beta workflow modules that should not yet be considered part of Galaxy's
           stable API.
 
-      enable_beta_workflow_format:
-        type: bool
-        default: false
+      default_workflow_export_format:
+        type: str
+        default: ga
         required: false
         desc: |
-          Enable import and export of workflows as Galaxy Format 2 workflows.
+          Default format for the export of workflows. Possible values are 'ga'
+          or 'format2'.
 
       force_beta_workflow_scheduled_min_steps:
         type: int
@@ -2185,6 +2175,20 @@ mapping:
           having a defined admin user in the database/config.  Only set this if you
           need to bootstrap Galaxy, you probably do not want to set this on public
           servers.
+
+      enable_openid:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable access to post-authentication options via OpenID.
+
+      openid_consumer_cache_path:
+        type: str
+        default: database/openid_consumer_cache
+        required: false
+        desc: |
+          If OpenID is enabled, consumer cache directory to use.
 
       enable_tool_tags:
         type: bool

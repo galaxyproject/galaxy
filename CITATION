@@ -1,24 +1,26 @@
 If you use or extend Galaxy in your published work, please cite this
 publication:
 
-- Afgan E, Baker D, van den Beek M, Blankenberg D, Bouvier D, Čech M, Chilton
-  J, Clements D, Coraor N, Eberhard C, Grüning B, Guerler A, Hillman-Jackson
-  J, Von Kuster G, Rasche E, Soranzo N, Turaga N, Taylor J, Nekrutenko A, Goecks
-  J. "The Galaxy platform for accessible, reproducible and collaborative
-  biomedical analyses: 2016 update"
-  Nucleic Acids Research (2016) 44(W1):W3-W10 doi:10.1093/nar/gkw343
+- Afgan E, Baker D, Batut B, van den Beek M, Bouvier D, Čech M, Chilton J,
+  Clements D, Coraor N, Grüning BA, Guerler A, Hillman-Jackson J, Hiltemann S,
+  Jalili V, Rasche H, Soranzo N, Goecks J, Taylor J, Nekrutenko A, Blankenberg
+  D. "The Galaxy platform for accessible, reproducible and collaborative
+  biomedical analyses: 2018 update"
+  Nucleic Acids Res. (2018) 46(W1):W537-W544 doi:10.1093/nar/gky379
 
 BibTeX format:
 
-@article{afgan2016galaxy,
-  title={The {Galaxy} platform for accessible, reproducible and collaborative biomedical analyses: 2016 update},
-  author={Afgan, Enis and Baker, Dannon and van den Beek, Marius and Blankenberg, Daniel and Bouvier, Dave and \v{C}ech, Martin and Chilton, John and Clements, Dave and Coraor, Nate and Eberhard, Carl and Gr\"uning, Bj\"orn and Guerler, Aysam and Hillman-Jackson, Jennifer and Von Kuster, Greg and Rasche, Eric and Soranzo, Nicola and Turaga, Nitesh and Taylor, James and Nekrutenko, Anton and Goecks, Jeremy},
-  journal={Nucleic Acids Res.},
-  volume={44},
-  number={W1},
-  pages={W3-W10},
-  year={2016},
-  publisher={Oxford University Press}
+@article{10.1093/nar/gky379,
+  title = {The {Galaxy} platform for accessible, reproducible and collaborative biomedical analyses: 2018 update},
+  author = {Afgan, Enis and Baker, Dannon and Batut, B\'{e}r\'{e}nice and van den Beek, Marius and Bouvier, Dave and \v{C}ech, Martin and Chilton, John and Clements, Dave and Coraor, Nate and Gr\"uning, Bj\"orn A. and Guerler, Aysam and Hillman-Jackson, Jennifer and Hiltemann, Saskia and Jalili, Vahid and Rasche, Helena and Soranzo, Nicola and Goecks, Jeremy and Taylor, James and Nekrutenko, Anton and Blankenberg, Daniel},
+  journal = {Nucleic Acids Res.},
+  doi = {10.1093/nar/gky379},
+  volume = {46},
+  number = {W1},
+  pages = {W537-W544},
+  year = {2018},
+  url = {https://doi.org/10.1093/nar/gky379},
+  publisher = {Oxford University Press}
 }
 
 

@@ -72,7 +72,7 @@ QUnit.module("Input terminal model test", {
                 return Terminals.NULL_COLLECTION_TYPE_DESCRIPTION;
             };
         }
-        return this.input_terminal.canAccept(other);
+        return this.input_terminal.canAccept(other).canAccept;
     },
     pja_change_datatype_node: function(output_name, newtype) {
         var pja = {
@@ -319,7 +319,7 @@ QUnit.test("Collection output can connect to same collection input type", functi
     });
     outputTerminal.node = {};
     assert.ok(
-        inputTerminal.canAccept(outputTerminal),
+        inputTerminal.canAccept(outputTerminal).canAccept,
         "Input terminal " + inputTerminal + " can not accept " + outputTerminal
     );
 });
@@ -332,7 +332,7 @@ QUnit.test("Collection output cannot connect to different collection input type"
         collection_type: "paired"
     });
     outputTerminal.node = {};
-    assert.ok(!inputTerminal.canAccept(outputTerminal));
+    assert.ok(!inputTerminal.canAccept(outputTerminal).canAccept);
 });
 
 QUnit.module("Node unit test", {
@@ -989,7 +989,7 @@ QUnit.module("terminal mapping logic", {
             outputTerminal = output;
         }
 
-        assert.ok(!inputTerminal.attachable(outputTerminal));
+        assert.ok(!inputTerminal.attachable(outputTerminal).canAccept);
     },
     verifyAttachable: function(assert, inputTerminal, output) {
         var outputTerminal;
@@ -1000,12 +1000,15 @@ QUnit.module("terminal mapping logic", {
             outputTerminal = output;
         }
 
-        assert.ok(inputTerminal.attachable(outputTerminal), "Cannot attach " + outputTerminal + " to " + inputTerminal);
+        assert.ok(
+            inputTerminal.attachable(outputTerminal).canAccept,
+            "Cannot attach " + outputTerminal + " to " + inputTerminal
+        );
 
         // Go further... make sure datatypes are being enforced
         inputTerminal.datatypes = ["bam"];
         outputTerminal.datatypes = ["txt"];
-        assert.ok(!inputTerminal.attachable(outputTerminal));
+        assert.ok(!inputTerminal.attachable(outputTerminal).canAccept);
     },
     verifyMappedOver: function(assert, terminal) {
         assert.ok(terminal.terminalMapping.mapOver.isCollection);

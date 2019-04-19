@@ -1,6 +1,6 @@
 import $ from "jquery";
 import Connector from "mvc/workflow/workflow-connector";
-import * as Toastr from "libs/toastr";
+import { Toast } from "ui/toast";
 
 class Workflow {
     constructor(app, canvas_container) {
@@ -37,7 +37,7 @@ class Workflow {
             this.unregisterOutputLabel(fromLabel);
         }
         if (!this.canLabelOutputWith(toLabel)) {
-            Toastr.warning(
+            Toast.warning(
                 `Workflow contains duplicate workflow output labels ${toLabel}. This must be fixed before it can be saved.`
             );
         }

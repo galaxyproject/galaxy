@@ -1,7 +1,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import mod_toastr from "libs/toastr";
+import { Toast } from "ui/toast";
 import { getGalaxyInstance } from "app";
 
 // galaxy library row view
@@ -116,7 +116,7 @@ var LibraryRowView = Backbone.View.extend({
 
     /* User clicked the 'cancel' button so we render normal rowView */
     cancel_library_modification: function() {
-        // mod_toastr.info('Modifications canceled');
+        // Toast.info('Modifications canceled');
         this.edit_mode = false;
         this.repaint();
     },
@@ -132,7 +132,7 @@ var LibraryRowView = Backbone.View.extend({
                 library.set("name", new_name);
                 is_changed = true;
             } else {
-                mod_toastr.warning("Library name has to be at least 3 characters long.");
+                Toast.warning("Library name has to be at least 3 characters long.");
                 return;
             }
         }
@@ -156,20 +156,20 @@ var LibraryRowView = Backbone.View.extend({
                 success: function(library) {
                     row_view.edit_mode = false;
                     row_view.repaint(library);
-                    mod_toastr.success("Changes to library saved.");
+                    Toast.success("Changes to library saved.");
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        mod_toastr.error(response.responseJSON.err_msg);
+                        Toast.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occurred while attempting to update the library.");
+                        Toast.error("An error occurred while attempting to update the library.");
                     }
                 }
             });
         } else {
             this.edit_mode = false;
             this.repaint(library);
-            mod_toastr.info("Nothing has changed.");
+            Toast.info("Nothing has changed.");
         }
     },
 
@@ -191,13 +191,13 @@ var LibraryRowView = Backbone.View.extend({
                 } else if (Galaxy.libraries.preferences.get("with_deleted") === true) {
                     row_view.repaint(library);
                 }
-                mod_toastr.success("Library has been marked deleted.");
+                Toast.success("Library has been marked deleted.");
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(response.responseJSON.err_msg);
+                    Toast.error(response.responseJSON.err_msg);
                 } else {
-                    mod_toastr.error("An error occurred during deleting the library.");
+                    Toast.error("An error occurred during deleting the library.");
                 }
             }
         });
@@ -218,13 +218,13 @@ var LibraryRowView = Backbone.View.extend({
                 Galaxy.libraries.libraryListView.collection.add(library);
                 row_view.edit_mode = false;
                 row_view.repaint(library);
-                mod_toastr.success("Library has been undeleted.");
+                Toast.success("Library has been undeleted.");
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(response.responseJSON.err_msg);
+                    Toast.error(response.responseJSON.err_msg);
                 } else {
-                    mod_toastr.error("An error occurred while undeleting the library.");
+                    Toast.error("An error occurred while undeleting the library.");
                 }
             }
         });

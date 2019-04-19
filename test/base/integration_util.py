@@ -7,6 +7,8 @@ tessting configuration.
 import os
 from unittest import skip, SkipTest, TestCase
 
+import pytest
+
 from galaxy.tools.deps.commands import which
 from galaxy.tools.verify.test_data import TestDataResolver
 from .api import UsesApiTestCaseMixin
@@ -37,7 +39,7 @@ def skip_unless_kubernetes():
     return skip_unless_executable("kubectl")
 
 
-class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
+class IntegrationInstance(UsesApiTestCaseMixin):
     """Unit test case with utilities for spinning up Galaxy."""
 
     prefer_template_database = True
@@ -119,3 +121,27 @@ class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
 
     def _run_tool_test(self, *args, **kwargs):
         return self._test_driver.run_tool_test(*args, **kwargs)
+
+
+class IntegrationTestCase(IntegrationInstance, TestCase):
+    """Unit TestCase with utilities for spinning up Galaxy."""
+
+
+def integration_module_instance(clazz):
+
+    def _instance():
+        instance = clazz()
+        instance.setUpClass()
+        instance.setUp()
+        yield instance
+        instance.tearDownClass()
+
+    return pytest.fixture(scope='module')(_instance)
+
+
+def integration_tool_runner(tool_ids):
+
+    def test_tools(instance, tool_id):
+        instance._run_tool_test(tool_id)
+
+    return pytest.mark.parametrize("tool_id", tool_ids)(test_tools)

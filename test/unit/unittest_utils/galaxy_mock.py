@@ -61,7 +61,7 @@ class MockApp(object):
         self.security = self.config.security
         self.name = kwargs.get('name', 'galaxy')
         self.object_store = objectstore.build_object_store_from_config(self.config)
-        self.model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=self.object_store)
+        self.model = mapping.init("/tmp", self.config.database_connection, create_tables=True, object_store=self.object_store)
         self.security_agent = self.model.security_agent
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)
@@ -111,6 +111,7 @@ class MockAppConfig(Bunch):
         Bunch.__init__(self, **kwargs)
         root = root or '/tmp'
         self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
+        self.database_connection = kwargs.get('database_connection', "sqlite:///:memory:")
         self.use_remote_user = kwargs.get('use_remote_user', False)
         self.file_path = '/tmp'
         self.jobs_directory = '/tmp'

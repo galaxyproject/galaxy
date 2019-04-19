@@ -1219,9 +1219,7 @@ it may be inconvenient to upload the entiry file and this can be used instead.
     <xs:attribute name="decompress" type="PermissiveBoolean">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-
-If ``compare`` is set to ``diff``, attempt to decompress both produced output and expected output files if needed before performing the diff. This flag is useful for testing gzipped outputs that are non-deterministic despite having deterministic decompressed contents. This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
-
+When this attribute is true and ``compare`` is set to ``diff``, try to decompress files if needed. This flag is useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip will be automatically decompressed. This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -5328,6 +5326,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="docker"/>
+      <xs:enumeration value="singularity"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="ToolTypeType">

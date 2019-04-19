@@ -1296,6 +1296,7 @@ class JobWrapper(HasResourceParameters):
                         return self.fail("Job %s's output dataset(s) could not be read" % job.id)
 
         job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
+        implicit_collection_jobs = job.implicit_collection_jobs_association
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context(job_context, dataset_assoc)
             # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
@@ -1345,7 +1346,9 @@ class JobWrapper(HasResourceParameters):
                         log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, e)
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
-                    dataset.mark_unhidden()
+                    if not implicit_collection_jobs:
+                        # Only unhide dataset outputs that are not part of a implicit collection
+                        dataset.mark_unhidden()
                 elif not purged:
                     # If the tool was expected to set the extension, attempt to retrieve it
                     if dataset.ext == 'auto':
@@ -1519,7 +1522,10 @@ class JobWrapper(HasResourceParameters):
             log.exception("Unable to cleanup job %d", self.job_id)
 
     def _collect_extra_files(self, dataset, job_working_directory):
-        temp_file_path = os.path.join(job_working_directory, "dataset_%s_files" % (dataset.id))
+        object_store = self.app.object_store
+        store_by = getattr(object_store, "store_by", "id")
+        file_name = "dataset_%s_files" % getattr(dataset, store_by)
+        temp_file_path = os.path.join(job_working_directory, file_name)
         extra_dir = None
         try:
             # This skips creation of directories - object store
