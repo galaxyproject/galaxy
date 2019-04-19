@@ -100,14 +100,18 @@ class BaseTestCase(unittest.TestCase):
         self.assertTrue(True, 'is uuid: ' + item)
 
     def assertORMFilter(self, item, msg=None):
-        if not isinstance(item, sqlalchemy.sql.elements.BinaryExpression):
-            self.fail('Not an orm filter: ' + str(type(item)))
-        self.assertTrue(True, msg or ('is an orm filter: ' + str(item)))
+        if not isinstance(item.filter, (sqlalchemy.sql.elements.BinaryExpression, sqlalchemy.sql.elements.BooleanClauseList)):
+            self.fail('Not an orm filter: ' + str(type(item.filter)))
+        self.assertTrue(True, msg or ('is an orm filter: ' + str(item.filter)))
+
+    def assertORMFunctionFilter(self, item, msg=None):
+        assert item.filter_type == 'orm_function'
+        assert callable(item.filter)
 
     def assertFnFilter(self, item, msg=None):
-        if not item or not callable(item):
-            self.fail('Not a fn filter: ' + str(type(item)))
-        self.assertTrue(True, msg or ('is a fn filter: ' + str(item)))
+        if not item.filter or not callable(item.filter):
+            self.fail('Not a fn filter: ' + str(type(item.filter)))
+        self.assertTrue(True, msg or ('is a fn filter: ' + str(item.filter)))
 
     def assertIsJsonifyable(self, item):
         # TODO: use galaxy's override

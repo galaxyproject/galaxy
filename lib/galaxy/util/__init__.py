@@ -63,6 +63,8 @@ inflector = Inflector(English)
 log = get_logger(__name__)
 _lock = threading.RLock()
 
+namedtuple = collections.namedtuple
+
 CHUNK_SIZE = 65536  # 64k
 
 DATABASE_MAX_STRING_SIZE = 32768
