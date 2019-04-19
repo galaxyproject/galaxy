@@ -366,7 +366,7 @@ class ImgtJson(Json):
 @build_sniff_from_prefix
 class GeoJson(Json):
     """
-        GeoJSON is a geospatial data interchange format based on JavaScript Object Notation (JSON). 
+        GeoJSON is a geospatial data interchange format based on JavaScript Object Notation (JSON).
         https://tools.ietf.org/html/rfc7946
     """
     file_ext = "geojson"
