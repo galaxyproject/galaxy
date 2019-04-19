@@ -291,13 +291,9 @@ var View = Backbone.View.extend({
                 return false;
             }
             if (input_field.validate) {
-                // wish there was a way to just reset this input field
-                const reset = () => {
-                    this.form.trigger("reset");
-                };
-                const validateObject = input_field.validate(reset);
-                if (!validateObject.valid) {
-                    this.form.highlight(input_id, validateObject.message);
+                const message = input_field.validate();
+                if (message) {
+                    this.form.highlight(input_id, message);
                     return false;
                 }
             }
