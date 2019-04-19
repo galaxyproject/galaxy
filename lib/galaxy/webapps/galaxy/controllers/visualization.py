@@ -623,7 +623,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         """
         log.exception('error rendering visualization (%s)', visualization_name)
         if trans.debug:
-            raise
+            raise exception
         return trans.show_error_message(
             "There was an error rendering the visualization. " +
             "Contact your Galaxy administrator if the problem persists." +
