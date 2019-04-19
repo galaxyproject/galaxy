@@ -1641,7 +1641,7 @@ def url_get(base_url, password_mgr=None, pathspec=None, params=None):
     response = urlopener.open(full_url)
     content = response.read()
     response.close()
-    return content
+    return unicodify(content)
 
 
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
