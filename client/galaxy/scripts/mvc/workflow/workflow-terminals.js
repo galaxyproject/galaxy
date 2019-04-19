@@ -426,7 +426,7 @@ var InputTerminal = BaseInputTerminal.extend({
                         "Cannot attach collections to data parameters with individual data inputs already attached."
                     );
                 }
-                if (otherCollectionType.collectionType.endsWith("paired")) {
+                if (otherCollectionType.collectionType && otherCollectionType.collectionType.endsWith("paired")) {
                     return new ConnectionAcceptable(
                         false,
                         "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way."
