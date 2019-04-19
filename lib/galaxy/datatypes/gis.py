@@ -9,8 +9,7 @@ from galaxy.datatypes import data
 from galaxy.datatypes.metadata import MetadataElement
 
 
-verbose = False
-gal_Log = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 # The base class for all GIS data
@@ -35,12 +34,9 @@ class GIS(data.Data):
 
 # The shapefile class
 class Shapefile(GIS):
+    """ The Shapefile data format:
+            For more information please see http://en.wikipedia.org/wiki/Shapefile
     """
-    Shapefile data
-    derived from Data - composite datatype elements
-    stored in extra files path
-    """
-#    http://en.wikipedia.org/wiki/Shapefile
 
     MetadataElement(name="base_name", desc="base name for all transformed versions of this dataset", default="Shapefile", readonly=True, set_in_upload=True, optional=True)
 
@@ -116,17 +112,18 @@ class Shapefile(GIS):
 
     def __init__(self, **kwd):
         GIS.__init__(self, **kwd)
-        self.add_composite_file('shapefile.shp', description='Geometry File .shp', is_binary=True, optional=False)
-        self.add_composite_file('shapefile.shx', description='Geometry index File .shx', is_binary=True, optional=False)
-        self.add_composite_file('shapefile.dbf', description='Database File .dbf', is_binary=True, optional=False)
-#        self.add_composite_file('shapefile.sbn', description='Spatial index of the features .sbn', is_binary=True, optional=True)
-#        self.add_composite_file('shapefile.sbx', description='Spatial index of the features .sbx', is_binary=True, optional=True)
-#        self.add_composite_file('shapefile.fbn', description='Spatial index of the features that are read-only .fbn', is_binary=True, optional=True)
-#        self.add_composite_file('shapefile.fbx', description='Spatial index of the features that are read-only .fbx', is_binary=True, optional=True)
-#        self.add_composite_file('shapefile.ain', description='Attribute index .ain', is_binary=True, optional=True)
-#        self.add_composite_file('shapefile.aih', description='Attribute index .aih', is_binary=True, optional=True)
-#        self.add_composite_file('shapefile.atx', description='Attribute index for the dbf file .atx', is_binary=True, optional=True)
-#        self.add_composite_file('shapefile.ixs', description='Geocoding index .ixs', is_binary=True, optional=True)
-#        self.add_composite_file('shapefile.mxs', description='Geocoding index (ODB format) .mxs', is_binary=True, optional=True)
-#        self.add_composite_file('shapefile.prj', description='Projection description .prj', is_binary=True, optional=True)
-#        self.add_composite_file('shapefile.xml', description='Geospatial metadata .xml', is_binary=False, optional=True)
+        self.add_composite_file('shapefile.shp', description='Geometry File (shp)', is_binary=True, optional=False)
+        self.add_composite_file('shapefile.shx', description='Geometry index File (shx)', is_binary=True, optional=False)
+        self.add_composite_file('shapefile.dbf', description='Columnar attributes for each shape (dbf)', is_binary=True, optional=False)
+        ## optional
+        self.add_composite_file('shapefile.prj', description='Projection description (prj)', is_binary=False, optional=True)
+        self.add_composite_file('shapefile.sbn', description='Spatial index of the features (sbn)', is_binary=True, optional=True)
+        self.add_composite_file('shapefile.sbx', description='Spatial index of the features (sbx)', is_binary=True, optional=True)
+        self.add_composite_file('shapefile.fbn', description='Read only spatial index of the features (fbn)', is_binary=True, optional=True)
+        self.add_composite_file('shapefile.fbx', description='Read only spatial index of the features (fbx)', is_binary=True, optional=True)
+        self.add_composite_file('shapefile.ain', description='Attribute index of the active fields in a table (ain)', is_binary=True, optional=True)
+        self.add_composite_file('shapefile.aih', description='Attribute index of the active fields in a table (aih)', is_binary=True, optional=True)
+        self.add_composite_file('shapefile.atx', description='Attribute index for the dbf file (atx)', is_binary=True, optional=True)
+        self.add_composite_file('shapefile.ixs', description='Geocoding index (ixs)', is_binary=True, optional=True)
+        self.add_composite_file('shapefile.mxs', description='Geocoding index in ODB format (mxs)', is_binary=True, optional=True)
+        self.add_composite_file('shapefile.shp.xml', description='Geospatial metadata in XML format (xml)', is_binary=False, optional=True)
