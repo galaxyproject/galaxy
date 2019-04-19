@@ -29,13 +29,10 @@
 </template>
 <script>
 import _ from "underscore";
-import { getAppRoot } from "onload/loadConfig";
-
 import axios from "axios";
 import Vue from 'vue';
 import BootstrapVue from 'bootstrap-vue';
-
-
+import { getAppRoot } from "onload/loadConfig";
 import * as bibtexParse from "libs/bibtexParse";
 import { convertLaTeX } from "latex-to-unicode-converter";
 import { stringifyLaTeX } from "latex-parser";
