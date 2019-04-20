@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import re
 from json import dumps
 
@@ -392,6 +393,10 @@ class DefaultToolAction(object):
                             break
 
                 data = app.model.HistoryDatasetAssociation(extension=ext, dataset=dataset, create_dataset=create_datasets, flush=False)
+                if create_datasets:
+                    from_work_dir = output.from_work_dir
+                    if from_work_dir is not None:
+                        data.dataset.created_from_basename = os.path.basename(from_work_dir)
                 if hidden is None:
                     hidden = output.hidden
                 if not hidden and dataset_collection_elements is not None:  # Mapping over a collection - hide datasets
