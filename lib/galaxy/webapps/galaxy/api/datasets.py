@@ -115,7 +115,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         if history_id:
             container = self.history_manager.get_accessible(self.decode_id(history_id), trans.user)
         contents = self.history_contents_manager.contents(
-            container=container, filters=filters, limit=limit, offset=offset, order_by=order_by
+            container=container, filters=filters, limit=limit, offset=offset, order_by=order_by, user_id=trans.user.id,
         )
         return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view='summary') for content in contents]
 
