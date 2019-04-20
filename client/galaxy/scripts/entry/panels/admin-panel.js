@@ -39,6 +39,7 @@ var AdminPanel = Backbone.View.extend({
                     {
                         title: _l("Manage jobs"),
                         url: "admin/jobs",
+                        target: "__use_router__",
                         id: "admin-link-jobs"
                     },
                     {
