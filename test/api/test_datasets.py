@@ -88,6 +88,14 @@ class DatasetsApiTestCase(api.ApiTestCase):
         self._assert_status_code_is(index_response, 400)
         assert index_response.json()['err_msg'] == 'bad op in filter'
 
+    def test_search_returns_only_accessible(self):
+        hda_id = self.dataset_populator.new_dataset(self.history_id)['id']
+        with self._different_user():
+            payload = {'limit': 10, 'offset': 0, 'q': ['history_content_type'], 'qv': ['dataset']}
+            index_response = self._get("datasets", payload).json()
+            for item in index_response:
+                assert hda_id != item['id']
+
     def test_show(self):
         hda1 = self.dataset_populator.new_dataset(self.history_id)
         show_response = self._get("datasets/%s" % (hda1["id"]))
