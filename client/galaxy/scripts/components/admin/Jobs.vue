@@ -1,7 +1,7 @@
 <template>
     <div>
         <h2 class="mb-3">
-            <span id="jobs-title">Jobs (vue)</span>
+            <span id="jobs-title">Jobs</span>
         </h2>
         <Alert :message="message" :variant="status" />
         <b-alert variant="info" show>
@@ -133,7 +133,7 @@
                 </template>
                 <!-- Enable cell formatting for the command line column -->
                 <span slot="html" slot-scope="data" v-html="data.value" />
-                <template slot="HEAD_selected" slot-scope="data">
+                <template slot="HEAD_selected">
                     <b-form-checkbox
                         v-model="allSelected"
                         :indeterminate="indeterminate"
