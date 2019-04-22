@@ -166,7 +166,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
         else:
             ajs.job_id = self.JOB_NAME_PREFIX + str(job_wrapper.get_id_tag())
             log.debug("(%s/%s) Job recovered in '%s' state, adding to the"
-                         " runner monitor queue", job.id, ajs.job_id, job.state)
+                      " runner monitor queue", job.id, ajs.job_id, job.state)
             self.monitor_queue.put(ajs)
 
     @handle_exception_call
