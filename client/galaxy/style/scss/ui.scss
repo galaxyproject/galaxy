@@ -452,6 +452,12 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
+.ui-select-content {
+    .btn-group {
+        @extend .d-flex;
+    }
+}
+
 .ui-dragover {
     border-radius: 3px;
     border: 2px solid $table-border-color;

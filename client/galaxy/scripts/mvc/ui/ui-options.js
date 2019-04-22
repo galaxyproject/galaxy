@@ -38,9 +38,9 @@ var Base = Backbone.View.extend({
             .removeClass()
             .addClass("ui-options")
             .addClass(this.model.get("cls"))
-            .append((this.$message = $("<div/>").addClass("mt-2")))
-            .append((this.$menu = $("<div/>").addClass("ui-options-menu")))
-            .append((this.$options = $(this._template())));
+            .append(this.$message = $("<div/>").addClass("mt-2"))
+            .append(this.$menu = $("<div/>").addClass("ui-options-menu"))
+            .append(this.$options = $(this._template()));
 
         // add select/unselect all button
         this.all_button = null;
@@ -298,7 +298,7 @@ RadioButton.View = Base.extend({
 
     /** Main template function */
     _template: function() {
-        return $("<div/>").addClass("btn-group ui-radiobutton d-flex");
+        return $("<div/>").addClass("btn-group ui-radiobutton");
     }
 });
 
