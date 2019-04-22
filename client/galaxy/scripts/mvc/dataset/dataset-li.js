@@ -223,9 +223,20 @@ export var DatasetListItemView = _super.extend(
         /** Defer to the appropo summary rendering fn based on state */
         _renderSummary: function() {
             var json = this.model.toJSON();
-            var summaryRenderFn = this.templates.summaries[json.state];
+            // not all handler assignment methods use the "waiting" state
+            if (json.state == STATES.NEW && ! this._usesWaitingState()) {
+                var summaryRenderFn = this.templates.summaries["new-or-waiting"];
+            } else {
+                var summaryRenderFn = this.templates.summaries[json.state];
+            }
             summaryRenderFn = summaryRenderFn || this.templates.summaries.unknown;
             return summaryRenderFn(json, this);
+        },
+
+        _usesWaitingState: function() {
+            let Galaxy = getGalaxyInstance();
+            var methods = Galaxy.config.job.handler_assignment_methods;
+            return methods.indexOf("db-skip-locked") >= 0 || methods.indexOf("db-transaction-isolation") >= 0;
         },
 
         /** Render messages to be displayed only when the details are shown */
@@ -481,14 +492,18 @@ DatasetListItemView.prototype.templates = (() => {
         ],
         "dataset"
     );
-    // TODO: if grabbing not enabled and state = NEW then it's either unhandled or not ready
-    //       if grabbing enabled and state = NEW then it's unhandled
+    // This is a fake state, if grabbing is not enabled and state = NEW then it's either unhandled or not ready; if is grabbing enabled and state = NEW then it's unhandled
+    summaryTemplates["new-or-waiting"] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("This dataset's job has not yet been picked up by Galaxy's job running system or not all of the input datasets needed to run it are ready yet"), "</div>"],
+        "dataset"
+    );
+    // Real dataset states
     summaryTemplates[STATES.NEW] = BASE_MVC.wrapTemplate(
-        ["<div>", _l("This is a new dataset and not all of its data are available yet"), "</div>"],
+        ["<div>", _l("This dataset's job has not yet been picked up by Galaxy's job running system"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.WAITING] = BASE_MVC.wrapTemplate(
-        ["<div>", _l("Not all of the input datasets needed to run this dataset's job are available yet"), "</div>"],
+        ["<div>", _l("Not all of the input datasets needed to run this dataset's job are ready yet"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.NOT_VIEWABLE] = BASE_MVC.wrapTemplate(
