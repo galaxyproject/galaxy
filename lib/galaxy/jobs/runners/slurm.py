@@ -8,7 +8,6 @@ import subprocess
 import tempfile
 import time
 
-from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
 from galaxy.util.logging import get_logger
 
