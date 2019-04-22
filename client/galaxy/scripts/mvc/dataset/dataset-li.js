@@ -523,7 +523,11 @@ DatasetListItemView.prototype.templates = (() => {
         "dataset"
     );
     summaryTemplates[STATES.SUBMITTED] = BASE_MVC.wrapTemplate(
-        ["<div>", _l("This dataset's job has been submitted but has not yet been assigned a position in the queue"), "</div>"],
+        ["<div>", _l("This dataset's job has been submitted to a compute resource for execution"), "</div>"],
+        "dataset"
+    );
+    summaryTemplates[STATES.STAGEIN] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("Input datasets are being staged in to the compute resource where this dataset's job will run"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.QUEUED] = BASE_MVC.wrapTemplate(
@@ -532,6 +536,14 @@ DatasetListItemView.prototype.templates = (() => {
     );
     summaryTemplates[STATES.RUNNING] = BASE_MVC.wrapTemplate(
         ["<div>", _l("This dataset's job is currently running"), "</div>"],
+        "dataset"
+    );
+    summaryTemplates[STATES.STAGEOUT] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("This dataset is being staged out from the compute resource where this dataset's job ran"), "</div>"],
+        "dataset"
+    );
+    summaryTemplates[STATES.FINISHING] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("This dataset's job is currently finishing"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.UPLOAD] = BASE_MVC.wrapTemplate(

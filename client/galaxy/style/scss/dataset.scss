@@ -109,6 +109,7 @@
     &.state-waiting,
     &.state-dispatched,
     &.state-submitted,
+    &.state-stagein,
     &.state-queued {
         background: $state-default-bg;
         .state-icon {
@@ -126,7 +127,8 @@
         }
     }
 
-    &.state-submitted {
+    &.state-submitted,
+    &.state-stagein {
         // normal font weight
     }
 
@@ -148,6 +150,8 @@
     }
 
     &.state-running,
+    &.state-stageout,
+    &.state-finishing,
     &.state-setting_metadata {
         background: $state-running-bg;
         .state-icon {

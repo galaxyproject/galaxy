@@ -4,7 +4,7 @@ import AJAX_QUEUE from "utils/ajax-queue";
 
 /** ms between fetches when checking running jobs/datasets for updates */
 var UPDATE_DELAY = 2000;
-var NON_TERMINAL_STATES = ["new", "waiting", "limited", "dispatched", "submitted", "queued", "running"];
+var NON_TERMINAL_STATES = ["new", "waiting", "limited", "dispatched", "submitted", "stagein", "queued", "running", "stageout", "finishing"];
 var ERROR_STATES = ["error", "deleted"];
 /** Fetch state on add or just wait for polling to start. */
 var FETCH_STATE_ON_ADD = false;

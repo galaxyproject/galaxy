@@ -1189,12 +1189,27 @@ ul.manage-table-actions li {
     background: $state-default-bg;
 }
 
+.state-color-stagein {
+    border-color: $state-default-border;
+    background: $state-default-bg;
+}
+
 .state-color-queued {
     border-color: $state-default-border;
     background: $state-default-bg;
 }
 
 .state-color-running {
+    border-color: $state-running-border;
+    background: $state-running-bg;
+}
+
+.state-color-stageout {
+    border-color: $state-running-border;
+    background: $state-running-bg;
+}
+
+.state-color-finishing {
     border-color: $state-running-border;
     background: $state-running-bg;
 }

@@ -12,10 +12,16 @@ var STATES = {
     DISPATCHED: "dispatched",
     /** the job that will produce the dataset has been submitted to the executing resource */
     SUBMITTED: "submitted",
+    /** the inputs of the job that will produce the dataset are being staged to a remote compute resource */
+    STAGEIN: "stagein",
     /** the job that will produce the dataset is queued on the executing resource */
     QUEUED: "queued",
     /** the job that will produce the dataset is running */
     RUNNING: "running",
+    /** the outputs of the job that produced the dataset are being staged from a remote compute resource */
+    STAGEOUT: "stageout",
+    /** the job that will produce the dataset is finishing */
+    FINISHING: "finishing",
     /** metadata for the dataset is being discovered/set */
     SETTING_METADATA: "setting_metadata",
 
@@ -57,8 +63,11 @@ STATES.NOT_READY_STATES = [
     STATES.LIMITED,
     STATES.DISPATCHED,
     STATES.SUBMITTED,
+    STATES.STAGEIN,
     STATES.QUEUED,
     STATES.RUNNING,
+    STATES.STAGEOUT,
+    STATES.FINISHING,
     STATES.SETTING_METADATA,
     STATES.WAITING,
     STATES.NEW

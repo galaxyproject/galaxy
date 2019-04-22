@@ -53,6 +53,9 @@ DEFAULT_DATASET_MESSAGES = {
     JOB_LIMITED: None,  # message will be set in the UI
 }
 WAITING_JOB_STATES = (model.Job.states.NEW, model.Job.states.WAITING, model.Job.states.LIMITED)
+RUNNING_JOB_STATES = (model.Job.states.DISPATCHED, model.Job.states.SUBMITTED, model.Job.states.STAGEIN,
+                      model.Job.states.QUEUED, model.Job.states.RUNNING, model.Job.states.STAGEOUT,
+                      model.Job.states.FINISHING)
 
 
 class JobHandler(object):
@@ -171,17 +174,9 @@ class JobHandlerQueue(Monitors):
         """
         jobs_at_startup = []
         if self.track_jobs_in_database:
-            in_list = (model.Job.states.DISPATCHED,
-                       model.Job.states.SUBMITTED,
-                       model.Job.states.QUEUED,
-                       model.Job.states.RUNNING)
+            in_list = RUNNING_JOB_STATES
         else:
-            in_list = (model.Job.states.NEW,
-                       model.Job.states.WAITING,
-                       model.Job.states.DISPATCHED,
-                       model.Job.states.SUBMITTED,
-                       model.Job.states.QUEUED,
-                       model.Job.states.RUNNING)
+            in_list = (model.Job.states.NEW, model.Job.states.WAITING) + RUNNING_JOB_STATES
         if self.app.config.user_activation_on:
             jobs_at_startup = self.sa_session.query(model.Job).enable_eagerloads(False) \
                 .outerjoin(model.User) \
@@ -660,11 +655,7 @@ class JobHandlerQueue(Monitors):
         if not self.app.config.cache_user_job_count:
             result = self.sa_session.execute(select([func.count(model.Job.table.c.id)])
                                              .where(and_(model.Job.table.c.state.in_(
-                                                         (model.Job.states.DISPATCHED,
-                                                          model.Job.states.SUBMITTED,
-                                                          model.Job.states.QUEUED,
-                                                          model.Job.states.RUNNING,
-                                                          model.Job.states.RESUBMITTED)),
+                                                         RUNNING_JOB_STATES + (model.Job.states.RESUBMITTED,)),
                                                          (model.Job.table.c.user_id == user_id))))
             for row in result:
                 # there should only be one row
@@ -677,11 +668,7 @@ class JobHandlerQueue(Monitors):
             self.user_job_count = {}
             query = self.sa_session.execute(select([model.Job.table.c.user_id, func.count(model.Job.table.c.user_id)])
                                             .where(and_(model.Job.table.c.state.in_(
-                                                        (model.Job.states.DISPATCHED,
-                                                         model.Job.states.QUEUED,
-                                                         model.Job.states.SUBMITTED,
-                                                         model.Job.states.RUNNING,
-                                                         model.Job.states.RESUBMITTED)),
+                                                        RUNNING_JOB_STATES + (model.Job.states.RESUBMITTED,)),
                                                         (model.Job.table.c.user_id != null())))
                                             .group_by(model.Job.table.c.user_id))
             for row in query:

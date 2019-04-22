@@ -13,8 +13,8 @@ import LoadingIndicator from "ui/loading-indicator";
 
 const active_state_display_grouping = {
     ok: ["ok"],
-    running: ["running"],
-    queued: ["queued", "dispatched", "submitted"],
+    running: ["running", "stageout", "finishing"],
+    queued: ["queued", "dispatched", "stagein", "submitted"],
     new: ["new"],
     error: ["error"],
     paused: ["paused", "limited"]

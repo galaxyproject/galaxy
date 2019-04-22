@@ -736,6 +736,8 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         """
         galaxy_id_tag = job_state.job_wrapper.get_id_tag()
         external_job_id = job_state.job_id
+        log.debug("(%s/%s) Job execution complete, performing job finish tasks", galaxy_id_tag, external_job_id)
+        job_state.job_wrapper.change_state(model.Job.states.FINISHING)
 
         # To ensure that files below are readable, ownership must be reclaimed first
         job_state.job_wrapper.reclaim_ownership()
@@ -775,7 +777,8 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
 
     def _recover_async_job_state(self, job, job_wrapper, cls=AsynchronousJobState):
         """Recovers jobs still in the submitted/queued/running state when Galaxy started"""
-        assert job.state in (model.Job.states.SUBMITTED, model.Job.states.QUEUED, model.Job.states.RUNNING), \
+        assert job.state in (model.Job.states.SUBMITTED, model.Job.states.QUEUED, model.Job.states.RUNNING,
+                             model.Job.states.STAGEOUT, model.Job.states.FINISHING), \
             "(%s) Cannot recover job in '%s' state, this is a bug" % (job.id, job.state)
         job_id = job.get_job_runner_external_id()
         ajs = cls(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)

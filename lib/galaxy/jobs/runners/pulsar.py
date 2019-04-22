@@ -65,6 +65,13 @@ LOST_REMOTE_ERROR = "Remote job server could not determine this job's state."
 
 UPGRADE_PULSAR_ERROR = "Galaxy is misconfigured, please contact administrator. The target Pulsar server is unsupported, this version of Galaxy requires Pulsar version %s or newer."
 
+PULSAR_STATE_MAP = {
+    'preprocessing': model.Job.states.STAGEIN,
+    'queued': model.Job.states.QUEUED,
+    'running': model.Job.states.RUNNING,
+    'postprocessing': model.Job.states.STAGEOUT,
+}
+
 # Is there a good way to infer some default for this? Can only use
 # url_for from web threads. https://gist.github.com/jmchilton/9098762
 DEFAULT_GALAXY_URL = "http://localhost:8080"
@@ -252,6 +259,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return job_state
 
     def _update_job_state_for_status(self, job_state, pulsar_status, full_status=None):
+        # Handle terminal states
         if pulsar_status == "complete":
             self.mark_as_finished(job_state)
             return None
@@ -263,9 +271,14 @@ class PulsarJobRunner(AsynchronousJobRunner):
             if not job_state.job_wrapper.get_job().finished:
                 self.fail_job(job_state, message, full_status=full_status)
             return None
-        if pulsar_status == "running" and not job_state.running:
-            job_state.running = True
-            job_state.job_wrapper.change_state(model.Job.states.RUNNING)
+        # Handle nonterminal state changes
+        state = PULSAR_STATE_MAP.get(pulsar_status)
+        if state and state != job_state.old_state:
+            log.debug("(%s) Pulsar status '%s' caused state change '%s' to '%s'",
+                      job_state.job_id, pulsar_status, job_state.old_state, state)
+            job_state.old_state = state
+            job_state.running = state in (model.Job.states.RUNNING, model.Job.states.STAGEOUT)
+            job_state.job_wrapper.change_state(state)
         return job_state
 
     def queue_job(self, job_wrapper):
@@ -303,7 +316,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             job_id = pulsar_submit_job(client, client_job_description, remote_job_config)
             log.info("Pulsar job submitted with job_id %s" % job_id)
             job_wrapper.set_job_destination(job_destination, job_id)
-            job_wrapper.change_state(model.Job.states.QUEUED)
+            job_wrapper.change_state(model.Job.states.SUBMITTED)
         except Exception:
             job_wrapper.fail("failure running job", exception=True)
             log.exception("failure running job %d", job_wrapper.job_id)
@@ -312,7 +325,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         pulsar_job_state = AsynchronousJobState()
         pulsar_job_state.job_wrapper = job_wrapper
         pulsar_job_state.job_id = job_id
-        pulsar_job_state.old_state = True
+        pulsar_job_state.old_state = model.Job.states.SUBMITTED
         pulsar_job_state.running = False
         pulsar_job_state.job_destination = job_destination
         self.monitor_job(pulsar_job_state)
@@ -483,6 +496,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def finish_job(self, job_state):
         stderr = stdout = ''
         job_wrapper = job_state.job_wrapper
+        galaxy_id_tag = job_state.job_wrapper.get_id_tag()
+        log.debug("(%s/Pulsar) Job execution complete, performing job finish tasks", galaxy_id_tag)
+        job_wrapper.change_state(model.Job.states.FINISHING)
         try:
             client = self.get_client_from_state(job_state)
             run_results = client.full_status()
@@ -590,8 +606,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
         state = job.get_state()
         if state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.SUBMITTED]:
             log.debug("(Pulsar/%s) is still in running state, adding to the Pulsar queue" % (job.id))
-            job_state.old_state = True
-            job_state.running = state == model.Job.states.RUNNING
+            job_state.old_state = job.state
+            job_state.running = state in (model.Job.states.RUNNING, model.Job.states.STAGEOUT)
             self.monitor_queue.put(job_state)
 
     def shutdown(self):
@@ -607,6 +623,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
         job_state.runner_url = job_wrapper.get_job_runner_url()
         job_state.job_destination = job_wrapper.job_destination
         job_state.job_wrapper = job_wrapper
+        job_state.old_state = job.state
+        job_state.running = job.state in (model.Job.states.RUNNING, model.Job.states.STAGEOUT)
         return job_state
 
     def __client_outputs(self, client, job_wrapper):
@@ -759,9 +777,11 @@ class PulsarMQJobRunner(PulsarJobRunner):
         job_id = None
         try:
             job_id = full_status["job_id"]
+            pulsar_status = full_status["status"]
             job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id(job_id)
             job_state = self._job_state(job, job_wrapper)
-            self._update_job_state_for_status(job_state, full_status["status"], full_status=full_status)
+            log.debug("(%s) Pulsar status is: %s", job_id, pulsar_status)
+            self._update_job_state_for_status(job_state, pulsar_status, full_status=full_status)
         except Exception:
             log.exception("Failed to update Pulsar job status for job_id %s", job_id)
             raise
