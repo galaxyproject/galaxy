@@ -1358,7 +1358,7 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
     return inputs, label_map, has_uploads
 
 
-def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "new", "ready"], assert_ok=False, timeout=DEFAULT_TIMEOUT):
+def wait_on_state(state_func, desc="state", skip_states=None, assert_ok=False, timeout=DEFAULT_TIMEOUT):
     def get_state():
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting."
@@ -1369,6 +1369,7 @@ def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "n
             if assert_ok:
                 assert state == "ok", "Final state - %s - not okay." % state
             return state
+    skip_states = skip_states or ["new", "waiting", "dispatched", "submitted", "queued", "running", "finishing"]
     try:
         return wait_on(get_state, desc=desc, timeout=timeout)
     except TimeoutAssertionError as e:
