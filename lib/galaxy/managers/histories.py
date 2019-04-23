@@ -328,7 +328,6 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             elif (hda_state_counts[states.QUEUED] > 0 or
                     hda_state_counts[states.NEW] > 0 or
                     hda_state_counts[states.WAITING] > 0 or
-                    hda_state_counts[states.PAUSED] > 0 or
                     hda_state_counts[states.LIMITED] > 0 or
                     hda_state_counts[states.DISPATCHED] > 0 or
                     hda_state_counts[states.SUBMITTED] > 0 or
