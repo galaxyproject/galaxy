@@ -66,7 +66,11 @@ def _json_wrap_input(input, value, handle_files="skip"):
             if value:
                 if isinstance(value, list):
                     value = value[0]
-                return _hda_to_object(value)
+                json_value = _hda_to_object(value)
+                if input.load_contents:
+                    with open(str(value), mode='rb') as fh:
+                        json_value['contents'] = fh.read(input.load_contents).decode('utf-8', errors='replace')
+                return json_value
             else:
                 return None
         else:
