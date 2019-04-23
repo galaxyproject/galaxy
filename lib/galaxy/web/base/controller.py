@@ -1524,8 +1524,6 @@ class SharableMixin(object):
         raise NotImplementedError()
 
 
-
-
 class UsesQuotaMixin(object):
 
     def get_quota(self, trans, id, check_ownership=False, check_accessible=False, deleted=None):
