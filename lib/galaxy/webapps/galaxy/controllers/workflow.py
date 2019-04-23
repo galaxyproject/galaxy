@@ -859,7 +859,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             col = collections[collection].to_dict()
             if col['job_source_id'] is None:
                 inputs += '- {}(Type: {})\n- Sample Names:\n'.format(str(col['name']), str(col['collection_type']))
-                col_pieces = collections[i].dataset_instances
+                col_pieces = collections[collection].dataset_instances
                 if 'list:paired' in col['collection_type']:
                     inputs += '    * {}\n'.format(str(collections[collection].collection.elements[0].element_identifier))
                     for piece in range(len(col_pieces)):
