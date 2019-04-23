@@ -386,7 +386,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             if newest_key.key != provided_key.key:
                 return 'Provided API key has expired.'
             self.set_user(provided_key.user)
-        elif secure_id:
+        elif secure_id or (self.app.config.use_remote_user and self.environ.get(self.app.config.remote_user_header, False)):
             # API authentication via active session
             # Associate user using existing session
             # This will throw an exception under remote auth with anon users.
