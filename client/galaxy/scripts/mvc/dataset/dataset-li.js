@@ -223,11 +223,10 @@ export var DatasetListItemView = _super.extend(
         /** Defer to the appropo summary rendering fn based on state */
         _renderSummary: function() {
             var json = this.model.toJSON();
+            var summaryRenderFn = this.templates.summaries[json.state];
             // not all handler assignment methods use the "waiting" state
             if (json.state == STATES.NEW && ! this._usesWaitingState()) {
-                var summaryRenderFn = this.templates.summaries["new-or-waiting"];
-            } else {
-                var summaryRenderFn = this.templates.summaries[json.state];
+                summaryRenderFn = this.templates.summaries["new-or-waiting"];
             }
             summaryRenderFn = summaryRenderFn || this.templates.summaries.unknown;
             return summaryRenderFn(json, this);
