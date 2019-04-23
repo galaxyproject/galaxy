@@ -113,7 +113,7 @@ class XmlToolSource(ToolSource):
         return ((command_el is not None) and command_el.text) or None
 
     def parse_expression(self):
-        """ Return string contianing command to run.
+        """ Return string containing command to run.
         """
         expression_el = self.root.find("expression")
         if expression_el is not None:

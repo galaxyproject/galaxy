@@ -95,6 +95,7 @@ class ToolParameter(Dictifiable):
         self.name = self.__class__.parse_name(input_source)
         self.type = input_source.get("type")
         self.hidden = input_source.get_bool("hidden", False)
+        self.load_contents = int(input_source.get("load_contents", 0))
         self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
         self.optional = input_source.parse_optional()
         self.is_dynamic = False
