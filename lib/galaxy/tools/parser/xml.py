@@ -345,7 +345,7 @@ class XmlToolSource(ToolSource):
                 else:
                     _parse_expression(out_child)
             else:
-                log.warn("Unknown output tag encountered [%s]" % out_child.tag)
+                log.warning("Unknown output tag encountered [%s]" % out_child.tag)
 
         for output_def in data_dict.values():
             outputs[output_def.name] = output_def
