@@ -63,6 +63,8 @@ inflector = Inflector(English)
 log = get_logger(__name__)
 _lock = threading.RLock()
 
+namedtuple = collections.namedtuple
+
 CHUNK_SIZE = 65536  # 64k
 
 DATABASE_MAX_STRING_SIZE = 32768
@@ -1524,7 +1526,10 @@ galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 
 def galaxy_directory():
-    return os.path.abspath(galaxy_root_path)
+    root_path = os.path.abspath(galaxy_root_path)
+    if os.path.basename(root_path) == "packages":
+        root_path = os.path.abspath(os.path.join(root_path, ".."))
+    return root_path
 
 
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):
@@ -1638,7 +1643,7 @@ def url_get(base_url, password_mgr=None, pathspec=None, params=None):
     response = urlopener.open(full_url)
     content = response.read()
     response.close()
-    return content
+    return unicodify(content)
 
 
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):

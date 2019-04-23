@@ -1607,7 +1607,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         var view = this;
 
         var // Either redrawing a single drawable or all view's drawables.
-        track_list = drawable ? [drawable] : view.drawables;
+            track_list = drawable ? [drawable] : view.drawables;
 
         // Add/update tracks in track list to redraw list.
         _.each(track_list, track => {
@@ -3084,10 +3084,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         this.tiles_div.children().addClass("remove");
 
         var // Tile width in bases.
-        tile_width = Math.floor(TILE_SIZE * resolution);
+            tile_width = Math.floor(TILE_SIZE * resolution);
 
         var // Index of first tile that overlaps visible region.
-        tile_index = Math.floor(low / tile_width);
+            tile_index = Math.floor(low / tile_width);
 
         var tile_region;
         var tile_promise;

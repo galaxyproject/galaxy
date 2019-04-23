@@ -2,6 +2,7 @@
     This is the main class of the form plugin. It is referenced as 'app' in lower level modules.
 */
 import $ from "jquery";
+import _ from "underscore";
 import Backbone from "backbone";
 import Portlet from "mvc/ui/ui-portlet";
 import Ui from "mvc/ui/ui-misc";

@@ -1,6 +1,5 @@
 import jQuery from "jquery";
-("use_strict");
-
+import _ from "underscore";
 var $ = jQuery;
 
 // ============================================================================
@@ -11,7 +10,7 @@ var $ = jQuery;
  * function to perform; or (b) another dict with two required keys, 'url' and 'action' (the
  * function to perform. (b) is useful for exposing the underlying URL of the option.
  */
-function make_popupmenu(button_element, initial_options) {
+export function make_popupmenu(button_element, initial_options) {
     /*  Use the $.data feature to store options with the link element.
         This allows options to be changed at a later time
     */
@@ -99,71 +98,59 @@ function make_popupmenu(button_element, initial_options) {
  *  - div 2 becomes the 'face' of the popupmenu
  *
  *  NOTE: make_popup_menus finds and operates on all divs with a popupmenu attr (no need to point it at something)
- *          but (since that selector searches the dom on the page), you can send a parent in
  *  NOTE: make_popup_menus, and make_popupmenu are horrible names
  */
-function make_popup_menus(parent) {
-    // find all popupmenu menu divs (divs that contains anchors to be converted to menu options)
-    //  either in the parent or the document if no parent passed
-    parent = parent || document;
-    $(parent)
-        .find("div[popupmenu]")
-        .each(function() {
-            var options = {};
-            var menu = $(this);
+export function make_popup_menus() {
+    $("div[popupmenu]").each(function() {
+        var options = {};
+        var menu = $(this);
 
-            // find each anchor in the menu, convert them into an options map: { a.text : click_function }
-            menu.find("a").each(function() {
-                var link = $(this);
-                var link_dom = link.get(0);
-                var confirmtext = link_dom.getAttribute("confirm");
-                var href = link_dom.getAttribute("href");
-                var target = link_dom.getAttribute("target");
+        // find each anchor in the menu, convert them into an options map: { a.text : click_function }
+        menu.find("a").each(function() {
+            var link = $(this);
+            var link_dom = link.get(0);
+            var confirmtext = link_dom.getAttribute("confirm");
+            var href = link_dom.getAttribute("href");
+            var target = link_dom.getAttribute("target");
 
-                // no href - no function (gen. a label)
-                if (!href) {
-                    options[link.text()] = null;
-                } else {
-                    options[link.text()] = {
-                        url: href,
-                        action: function(event) {
-                            // if theres confirm text, send the dialog
-                            if (!confirmtext || confirm(confirmtext)) {
-                                // link.click() doesn't use target for some reason,
-                                // so manually do it here.
-                                if (target) {
-                                    window.open(href, target);
-                                    return false;
-                                } else {
-                                    // For all other links, do the default action.
-                                    link.click();
-                                }
+            // no href - no function (gen. a label)
+            if (!href) {
+                options[link.text()] = null;
+            } else {
+                options[link.text()] = {
+                    url: href,
+                    action: function(event) {
+                        // if theres confirm text, send the dialog
+                        if (!confirmtext || confirm(confirmtext)) {
+                            // link.click() doesn't use target for some reason,
+                            // so manually do it here.
+                            if (target) {
+                                window.open(href, target);
+                                return false;
                             } else {
-                                event.preventDefault();
+                                // For all other links, do the default action.
+                                link.click();
                             }
+                        } else {
+                            event.preventDefault();
                         }
-                    };
-                }
-            });
-            // locate the element with the id corresponding to the menu's popupmenu attr
-            var box = $(parent).find(`#${menu.attr("popupmenu")}`);
-
-            // For menus with clickable link text, make clicking on the link go through instead
-            // of activating the popup menu
-            box.find("a").bind("click", e => {
-                e.stopPropagation(); // Stop bubbling so clicking on the link goes through
-                return true;
-            });
-
-            // attach the click events and menu box building to the box element
-            make_popupmenu(box, options);
-            box.addClass("popup");
-            menu.remove();
+                    }
+                };
+            }
         });
-}
+        // locate the element with the id corresponding to the menu's popupmenu attr
+        var box = $(`#${menu.attr("popupmenu")}`);
 
-// ============================================================================
-export default {
-    make_popupmenu: make_popupmenu,
-    make_popup_menus: make_popup_menus
-};
+        // For menus with clickable link text, make clicking on the link go through instead
+        // of activating the popup menu
+        box.find("a").bind("click", e => {
+            e.stopPropagation(); // Stop bubbling so clicking on the link goes through
+            return true;
+        });
+
+        // attach the click events and menu box building to the box element
+        make_popupmenu(box, options);
+        box.addClass("popup");
+        menu.remove();
+    });
+}

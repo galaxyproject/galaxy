@@ -1,3 +1,4 @@
+import _ from "underscore";
 import _l from "utils/localization";
 import pyre from "pyre-to-regexp";
 
@@ -860,8 +861,8 @@ const colHeadersFor = function(data, columns) {
     }
 };
 
-const applyRules = function(data, sources, columns, rules, colHeadersPerRule) {
-    var colHeadersPerRule = colHeadersPerRule || [];
+const applyRules = function(data, sources, columns, rules, headersPerRule = []) {
+    let colHeadersPerRule = Array.from(headersPerRule);
     let hasRuleError = false;
     for (var ruleIndex in rules) {
         const ruleHeaders = colHeadersFor(data, columns);
@@ -888,7 +889,7 @@ const applyRules = function(data, sources, columns, rules, colHeadersPerRule) {
             columns = res.columns || columns;
         }
     }
-    return { data, sources, columns };
+    return { data, sources, columns, colHeadersPerRule };
 };
 
 export default {

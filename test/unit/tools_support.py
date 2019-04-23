@@ -84,6 +84,11 @@ class UsesTools(object):
             self.__write_tool(extra_file_contents, path=os.path.join(self.test_directory, extra_file_path))
         return self.__setup_tool()
 
+    def _init_tool_for_path(self, tool_file):
+        self._init_app_for_tools()
+        self.tool_file = tool_file
+        return self.__setup_tool()
+
     def _init_app_for_tools(self):
         self.app.config.drmaa_external_runjob_script = ""
         self.app.config.tool_secret = "testsecret"
@@ -102,7 +107,8 @@ class UsesTools(object):
 
     def __write_tool(self, contents, path=None):
         path = path or self.tool_file
-        open(path, "w").write(contents)
+        with open(path, "w") as out:
+            out.write(contents)
 
 
 class MockContext(object):

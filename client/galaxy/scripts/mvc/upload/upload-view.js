@@ -1,5 +1,7 @@
-import _l from "utils/localization";
 /** Upload app contains the upload progress button and upload modal, compiles model data for API request **/
+import _l from "utils/localization";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import Modal from "mvc/ui/ui-modal";
 import Tabs from "mvc/ui/ui-tabs";
@@ -9,7 +11,6 @@ import UploadViewDefault from "mvc/upload/default/default-view";
 import UploadViewComposite from "mvc/upload/composite/composite-view";
 import UploadViewCollection from "mvc/upload/collection/collection-view";
 import UploadViewRuleBased from "mvc/upload/collection/rules-input-view";
-import { getGalaxyInstance } from "app";
 
 export default Backbone.View.extend({
     options: {

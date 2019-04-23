@@ -5,7 +5,8 @@ import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 import NodeView from "mvc/workflow/workflow-view-node";
 
-var StepParameterTypes = ["text", "integer", "float", "boolean", "color"];
+// unused
+//var StepParameterTypes = ["text", "integer", "float", "boolean", "color"];
 
 var Node = Backbone.Model.extend({
     initialize: function(app, attr) {
@@ -275,6 +276,9 @@ var Node = Backbone.Model.extend({
                 // the output already exists, but the output formats may have changed.
                 // Therefore we update the datatypes and destroy invalid connections.
                 node.output_terminals[output.name].datatypes = output.extensions;
+                if (node.type == 'parameter_input') {
+                    node.output_terminals[output.name].attributes.type = output.type;
+                }
                 node.output_terminals[output.name].destroyInvalidConnections();
             }
         });

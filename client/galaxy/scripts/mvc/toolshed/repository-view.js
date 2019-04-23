@@ -2,7 +2,7 @@ import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
-import jstree from "libs/jquery/jstree";
+import "libs/jquery/jstree";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import Utils from "utils/utils";
 import Modal from "mvc/ui/ui-modal";

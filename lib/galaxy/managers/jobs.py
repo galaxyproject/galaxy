@@ -153,7 +153,7 @@ class JobSearch(object):
                         # We need to make sure that the job we are looking for has been run with identical inputs.
                         # Here we deal with 3 requirements:
                         #  - the jobs' input dataset (=b) version is 0, meaning the job's input dataset is not yet ready
-                        #  - b's update_time is older than the job create time, meaning no changes occured
+                        #  - b's update_time is older than the job create time, meaning no changes occurred
                         #  - the job has a dataset_version recorded, and that versions' metadata matches c's metadata.
                         or_(
                             and_(or_(a.dataset_version.in_([0, b.version]),
@@ -177,13 +177,13 @@ class JobSearch(object):
                                              d.value == json.dumps(identifier)))
                     used_ids.append(a.dataset_id)
                 elif t == 'ldda':
-                        a = aliased(model.JobToInputLibraryDatasetAssociation)
-                        conditions.append(and_(
-                            model.Job.id == a.job_id,
-                            a.name == k,
-                            a.ldda_id == v
-                        ))
-                        used_ids.append(a.ldda_id)
+                    a = aliased(model.JobToInputLibraryDatasetAssociation)
+                    conditions.append(and_(
+                        model.Job.id == a.job_id,
+                        a.name == k,
+                        a.ldda_id == v
+                    ))
+                    used_ids.append(a.ldda_id)
                 elif t == 'hdca':
                     a = aliased(model.JobToInputDatasetCollectionAssociation)
                     b = aliased(model.HistoryDatasetCollectionAssociation)

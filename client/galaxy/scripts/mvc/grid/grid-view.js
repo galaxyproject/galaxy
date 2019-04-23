@@ -1,13 +1,16 @@
 import Backbone from "backbone";
 import _ from "underscore";
+import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import GridModel from "mvc/grid/grid-model";
 import Templates from "mvc/grid/grid-template";
 import PopupMenu from "mvc/ui/popup-menu";
 import LoadingIndicator from "ui/loading-indicator";
+import { init_refresh_on_change } from "onload/globalInits/init_refresh_on_change";
+import store from "../../store";
+import slugify from "slugify";
 
-/* global $ */
 // This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
 // not appended to the identifier of a nested array.
 $.ajaxSettings.traditional = true;
@@ -23,16 +26,22 @@ export default Backbone.View.extend({
         this.title = grid_config.title;
         this.active_tab = grid_config.active_tab;
         var self = this;
-        window.add_tag_to_grid_filter = (tag_name, tag_value) => {
-            // Put tag name and value together.
-            var tag = tag_name + (tag_value !== undefined && tag_value !== "" ? `:${tag_value}` : "");
-            var advanced_search = $("#advanced-search").is(":visible");
-            if (!advanced_search) {
-                $("#standard-search").slideToggle("fast");
-                $("#advanced-search").slideToggle("fast");
+
+        // Subscribe to changes in the store, currently just storing
+        // tag changes from the tagging components, but that will change
+        // when we rework the grid. This subscription ties this older grid
+        // code to the new vue components
+        store.watch(
+            state => state.gridSearch.searchTags,
+            newTags => {
+                let tagArray = Array.from(newTags);
+                self.grid.add_filter("tags", tagArray, false);
+                self.openAdvancedSearch();
+                self.render_filter_button("tags", tagArray);
+                self.go_page_one();
+                self.execute();
             }
-            self.add_filter_condition("tags", tag);
-        };
+        );
 
         if (grid_config.url_base && !grid_config.items) {
             LoadingIndicator.markViewAsLoading(this);
@@ -63,6 +72,14 @@ export default Backbone.View.extend({
         }
     },
 
+    openAdvancedSearch: function() {
+        var isOpen = $("#advanced-search").is(":visible");
+        if (!isOpen) {
+            $("#standard-search").slideToggle("fast");
+            $("#advanced-search").slideToggle("fast");
+        }
+    },
+
     // refresh frames
     handle_refresh: function(refresh_frames) {
         if (refresh_frames) {
@@ -90,11 +107,14 @@ export default Backbone.View.extend({
 
         // strip protocol and domain
         var url = this.grid.get("url_base");
-        url = url.replace(/^.*\/\/[^\/]+/, "");
+        url = url.replace(/^.*\/\/[^/]+/, "");
         this.grid.set("url_base", url);
 
         // append main template
         this.$el.html(Templates.grid(options));
+
+        // add a class identifier for styling purposes
+        this.$el.addClass(this.getRootClassName(grid_config));
 
         // update div contents
         this.$el.find("#grid-table-header").html(Templates.header(options));
@@ -118,9 +138,7 @@ export default Backbone.View.extend({
 
         // attach global event handler
         // TODO: redundant (the onload/standard page handlers do this) - but needed because these are constructed after page ready
-        if (window.init_refresh_on_change) {
-            window.init_refresh_on_change();
-        }
+        init_refresh_on_change();
     },
 
     // Initialize grid controls
@@ -309,6 +327,14 @@ export default Backbone.View.extend({
         // Add condition to grid.
         this.grid.add_filter(name, value, true);
 
+        this.render_filter_button(name, value);
+
+        // execute
+        this.go_page_one();
+        this.execute();
+    },
+
+    render_filter_button: function(name, value) {
         // Add button that displays filter and provides a button to delete it.
         var t = $(Templates.filter_element(name, value));
         var self = this;
@@ -323,16 +349,17 @@ export default Backbone.View.extend({
         // append to container
         var container = this.$el.find(`#${name}-filtering-criteria`);
         container.append(t);
-
-        // execute
-        this.go_page_one();
-        this.execute();
     },
 
     // Remove a condition to the grid filter; this adds the condition and refreshes the grid.
     remove_filter_condition: function(name, value) {
         // Remove filter condition.
         this.grid.remove_filter(name, value);
+
+        // update vuex if the one criteria we're currently tracking changes
+        if (name == "tags") {
+            store.dispatch("removeSearchTag", { text: value });
+        }
 
         // Execute
         this.go_page_one();
@@ -412,7 +439,7 @@ export default Backbone.View.extend({
             var id = $(this).attr("id");
 
             var // Id has form 'page-link-<page_num>
-            page_num = parseInt(id.split("-")[2], 10);
+                page_num = parseInt(id.split("-")[2], 10);
 
             var cur_page = self.grid.get("cur_page");
             var text;
@@ -664,5 +691,12 @@ export default Backbone.View.extend({
                 });
             }
         });
+    },
+
+    // Generates a class name at the root of the view that we can
+    // use for conditional styling in the various kinds of grids
+    // instead of acres of if/then statements in javascript
+    getRootClassName({ title = "grid" }) {
+        return slugify(title).toLowerCase();
     }
 });

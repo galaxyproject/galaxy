@@ -224,10 +224,10 @@ function _makeSection(output_id, label, options) {
     var node = options.node;
     var workflow = options.workflow;
 
-    for (var key in datatypes) {
+    for (let key in datatypes) {
         extensions.push({ 0: datatypes[key], 1: datatypes[key] });
     }
-    for (var key in node.input_terminals) {
+    for (let key in node.input_terminals) {
         name_label_map.push({ name: node.input_terminals[key].name, label: node.input_terminals[key].label });
     }
     var rename_help = _makeRenameHelp(name_label_map);

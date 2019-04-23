@@ -1,5 +1,9 @@
-// dependencies
-import mod_toastr from "libs/toastr";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { Toast } from "ui/toast";
+import { getGalaxyInstance } from "app";
+
 // galaxy library row view
 var LibraryRowView = Backbone.View.extend({
     events: {
@@ -28,6 +32,7 @@ var LibraryRowView = Backbone.View.extend({
 
     render: function(library) {
         if (typeof library === "undefined") {
+            let Galaxy = getGalaxyInstance();
             library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
             console.log(library);
         }
@@ -111,12 +116,13 @@ var LibraryRowView = Backbone.View.extend({
 
     /* User clicked the 'cancel' button so we render normal rowView */
     cancel_library_modification: function() {
-        // mod_toastr.info('Modifications canceled');
+        // Toast.info('Modifications canceled');
         this.edit_mode = false;
         this.repaint();
     },
 
     save_library_modification: function() {
+        let Galaxy = getGalaxyInstance();
         var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
         var is_changed = false;
 
@@ -126,7 +132,7 @@ var LibraryRowView = Backbone.View.extend({
                 library.set("name", new_name);
                 is_changed = true;
             } else {
-                mod_toastr.warning("Library name has to be at least 3 characters long.");
+                Toast.warning("Library name has to be at least 3 characters long.");
                 return;
             }
         }
@@ -150,24 +156,25 @@ var LibraryRowView = Backbone.View.extend({
                 success: function(library) {
                     row_view.edit_mode = false;
                     row_view.repaint(library);
-                    mod_toastr.success("Changes to library saved.");
+                    Toast.success("Changes to library saved.");
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        mod_toastr.error(response.responseJSON.err_msg);
+                        Toast.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occured while attempting to update the library.");
+                        Toast.error("An error occurred while attempting to update the library.");
                     }
                 }
             });
         } else {
             this.edit_mode = false;
             this.repaint(library);
-            mod_toastr.info("Nothing has changed.");
+            Toast.info("Nothing has changed.");
         }
     },
 
     delete_library: function() {
+        let Galaxy = getGalaxyInstance();
         var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
         var row_view = this;
         // mark the library deleted
@@ -184,19 +191,20 @@ var LibraryRowView = Backbone.View.extend({
                 } else if (Galaxy.libraries.preferences.get("with_deleted") === true) {
                     row_view.repaint(library);
                 }
-                mod_toastr.success("Library has been marked deleted.");
+                Toast.success("Library has been marked deleted.");
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(response.responseJSON.err_msg);
+                    Toast.error(response.responseJSON.err_msg);
                 } else {
-                    mod_toastr.error("An error occured during deleting the library.");
+                    Toast.error("An error occurred during deleting the library.");
                 }
             }
         });
     },
 
     undelete_library: function() {
+        let Galaxy = getGalaxyInstance();
         var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
         var row_view = this;
 
@@ -210,13 +218,13 @@ var LibraryRowView = Backbone.View.extend({
                 Galaxy.libraries.libraryListView.collection.add(library);
                 row_view.edit_mode = false;
                 row_view.repaint(library);
-                mod_toastr.success("Library has been undeleted.");
+                Toast.success("Library has been undeleted.");
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(response.responseJSON.err_msg);
+                    Toast.error(response.responseJSON.err_msg);
                 } else {
-                    mod_toastr.error("An error occured while undeleting the library.");
+                    Toast.error("An error occurred while undeleting the library.");
                 }
             }
         });

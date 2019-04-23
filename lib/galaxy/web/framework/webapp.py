@@ -517,10 +517,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                 url_for(controller='user', action='logout'),
                 url_for(controller='user', action='reset_password'),
                 url_for(controller='user', action='change_password'),
-                # required to log in w/ openid
-                url_for(controller='user', action='openid_auth'),
-                url_for(controller='user', action='openid_process'),
-                url_for(controller='user', action='openid_associate'),
                 # TODO: do any of these still need to bypass require login?
                 url_for(controller='user', action='api_keys'),
                 url_for(controller='user', action='create'),
@@ -624,12 +620,16 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             # self.log_event( "Automatically created account '%s'", user.email )
         return user
 
+    @property
+    def cookie_path(self):
+        return self.app.config.cookie_path or url_for('/')
+
     def __update_session_cookie(self, name='galaxysession'):
         """
         Update the session cookie to match the current session.
         """
         self.set_cookie(self.security.encode_guid(self.galaxy_session.session_key),
-                        name=name, path=self.app.config.cookie_path)
+                        name=name, path=self.cookie_path)
 
     def check_user_library_import_dir(self, user):
         if getattr(self.app.config, "user_library_import_dir_auto_creation", False):
@@ -903,18 +903,12 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             )
         return token
 
-    def check_csrf_token(self):
-        session_csrf_token = self.request.params.get("session_csrf_token", None)
-        problem = False
+    def check_csrf_token(self, payload):
+        session_csrf_token = payload.get("session_csrf_token")
         if not session_csrf_token:
-            log.warning("No session_csrf_token set, denying request.")
-            problem = True
+            return "No session token set, denying request."
         elif session_csrf_token != self.session_csrf_token:
-            log.warning("Wrong session token found, denying request.")
-            problem = True
-
-        if problem:
-            return self.show_warn_message("Failed to authorize action.")
+            return "Wrong session token found, denying request."
 
     def fill_template(self, filename, **kwargs):
         """

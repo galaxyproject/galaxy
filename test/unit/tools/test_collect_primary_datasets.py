@@ -6,8 +6,8 @@ from galaxy import (
     model,
     util
 )
-from galaxy.tools.parameters.output_collect import LegacyToolProvidedMetadata, NullToolProvidedMetadata
 from galaxy.tools.parser import output_collection_def
+from galaxy.tools.provided_metadata import LegacyToolProvidedMetadata, NullToolProvidedMetadata
 from .. import tools_support
 
 DEFAULT_TOOL_OUTPUT = "out1"
@@ -22,7 +22,6 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         self.app.object_store = object_store
         self._init_tool(tools_support.SIMPLE_TOOL_CONTENTS)
         self._setup_test_output()
-        self.app.config.collect_outputs_from = "job_working_directory"
 
         self.app.model.Dataset.object_store = object_store
 
@@ -210,14 +209,6 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         created_hda = self._collect_default_extra()
         assert created_hda.ext == "txt"
 
-    def test_new_file_path_collection(self):
-        self.app.config.collect_outputs_from = "new_file_path"
-        self.app.config.new_file_path = self.test_directory
-
-        self._setup_extra_file()
-        created_hda = self._collect_default_extra(job_working_directory="/tmp")
-        assert created_hda
-
     def test_job_param(self):
         self._setup_extra_file()
         assert len(self.job.output_datasets) == 1
@@ -338,9 +329,9 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         if not os.path.exists(meta_file):
             tool_provided_metadata = NullToolProvidedMetadata()
         else:
-            tool_provided_metadata = LegacyToolProvidedMetadata(None, meta_file)
+            tool_provided_metadata = LegacyToolProvidedMetadata(meta_file)
 
-        return self.tool.collect_primary_datasets(self.outputs, tool_provided_metadata, job_working_directory, "txt", input_dbkey="btau")
+        return self.tool.discover_outputs(self.outputs, {}, tool_provided_metadata, job_working_directory, job=self.job, input_ext="txt", input_dbkey="btau")
 
     def _replace_output_collectors(self, xml_str):
         # Rewrite tool as if it had been created with output containing
@@ -392,6 +383,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         self.app.model.context.add(job)
         self.job = job
         self.history = self._new_history(hdas=[self.hda])
+        self.job.history = self.history
         self.outputs = {DEFAULT_TOOL_OUTPUT: self.hda}
 
     def _new_history(self, hdas=[], flush=True):

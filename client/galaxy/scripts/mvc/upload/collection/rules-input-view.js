@@ -182,9 +182,9 @@ export default Backbone.View.extend({
         return `
             <div class="upload-view-default">
                 <div class="upload-top">
-                    <h6 class="upload-top-info">
+                    <div class="upload-top-info">
                         Tabular source data to extract collection files and metadata from
-                    </h6>
+                    </div>
                 </div>
                 <div class="upload-box" style="height: 335px;">
                     <span style="width: 25%; display: inline; height: 100%" class="float-left">

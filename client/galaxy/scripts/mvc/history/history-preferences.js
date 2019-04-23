@@ -1,6 +1,5 @@
+import _ from "underscore";
 import BASE_MVC from "mvc/base-mvc";
-
-var logNamespace = "history";
 
 // ============================================================================
 /** session storage for individual history preferences */

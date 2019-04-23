@@ -1,7 +1,7 @@
 <tool id="multi_output" name="Multi_Output" version="0.1.0">
   <command>
     echo "Hello" > $report;
-    echo "World Contents" > '${__new_file_path__}/primary_${report.id}_world_visible_?'
+    echo "World Contents" > 'primary_${report.id}_world_visible_?'
   </command>
   <inputs>
     <param name="input" type="integer" value="7" />

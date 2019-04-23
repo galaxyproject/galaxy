@@ -1,3 +1,6 @@
+import $ from "jquery";
+import Backbone from "backbone";
+
 import Utils from "utils/utils";
 
 var View = Backbone.View.extend({

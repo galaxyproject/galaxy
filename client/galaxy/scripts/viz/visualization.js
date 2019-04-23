@@ -8,6 +8,7 @@ import util_mod from "viz/trackster/util";
 import config_mod from "utils/config";
 import GridView from "mvc/grid/grid-view";
 import Tabs from "mvc/ui/ui-tabs";
+import { getGalaxyInstance } from "app";
 
 /**
  * Mixin for returning custom JSON representation from toJSON. Class attribute to_json_keys defines a set of attributes
@@ -72,6 +73,7 @@ var select_datasets = (filters, success_fn) => {
     });
 
     // modal
+    let Galaxy = getGalaxyInstance();
     Galaxy.modal.show({
         title: _l("Select datasets for new tracks"),
         body: tabs.$el,
@@ -312,11 +314,11 @@ var GenomeDataManager = Cache.extend({
         var ready_deferred = $.Deferred();
 
         var // If requesting raw data, query dataset state; if requesting (converted) data,
-        // need to query converted datasets state.
-        query_type =
-            this.get("data_type") === "raw_data"
-                ? "state"
-                : this.get("data_type") === "data"
+            // need to query converted datasets state.
+            query_type =
+                this.get("data_type") === "raw_data"
+                    ? "state"
+                    : this.get("data_type") === "data"
                     ? "converted_datasets_state"
                     : "error";
 
@@ -607,22 +609,22 @@ var GenomeDataManager = Cache.extend({
         var all_data_available = true;
 
         var //  Map chromosome info into genome data.
-        gw_data = _.map(genome.get("chroms_info").chrom_info, chrom_info => {
-            var chrom_data = self.get_elt(
-                new GenomeRegion({
-                    chrom: chrom_info.chrom,
-                    start: 0,
-                    end: chrom_info.len
-                })
-            );
+            gw_data = _.map(genome.get("chroms_info").chrom_info, chrom_info => {
+                var chrom_data = self.get_elt(
+                    new GenomeRegion({
+                        chrom: chrom_info.chrom,
+                        start: 0,
+                        end: chrom_info.len
+                    })
+                );
 
-            // Set flag if data is not available.
-            if (!chrom_data) {
-                all_data_available = false;
-            }
+                // Set flag if data is not available.
+                if (!chrom_data) {
+                    all_data_available = false;
+                }
 
-            return chrom_data;
-        });
+                return chrom_data;
+            });
 
         // -- If all data is available, return it. --
         if (all_data_available) {

@@ -40,12 +40,22 @@ from galaxy.model.base import ModelMapping
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString, UUIDType
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.orm.now import now
-from galaxy.security import GalaxyRBACAgent
+from galaxy.model.security import GalaxyRBACAgent
 
 log = logging.getLogger(__name__)
 
 metadata = MetaData()
 
+
+model.WorkerProcess.table = Table(
+    'worker_process',
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("server_name", String(255), index=True),
+    Column("hostname", String(255)),
+    Column("update_time", DateTime, default=now, onupdate=now),
+    UniqueConstraint('server_name', 'hostname'),
+)
 
 model.User.table = Table(
     "galaxy_user", metadata,
@@ -81,16 +91,6 @@ model.UserAddress.table = Table(
     Column("phone", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False))
-
-model.UserOpenID.table = Table(
-    "galaxy_user_openid", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, index=True, default=now, onupdate=now),
-    Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("openid", TEXT, index=True, unique=True),
-    Column("provider", TrimmedString(255)))
 
 model.PSAAssociation.table = Table(
     "psa_association", metadata,
@@ -133,6 +133,21 @@ model.UserAuthnzToken.table = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
+model.CustosAuthnzToken.table = Table(
+    "custos_authnz_token", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('user_id', Integer, ForeignKey("galaxy_user.id")),
+    Column('external_user_id', String(64)),
+    Column('provider', String(255)),
+    Column('access_token', Text),
+    Column('id_token', Text),
+    Column('refresh_token', Text),
+    Column("expiration_time", DateTime),
+    Column("refresh_expiration_time", DateTime),
+    UniqueConstraint("user_id", "external_user_id", "provider"),
+    UniqueConstraint("external_user_id", "provider"),
+)
+
 model.CloudAuthz.table = Table(
     "cloudauthz", metadata,
     Column('id', Integer, primary_key=True),
@@ -143,13 +158,32 @@ model.CloudAuthz.table = Table(
     Column('tokens', JSONType),
     Column('last_update', DateTime),
     Column('last_activity', DateTime),
-    Column('description', TEXT))
+    Column('description', TEXT),
+    Column('create_time', DateTime, default=now))
 
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,
     Column("token", String(32), primary_key=True, unique=True, index=True),
     Column("expiration_time", DateTime),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
+
+
+model.DynamicTool.table = Table(
+    "dynamic_tool", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("uuid", UUIDType()),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, index=True, default=now, onupdate=now),
+    Column("tool_id", Unicode(255)),
+    Column("tool_version", Unicode(255)),
+    Column("tool_format", Unicode(255)),
+    Column("tool_path", Unicode(255)),
+    Column("tool_directory", Unicode(255)),
+    Column("hidden", Boolean, default=True),
+    Column("active", Boolean, default=True),
+    Column("value", JSONType()),
+)
+
 
 model.History.table = Table(
     "history", metadata,
@@ -232,6 +266,32 @@ model.Dataset.table = Table(
     Column('file_size', Numeric(15, 0)),
     Column('total_size', Numeric(15, 0)),
     Column('uuid', UUIDType()))
+
+model.DatasetSource.table = Table(
+    "dataset_source", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
+    Column("source_uri", TEXT),
+    Column("extra_files_path", TEXT),
+    Column("transform", JSONType)
+)
+
+model.DatasetHash.table = Table(
+    "dataset_hash", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
+    Column("hash_function", TEXT),
+    Column("hash_value", TEXT),
+    Column("extra_files_path", TEXT),
+)
+
+model.DatasetSourceHash.table = Table(
+    "dataset_source_hash", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("dataset_source_id", Integer, ForeignKey("dataset_source.id"), index=True),
+    Column("hash_function", TEXT),
+    Column("hash_value", TEXT)
+)
 
 # hda read access permission given by a user to a specific site (gen. for external display applications)
 model.HistoryDatasetAssociationDisplayAtAuthorization.table = Table(
@@ -532,15 +592,19 @@ model.Job.table = Table(
     Column("library_folder_id", Integer, ForeignKey("library_folder.id"), index=True),
     Column("tool_id", String(255)),
     Column("tool_version", TEXT, default="1.0.0"),
+    Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), index=True, nullable=True),
     Column("state", String(64), index=True),
     Column("info", TrimmedString(255)),
     Column("copied_from_job_id", Integer, nullable=True),
     Column("command_line", TEXT),
     Column("dependencies", JSONType, nullable=True),
+    Column("job_messages", JSONType, nullable=True),
     Column("param_filename", String(1024)),
     Column("runner_name", String(255)),
-    Column("stdout", TEXT),
-    Column("stderr", TEXT),
+    Column("job_stdout", TEXT),
+    Column("job_stderr", TEXT),
+    Column("tool_stdout", TEXT),
+    Column("tool_stderr", TEXT),
     Column("exit_code", Integer, nullable=True),
     Column("traceback", TEXT),
     Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True, nullable=True),
@@ -666,9 +730,7 @@ model.JobExportHistoryArchive.table = Table(
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
     Column("compressed", Boolean, index=True, default=False),
-    Column("history_attrs_filename", TEXT),
-    Column("datasets_attrs_filename", TEXT),
-    Column("jobs_attrs_filename", TEXT))
+    Column("history_attrs_filename", TEXT))
 
 model.JobImportHistoryArchive.table = Table(
     "job_import_history_archive", metadata,
@@ -733,9 +795,12 @@ model.Task.table = Table(
     Column("command_line", TEXT),
     Column("param_filename", String(1024)),
     Column("runner_name", String(255)),
-    Column("stdout", TEXT),
-    Column("stderr", TEXT),
+    Column("job_stdout", TEXT),  # job_stdout makes sense here because it is short for job script standard out.
+    Column("job_stderr", TEXT),
+    Column("tool_stdout", TEXT),
+    Column("tool_stderr", TEXT),
     Column("exit_code", Integer, nullable=True),
+    Column("job_messages", JSONType, nullable=True),
     Column("info", TrimmedString(255)),
     Column("traceback", TEXT),
     Column("job_id", Integer, ForeignKey("job.id"), index=True, nullable=False),
@@ -897,6 +962,7 @@ model.WorkflowStep.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("workflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=False),
     Column("subworkflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=True),
+    Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), index=True, nullable=True),
     Column("type", String(64)),
     Column("tool_id", TEXT),
     Column("tool_version", TEXT),
@@ -1074,6 +1140,7 @@ model.MetadataFile.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, index=True, default=now, onupdate=now),
     Column("object_store_id", TrimmedString(255), index=True),
+    Column("uuid", UUIDType(), index=True),
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False))
 
@@ -1443,12 +1510,73 @@ model.APIKeys.table = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("key", TrimmedString(32), index=True, unique=True))
 
+CleanupEvent_table = Table("cleanup_event", metadata,
+                           Column("id", Integer, primary_key=True),
+                           Column("create_time", DateTime, default=now),
+                           Column("message", TrimmedString(1024)))
+
+CleanupEventDatasetAssociation_table = Table("cleanup_event_dataset_association", metadata,
+                                             Column("id", Integer, primary_key=True),
+                                             Column("create_time", DateTime, default=now),
+                                             Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                             Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True))
+
+CleanupEventMetadataFileAssociation_table = Table("cleanup_event_metadata_file_association", metadata,
+                                                  Column("id", Integer, primary_key=True),
+                                                  Column("create_time", DateTime, default=now),
+                                                  Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                  Column("metadata_file_id", Integer, ForeignKey("metadata_file.id"), index=True))
+
+CleanupEventHistoryAssociation_table = Table("cleanup_event_history_association", metadata,
+                                             Column("id", Integer, primary_key=True),
+                                             Column("create_time", DateTime, default=now),
+                                             Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                             Column("history_id", Integer, ForeignKey("history.id"), index=True))
+
+CleanupEventHistoryDatasetAssociationAssociation_table = Table("cleanup_event_hda_association", metadata,
+                                                               Column("id", Integer, primary_key=True),
+                                                               Column("create_time", DateTime, default=now),
+                                                               Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                               Column("hda_id", Integer, ForeignKey("history_dataset_association.id"), index=True))
+
+CleanupEventLibraryAssociation_table = Table("cleanup_event_library_association", metadata,
+                                             Column("id", Integer, primary_key=True),
+                                             Column("create_time", DateTime, default=now),
+                                             Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                             Column("library_id", Integer, ForeignKey("library.id"), index=True))
+
+CleanupEventLibraryFolderAssociation_table = Table("cleanup_event_library_folder_association", metadata,
+                                                   Column("id", Integer, primary_key=True),
+                                                   Column("create_time", DateTime, default=now),
+                                                   Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                   Column("library_folder_id", Integer, ForeignKey("library_folder.id"), index=True))
+
+CleanupEventLibraryDatasetAssociation_table = Table("cleanup_event_library_dataset_association", metadata,
+                                                    Column("id", Integer, primary_key=True),
+                                                    Column("create_time", DateTime, default=now),
+                                                    Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                    Column("library_dataset_id", Integer, ForeignKey("library_dataset.id"), index=True))
+
+CleanupEventLibraryDatasetDatasetAssociationAssociation_table = Table("cleanup_event_ldda_association", metadata,
+                                                                      Column("id", Integer, primary_key=True),
+                                                                      Column("create_time", DateTime, default=now),
+                                                                      Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                                      Column("ldda_id", Integer, ForeignKey("library_dataset_dataset_association.id"), index=True))
+
+CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table = Table("cleanup_event_icda_association", metadata,
+                                                                           Column("id", Integer, primary_key=True),
+                                                                           Column("create_time", DateTime, default=now),
+                                                                           Column("cleanup_event_id", Integer, ForeignKey("cleanup_event.id"), index=True, nullable=True),
+                                                                           Column("icda_id", Integer, ForeignKey("implicitly_converted_dataset_association.id"), index=True))
+
 
 # With the tables defined we can define the mappers and setup the
 # relationships between the model objects.
 def simple_mapping(model, **kwds):
     mapper(model, model.table, properties=kwds)
 
+
+simple_mapping(model.WorkerProcess)
 
 mapper(model.FormValues, model.FormValues.table, properties=dict(
     form_definition=relation(model.FormDefinition,
@@ -1477,17 +1605,6 @@ mapper(model.UserAddress, model.UserAddress.table, properties=dict(
         order_by=desc(model.UserAddress.table.c.update_time)),
 ))
 
-mapper(model.UserOpenID, model.UserOpenID.table, properties=dict(
-    session=relation(model.GalaxySession,
-        primaryjoin=(model.UserOpenID.table.c.session_id == model.GalaxySession.table.c.id),
-        backref='openids',
-        order_by=desc(model.UserOpenID.table.c.update_time)),
-    user=relation(model.User,
-        primaryjoin=(model.UserOpenID.table.c.user_id == model.User.table.c.id),
-        backref='openids',
-        order_by=desc(model.UserOpenID.table.c.update_time))
-))
-
 mapper(model.PSAAssociation, model.PSAAssociation.table, properties=None)
 
 mapper(model.PSACode, model.PSACode.table, properties=None)
@@ -1502,6 +1619,12 @@ mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
                   backref='social_auth')
 ))
 
+mapper(model.CustosAuthnzToken, model.CustosAuthnzToken.table, properties=dict(
+    user=relation(model.User,
+                  primaryjoin=(model.CustosAuthnzToken.table.c.user_id == model.User.table.c.id),
+                  backref='custos_auth')
+))
+
 mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
     user=relation(model.User,
                   primaryjoin=(model.CloudAuthz.table.c.user_id == model.User.table.c.id),
@@ -1512,6 +1635,8 @@ mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
 ))
 
 mapper(model.ValidationError, model.ValidationError.table)
+
+simple_mapping(model.DynamicTool)
 
 simple_mapping(model.HistoryDatasetAssociation,
     dataset=relation(model.Dataset,
@@ -1535,9 +1660,6 @@ simple_mapping(model.HistoryDatasetAssociation,
                      model.LibraryDatasetDatasetAssociation.table.c.id)),
     implicitly_converted_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id ==
-                     model.HistoryDatasetAssociation.table.c.id)),
-    implicitly_converted_parent_datasets=relation(model.ImplicitlyConvertedDatasetAssociation,
-        primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_id ==
                      model.HistoryDatasetAssociation.table.c.id)),
     tags=relation(model.HistoryDatasetAssociationTagAssociation,
         order_by=model.HistoryDatasetAssociationTagAssociation.table.c.id,
@@ -1582,6 +1704,18 @@ simple_mapping(model.Dataset,
         backref='datasets')
 )
 
+mapper(model.DatasetHash, model.DatasetHash.table, properties=dict(
+    dataset=relation(model.Dataset, backref='hashes')
+))
+
+mapper(model.DatasetSource, model.DatasetSource.table, properties=dict(
+    dataset=relation(model.Dataset, backref='sources')
+))
+
+mapper(model.DatasetSourceHash, model.DatasetSourceHash.table, properties=dict(
+    source=relation(model.DatasetSource, backref='hashes')
+))
+
 mapper(model.HistoryDatasetAssociationHistory, model.HistoryDatasetAssociationHistory.table)
 
 mapper(model.HistoryDatasetAssociationDisplayAtAuthorization, model.HistoryDatasetAssociationDisplayAtAuthorization.table, properties=dict(
@@ -1607,10 +1741,12 @@ mapper(model.ImplicitlyConvertedDatasetAssociation, model.ImplicitlyConvertedDat
                      model.LibraryDatasetDatasetAssociation.table.c.id)),
     dataset_ldda=relation(model.LibraryDatasetDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_id ==
-                     model.LibraryDatasetDatasetAssociation.table.c.id)),
+                     model.LibraryDatasetDatasetAssociation.table.c.id),
+        backref="implicitly_converted_parent_datasets"),
     dataset=relation(model.HistoryDatasetAssociation,
         primaryjoin=(model.ImplicitlyConvertedDatasetAssociation.table.c.hda_id ==
-                     model.HistoryDatasetAssociation.table.c.id))
+                     model.HistoryDatasetAssociation.table.c.id),
+        backref="implicitly_converted_parent_datasets")
 ))
 
 mapper(model.History, model.History.table, properties=dict(
@@ -2084,7 +2220,7 @@ mapper(model.Job, model.Job.table, properties=dict(
     # user=relation( model.User.mapper ),
     user=relation(model.User),
     galaxy_session=relation(model.GalaxySession),
-    history=relation(model.History),
+    history=relation(model.History, backref="jobs"),
     library_folder=relation(model.LibraryFolder, lazy=True),
     parameters=relation(model.JobParameter, lazy=True),
     input_datasets=relation(model.JobToInputDatasetAssociation),
@@ -2225,8 +2361,11 @@ mapper(model.Workflow, model.Workflow.table, properties=dict(
 
 mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
     subworkflow=relation(model.Workflow,
-        primaryjoin=((model.Workflow.table.c.id == model.WorkflowStep.table.c.subworkflow_id)),
+        primaryjoin=(model.Workflow.table.c.id == model.WorkflowStep.table.c.subworkflow_id),
         backref="parent_workflow_steps"),
+    dynamic_tool=relation(model.DynamicTool,
+        primaryjoin=(model.DynamicTool.table.c.id == model.WorkflowStep.table.c.dynamic_tool_id),
+        backref="workflow_steps"),
     tags=relation(model.WorkflowStepTagAssociation,
         order_by=model.WorkflowStepTagAssociation.table.c.id,
         backref="workflow_steps"),

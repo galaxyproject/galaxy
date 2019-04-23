@@ -1,10 +1,10 @@
-/* global $, jQuery */
+import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import mod_toastr from "libs/toastr";
+import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import mod_utils from "utils/utils";
 import mod_select from "mvc/ui/ui-select";
@@ -29,7 +29,8 @@ var LibraryDatasetView = Backbone.View.extend({
         "click .make-private": "makeDatasetPrivate",
         "click .remove-restrictions": "removeDatasetRestrictions",
         "click .toolbtn_save_permissions": "savePermissions",
-        "click .toolbtn_save_modifications": "saveModifications"
+        "click .toolbtn_save_modifications": "saveModifications",
+        "click .toolbtn_detect_datatype": "detectDatatype"
     },
 
     // genome select
@@ -84,13 +85,13 @@ var LibraryDatasetView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
+                    Toast.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
                     });
                 } else {
-                    mod_toastr.error("An error occurred. Click this to go back.", "", {
+                    Toast.error("An error occurred. Click this to go back.", "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
@@ -114,7 +115,7 @@ var LibraryDatasetView = Backbone.View.extend({
         var self = this;
         if (!this.options.ldda_id) {
             this.render();
-            mod_toastr.error("Library dataset version requested but no id provided.");
+            Toast.error("Library dataset version requested but no id provided.");
         } else {
             this.ldda = new mod_library_model.Ldda({
                 id: this.options.ldda_id
@@ -126,9 +127,9 @@ var LibraryDatasetView = Backbone.View.extend({
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        mod_toastr.error(response.responseJSON.err_msg);
+                        Toast.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occurred.");
+                        Toast.error("An error occurred.");
                     }
                 }
             });
@@ -177,7 +178,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 .submit()
                 .remove();
 
-            mod_toastr.info("Your download will begin soon.");
+            Toast.info("Your download will begin soon.");
         }
     },
 
@@ -208,7 +209,7 @@ var LibraryDatasetView = Backbone.View.extend({
         this.histories.fetch({
             success: function(histories) {
                 if (histories.length === 0) {
-                    mod_toastr.warning("You have to create history first. Click this to do so.", "", {
+                    Toast.warning("You have to create history first. Click this to do so.", "", {
                         onclick: function() {
                             window.location = getAppRoot();
                         }
@@ -219,9 +220,9 @@ var LibraryDatasetView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(response.responseJSON.err_msg);
+                    Toast.error(response.responseJSON.err_msg);
                 } else {
-                    mod_toastr.error("An error occurred.");
+                    Toast.error("An error occurred.");
                 }
             }
         });
@@ -239,7 +240,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     self.processImportToHistory(new_history.id);
                 })
                 .fail((xhr, status, error) => {
-                    mod_toastr.error("An error occurred.");
+                    Toast.error("An error occurred.");
                 })
                 .always(() => {
                     self.modal.enableButton("Import");
@@ -259,14 +260,14 @@ var LibraryDatasetView = Backbone.View.extend({
         historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
         // set the used history as current so user will see the last one
         // that he imported into in the history panel on the 'analysis' page
-        jQuery.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
+        $.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
         // save the dataset into selected history
         historyItem.save(
             { content: this.id, source: "library" },
             {
                 success: function() {
                     Galaxy.modal.hide();
-                    mod_toastr.success("Dataset imported. Click this to start analyzing it.", "", {
+                    Toast.success("Dataset imported. Click this to start analyzing it.", "", {
                         onclick: function() {
                             window.location = getAppRoot();
                         }
@@ -274,9 +275,9 @@ var LibraryDatasetView = Backbone.View.extend({
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        mod_toastr.error(`Dataset not imported. ${response.responseJSON.err_msg}`);
+                        Toast.error(`Dataset not imported. ${response.responseJSON.err_msg}`);
                     } else {
-                        mod_toastr.error("An error occured. Dataset not imported. Please try again.");
+                        Toast.error("An error occurred. Dataset not imported. Please try again.");
                     }
                 }
             }
@@ -310,7 +311,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 });
             })
             .fail(() => {
-                mod_toastr.error("An error occurred while attempting to fetch dataset permissions.");
+                Toast.error("An error occurred while attempting to fetch dataset permissions.");
             });
         $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         $("#center").css("overflow", "auto");
@@ -398,6 +399,12 @@ var LibraryDatasetView = Backbone.View.extend({
         return select_options;
     },
 
+    detectDatatype: function(options) {
+        let ld = this.model;
+        ld.set("file_ext", "auto");
+        this._submitModification(ld);
+    },
+
     /**
      * Save the changes made to the library dataset.
      */
@@ -410,7 +417,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 ld.set("name", new_name);
                 is_changed = true;
             } else {
-                mod_toastr.warning("Library dataset name has to be at least 1 character long.");
+                Toast.warning("Library dataset name has to be at least 1 character long.");
                 return;
             }
         }
@@ -434,26 +441,29 @@ var LibraryDatasetView = Backbone.View.extend({
             ld.set("file_ext", new_ext);
             is_changed = true;
         }
-        var dataset_view = this;
         if (is_changed) {
-            ld.save(null, {
-                patch: true,
-                success: function(ld) {
-                    dataset_view.render();
-                    mod_toastr.success("Changes to library dataset saved.");
-                },
-                error: function(model, response) {
-                    if (typeof response.responseJSON !== "undefined") {
-                        mod_toastr.error(response.responseJSON.err_msg);
-                    } else {
-                        mod_toastr.error("An error occured while attempting to update the library dataset.");
-                    }
-                }
-            });
+            this._submitModification(ld);
         } else {
-            dataset_view.render();
-            mod_toastr.info("Nothing has changed.");
+            this.render();
+            Toast.info("Nothing has changed.");
         }
+    },
+
+    _submitModification(library_dataset) {
+        library_dataset.save(null, {
+            patch: true,
+            success: library_dataset => {
+                this.render();
+                Toast.success("Changes to library dataset saved.");
+            },
+            error: function(model, response) {
+                if (typeof response.responseJSON !== "undefined") {
+                    Toast.error(response.responseJSON.err_msg);
+                } else {
+                    Toast.error("An error occurred while attempting to update the library dataset.");
+                }
+            }
+        });
     },
 
     copyToClipboard: function(e) {
@@ -473,10 +483,10 @@ var LibraryDatasetView = Backbone.View.extend({
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
-                mod_toastr.success("The dataset is now private to you.");
+                Toast.success("The dataset is now private to you.");
             })
             .fail(() => {
-                mod_toastr.error("An error occurred while attempting to make dataset private.");
+                Toast.error("An error occurred while attempting to make dataset private.");
             });
     },
 
@@ -488,10 +498,10 @@ var LibraryDatasetView = Backbone.View.extend({
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
-                mod_toastr.success("Access to this dataset is now unrestricted.");
+                Toast.success("Access to this dataset is now unrestricted.");
             })
             .fail(() => {
-                mod_toastr.error("An error occurred while attempting to make dataset unrestricted.");
+                Toast.error("An error occurred while attempting to make dataset unrestricted.");
             });
     },
 
@@ -523,10 +533,10 @@ var LibraryDatasetView = Backbone.View.extend({
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
-                mod_toastr.success("Permissions saved.");
+                Toast.success("Permissions saved.");
             })
             .fail(() => {
-                mod_toastr.error("An error occurred while attempting to set dataset permissions.");
+                Toast.error("An error occurred while attempting to set dataset permissions.");
             });
     },
 
@@ -617,6 +627,10 @@ var LibraryDatasetView = Backbone.View.extend({
                 '<button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-secondary toolbtn_modify_dataset toolbar-item mr-1" type="button">',
                 '<span class="fa fa-pencil"></span>',
                 "&nbsp;Modify",
+                "</button>",
+                '<button data-toggle="tooltip" data-placement="top" title="Attempt to detect the format of dataset" class="btn btn-secondary toolbtn_detect_datatype toolbar-item mr-1" type="button">',
+                '<span class="fa fa-undo"></span>',
+                "&nbsp;Auto-detect datatype",
                 "</button>",
                 "<% } %>",
                 '<% if (item.get("can_user_manage")) { %>',

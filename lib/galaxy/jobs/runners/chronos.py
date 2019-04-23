@@ -142,7 +142,6 @@ class ChronosJobRunner(AsynchronousJobRunner):
                                    job_id=job_name,
                                    job_destination=job_destination)
         self.monitor_queue.put(ajs)
-        return None
 
     @handle_exception_call
     def stop_job(self, job_wrapper):

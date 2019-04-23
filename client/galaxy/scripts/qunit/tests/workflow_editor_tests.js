@@ -11,8 +11,8 @@ import TerminalsView from "mvc/workflow/workflow-view-terminals";
 import Connector from "mvc/workflow/workflow-connector";
 import { getAppRoot } from "onload/loadConfig";
 
-window.show_modal = function(a, b, c) {};
-window.hide_modal = function() {};
+// window.show_modal = function(a, b, c) {};
+// window.hide_modal = function() {};
 
 // create body and app
 var create_app = function() {
@@ -72,7 +72,7 @@ QUnit.module("Input terminal model test", {
                 return Terminals.NULL_COLLECTION_TYPE_DESCRIPTION;
             };
         }
-        return this.input_terminal.canAccept(other);
+        return this.input_terminal.canAccept(other).canAccept;
     },
     pja_change_datatype_node: function(output_name, newtype) {
         var pja = {
@@ -319,7 +319,7 @@ QUnit.test("Collection output can connect to same collection input type", functi
     });
     outputTerminal.node = {};
     assert.ok(
-        inputTerminal.canAccept(outputTerminal),
+        inputTerminal.canAccept(outputTerminal).canAccept,
         "Input terminal " + inputTerminal + " can not accept " + outputTerminal
     );
 });
@@ -332,7 +332,7 @@ QUnit.test("Collection output cannot connect to different collection input type"
         collection_type: "paired"
     });
     outputTerminal.node = {};
-    assert.ok(!inputTerminal.canAccept(outputTerminal));
+    assert.ok(!inputTerminal.canAccept(outputTerminal).canAccept);
 });
 
 QUnit.module("Node unit test", {
@@ -545,6 +545,8 @@ QUnit.module("Node view ", {
             input_terminals: {},
             output_terminals: {},
             markChanged: function() {},
+            hasConnectedOutputTerminals: function() {},
+            connectedMappedInputTerminals: function() {},
             terminalMapping: { disableMapOver: function() {} }
         });
     },
@@ -987,7 +989,7 @@ QUnit.module("terminal mapping logic", {
             outputTerminal = output;
         }
 
-        assert.ok(!inputTerminal.attachable(outputTerminal));
+        assert.ok(!inputTerminal.attachable(outputTerminal).canAccept);
     },
     verifyAttachable: function(assert, inputTerminal, output) {
         var outputTerminal;
@@ -998,12 +1000,15 @@ QUnit.module("terminal mapping logic", {
             outputTerminal = output;
         }
 
-        assert.ok(inputTerminal.attachable(outputTerminal), "Cannot attach " + outputTerminal + " to " + inputTerminal);
+        assert.ok(
+            inputTerminal.attachable(outputTerminal).canAccept,
+            "Cannot attach " + outputTerminal + " to " + inputTerminal
+        );
 
         // Go further... make sure datatypes are being enforced
         inputTerminal.datatypes = ["bam"];
         outputTerminal.datatypes = ["txt"];
-        assert.ok(!inputTerminal.attachable(outputTerminal));
+        assert.ok(!inputTerminal.attachable(outputTerminal).canAccept);
     },
     verifyMappedOver: function(assert, terminal) {
         assert.ok(terminal.terminalMapping.mapOver.isCollection);
@@ -1174,7 +1179,14 @@ QUnit.test("multiple input attachable by collections", function(assert) {
     this.verifyAttachable(assert, this.inputTerminal1, "list");
 });
 
-QUnit.test("unconnected multiple inputs cannot be connected to rank > 1 collections (yet...)", function(assert) {
+QUnit.test("multiple input attachable by nested collections", function(assert) {
+    this.inputTerminal1 = this.newInputTerminal(null, { multiple: true });
+    var connectedInput1 = this.addConnectedInput(this.inputTerminal1);
+    this.addConnectedOutput(connectedInput1);
+    this.verifyAttachable(assert, this.inputTerminal1, "list:list");
+});
+
+QUnit.test("Multiple inputs cannot be connected to pairs", function(assert) {
     this.inputTerminal1 = this.newInputTerminal(null, { multiple: true });
     this.verifyNotAttachable(assert, this.inputTerminal1, "list:paired");
 });

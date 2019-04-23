@@ -1,7 +1,8 @@
+import $ from "jquery";
 import _ from "libs/underscore";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
-import mod_toastr from "libs/toastr";
+import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_libraryrow_view from "mvc/library/library-libraryrow-view";
 
@@ -36,9 +37,9 @@ var LibraryListView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(response.responseJSON.err_msg);
+                    Toast.error(response.responseJSON.err_msg);
                 } else {
-                    mod_toastr.error("An error occurred.");
+                    Toast.error("An error occurred.");
                 }
             }
         });
@@ -146,9 +147,9 @@ var LibraryListView = Backbone.View.extend({
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        mod_toastr.error(response.responseJSON.err_msg);
+                        Toast.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occurred.");
+                        Toast.error("An error occurred.");
                     }
                 }
             });
@@ -239,8 +240,7 @@ var LibraryListView = Backbone.View.extend({
                 "<% } else{ %>",
                 "<div>",
                 "There are no libraries visible to you here. If you expected some to show up please consult the",
-                ' <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">library security wikipage</a>',
-                ' or visit the <a href="https://biostar.usegalaxy.org/" target="_blank">Galaxy support site</a>.',
+                ' <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">library security wikipage</a>.',
                 "</div>",
                 "<% }%>",
                 "<% } else{ %>",

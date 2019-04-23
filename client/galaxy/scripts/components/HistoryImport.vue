@@ -3,12 +3,8 @@
         <b-card title="Import a history from an archive">
             <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
             <p>Please provide a Galaxy history export URL or a history file.</p>
-            <b-form-group label="Archived History URL">
-                <b-form-input type="url" v-model="sourceURL"/>
-            </b-form-group>
-            <b-form-group label="Archived History File">
-                <b-form-file v-model="sourceFile"/>
-            </b-form-group>
+            <b-form-group label="Archived History URL"> <b-form-input type="url" v-model="sourceURL" /> </b-form-group>
+            <b-form-group label="Archived History File"> <b-form-file v-model="sourceFile" /> </b-form-group>
             <b-button type="submit">Import history</b-button>
         </b-card>
     </b-form>

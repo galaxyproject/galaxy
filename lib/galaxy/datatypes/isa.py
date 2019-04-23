@@ -271,7 +271,7 @@ class _Isa(data.Data):
         if investigation is None:
             html = """<html><header><title>Error while reading ISA archive.</title></header>
                    <body>
-                        <h1>An error occured while reading content of ISA archive.</h1>
+                        <h1>An error occurred while reading content of ISA archive.</h1>
                         <p>If you have tried to load your archive with the uploader by selecting isa-tab as composite data type, then try to load it again with isa-json instead. Conversely, if you have tried to load your archive with the uploader by selecting isa-json as composite data type, then try isa-tab instead.</p>
                         <p>You may also try to look into your zip file in order to find out if this is a proper ISA archive. If you see a file i_Investigation.txt inside, then it is an ISA-Tab archive. If you see a file with extension .json inside, then it is an ISA-JSON archive. If you see nothing like that, then either your ISA archive is corrupted, or it is not an ISA archive.</p>
                    </body></html>"""

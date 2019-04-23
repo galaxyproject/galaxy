@@ -104,5 +104,6 @@ class AnnotatableFilterMixin(object):
 
     def _add_parsers(self):
         self.fn_filter_parsers.update({
-            'annotation'    : {'op': {'has': self.filter_annotation_contains, }},
+            'annotation'    : {'op': {'has': self.filter_annotation_contains,
+                                      'contains': self.filter_annotation_contains}},
         })

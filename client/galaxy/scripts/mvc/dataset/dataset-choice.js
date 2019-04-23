@@ -1,3 +1,6 @@
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import DATASET from "mvc/dataset/dataset-model";
 import DATASET_LIST from "mvc/dataset/dataset-list";
 import MODAL from "mvc/ui/ui-modal";
@@ -99,7 +102,7 @@ var DatasetChoiceModal = (datasetJSON, options) => {
     var modal;
     var list;
     var buttons;
-    var promise = jQuery.Deferred();
+    var promise = $.Deferred();
     var filterFn = options.filter || _filterDatasetJSON;
 
     // filter the given datasets and if none left return a rejected promise for use with fail()

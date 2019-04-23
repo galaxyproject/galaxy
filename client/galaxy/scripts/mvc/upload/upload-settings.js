@@ -1,5 +1,7 @@
 /** This renders the content of the settings popup, allowing users to specify flags i.e. for space-to-tab conversion **/
-import Utils from "utils/utils";
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 export default Backbone.View.extend({
     options: {
         class_check: "fa-check-square-o",
@@ -17,7 +19,6 @@ export default Backbone.View.extend({
     },
 
     initialize: function(options) {
-        var self = this;
         this.model = options.model;
         this.setElement($("<div/>").addClass("upload-settings"));
         this.$el.append($("<div/>").addClass("upload-settings-cover"));

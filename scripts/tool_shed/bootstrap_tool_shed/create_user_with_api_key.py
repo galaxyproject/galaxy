@@ -13,7 +13,7 @@ sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir,
 sys.path.insert(1, os.path.join(os.path.dirname(__file__)))
 
 import galaxy.webapps.tool_shed.config as tool_shed_config
-from galaxy.web import security
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.tool_shed.model import mapping
 from bootstrap_util import admin_user_info  # noqa: I100,I201
 
@@ -40,7 +40,7 @@ class BootstrapApplication(object):
                                   self.config.database_connection,
                                   engine_options={},
                                   create_tables=False)
-        self.security = security.SecurityHelper(id_secret=self.config.id_secret)
+        self.security = IdEncodingHelper(id_secret=self.config.id_secret)
         self.hgweb_config_manager = self.model.hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
         print('Using hgweb.config file: ', self.hgweb_config_manager.hgweb_config)

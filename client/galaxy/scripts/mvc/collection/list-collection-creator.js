@@ -1,16 +1,19 @@
+import _ from "underscore";
+import jQuery from "jquery";
+import Backbone from "backbone";
 import HDCA from "mvc/history/hdca-model";
 import STATES from "mvc/dataset/states";
 import BASE_MVC from "mvc/base-mvc";
 import baseCreator from "mvc/collection/base-creator";
 import UI_MODAL from "mvc/ui/ui-modal";
-import naturalSort from "utils/natural-sort";
 import _l from "utils/localization";
-import RuleCollectionBuilder from "components/RuleCollectionBuilder.vue";
 import Vue from "vue";
+import { getGalaxyInstance } from "app";
 
 import "ui/hoverhighlight";
 
 var logNamespace = "collections";
+var $ = jQuery;
 
 /*==============================================================================
 TODO:
@@ -113,13 +116,6 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
     _clickName: function(ev) {
         ev.stopPropagation();
         ev.preventDefault();
-
-        var promptString = [
-            _l("Enter a new name for the element"),
-            ":\n(",
-            _l("Note that changing the name here will not rename the dataset"),
-            ")"
-        ].join("");
 
         var response = prompt(`${_l("Enter a new name for the element")}:`, this.element.name);
 
@@ -263,7 +259,6 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         /** separate working list into valid and invalid elements for this collection */
         _validateElements: function() {
             var creator = this;
-            var existingNames = {};
             creator.invalidElements = [];
 
             this.workingElements = this.workingElements.filter(element => {
@@ -1016,6 +1011,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
 const collectionCreatorModalSetup = function _collectionCreatorModalSetup(options) {
     const deferred = jQuery.Deferred();
+    let Galaxy = getGalaxyInstance();
     const modal = Galaxy.modal || new UI_MODAL.View();
 
     const creatorOptions = _.defaults(options || {}, {
@@ -1079,25 +1075,29 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
     options = _.defaults(options || {}, {
         title: title
     });
-    const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options);
-    var ruleCollectionBuilderInstance = Vue.extend(RuleCollectionBuilder);
-    var vm = document.createElement("div");
-    showEl(vm);
-    new ruleCollectionBuilderInstance({
-        propsData: {
-            initialElements: elements,
-            elementsType: elementsType,
-            importType: importType,
-            ftpUploadSite: options.ftpUploadSite,
-            creationFn: options.creationFn,
-            oncancel: options.oncancel,
-            oncreate: options.oncreate,
-            defaultHideSourceItems: options.defaultHideSourceItems,
-            saveRulesFn: options.saveRulesFn,
-            initialRules: options.initialRules
+    const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options); // eslint-disable-line no-unused-vars
+    return import(/* webpackChunkName: "ruleCollectionBuilder" */ "components/RuleCollectionBuilder.vue").then(
+        module => {
+            var ruleCollectionBuilderInstance = Vue.extend(module.default);
+            var vm = document.createElement("div");
+            showEl(vm);
+            new ruleCollectionBuilderInstance({
+                propsData: {
+                    initialElements: elements,
+                    elementsType: elementsType,
+                    importType: importType,
+                    ftpUploadSite: options.ftpUploadSite,
+                    creationFn: options.creationFn,
+                    oncancel: options.oncancel,
+                    oncreate: options.oncreate,
+                    defaultHideSourceItems: options.defaultHideSourceItems,
+                    saveRulesFn: options.saveRulesFn,
+                    initialRules: options.initialRules
+                }
+            }).$mount(vm);
+            return deferred;
         }
-    }).$mount(vm);
-    return deferred;
+    );
 };
 
 /** List collection flavor of collectionCreatorModal. */

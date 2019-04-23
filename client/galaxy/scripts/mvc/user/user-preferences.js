@@ -98,20 +98,20 @@ var Model = Backbone.Model.extend({
                 submit_title: "Save filters",
                 redirect: "user"
             },
-            openids: {
-                title: _l("Manage OpenIDs"),
-                description: _l("Associate OpenIDs with your account."),
-                icon: "fa-openid",
-                onclick: function() {
-                    Galaxy.page.router.push(`${getAppRoot()}openids/list`);
-                }
-            },
             custom_builds: {
                 title: _l("Manage custom builds"),
                 description: _l("Add or remove custom builds using history datasets."),
                 icon: "fa-cubes",
                 onclick: function() {
                     Galaxy.page.router.push(`${getAppRoot()}custom_builds`);
+                }
+            },
+            genomespace: {
+                title: _l("Request GenomeSpace token"),
+                description: _l("Requests token through OpenID."),
+                icon: "fa-openid",
+                onclick: function() {
+                    window.location.href = `${getAppRoot()}openid/openid_auth?openid_provider=genomespace`;
                 }
             },
             logout: {
@@ -174,11 +174,11 @@ var View = Backbone.View.extend({
             self._addLink("permissions");
             self._addLink("make_data_private");
             self._addLink("api_key");
+            if (config.enable_openid) {
+                self._addLink("genomespace");
+            }
             if (config.has_user_tool_filters) {
                 self._addLink("toolbox_filters");
-            }
-            if (config.enable_openid && !config.use_remote_user) {
-                self._addLink("openids");
             }
             if (Galaxy.session_csrf_token) {
                 self._addLink("logout");

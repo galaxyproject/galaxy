@@ -267,8 +267,30 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             );
             row.append(this._renderCell(cells.slice(num_columns - 1).join("\t"), num_columns - 1));
         } else if (cells.length === 1) {
-            // Comment line, just return the one cell.
-            row.append(this._renderCell(line, 0, num_columns));
+            cells = line.split(",");
+            if (cells.length === num_columns) {
+                _.each(
+                    cells,
+                    function(cell_contents, index) {
+                        row.append(this._renderCell(cell_contents, index));
+                    },
+                    this
+                );
+            } else {
+                cells = line.split(" ");
+                if (cells.length === num_columns) {
+                    _.each(
+                        cells,
+                        function(cell_contents, index) {
+                            row.append(this._renderCell(cell_contents, index));
+                        },
+                        this
+                    );
+                } else {    
+                    // Comment line, just return the one cell.
+                    row.append(this._renderCell(line, 0, num_columns));
+                }
+            }
         } else {
             // cells.length is greater than one, but less than num_columns.  Render cells and pad tds.
             // Possibly a SAM file or like format with optional metadata missing.
@@ -354,6 +376,11 @@ var EmbeddedTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
     }
 });
 
+function search(str, array) {
+    for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
+    return -1;
+}
+
 /** Button for trackster visualization */
 var TabularButtonTracksterView = Backbone.View.extend({
     // gene region columns
@@ -424,10 +451,6 @@ var TabularButtonTracksterView = Backbone.View.extend({
         // check for vcf-file format
         if (this.file_ext == "vcf") {
             // search array
-            function search(str, array) {
-                for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
-                return -1;
-            }
 
             // load
             this.col.chrom = search("Chrom", metadata.get("column_names"));

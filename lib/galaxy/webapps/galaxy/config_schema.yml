@@ -25,17 +25,6 @@ mapping:
     required: true
     mapping:
 
-      cookie_path:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          When running multiple Galaxy instances under separate URL prefixes on a
-          single hostname, you will want to set this to the same path as the prefix set
-          in the uWSGI "mount" configuration option above. This value becomes the "path"
-          attribute set in the cookie so the cookies from one instance will not clobber
-          those from another.
-
       database_connection:
         type: str
         default: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
@@ -695,18 +684,6 @@ mapping:
           external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
-      collect_outputs_from:
-        type: str
-        default: new_file_path,job_working_directory
-        required: false
-        desc: |
-          Tools with a number of outputs not known until runtime can write these
-          outputs to a directory for collection by Galaxy when the job is done.
-          Previously, this directory was new_file_path, but using one global directory
-          can cause performance problems, so using job_working_directory ('.' or cwd
-          when a job is run) is encouraged.  By default, both are checked to avoid
-          breaking existing tools.
-
       object_store_config_file:
         type: str
         default: config/object_store_conf.xml
@@ -714,6 +691,14 @@ mapping:
         desc: |
           Configuration file for the object store
           If this is set and exists, it overrides any other objectstore settings.
+
+      object_store_store_by:
+        type: str
+        default: id
+        required: false
+        desc: |
+          What Dataset attribute is used to reference files in an ObjectStore implementation,
+          default is 'id' but can also be set to 'uuid' for more de-centralized usage.
 
       smtp_server:
         type: str
@@ -825,7 +810,6 @@ mapping:
           Activation grace period (in hours).  Activation is not forced (login is not
           disabled) until grace period has passed.  Users under grace period can't run
           jobs. Enter 0 to disable grace period.
-          Users with OpenID logins have grace period forever.
 
       inactivity_box_content:
         type: str
@@ -941,6 +925,13 @@ mapping:
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
 
+      user_preferences_extra_conf_path:
+        type: str
+        default: 'config/user_preferences_extra_conf.yml'
+        required: false
+        desc: |
+          Location of the configuration file containing extra user preferences.
+
       default_locale:
         type: str
         default: auto
@@ -1015,41 +1006,6 @@ mapping:
         required: false
         desc: |
           The URL linked by the "Support" link in the "Help" menu.
-
-      biostar_url:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_key_name:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_key:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_enable_bug_reports:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_never_authenticate:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
 
       citation_url:
         type: str
@@ -1553,11 +1509,11 @@ mapping:
 
       use_interactive:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Enable live debugging in your browser.  This should NEVER be enabled on a
-          public site.  Enabled in the sample config for development.
+          public site.
 
       monitor_thread_join_timeout:
         type: int
@@ -2091,12 +2047,13 @@ mapping:
           Enable beta workflow modules that should not yet be considered part of Galaxy's
           stable API.
 
-      enable_beta_workflow_format:
-        type: bool
-        default: false
+      default_workflow_export_format:
+        type: str
+        default: ga
         required: false
         desc: |
-          Enable import and export of workflows as Galaxy Format 2 workflows.
+          Default format for the export of workflows. Possible values are 'ga'
+          or 'format2'.
 
       force_beta_workflow_scheduled_min_steps:
         type: int
@@ -2171,29 +2128,6 @@ mapping:
         desc: |
           Force serial scheduling of workflows within the context of a particular history
 
-      enable_openid:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable authentication via OpenID.  Allows users to log in to their Galaxy
-          account by authenticating with an OpenID provider.
-
-      openid_config_file:
-        type: str
-        default: config/openid_conf.xml
-        required: false
-        desc: |
-          If OpenID is enabled, this configuration file specifies providers to use.
-          Falls back to the .sample variant in config if default does not exist.
-
-      openid_consumer_cache_path:
-        type: str
-        default: database/openid_consumer_cache
-        required: false
-        desc: |
-          If OpenID is enabled, consumer cache directory to use.
-
       enable_oidc:
         type: bool
         default: false
@@ -2241,6 +2175,20 @@ mapping:
           having a defined admin user in the database/config.  Only set this if you
           need to bootstrap Galaxy, you probably do not want to set this on public
           servers.
+
+      enable_openid:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable access to post-authentication options via OpenID.
+
+      openid_consumer_cache_path:
+        type: str
+        default: database/openid_consumer_cache
+        required: false
+        desc: |
+          If OpenID is enabled, consumer cache directory to use.
 
       enable_tool_tags:
         type: bool

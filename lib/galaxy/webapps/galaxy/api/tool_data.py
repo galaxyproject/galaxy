@@ -6,8 +6,8 @@ from galaxy import (
     web
 )
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_raw as expose_api_raw
+    expose_api,
+    expose_api_raw
 )
 from galaxy.web.base.controller import BaseAPIController
 

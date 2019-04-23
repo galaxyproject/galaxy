@@ -1,9 +1,7 @@
 # These dependencies are only required when certain config options are set
 psycopg2-binary==2.7.4
-WebError==0.10.3
-Pygments==2.2.0
-python-openid
-MySQL-python
+weberror==0.10.3
+mysqlclient
 fluent-logger
 raven
 pbs_python
@@ -14,12 +12,20 @@ azure-storage==0.32.0
 # PyRods not in PyPI
 python-ldap==2.4.44
 python-pam
-cloudbridge==1.0.1
+galaxycloudrunner
 
 # Chronos client
 chronos-python==0.38.0
+
+# Kubernetes job runner
+pykube==0.15.0
 
 # Synnefo / Pithos+ object store client
 kamaki
 
 watchdog
+
+# Error reporters optional modules
+python-gitlab
+pygithub
+influxdb

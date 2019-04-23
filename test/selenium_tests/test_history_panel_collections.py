@@ -65,7 +65,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
 
             self.home()
 
-            self.history_panel_wait_for_hid_state(running_hid, "running")
+            self.history_panel_wait_for_hid_state(running_hid, "running", 1)
             self.screenshot("history_panel_collections_state_mapping_running")
         finally:
             for job in running_response.json()["jobs"]:
@@ -158,7 +158,8 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         collection_hid = input_collection["hid"]
         collection_view = self._click_and_wait_for_collection_view(collection_hid)
 
-        self.tagging_add(["#moo"])
+        # the space on the end of the parent_selector is important
+        self.tagging_add(["#moo"], parent_selector="#current-history-panel .dataset-collection-panel .controls ")
 
         self.screenshot("history_panel_collection_view_add_nametag")
         collection_view.back.wait_for_and_click()

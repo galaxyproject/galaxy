@@ -1,17 +1,3 @@
-~~~~~~~~~~~~~~~
-``cookie_path``
-~~~~~~~~~~~~~~~
-
-:Description:
-    When running multiple Galaxy instances under separate URL prefixes
-    on a single hostname, you will want to set this to the same path
-    as the prefix set in the uWSGI "mount" configuration option above.
-    This value becomes the "path" attribute set in the cookie so the
-    cookies from one instance will not clobber those from another.
-:Default: ````
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -925,22 +911,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~
-``collect_outputs_from``
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Tools with a number of outputs not known until runtime can write
-    these outputs to a directory for collection by Galaxy when the job
-    is done. Previously, this directory was new_file_path, but using
-    one global directory can cause performance problems, so using
-    job_working_directory ('.' or cwd when a job is run) is
-    encouraged.  By default, both are checked to avoid breaking
-    existing tools.
-:Default: ``new_file_path,job_working_directory``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``object_store_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -949,6 +919,18 @@
     Configuration file for the object store If this is set and exists,
     it overrides any other objectstore settings.
 :Default: ``config/object_store_conf.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_store_by``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    What Dataset attribute is used to reference files in an
+    ObjectStore implementation, default is 'id' but can also be set to
+    'uuid' for more de-centralized usage.
+:Default: ``id``
 :Type: str
 
 
@@ -1102,7 +1084,7 @@
     Activation grace period (in hours).  Activation is not forced
     (login is not disabled) until grace period has passed.  Users
     under grace period can't run jobs. Enter 0 to disable grace
-    period. Users with OpenID logins have grace period forever.
+    period.
 :Default: ``3``
 :Type: int
 
@@ -1253,6 +1235,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``user_preferences_extra_conf_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Location of the configuration file containing extra user
+    preferences.
+:Default: ``config/user_preferences_extra_conf.yml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~
 ``default_locale``
 ~~~~~~~~~~~~~~~~~~
@@ -1351,56 +1344,6 @@
     The URL linked by the "Support" link in the "Help" menu.
 :Default: ``https://galaxyproject.org/support/``
 :Type: str
-
-
-~~~~~~~~~~~~~~~
-``biostar_url``
-~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ````
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~
-``biostar_key_name``
-~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ````
-:Type: str
-
-
-~~~~~~~~~~~~~~~
-``biostar_key``
-~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ````
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``biostar_enable_bug_reports``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ``true``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``biostar_never_authenticate``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable integration with a custom Biostar instance.
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~
@@ -2098,9 +2041,8 @@
 
 :Description:
     Enable live debugging in your browser.  This should NEVER be
-    enabled on a public site.  Enabled in the sample config for
-    development.
-:Default: ``true``
+    enabled on a public site.
+:Default: ``false``
 :Type: bool
 
 
@@ -2813,15 +2755,15 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_workflow_format``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``default_workflow_export_format``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable import and export of workflows as Galaxy Format 2
-    workflows.
-:Default: ``false``
-:Type: bool
+    Default format for the export of workflows. Possible values are
+    'ga' or 'format2'.
+:Default: ``ga``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2921,39 +2863,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~
-``enable_openid``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable authentication via OpenID.  Allows users to log in to their
-    Galaxy account by authenticating with an OpenID provider.
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~
-``openid_config_file``
-~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If OpenID is enabled, this configuration file specifies providers
-    to use. Falls back to the .sample variant in config if default
-    does not exist.
-:Default: ``config/openid_conf.xml``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``openid_consumer_cache_path``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If OpenID is enabled, consumer cache directory to use.
-:Default: ``database/openid_consumer_cache``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~
 ``enable_oidc``
 ~~~~~~~~~~~~~~~
@@ -3017,6 +2926,26 @@
     set this if you need to bootstrap Galaxy, you probably do not want
     to set this on public servers.
 :Default: ``changethis``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~
+``enable_openid``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable access to post-authentication options via OpenID.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``openid_consumer_cache_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If OpenID is enabled, consumer cache directory to use.
+:Default: ``database/openid_consumer_cache``
 :Type: str
 
 

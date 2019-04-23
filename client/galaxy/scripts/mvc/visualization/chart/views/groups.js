@@ -5,7 +5,6 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
-import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
 import Repeat from "mvc/form/form-repeat";
 import FormData from "mvc/form/form-data";

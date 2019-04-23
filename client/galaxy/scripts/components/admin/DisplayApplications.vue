@@ -1,26 +1,38 @@
 <template>
     <div>
-        <b-alert :show="messageVisible" :variant="messageVariant">
-            {{ messageText }}
-        </b-alert>
-        <b-alert :show="warningVisible" variant="warning">
-            No display applications available.
-        </b-alert>
+        <b-alert :show="messageVisible" :variant="messageVariant"> {{ messageText }} </b-alert>
+        <b-alert :show="warningVisible" variant="warning"> No display applications available. </b-alert>
         <div v-if="applicationsVisible" class="card-header">
             There are currently {{ applicationsLength }}
-            <b-button size="sm" @click.prevent="reloadAll()" title="Reload all display applications" data-placement="bottom">
-                <span class="fa fa-refresh"/>
+            <b-button
+                size="sm"
+                @click.prevent="reloadAll()"
+                title="Reload all display applications"
+                data-placement="bottom"
+            >
+                <span class="fa fa-refresh" />
             </b-button>
             display applications loaded.
         </div>
-        <b-table id="display-applications-grid" v-if="applicationsVisible" striped :fields="applicationsAttributes" :items="applications">
+        <b-table
+            id="display-applications-grid"
+            v-if="applicationsVisible"
+            striped
+            :fields="applicationsAttributes"
+            :items="applications"
+        >
             <template slot="reload" slot-scope="data">
-                <b-button size="sm" title="Reload display application" data-placement="bottom" @click.prevent="reload(data.item.id, data.index)">
-                    <span class="fa fa-refresh"/>
+                <b-button
+                    size="sm"
+                    title="Reload display application"
+                    data-placement="bottom"
+                    @click.prevent="reload(data.item.id, data.index)"
+                >
+                    <span class="fa fa-refresh" />
                 </b-button>
             </template>
             <template slot="links" slot-scope="data">
-                <li v-for="link in data.item.links">{{ link.name }}</li>
+                <li v-for="link in data.item.links" :key="link.name">{{ link.name }}</li>
             </template>
         </b-table>
     </div>
