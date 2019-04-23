@@ -87,7 +87,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             message = " ".join([validate_email(trans, kwd["email"], allow_empty=True),
                                 validate_publicname(trans, kwd["username"])]).rstrip()
             if not message:
-                user, message = self.user_manager.register(trans, **kwd)
+                user, message = self.user_manager.register(trans, autoregistration=True, **kwd)
                 if message:
                     # message, status, user, success
                     return message, "error", None, False
