@@ -418,6 +418,15 @@ class ExportsHistoryMixin(object):
         history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
 
 
+class Historian(object):
+
+    def serve_ready_historian(self, trans, name, path):
+        trans.response.set_content_type('application/x-tar')
+        disposition = 'attachment; filename="{}_historian.zip"'.format(name)
+        trans.response.headers["Content-Disposition"] = disposition
+        return open(path + '.zip', mode='rb')
+
+
 class ImportsHistoryMixin(object):
 
     def queue_history_import(self, trans, archive_type, archive_source):
@@ -1498,14 +1507,6 @@ class SharableMixin(object):
         raise NotImplementedError()
 
 
-class Historian(object):
-
-    def serve_ready_historian(self, trans, name, path):
-        trans.response.set_content_type('application/x-tar')
-        disposition = 'attachment; filename="{}_historian.zip"'.format(name)
-        trans.response.headers["Content-Disposition"] = disposition
-        #archive = trans.app.object_store.get_filename(jeha.dataset)
-        return open(path + '.zip', mode='rb')
 
 
 class UsesQuotaMixin(object):

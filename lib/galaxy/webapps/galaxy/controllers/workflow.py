@@ -183,7 +183,7 @@ class SingleTagContentsParser(HTMLParser):
             self.tag_content += text
 
 
-class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings):
+class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, Historian, UsesItemRatings):
     stored_list_grid = StoredWorkflowListGrid()
     published_list_grid = StoredWorkflowAllPublishedGrid()
 
@@ -817,16 +817,12 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return trans.response.send_redirect(redirect_url)
 
     def get_workflow_data(self, trans, id):
+        """ Return the dictionary of the workflow with given id """
         stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
         return self._workflow_to_dict(trans, stored)
 
     def write_workflow(self, trans, workflow):
-        '''
-        write_workflow
-            dict: workflow - the workflow you want to write
-            output: writer
-        write all the steps of a workflow
-        '''
+        """ Return the extracted workflow data formated """
         names = []
         writer = '\n\nTool List(s):\n--------------------------------------\n'
         for key, value in workflow['steps'].iteritems():  # Iterate through each step of the workflow
@@ -853,10 +849,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 writer += "\n"
         return writer
 
-    def write_history_inputs(self, trans):
-        hist = trans.get_history()
+    def write_history_inputs(self, trans, hist):
+        """ Return the extracted history data formated """
         inputs = ""
-
         collections = hist.visible_dataset_collections 
         datasets = hist.visible_datasets
         
@@ -911,12 +906,10 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 workflow_name=workflow_name,
                 dataset_names=dataset_names,
                 dataset_collection_names=dataset_collection_names
-            )
-            # Index page with message
-            
+            ) 
             workflow_id = trans.security.encode_id(stored_workflow.id)
             
-            # Image grabbed all I gotta do now is write it to the output file
+            # Grab data
             stored = self.get_stored_workflow(trans, workflow_id, check_ownership=True)
             svg = self._workflow_to_svg_canvas(trans, stored).tostring()
             workflow_data = self.get_workflow_data(trans, workflow_id)
@@ -924,29 +917,25 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             writeup =  'History: {}\nGalaxy: {}\nUser: {}\n'.format(workflow_data['name'], 'https://usegalaxy.org/', str(trans.user.email))
             writeup += '--------------------------------------\n\n\n\nImage saved as historian_img.svg\n\n\n\n'
             writeup += 'History Input(s):\n--------------------------------------\n'
-            
-            writeup += self.write_history_inputs(trans)
+            writeup += self.write_history_inputs(trans, trans.get_history())
             writeup += self.write_workflow(trans, workflow_data) 
              
             temp_output_dir = tempfile.mkdtemp()
-            nd = os.path.join(temp_output_dir, workflow_data['name'] + '_historian')
-
-            os.makedirs(nd)
+            new_dir = os.path.join(temp_output_dir, workflow_data['name'] + '_historian')
+            os.makedirs(new_dir)
             
-            txt_file_path = os.path.join(nd, "historian_writeup.txt")
+            txt_file_path = os.path.join(new_dir, "historian_writeup.txt")
             w = open(txt_file_path, 'w')
-            
-            img_file_path = os.path.join(nd, "historian_img.svg")
+            img_file_path = os.path.join(new_dir, "historian_img.svg")
             img = open(img_file_path, 'w')
 
             w.write(writeup)
             img.write(svg)
-           
             w.close()
             img.close()
-            shutil.make_archive(nd, 'zip', nd)
-            
-            return self.serve_ready_historian(trans, workflow_data['name'], nd) 
+            shutil.make_archive(new_dir, 'zip', new_dir)
+ 
+            return self.serve_ready_historian(trans, workflow_data['name'], new_dir) 
 
     @web.expose
     def build_from_current_history(self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None):
