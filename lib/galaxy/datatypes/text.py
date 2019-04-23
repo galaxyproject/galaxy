@@ -364,6 +364,53 @@ class ImgtJson(Json):
 
 
 @build_sniff_from_prefix
+class GeoJson(Json):
+    """
+        GeoJSON is a geospatial data interchange format based on JavaScript Object Notation (JSON).
+        https://tools.ietf.org/html/rfc7946
+    """
+    file_ext = "geojson"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(GeoJson, self).set_peek(dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb = "GeoJSON"
+
+    def sniff_prefix(self, file_prefix):
+        """
+        Determines whether the file is in json format with imgt elements
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.json' )
+        >>> GeoJson().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'gis.geojson' )
+        >>> GeoJson().sniff( fname )
+        True
+        """
+        is_geojson = False
+        if self._looks_like_json(file_prefix):
+            is_geojson = self._looks_like_geojson(file_prefix)
+        return is_geojson
+
+    def _looks_like_geojson(self, file_prefix, load_size=5000):
+        """
+        One of "Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", and "GeometryCollection" needs to be present.
+        All of "type", "geometry", and "coordinates" needs to be present.
+        """
+        is_geojson = False
+        try:
+            with open(file_prefix.filename, "r") as fh:
+                segment_str = fh.read(load_size)
+                if any(x in segment_str for x in ["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", "GeometryCollection"]):
+                    if all(x in segment_str for x in ["type", "geometry", "coordinates"]):
+                        return True
+        except Exception:
+            pass
+        return is_geojson
+
+
+@build_sniff_from_prefix
 class Obo(Text):
     """
         OBO file format description
