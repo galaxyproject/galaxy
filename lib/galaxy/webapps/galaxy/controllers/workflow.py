@@ -855,22 +855,22 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         collections = hist.visible_dataset_collections 
         datasets = hist.visible_datasets
         
-        for i in range(len(collections)): #range(1):
-            col = collections[i].to_dict()
+        for collection in range(len(collections)): #range(1):
+            col = collections[collection].to_dict()
             if col['job_source_id'] is None:
                 inputs += '- {}(Type: {})\n- Sample Names:\n'.format(str(col['name']), str(col['collection_type']))
                 col_pieces = collections[i].dataset_instances
                 if 'list:paired' in col['collection_type']:
-                    inputs += '    * {}\n'.format(str(collections[i].collection.elements[0].element_identifier))
-                    for j in range(len(col_pieces)):
-                        inputs += '      - {}\n'.format(str(col_pieces[j].to_dict()['name']))
+                    inputs += '    * {}\n'.format(str(collections[collection].collection.elements[0].element_identifier))
+                    for piece in range(len(col_pieces)):
+                        inputs += '      - {}\n'.format(str(col_pieces[piece].to_dict()['name']))
                 elif 'paired' in col['collection_type']:
-                    for k in range(2):
-                        inputs += '    - {}\n'.format(str(collections[(1-k)].collection.elements[k].element_identifier))
-                        inputs += '      *  {}\n'.format(str(col_pieces[(1-k)].to_dict()['name']))
+                    for index in range(2):
+                        inputs += '    - {}\n'.format(str(collections[(1-index)].collection.elements[index].element_identifier))
+                        inputs += '      *  {}\n'.format(str(col_pieces[(1-index)].to_dict()['name']))
                 else:
-                    for j in range(len(col_pieces)):
-                        inputs += '    * {}\n'.format(str(col_pieces[j].to_dict()['name']))
+                    for piece in range(len(col_pieces)):
+                        inputs += '    * {}\n'.format(str(col_pieces[piece].to_dict()['name']))
 
         for data in datasets:
             if 'uploaded' in data.to_dict()['misc_info']:
