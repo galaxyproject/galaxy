@@ -1498,6 +1498,16 @@ class SharableMixin(object):
         raise NotImplementedError()
 
 
+class Historian(object):
+
+    def serve_ready_historian(self, trans, name, path):
+        trans.response.set_content_type('application/x-tar')
+        disposition = 'attachment; filename="{}_historian.zip"'.format(name)
+        trans.response.headers["Content-Disposition"] = disposition
+        #archive = trans.app.object_store.get_filename(jeha.dataset)
+        return open(path + '.zip', mode='rb')
+
+
 class UsesQuotaMixin(object):
 
     def get_quota(self, trans, id, check_ownership=False, check_accessible=False, deleted=None):

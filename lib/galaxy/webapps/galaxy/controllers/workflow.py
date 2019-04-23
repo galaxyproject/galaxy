@@ -4,6 +4,11 @@ import base64
 import json
 import logging
 
+import re
+import os
+import tempfile
+import shutil
+
 from markupsafe import escape
 from six.moves.html_parser import HTMLParser
 from six.moves.http_client import HTTPConnection
@@ -30,7 +35,8 @@ from galaxy.web import error, url_for
 from galaxy.web.base.controller import (
     BaseUIController,
     SharableMixin,
-    UsesStoredWorkflowMixin
+    UsesStoredWorkflowMixin,
+    Historian
 )
 from galaxy.web.framework.helpers import (
     grids,
@@ -809,6 +815,138 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             message = "Import request requires 'workflow_text'."
         redirect_url = url_for('/') + 'workflows/list?status=' + status + '&message=%s' % escape(message)
         return trans.response.send_redirect(redirect_url)
+
+    def get_workflow_data(self, trans, id):
+        stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
+        return self._workflow_to_dict(trans, stored)
+
+    def write_workflow(self, trans, workflow):
+        '''
+        write_workflow
+            dict: workflow - the workflow you want to write
+            output: writer
+        write all the steps of a workflow
+        '''
+        names = []
+        writer = '\n\nTool List(s):\n--------------------------------------\n'
+        for key, value in workflow['steps'].iteritems():  # Iterate through each step of the workflow
+            if value['tool_id'] is None:  # Input step
+                names.append(json.loads(value['tool_state'])['name'])
+            else:  # Tool step
+                names.append(value['tool_id'])
+                writer += "- Name: {}\n".format(names[value['id']])
+
+                inputs = value['input_connections']
+                writer += "- Input(s):\n"
+                for w_type, w_input in inputs.iteritems():  # Write all input sources
+                    writer += "   * {}: {}\n".format(w_type, names[w_input['id']])
+
+                writer += "- Tool parameters:\n"
+                # Split on comma unless that comma is in []
+                split_value = (re.split(r',\s*(?![^[]]*\))', str(value['tool_state'])))
+                for param in split_value:  # Write all tool parameters except ones excluded right below
+                    if "null" not in param and 'chromInfo' not in param and '__workflow' not in param:
+                        bad_chars = '{}\'\\[]"'  # Unwanted characters that are stuck to the string from its extraction
+                        for c in bad_chars:
+                            param = param.replace(c, "")
+                        writer += "   * {}\n".format(param.strip())
+                writer += "\n"
+        return writer
+
+    def write_history_inputs(self, trans):
+        hist = trans.get_history()
+        inputs = ""
+
+        collections = hist.visible_dataset_collections 
+        datasets = hist.visible_datasets
+        
+        for i in range(len(collections)): #range(1):
+            col = collections[i].to_dict()
+            if col['job_source_id'] is None:
+                inputs += '- {}(Type: {})\n- Sample Names:\n'.format(str(col['name']), str(col['collection_type']))
+                col_pieces = collections[i].dataset_instances
+                if 'list:paired' in col['collection_type']:
+                    inputs += '    * {}\n'.format(str(collections[i].collection.elements[0].element_identifier))
+                    for j in range(len(col_pieces)):
+                        inputs += '      - {}\n'.format(str(col_pieces[j].to_dict()['name']))
+                elif 'paired' in col['collection_type']:
+                    for k in range(2):
+                        inputs += '    - {}\n'.format(str(collections[(1-k)].collection.elements[k].element_identifier))
+                        inputs += '      *  {}\n'.format(str(col_pieces[(1-k)].to_dict()['name']))
+                else:
+                    for j in range(len(col_pieces)):
+                        inputs += '    * {}\n'.format(str(col_pieces[j].to_dict()['name']))
+
+        for data in datasets:
+            if 'uploaded' in data.to_dict()['misc_info']:
+                inputs += '- {}\n- Source: {}'.format(str(data.to_dict()['name']), str(data.to_dict()['misc_info']))
+        return inputs
+
+    @web.expose
+    def export_writeup(self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None):
+        user = trans.get_user()
+        history = trans.get_history()
+        if not user:
+            return trans.show_error_message("Must be logged in to create workflows")
+        if (job_ids is None and dataset_ids is None) or workflow_name is None:
+            jobs, warnings = summarize(trans)
+            # Render
+            return trans.fill_template(
+                "workflow/export_writeup.mako",
+                jobs=jobs,
+                warnings=warnings,
+                history=history
+            )
+        else:
+            # If there is just one dataset name selected or one dataset collection, these
+            # come through as string types instead of lists. xref #3247.
+            dataset_names = util.listify(dataset_names)
+            dataset_collection_names = util.listify(dataset_collection_names)
+            stored_workflow = extract_workflow(
+                trans,
+                user=user,
+                job_ids=job_ids,
+                dataset_ids=dataset_ids,
+                dataset_collection_ids=dataset_collection_ids,
+                workflow_name=workflow_name,
+                dataset_names=dataset_names,
+                dataset_collection_names=dataset_collection_names
+            )
+            # Index page with message
+            
+            workflow_id = trans.security.encode_id(stored_workflow.id)
+            
+            # Image grabbed all I gotta do now is write it to the output file
+            stored = self.get_stored_workflow(trans, workflow_id, check_ownership=True)
+            svg = self._workflow_to_svg_canvas(trans, stored).tostring()
+            workflow_data = self.get_workflow_data(trans, workflow_id)
+            
+            writeup =  'History: {}\nGalaxy: {}\nUser: {}\n'.format(workflow_data['name'], 'https://usegalaxy.org/', str(trans.user.email))
+            writeup += '--------------------------------------\n\n\n\nImage saved as historian_img.svg\n\n\n\n'
+            writeup += 'History Input(s):\n--------------------------------------\n'
+            
+            writeup += self.write_history_inputs(trans)
+            writeup += self.write_workflow(trans, workflow_data) 
+             
+            temp_output_dir = tempfile.mkdtemp()
+            nd = os.path.join(temp_output_dir, workflow_data['name'] + '_historian')
+
+            os.makedirs(nd)
+            
+            txt_file_path = os.path.join(nd, "historian_writeup.txt")
+            w = open(txt_file_path, 'w')
+            
+            img_file_path = os.path.join(nd, "historian_img.svg")
+            img = open(img_file_path, 'w')
+
+            w.write(writeup)
+            img.write(svg)
+           
+            w.close()
+            img.close()
+            shutil.make_archive(nd, 'zip', nd)
+            
+            return self.serve_ready_historian(trans, workflow_data['name'], nd) 
 
     @web.expose
     def build_from_current_history(self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None):

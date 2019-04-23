@@ -202,6 +202,10 @@ var menu = [
         href: "history/export_archive?preview=True",
         anon: true
     },
+    {
+	html: _l("Export History Write Up"),
+	href: "workflow/export_writeup"
+    },
 
     {
         html: _l("Other Actions"),
