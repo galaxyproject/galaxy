@@ -270,6 +270,7 @@ class XmlToolSource(ToolSource):
 
         def _parse_expression(output_elem, **kwds):
             output_def = self._parse_expression_output(output_elem, tool, **kwds)
+            output_def.filters = output_elem.findall('filter')
             data_dict[output_def.name] = output_def
             return output_def
 
