@@ -329,7 +329,7 @@ class XmlToolSource(ToolSource):
                 output_collection.outputs[output_name] = data
             output_collections[name] = output_collection
 
-        for out_child in out_elem.getchildren():
+        for out_child in out_elem:
             if out_child.tag == "data":
                 _parse(out_child)
             elif out_child.tag == "collection":
