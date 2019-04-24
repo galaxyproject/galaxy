@@ -26,8 +26,12 @@ class TestStockToursTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_core_scratchbook(self):
+        sleep_on_steps = {
+            8: 20 * TIMEOUT_MULTIPLIER
+        }
         self.run_tour(
             os.path.join(STOCK_TOURS_DIRECTORY, "core.scratchbook.yaml"),
+            sleep_on_steps=sleep_on_steps
         )
 
     @selenium_test
