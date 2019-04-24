@@ -24,6 +24,8 @@ import time
 import unicodedata
 import xml.dom.minidom
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
 from xml.etree import ElementInclude, ElementTree
@@ -40,7 +42,10 @@ from boltons.iterutils import (
     remap,
 )
 from six import binary_type, iteritems, PY2, string_types, text_type
-from six.moves import email_mime_multipart, email_mime_text, xrange, zip
+from six.moves import (
+    xrange,
+    zip
+)
 from six.moves.urllib import (
     parse as urlparse,
     request as urlrequest
@@ -1431,9 +1436,9 @@ def send_mail(frm, to, subject, body, config, html=None):
 
     to = listify(to)
     if html:
-        msg = email_mime_multipart.MIMEMultipart('alternative')
+        msg = MIMEMultipart('alternative')
     else:
-        msg = email_mime_text.MIMEText(body.encode('ascii', 'replace'))
+        msg = MIMEText(body, 'plain', 'utf-8')
 
     msg['To'] = ', '.join(to)
     msg['From'] = frm
@@ -1445,8 +1450,8 @@ def send_mail(frm, to, subject, body, config, html=None):
         return
 
     if html:
-        mp_text = email_mime_text.MIMEText(body.encode('ascii', 'replace'), 'plain')
-        mp_html = email_mime_text.MIMEText(html.encode('ascii', 'replace'), 'html')
+        mp_text = MIMEText(body, 'plain', 'utf-8')
+        mp_html = MIMEText(html, 'html', 'utf-8')
         msg.attach(mp_text)
         msg.attach(mp_html)
 
