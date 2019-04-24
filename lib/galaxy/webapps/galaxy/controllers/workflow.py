@@ -852,10 +852,10 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     def write_history_inputs(self, trans, hist):
         """ Return the extracted history data formated """
         inputs = ""
-        collections = hist.visible_dataset_collections 
+        collections = hist.visible_dataset_collections
         datasets = hist.visible_datasets
-        
-        for collection in range(len(collections)): #range(1):
+
+        for collection in range(len(collections)):
             col = collections[collection].to_dict()
             if col['job_source_id'] is None:
                 inputs += '- {}(Type: {})\n- Sample Names:\n'.format(str(col['name']), str(col['collection_type']))
@@ -866,8 +866,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                         inputs += '      - {}\n'.format(str(col_pieces[piece].to_dict()['name']))
                 elif 'paired' in col['collection_type']:
                     for index in range(2):
-                        inputs += '    - {}\n'.format(str(collections[(1-index)].collection.elements[index].element_identifier))
-                        inputs += '      *  {}\n'.format(str(col_pieces[(1-index)].to_dict()['name']))
+                        inputs += '    - {}\n'.format(str(collections[(1 - index)].collection.elements[index].element_identifier))
+                        inputs += '      *  {}\n'.format(str(col_pieces[(1 - index)].to_dict()['name']))
                 else:
                     for piece in range(len(col_pieces)):
                         inputs += '    * {}\n'.format(str(col_pieces[piece].to_dict()['name']))
@@ -906,36 +906,41 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 workflow_name=workflow_name,
                 dataset_names=dataset_names,
                 dataset_collection_names=dataset_collection_names
-            ) 
+            )
             workflow_id = trans.security.encode_id(stored_workflow.id)
-            
+
             # Grab data
             stored = self.get_stored_workflow(trans, workflow_id, check_ownership=True)
             svg = self._workflow_to_svg_canvas(trans, stored).tostring()
             workflow_data = self.get_workflow_data(trans, workflow_id)
-            
-            writeup =  'History: {}\nGalaxy: {}\nUser: {}\n'.format(workflow_data['name'], 'https://usegalaxy.org/', str(trans.user.email))
+
+            writeup = 'History: {}\nGalaxy: {}\nUser: {}\n'.format(workflow_data['name'], 'https://usegalaxy.org/', str(trans.user.email))
             writeup += '--------------------------------------\n\n\n\nImage saved as historian_img.svg\n\n\n\n'
             writeup += 'History Input(s):\n--------------------------------------\n'
             writeup += self.write_history_inputs(trans, trans.get_history())
-            writeup += self.write_workflow(trans, workflow_data) 
-             
+            writeup += self.write_workflow(trans, workflow_data)
+
             temp_output_dir = tempfile.mkdtemp()
             new_dir = os.path.join(temp_output_dir, workflow_data['name'] + '_historian')
             os.makedirs(new_dir)
-            
+
             txt_file_path = os.path.join(new_dir, "historian_writeup.txt")
             w = open(txt_file_path, 'w')
+            w.write(writeup)
+            w.close()
             img_file_path = os.path.join(new_dir, "historian_img.svg")
             img = open(img_file_path, 'w')
-
-            w.write(writeup)
             img.write(svg)
-            w.close()
             img.close()
             shutil.make_archive(new_dir, 'zip', new_dir)
- 
-            return self.serve_ready_historian(trans, workflow_data['name'], new_dir) 
+
+            # Delete temp workflow
+            stored.deleted = True
+            trans.user.stored_workflow_menu_entries = [entry for entry in trans.user.stored_workflow_menu_entries if entry.stored_workflow != stored]
+            trans.sa_session.add(stored)
+            trans.sa_session.flush()
+
+            return self.serve_ready_historian(trans, workflow_data['name'], new_dir)
 
     @web.expose
     def build_from_current_history(self, trans, job_ids=None, dataset_ids=None, dataset_collection_ids=None, workflow_name=None, dataset_names=None, dataset_collection_names=None):
