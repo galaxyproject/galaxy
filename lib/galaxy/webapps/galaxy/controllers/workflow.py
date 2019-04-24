@@ -3,11 +3,10 @@ from __future__ import absolute_import
 import base64
 import json
 import logging
-
-import re
-import os
-import tempfile
 import shutil
+import os
+import re
+import tempfile
 
 from markupsafe import escape
 from six.moves.html_parser import HTMLParser
@@ -34,9 +33,9 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import (
     BaseUIController,
+    Historian,
     SharableMixin,
-    UsesStoredWorkflowMixin,
-    Historian
+    UsesStoredWorkflowMixin
 )
 from galaxy.web.framework.helpers import (
     grids,
