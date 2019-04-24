@@ -158,6 +158,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "sam_pileup",
     "find_diag_hits",
     "cufflinks",
+    "gops_intersect_1",
     # Tools improperly migrated to the tool shed (iuc)
     "tabular_to_dbnsfp",
     # Tools improperly migrated using Galaxy (from shed other)
