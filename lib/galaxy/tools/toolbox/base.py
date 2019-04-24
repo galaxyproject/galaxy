@@ -543,6 +543,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     def _load_tool_tag_set(self, item, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None, internal=False):
         try:
             path_template = item.get("file")
+            alter_version = item.get("version")
             template_kwds = self._path_template_kwds()
             path = string.Template(path_template).safe_substitute(**template_kwds)
             concrete_path = os.path.join(tool_path, path)
@@ -568,6 +569,24 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     tool = self.load_tool(concrete_path, guid=guid, repository_id=repository_id, use_cached=False)
             if not tool:  # tool was not in cache and is not a tool shed tool.
                 tool = self.load_tool(concrete_path, use_cached=False)
+
+            # to have multiple versions of tools in manual installation mode
+            # e.g.
+            # in `tool_conf.xml`
+            # <tool file="path to tool version 0.1" version="0.1"/>
+            # <tool file="path to tool version 0.2" version="0.2"/>
+            #
+            if alter_version and not tool.guid:
+                if not tool.old_id:
+                    new_id = tool.id + '/' + alter_version
+                    setattr(tool, 'old_id', tool.id)
+                    setattr(tool, 'id', new_id)
+                    setattr(tool, 'all_ids', [new_id.lower(), tool.old_id.lower()])
+                else:
+                    new_id = tool.old_id + '/' + alter_version
+                    setattr(tool, 'id', new_id)
+                    setattr(tool, 'all_ids', [new_id.lower(), tool.old_id.lower()])
+
             if string_as_bool(item.get('hidden', False)):
                 tool.hidden = True
             key = 'tool_%s' % str(tool.id)
