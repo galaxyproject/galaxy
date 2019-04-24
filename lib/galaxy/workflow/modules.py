@@ -1230,7 +1230,7 @@ class ToolModule(WorkflowModule):
 
             unmatched_input_connections = expected_replacement_keys - found_replacement_keys
             if unmatched_input_connections:
-                log.warn("Failed to use input connections for inputs [%s]" % unmatched_input_connections)
+                log.warning("Failed to use input connections for inputs [%s]" % unmatched_input_connections)
 
             param_combinations.append(execution_state.inputs)
 

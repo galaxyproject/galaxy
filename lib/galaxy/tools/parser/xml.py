@@ -330,7 +330,7 @@ class XmlToolSource(ToolSource):
                 output_collection.outputs[output_name] = data
             output_collections[name] = output_collection
 
-        for out_child in out_elem.getchildren():
+        for out_child in out_elem:
             if out_child.tag == "data":
                 _parse(out_child)
             elif out_child.tag == "collection":
@@ -346,7 +346,7 @@ class XmlToolSource(ToolSource):
                 else:
                     _parse_expression(out_child)
             else:
-                log.warn("Unknown output tag encountered [%s]" % out_child.tag)
+                log.warning("Unknown output tag encountered [%s]" % out_child.tag)
 
         for output_def in data_dict.values():
             outputs[output_def.name] = output_def
