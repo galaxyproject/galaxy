@@ -2552,9 +2552,9 @@ class DatasetInstance(object):
         """
         Return true if the dataset is neither ready nor in error
         """
-        return self.state in (self.states.NEW, self.states.UPLOAD,
-                              self.states.QUEUED, self.states.RUNNING,
-                              self.states.SETTING_METADATA)
+        return self.state in (self.states.NEW, self.states.UPLOAD, self.states.WAITING, self.states.DISPATCHED,
+                              self.states.SUBMITTED, self.states.STAGEIN, self.states.QUEUED, self.states.RUNNING,
+                              self.states.STAGEOUT, self.states.FINISHING, self.states.SETTING_METADATA)
 
     @property
     def source_library_dataset(self):
