@@ -32,6 +32,10 @@ from galaxy.web.base.controller import (
 log = logging.getLogger(__name__)
 
 
+def _filtered_registration_params_dict(payload):
+    return {k: v for (k, v) in payload.items() if k in ['username', 'password' 'confirm' 'subscribe', 'autoregistration']}
+
+
 class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     installed_len_files = None
 
@@ -87,7 +91,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             message = " ".join([validate_email(trans, kwd["email"], allow_empty=True),
                                 validate_publicname(trans, kwd["username"])]).rstrip()
             if not message:
-                user, message = self.user_manager.register(trans, autoregistration=True, **kwd)
+                user, message = self.user_manager.register(trans, autoregistration=True, **_filtered_registration_params_dict(kwd))
                 if message:
                     # message, status, user, success
                     return message, "error", None, False
@@ -231,7 +235,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         message = trans.check_csrf_token(payload)
         if message:
             return self.message_exception(trans, message)
-        user, message = self.user_manager.register(trans, **payload)
+        user, message = self.user_manager.register(trans, **_filtered_registration_params_dict(payload))
         if message:
             return self.message_exception(trans, message, sanitize=False)
         elif user and not trans.user_is_admin:

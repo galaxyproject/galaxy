@@ -51,7 +51,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         self.model_class = app.model.User
         super(UserManager, self).__init__(app)
 
-    def register(self, trans, email=None, username=None, password=None, confirm=None, subscribe=False, autoregistration=False, **kwd):
+    def register(self, trans, email=None, username=None, password=None, confirm=None, subscribe=False, autoregistration=False):
         """
         Register a new user.
         """
