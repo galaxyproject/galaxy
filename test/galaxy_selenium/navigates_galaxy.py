@@ -800,6 +800,12 @@ class NavigatesGalaxy(HasDriver):
     def workflow_editor_options_menu_element(self):
         return self.wait_for_selector_visible("#workflow-options-button-menu")
 
+    def workflow_editor_click_run(self):
+        return self.wait_for_and_click_selector("#workflow-run-button")
+
+    def workflow_editor_click_save(self):
+        return self.wait_for_and_click_selector("#workflow-save-button")
+
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 

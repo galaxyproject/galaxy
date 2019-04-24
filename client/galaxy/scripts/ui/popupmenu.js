@@ -37,11 +37,12 @@ export function make_popupmenu(button_element, initial_options) {
             $.each(options, (k, v) => {
                 if (v) {
                     // Action can be either an anonymous function and a mapped dict.
-                    var action = v.action || v;
+                    let action = v.action || v;
+                    let url = v.url || "javascript:void(0);";
                     menu_element.append(
                         $("<li></li>").append(
                             $("<a>")
-                                .attr("href", v.url)
+                                .attr("href", url)
                                 .html(k)
                                 .click(action)
                         )
