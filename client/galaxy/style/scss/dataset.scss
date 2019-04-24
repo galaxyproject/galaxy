@@ -151,11 +151,22 @@
 
     &.state-running,
     &.state-stageout,
-    &.state-finishing,
     &.state-setting_metadata {
         background: $state-running-bg;
         .state-icon {
             @extend .fa-spin;
+            &:before {
+                content: $fa-var-spinner;
+            }
+        }
+    }
+
+    &.state-finishing {
+        background: $state-running-bg;
+        .state-icon {
+            // Fast spin!
+            -webkit-animation: fa-spin 1s infinite linear;
+            animation: fa-spin 1s infinite linear;
             &:before {
                 content: $fa-var-spinner;
             }
