@@ -13,8 +13,6 @@ def __main__():
     skipped_lines = 0
     first_skipped_line = 0
     out = open(output_name, 'w')
-    out.write("##gff-version 2\n")
-    out.write("##bed_to_gff_converter.py\n\n")
     i = 0
     for i, line in enumerate(open(input_name)):
         complete_bed = False
