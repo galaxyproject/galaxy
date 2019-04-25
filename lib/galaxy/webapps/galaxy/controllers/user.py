@@ -33,7 +33,7 @@ log = logging.getLogger(__name__)
 
 
 def _filtered_registration_params_dict(payload):
-    return {k: v for (k, v) in payload.items() if k in ['email', 'username', 'password' 'confirm' 'subscribe']}
+    return {k: v for (k, v) in payload.items() if k in ['email', 'username', 'password', 'confirm', 'subscribe']}
 
 
 class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
