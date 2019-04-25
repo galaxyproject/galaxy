@@ -107,13 +107,7 @@ class JobSearch(object):
 
         if job_state is None:
             conditions.append(
-                model.Job.state.in_([model.Job.states.NEW,
-                                     model.Job.states.QUEUED,
-                                     model.Job.states.NOT_READY,
-                                     model.Job.states.WAITING,
-                                     model.Job.states.LIMITED,
-                                     model.Job.states.RUNNING,
-                                     model.Job.states.OK])
+                ~model.Job.state.in_([model.Job.states.ERROR, model.Job.states.FAILED])
             )
         else:
             if isinstance(job_state, string_types):
