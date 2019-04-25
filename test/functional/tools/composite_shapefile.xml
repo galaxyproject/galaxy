@@ -1,0 +1,35 @@
+<tool id="composite" name="composite" version="1.0.0">
+    <requirements>
+        <requirement type="package" version="1.8.6">fiona</requirement>
+    </requirements>
+    <command><![CDATA[
+        python -c "import fiona; shape = fiona.open("$input.extra_files_path/shapefile.shp"); print(shape.schema)" > '$output'
+    ]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="shp" label="Shapefile" help="Used in GIS applications"/>
+    </inputs>
+    <outputs>
+        <data format="txt" name="output" label="${tool.name} on ${on_string}: Shapefile test" />
+        <data format="shp" name="output_shapefile" label="${tool.name} on ${on_string}: Shapefile test - shp" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="shp" >
+                <composite_data value="shapefile/TM_WORLD_BORDERS_SIMPL-0.3.dbf"/>
+                <composite_data value="shapefile/TM_WORLD_BORDERS_SIMPL-0.3.prj"/>
+                <composite_data value="shapefile/TM_WORLD_BORDERS_SIMPL-0.3.shp"/>
+                <composite_data value="shapefile/TM_WORLD_BORDERS_SIMPL-0.3.shx"/>
+            </param>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="{'properties': OrderedDict([('FIPS', 'str:2'), ('ISO2', 'str:2'), ('ISO3', 'str:3'), ('UN', 'int:3')," />
+                </assert_contents>
+            </output>
+            <!--output name="output_shapefile" ftype="shp" file="out.shp">
+                <extra_files type="file" file="out7.imzml" name="imzml" lines_diff="4"/>
+                <extra_files type="file" file="out7.ibd" name="ibd" compare="sim_size"/>
+            </output-->
+        </test>
+    </tests>
+</tool>
