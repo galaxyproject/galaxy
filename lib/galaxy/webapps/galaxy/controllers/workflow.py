@@ -4,8 +4,8 @@ import base64
 import json
 import logging
 import os
-import shutil
 import re
+import shutil
 import tempfile
 
 from markupsafe import escape
