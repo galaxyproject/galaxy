@@ -37,10 +37,7 @@
                 </b-row>
             </b-container>
             <b-card-group columns>
-                <b-card no-body id="data-managers-card">
-                    <h4 slot="header">
-                        Data Managers
-                    </h4>
+                <b-card no-body header="Data Managers" id="data-managers-card">
                     <b-list-group flush>
                         <b-list-group-item v-for="(dataManagerGroup, index) in dataManagersFiltered" :key="index">
                             <div>
@@ -101,10 +98,7 @@
                         </b-list-group-item>
                     </b-list-group>
                 </b-card>
-                <b-card no-body>
-                    <h4 slot="header">
-                        Tool Data Tables
-                    </h4>
+                <b-card no-body header="Tool Data Tables">
                     <b-list-group flush>
                         <b-list-group-item
                             v-for="(dataTable, index) in dataTablesFiltered"
