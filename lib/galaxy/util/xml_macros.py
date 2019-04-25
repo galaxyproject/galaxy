@@ -19,6 +19,7 @@ def load_with_references(path):
 
     # Collect tokens
     tokens = _macros_of_type(root, 'token', lambda el: el.text or '')
+    tokens = expand_nested_tokens(tokens)
 
     # Expand xml macros
     macro_dict = _macros_of_type(root, 'xml', lambda el: XmlMacroDef(el))
@@ -82,8 +83,26 @@ def _macros_of_type(root, type, el_func):
     return macro_dict
 
 
+def expand_nested_tokens(tokens, restarts=10):
+    token_copy = tokens.copy()
+    token_changed = False
+    for token_name in token_copy.keys():
+        for current_token_name, current_token_value in token_copy.items():
+            if token_name in current_token_value:
+                current_token_value = current_token_value.replace(token_name, token_copy[token_name])
+                tokens[current_token_name] = current_token_value
+                # We changed a token, so we need to restart
+                token_changed = True
+    if token_changed:
+        if restarts > 0:
+            expand_nested_tokens(tokens, restarts=restarts - 1)
+        else:
+            raise Exception("Tokens are nested too deep")
+    return tokens
+
+
 def _expand_tokens(elements, tokens):
-    if not tokens or not elements:
+    if not tokens or elements is None:
         return
 
     for element in elements:
