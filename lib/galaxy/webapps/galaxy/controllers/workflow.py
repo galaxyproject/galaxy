@@ -3,8 +3,8 @@ from __future__ import absolute_import
 import base64
 import json
 import logging
-import shutil
 import os
+import shutil
 import re
 import tempfile
 
