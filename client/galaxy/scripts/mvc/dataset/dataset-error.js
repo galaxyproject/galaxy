@@ -81,17 +81,15 @@ var View = Backbone.View.extend({
             if (has_empty_inputs) {
                 reportEl.after(`
                     <p>
-                        The tool was executed with one or more empty input datasets, this isn't
-                        always a problem and may not have been but frequently this is a source
-                        of error.
+                        The tool was executed with one or more empty input datasets. This frequently
+                        results in tool errors due to problematic input choices.
                     <p>`);
             }
             if (has_duplicate_inputs) {
                 reportEl.after(`
                     <p>
-                        The tool was executed with one or more duplicate input datasets, this isn't
-                        always a problem and may not have been but frequently this is a source
-                        of error.
+                        The tool was executed with one or more duplicate input datasets. This frequently
+                        results in tool errors due to problematic input choices.
                     <p>`);
             }
         }
