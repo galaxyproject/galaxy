@@ -436,18 +436,24 @@ var ToolPanel = Backbone.Model.extend({
 
         var // Helper to recursively parse tool panel.
             parse_elt = elt_dict => {
-                var type = elt_dict.model_class;
+                let type = elt_dict.model_class;
                 // There are many types of tools; for now, anything that ends in 'Tool'
                 // and is not a ExpressionTool is treated as a generic tool.
-                if (type.indexOf("Tool") === type.length - 4 && type != 'ExpressionTool') {
-                    return self.attributes.tools.get(elt_dict.id);
+                if (type.indexOf("Tool") === type.length - 4) {
+                    let tool = self.attributes.tools.get(elt_dict.id);
+                    if (type === 'ExpressionTool') {
+                        tool.hide();
+                    }
+                    return tool;
                 } else if (type === "ToolSection") {
                     // Parse elements.
-                    var elems = _.map(elt_dict.elems, parse_elt).filter(Boolean);
-                    if (elems.length > 0) {
-                        elt_dict.elems = elems;
-                        return new ToolSection(elt_dict);
+                    let elems = _.map(elt_dict.elems, parse_elt).filter(el => el.is_visible());
+                    elt_dict.elems = elems;
+                    let section = new ToolSection(elt_dict);
+                    if (elems.length == 0) {
+                        section.hide();
                     }
+                    return section;
                 } else if (type === "ToolSectionLabel") {
                     return new ToolSectionLabel(elt_dict);
                 }
