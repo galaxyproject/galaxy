@@ -1215,6 +1215,6 @@ class ConfiguresGalaxyMixin(object):
         for i in range(1, attempts):
             try:
                 database_exists(url)
-            except:
+            except Exception:
                 log.info("Waiting for database: attempt %d of %d" % (i, attempts))
                 sleep(pause)
