@@ -91,7 +91,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                                 validate_publicname(trans, username)]).rstrip()
             if not message:
                 user = self.user_manager.create(email=email, username=username, password=password)
-                if self.app.config.user_activation_on:
+                if trans.app.config.user_activation_on:
                     self.user_manager.send_activation_email(trans, email, username)
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
                 # (needed when logging in with a history), user needs to have default permissions set before logging in
