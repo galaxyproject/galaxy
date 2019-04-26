@@ -78,13 +78,12 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 trans.log_event("Assigning role to newly created user")
                 trans.app.security_agent.associate_user_role(user, role)
 
-    def __autoregistration(self, trans, login, password, status, kwd, no_password_check=False, cntrller=None):
+    def __autoregistration(self, trans, login, password):
         """
         Does the autoregistration if enabled. Returns a message
         """
-        autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password, no_password_check=no_password_check)
+        autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
         user = None
-        success = False
         if autoreg["auto_reg"]:
             email = autoreg["email"]
             username= autoreg["username"]
@@ -110,7 +109,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
         else:
             message = "No such user or invalid password."
-        return message, status, user, success
+        return message, user
 
     @expose_api_anonymous_and_sessionless
     def login(self, trans, payload={}, **kwd):
@@ -135,8 +134,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if user is None:
-            message, status, user, success = self.__autoregistration(trans, login, password, status, kwd)
-            if not success:
+            message, user = self.__autoregistration(trans, login, password)
+            if message:
                 return self.message_exception(trans, message)
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
