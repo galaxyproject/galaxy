@@ -86,7 +86,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         user = None
         if autoreg["auto_reg"]:
             email = autoreg["email"]
-            username= autoreg["username"]
+            username = autoreg["username"]
             message = " ".join([validate_email(trans, email, allow_empty=True),
                                 validate_publicname(trans, username)]).rstrip()
             if not message:
