@@ -83,21 +83,13 @@ def _macros_of_type(root, type, el_func):
     return macro_dict
 
 
-def expand_nested_tokens(tokens, restarts=10):
-    token_copy = tokens.copy()
-    token_changed = False
-    for token_name in token_copy.keys():
-        for current_token_name, current_token_value in token_copy.items():
+def expand_nested_tokens(tokens):
+    for token_name in tokens.keys():
+        for current_token_name, current_token_value in tokens.items():
             if token_name in current_token_value:
-                current_token_value = current_token_value.replace(token_name, token_copy[token_name])
-                tokens[current_token_name] = current_token_value
-                # We changed a token, so we need to restart
-                token_changed = True
-    if token_changed:
-        if restarts > 0:
-            expand_nested_tokens(tokens, restarts=restarts - 1)
-        else:
-            raise Exception("Tokens are nested too deep")
+                if token_name == current_token_name:
+                    raise Exception("Token '%s' cannot contain itself" % token_name)
+                tokens[current_token_name] = current_token_value.replace(token_name, tokens[token_name])
     return tokens
 
 
@@ -122,11 +114,11 @@ def _expand_tokens_for_el(element, tokens):
     _expand_tokens(list(element), tokens)
 
 
-def _expand_tokens_str(str, tokens):
+def _expand_tokens_str(s, tokens):
     for key, value in tokens.items():
-        if str.find(key) > -1:
-            str = str.replace(key, value)
-    return str
+        if key in s:
+            s = s.replace(key, value)
+    return s
 
 
 def _expand_macros(elements, macros, tokens):
@@ -158,7 +150,7 @@ def _expand_macro(element, expand_el, macros, tokens):
 
     # HACK for elementtree, newer implementations (etree/lxml) won't
     # require this parent_map data structure but elementtree does not
-    # track parents or recongnize .find('..').
+    # track parents or recognize .find('..').
     # TODO fix this now that we're not using elementtree
     parent_map = dict((c, p) for p in element.iter() for c in p)
     _xml_replace(expand_el, expanded_elements, parent_map)
