@@ -169,7 +169,7 @@ galaxy:
   # Number of attempts before failing.
   #database_wait_attempts: 60
 
-  # Sleep period between attepmts (seconds; can be a floating point number).
+  # Sleep period between attempts (seconds; can be a floating point number).
   #database_wait_sleep: 1
 
   # Where dataset files are stored. It must accessible at the same path
