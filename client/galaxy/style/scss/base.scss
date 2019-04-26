@@ -1918,7 +1918,8 @@ div.toolTitleNoSection {
 }
 
 /* Toolshed, reports custom styles from mako templates */
-body.toolshed, body.reports {
+body.toolshed,
+body.reports {
     margin: 0;
     padding: 0;
     overflow: hidden;

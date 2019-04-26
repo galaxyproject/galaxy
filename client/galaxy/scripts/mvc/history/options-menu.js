@@ -195,8 +195,8 @@ var menu = [
         anon: true
     },
     {
-	html: _l("Export History Write Up"),
-	href: "workflow/export_writeup"
+        html: _l("Export History Write Up"),
+        href: "workflow/export_writeup"
     },
 
     {
@@ -256,7 +256,7 @@ function buildMenu(isAnon, purgeAllowed, urlRoot) {
         if (menuOption.confirm) {
             menuOption.func = () => {
                 const galaxy_main = window.parent.document.getElementById("galaxy_main");
-                if (confirm(menuOption.confirm) && galaxy_main){
+                if (confirm(menuOption.confirm) && galaxy_main) {
                     galaxy_main.src = menuOption.href;
                 }
             };

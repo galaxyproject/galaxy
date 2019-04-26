@@ -3,6 +3,8 @@ from __future__ import print_function
 import logging
 import os
 import unittest
+import sys
+sys.path.insert(0, '/home/CSCScience.ca/KLamoure/galaxy_clients/galaxy/lib')
 
 from galaxy.security import idencoding
 from galaxy.tools.verify.test_data import TestDataResolver

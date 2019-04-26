@@ -286,7 +286,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
                         },
                         this
                     );
-                } else {    
+                } else {
                     // Comment line, just return the one cell.
                     row.append(this._renderCell(line, 0, num_columns));
                 }
