@@ -86,15 +86,14 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         user = None
         success = False
         if autoreg["auto_reg"]:
-            kwd["email"] = autoreg["email"]
-            kwd["username"] = autoreg["username"]
-            message = " ".join([validate_email(trans, kwd["email"], allow_empty=True),
-                                validate_publicname(trans, kwd["username"])]).rstrip()
+            email = autoreg["email"]
+            username= autoreg["username"]
+            message = " ".join([validate_email(trans, email, allow_empty=True),
+                                validate_publicname(trans, username)]).rstrip()
             if not message:
-                user, message = self.user_manager.register(trans, autoregistration=True, **_filtered_registration_params_dict(kwd))
-                if message:
-                    # message, status, user, success
-                    return message, "error", None, False
+                user = self.user_manager.create(email=email, username=username, password=password)
+                if self.app.config.user_activation_on:
+                    self.user_manager.send_activation_email(trans, email, username)
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
                 # (needed when logging in with a history), user needs to have default permissions set before logging in
                 if not trans.user_is_admin:
