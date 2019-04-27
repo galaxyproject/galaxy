@@ -163,13 +163,15 @@ galaxy:
   # not recommended for production use.
   #database_auto_migrate: false
 
-  # Wait for database to become available instead of failing immediately.
+  # Wait for database to become available instead of failing
+  # immediately.
   #database_wait: false
 
-  # Number of attempts before failing.
+  # Number of attempts before failing if database_wait is enabled.
   #database_wait_attempts: 60
 
-  # Sleep period between attempts (seconds; can be a floating point number).
+  # Time to sleep between attempts if database_wait is enabled (in
+  # seconds).
   #database_wait_sleep: 1
 
   # Where dataset files are stored. It must accessible at the same path

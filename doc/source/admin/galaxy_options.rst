@@ -142,6 +142,38 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~
+``database_wait``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Wait for database to become available instead of failing
+    immediately.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``database_wait_attempts``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Number of attempts before failing if database_wait is enabled.
+:Default: ``60``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``database_wait_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time to sleep between attempts if database_wait is enabled (in
+    seconds).
+:Default: ``1``
+:Type: float
+
+
 ~~~~~~~~~~~~~
 ``file_path``
 ~~~~~~~~~~~~~
