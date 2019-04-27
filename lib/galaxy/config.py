@@ -1208,7 +1208,6 @@ class ConfiguresGalaxyMixin(object):
             signal.signal(sig, handler)
 
     def _wait_for_database(self, url):
-        from time import sleep
         from sqlalchemy_utils import database_exists
         attempts = self.config.database_wait_attempts
         pause = self.config.database_wait_sleep
@@ -1217,4 +1216,4 @@ class ConfiguresGalaxyMixin(object):
                 database_exists(url)
             except Exception:
                 log.info("Waiting for database: attempt %d of %d" % (i, attempts))
-                sleep(pause)
+                time.sleep(pause)
