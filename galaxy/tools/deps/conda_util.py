@@ -42,12 +42,9 @@ USE_LOCAL_DEFAULT = False
 
 def conda_link():
     if IS_OS_X:
-        url = "https://repo.continuum.io/miniconda/Miniconda3-4.3.31-MacOSX-x86_64.sh"
+        url = "https://repo.continuum.io/miniconda/Miniconda3-4.6.14-MacOSX-x86_64.sh"
     else:
-        if sys.maxsize > 2**32:
-            url = "https://repo.continuum.io/miniconda/Miniconda3-4.3.31-Linux-x86_64.sh"
-        else:
-            url = "https://repo.continuum.io/miniconda/Miniconda3-4.3.31-Linux-x86.sh"
+        url = "https://repo.continuum.io/miniconda/Miniconda3-4.6.14-Linux-x86_64.sh"
     return url
 
 
