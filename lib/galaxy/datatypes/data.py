@@ -48,6 +48,36 @@ DOWNLOAD_FILENAME_PATTERN_DATASET = "Galaxy${hid}-[${name}].${ext}"
 DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}__${element_identifier}].${ext}"
 
 
+class DatatypeValidation(object):
+
+    def __init__(self, state, message):
+        self.state = state
+        self.message = message
+
+    @staticmethod
+    def validated():
+        return DatatypeValidation("ok", "Dataset validated by datatype validator.")
+
+    @staticmethod
+    def invalid(message):
+        return DatatypeValidation("invalid", message)
+
+    @staticmethod
+    def unvalidated():
+        return DatatypeValidation("unknown", "Dataset validation unimplemented for this datatype.")
+
+    def __repr__(self):
+        return "DatatypeValidation[state=%s,message=%s]" % (self.state, self.message)
+
+
+def validate(dataset_instance):
+    try:
+        datatype_validation = dataset_instance.datatype.validate(dataset_instance)
+    except Exception as e:
+        datatype_validation = DatatypeValidation.invalid("Problem running datatype validation method [%s]" % str(e))
+    return datatype_validation
+
+
 class DataMeta(abc.ABCMeta):
     """
     Metaclass for Data class.  Sets up metadata spec.
@@ -503,10 +533,6 @@ class Data(object):
         except Exception:
             return "info unavailable"
 
-    def validate(self, dataset):
-        """Unimplemented validate, return no exceptions"""
-        return list()
-
     def repair_methods(self, dataset):
         """Unimplemented method, returns dict with method/option for repairing errors"""
         return None
@@ -742,6 +768,9 @@ class Data(object):
         if self.has_dataprovider(data_format):
             return self.dataproviders[data_format](self, dataset, **settings)
         raise dataproviders.exceptions.NoProviderAvailable(self, data_format)
+
+    def validate(self, dataset, **kwd):
+        return DatatypeValidation.unvalidated()
 
     @dataproviders.decorators.dataprovider_factory('base')
     def base_dataprovider(self, dataset, **settings):

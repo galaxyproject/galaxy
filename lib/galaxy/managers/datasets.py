@@ -370,7 +370,7 @@ class DatasetAssociationManager(base.ModelManager,
         else:
             raise exceptions.InsufficientPermissionsException('Changing datatype "%s" is not allowed.' % (data.extension))
 
-    def set_metadata(self, trans, dataset_assoc, overwrite=False):
+    def set_metadata(self, trans, dataset_assoc, overwrite=False, validate=True):
         """Trigger a job that detects and sets metadata on a given dataset association (ldda or hda)"""
         data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
         if not self.ok_to_edit_metadata(data.id):
@@ -384,7 +384,7 @@ class DatasetAssociationManager(base.ModelManager,
                             setattr(data.metadata, name, spec.unwrap(spec.get('default')))
 
             self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
-                self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data},
+                self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data, 'validate': validate},
                 overwrite=overwrite)
 
     def update_permissions(self, trans, dataset_assoc, **kwd):

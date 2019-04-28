@@ -234,6 +234,8 @@ model.HistoryDatasetAssociation.table = Table(
     Column("version", Integer, default=1, nullable=True, index=True),
     Column("hid", Integer),
     Column("purged", Boolean, index=True, default=False),
+    Column("validated_state", TrimmedString(64), default='unvalidated', nullable=False),
+    Column("validated_state_message", TEXT),
     Column("hidden_beneath_collection_instance_id",
            ForeignKey("history_dataset_collection_association.id"), nullable=True))
 
@@ -513,6 +515,8 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("parent_id", Integer, ForeignKey("library_dataset_dataset_association.id"), nullable=True),
     Column("designation", TrimmedString(255)),
     Column("deleted", Boolean, index=True, default=False),
+    Column("validated_state", TrimmedString(64), default='unvalidated', nullable=False),
+    Column("validated_state_message", TEXT),
     Column("visible", Boolean),
     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),

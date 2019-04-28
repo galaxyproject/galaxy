@@ -989,6 +989,15 @@ class JobWrapper(HasResourceParameters):
         param_dict = self.tool.params_from_strings(param_dict, self.app)
         return param_dict
 
+    @property
+    def validate_outputs(self):
+        job = self.get_job()
+        for p in job.parameters:
+            if p.name == "__validate_outputs__":
+                log.info("validate... %s" % p.value)
+                return loads(p.value)
+        return False
+
     def get_version_string_path(self):
         return os.path.abspath(os.path.join(self.working_directory, COMMAND_VERSION_FILENAME))
 
@@ -1960,6 +1969,7 @@ class JobWrapper(HasResourceParameters):
                                                                         datatypes_config=datatypes_config,
                                                                         job_metadata=os.path.join(self.tool_working_directory, self.tool.provided_metadata_file),
                                                                         max_metadata_value_size=self.app.config.max_metadata_value_size,
+                                                                        validate_outputs=self.validate_outputs,
                                                                         **kwds)
         if resolve_metadata_dependencies:
             metadata_tool = self.app.toolbox.get_tool("__SET_METADATA__")

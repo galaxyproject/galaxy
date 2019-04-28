@@ -4,6 +4,7 @@ from json import dumps
 
 from galaxy.jobs.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
+from galaxy.util import asbool
 from galaxy.util.odict import odict
 from . import ToolAction
 
@@ -34,7 +35,11 @@ class SetMetadataToolAction(ToolAction):
         """
         Execute using application.
         """
+
         for name, value in incoming.items():
+            # Why are we looping here and not just using a fixed input name? Needed?
+            if not name.startswith("input"):
+                continue
             if isinstance(value, app.model.HistoryDatasetAssociation):
                 dataset = value
                 dataset_name = name
@@ -82,6 +87,7 @@ class SetMetadataToolAction(ToolAction):
         output_datatasets_dict = {
             dataset_name: dataset,
         }
+        validate_outputs = asbool(incoming.get("validate", False))
         cmd_line = external_metadata_wrapper.setup_external_metadata(output_datatasets_dict,
                                                                      sa_session,
                                                                      exec_dir=None,
@@ -93,6 +99,7 @@ class SetMetadataToolAction(ToolAction):
                                                                      datatypes_config=datatypes_config,
                                                                      job_metadata=os.path.join(job_working_dir, 'working', tool.provided_metadata_file),
                                                                      include_command=False,
+                                                                     validate_outputs=validate_outputs,
                                                                      max_metadata_value_size=app.config.max_metadata_value_size,
                                                                      kwds={'overwrite': overwrite})
         incoming['__SET_EXTERNAL_METADATA_COMMAND_LINE__'] = cmd_line

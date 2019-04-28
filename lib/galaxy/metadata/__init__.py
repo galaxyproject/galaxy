@@ -98,6 +98,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                                 config_file=None, datatypes_config=None,
                                 job_metadata=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
+                                validate_outputs=False,
                                 kwds=None):
         assert job_metadata, "setup_external_metadata must be supplied with job_metadata path"
         kwds = kwds or {}
@@ -124,7 +125,8 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             _initialize_metadata_inputs(dataset, _metadata_path, tmp_dir, kwds)
 
             outputs[name] = {
-                "filename_override": _get_filename_override(output_fnames, dataset.file_name)
+                "filename_override": _get_filename_override(output_fnames, dataset.file_name),
+                "validate": validate_outputs,
             }
 
         metadata_params_path = os.path.join(metadata_dir, "params.json")
@@ -211,6 +213,7 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                                 config_file=None, datatypes_config=None,
                                 job_metadata=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
+                                validate_outputs=False,
                                 kwds=None):
         kwds = kwds or {}
         tmp_dir = _init_tmp_dir(tmp_dir)

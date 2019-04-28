@@ -514,6 +514,28 @@ class BaseDatasetPopulator(object):
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
+    def validate_dataset(self, history_id, dataset_id):
+        url = "histories/%s/contents/%s/validate" % (history_id, dataset_id)
+        update_response = self.galaxy_interactor._put(url, {})
+        assert update_response.status_code == 200, update_response.content
+        return update_response.json()
+
+    def validate_dataset_and_wait(self, history_id, dataset_id):
+        self.validate_dataset(history_id, dataset_id)
+
+        def validated():
+            metadata = self.get_history_dataset_details(history_id, dataset_id=dataset_id)
+            validated_state = metadata['validated_state']
+            if validated_state == 'unknown':
+                return
+            else:
+                return validated_state
+
+        return wait_on(
+            validated,
+            "dataset validation"
+        )
+
     def export_url(self, history_id, data, check_download=True):
         url = "histories/%s/exports" % history_id
         put_response = self._put(url, data)
