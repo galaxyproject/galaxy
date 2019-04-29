@@ -15,8 +15,8 @@ import logging
 import os
 import re
 import sys
-from cgi import escape
 
+from markupsafe import escape
 from six.moves.urllib.parse import quote_plus
 
 from galaxy.datatypes import metadata

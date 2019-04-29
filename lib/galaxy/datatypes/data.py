@@ -8,11 +8,11 @@ import shutil
 import string
 import tempfile
 import zipfile
-from cgi import escape
 from inspect import isclass
 
 import six
 import webob.exc
+from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
