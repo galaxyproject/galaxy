@@ -2,11 +2,11 @@
 Middleware that profiles the request with cProfile and displays profiling
 information at the bottom of each page.
 """
-import cgi
 import cProfile
 import pstats
 import threading
 
+import markupsafe
 from paste import response
 
 
@@ -93,9 +93,9 @@ def pstats_as_html(stats, *sel_list):
     funcs, order_message, select_message = get_func_list(stats, sel_list)
     # Deal with any ordering or selection messages
     if order_message:
-        rval.append("<div>%s</div>" % cgi.escape(order_message))
+        rval.append("<div>%s</div>" % markupsafe.escape(order_message))
     if select_message:
-        rval.append("<div>%s</div>" % cgi.escape(select_message))
+        rval.append("<div>%s</div>" % markupsafe.escape(select_message))
     # Build a table for the functions
     if list:
         rval.append("<table>")
@@ -114,7 +114,7 @@ def pstats_as_html(stats, *sel_list):
             ncalls = str(nc)
             if nc != cc:
                 ncalls = ncalls + '/' + str(cc)
-            rval.append("<td>%s</td>" % cgi.escape(ncalls))
+            rval.append("<td>%s</td>" % markupsafe.escape(ncalls))
             # tottime
             rval.append("<td>%0.8f</td>" % tt)
             # percall
@@ -122,7 +122,7 @@ def pstats_as_html(stats, *sel_list):
                 percall = ""
             else:
                 percall = "%0.8f" % (tt / nc)
-            rval.append("<td>%s</td>" % cgi.escape(percall))
+            rval.append("<td>%s</td>" % markupsafe.escape(percall))
             # cumtime
             rval.append("<td>%0.8f</td>" % ct)
             # ctpercall
@@ -130,9 +130,9 @@ def pstats_as_html(stats, *sel_list):
                 ctpercall = ""
             else:
                 ctpercall = "%0.8f" % (ct / cc)
-            rval.append("<td>%s</td>" % cgi.escape(ctpercall))
+            rval.append("<td>%s</td>" % markupsafe.escape(ctpercall))
             # location
-            rval.append("<td>%s</td>" % cgi.escape(func_std_string(func)))
+            rval.append("<td>%s</td>" % markupsafe.escape(func_std_string(func)))
             # row complete
             rval.append("</tr>")
         rval.append("</table>")
