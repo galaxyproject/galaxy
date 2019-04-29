@@ -1,4 +1,4 @@
-<tool id="composite" name="composite" version="1.0.0">
+<tool id="shapefile_composite" name="composite shapefile tool" version="1.0.0">
     <requirements>
         <requirement type="package" version="1.8.6">fiona</requirement>
     </requirements>
