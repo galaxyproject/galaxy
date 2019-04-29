@@ -107,13 +107,10 @@ def main():
         we need to add 1 to group_col.
         if POS2 is not specified, the newer versions of sort will consider the entire line for sorting. To prevent this, we set POS2=POS1.
         """
-        case = ''
-        if ignorecase == 1:
-            case = '-f'
         group_col_str = str(group_col + 1)
         command_line = ["sort", "-t", "\t", "-k%s,%s" % (group_col_str, group_col_str), "-o", tmpfile.name, inputfile]
-        if case:
-            command_line.append(case)
+        if ignorecase == 1:
+            command_line.append('-f')
     except Exception as exc:
         stop_err('Initialization error -> %s' % str(exc))
 
