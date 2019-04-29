@@ -67,17 +67,12 @@ def main():
     if sys.argv[5] != "None":
         asciitodelete = sys.argv[5]
         if asciitodelete:
-            oldfile = open(inputfile, 'r')
             newinputfile = "input_cleaned.tsv"
-            newfile = open(newinputfile, 'w')
-            asciitodelete = asciitodelete.split(',')
-            for i in range(len(asciitodelete)):
-                asciitodelete[i] = chr(int(asciitodelete[i]))
-            for line in oldfile:
-                if line[0] not in asciitodelete:
-                    newfile.write(line)
-            oldfile.close()
-            newfile.close()
+            with open(inputfile, 'r') as oldfile, open(newinputfile, 'w') as newfile:
+                asciitodelete = {chr(int(_)) for _ in asciitodelete.split(',')}
+                for line in oldfile:
+                    if line[0] not in asciitodelete:
+                        newfile.write(line)
             inputfile = newinputfile
 
     # get operations and options in separate arrays
@@ -115,16 +110,17 @@ def main():
         case = ''
         if ignorecase == 1:
             case = '-f'
-        command_line = "sort -t $'\\t' %s -k%s,%s -o %s %s" % (case, group_col + 1, group_col + 1, tmpfile.name, inputfile)
+        group_col_str = str(group_col + 1)
+        command_line = ["sort", "-t", "\t", "-k%s,%s" % (group_col_str, group_col_str), "-o", tmpfile.name, inputfile]
+        if case:
+            command_line.append(case)
     except Exception as exc:
         stop_err('Initialization error -> %s' % str(exc))
 
     try:
-        subprocess.check_output(command_line, stderr=subprocess.STDOUT, shell=True)
+        subprocess.check_output(command_line, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as e:
         stop_err("Sorting input dataset resulted in error: %s: %s" % (e.returncode, e.output))
-
-    fout = open(sys.argv[1], "w")
 
     def is_new_item(line):
         try:
@@ -136,52 +132,56 @@ def main():
             return item.lower()
         return item
 
-    for key, line_list in groupby(tmpfile, key=is_new_item):
-        op_vals = [[] for _ in ops]
-        out_str = key
+    with open(sys.argv[1], "w") as fout:
 
-        for line in line_list:
-            fields = line.split("\t")
-            for i, col in enumerate(cols):
-                col = int(col) - 1  # cXX from galaxy is 1-based
-                try:
-                    val = fields[col].strip()
-                    op_vals[i].append(val)
-                except IndexError:
-                    sys.stderr.write('Could not access the value for column %s on line: "%s". Make sure file is tab-delimited.\n' % (col + 1, line))
-                    sys.exit(1)
+        for key, line_list in groupby(tmpfile, key=is_new_item):
+            op_vals = [[] for _ in ops]
+            out_str = key
 
-        # Generate string for each op for this group
-        for i, op in enumerate(ops):
-            data = op_vals[i]
-            rval = ""
-            if op == "mode":
-                rval = mode(data)
-            elif op == "length":
-                rval = len(data)
-            elif op == "random":
-                rval = random.choice(data)
-            elif op in ['cat', 'cat_uniq']:
-                if op == 'cat_uniq':
-                    data = numpy.unique(data)
-                rval = ','.join(data)
-            elif op == "unique":
-                rval = len(numpy.unique(data))
-            else:
-                # some kind of numpy fn
-                try:
-                    data = float_wdefault(data, default_val[i], col + 1)
-                except ValueError:
-                    sys.stderr.write("Operation %s expected number values but got %s instead.\n" % (op, data))
-                    sys.exit(1)
-                rval = getattr(numpy, op)(data)
-                if round_val[i] == 'yes':
-                    rval = int(round(rval))
+            for line in line_list:
+                fields = line.split("\t")
+                for i, col in enumerate(cols):
+                    col = int(col) - 1  # cXX from galaxy is 1-based
+                    try:
+                        val = fields[col].strip()
+                        op_vals[i].append(val)
+                    except IndexError:
+                        sys.stderr.write('Could not access the value for column %s on line: "%s". Make sure file is tab-delimited.\n' % (col + 1, line))
+                        sys.exit(1)
+
+            # Generate string for each op for this group
+            for i, op in enumerate(ops):
+                data = op_vals[i]
+                rval = ""
+                if op == "mode":
+                    rval = mode(data)
+                elif op == "length":
+                    rval = len(data)
+                elif op == "random":
+                    rval = random.choice(data)
+                elif op in ['cat', 'cat_uniq']:
+                    if op == 'cat_uniq':
+                        data = numpy.unique(data)
+                    rval = ','.join(data)
+                elif op == "unique":
+                    rval = len(numpy.unique(data))
                 else:
-                    rval = '%g' % rval
-            out_str += "\t%s" % rval
+                    # some kind of numpy fn
+                    try:
+                        data = float_wdefault(data, default_val[i], col + 1)
+                    except ValueError:
+                        sys.stderr.write("Operation %s expected number values but got %s instead.\n" % (op, data))
+                        sys.exit(1)
+                    rval = getattr(numpy, op)(data)
+                    if round_val[i] == 'yes':
+                        rval = int(round(rval))
+                    else:
+                        rval = '%g' % rval
+                out_str += "\t%s" % rval
 
-        fout.write(out_str + "\n")
+            fout.write(out_str + "\n")
+
+    tmpfile.close()
 
     # Generate a useful info message.
     msg = "--Group by c%d: " % (group_col + 1)
@@ -200,8 +200,6 @@ def main():
         msg += op + "[c" + cols[i] + "] "
 
     print(msg)
-    fout.close()
-    tmpfile.close()
 
 
 if __name__ == "__main__":
