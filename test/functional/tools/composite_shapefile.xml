@@ -17,7 +17,7 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" ftype="shp" >
+            <param name="input" value="" ftype="shp" >
                 <composite_data value="shapefile/shapefile.dbf"/>
                 <composite_data value="shapefile/shapefile.prj"/>
                 <composite_data value="shapefile/shapefile.shp"/>
@@ -28,12 +28,12 @@
                     <has_text text="{'properties': OrderedDict([('FIPS', 'str:2'), ('ISO2', 'str:2'), ('ISO3', 'str:3'), ('UN', 'int:3')," />
                 </assert_contents>
             </output>
-            <!--output name="output" file="shapefile/output.html">
+            <output name="output" file="shapefile/output.html">
                 <extra_files type="file" name="shapefile.dbf" value="shapefile/shapefile.dbf" compare="sim_size" />
                 <extra_files type="file" name="shapefile.prj" value="shapefile/shapefile.prj" compare="sim_size" />
                 <extra_files type="file" name="shapefile.shp" value="shapefile/shapefile.shp" compare="sim_size" />
                 <extra_files type="file" name="shapefile.shx" value="shapefile/shapefile.shx" compare="sim_size" />
-            </output--!>
+            </output>
         </test>
     </tests>
 </tool>
