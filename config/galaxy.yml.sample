@@ -163,6 +163,17 @@ galaxy:
   # not recommended for production use.
   #database_auto_migrate: false
 
+  # Wait for database to become available instead of failing
+  # immediately.
+  #database_wait: false
+
+  # Number of attempts before failing if database_wait is enabled.
+  #database_wait_attempts: 60
+
+  # Time to sleep between attempts if database_wait is enabled (in
+  # seconds).
+  #database_wait_sleep: 1
+
   # Where dataset files are stored. It must accessible at the same path
   # on any cluster nodes that will run Galaxy jobs, unless using Pulsar.
   #file_path: database/files

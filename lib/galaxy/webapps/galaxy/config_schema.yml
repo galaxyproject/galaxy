@@ -128,6 +128,27 @@ mapping:
           migrate the database forward after updates. This is not recommended for production
           use.
 
+      database_wait:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Wait for database to become available instead of failing immediately.
+
+      database_wait_attempts:
+        type: int
+        default: 60
+        required: false
+        desc: |
+          Number of attempts before failing if database_wait is enabled.
+
+      database_wait_sleep:
+        type: float
+        default: 1
+        required: false
+        desc: |
+          Time to sleep between attempts if database_wait is enabled (in seconds).
+
       file_path:
         type: str
         default: database/files
