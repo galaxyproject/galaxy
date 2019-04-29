@@ -15,7 +15,7 @@ import Webhooks from "mvc/webhooks";
 var View = Backbone.View.extend({
     initialize: function(options) {
         let Galaxy = getGalaxyInstance();
-        var self = this;
+        let self = this;
         this.modal = Galaxy.modal || new Modal.View();
         this.form = new ToolFormBase(
             Utils.merge(
@@ -195,8 +195,10 @@ var View = Backbone.View.extend({
      */
     submit: function(options, callback) {
         let Galaxy = getGalaxyInstance();
-        var self = this;
-        var job_def = {
+        let history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
+        let self = this;
+        let job_def = {
+            history_id: history_id,
             tool_id: options.id,
             tool_version: options.version,
             inputs: this.form.data.create()
@@ -208,7 +210,7 @@ var View = Backbone.View.extend({
             return;
         }
         if (options.action !== `${getAppRoot()}tool_runner/index`) {
-            var $f = $("<form/>").attr({
+            let $f = $("<form/>").attr({
                 action: options.action,
                 method: options.method,
                 enctype: options.enctype
@@ -240,15 +242,15 @@ var View = Backbone.View.extend({
                         toolId: job_def.tool_id
                     });
                 }
-                Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshContents();
+                Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshContents();
             },
             error: function(response) {
                 callback && callback();
                 Galaxy.emit.debug("tool-form::submit", "Submission failed.", response);
-                var input_found = false;
+                let input_found = false;
                 if (response && response.err_data) {
-                    var error_messages = self.form.data.matchResponse(response.err_data);
-                    for (var input_id in error_messages) {
+                    let error_messages = self.form.data.matchResponse(response.err_data);
+                    for (let input_id in error_messages) {
                         self.form.highlight(input_id, error_messages[input_id]);
                         input_found = true;
                         break;
@@ -363,7 +365,7 @@ var View = Backbone.View.extend({
     },
 
     _templateSuccess: function(response, job_def) {
-        var njobs = response.jobs.length;
+        var njobs = response && response.jobs ? response.jobs.length : 0;
         if (njobs > 0) {
             var inputs = this._getInputs(job_def);
             var ninputs = inputs.length;

@@ -455,6 +455,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     def create(self, trans, payload, **kwd):
         """
         POST /api/tools
+        Execute tool with a given parameter payload
         """
         tool_id = payload.get("tool_id")
         tool_uuid = payload.get("tool_uuid")
@@ -468,8 +469,6 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         action = payload.get('action', None)
         if action == 'rerun':
             raise Exception("'rerun' action has been deprecated")
-
-        # -- Execute tool. --
 
         # Get tool.
         tool_version = payload.get('tool_version', None)
@@ -504,21 +503,14 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         # Set up inputs.
         inputs = payload.get('inputs', {})
+
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():
             if k.startswith('files_') or k.startswith('__files_'):
                 inputs[k] = v
 
         # for inputs that are coming from the Library, copy them into the history
-        input_patch = {}
-        for k, v in inputs.items():
-            if isinstance(v, dict) and v.get('src', '') == 'ldda' and 'id' in v:
-                ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(self.decode_id(v['id']))
-                if trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset):
-                    input_patch[k] = ldda.to_history_dataset_association(target_history, add_to_history=True)
-
-        for k, v in input_patch.items():
-            inputs[k] = v
+        self._patch_library_inputs(trans, inputs, target_history)
 
         # TODO: encode data ids and decode ids.
         # TODO: handle dbkeys
@@ -566,6 +558,27 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             rval['implicit_collections'].append(output_dict)
 
         return rval
+
+    def _patch_library_inputs(self, trans, inputs, target_history):
+        """
+        Transform inputs from the data libaray to history items.
+        """
+        for k, v in inputs.items():
+            new_value = self._patch_library_dataset(trans, v, target_history)
+            if new_value:
+                v = new_value
+            elif isinstance(v, dict) and 'values' in v:
+                for index, value in enumerate(v['values']):
+                    patched = self._patch_library_dataset(trans, value, target_history)
+                    if patched:
+                        v['values'][index] = patched
+            inputs[k] = v
+
+    def _patch_library_dataset(self, trans, v, target_history):
+        if isinstance(v, dict) and 'id' in v and v.get('src') == 'ldda':
+            ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(self.decode_id(v['id']))
+            if trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset):
+                return ldda.to_history_dataset_association(target_history, add_to_history=True)
 
     #
     # -- Helper methods --

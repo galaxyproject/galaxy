@@ -98,7 +98,7 @@ describe("services.js/Services", () => {
         let items = services.getItems(rawData);
         expect(items.length).to.equals(1);
         let first = items[0];
-        expect(first.name).to.equals("1: name_1");
+        expect(first.label).to.equals("1: name_1");
         expect(first.download).to.equals("host/api/histories/0/contents/1/display");
     });
 });

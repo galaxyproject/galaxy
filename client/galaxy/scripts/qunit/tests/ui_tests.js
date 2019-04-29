@@ -734,10 +734,10 @@ QUnit.test("select-content", function(assert) {
             select.$(".ui-select:last").css("display") == (options.selectfields == 1 ? "block" : "none"),
             "Last select visibility"
         );
-        /*assert.ok(
+        assert.ok(
             (select.button_dialog.$el.css("display") != "none") === options.showdialog,
             "Data dialog button visible"
-        );*/
+        );
         _testSelect("first", options);
         _testSelect("last", options);
     };

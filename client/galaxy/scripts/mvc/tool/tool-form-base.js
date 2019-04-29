@@ -26,7 +26,7 @@ export default FormBase.extend({
         this._update(this.model.get("initialmodel"));
 
         // listen to history panel
-        if (this.model.get("listen_to_history") && Galaxy && Galaxy.currHistoryPanel) {
+        if (this.model.get("listen_to_history") && Galaxy.currHistoryPanel) {
             this.listenTo(Galaxy.currHistoryPanel.collection, "change", () => {
                 self.model.get("onchange")();
             });
