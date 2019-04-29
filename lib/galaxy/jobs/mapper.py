@@ -1,10 +1,10 @@
 import importlib
-import inspect
 import logging
 
 import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
 from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
+from galaxy.util.getargspec import getfullargspec
 from galaxy.util.submodules import import_submodules
 from .rule_helper import RuleHelper
 
@@ -56,7 +56,7 @@ class JobRunnerMapper(object):
             self.rules_module = importlib.import_module(module_name)
 
     def __invoke_expand_function(self, expand_function, destination):
-        function_arg_names = inspect.getargspec(expand_function).args
+        function_arg_names = getfullargspec(expand_function).args
         app = self.job_wrapper.app
         possible_args = {
             "job_id": self.job_wrapper.job_id,
