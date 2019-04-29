@@ -244,51 +244,93 @@ var LibraryToolbarView = Backbone.View.extend({
     templatePaginator: function() {
         return _.template(
             [
-                '<ul class="pagination mr-1">',
-                "<% if ( ( show_page - 1 ) > 0 ) { %>",
-                "<% if ( ( show_page - 1 ) > page_count ) { %>", // we are on higher page than total page count
-                '<li class="page-item"><a class="page-link" href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>',
-                '<li class="page-item disabled"><a class="page-link" href="#page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>',
-                "<% } else { %>",
-                '<li class="page-item"><a class="page-link" href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>',
-                '<li class="page-item"><a class="page-link" href="#page/<% print( show_page - 1 ) %>"><% print( show_page - 1 ) %></a></li>',
-                "<% } %>",
-                "<% } else { %>", // we are on the first page
-                '<li class="page-item disabled"><a class="page-link" href="#page/1"><span class="fa fa-angle-double-left"></span></a></li>',
-                '<li class="page-item disabled"><a class="page-link" href="#page/<% print( show_page ) %>"><% print( show_page - 1 ) %></a></li>',
-                "<% } %>",
-                '<li class="page-item active">',
-                '<a class="page-link" href="#page/<% print( show_page ) %>"><% print( show_page ) %></a>',
-                "</li>",
-                "<% if ( ( show_page ) < page_count ) { %>",
-                '<li class="page-item"><a class="page-link" href="#page/<% print( show_page + 1 ) %>"><% print( show_page + 1 ) %></a></li>',
-                '<li class="page-item"><a class="page-link" href="#page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
-                "<% } else { %>",
-                '<li class="page-item disabled"><a class="page-link" href="#page/<% print( show_page  ) %>"><% print( show_page + 1 ) %></a></li>',
-                '<li class="page-item disabled"><a class="page-link" href="#page/<% print( page_count ) %>"><span class="fa fa-angle-double-right"></span></a></li>',
-                "<% } %>",
-                "</ul>",
-                '<span class="mr-1">',
-                ' <%- libraries_shown %> libraries shown <a href="" data-toggle="tooltip" data-placement="top" title="currently <%- library_page_size %> per page" class="page_size_prompt">(change)</a>',
-                "</span>",
-                '<span class="mr-1">',
-                " <%- total_libraries_count %> total",
-                "</span>"
+                `<ul class="pagination mr-1">
+                    <% if ( ( show_page - 1 ) > 0 ) { %>
+                        <% if ( ( show_page - 1 ) > page_count ) { %>`, // we are on higher page than total page count
+                `           <li class="page-item">
+                                <a class="page-link" href="#page/1">
+                                    <span class="fa fa-angle-double-left"></span>
+                                </a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#page/<% print( show_page ) %>">
+                                    <% print( show_page - 1 ) %>
+                                </a>
+                            </li>
+                        <% } else { %>
+                            <li class="page-item">
+                                <a class="page-link" href="#page/1">
+                                    <span class="fa fa-angle-double-left"></span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="#page/<% print( show_page - 1 ) %>">
+                                    <% print( show_page - 1 ) %>
+                                </a>
+                            </li>
+                        <% } %>
+                    <% } else { %>`, // we are on the first page
+                `       <li class="page-item disabled">
+                            <a class="page-link" href="#page/1">
+                                <span class="fa fa-angle-double-left"></span>
+                            </a>
+                        </li>
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#page/<% print( show_page ) %>">
+                                <% print( show_page - 1 ) %>
+                            </a>
+                        </li>
+                    <% } %>
+                        <li class="page-item active">
+                            <a class="page-link" href="#page/<% print( show_page ) %>">
+                                <% print( show_page ) %>
+                            </a>
+                        </li>
+                    <% if ( ( show_page ) < page_count ) { %>
+                        <li class="page-item">
+                            <a class="page-link" href="#page/<% print( show_page + 1 ) %>">
+                                <% print( show_page + 1 ) %>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#page/<% print( page_count ) %>">
+                                <span class="fa fa-angle-double-right"></span>
+                            </a>
+                        </li>
+                    <% } else { %>
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#page/<% print( show_page  ) %>">
+                                <% print( show_page + 1 ) %>
+                            </a>
+                        </li>
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#page/<% print( page_count ) %>">
+                                <span class="fa fa-angle-double-right"></span>
+                            </a>
+                        </li>
+                    <% } %>
+                </ul>
+                <span class="mr-1">
+                    <%- libraries_shown %> libraries shown <a href="" data-toggle="tooltip"
+                        data-placement="top" title="currently <%- library_page_size %> per page"
+                        class="page_size_prompt">(change)</a>
+                </span>
+                <span class="mr-1">
+                    <%- total_libraries_count %> total
+                </span>`
             ].join("")
         );
     },
 
     templateNewLibraryInModal: function() {
         return _.template(
-            [
-                '<div id="new_library_modal">',
-                "<form>",
-                '<input type="text" name="Name" value="" placeholder="Name" autofocus>',
-                '<input type="text" name="Description" value="" placeholder="Description">',
-                '<input type="text" name="Synopsis" value="" placeholder="Synopsis">',
-                "</form>",
-                "</div>"
-            ].join("")
+            `<div id="new_library_modal">
+                <form>
+                    <input type="text" name="Name" value="" placeholder="Name" autofocus>
+                    <input type="text" name="Description" value="" placeholder="Description">
+                    <input type="text" name="Synopsis" value="" placeholder="Synopsis">
+                </form>
+            </div>`
         );
     }
 });
