@@ -684,7 +684,7 @@ div.form-row-input label {
 }
 
 #run-workflow {
-    @include float-right;
+    @extend .float-right;
     @extend .mt-3;
 }
 
