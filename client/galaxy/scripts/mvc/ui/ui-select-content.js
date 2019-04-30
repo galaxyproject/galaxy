@@ -17,6 +17,7 @@ var Configurations = {
             src: "hda",
             icon: "fa-file-o",
             tooltip: _l("Single dataset"),
+            library: true,
             multiple: false,
             batch: Batch.DISABLED
         },
@@ -355,7 +356,7 @@ var View = Backbone.View.extend({
                     },
                     {
                         multiple: cnf.multiple,
-                        library: !cnf.multiple,
+                        library: cnf.library,
                         format: null
                     }
                 );
