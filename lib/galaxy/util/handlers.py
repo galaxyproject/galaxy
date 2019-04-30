@@ -62,8 +62,7 @@ class ConfiguresHandlers(object):
                         [x.strip() for x in handler.get('tags', self.DEFAULT_HANDLER_TAG).split(',')]
                     )
             self.default_handler_id = self._get_default(
-                    self.app.config, config_element, list(self.handlers.keys()),
-                    required=self.deterministic_handler_assignment)
+                self.app.config, config_element, list(self.handlers.keys()), required=False)
 
     def _init_handler_assignment_methods(self, config_element=None):
         self.__is_handler = None
@@ -186,7 +185,8 @@ class ConfiguresHandlers(object):
 
     @property
     def deterministic_handler_assignment(self):
-        return any(filter(lambda x: x in (
+        return self.handler_assignment_methods and any(
+            filter(lambda x: x in (
                 HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE,
                 HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN,
             ), self.handler_assignment_methods))
