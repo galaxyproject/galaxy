@@ -8,10 +8,10 @@ import Select from "mvc/ui/ui-select-default";
 import { getGalaxyInstance } from "app";
 
 /** Batch mode letiations */
-let Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
+const Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
 
 /** List of available content selectors options */
-let Configurations = {
+const Configurations = {
     data: [
         {
             src: "hda",
