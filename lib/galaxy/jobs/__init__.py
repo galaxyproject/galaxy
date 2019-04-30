@@ -112,6 +112,35 @@ def config_exception(e, file):
     return Exception(message)
 
 
+def job_config_xml_to_dict(config, root):
+    config_dict = {}
+
+    runners = {}
+    config_dict["runners"] = runners
+
+    # Parser plugins section populate 'runners' and 'dynamic' in config_dict.
+    plugins = root.find('plugins')
+    if plugins is not None:
+        for plugin in ConfiguresHandlers._findall_with_required(plugins, 'plugin', ('id', 'type', 'load')):
+            if plugin.get('type') == 'runner':
+                workers = plugin.get('workers', plugins.get('workers', JobConfiguration.DEFAULT_NWORKERS))
+                runner_kwds = JobConfiguration.get_params(config, plugin)
+                plugin_id = plugin.get('id')
+                runner_info = dict(id=plugin_id,
+                                   load=plugin.get('load'),
+                                   workers=int(workers),
+                                   kwds=runner_kwds)
+                runners[plugin_id] = runner_info
+            else:
+                log.error('Unknown plugin type: %s' % plugin.get('type'))
+
+        for plugin in ConfiguresHandlers._findall_with_required(plugins, 'plugin', ('id', 'type')):
+            if plugin.get('id') == 'dynamic' and plugin.get('type') == 'runner':
+                config_dict["dynamic"] = JobConfiguration.get_params(config, plugin)
+
+    return config_dict
+
+
 class JobConfiguration(ConfiguresHandlers):
     """A parser and interface to advanced job management features.
 
@@ -182,6 +211,29 @@ class JobConfiguration(ConfiguresHandlers):
         except Exception as e:
             raise config_exception(e, job_config_file)
 
+    def _configure_from_dict(self, job_config_dict):
+        for runner_id, runner_info in job_config_dict["runners"].items():
+            if "kwds" not in runner_info:
+                # convert all 'extra' parameters into kwds, allows defining a runner
+                # with a flat dictionary.
+                kwds = {}
+                for key, value in runner_info.items():
+                    if key in ['id', 'load', 'workers']:
+                        continue
+                    kwds[key] = value
+                runner_info["kwds"] = kwds
+
+            if not self.__is_enabled(runner_info.get("kwds")):
+                continue
+            runner_info["id"] = runner_id
+            if runner_id == "dynamic":
+                log.warning('Deprecated treatment of dynamic running configuration as an actual job runner.')
+                self.dynamic_params = runner_info["kwds"]
+                continue
+            self.runner_plugins.append(runner_info)
+        if "dynamic" in job_config_dict:
+            self.dynamic_params = job_config_dict.get("dynamic", None)
+
     def __parse_job_conf_xml(self, tree):
         """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).
 
@@ -191,29 +243,12 @@ class JobConfiguration(ConfiguresHandlers):
         root = tree.getroot()
         log.debug('Loading job configuration from %s' % self.app.config.job_config_file)
 
-        # Parse job plugins
-        plugins = root.find('plugins')
-        if plugins is not None:
-            for plugin in self._findall_with_required(plugins, 'plugin', ('id', 'type', 'load')):
-                if plugin.get('type') == 'runner':
-                    workers = plugin.get('workers', plugins.get('workers', JobConfiguration.DEFAULT_NWORKERS))
-                    runner_kwds = self.__get_params(plugin)
-                    if not self.__is_enabled(runner_kwds):
-                        continue
-                    runner_info = dict(id=plugin.get('id'),
-                                       load=plugin.get('load'),
-                                       workers=int(workers),
-                                       kwds=runner_kwds)
-                    self.runner_plugins.append(runner_info)
-                else:
-                    log.error('Unknown plugin type: %s' % plugin.get('type'))
-            for plugin in self._findall_with_required(plugins, 'plugin', ('id', 'type')):
-                if plugin.get('id') == 'dynamic' and plugin.get('type') == 'runner':
-                    self.dynamic_params = self.__get_params(plugin)
-
+        job_config_dict = job_config_xml_to_dict(self.app.config, root)
         # Load tasks if configured
         if self.app.config.use_tasked_jobs:
-            self.runner_plugins.append(dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers))
+            job_config_dict["runners"]["tasks"] = dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers, kwds={})
+
+        self._configure_from_dict(job_config_dict)
 
         # Parse handlers
         handlers_conf = root.find('handlers')
@@ -383,14 +418,8 @@ class JobConfiguration(ConfiguresHandlers):
     def __parse_resource_parameters(self):
         self.resource_parameters = util.parse_resource_parameters(self.app.config.job_resource_params_file)
 
-    def __get_params(self, parent):
-        """Parses any child <param> tags in to a dictionary suitable for persistence.
-
-        :param parent: Parent element in which to find child <param> tags.
-        :type parent: ``xml.etree.ElementTree.Element``
-
-        :returns: dict
-        """
+    @staticmethod
+    def get_params(config, parent):
         rval = {}
         for param in parent.findall('param'):
             key = param.get('id')
@@ -406,10 +435,20 @@ class JobConfiguration(ConfiguresHandlers):
                 param_value = os.environ.get(environ_var, param_value)
             elif 'from_config' in param.attrib:
                 config_val = param.attrib['from_config']
-                param_value = self.app.config.config_dict.get(config_val, param_value)
+                param_value = config.config_dict.get(config_val, param_value)
 
             rval[key] = param_value
         return rval
+
+    def __get_params(self, parent):
+        """Parses any child <param> tags in to a dictionary suitable for persistence.
+
+        :param parent: Parent element in which to find child <param> tags.
+        :type parent: ``xml.etree.ElementTree.Element``
+
+        :returns: dict
+        """
+        return JobConfiguration.get_params(self.app.config, parent)
 
     def __get_envs(self, parent):
         """Parses any child <env> tags in to a dictionary suitable for persistence.
@@ -451,7 +490,7 @@ class JobConfiguration(ConfiguresHandlers):
     def __is_enabled(self, params):
         """Check for an enabled parameter - pop it out - and return as boolean."""
         enabled = True
-        if "enabled" in params:
+        if "enabled" in (params or {}):
             raw_enabled = params.pop("enabled")
             enabled = util.asbool(raw_enabled)
 
