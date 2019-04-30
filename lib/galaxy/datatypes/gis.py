@@ -6,8 +6,6 @@ import logging
 
 from galaxy.datatypes.binary import Binary
 
-log = logging.getLogger(__name__)
-
 
 class Shapefile(Binary):
     """ The Shapefile data format:
