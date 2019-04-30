@@ -256,9 +256,10 @@ class Biom1(Json):
                         if b_name == "columns" and metadata_value:
                             keep_columns = set()
                             for column in metadata_value:
-                                for k, v in column['metadata'].items():
-                                    if v is not None:
-                                        keep_columns.add(k)
+                                if column['metadata'] is not None:
+                                    for k, v in column['metadata'].items():
+                                        if v is not None:
+                                            keep_columns.add(k)
                             final_list = sorted(list(keep_columns))
                             dataset.metadata.table_column_metadata_headers = final_list
                         if b_name in b_transform:
