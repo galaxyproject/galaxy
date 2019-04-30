@@ -138,6 +138,9 @@ def job_config_xml_to_dict(config, root):
             if plugin.get('id') == 'dynamic' and plugin.get('type') == 'runner':
                 config_dict["dynamic"] = JobConfiguration.get_params(config, plugin)
 
+    handling_config_dict = ConfiguresHandlers.xml_to_dict(config, root.find("handlers"))
+    config_dict["handling"] = handling_config_dict
+
     return config_dict
 
 
@@ -234,6 +237,18 @@ class JobConfiguration(ConfiguresHandlers):
         if "dynamic" in job_config_dict:
             self.dynamic_params = job_config_dict.get("dynamic", None)
 
+        # Parse handlers
+        handling_config_dict = job_config_dict.get("handling", {})
+        self._init_handler_assignment_methods(handling_config_dict)
+        self._init_handlers(handling_config_dict)
+        if not self.handler_assignment_methods_configured:
+            self._set_default_handler_assignment_methods()
+        else:
+            self.app.application_stack.init_job_handling(self)
+        log.info("Job handler assignment methods set to: %s", ', '.join(self.handler_assignment_methods))
+        for tag, handlers in [(t, h) for t, h in self.handlers.items() if isinstance(h, list)]:
+            log.info("Tag [%s] handlers: %s", tag, ', '.join(handlers))
+
     def __parse_job_conf_xml(self, tree):
         """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).
 
@@ -249,18 +264,6 @@ class JobConfiguration(ConfiguresHandlers):
             job_config_dict["runners"]["tasks"] = dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers, kwds={})
 
         self._configure_from_dict(job_config_dict)
-
-        # Parse handlers
-        handlers_conf = root.find('handlers')
-        self._init_handler_assignment_methods(handlers_conf)
-        self._init_handlers(handlers_conf)
-        if not self.handler_assignment_methods_configured:
-            self._set_default_handler_assignment_methods()
-        else:
-            self.app.application_stack.init_job_handling(self)
-        log.info("Job handler assignment methods set to: %s", ', '.join(self.handler_assignment_methods))
-        for tag, handlers in [(t, h) for t, h in self.handlers.items() if isinstance(h, list)]:
-            log.info("Tag [%s] handlers: %s", tag, ', '.join(handlers))
 
         # Parse destinations
         destinations = root.find('destinations')
@@ -366,11 +369,11 @@ class JobConfiguration(ConfiguresHandlers):
 
         log.debug('Done loading job configuration')
 
-    def _parse_handler(self, handler_id, handler_element):
-        for plugin in handler_element.findall('plugin'):
+    def _parse_handler(self, handler_id, process_dict):
+        for plugin_id in process_dict.get("plugins") or []:
             if handler_id not in self.handler_runner_plugins:
                 self.handler_runner_plugins[handler_id] = []
-            self.handler_runner_plugins[handler_id].append(plugin.get('id'))
+            self.handler_runner_plugins[handler_id].append(plugin_id)
 
     def __set_default_job_conf(self):
         # Run jobs locally

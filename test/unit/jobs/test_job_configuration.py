@@ -92,7 +92,7 @@ class JobConfXmlParserTestCase(unittest.TestCase):
     def test_implict_uwsgi_mule_message_handler_assign_with_explicit_handlers(self):
         self.__with_handlers_config(handlers=[{'id': 'handler0'}, {'id': 'handler1'}])
         self.__with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
-        assert self.job_config.handler_assignment_methods == ['uwsgi-mule-message', 'db-preassign']
+        assert self.job_config.handler_assignment_methods == ['uwsgi-mule-message', 'db-preassign'], self.job_config.handler_assignment_methods
         assert self.job_config.default_handler_id is None
         assert self.job_config.handlers['_default_'] == ['handler0', 'handler1', 'main.job-handlers.1']
 
