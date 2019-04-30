@@ -223,6 +223,21 @@ def job_config_xml_to_dict(config, root):
             tool_mapping_conf["params"] = JobConfiguration.get_params(config, tool)
             config_dict['tools'].append(tool_mapping_conf)
 
+    limits_config = []
+    limits = root.find('limits')
+    if limits is not None:
+        for limit in JobConfiguration._findall_with_required(limits, 'limit', ('type',)):
+            limit_dict = {}
+            for key in ['type', 'tag', 'id', 'window']:
+                if key == 'type' and key.startswith('destination_'):
+                    key = 'environment_%s' % key[len("destination_"):]
+                value = limit.get(key)
+                if value:
+                    limit_dict[key] = value
+                limit_dict['value'] = limit.text
+            limits_config.append(limit_dict)
+
+    config_dict['limits'] = limits_config
     return config_dict
 
 
@@ -394,7 +409,7 @@ class JobConfiguration(ConfiguresHandlers):
         tools = job_config_dict.get('tools', [])
         for tool in tools:
             tool_id = tool.get('id').lower().rstrip('/')
-            if id not in self.tools:
+            if tool_id not in self.tools:
                 self.tools[tool_id] = list()
             params = tool.get("params")
             if params is None:
@@ -407,6 +422,47 @@ class JobConfiguration(ConfiguresHandlers):
             if "environment" in tool:
                 tool["destination"] = tool.pop("environment")
             self.tools[tool_id].append(JobToolConfiguration(**dict(tool.items())))
+
+        types = dict(registered_user_concurrent_jobs=int,
+                     anonymous_user_concurrent_jobs=int,
+                     walltime=str,
+                     total_walltime=str,
+                     output_size=util.size_to_bytes)
+
+        # Parse job limits
+        for limit_dict in job_config_dict.get("limits", []):
+            limit_type = limit_dict.get('type')
+            if limit_type.startswith("environment_"):
+                limit_type = 'destination_%s' % limit_type[len("environment_"):]
+
+            limit_value = limit_dict.get("value")
+            # concurrent_jobs renamed to destination_user_concurrent_jobs in job_conf.xml
+            if limit_type in ('destination_user_concurrent_jobs', 'concurrent_jobs', 'destination_total_concurrent_jobs'):
+                id = limit_dict.get('tag', None) or limit_dict.get('id')
+                if limit_type == 'destination_total_concurrent_jobs':
+                    self.limits.destination_total_concurrent_jobs[id] = int(limit_value)
+                else:
+                    self.limits.destination_user_concurrent_jobs[id] = int(limit_value)
+            elif limit_type == 'total_walltime':
+                self.limits.total_walltime["window"] = (
+                    int(limit_dict.get('window')) or 30
+                )
+                self.limits.total_walltime["raw"] = (
+                    types.get(limit_type, str)(limit_value)
+                )
+            elif limit_value:
+                self.limits.__dict__[limit_type] = types.get(limit_type, str)(limit_value)
+
+        if self.limits.walltime is not None:
+            h, m, s = [int(v) for v in self.limits.walltime.split(':')]
+            self.limits.walltime_delta = datetime.timedelta(0, s, 0, 0, m, h)
+
+        if "raw" in self.limits.total_walltime:
+            h, m, s = [int(v) for v in
+                       self.limits.total_walltime["raw"].split(':')]
+            self.limits.total_walltime["delta"] = datetime.timedelta(
+                0, s, 0, 0, m, h
+            )
 
     def __parse_job_conf_xml(self, tree):
         """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).
@@ -423,45 +479,6 @@ class JobConfiguration(ConfiguresHandlers):
             job_config_dict["runners"]["tasks"] = dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers, kwds={})
 
         self._configure_from_dict(job_config_dict)
-
-        types = dict(registered_user_concurrent_jobs=int,
-                     anonymous_user_concurrent_jobs=int,
-                     walltime=str,
-                     total_walltime=str,
-                     output_size=util.size_to_bytes)
-
-        # Parse job limits
-        limits = root.find('limits')
-        if limits is not None:
-            for limit in self._findall_with_required(limits, 'limit', ('type',)):
-                type = limit.get('type')
-                # concurrent_jobs renamed to destination_user_concurrent_jobs in job_conf.xml
-                if type in ('destination_user_concurrent_jobs', 'concurrent_jobs', 'destination_total_concurrent_jobs'):
-                    id = limit.get('tag', None) or limit.get('id')
-                    if type == 'destination_total_concurrent_jobs':
-                        self.limits.destination_total_concurrent_jobs[id] = int(limit.text)
-                    else:
-                        self.limits.destination_user_concurrent_jobs[id] = int(limit.text)
-                elif type == 'total_walltime':
-                    self.limits.total_walltime["window"] = (
-                        int(limit.get('window')) or 30
-                    )
-                    self.limits.total_walltime["raw"] = (
-                        types.get(type, str)(limit.text)
-                    )
-                elif limit.text:
-                    self.limits.__dict__[type] = types.get(type, str)(limit.text)
-
-        if self.limits.walltime is not None:
-            h, m, s = [int(v) for v in self.limits.walltime.split(':')]
-            self.limits.walltime_delta = datetime.timedelta(0, s, 0, 0, m, h)
-
-        if "raw" in self.limits.total_walltime:
-            h, m, s = [int(v) for v in
-                       self.limits.total_walltime["raw"].split(':')]
-            self.limits.total_walltime["delta"] = datetime.timedelta(
-                0, s, 0, 0, m, h
-            )
 
         log.debug('Done loading job configuration')
 
