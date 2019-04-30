@@ -32,7 +32,7 @@
                             </b-form-group>
                             <b-button name="create" type="submit">Create</b-button>
                         </b-card-body>
-                        <b-card-footer>
+                        <b-card-footer v-if="!isAdmin">
                             Already have an account?
                             <a id="login-toggle" href="#" @click.prevent="toggleLogin">Log in here.</a>
                         </b-card-footer>
@@ -80,7 +80,8 @@ export default {
             subscribe: null,
             messageText: null,
             messageVariant: null,
-            session_csrf_token: galaxy.session_csrf_token
+            session_csrf_token: galaxy.session_csrf_token,
+            isAdmin: galaxy.user.isAdmin()
         };
     },
     computed: {
