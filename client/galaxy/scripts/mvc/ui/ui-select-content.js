@@ -7,11 +7,11 @@ import Ui from "mvc/ui/ui-misc";
 import Select from "mvc/ui/ui-select-default";
 import { getGalaxyInstance } from "app";
 
-/** Batch mode variations */
-var Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
+/** Batch mode letiations */
+let Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
 
 /** List of available content selectors options */
-var Configurations = {
+let Configurations = {
     data: [
         {
             src: "hda",
@@ -123,9 +123,9 @@ var Configurations = {
 };
 
 /** View for hda and hdca content selector ui elements */
-var View = Backbone.View.extend({
+let View = Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
+        let self = this;
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -258,7 +258,7 @@ var View = Backbone.View.extend({
 
     /** Change of current select field */
     _changeCurrent: function() {
-        var self = this;
+        let self = this;
         _.each(this.fields, (field, i) => {
             let cnf = self.config[i];
             if (self.model.get("current") == i) {
@@ -293,7 +293,7 @@ var View = Backbone.View.extend({
         let galaxy = getGalaxyInstance();
 
         // identify selector type identifier i.e. [ flavor ]_[ type ]_[ multiple ]
-        var config_id =
+        let config_id =
             (this.model.get("flavor") ? `${this.model.get("flavor")}_` : "") +
             String(this.model.get("type")) +
             (this.model.get("multiple") ? "_multiple" : "");
@@ -305,9 +305,9 @@ var View = Backbone.View.extend({
         }
 
         // prepare extension component of error message
-        var data = self.model.get("data");
-        var extensions = Utils.textify(this.model.get("extensions"));
-        var src_labels = this.model.get("src_labels");
+        let data = self.model.get("data");
+        let extensions = Utils.textify(this.model.get("extensions"));
+        let src_labels = this.model.get("src_labels");
 
         // build radio button for data selectors
         this.fields = [];
@@ -384,7 +384,7 @@ var View = Backbone.View.extend({
 
     /** Change of wait flag */
     _changeWait: function() {
-        var self = this;
+        let self = this;
         _.each(this.fields, field => {
             field[self.model.get("wait") ? "wait" : "unwait"]();
         });
@@ -392,9 +392,9 @@ var View = Backbone.View.extend({
 
     /** Change of available options */
     _changeData: function() {
-        var options = this.model.get("data");
-        var self = this;
-        var select_options = {};
+        let options = this.model.get("data");
+        let self = this;
+        let select_options = {};
         _.each(options, (items, src) => {
             select_options[src] = [];
             _.each(items, item => {
@@ -416,19 +416,19 @@ var View = Backbone.View.extend({
 
     /** Change of incoming value */
     _changeValue: function() {
-        var new_value = this.model.get("value");
+        let new_value = this.model.get("value");
         if (new_value && new_value.values && new_value.values.length > 0) {
             // create list with content ids
-            var list = [];
+            let list = [];
             _.each(new_value.values, value => {
                 list.push(value.id);
             });
             // sniff first suitable field type from config list
-            var src = new_value.values[0].src;
-            var multiple = new_value.values.length > 1;
-            for (var i = 0; i < this.config.length; i++) {
-                var field = this.fields[i];
-                var c = this.config[i];
+            let src = new_value.values[0].src;
+            let multiple = new_value.values.length > 1;
+            for (let i = 0; i < this.config.length; i++) {
+                let field = this.fields[i];
+                let c = this.config[i];
                 if (c.src == src && [multiple, true].indexOf(c.multiple) !== -1) {
                     this.model.set("current", i);
                     field.value(list);
@@ -502,7 +502,7 @@ var View = Backbone.View.extend({
                 let first_id = values[0].id;
                 let first_src = values[0].src;
                 if (config.src == first_src && drop_partial) {
-                    var current_value = field.value();
+                    let current_value = field.value();
                     if (current_value && config.multiple) {
                         _.each(values, v => {
                             if (current_value.indexOf(v.id) == -1) {
@@ -525,7 +525,7 @@ var View = Backbone.View.extend({
 
     /** Highlight drag result */
     _handleDropStatus: function(status) {
-        var self = this;
+        let self = this;
         this.$el.removeClass("ui-dragover").addClass(`ui-dragover-${status}`);
         setTimeout(() => {
             self.$el.removeClass(`ui-dragover-${status}`);
@@ -535,10 +535,10 @@ var View = Backbone.View.extend({
     /** Assists in identifying the batch mode */
     _batch: function(result) {
         result["batch"] = false;
-        var current = this.model.get("current");
-        var config = this.config[current];
+        let current = this.model.get("current");
+        let config = this.config[current];
         if (config.src == "hdca") {
-            var hdca = this.cache[`${this.fields[current].value()}_hdca`];
+            let hdca = this.cache[`${this.fields[current].value()}_hdca`];
             if (hdca && hdca.map_over_type) {
                 result["batch"] = true;
             }
