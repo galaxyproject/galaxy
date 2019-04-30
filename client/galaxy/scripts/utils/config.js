@@ -364,7 +364,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
     render_in_modal: function(title) {
         // Set up handlers for cancel, ok button and for handling esc key.
         var self = this;
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         var cancel_fn = () => {
             Galaxy.modal.hide();

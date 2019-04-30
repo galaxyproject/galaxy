@@ -37,7 +37,7 @@ export function standardInit(label = "Galaxy", appFactory = defaultAppFactory) {
     globalInits();
 
     // waits for configs to stop changing then instantiates Galaxy
-    let galaxy$ = config$.pipe(map(cfg => appFactory(cfg, label)));
+    const galaxy$ = config$.pipe(map(cfg => appFactory(cfg, label)));
 
     // once config, app and initialization observables have a value then run all
     // the initialization functions, this will keep running new initialization

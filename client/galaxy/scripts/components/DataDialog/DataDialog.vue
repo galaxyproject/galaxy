@@ -99,7 +99,7 @@ export default {
         },
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
         formatRows() {
-            for (let item of this.items) {
+            for (const item of this.items) {
                 let _rowVariant = "active";
                 if (item.isDataset) {
                     _rowVariant = this.model.exists(item.id) ? "success" : "default";
@@ -121,7 +121,7 @@ export default {
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
         finalize: function() {
-            let results = this.model.finalize();
+            const results = this.model.finalize();
             this.modalShow = false;
             this.callback(results);
         },

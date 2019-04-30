@@ -9,8 +9,8 @@ import { setGalaxyInstance } from "app";
  */
 export const defaultAppFactory = (config, label = "Galaxy") => {
     return setGalaxyInstance(GalaxyApp => {
-        let { options, bootstrapped } = config;
-        let app = new GalaxyApp(options, bootstrapped);
+        const { options, bootstrapped } = config;
+        const app = new GalaxyApp(options, bootstrapped);
         app.debug(`${label} app`);
         return app;
     });

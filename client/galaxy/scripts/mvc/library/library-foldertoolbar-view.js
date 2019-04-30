@@ -78,7 +78,7 @@ var FolderToolbarView = Backbone.View.extend({
 
     render: function(options) {
         this.options = _.extend(this.options, options);
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var toolbar_template = this.templateToolBar();
         var template_defaults = {
             id: this.options.id,
@@ -107,7 +107,7 @@ var FolderToolbarView = Backbone.View.extend({
      */
     renderPaginator: function(options) {
         this.options = _.extend(this.options, options);
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var paginator_template = this.templatePaginator();
         $("body")
             .find(".folder-paginator")
@@ -125,7 +125,7 @@ var FolderToolbarView = Backbone.View.extend({
 
     configureElements: function(options) {
         this.options = _.extend(this.options, options);
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         if (this.options.can_add_library_item === true) {
             $(".add-library-items").show();
@@ -155,7 +155,7 @@ var FolderToolbarView = Backbone.View.extend({
     createFolderFromModal: function(event) {
         event.preventDefault();
         event.stopPropagation();
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var template = this.templateNewFolderInModal();
         this.modal = Galaxy.modal;
         this.modal.show({
@@ -174,7 +174,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     createNewFolderEvent: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var folderDetails = this.serializeNewFolder();
         if (this.validateNewFolder(folderDetails)) {
             var folder = new mod_library_model.FolderAsModel();
@@ -222,7 +222,7 @@ var FolderToolbarView = Backbone.View.extend({
 
     importToHistoryModal: function(e) {
         e.preventDefault();
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var $checkedValues = this.findCheckedRows();
         var template = this.templateImportIntoHistoryModal();
         if ($checkedValues.length === 0) {
@@ -296,8 +296,8 @@ var FolderToolbarView = Backbone.View.extend({
         var items_to_import = [];
         // prepare the dataset objects to be imported
         for (let i = checked_items.dataset_ids.length - 1; i >= 0; i--) {
-            let library_dataset_id = checked_items.dataset_ids[i];
-            let historyItem = new mod_library_model.HistoryItem();
+            const library_dataset_id = checked_items.dataset_ids[i];
+            const historyItem = new mod_library_model.HistoryItem();
             historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
             historyItem.content = library_dataset_id;
             historyItem.source = "library";
@@ -305,8 +305,8 @@ var FolderToolbarView = Backbone.View.extend({
         }
         // prepare the folder objects to be imported
         for (let i = checked_items.folder_ids.length - 1; i >= 0; i--) {
-            let library_folder_id = checked_items.folder_ids[i];
-            let historyItem = new mod_library_model.HistoryItem();
+            const library_folder_id = checked_items.folder_ids[i];
+            const historyItem = new mod_library_model.HistoryItem();
             historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
             historyItem.content = library_folder_id;
             historyItem.source = "library_folder";
@@ -373,7 +373,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     addFilesFromHistoryModal: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.histories = new mod_library_model.GalaxyHistories();
         this.histories
             .fetch()
@@ -416,7 +416,7 @@ var FolderToolbarView = Backbone.View.extend({
      * Create modal for importing from Galaxy path.
      */
     importFilesFromPathModal: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.modal = Galaxy.modal;
         var template_modal = this.templateImportPathModal();
         this.modal.show({
@@ -450,7 +450,7 @@ var FolderToolbarView = Backbone.View.extend({
             url: `${getAppRoot()}api/datatypes?extension_only=False`,
             success: datatypes => {
                 this.list_extensions = [];
-                for (let key in datatypes) {
+                for (const key in datatypes) {
                     this.list_extensions.push({
                         id: datatypes[key].extension,
                         text: datatypes[key].extension,
@@ -467,7 +467,7 @@ var FolderToolbarView = Backbone.View.extend({
             url: `${getAppRoot()}api/genomes`,
             success: genomes => {
                 this.list_genomes = [];
-                for (let key in genomes) {
+                for (const key in genomes) {
                     this.list_genomes.push({
                         id: genomes[key][1],
                         text: genomes[key][0]
@@ -480,7 +480,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     renderSelectBoxes: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         // This won't work properly unlesss we already have the data fetched.
         // See this.fetchExtAndGenomes()
         this.select_genome = new mod_select.View({
@@ -503,7 +503,7 @@ var FolderToolbarView = Backbone.View.extend({
      */
     importFilesFromGalaxyFolderModal: function(options) {
         var template_modal = this.templateBrowserModal();
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.modal = Galaxy.modal;
         this.modal.show({
             closing_events: true,
@@ -650,7 +650,7 @@ var FolderToolbarView = Backbone.View.extend({
      * @param {int} length The number of items in the chain call.
      */
     initChainCallControl: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var template;
         switch (options.action) {
             case "adding_datasets":
@@ -719,7 +719,7 @@ var FolderToolbarView = Backbone.View.extend({
                 action: "adding_datasets"
             });
             if (selection_type === "folder") {
-                let full_source = `${options.source}_folder`;
+                const full_source = `${options.source}_folder`;
                 this.chainCallImportingFolders({
                     paths: paths,
                     preserve_dirs: preserve_dirs,
@@ -732,7 +732,7 @@ var FolderToolbarView = Backbone.View.extend({
                     tag_using_filenames: tag_using_filenames
                 });
             } else if (selection_type === "file") {
-                let full_source = `${options.source}_file`;
+                const full_source = `${options.source}_file`;
                 this.chainCallImportingUserdirFiles({
                     paths: paths,
                     file_type: file_type,
@@ -827,7 +827,7 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {str} history_name     name of the history to import to
      */
     chainCallImportingIntoHistory: function(history_item_set, history_name) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var popped_item = history_item_set.pop();
         if (typeof popped_item == "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
@@ -878,8 +878,8 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
      */
     chainCallImportingUserdirFiles: function(options) {
-        let Galaxy = getGalaxyInstance();
-        let popped_item = options.paths.pop();
+        const Galaxy = getGalaxyInstance();
+        const popped_item = options.paths.pop();
         if (typeof popped_item === "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
                 Toast.success("Selected files imported into the current folder");
@@ -889,8 +889,8 @@ var FolderToolbarView = Backbone.View.extend({
             }
             return true;
         }
-        let post_url = `${getAppRoot()}api/libraries/datasets`;
-        let post_data = {
+        const post_url = `${getAppRoot()}api/libraries/datasets`;
+        const post_data = {
             encoded_folder_id: this.id,
             source: options.source,
             path: popped_item,
@@ -901,7 +901,7 @@ var FolderToolbarView = Backbone.View.extend({
             dbkey: options.dbkey,
             tag_using_filenames: options.tag_using_filenames
         };
-        let promise = $.when($.post(post_url, post_data));
+        const promise = $.when($.post(post_url, post_data));
         promise
             .done(response => {
                 this.updateProgress();
@@ -927,9 +927,9 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
      */
     chainCallImportingFolders: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         // TODO need to check which paths to call
-        let popped_item = options.paths.pop();
+        const popped_item = options.paths.pop();
         if (typeof popped_item == "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
                 Toast.success("Selected folders and their contents imported into the current folder.");
@@ -940,8 +940,8 @@ var FolderToolbarView = Backbone.View.extend({
             }
             return true;
         }
-        let post_url = `${getAppRoot()}api/libraries/datasets`;
-        let post_data = {
+        const post_url = `${getAppRoot()}api/libraries/datasets`;
+        const post_data = {
             encoded_folder_id: this.id,
             source: options.source,
             path: popped_item,
@@ -953,7 +953,7 @@ var FolderToolbarView = Backbone.View.extend({
             dbkey: options.dbkey,
             tag_using_filenames: options.tag_using_filenames
         };
-        let promise = $.when($.post(post_url, post_data));
+        const promise = $.when($.post(post_url, post_data));
         promise
             .done(response => {
                 this.updateProgress();
@@ -972,7 +972,7 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {array} hdas_set array of empty hda objects
      */
     chainCallAddingHdas: function(hdas_set) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.added_hdas = new mod_library_model.Folder();
         var popped_item = hdas_set.pop();
         if (typeof popped_item == "undefined") {
@@ -1011,7 +1011,7 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {array} lddas_set array of lddas to delete
      */
     chainCallDeletingItems: function(items_to_delete) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.deleted_items = new mod_library_model.Folder();
         var item_to_delete = items_to_delete.pop();
         if (typeof item_to_delete === "undefined") {
@@ -1060,7 +1060,7 @@ var FolderToolbarView = Backbone.View.extend({
      * Handles the click on 'show deleted' checkbox
      */
     checkIncludeDeleted: function(event) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (event.target.checked) {
             Galaxy.libraries.folderListView.fetchFolder({
                 include_deleted: true
@@ -1076,7 +1076,7 @@ var FolderToolbarView = Backbone.View.extend({
      * Delete the selected items. Atomic. One by one.
      */
     deleteSelectedItems: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var dataset_ids = [];
         var folder_ids = [];
         var $checkedValues = this.findCheckedRows();
@@ -1138,7 +1138,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     showLocInfo: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var library = null;
         if (Galaxy.libraries.libraryListView !== null) {
             library = Galaxy.libraries.libraryListView.collection.get(this.options.parent_library_id);
@@ -1163,7 +1163,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     showLocInfoModal: function(library) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var template = this.templateLocInfoInModal();
         this.modal = Galaxy.modal;
         this.modal.show({
@@ -1179,7 +1179,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     showImportModal: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         switch (options.source) {
             case "history":
                 this.addFilesFromHistoryModal();
@@ -1209,7 +1209,7 @@ var FolderToolbarView = Backbone.View.extend({
      */
     showPageSizePrompt: function(e) {
         e.preventDefault();
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var folder_page_size = prompt(
             "How many items per page do you want to see?",
             Galaxy.libraries.preferences.get("folder_page_size")
@@ -1248,7 +1248,7 @@ var FolderToolbarView = Backbone.View.extend({
 
     showCollectionSelect: function(e) {
         e.preventDefault();
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var checked_items = this.findCheckedItems();
         var template = this.templateCollectionSelectModal();
         this.modal = Galaxy.modal;
@@ -1317,13 +1317,13 @@ var FolderToolbarView = Backbone.View.extend({
      * The code below overwrites the id with ldda_id for this reason.
      */
     showCollectionBuilder: function(checked_items) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         let collection_elements = [];
-        let elements_source = this.modal.$('input[type="radio"]:checked').val();
+        const elements_source = this.modal.$('input[type="radio"]:checked').val();
         if (elements_source === "selection") {
             for (let i = checked_items.length - 1; i >= 0; i--) {
-                let collection_item = {};
-                let dataset = Galaxy.libraries.folderListView.folder_container.get("folder").get(checked_items[i]);
+                const collection_item = {};
+                const dataset = Galaxy.libraries.folderListView.folder_container.get("folder").get(checked_items[i]);
                 collection_item.id = dataset.get("ldda_id");
                 collection_item.name = dataset.get("name");
                 collection_item.deleted = dataset.get("deleted");
@@ -1331,13 +1331,13 @@ var FolderToolbarView = Backbone.View.extend({
                 collection_elements.push(collection_item);
             }
         } else if (elements_source === "folder") {
-            let all_datasets = Galaxy.libraries.folderListView.folder_container.get("folder").where({ type: "file" });
+            const all_datasets = Galaxy.libraries.folderListView.folder_container.get("folder").where({ type: "file" });
             collection_elements = new Backbone.Collection(all_datasets).toJSON();
             for (var i = collection_elements.length - 1; i >= 0; i--) {
                 collection_elements[i].id = collection_elements[i].ldda_id;
             }
         }
-        let new_history_name = this.modal.$("input[name=history_name]").val();
+        const new_history_name = this.modal.$("input[name=history_name]").val();
         if (new_history_name !== "") {
             this.createNewHistory(new_history_name)
                 .done(new_history => {
@@ -1348,14 +1348,14 @@ var FolderToolbarView = Backbone.View.extend({
                     Toast.error("An error occurred.");
                 });
         } else {
-            let selected_history_id = this.select_collection_history.value();
-            let selected_history_name = this.select_collection_history.text();
+            const selected_history_id = this.select_collection_history.value();
+            const selected_history_name = this.select_collection_history.text();
             this.collectionImport(collection_elements, selected_history_id, selected_history_name);
         }
     },
 
     collectionImport: function(collection_elements, history_id, history_name) {
-        let modal_title = `Creating Collection in ${history_name}`;
+        const modal_title = `Creating Collection in ${history_name}`;
         let creator_class;
         let creationFn;
         if (this.collectionType === "list") {
@@ -1388,7 +1388,7 @@ var FolderToolbarView = Backbone.View.extend({
                 creator_class
             );
         } else if (this.collectionType === "list:paired") {
-            let elements = collection_elements.map(element => ({
+            const elements = collection_elements.map(element => ({
                 id: element.id,
                 name: element.name,
                 src: "ldda"
@@ -1410,7 +1410,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     createHDCA: function(elementIdentifiers, collectionType, name, hideSourceItems, history_id, options) {
-        let hdca = new HDCA_MODEL.HistoryDatasetCollection({
+        const hdca = new HDCA_MODEL.HistoryDatasetCollection({
             history_content_type: "dataset_collection",
             collection_type: collectionType,
             history_id: history_id,

@@ -156,7 +156,7 @@ var View = Backbone.View.extend({
      *              argument that is the frame's content DOM element
      */
     add: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (this.frame_counter >= this.options.frame_max) {
             Galaxy.modal.show({
                 title: _l("Warning"),
