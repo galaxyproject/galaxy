@@ -188,6 +188,25 @@ def job_config_xml_to_dict(config, root):
     if default_destination:
         config_dict['execution']['default'] = default_destination
 
+    resources_config_dict = {}
+    resource_groups = {}
+
+    # Parse resources...
+    resources = root.find('resources')
+    if resources is not None:
+        default_resource_group = resources.get("default", None)
+        if default_resource_group:
+            resources_config_dict["default"] = default_resource_group
+
+        for group in ConfiguresHandlers._findall_with_required(resources, 'group'):
+            group_id = group.get('id')
+            fields_str = group.get('fields', None) or group.text or ''
+            fields = [f for f in fields_str.split(",") if f]
+            resource_groups[group_id] = fields
+
+    resources_config_dict["groups"] = resource_groups
+    config_dict["resources"] = resources_config_dict
+
     return config_dict
 
 
@@ -350,6 +369,12 @@ class JobConfiguration(ConfiguresHandlers):
         # Determine the default destination
         self.default_destination_id = self._ensure_default_set(execution_dict.get("default"), list(self.destinations.keys()), auto=True)
 
+        # Read in resources
+        resources = job_config_dict.get("resources", {})
+        self.default_resource_group = resources.get("default", None)
+        for group_id, fields in resources.get("groups", {}).items():
+            self.resource_groups[group_id] = fields
+
     def __parse_job_conf_xml(self, tree):
         """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).
 
@@ -365,16 +390,6 @@ class JobConfiguration(ConfiguresHandlers):
             job_config_dict["runners"]["tasks"] = dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers, kwds={})
 
         self._configure_from_dict(job_config_dict)
-
-        # Parse resources...
-        resources = root.find('resources')
-        if resources is not None:
-            self.default_resource_group = resources.get("default", None)
-            for group in self._findall_with_required(resources, 'group'):
-                id = group.get('id')
-                fields_str = group.get('fields', None) or group.text or ''
-                fields = [f for f in fields_str.split(",") if f]
-                self.resource_groups[id] = fields
 
         # Parse tool mappings
         tools = root.find('tools')
