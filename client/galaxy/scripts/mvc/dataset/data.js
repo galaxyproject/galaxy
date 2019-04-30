@@ -405,7 +405,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
     // backbone initialize
     initialize: function(options) {
         // check if environment is available
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         // link galaxy modal or create one
         if (Galaxy && Galaxy.modal) {

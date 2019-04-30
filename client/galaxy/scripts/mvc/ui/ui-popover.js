@@ -21,7 +21,7 @@ export default Backbone.View.extend({
      * Show popover
      */
     show: function($content) {
-        let btn = "<i class='fa fa-times-circle'/>";
+        const btn = "<i class='fa fa-times-circle'/>";
         $(this.$target).popover({
             title: `${this.options.title} ${btn}`,
             placement: this.options.placement,
@@ -33,7 +33,7 @@ export default Backbone.View.extend({
 
         // add event to hide if click is outside of popup and not on container
         var self = this;
-        let $popover = $(this.$target.data("bs.popover").tip);
+        const $popover = $(this.$target.data("bs.popover").tip);
         $popover.find(".popover-header > i").on("click", () => this.hide());
         $("body").on(`mousedown.${this.uid}`, e => {
             if (!$($popover).is(e.target) && $($popover).has(e.target).length === 0) {

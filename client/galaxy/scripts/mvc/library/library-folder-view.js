@@ -26,7 +26,7 @@ var FolderView = Backbone.View.extend({
     },
 
     fetchFolder: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         this.model = new mod_library_model.FolderAsModel({
             id: this.options.id
@@ -57,7 +57,7 @@ var FolderView = Backbone.View.extend({
     },
 
     showPermissions: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         $(".tooltip").remove();
 

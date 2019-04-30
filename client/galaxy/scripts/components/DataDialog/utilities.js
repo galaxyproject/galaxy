@@ -11,7 +11,7 @@ export class UrlTracker {
             this.navigation.push(url);
         } else {
             this.navigation.pop();
-            let navigationLength = this.navigation.length;
+            const navigationLength = this.navigation.length;
             if (navigationLength > 0) {
                 url = this.navigation[navigationLength - 1];
             } else {

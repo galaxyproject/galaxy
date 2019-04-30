@@ -40,7 +40,7 @@ export default Backbone.View.extend({
             var $checkbox = $("<div/>")
                 .addClass(`upload-${parameter.id} fa`)
                 .addClass((self.model.get(parameter.id) && self.options.class_check) || self.options.class_uncheck);
-            let $row = $("<tr/>")
+            const $row = $("<tr/>")
                 .append($("<td/>").append($checkbox))
                 .append($("<td/>").append(parameter.title))
                 .on("click", () => {

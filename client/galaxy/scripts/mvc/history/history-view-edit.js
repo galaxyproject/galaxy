@@ -155,18 +155,18 @@ var HistoryViewEdit = _super.extend(
 
         /** render the tags sub-view controller */
         _renderTags: function($where) {
-            let el = $where.find(".controls .tags-display")[0];
+            const el = $where.find(".controls .tags-display")[0];
 
-            let propsData = {
+            const propsData = {
                 model: this.model,
                 disabled: false,
                 context: "history-view-edit"
             };
 
-            let vm = mountModelTags(propsData, el);
+            const vm = mountModelTags(propsData, el);
 
             // tag icon button open/closes
-            let activator = faIconButton({
+            const activator = faIconButton({
                 title: _l("Edit history tags"),
                 classes: "history-tag-btn",
                 faIcon: "fa-tags",
@@ -283,7 +283,7 @@ var HistoryViewEdit = _super.extend(
 
                 var xhr = jQuery.ajax(options);
                 xhr.done((message, status, responseObj) => {
-                    for (let updated of message) {
+                    for (const updated of message) {
                         const typeId = updated.history_content_type + "-" + updated.id;
                         actionModels[typeId].set(updated);
                     }

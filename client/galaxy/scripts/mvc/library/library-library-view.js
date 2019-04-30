@@ -38,7 +38,7 @@ var LibraryView = Backbone.View.extend({
                 }
             },
             error: function(model, response) {
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 if (typeof response.responseJSON !== "undefined") {
                     Toast.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
                         onclick: function() {
@@ -68,7 +68,7 @@ var LibraryView = Backbone.View.extend({
             }
         }
         var is_admin = false;
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (Galaxy.user) {
             is_admin = Galaxy.user.isAdmin();
         }

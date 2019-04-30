@@ -13,7 +13,7 @@ export var CommunicationServerView = Backbone.View.extend({
 
     /** makes bootstrap modal and iframe inside it */
     makeModalIframe: function(e) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         // make modal
         var host = Galaxy.config.communication_server_host;
 

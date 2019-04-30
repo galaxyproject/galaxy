@@ -74,7 +74,7 @@ export default Backbone.View.extend({
     addDataset: function(dataset_id) {
         var self = this;
         var current_dataset = null;
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (Galaxy && Galaxy.currHistoryPanel) {
             var history_id = Galaxy.currHistoryPanel.collection.historyId;
             this.history_cache[history_id] = {

@@ -4,7 +4,7 @@ import { getGalaxyInstance } from "app";
 // tool form templates
 export default {
     openFileBrowser: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var GS_UI_URL = Galaxy.config.genomespace_ui_url;
         var GS_UPLOAD_URL = `${GS_UI_URL}upload/loadUrlToGenomespace.html?getLocation=true`;
 
