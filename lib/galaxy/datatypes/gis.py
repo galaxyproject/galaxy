@@ -2,8 +2,6 @@
 GIS classes
 """
 
-import logging
-
 from galaxy.datatypes.binary import Binary
 
 
