@@ -29,10 +29,10 @@
                 </assert_contents>
             </output>
             <output name="output_shapefile" file="shapefile/output.html">
-                <extra_files type="file" name="shapefile.shp" value="shapefile/shapefile.shp" compare="sim_size" />
-                <extra_files type="file" name="shapefile.shx" value="shapefile/shapefile.shx" compare="sim_size" />
-                <extra_files type="file" name="shapefile.dbf" value="shapefile/shapefile.dbf" compare="sim_size" />
-                <extra_files type="file" name="shapefile.prj" value="shapefile/shapefile.prj" compare="sim_size" />
+                <extra_files type="file" name="shapefile.shp" value="shapefile/shapefile.shp" md5="ae4648a8a6be706e910e46607f261317" />
+                <extra_files type="file" name="shapefile.shx" value="shapefile/shapefile.shx" md5="6321ef787b7826afe06e9cf3eb20e656" />
+                <extra_files type="file" name="shapefile.dbf" value="shapefile/shapefile.dbf" md5="d65d87e1570510af8a81d7d174ea361a" />
+                <extra_files type="file" name="shapefile.prj" value="shapefile/shapefile.prj" lines_diff="2" />
             </output>
         </test>
     </tests>
