@@ -42,7 +42,7 @@ DEFAULT_CONDARC_OVERRIDE = "_condarc"
 # https://github.com/bioconda/bioconda-recipes/blob/master/config.yml , but
 # adding `iuc` as first channel (for Galaxy-specific packages)
 DEFAULT_ENSURE_CHANNELS = "iuc,conda-forge,bioconda,defaults"
-CONDA_SOURCE_CMD = """[ "$CONDA_DEFAULT_ENV" = "{conda_environment_name}" ] ||
+CONDA_SOURCE_CMD = """[ "$(basename "$CONDA_DEFAULT_ENV")" = "$(basename '{environment_path}')" ] ||
 MAX_TRIES=3
 COUNT=0
 while [ $COUNT -lt $MAX_TRIES ]; do
@@ -406,7 +406,6 @@ class MergedCondaDependency(Dependency):
             )
         else:
             return CONDA_SOURCE_CMD.format(
-                conda_environment_name=os.path.basename(self.environment_path),
                 activate_path=self.activate,
                 environment_path=self.environment_path
             )
@@ -475,7 +474,6 @@ class CondaDependency(Dependency):
             )
         else:
             return CONDA_SOURCE_CMD.format(
-                conda_environment_name=os.path.basename(self.environment_path),
                 activate_path=self.activate,
                 environment_path=self.environment_path
             )
