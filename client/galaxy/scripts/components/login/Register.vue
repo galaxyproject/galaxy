@@ -1,7 +1,7 @@
 <template>
     <div class="container">
         <div class="row justify-content-md-center">
-            <div class="col col-lg-6">
+            <div class="col" :class="{ 'col-lg-6': !isAdmin }">
                 <b-alert :show="registration_warning_message" variant="danger">
                     {{ registration_warning_message }}
                 </b-alert>
