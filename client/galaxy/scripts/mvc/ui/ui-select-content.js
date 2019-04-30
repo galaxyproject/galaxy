@@ -350,7 +350,7 @@ let View = Backbone.View.extend({
             onclick: () => {
                 let current = this.model.get("current");
                 let cnf = this.config[current];
-                let librarySupport = galaxy.user.id && cnf.library;
+                let librarySupport = Boolean(galaxy.user.id && cnf.library);
                 galaxy.data.dialog(
                     response => {
                         this._handleDropValues(response, false);
