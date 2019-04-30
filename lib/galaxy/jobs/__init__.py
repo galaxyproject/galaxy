@@ -207,6 +207,22 @@ def job_config_xml_to_dict(config, root):
     resources_config_dict["groups"] = resource_groups
     config_dict["resources"] = resources_config_dict
 
+    # Parse tool mappings
+    tools = root.find('tools')
+    config_dict['tools'] = []
+    if tools is not None:
+        for tool in ConfiguresHandlers._findall_with_required(tools, 'tool'):
+            # There can be multiple definitions with identical ids, but different params
+            tool_mapping_conf = {}
+            for key in ['handler', 'destination', 'id', 'resources']:
+                value = tool.get(key)
+                if value:
+                    if key == "destination":
+                        key = "environment"
+                    tool_mapping_conf[key] = value
+            tool_mapping_conf["params"] = JobConfiguration.get_params(config, tool)
+            config_dict['tools'].append(tool_mapping_conf)
+
     return config_dict
 
 
@@ -375,6 +391,23 @@ class JobConfiguration(ConfiguresHandlers):
         for group_id, fields in resources.get("groups", {}).items():
             self.resource_groups[group_id] = fields
 
+        tools = job_config_dict.get('tools', [])
+        for tool in tools:
+            tool_id = tool.get('id').lower().rstrip('/')
+            if id not in self.tools:
+                self.tools[tool_id] = list()
+            params = tool.get("params")
+            if params is None:
+                params = {}
+                for key, value in tool.items():
+                    if key in ["environment", "handler", "id"]:
+                        continue
+                    params[key] = value
+                tool["params"] = params
+            if "environment" in tool:
+                tool["destination"] = tool.pop("environment")
+            self.tools[tool_id].append(JobToolConfiguration(**dict(tool.items())))
+
     def __parse_job_conf_xml(self, tree):
         """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).
 
@@ -390,17 +423,6 @@ class JobConfiguration(ConfiguresHandlers):
             job_config_dict["runners"]["tasks"] = dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers, kwds={})
 
         self._configure_from_dict(job_config_dict)
-
-        # Parse tool mappings
-        tools = root.find('tools')
-        if tools is not None:
-            for tool in self._findall_with_required(tools, 'tool'):
-                # There can be multiple definitions with identical ids, but different params
-                id = tool.get('id').lower().rstrip('/')
-                if id not in self.tools:
-                    self.tools[id] = list()
-                self.tools[id].append(JobToolConfiguration(**dict(tool.items())))
-                self.tools[id][-1]['params'] = self.__get_params(tool)
 
         types = dict(registered_user_concurrent_jobs=int,
                      anonymous_user_concurrent_jobs=int,
