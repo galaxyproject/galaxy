@@ -32,8 +32,8 @@ export default {
         };
     },
     created: function() {
-        let historyId = this.id,
-            url = "";
+        const historyId = this.id;
+        let url = "";
         if (historyId !== undefined && historyId !== "" && historyId !== null) {
             url = getAppRoot() + "history/display_structured?id=" + historyId;
         } else {
