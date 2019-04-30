@@ -184,7 +184,7 @@ class ConfiguresHandlers(object):
         if rval is not None:
             # If the parent element has a 'default' attribute, use the id or tag in that attribute
             if self.deterministic_handler_assignment and rval not in names:
-                raise Exception("<default attribute '%s' does not match a defined id or tag in a child element" % (rval))
+                raise Exception("default attribute '%s' does not match a defined id or tag in a child element" % (rval))
             log.debug("default set to child with id or tag '%s'" % (rval))
         elif auto and len(names) == 1:
             log.info("Setting default to child with id '%s'" % (names[0]))

@@ -80,10 +80,6 @@ class JobDestination(Bunch):
 
         super(JobDestination, self).__init__(**kwds)
 
-        # Store tags as a list
-        if self.tags is not None:
-            self['tags'] = [x.strip() for x in self.tags.split(',')]
-
 
 class JobToolConfiguration(Bunch):
     """
@@ -140,6 +136,57 @@ def job_config_xml_to_dict(config, root):
 
     handling_config_dict = ConfiguresHandlers.xml_to_dict(config, root.find("handlers"))
     config_dict["handling"] = handling_config_dict
+
+    # Parse destinations
+    environments = []
+
+    destinations = root.find('destinations')
+    for destination in ConfiguresHandlers._findall_with_required(destinations, 'destination', ('id', 'runner')):
+        destination_id = destination.get('id')
+        destination_metrics = destination.get("metrics", None)
+
+        environment = {"id": destination_id}
+
+        metrics_to_dict = {"src": "default"}
+        if destination_metrics:
+            if not util.asbool(destination_metrics):
+                metrics_to_dict = {"src": "disabled"}
+            else:
+                metrics_to_dict = {"src": "path", "path": destination_metrics}
+        else:
+            metrics_elements = ConfiguresHandlers._findall_with_required(destination, 'job_metrics', ())
+            if metrics_elements:
+                metrics_to_dict = {"src": "xml_element", 'xml_element': metrics_elements[0]}
+
+        environment["metrics"] = metrics_to_dict
+
+        params = JobConfiguration.get_params(config, destination)
+        # TODO: handle enabled/disabled in configure_from
+        environment['params'] = params
+        environment['env'] = JobConfiguration.get_envs(destination)
+        destination_resubmits = JobConfiguration.get_resubmits(destination)
+        if destination_resubmits:
+            environment['resubmit'] = destination_resubmits
+        # TODO: handle empty resubmits defaults in configure_from
+
+        runner = destination.get('runner')
+        if runner:
+            environment['runner'] = runner
+
+        tags = destination.get('tags')
+        # Store tags as a list
+        if tags is not None:
+            tags = [x.strip() for x in tags.split(',')]
+            environment['tags'] = tags
+
+        environments.append(environment)
+
+    config_dict['execution'] = {
+        'environments': environments,
+    }
+    default_destination = ConfiguresHandlers.get_xml_default(config, destinations)
+    if default_destination:
+        config_dict['execution']['default'] = default_destination
 
     return config_dict
 
@@ -249,6 +296,60 @@ class JobConfiguration(ConfiguresHandlers):
         for tag, handlers in [(t, h) for t, h in self.handlers.items() if isinstance(h, list)]:
             log.info("Tag [%s] handlers: %s", tag, ', '.join(handlers))
 
+        # Parse environments
+        job_metrics = self.app.job_metrics
+        execution_dict = job_config_dict.get('execution', {})
+        environments = execution_dict.get("environments", [])
+        enviroment_iter = map(lambda e: (e["id"], e), environments) if isinstance(environments, list) else environments.items()
+        for environment_id, environment_dict in enviroment_iter:
+            metrics = environment_dict.get("metrics") or {"src": "default"}
+            metrics_src = metrics.get("src") or "default"
+            if metrics_src != "default":
+                # customized metrics for this environment.
+                if metrics_src == "disabled":
+                    job_metrics.set_destination_instrumenter(environment_id, None)
+                elif metrics_src == "xml_element":
+                    metrics_element = metrics.get("xml_element")
+                    job_metrics.set_destination_conf_element(environment_id, metrics_element)
+                elif metrics_src == "path":
+                    metrics_conf_path = self.app.config.resolve_path(metrics.get("path"))
+                    job_metrics.set_destination_conf_file(environment_id, metrics_conf_path)
+
+            destination_kwds = {}
+
+            params = environment_dict.get("params")
+            if params is None:
+                # Treat the excess keys in the environment as the destination parameters
+                # allowing a flat configuration of these things.
+                params = {}
+                for key, value in environment_dict.items():
+                    if key in ['id', 'tags', 'runner', 'shell', 'env', 'resubmit']:
+                        continue
+                    params[key] = value
+                environment_dict["params"] = params
+
+            for key in ['tags', 'runner', 'shell', 'env', 'resubmit', 'params']:
+                if key in environment_dict:
+                    destination_kwds[key] = environment_dict[key]
+            destination_kwds["id"] = environment_id
+            job_destination = JobDestination(**destination_kwds)
+            if not self.__is_enabled(job_destination.params):
+                continue
+
+            if not job_destination.resubmit:
+                resubmits = self.default_resubmits
+                job_destination.resubmit = resubmits
+
+            self.destinations[environment_id] = (job_destination,)
+            if job_destination.tags is not None:
+                for tag in job_destination.tags:
+                    if tag not in self.destinations:
+                        self.destinations[tag] = []
+                    self.destinations[tag].append(job_destination)
+
+        # Determine the default destination
+        self.default_destination_id = self._ensure_default_set(execution_dict.get("default"), list(self.destinations.keys()), auto=True)
+
     def __parse_job_conf_xml(self, tree):
         """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).
 
@@ -264,48 +365,6 @@ class JobConfiguration(ConfiguresHandlers):
             job_config_dict["runners"]["tasks"] = dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers, kwds={})
 
         self._configure_from_dict(job_config_dict)
-
-        # Parse destinations
-        destinations = root.find('destinations')
-        job_metrics = self.app.job_metrics
-        for destination in self._findall_with_required(destinations, 'destination', ('id', 'runner')):
-            id = destination.get('id')
-            destination_metrics = destination.get("metrics", None)
-            if destination_metrics:
-                if not util.asbool(destination_metrics):
-                    # disable
-                    job_metrics.set_destination_instrumenter(id, None)
-                else:
-                    metrics_conf_path = self.app.config.resolve_path(destination_metrics)
-                    job_metrics.set_destination_conf_file(id, metrics_conf_path)
-            else:
-                metrics_elements = self._findall_with_required(destination, 'job_metrics', ())
-                if metrics_elements:
-                    job_metrics.set_destination_conf_element(id, metrics_elements[0])
-            job_destination = JobDestination(**dict(destination.items()))
-            params = self.__get_params(destination)
-            if not self.__is_enabled(params):
-                continue
-
-            job_destination['params'] = params
-            job_destination['env'] = self.__get_envs(destination)
-            destination_resubmits = self.__get_resubmits(destination)
-            if destination_resubmits:
-                resubmits = destination_resubmits
-            else:
-                resubmits = self.default_resubmits
-            job_destination["resubmit"] = resubmits
-
-            self.destinations[id] = (job_destination,)
-            if job_destination.tags is not None:
-                for tag in job_destination.tags:
-                    if tag not in self.destinations:
-                        self.destinations[tag] = []
-                    self.destinations[tag].append(job_destination)
-
-        # Determine the default destination
-        self.default_destination_id = self._get_default(
-            self.app.config, destinations, list(self.destinations.keys()), auto=True)
 
         # Parse resources...
         resources = root.find('resources')
@@ -453,7 +512,8 @@ class JobConfiguration(ConfiguresHandlers):
         """
         return JobConfiguration.get_params(self.app.config, parent)
 
-    def __get_envs(self, parent):
+    @staticmethod
+    def get_envs(parent):
         """Parses any child <env> tags in to a dictionary suitable for persistence.
 
         :param parent: Parent element in which to find child <env> tags.
@@ -472,7 +532,8 @@ class JobConfiguration(ConfiguresHandlers):
             ))
         return rval
 
-    def __get_resubmits(self, parent):
+    @staticmethod
+    def get_resubmits(parent):
         """Parses any child <resubmit> tags in to a dictionary suitable for persistence.
 
         :param parent: Parent element in which to find child <resubmit> tags.
