@@ -101,7 +101,7 @@ Please mind `http` and `https`.
         <!-- <idphint>cilogon</idphint> -->
     </provider>
     
-    <! -- Documentation: https://docs.google.com/document/d/1vOyW4dLVozy7oQvINYxHheVaLvwNsvvghbiKTLg7RbY-->
+    <! -- Documentation: https://galaxyproject.org/authnz/config/oidc/idps/elixir-aai  -->
     <provider name="Elixir">
         <client_id>...</client_id>
         <client_secret>...</client_secret>
