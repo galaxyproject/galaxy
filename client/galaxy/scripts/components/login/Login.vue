@@ -60,10 +60,10 @@ export default {
         }
     },
     data() {
-        let galaxy = getGalaxyInstance();
-        let oidc_idps = galaxy.config.oidc;
+        const galaxy = getGalaxyInstance();
+        const oidc_idps = galaxy.config.oidc;
         // Icons to use for each IdP
-        let oidc_idps_icons = { google: "fa fa-google" };
+        const oidc_idps_icons = { google: "fa fa-google" };
         // Add default icons to IdPs without icons
         oidc_idps
             .filter(function(key) {
@@ -99,7 +99,7 @@ export default {
             }
         },
         submitGalaxyLogin: function(method) {
-            let rootUrl = getAppRoot();
+            const rootUrl = getAppRoot();
             axios
                 .post(`${rootUrl}user/login`, this.$data)
                 .then(response => {
@@ -116,12 +116,12 @@ export default {
                 })
                 .catch(error => {
                     this.messageVariant = "danger";
-                    let message = error.response.data && error.response.data.err_msg;
+                    const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
         submitOIDCLogin: function(idp) {
-            let rootUrl = getAppRoot();
+            const rootUrl = getAppRoot();
             axios
                 .post(`${rootUrl}authnz/${idp}/login`)
                 .then(response => {
@@ -132,12 +132,12 @@ export default {
                 })
                 .catch(error => {
                     this.messageVariant = "danger";
-                    let message = error.response.data && error.response.data.err_msg;
+                    const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
         reset: function(ev) {
-            let rootUrl = getAppRoot();
+            const rootUrl = getAppRoot();
             ev.preventDefault();
             axios
                 .post(`${rootUrl}user/reset_password`, { email: this.login })
@@ -147,7 +147,7 @@ export default {
                 })
                 .catch(error => {
                     this.messageVariant = "danger";
-                    let message = error.response.data && error.response.data.err_msg;
+                    const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Password reset failed for an unknown reason.";
                 });
         }
