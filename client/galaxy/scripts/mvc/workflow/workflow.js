@@ -150,7 +150,7 @@ const WorkflowItemView = Backbone.View.extend({
     /** Template for user actions for workflows */
     _templateActions: function() {
         const Galaxy = getGalaxyInstance();
-        if (this.model.get("owner") === Galaxy.user.attributes.username) {
+        if (this.model.get("owner") !== Galaxy.user.attributes.username) {
             return `<div class="dropdown-menu">
                         <a class="dropdown-item" href="${getAppRoot()}workflow/editor?id=${this.model.id}">Edit</a>
                         <a class="dropdown-item" href="${getAppRoot()}workflows/run?id=${this.model.id}">Run</a>
@@ -158,24 +158,24 @@ const WorkflowItemView = Backbone.View.extend({
                         <a class="dropdown-item" href="${getAppRoot()}api/workflows/${
                 this.model.id
             }/download?format=json-download">Download</a>
-                        <a class="dropdown-item" id="copy-workflow" style="cursor: pointer;">Copy</a>
-                        <a class="dropdown-item" id="rename-workflow" style="cursor: pointer;">Rename</a>
+                        <a class="dropdown-item" id="copy-workflow">Copy</a>
+                        <a class="dropdown-item" id="rename-workflow">Rename</a>
                         <a class="dropdown-item" href="${getAppRoot()}workflow/display_by_id?id=${
                 this.model.id
             }">View</a>
-                        <a class="dropdown-item" id="delete-workflow" style="cursor: pointer;">Delete</a>
+                        <a class="dropdown-item" id="delete-workflow">Delete</a>
                     </div>`;
         } else {
-            return `<ul class="dropdown-menu">
-                        <li><a href="${getAppRoot()}workflow/display_by_username_and_slug?username=${this.model.get(
+            return `<div class="dropdown-menu">
+                        <a class="dropdown-item" href="${getAppRoot()}workflow/display_by_username_and_slug?username=${this.model.get(
                 "owner"
-            )}&slug=${this.model.get("slug")}">View</a></li>
-                        <li><a href="${getAppRoot()}workflows/run?id=${this.model.id}">Run</a></li>
-                        <li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li>
-                        <li><a class="link-confirm-shared-${
+            )}&slug=${this.model.get("slug")}">View</a>
+                        <a class="dropdown-item" href="${getAppRoot()}workflows/run?id=${this.model.id}">Run</a>
+                        <a class="dropdown-item" id="copy-workflow">Copy</a>
+                        <a class="dropdown-item link-confirm-shared-${
                             this.model.id
                         }" href="${getAppRoot()}workflow/sharing?unshare_me=True&id=${this.model.id}">Remove</a></li>
-                    </ul>`;
+                    </div>`;
         }
     }
 });
