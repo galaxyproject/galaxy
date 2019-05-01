@@ -20,6 +20,7 @@ from tempfile import NamedTemporaryFile
 from xml.etree import ElementTree
 
 import six
+import yaml
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
 
 import galaxy
@@ -291,7 +292,7 @@ class JobConfiguration(ConfiguresHandlers):
         default_resubmit_condition = self.app.config.default_job_resubmission_condition
         if default_resubmit_condition:
             default_resubmits.append(dict(
-                destination=None,
+                environment=None,
                 condition=default_resubmit_condition,
                 handler=None,
                 delay=None,
@@ -300,10 +301,26 @@ class JobConfiguration(ConfiguresHandlers):
 
         self.__parse_resource_parameters()
         # Initialize the config
-        job_config_file = self.app.config.job_config_file
         try:
-            tree = load(job_config_file)
-            self.__parse_job_conf_xml(tree)
+            if 'job_config' in self.app.config.config_dict:
+                job_config_dict = self.app.config.config_dict["job_config"]
+            else:
+                job_config_file = self.app.config.job_config_file
+                if '.xml' in job_config_file:
+                    tree = load(job_config_file)
+                    job_config_dict = self.__parse_job_conf_xml(tree)
+                else:
+                    with open(job_config_file, "r") as f:
+                        job_config_dict = yaml.safe_load(f)
+
+            # Load tasks if configured
+            if self.app.config.use_tasked_jobs:
+                job_config_dict["runners"]["tasks"] = dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers, kwds={})
+
+            self._configure_from_dict(job_config_dict)
+
+            log.debug('Done loading job configuration')
+
         except IOError:
             log.warning('Job configuration "%s" does not exist, using default job configuration',
                         self.app.config.job_config_file)
@@ -474,13 +491,7 @@ class JobConfiguration(ConfiguresHandlers):
         log.debug('Loading job configuration from %s' % self.app.config.job_config_file)
 
         job_config_dict = job_config_xml_to_dict(self.app.config, root)
-        # Load tasks if configured
-        if self.app.config.use_tasked_jobs:
-            job_config_dict["runners"]["tasks"] = dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers, kwds={})
-
-        self._configure_from_dict(job_config_dict)
-
-        log.debug('Done loading job configuration')
+        return job_config_dict
 
     def _parse_handler(self, handler_id, process_dict):
         for plugin_id in process_dict.get("plugins") or []:
@@ -599,7 +610,7 @@ class JobConfiguration(ConfiguresHandlers):
         for resubmit in parent.findall('resubmit'):
             rval.append(dict(
                 condition=resubmit.get('condition'),
-                destination=resubmit.get('destination'),
+                environment=resubmit.get('destination'),
                 handler=resubmit.get('handler'),
                 delay=resubmit.get('delay'),
             ))
@@ -753,7 +764,7 @@ class JobConfiguration(ConfiguresHandlers):
                     log.warning("Job runner classes must be subclassed from BaseJobRunner, %s has bases: %s" % (id, runner_class.__bases__))
                     continue
                 try:
-                    rval[id] = runner_class(self.app, runner['workers'], **runner.get('kwds', {}))
+                    rval[id] = runner_class(self.app, runner.get('workers', JobConfiguration.DEFAULT_NWORKERS), **runner.get('kwds', {}))
                 except TypeError:
                     log.exception("Job runner '%s:%s' has not been converted to a new-style runner or encountered TypeError on load",
                                   module_name, class_name)

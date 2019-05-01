@@ -3187,6 +3187,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~
+``job_config``
+~~~~~~~~~~~~~~
+
+:Description:
+    Description of job running configuration, can be embedded into
+    Galaxy configuration or loaded from an additional file with the
+    job_config_file option.
+:Default: ``None``
+:Type: map
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``default_job_resubmission_condition``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
