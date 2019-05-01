@@ -86,17 +86,15 @@ var PopupMenu = Backbone.View.extend({
         }
         return _.map(options, option => {
             if (option.divider) {
-                return '<div class="dropdown-item divider"></div>';
+                return '<div class="dropdown-divider"/>';
             } else if (option.header) {
-                return `<div class="dropdown-item head">
-                            <a href="javascript:void(0);">${option.html}</a>
-                        </div>`;
+                return `<div class="dropdown-header">${option.html}</div>`;
             }
             var href = option.href || "javascript:void(0);";
             var target = option.target ? `target="${option.target}"` : "";
             var check = option.checked ? '<span class="fa fa-check"/>' : "";
             return `<a class="dropdown-item popupmenu-option" href="${href}" ${target}>
-                        ${check}${option.html}
+                        ${check} ${option.html}
                     </a>`;
         }).join("");
     },
