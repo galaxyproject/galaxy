@@ -55,6 +55,7 @@ export var View = Backbone.View.extend({
                 this.hide(true);
             });
         }
+        this.$el.find(".title").focus();
     },
 
     /**
@@ -195,7 +196,7 @@ export var View = Backbone.View.extend({
             '<div class="modal-dialog">' +
             '<div class="modal-content">' +
             '<div class="modal-header">' +
-            '<h4 class="title"/>' +
+            '<h4 class="title" tabindex="0"/>' +
             "</div>" +
             '<div class="modal-body"/>' +
             '<div class="modal-footer">' +
