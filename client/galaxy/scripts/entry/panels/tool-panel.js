@@ -43,26 +43,29 @@ var ToolPanel = Backbone.View.extend({
             default_genome: config.default_genome,
             default_extension: config.default_extension
         });
+        let panel_buttons = [this.upload_button];
 
         // add favorite filter button
-        this.favorite_button = new Buttons.ButtonLink({
-            cls: "panel-header-button",
-            title: _l("Show favorites"),
-            icon: "fa fa-star-o",
-            onclick: e => {
-                $("#tool-search-query")
-                    .val("#favorites")
-                    .trigger("change");
-            }
-        });
-
+        if (Galaxy.user && Galaxy.user.id){
+            this.favorite_button = new Buttons.ButtonLink({
+                cls: "panel-header-button",
+                title: _l("Show favorites"),
+                icon: "fa fa-star-o",
+                onclick: e => {
+                    $("#tool-search-query")
+                        .val("#favorites")
+                        .trigger("change");
+                }
+            });
+            panel_buttons.push(this.favorite_button);
+        }
         // add uploader button to Galaxy object
         Galaxy.upload = this.upload_button;
 
         // components for panel definition
         this.model = new Backbone.Model({
             title: _l("Tools"),
-            buttons: [this.upload_button, this.favorite_button]
+            buttons: panel_buttons
         });
 
         // build body template
