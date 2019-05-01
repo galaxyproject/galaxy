@@ -53,7 +53,7 @@ GalaxyApp.prototype._init = function(options, bootstrapped) {
     // Patch if this galaxy instance is replacing an existing one
     // _patchGalaxy depends on options.patchExisting
     // TODO: rethink this behavior
-    let existingGalaxy = getGalaxyInstance();
+    const existingGalaxy = getGalaxyInstance();
     if (existingGalaxy) {
         self._patchGalaxy(existingGalaxy);
     }
@@ -212,7 +212,7 @@ GalaxyApp.prototype._initUserLocale = function _initUserLocale(options) {
             ? "__root"
             : (navigator.language || navigator.userLanguage || "__root").toLowerCase();
 
-    let locale = user_locale || global_locale || nav_locale;
+    const locale = user_locale || global_locale || nav_locale;
 
     sessionStorage.setItem("currentLocale", locale);
 };

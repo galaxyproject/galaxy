@@ -81,7 +81,7 @@ const WorkflowItemView = Backbone.View.extend({
     },
 
     copyWorkflow: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         const oldName = this.model.get("name");
         $.getJSON(`${this.model.urlRoot}/${this.model.id}/download`, wfJson => {
             let newName = `Copy of ${oldName}`;
@@ -108,9 +108,9 @@ const WorkflowItemView = Backbone.View.extend({
     },
 
     _rowTemplate: function() {
-        let Galaxy = getGalaxyInstance();
-        let show = this.model.get("show_in_tool_panel");
-        let wfId = this.model.id;
+        const Galaxy = getGalaxyInstance();
+        const show = this.model.get("show_in_tool_panel");
+        const wfId = this.model.id;
         const checkboxHtml = `<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" ${
             show ? `checked="${show}"` : ""
         } value="${wfId}">`;
@@ -138,8 +138,8 @@ const WorkflowItemView = Backbone.View.extend({
     },
 
     renderTagEditor: function() {
-        let el = $(this.el).find(".tags-display")[0];
-        let propsData = {
+        const el = $(this.el).find(".tags-display")[0];
+        const propsData = {
             model: this.model,
             disabled: false,
             context: "workflow"
@@ -149,7 +149,7 @@ const WorkflowItemView = Backbone.View.extend({
 
     /** Template for user actions for workflows */
     _templateActions: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (this.model.get("owner") === Galaxy.user.attributes.username) {
             return `<div class="dropdown-menu">
                         <a class="dropdown-item" href="${getAppRoot()}workflow/editor?id=${this.model.id}">Edit</a>

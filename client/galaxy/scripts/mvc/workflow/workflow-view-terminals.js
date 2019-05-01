@@ -143,11 +143,11 @@ var BaseInputTerminalView = TerminalView.extend({
         }
     },
     onHover: function() {
-        let element = this.el;
-        let terminal = element.terminal;
+        const element = this.el;
+        const terminal = element.terminal;
         // If connected, create a popup to allow disconnection
         if (terminal.connectors.length > 0) {
-            let t = $("<div/>")
+            const t = $("<div/>")
                 .addClass("delete-terminal")
                 .click(() => {
                     $.each(terminal.connectors, (_, x) => {

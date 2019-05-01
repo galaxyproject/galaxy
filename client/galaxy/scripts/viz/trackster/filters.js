@@ -659,7 +659,7 @@ _.extend(FiltersManager.prototype, {
             // https://github.com/galaxyproject/galaxy/issues/7224
             // eslint-disable-next-line no-undef
             $.getJSON(run_tool_url, url_params, response => {
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 if (response.error) {
                     // General error.
                     Galaxy.modal.show({

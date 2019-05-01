@@ -165,7 +165,7 @@ var Terminal = Backbone.Model.extend({
         let output_val = val;
         if (this.multiple) {
             // emulate list input
-            let description = new CollectionTypeDescription("list");
+            const description = new CollectionTypeDescription("list");
             if (val.collectionType === description.collectionType) {
                 // No mapping over necessary
                 return;
@@ -195,9 +195,9 @@ var Terminal = Backbone.Model.extend({
     },
 
     resetCollectionTypeSource: function() {
-        let node = this.node;
+        const node = this.node;
         _.each(node.output_terminals, function(output_terminal) {
-            let type_source = output_terminal.attributes.collection_type_source;
+            const type_source = output_terminal.attributes.collection_type_source;
             if (type_source && output_terminal.attributes.collection_type) {
                 output_terminal.attributes.collection_type = null;
                 output_terminal.update(output_terminal.attributes);
@@ -506,7 +506,7 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
         if (!other) {
             return;
         } else {
-            let node = this.node;
+            const node = this.node;
             _.each(node.output_terminals, function(output_terminal) {
                 if (output_terminal.attributes.collection_type_source && !connector.dragging) {
                     if (other.isMappedOver()) {
@@ -634,7 +634,7 @@ var OutputCollectionTerminal = Terminal.extend({
             newCollectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
         }
 
-        let oldCollectionType = this.collectionType;
+        const oldCollectionType = this.collectionType;
         this.collectionType = newCollectionType;
         // we need to iterate over a copy, as we slice this.connectors in the process of destroying connections
         var connectors = this.connectors.slice(0);

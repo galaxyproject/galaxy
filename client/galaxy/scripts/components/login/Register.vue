@@ -71,7 +71,7 @@ export default {
         }
     },
     data() {
-        let galaxy = getGalaxyInstance();
+        const galaxy = getGalaxyInstance();
         return {
             email: null,
             password: null,
@@ -95,7 +95,7 @@ export default {
             }
         },
         submit: function(method) {
-            let rootUrl = getAppRoot();
+            const rootUrl = getAppRoot();
             axios
                 .post(`${rootUrl}user/create`, this.$data)
                 .then(response => {
@@ -106,7 +106,7 @@ export default {
                 })
                 .catch(error => {
                     this.messageVariant = "danger";
-                    let message = error.response.data && error.response.data.err_msg;
+                    const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Registration failed for an unknown reason.";
                 });
         }

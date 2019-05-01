@@ -44,7 +44,7 @@ export default {
     },
     data() {
         // initialize toggle value
-        let isClosed = this.useToggleLink && this.value.length > this.maxVisibleTags;
+        const isClosed = this.useToggleLink && this.value.length > this.maxVisibleTags;
 
         return {
             tagText: "",
@@ -92,13 +92,13 @@ export default {
         },
         beforeAddingTag($event) {
             if (!this.emitHookEvent("before-adding-tag", $event)) {
-                let { tag, addTag } = $event;
+                const { tag, addTag } = $event;
                 addTag(tag);
             }
         },
         beforeDeletingTag($event) {
             if (!this.emitHookEvent("before-deleting-tag", $event)) {
-                let { tag, deleteTag } = $event;
+                const { tag, deleteTag } = $event;
                 deleteTag(tag);
             }
         },

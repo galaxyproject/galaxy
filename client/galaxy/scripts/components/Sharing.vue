@@ -175,8 +175,8 @@ export default {
             }`;
         },
         item_url_parts() {
-            let str = this.item_url;
-            let index = str.lastIndexOf("/");
+            const str = this.item_url;
+            const index = str.lastIndexOf("/");
             return [str.substring(0, index + 1), str.substring(index + 1)];
         },
         published_url() {
@@ -196,7 +196,7 @@ export default {
         }
     },
     data() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         return {
             ready: false,
             has_username: Galaxy.user.get("username"),
@@ -232,7 +232,7 @@ export default {
                 .catch(error => (this.err_msg = error.response.data.err_msg));
         },
         setUsername: function() {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             axios
                 .put(`${getAppRoot()}api/users/${Galaxy.user.id}/information/inputs`, {
                     username: this.new_username || ""
@@ -245,7 +245,7 @@ export default {
                 .catch(error => (this.err_msg = error.response.data.err_msg));
         },
         setSharing: function(action, user_id) {
-            let data = {
+            const data = {
                 action: action,
                 user_id: user_id
             };

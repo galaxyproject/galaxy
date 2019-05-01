@@ -67,7 +67,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     fetchDataset: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         this.model = new mod_library_model.Item({
             id: this.options.id
@@ -184,7 +184,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
     importIntoHistory: function() {
         this.refreshUserHistoriesList(self => {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             var template = self.templateBulkImportInModal();
             self.modal = Galaxy.modal;
             self.modal.show({
@@ -255,7 +255,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     processImportToHistory: function(history_id) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var historyItem = new mod_library_model.HistoryItem();
         historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
         // set the used history as current so user will see the last one
@@ -285,7 +285,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     showPermissions: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var template = this.templateDatasetPermissions();
         var self = this;
         this.options = _.extend(this.options, options);
@@ -400,7 +400,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     detectDatatype: function(options) {
-        let ld = this.model;
+        const ld = this.model;
         ld.set("file_ext", "auto");
         this._submitModification(ld);
     },

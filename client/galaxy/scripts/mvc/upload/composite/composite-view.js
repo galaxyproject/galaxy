@@ -160,7 +160,7 @@ export default Backbone.View.extend({
 
     /** Refresh success state */
     _eventSuccess: function(message) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.collection.each(it => {
             it.set("status", "success");
         });

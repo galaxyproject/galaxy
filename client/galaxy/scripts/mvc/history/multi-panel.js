@@ -473,7 +473,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     /** create a column and its panel and set up any listeners to them */
     createColumn: function createColumn(history, options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         // options passed can be re-used, so extend them before adding the model to prevent pollution for the next
         options = _.extend({}, options, {
             model: history,

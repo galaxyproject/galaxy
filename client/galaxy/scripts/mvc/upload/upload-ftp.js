@@ -27,7 +27,7 @@ export default Backbone.View.extend({
         }).set(options);
 
         this.collection = this.model.get("collection");
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (Galaxy.config.enable_oidc) {
             this.model.set("help_text", this.model.get("help_text") + this.model.get("oidc_text"));
         }

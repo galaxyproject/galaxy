@@ -11,7 +11,7 @@ import Form from "mvc/form/form-view";
 /** Dataset edit attributes view */
 var View = Backbone.View.extend({
     initialize: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.setElement("<div/>");
         this.model = new Backbone.Model({
             dataset_id: Galaxy.params.dataset_id
@@ -132,7 +132,7 @@ var View = Backbone.View.extend({
         var message = "<h3>Error Details</h3>";
         if (job_messages) {
             message += "<p>Execution resulted in the following messages:</p>";
-            for (let job_message of job_messages) {
+            for (const job_message of job_messages) {
                 message += `<p><pre>${_.escape(job_message["desc"])}</pre></p>`;
             }
         }
@@ -172,7 +172,7 @@ var View = Backbone.View.extend({
 
     /** Convert tab template */
     _getBugFormTemplate: function(dataset, job) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var inputs = [
             {
                 help: _l("Your email address"),

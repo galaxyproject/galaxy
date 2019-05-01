@@ -42,7 +42,7 @@ export default Backbone.Model.extend({
 
     /** Returns an input field for a given field type */
     create: function(input_def) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var fieldClass = this.types[input_def.type];
         var field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
         if (!field) {

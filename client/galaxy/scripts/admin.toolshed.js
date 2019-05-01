@@ -55,7 +55,7 @@ var GalaxyAdminToolshedApp = Backbone.View.extend({
     },
 
     initialize: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         Galaxy.admintoolshedapp = this;
         this.admin_toolshed_router = new AdminToolshedRouter();

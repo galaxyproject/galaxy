@@ -7,7 +7,7 @@ import Page from "layout/page";
 addInitialization((Galaxy, { options = {} }) => {
     console.log("Analysis custom page setup");
 
-    let pageOptions = Object.assign({}, options, {
+    const pageOptions = Object.assign({}, options, {
         config: Object.assign({}, options.config, {
             hide_panels: Galaxy.params.hide_panels,
             hide_masthead: Galaxy.params.hide_masthead

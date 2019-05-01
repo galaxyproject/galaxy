@@ -165,7 +165,7 @@ var View = Backbone.View.extend({
             this.data2 = [];
             this.data2index = {};
             _.each(this.data, (option, index) => {
-                let d = {
+                const d = {
                     order: index,
                     id: option.value,
                     text: option.label,
@@ -201,7 +201,7 @@ var View = Backbone.View.extend({
                 },
                 formatResult: result => {
                     let extraTagWarning = "";
-                    let filteredTags = _.filter(result.tags, t => this.matched_tags.hasOwnProperty(t));
+                    const filteredTags = _.filter(result.tags, t => this.matched_tags.hasOwnProperty(t));
                     if (filteredTags.length > 5) {
                         extraTagWarning = `&nbsp;<div class="label label-warning">${filteredTags.length -
                             5} more tags</div>`;

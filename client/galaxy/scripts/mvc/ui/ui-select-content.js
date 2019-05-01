@@ -158,7 +158,7 @@ let View = Backbone.View.extend({
         };
 
         // add drag-drop event handlers
-        let element = this.$el.get(0);
+        const element = this.$el.get(0);
         element.addEventListener("dragenter", e => {
             this.lastenter = e.target;
             self.$el.addClass("ui-dragover");
@@ -172,7 +172,7 @@ let View = Backbone.View.extend({
         element.addEventListener("drop", e => {
             e.preventDefault();
             try {
-                let drop_data = JSON.parse(e.dataTransfer.getData("text"))[0];
+                const drop_data = JSON.parse(e.dataTransfer.getData("text"))[0];
                 this._handleDropValues(drop_data);
             } catch (e) {
                 this._handleDropStatus("danger");
@@ -224,19 +224,19 @@ let View = Backbone.View.extend({
 
     /** Return the currently selected dataset values */
     value: function(new_value) {
-        let galaxy = getGalaxyInstance();
+        const galaxy = getGalaxyInstance();
         new_value !== undefined && this.model.set("value", new_value);
-        let current = this.model.get("current");
+        const current = this.model.get("current");
         if (this.config[current]) {
             let id_list = this.fields[current].value();
             if (id_list !== null) {
                 id_list = $.isArray(id_list) ? id_list : [id_list];
                 if (id_list.length > 0) {
-                    let result = this._batch({ values: [] });
-                    for (let i in id_list) {
-                        let details = this.cache[`${id_list[i]}_${this.config[current].src}`];
+                    const result = this._batch({ values: [] });
+                    for (const i in id_list) {
+                        const details = this.cache[`${id_list[i]}_${this.config[current].src}`];
                         if (details) {
-                            let unpatchedValue = this._unpatchValue(details);
+                            const unpatchedValue = this._unpatchValue(details);
                             result.values.push(unpatchedValue);
                         } else {
                             galaxy.emit.debug(
@@ -260,7 +260,7 @@ let View = Backbone.View.extend({
     _changeCurrent: function() {
         let self = this;
         _.each(this.fields, (field, i) => {
-            let cnf = self.config[i];
+            const cnf = self.config[i];
             if (self.model.get("current") == i) {
                 field.$el.show();
                 _.each(self.$batch, ($batchfield, batchmode) => {
@@ -289,8 +289,8 @@ let View = Backbone.View.extend({
 
     /** Change of type */
     _changeType: function() {
-        let self = this;
-        let galaxy = getGalaxyInstance();
+        const self = this;
+        const galaxy = getGalaxyInstance();
 
         // identify selector type identifier i.e. [ flavor ]_[ type ]_[ multiple ]
         let config_id =
@@ -348,8 +348,8 @@ let View = Backbone.View.extend({
             tooltip: "Browse Datasets",
             cls: "ml-2",
             onclick: () => {
-                let current = this.model.get("current");
-                let cnf = this.config[current];
+                const current = this.model.get("current");
+                const cnf = this.config[current];
                 galaxy.data.dialog(
                     response => {
                         this._handleDropValues(response, false);
@@ -364,7 +364,7 @@ let View = Backbone.View.extend({
         });
 
         // append views
-        let $fields = $("<div/>").addClass("w-100");
+        const $fields = $("<div/>").addClass("w-100");
         this.$el
             .empty()
             .addClass("d-flex flex-row")
@@ -459,7 +459,7 @@ let View = Backbone.View.extend({
     /** Restores original value e.g. after patching library datasets **/
     _unpatchValue: function(v) {
         if (v.origin) {
-            let d = Object.assign({}, v);
+            const d = Object.assign({}, v);
             d.id = d.id.substr(d.origin.length);
             d.src = d.origin;
             return d;
@@ -469,20 +469,20 @@ let View = Backbone.View.extend({
 
     /** Add values from drag/drop */
     _handleDropValues: function(drop_data, drop_partial = true) {
-        let self = this;
-        let data = this.model.get("data");
-        let current = this.model.get("current");
-        let config = this.config[current];
-        let field = this.fields[current];
+        const self = this;
+        const data = this.model.get("data");
+        const current = this.model.get("current");
+        const config = this.config[current];
+        const field = this.fields[current];
         if (data) {
-            let values = $.isArray(drop_data) ? drop_data : [drop_data];
+            const values = $.isArray(drop_data) ? drop_data : [drop_data];
             if (values.length > 0) {
                 let data_changed = false;
                 _.each(values, v => {
                     self._patchValue(v);
-                    let new_id = v.id;
-                    let new_src = (v.src = this._getSource(v));
-                    let new_value = { id: new_id, src: new_src };
+                    const new_id = v.id;
+                    const new_src = (v.src = this._getSource(v));
+                    const new_value = { id: new_id, src: new_src };
                     if (!_.findWhere(data[new_src], new_value)) {
                         data_changed = true;
                         data[new_src].push({
@@ -499,8 +499,8 @@ let View = Backbone.View.extend({
                 if (data_changed) {
                     this._changeData();
                 }
-                let first_id = values[0].id;
-                let first_src = values[0].src;
+                const first_id = values[0].id;
+                const first_src = values[0].src;
                 if (config.src == first_src && drop_partial) {
                     let current_value = field.value();
                     if (current_value && config.multiple) {

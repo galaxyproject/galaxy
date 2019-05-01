@@ -272,8 +272,8 @@ export default Backbone.View.extend({
         this.type_to_type = this.datatypes_mapping.class_to_classes;
 
         this.get_workflow_versions = function() {
-            let _workflow_version_dropdown = {};
-            let workflow_versions = JSON.parse(
+            const _workflow_version_dropdown = {};
+            const workflow_versions = JSON.parse(
                 $.ajax({
                     url: `${getAppRoot()}api/workflows/${self.options.id}/versions`,
                     async: false
@@ -281,7 +281,7 @@ export default Backbone.View.extend({
             );
 
             for (let i = 0; i < workflow_versions.length; i++) {
-                let current_wf = workflow_versions[i];
+                const current_wf = workflow_versions[i];
                 let version_text = `Version ${current_wf["version"]}, ${current_wf["steps"]} steps`;
                 let selected = false;
                 if (i == self.workflow.workflow_version) {
@@ -297,7 +297,7 @@ export default Backbone.View.extend({
         };
 
         this.build_version_select = function() {
-            let versions = this.get_workflow_versions();
+            const versions = this.get_workflow_versions();
             $("#workflow-version-switch").empty();
             $.each(versions, function(k, v) {
                 $("#workflow-version-switch").append(
@@ -311,7 +311,7 @@ export default Backbone.View.extend({
                 $("#workflow-version-switch").unbind("change");
                 if (this.value != self.workflow.workflow_version) {
                     if (self.workflow && self.workflow.has_changes) {
-                        let r = confirm("There are unsaved changes to your workflow which will be lost. Continue ?");
+                        const r = confirm("There are unsaved changes to your workflow which will be lost. Continue ?");
                         if (r == false) {
                             // We rebuild the version select list, to reset the selected version
                             self.build_version_select();
@@ -526,7 +526,7 @@ export default Backbone.View.extend({
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Copy and insert individual steps"),
                     onclick: function() {
-                        let Galaxy = getGalaxyInstance();
+                        const Galaxy = getGalaxyInstance();
                         if (workflow.step_count < 2) {
                             self.copy_into_workflow(workflow.id, workflow.name);
                         } else {
@@ -714,7 +714,7 @@ export default Backbone.View.extend({
                     if (pja.action_arguments) {
                         $.each(pja.action_arguments, (k, action_argument) => {
                             if (typeof action_argument === "string") {
-                                let arg_matches = action_argument.match(parameter_re);
+                                const arg_matches = action_argument.match(parameter_re);
                                 if (arg_matches) {
                                     matches = matches.concat(arg_matches);
                                 }
@@ -752,7 +752,7 @@ export default Backbone.View.extend({
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
         var $container = $(`#${cls}`);
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (content && $container.find(`#${id}`).length === 0) {
             var $el = $(`<div id="${id}" class="${cls}"/>`);
             content.node = node;
