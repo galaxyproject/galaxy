@@ -7,7 +7,7 @@ import Ui from "mvc/ui/ui-misc";
 import Select from "mvc/ui/ui-select-default";
 import { getGalaxyInstance } from "app";
 
-/** Batch mode letiations */
+/** Batch mode variations */
 const Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
 
 /** List of available content selectors options */
