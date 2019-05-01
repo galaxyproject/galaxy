@@ -269,19 +269,13 @@ var LibraryRowView = Backbone.View.extend({
                         <% } %>
                     <% } else if(edit_mode){ %>
                         <td>
-                            <textarea rows="4" class="form-control input_library_name" placeholder="name" >
-                                <%- library.get("name") %>
-                            </textarea>
+                            <textarea rows="4" class="form-control input_library_name" placeholder="name" ><%- library.get("name") %></textarea>
                         </td>
                         <td>
-                            <textarea rows="4" class="form-control input_library_description" placeholder="description">
-                                <%- library.get("description") %>
-                            </textarea>
+                            <textarea rows="4" class="form-control input_library_description" placeholder="description"><%- library.get("description") %></textarea>
                         </td>
                         <td>
-                            <textarea rows="4" class="form-control input_library_synopsis" placeholder="synopsis">
-                                <%- library.get("synopsis") %>
-                            </textarea>
+                            <textarea rows="4" class="form-control input_library_synopsis" placeholder="synopsis"><%- library.get("synopsis") %></textarea>
                         </td>
                     <% } %>
                     <td class="right-center">
@@ -290,30 +284,30 @@ var LibraryRowView = Backbone.View.extend({
                                 style="color:grey;" class="fa fa-globe fa-lg"></span>
                         <% }%>
                         <button data-toggle="tooltip" data-placement="left" title="Modify '<%- library.get("name") %>'"
-                            class="btn btn-sm edit_library_btn" type="button"
+                            class="btn btn-secondary btn-sm edit_library_btn" type="button"
                             style="<% if(button_config.edit_library_btn === false) { print("display:none;") } %>">
                             <span class="fa fa-pencil"></span> Edit
                         </button>
                         <a data-toggle="tooltip" data-placement="left"
                             title="Permissions of '<%- library.get("name") %>'"
                             href="#library/<%- library.get("id") %>/permissions">
-                            <button class="btn btn-sm permission_library_btn" type="button"
+                            <button class="btn btn-secondary btn-sm permission_library_btn" type="button"
                                 style="<% if(button_config.permission_library_btn === false) { print("display:none;") } %>">
                                 <span class="fa fa-group"></span> Manage
                             </button>
                         </a>
                         <button data-toggle="tooltip" data-placement="left" title="Save changes"
-                            class="btn btn-sm save_library_btn" type="button"
+                            class="btn btn-secondary btn-sm save_library_btn" type="button"
                             style="<% if(button_config.save_library_btn === false) { print("display:none;") } %>">
                             <span class="fa fa-floppy-o"></span> Save
                         </button>
                         <button data-toggle="tooltip" data-placement="left" title="Discard changes"
-                            class="btn btn-sm cancel_library_btn" type="button"
+                            class="btn btn-secondary btn-sm cancel_library_btn" type="button"
                             style="<% if(button_config.cancel_library_btn === false) { print("display:none;") } %>">
                             <span class="fa fa-times"></span> Cancel
                         </button>
                         <button data-toggle="tooltip" data-placement="left" title="Delete '<%- library.get("name") %>'"
-                            class="btn btn-sm delete_library_btn" type="button"
+                            class="btn btn-secondary btn-sm delete_library_btn" type="button"
                             style="<% if(button_config.delete_library_btn === false) { print("display:none;") } %>">
                             <span class="fa fa-trash-o"></span> Delete
                         </button>`,
@@ -323,7 +317,7 @@ var LibraryRowView = Backbone.View.extend({
                             class="fa fa-ban fa-lg">
                         </span>
                         <button data-toggle="tooltip" data-placement="left" title="Undelete '<%- library.get("name") %>' "
-                            class="btn btn-sm undelete_library_btn" type="button"
+                            class="btn btn-secondary btn-sm undelete_library_btn" type="button"
                             style="<% if(button_config.undelete_library_btn === false) { print("display:none;") } %>">
                             <span class="fa fa-unlock"></span> Undelete
                         </button>
