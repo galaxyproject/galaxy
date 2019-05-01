@@ -17,6 +17,21 @@ LIST_COMPREHENSION_TEMPLATE = """#for $i in [1]:
 echo $v
 #end for
 """
+DICT_COMPREHENSION_TEMPLATE = """#for $i in [1]:
+#set $v = {_:_ for _ in [1] if _ == $i}
+echo $v[$i]
+#end for
+"""
+SET_COMPR_TEMPLATE = """#for $i in [1]:
+#set $v = {_ for _ in [1] if _ == $i}
+echo $v.pop()
+#end for
+"""
+GEN_EXPR_TEMPLATE = """#for $i in [1]:
+#set $v = list((_ for _ in [1] if _ == $i))
+echo $v[0]
+#end for
+"""
 TWO_TO_THREE_TEMPLATE = """#set $a = [x for x in {'a': '1'}.iterkeys()][0]
 #set $b = [x for x in {'a': '1'}.iteritems()][0][0]
 #set $c = [x for x in {'a': '1'}.itervalues()][0]
@@ -31,17 +46,32 @@ def test_fill_simple_template():
 def test_fill_list_comprehension_template():
     if sys.version_info.major > 2:
         with pytest.raises(NotFound):
-            str(fill_template(LIST_COMPREHENSION_TEMPLATE, retry=0))
+            fill_template(LIST_COMPREHENSION_TEMPLATE, retry=0)
     else:
-        template_str = str(fill_template(LIST_COMPREHENSION_TEMPLATE, retry=0))
+        template_str = fill_template(LIST_COMPREHENSION_TEMPLATE, retry=0)
         assert template_str == 'echo 1\n'
 
 
 def test_fill_list_comprehension_template_2():
-    template_str = str(fill_template(LIST_COMPREHENSION_TEMPLATE, retry=1))
+    template_str = fill_template(LIST_COMPREHENSION_TEMPLATE, retry=1)
+    assert template_str == 'echo 1\n'
+
+
+def test_fill_dict_comprehension():
+    template_str = fill_template(DICT_COMPREHENSION_TEMPLATE, retry=1)
+    assert template_str == 'echo 1\n'
+
+
+def test_set_comprehension():
+    template_str = fill_template(SET_COMPR_TEMPLATE, retry=1)
+    assert template_str == 'echo 1\n'
+
+
+def test_gen_expr():
+    template_str = fill_template(GEN_EXPR_TEMPLATE, retry=1)
     assert template_str == 'echo 1\n'
 
 
 def test_fix_template_two_to_three():
-    template_str = str(fill_template(TWO_TO_THREE_TEMPLATE, retry=1))
+    template_str = fill_template(TWO_TO_THREE_TEMPLATE, retry=1)
     assert template_str == 'a a 1'
