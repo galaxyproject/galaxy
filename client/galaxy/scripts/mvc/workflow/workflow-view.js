@@ -354,7 +354,9 @@ export default Backbone.View.extend({
         // Load workflow definition
         this.load_workflow(self.options.id, self.options.version);
         if (make_popupmenu) {
-            $("#workflow-run-button").click(() =>  window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`);
+            $("#workflow-run-button").click(
+                () => (window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`)
+            );
             $("#workflow-save-button").click(() => save_current_workflow());
             make_popupmenu($("#workflow-options-button"), {
                 "Save As": workflow_save_as,
