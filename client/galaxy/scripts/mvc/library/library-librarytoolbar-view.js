@@ -326,9 +326,18 @@ var LibraryToolbarView = Backbone.View.extend({
         return _.template(
             `<div id="new_library_modal">
                 <form>
-                    <input type="text" name="Name" value="" placeholder="Name" autofocus>
-                    <input type="text" name="Description" value="" placeholder="Description">
-                    <input type="text" name="Synopsis" value="" placeholder="Synopsis">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" class="form-control" name="Name" value="" placeholder="Name" autofocus>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" class="form-control" name="Description" value="" placeholder="Description">
+                    </div>
+                    <div class="form-group">
+                        <label>Synopsis</label>
+                        <input type="text" class="form-control" name="Synopsis" value="" placeholder="Synopsis">
+                    </div>
                 </form>
             </div>`
         );
