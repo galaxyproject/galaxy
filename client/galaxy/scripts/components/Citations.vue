@@ -30,8 +30,8 @@
 <script>
 import _ from "underscore";
 import axios from "axios";
-import Vue from 'vue';
-import BootstrapVue from 'bootstrap-vue';
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import * as bibtexParse from "libs/bibtexParse";
 import { convertLaTeX } from "latex-to-unicode-converter";

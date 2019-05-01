@@ -441,7 +441,7 @@ var ToolPanel = Backbone.Model.extend({
                 // and is not a ExpressionTool is treated as a generic tool.
                 if (type.indexOf("Tool") === type.length - 4) {
                     const tool = self.attributes.tools.get(elt_dict.id);
-                    if (type === 'ExpressionTool') {
+                    if (type === "ExpressionTool") {
                         tool.hide();
                     }
                     return tool;

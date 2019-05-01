@@ -30,7 +30,8 @@
                     </b-card>
                 </b-form>
                 <b-button v-for="idp in oidc_idps" :key="idp" class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                    <i v-bind:class="oidc_idps_icons[idp]" /> Sign in with {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+                    <i v-bind:class="oidc_idps_icons[idp]" /> Sign in with
+                    {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
                 </b-button>
             </div>
             <div v-if="show_welcome_with_login" class="col">

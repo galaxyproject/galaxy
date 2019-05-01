@@ -68,30 +68,6 @@ export default Backbone.View.extend({
         var self = (window.workflow_globals.app = this);
         this.options = options;
         this.urls = (options && options.urls) || {};
-        var close_editor = () => {
-            self.workflow.check_changes_in_active_form();
-            if (self.workflow && self.workflow.has_changes) {
-                var do_close = () => {
-                    window.onbeforeunload = undefined;
-                    window.document.location = self.urls.workflow_index;
-                };
-                show_modal(
-                    "Close workflow editor",
-                    "There are unsaved changes to your workflow which will be lost.",
-                    {
-                        Cancel: hide_modal,
-                        "Save Changes": function() {
-                            save_current_workflow(null, do_close);
-                        }
-                    },
-                    {
-                        "Don't Save": do_close
-                    }
-                );
-            } else {
-                window.document.location = self.urls.workflow_index;
-            }
-        };
         var workflow_index = self.urls.workflow_index;
         var save_current_workflow = (eventObj, success_callback) => {
             show_message("Saving workflow", "progress");
@@ -378,7 +354,9 @@ export default Backbone.View.extend({
         // Load workflow definition
         this.load_workflow(self.options.id, self.options.version);
         if (make_popupmenu) {
-            $("#workflow-run-button").click(() =>  window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`);
+            $("#workflow-run-button").click(
+                () => (window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`)
+            );
             $("#workflow-save-button").click(() => save_current_workflow());
             make_popupmenu($("#workflow-options-button"), {
                 "Save As": workflow_save_as,
@@ -389,8 +367,7 @@ export default Backbone.View.extend({
                 Download: {
                     url: `${getAppRoot()}api/workflows/${self.options.id}/download?format=json-download`,
                     action: function() {}
-                },
-                Close: close_editor
+                }
             });
         }
 

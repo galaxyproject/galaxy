@@ -63,7 +63,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_input_filled_in")
-        self.workflow_editor_save_and_close()
+        self.workflow_editor_click_save()
         self.workflow_index_open_with_name(name)
         data_input_node = editor.node._(label="input1")
         data_input_node.title.wait_for_and_click()
@@ -89,7 +89,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_data_collection_input_filled_in")
-        self.workflow_editor_save_and_close()
+        self.workflow_editor_click_save()
         self.workflow_index_open_with_name(name)
         data_input_node = editor.node._(label="input1")
         data_input_node.title.wait_for_and_click()
@@ -116,7 +116,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("workflow_editor_parameter_input_filled_in")
-        self.workflow_editor_save_and_close()
+        self.workflow_editor_click_save()
         self.workflow_index_open_with_name(name)
         data_input_node = editor.node._(label="input1")
         data_input_node.title.wait_for_and_click()
@@ -333,10 +333,6 @@ steps:
         self.workflow_index_click_option("Edit")
         self.assert_modal_has_text("Tool is not installed")
         self.screenshot("workflow_editor_missing_tool")
-
-    def workflow_editor_save_and_close(self):
-        self.workflow_editor_click_save()
-        self.workflow_editor_click_option("Close")
 
     def workflow_editor_maximize_center_pane(self, collapse_left=True, collapse_right=True):
         if collapse_left:

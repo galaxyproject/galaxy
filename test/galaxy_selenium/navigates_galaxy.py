@@ -804,7 +804,8 @@ class NavigatesGalaxy(HasDriver):
         return self.wait_for_and_click_selector("#workflow-run-button")
 
     def workflow_editor_click_save(self):
-        return self.wait_for_and_click_selector("#workflow-save-button")
+        self.wait_for_and_click_selector("#workflow-save-button")
+        self.sleep_for(self.wait_types.DATABASE_OPERATION)
 
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
