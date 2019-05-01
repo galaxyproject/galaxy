@@ -29,7 +29,7 @@ export function make_popupmenu(button_element, initial_options) {
         // Need setTimeouts so clicks don't interfere with each other
         setTimeout(() => {
             // Dynamically generate the wrapper holding all the selectable options of the menu.
-            var menu_element = $(`<div class="dropdown-menu" id="${button_element.attr('id')}-menu"/>`);
+            var menu_element = $(`<div class="dropdown-menu" id="${button_element.attr("id")}-menu"/>`);
             var options = button_element.data("menu_options");
             if (_.size(options) <= 0) {
                 $('<div class="dropdown-item">No Options.</div>').appendTo(menu_element);
