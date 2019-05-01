@@ -218,25 +218,25 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                     <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
                         <span class="caret"></span>
                     </button>
-                    <ul class="dropdown-menu" role="menu">
+                    <div class="dropdown-menu" role="menu">
                         <% if( !data.history.deleted ){ %>
-                            <li><a href="javascript:void(0);" class="copy-history">
+                            <a class="dropdown-item" href="javascript:void(0);" class="copy-history">
                                 ${_l("Copy")}
-                            </a></li>
-                            <li><a href="javascript:void(0);" class="delete-history">
+                            </a>
+                            <a class="dropdown-item" href="javascript:void(0);" class="delete-history">
                                 ${_l("Delete")}
-                            </a></li>
+                            </a>
                         <% } else /* if is deleted */ { %>
-                            <li><a href="javascript:void(0);" class="undelete-history">
+                            <a class="dropdown-item" href="javascript:void(0);" class="undelete-history">
                                 ${_l("Undelete")}
-                            </a></li>
+                            </a>
                         <% } %>
                         <% if( data.view.purgeAllowed ){ %>
-                            <li><a href="javascript:void(0);" class="purge-history">
+                            <a class="dropdown-item" href="javascript:void(0);" class="purge-history">
                                 ${_l("Purge")}
-                            </a></li>
+                            </a>
                         <% } %>
-                    </ul>
+                    </div>
                 </div>
             <% } %>
         </div>`,
@@ -1063,13 +1063,13 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             '<span class="current-order"><%- view.orderDescriptions[ view.collection.order ] %></span> ',
             '<span class="caret"></span>',
             "</button>",
-            '<ul class="dropdown-menu" role="menu">',
+            '<div class="dropdown-menu" role="menu">',
             "<% _.each( view.orderDescriptions, function( text, order ){ %>",
-            '<li class="dropdown-item"><a href="javascript:void(0);" class="set-order" data-order="<%- order %>">',
+            '<a href="javascript:void(0);" class="dropdown-item set-order" data-order="<%- order %>">',
             "<%- text %>",
-            "</a></li>",
+            "</a>",
             "<% }); %>",
-            "</ul>",
+            "</div>",
             "</div>",
 
             '<div class="checkbox"><label><input id="include-deleted" type="checkbox"',
