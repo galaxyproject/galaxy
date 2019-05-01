@@ -53,7 +53,7 @@ var PopupMenu = Backbone.View.extend({
         if (this.options.length) {
             var menu = this;
             //precondition: there should be one option per li
-            this.$el.find("li").each(function(i, li) {
+            this.$(".dropdown-item").each(function(i, li) {
                 var option = menu.options[i];
 
                 // if the option has 'func', call that function when the anchor is clicked
@@ -75,34 +75,29 @@ var PopupMenu = Backbone.View.extend({
     },
 
     template: function(id, options) {
-        return ['<ul id="', id, '-menu" class="dropdown-menu">', this._templateOptions(options), "</ul>"].join("");
+        return `<div id="${id}-menu" class="dropdown-menu">
+                    ${this._templateOptions(options)}
+                </div>`;
     },
 
     _templateOptions: function(options) {
         if (!options.length) {
-            return "<li>(no options)</li>";
+            return '<div class="dropdown-item">(no options)</div>';
         }
         return _.map(options, option => {
             if (option.divider) {
-                return '<li class="divider"></li>';
+                return '<div class="dropdown-item divider"></div>';
             } else if (option.header) {
-                return ['<li class="head"><a href="javascript:void(0);">', option.html, "</a></li>"].join("");
+                return `<div class="dropdown-item head">
+                            <a href="javascript:void(0);">${option.html}</a>
+                        </div>`;
             }
             var href = option.href || "javascript:void(0);";
-            var target = option.target ? ` target="${option.target}"` : "";
-
-            var check = option.checked ? '<span class="fa fa-check"></span>' : "";
-
-            return [
-                '<li><a class="popupmenu-option" href="',
-                href,
-                '"',
-                target,
-                ">",
-                check,
-                option.html,
-                "</a></li>"
-            ].join("");
+            var target = option.target ? `target="${option.target}"` : "";
+            var check = option.checked ? '<span class="fa fa-check"/>' : "";
+            return `<a class="dropdown-item popupmenu-option" href="${href}" ${target}>
+                        ${check}${option.html}
+                    </a>`;
         }).join("");
     },
 

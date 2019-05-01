@@ -1328,7 +1328,7 @@ div.popmenu-wrapper {
     top: 100%;
     z-index: 20000;
 
-    ul.dropdown-menu {
+    .dropdown-menu {
         // Since our menus are contained in a positioned div, need to override some styles
         display: block;
         position: relative;

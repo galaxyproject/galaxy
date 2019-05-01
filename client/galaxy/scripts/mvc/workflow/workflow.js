@@ -150,7 +150,7 @@ const WorkflowItemView = Backbone.View.extend({
     /** Template for user actions for workflows */
     _templateActions: function() {
         const Galaxy = getGalaxyInstance();
-        if (this.model.get("owner") !== Galaxy.user.attributes.username) {
+        if (this.model.get("owner") == Galaxy.user.attributes.username) {
             return `<div class="dropdown-menu">
                         <a class="dropdown-item" href="${getAppRoot()}workflow/editor?id=${this.model.id}">Edit</a>
                         <a class="dropdown-item" href="${getAppRoot()}workflows/run?id=${this.model.id}">Run</a>
