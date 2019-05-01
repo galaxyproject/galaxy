@@ -59,7 +59,7 @@ def fill_template(template_text,
         if retry > 0 and sys.version_info.major > 2:
             tb = e.__traceback__
             last_stack = traceback.extract_tb(tb)[-1]
-            if last_stack.name in ('<listcomp>', '<dictcomp>', '<setcomp>', '<genexpr>'):
+            if last_stack.name == '<listcomp>':
                 # On python 3 list,dict and set comprehensions as well as generator expressions
                 # have their own local scope, which prevents accessing frame variables in cheetah.
                 # We can work around this by replacing `$var` with `var`
@@ -80,7 +80,7 @@ def fill_template(template_text,
     except Exception as e:
         if first_exception is None:
             first_exception = e
-        if retry > 0 and sys.version_info.major > 2 and not futurized:
+        if not futurized:
             # Possibly an error caused by attempting to run python 2
             # template code on python 3. Run the generated module code
             # through futurize and hope for the best.
@@ -89,7 +89,7 @@ def fill_template(template_text,
             compiler_class = create_compiler_class(module_code)
             return fill_template(template_text=template_text,
                                  context=context,
-                                 retry=retry - 1,
+                                 retry=retry,
                                  compiler_class=compiler_class,
                                  first_exception=first_exception,
                                  futurized=True

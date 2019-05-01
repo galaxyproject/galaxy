@@ -58,18 +58,18 @@ def test_fill_list_comprehension_template_2():
 
 
 def test_fill_dict_comprehension():
-    template_str = fill_template(DICT_COMPREHENSION_TEMPLATE, retry=1)
-    assert template_str == 'echo 1\n'
+    with pytest.raises(NotFound):
+        fill_template(DICT_COMPREHENSION_TEMPLATE, retry=1)
 
 
 def test_set_comprehension():
-    template_str = fill_template(SET_COMPR_TEMPLATE, retry=1)
-    assert template_str == 'echo 1\n'
+    with pytest.raises(NotFound):
+        fill_template(SET_COMPR_TEMPLATE, retry=1)
 
 
 def test_gen_expr():
-    template_str = fill_template(GEN_EXPR_TEMPLATE, retry=1)
-    assert template_str == 'echo 1\n'
+    with pytest.raises(NotFound):
+        fill_template(GEN_EXPR_TEMPLATE, retry=1)
 
 
 def test_fix_template_two_to_three():
