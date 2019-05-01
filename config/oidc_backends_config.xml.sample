@@ -101,7 +101,7 @@ Please mind `http` and `https`.
         <!-- <idphint>cilogon</idphint> -->
     </provider>
     
-    <! -- Documentation: https://docs.google.com/document/d/1vOyW4dLVozy7oQvINYxHheVaLvwNsvvghbiKTLg7RbY-->
+    <!-- Documentation: https://docs.google.com/document/d/1vOyW4dLVozy7oQvINYxHheVaLvwNsvvghbiKTLg7RbY-->
     <provider name="Elixir">
         <client_id>...</client_id>
         <client_secret>...</client_secret>
