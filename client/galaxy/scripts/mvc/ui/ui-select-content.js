@@ -123,9 +123,9 @@ const Configurations = {
 };
 
 /** View for hda and hdca content selector ui elements */
-let View = Backbone.View.extend({
+const View = Backbone.View.extend({
     initialize: function(options) {
-        let self = this;
+        const self = this;
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -258,7 +258,7 @@ let View = Backbone.View.extend({
 
     /** Change of current select field */
     _changeCurrent: function() {
-        let self = this;
+        const self = this;
         _.each(this.fields, (field, i) => {
             const cnf = self.config[i];
             if (self.model.get("current") == i) {
@@ -293,7 +293,7 @@ let View = Backbone.View.extend({
         const galaxy = getGalaxyInstance();
 
         // identify selector type identifier i.e. [ flavor ]_[ type ]_[ multiple ]
-        let config_id =
+        const config_id =
             (this.model.get("flavor") ? `${this.model.get("flavor")}_` : "") +
             String(this.model.get("type")) +
             (this.model.get("multiple") ? "_multiple" : "");
@@ -305,9 +305,9 @@ let View = Backbone.View.extend({
         }
 
         // prepare extension component of error message
-        let data = self.model.get("data");
-        let extensions = Utils.textify(this.model.get("extensions"));
-        let src_labels = this.model.get("src_labels");
+        const data = self.model.get("data");
+        const extensions = Utils.textify(this.model.get("extensions"));
+        const src_labels = this.model.get("src_labels");
 
         // build radio button for data selectors
         this.fields = [];
@@ -384,7 +384,7 @@ let View = Backbone.View.extend({
 
     /** Change of wait flag */
     _changeWait: function() {
-        let self = this;
+        const self = this;
         _.each(this.fields, field => {
             field[self.model.get("wait") ? "wait" : "unwait"]();
         });
@@ -392,9 +392,9 @@ let View = Backbone.View.extend({
 
     /** Change of available options */
     _changeData: function() {
-        let options = this.model.get("data");
-        let self = this;
-        let select_options = {};
+        const options = this.model.get("data");
+        const self = this;
+        const select_options = {};
         _.each(options, (items, src) => {
             select_options[src] = [];
             _.each(items, item => {
@@ -416,19 +416,19 @@ let View = Backbone.View.extend({
 
     /** Change of incoming value */
     _changeValue: function() {
-        let new_value = this.model.get("value");
+        const new_value = this.model.get("value");
         if (new_value && new_value.values && new_value.values.length > 0) {
             // create list with content ids
-            let list = [];
+            const list = [];
             _.each(new_value.values, value => {
                 list.push(value.id);
             });
             // sniff first suitable field type from config list
-            let src = new_value.values[0].src;
-            let multiple = new_value.values.length > 1;
+            const src = new_value.values[0].src;
+            const multiple = new_value.values.length > 1;
             for (let i = 0; i < this.config.length; i++) {
-                let field = this.fields[i];
-                let c = this.config[i];
+                const field = this.fields[i];
+                const c = this.config[i];
                 if (c.src == src && [multiple, true].indexOf(c.multiple) !== -1) {
                     this.model.set("current", i);
                     field.value(list);
@@ -525,7 +525,7 @@ let View = Backbone.View.extend({
 
     /** Highlight drag result */
     _handleDropStatus: function(status) {
-        let self = this;
+        const self = this;
         this.$el.removeClass("ui-dragover").addClass(`ui-dragover-${status}`);
         setTimeout(() => {
             self.$el.removeClass(`ui-dragover-${status}`);
@@ -535,10 +535,10 @@ let View = Backbone.View.extend({
     /** Assists in identifying the batch mode */
     _batch: function(result) {
         result["batch"] = false;
-        let current = this.model.get("current");
-        let config = this.config[current];
+        const current = this.model.get("current");
+        const config = this.config[current];
         if (config.src == "hdca") {
-            let hdca = this.cache[`${this.fields[current].value()}_hdca`];
+            const hdca = this.cache[`${this.fields[current].value()}_hdca`];
             if (hdca && hdca.map_over_type) {
                 result["batch"] = true;
             }
