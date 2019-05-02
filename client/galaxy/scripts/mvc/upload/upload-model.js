@@ -4,6 +4,7 @@ var Model = Backbone.Model.extend({
         genome: "?",
         url_paste: "",
         status: "init",
+        optional: false,
         info: null,
         file_name: "",
         file_mode: "",
