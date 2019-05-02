@@ -52,14 +52,11 @@ var PopupMenu = Backbone.View.extend({
         // set up behavior on each link/anchor elem
         if (this.options.length) {
             var menu = this;
-            //precondition: there should be one option per li
-            this.$(".dropdown-item").each(function(i, li) {
+            this.$(".popupmenu-option").each(function(i) {
                 var option = menu.options[i];
-
                 // if the option has 'func', call that function when the anchor is clicked
                 if (option.func) {
                     $(this)
-                        .children("a.popupmenu-option")
                         .click(event => {
                             option.func.call(menu, event, option);
                             // We must preventDefault otherwise clicking "cancel"
@@ -82,18 +79,18 @@ var PopupMenu = Backbone.View.extend({
 
     _templateOptions: function(options) {
         if (!options.length) {
-            return '<div class="dropdown-item">(no options)</div>';
+            return '<div class="dropdown-header">(no options)</div>';
         }
         return _.map(options, option => {
             if (option.divider) {
-                return '<div class="dropdown-divider"/>';
+                return '<div class="popupmenu-option dropdown-divider"/>';
             } else if (option.header) {
-                return `<div class="dropdown-header">${option.html}</div>`;
+                return `<div class="popupmenu-option dropdown-header">${option.html}</div>`;
             }
             var href = option.href || "javascript:void(0);";
             var target = option.target ? `target="${option.target}"` : "";
             var check = option.checked ? '<span class="fa fa-check"/>' : "";
-            return `<a class="dropdown-item popupmenu-option" href="${href}" ${target}>
+            return `<a class="popupmenu-option dropdown-item" href="${href}" ${target}>
                         ${check} ${option.html}
                     </a>`;
         }).join("");
