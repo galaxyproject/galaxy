@@ -469,7 +469,7 @@ class ToolEvaluator(object):
             return
         try:
             # Substituting parameters into the command
-            command_line = fill_template(command, context=param_dict)
+            command_line = fill_template(command, context=param_dict, python_template_version=self.tool.python_template_version)
             cleaned_command_line = []
             # Remove leading and trailing whitespace from each line for readability.
             for line in command_line.split('\n'):
@@ -575,7 +575,7 @@ class ToolEvaluator(object):
 
     def __write_workdir_file(self, config_filename, content, context, is_template=True):
         if is_template:
-            value = fill_template(content, context=context)
+            value = fill_template(content, context=context, python_template_version=self.tool.python_template_version)
         else:
             value = unicodify(content)
         with io.open(config_filename, "w", encoding='utf-8') as f:

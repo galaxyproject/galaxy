@@ -266,6 +266,7 @@ class MockTool(object):
 
     def __init__(self, app):
         self.profile = 16.01
+        self.python_template_version = 2.7
         self.app = app
         self.hooks_called = []
         self.environment_variables = []

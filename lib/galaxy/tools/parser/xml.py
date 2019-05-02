@@ -483,6 +483,12 @@ class XmlToolSource(ToolSource):
         # - Enable buggy interpreter attribute.
         return self.root.get("profile", "16.01")
 
+    def parse_python_template_version(self):
+        python_template_version = self.root.get("python_template_version", None)
+        if python_template_version is not None:
+            python_template_version = float(python_template_version)
+        return python_template_version
+
 
 def _test_elem_to_dict(test_elem, i):
     rval = dict(

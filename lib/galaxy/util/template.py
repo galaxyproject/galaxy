@@ -38,6 +38,7 @@ def fill_template(template_text,
                   compiler_class=Compiler,
                   first_exception=None,
                   futurized=False,
+                  python_template_version=3,
                   **kwargs):
     """Fill a cheetah template out for specified context.
 
@@ -56,13 +57,15 @@ def fill_template(template_text,
     except NotFound as e:
         if first_exception is None:
             first_exception = e
-        if retry > 0 and sys.version_info.major > 2:
+        if python_template_version < 3 and retry > 0 and sys.version_info.major > 2:
             tb = e.__traceback__
             last_stack = traceback.extract_tb(tb)[-1]
             if last_stack.name == '<listcomp>':
-                # On python 3 list,dict and set comprehensions as well as generator expressions
+                # On python 3 list, dict and set comprehensions as well as generator expressions
                 # have their own local scope, which prevents accessing frame variables in cheetah.
-                # We can work around this by replacing `$var` with `var`
+                # We can work around this by replacing `$var` with `var`, but we only do this for
+                # list comprehensions, as this has never worked for dict or set comprehensions or
+                # generator expressions in Cheetah.
                 var_not_found = e.args[0].split("'")[1]
                 replace_str = 'VFFSL(SL,"%s",True)' % var_not_found
                 lineno = last_stack.lineno - 1
@@ -80,7 +83,7 @@ def fill_template(template_text,
     except Exception as e:
         if first_exception is None:
             first_exception = e
-        if not futurized:
+        if sys.version_info.major > 2 and python_template_version < 3 and not futurized:
             # Possibly an error caused by attempting to run python 2
             # template code on python 3. Run the generated module code
             # through futurize and hope for the best.

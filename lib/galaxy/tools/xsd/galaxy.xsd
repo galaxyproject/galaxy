@@ -175,11 +175,20 @@ set this to have values such as ``data_source`` or ``manage_data``.</xs:document
       </xs:attribute>
       <xs:attribute name="profile" type="xs:string">
         <xs:annotation>
-          <xs:documentation xml:lang="en">This string specified the minimum Galaxy
+          <xs:documentation xml:lang="en">This string specifies the minimum Galaxy
 version that should be required to run this tool. Certain legacy behaviors such
 as using standard error content to detect errors instead of exit code are disabled
 automatically if profile is set to any version newer than ``16.01``, such as
 ``16.04``.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="python_template_version" type="xs:float">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">This string specifies the minimum Python
+version that is able to fill the Cheetah sections of the tool. If unset defaults
+to 2.7 if the profile is older than 19.01, otherwise defaults to 3.5. Galaxy will 
+attempt to convert Python statements in Cheetah sections using [future](http://python-future.org/)
+if Galaxy is run on Python 3 and ``python_template_version`` is below 3.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="workflow_compatible" type="xs:boolean" default="true">
