@@ -6,6 +6,7 @@ import sys
 import tempfile
 import traceback
 
+import packaging.version
 from Cheetah.Compiler import Compiler
 from Cheetah.NameMapper import NotFound
 from Cheetah.Template import Template
@@ -38,7 +39,7 @@ def fill_template(template_text,
                   compiler_class=Compiler,
                   first_exception=None,
                   futurized=False,
-                  python_template_version=3,
+                  python_template_version='3',
                   **kwargs):
     """Fill a cheetah template out for specified context.
 
@@ -50,6 +51,8 @@ def fill_template(template_text,
         raise TypeError("Template text specified as None to fill_template.")
     if not context:
         context = kwargs
+    if isinstance(python_template_version, str):
+        python_template_version = packaging.version.parse(python_template_version)
     klass = Template.compile(source=template_text, compilerClass=compiler_class)
     t = klass(searchList=[context])
     try:
@@ -57,7 +60,7 @@ def fill_template(template_text,
     except NotFound as e:
         if first_exception is None:
             first_exception = e
-        if python_template_version < 3 and retry > 0 and sys.version_info.major > 2:
+        if sys.version_info.major > 2 and python_template_version.release[0] < 3 and retry > 0:
             tb = e.__traceback__
             last_stack = traceback.extract_tb(tb)[-1]
             if last_stack.name == '<listcomp>':
@@ -77,13 +80,14 @@ def fill_template(template_text,
                                      context=context,
                                      retry=retry - 1,
                                      compiler_class=compiler_class,
-                                     first_exception=first_exception
+                                     first_exception=first_exception,
+                                     python_template_version=python_template_version,
                                      )
         raise first_exception or e
     except Exception as e:
         if first_exception is None:
             first_exception = e
-        if sys.version_info.major > 2 and python_template_version < 3 and not futurized:
+        if sys.version_info.major > 2 and python_template_version.release[0] < 3 and not futurized:
             # Possibly an error caused by attempting to run python 2
             # template code on python 3. Run the generated module code
             # through futurize and hope for the best.
@@ -95,7 +99,8 @@ def fill_template(template_text,
                                  retry=retry,
                                  compiler_class=compiler_class,
                                  first_exception=first_exception,
-                                 futurized=True
+                                 futurized=True,
+                                 python_template_version=python_template_version,
                                  )
         raise first_exception or e
 

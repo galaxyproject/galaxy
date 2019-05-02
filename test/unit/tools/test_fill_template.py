@@ -53,7 +53,7 @@ def test_fill_list_comprehension_template():
 
 
 def test_fill_list_comprehension_template_2():
-    template_str = fill_template(LIST_COMPREHENSION_TEMPLATE, python_template_version=2, retry=1)
+    template_str = fill_template(LIST_COMPREHENSION_TEMPLATE, python_template_version='2', retry=1)
     assert template_str == 'echo 1\n'
 
 
@@ -73,5 +73,5 @@ def test_gen_expr():
 
 
 def test_fix_template_two_to_three():
-    template_str = fill_template(TWO_TO_THREE_TEMPLATE, python_template_version=2, retry=1)
+    template_str = fill_template(TWO_TO_THREE_TEMPLATE, python_template_version='2', retry=1)
     assert template_str == 'a a 1'

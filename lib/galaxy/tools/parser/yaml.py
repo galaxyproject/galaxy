@@ -1,3 +1,5 @@
+import packaging.version
+
 from galaxy.tools.deps import requirements
 from galaxy.util.odict import odict
 from .interface import InputSource
@@ -165,7 +167,7 @@ class YamlToolSource(ToolSource):
     def parse_python_template_version(self):
         python_template_version = self.root_dict.get("python_template_version", None)
         if python_template_version is not None:
-            python_template_version = float(python_template_version)
+            python_template_version = packaging.version.parse(python_template_version)
         return python_template_version
 
 

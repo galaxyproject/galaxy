@@ -648,9 +648,9 @@ class Tool(Dictifiable):
         if self.python_template_version is None:
             # If python_template_version not specified we assume tools with profile versions >= 19.05 are python 3 ready
             if self.profile >= 19.05:
-                self.python_template_version = 3.5
+                self.python_template_version = '3.5'
             else:
-                self.python_template_version = 2.7
+                self.python_template_version = '2.7'
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()

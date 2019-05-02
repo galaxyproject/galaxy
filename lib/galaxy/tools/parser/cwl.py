@@ -151,7 +151,7 @@ class CwlToolSource(ToolSource):
         return "16.04"
 
     def parse_python_template_version(self):
-        return 3.5
+        return '3.5'
 
 
 class CwlPageSource(PageSource):
