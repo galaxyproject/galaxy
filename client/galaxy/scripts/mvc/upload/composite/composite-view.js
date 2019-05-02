@@ -62,7 +62,8 @@ export default Backbone.View.extend({
                     _.each(details.composite_files, item => {
                         self.collection.add({
                             id: self.collection.size(),
-                            file_desc: item.description || item.name
+                            file_desc: item.description || item.name,
+                            optional: item.optional,
                         });
                     });
                 }
@@ -112,7 +113,7 @@ export default Backbone.View.extend({
             this.select_genome.enable();
             this.select_extension.enable();
         }
-        if (this.collection.where({ status: "ready" }).length == this.collection.length && this.collection.length > 0) {
+        if (this.collection.where({ status: "ready" }).length + this.collection.where({ optional: true }).length == this.collection.length && this.collection.length > 0) {
             this.btnStart.enable();
             this.btnStart.$el.addClass("btn-primary");
         } else {
