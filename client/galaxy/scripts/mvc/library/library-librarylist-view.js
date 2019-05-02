@@ -230,39 +230,37 @@ var LibraryListView = Backbone.View.extend({
 
     templateLibraryList: function() {
         return _.template(
-            [
-                `<div class="library_container table-responsive">
-                    <% if(length === 0) { %>
-                        <% if(search_term.length > 0) { %>
-                            <div>
-                                There are no libraries matching your search. Try different keyword.
-                            </div>
-                        <% } else{ %>
-                            <div>
-                                There are no libraries visible to you here. If you expected some to show up please consult the
-                                <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">library security wikipage</a>.
-                            </div>
-                        <% }%>
+            `<div class="library_container table-responsive">
+                <% if(length === 0) { %>
+                    <% if(search_term.length > 0) { %>
+                        <div>
+                            There are no libraries matching your search. Try different keyword.
+                        </div>
                     <% } else{ %>
-                        <table class="grid table table-sm">
-                            <thead>
-                                <th style="width:30%;">
-                                    <a class="sort-libraries-link" title="Click to reverse order" href="#">
-                                        name
-                                    </a>
-                                    <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span>
-                                </th>
-                                <th style="width:22%;">description</th>
-                                <th style="width:22%;">synopsis</th> 
-                                <th style="width:26%;"></th>
-                            </thead>
-                            <tbody id="library_list_body">`,
-                // library item views will attach here
-                `           </tbody>
-                        </table>
+                        <div>
+                            There are no libraries visible to you here. If you expected some to show up please consult the
+                            <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">library security wikipage</a>.
+                        </div>
                     <% }%>
-                </div>`
-            ].join("")
+                <% } else{ %>
+                    <table class="grid table table-sm">
+                        <thead>
+                            <th style="width:30%;">
+                                <a class="sort-libraries-link" title="Click to reverse order" href="#">
+                                    name
+                                </a>
+                                <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span>
+                            </th>
+                            <th style="width:22%;">description</th>
+                            <th style="width:22%;">synopsis</th> 
+                            <th style="width:26%;"></th>
+                        </thead>
+                        <tbody id="library_list_body">
+                        <!-- library item views will attach here -->
+                       </tbody>
+                    </table>
+                <% }%>
+            </div>`
         );
     }
 });
