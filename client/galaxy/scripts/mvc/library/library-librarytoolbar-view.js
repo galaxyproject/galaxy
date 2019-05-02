@@ -146,7 +146,7 @@ var LibraryToolbarView = Backbone.View.extend({
      */
     changePageSize: function(e) {
         e.preventDefault();
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         Galaxy.libraries.preferences.set({
             library_page_size: parseInt(e.target.value)
         });
