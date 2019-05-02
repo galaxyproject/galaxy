@@ -230,7 +230,7 @@ class JobConfXmlParserTestCase(unittest.TestCase):
 
         assert env_dest.env[3]["execute"] == "module load javastuff/2.10"
 
-    def test_hanlder_runner_plugins(self):
+    def test_handler_runner_plugins(self):
         self.__with_advanced_config()
         assert self.job_config.handler_runner_plugins["sge_handler"] == ["sge"]
         assert "special_handler1" not in self.job_config.handler_runner_plugins
