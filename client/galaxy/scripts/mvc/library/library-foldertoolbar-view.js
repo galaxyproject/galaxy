@@ -24,6 +24,7 @@ var FolderToolbarView = Backbone.View.extend({
         "click .toolbtn-bulk-delete": "deleteSelectedItems",
         "click .toolbtn-show-locinfo": "showLocInfo",
         "click .page-size-prompt": "showPageSizePrompt",
+        "click .page_size": "changePageSize",
         "click .toolbtn-collection-import": "showCollectionSelect"
     },
 
@@ -1317,6 +1318,21 @@ var FolderToolbarView = Backbone.View.extend({
         }
     },
 
+    /**
+     * Change the number of libs shown on page.
+     */
+    changePageSize: function(e) {
+        e.preventDefault();
+        let Galaxy = getGalaxyInstance();
+        Galaxy.libraries.preferences.set({
+            folder_page_size: parseInt(e.target.value)
+        });
+        Galaxy.libraries.folderListView.render({
+            id: this.options.id,
+            show_page: 1
+        });
+    },
+
     findCheckedRows: function() {
         return $("#folder_list_body").find(":checked");
     },
@@ -1985,9 +2001,14 @@ var FolderToolbarView = Backbone.View.extend({
                     </li>
                 <% } %>
             </ul>
+            <span class="mr-1 form-inline">
+                <input min="0" max="999" class="page_size form-control" type="number" value="<%- folder_page_size %>" />
+                <label class="ml-1">items per page,</label>
+<!--                <%- items_shown %> items shown <a href="" data-toggle="tooltip" data-placement="top"-->
+<!--                    title="currently <%- folder_page_size %> per page" class="page-size-prompt">(change)</a>-->
+            </span>
             <span class="mr-1">
-                <%- items_shown %> items shown <a href="" data-toggle="tooltip" data-placement="top"
-                    title="currently <%- folder_page_size %> per page" class="page-size-prompt">(change)</a>
+                <%- items_shown %> items shown,
             </span>
             <span class="mr-1">
                 <%- total_items_count %> total

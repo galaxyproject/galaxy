@@ -22,6 +22,7 @@ var LibraryToolbarView = Backbone.View.extend({
         "click #include_deleted_chk": "includeDeletedChecked",
         "click #exclude_restricted_chk": "excludeRestrictedChecked",
         "click .page_size_prompt": "showPageSizePrompt",
+        "change .page_size": "changePageSize",
         "keyup .library-search-input": "searchLibraries"
     },
 
@@ -141,6 +142,18 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     /**
+     * Change the number of libs shown on page.
+     */
+    changePageSize: function(e) {
+        e.preventDefault();
+        let Galaxy = getGalaxyInstance();
+        Galaxy.libraries.preferences.set({
+            library_page_size: parseInt(e.target.value)
+        });
+        Galaxy.libraries.libraryListView.render({ show_page: 1 });
+    },
+
+    /**
      * Clear the library modal once it is saved.
      */
     clearLibraryModal: function() {
@@ -222,7 +235,7 @@ var LibraryToolbarView = Backbone.View.extend({
                     <% } %>
                     <div class="d-flex align-items-center library-paginator mr-1" />
                         <form class="form-inline mr-1">
-                            <input type="text" class="form-control library-search-input mr-1" placeholder="Great Library" size="15">
+                            <input type="text" class="form-control library-search-input mr-1" placeholder="Filter" size="15">
                             <% if(admin_user === true) { %>
                                 <div class="form-check mr-1">
                                     <input class="form-check-input" id="include_deleted_chk" type="checkbox"/>
@@ -243,11 +256,10 @@ var LibraryToolbarView = Backbone.View.extend({
 
     templatePaginator: function() {
         return _.template(
-            [
                 `<ul class="pagination mr-1">
                     <% if ( ( show_page - 1 ) > 0 ) { %>
-                        <% if ( ( show_page - 1 ) > page_count ) { %>`, // we are on higher page than total page count
-                `           <li class="page-item">
+                        <% if ( ( show_page - 1 ) > page_count ) { %> <!-- we are on higher page than total page count -->
+                           <li class="page-item">
                                 <a class="page-link" href="#page/1">
                                     <span class="fa fa-angle-double-left"></span>
                                 </a>
@@ -269,8 +281,8 @@ var LibraryToolbarView = Backbone.View.extend({
                                 </a>
                             </li>
                         <% } %>
-                    <% } else { %>`, // we are on the first page
-                `       <li class="page-item disabled">
+                    <% } else { %> <!-- we are on the first page -->
+                       <li class="page-item disabled">
                             <a class="page-link" href="#page/1">
                                 <span class="fa fa-angle-double-left"></span>
                             </a>
@@ -310,15 +322,16 @@ var LibraryToolbarView = Backbone.View.extend({
                         </li>
                     <% } %>
                 </ul>
+                <span class="mr-1 form-inline">
+                    <input min="0" max="999" class="page_size form-control" type="number" value="<%- library_page_size %>" />
+                    <label class="ml-1">items per page,</label>
+                </span>
                 <span class="mr-1">
-                    <%- libraries_shown %> libraries shown <a href="" data-toggle="tooltip"
-                        data-placement="top" title="currently <%- library_page_size %> per page"
-                        class="page_size_prompt">(change)</a>
+                    <%- libraries_shown %> libraries shown,
                 </span>
                 <span class="mr-1">
                     <%- total_libraries_count %> total
                 </span>`
-            ].join("")
         );
     },
 
