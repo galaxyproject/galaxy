@@ -1,6 +1,6 @@
 <%namespace file="/display_common.mako" import="get_controller_name" />
 <%!
-from cgi import escape
+from markupsafe import escape
 %>
 
 ## Render a tagging element if there is a tagged_item.

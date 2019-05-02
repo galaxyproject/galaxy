@@ -141,7 +141,7 @@ var CopyDialog = {
         }
 
         var originalClosingCallback = options.closing_callback;
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         modal.show(
             _.extend(options, {
                 title: this.title({ name: history.get("name") }),
@@ -229,7 +229,7 @@ var ImportDialog = _.extend({}, CopyDialog, {
  *     {String} allDatasets default initial checked radio button: 'copy-all' or 'copy-non-deleted',
  */
 var historyCopyDialog = (history, options) => {
-    let Galaxy = getGalaxyInstance();
+    const Galaxy = getGalaxyInstance();
     options = options || {};
     // create our own modal if Galaxy doesn't have one (mako tab without use_panels)
     var modal = Galaxy.modal || new MODAL.View({});

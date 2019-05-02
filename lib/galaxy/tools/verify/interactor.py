@@ -717,13 +717,24 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
             shutil.rmtree(path)
 
 
-def verify_tool(tool_id, galaxy_interactor, resource_parameters=None, register_job_data=None, test_index=0, tool_version=None, quiet=False, test_history=None, force_path_paste=False):
+def verify_tool(tool_id,
+                galaxy_interactor,
+                resource_parameters=None,
+                register_job_data=None,
+                test_index=0,
+                tool_version=None,
+                quiet=False,
+                test_history=None,
+                force_path_paste=False,
+                maxseconds=None,
+                tool_test_dicts=None):
     if resource_parameters is None:
         resource_parameters = {}
-    tool_test_dicts = galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
+    tool_test_dicts = tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
     tool_test_dict = tool_test_dicts[test_index]
     testdef = ToolTestDescription(tool_test_dict)
-
+    if maxseconds is not None:
+        testdef.maxseconds = int(maxseconds)
     _handle_def_errors(testdef)
 
     if test_history is None:

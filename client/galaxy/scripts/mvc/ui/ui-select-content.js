@@ -8,15 +8,16 @@ import Select from "mvc/ui/ui-select-default";
 import { getGalaxyInstance } from "app";
 
 /** Batch mode variations */
-var Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
+const Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
 
 /** List of available content selectors options */
-var Configurations = {
+const Configurations = {
     data: [
         {
             src: "hda",
             icon: "fa-file-o",
             tooltip: _l("Single dataset"),
+            library: true,
             multiple: false,
             batch: Batch.DISABLED
         },
@@ -122,9 +123,9 @@ var Configurations = {
 };
 
 /** View for hda and hdca content selector ui elements */
-var View = Backbone.View.extend({
+const View = Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
+        const self = this;
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -157,7 +158,7 @@ var View = Backbone.View.extend({
         };
 
         // add drag-drop event handlers
-        let element = this.$el.get(0);
+        const element = this.$el.get(0);
         element.addEventListener("dragenter", e => {
             this.lastenter = e.target;
             self.$el.addClass("ui-dragover");
@@ -171,15 +172,15 @@ var View = Backbone.View.extend({
         element.addEventListener("drop", e => {
             e.preventDefault();
             try {
-                let drop_data = JSON.parse(e.dataTransfer.getData("text"))[0];
+                const drop_data = JSON.parse(e.dataTransfer.getData("text"))[0];
                 this._handleDropValues(drop_data);
             } catch (e) {
                 this._handleDropStatus("danger");
             }
         });
 
-        // track current history elements
-        this.history = {};
+        // track current cache elements
+        this.cache = {};
 
         // add listeners
         this.listenTo(this.model, "change:data", this._changeData, this);
@@ -223,19 +224,20 @@ var View = Backbone.View.extend({
 
     /** Return the currently selected dataset values */
     value: function(new_value) {
-        let galaxy = getGalaxyInstance();
+        const galaxy = getGalaxyInstance();
         new_value !== undefined && this.model.set("value", new_value);
-        var current = this.model.get("current");
+        const current = this.model.get("current");
         if (this.config[current]) {
-            var id_list = this.fields[current].value();
+            let id_list = this.fields[current].value();
             if (id_list !== null) {
                 id_list = $.isArray(id_list) ? id_list : [id_list];
                 if (id_list.length > 0) {
-                    var result = this._batch({ values: [] });
-                    for (var i in id_list) {
-                        var details = this.history[`${id_list[i]}_${this.config[current].src}`];
+                    const result = this._batch({ values: [] });
+                    for (const i in id_list) {
+                        const details = this.cache[`${id_list[i]}_${this.config[current].src}`];
                         if (details) {
-                            result.values.push(details);
+                            const unpatchedValue = this._unpatchValue(details);
+                            result.values.push(unpatchedValue);
                         } else {
                             galaxy.emit.debug(
                                 "ui-select-content::value()",
@@ -256,9 +258,9 @@ var View = Backbone.View.extend({
 
     /** Change of current select field */
     _changeCurrent: function() {
-        var self = this;
+        const self = this;
         _.each(this.fields, (field, i) => {
-            let cnf = self.config[i];
+            const cnf = self.config[i];
             if (self.model.get("current") == i) {
                 field.$el.show();
                 _.each(self.$batch, ($batchfield, batchmode) => {
@@ -268,7 +270,7 @@ var View = Backbone.View.extend({
                         $batchfield.hide();
                     }
                 });
-                if (cnf.showdialog) {
+                if (cnf.src == "hda") {
                     self.button_dialog.show();
                 } else {
                     self.button_dialog.hide();
@@ -287,11 +289,11 @@ var View = Backbone.View.extend({
 
     /** Change of type */
     _changeType: function() {
-        let self = this;
-        let galaxy = getGalaxyInstance();
+        const self = this;
+        const galaxy = getGalaxyInstance();
 
         // identify selector type identifier i.e. [ flavor ]_[ type ]_[ multiple ]
-        var config_id =
+        const config_id =
             (this.model.get("flavor") ? `${this.model.get("flavor")}_` : "") +
             String(this.model.get("type")) +
             (this.model.get("multiple") ? "_multiple" : "");
@@ -303,9 +305,9 @@ var View = Backbone.View.extend({
         }
 
         // prepare extension component of error message
-        var data = self.model.get("data");
-        var extensions = Utils.textify(this.model.get("extensions"));
-        var src_labels = this.model.get("src_labels");
+        const data = self.model.get("data");
+        const extensions = Utils.textify(this.model.get("extensions"));
+        const src_labels = this.model.get("src_labels");
 
         // build radio button for data selectors
         this.fields = [];
@@ -346,23 +348,23 @@ var View = Backbone.View.extend({
             tooltip: "Browse Datasets",
             cls: "ml-2",
             onclick: () => {
-                let current = this.model.get("current");
-                let cnf = this.config[current];
+                const current = this.model.get("current");
+                const cnf = this.config[current];
                 galaxy.data.dialog(
                     response => {
                         this._handleDropValues(response, false);
                     },
                     {
                         multiple: cnf.multiple,
-                        format: null,
-                        library: false
+                        library: cnf.library,
+                        format: null
                     }
                 );
             }
         });
 
         // append views
-        let $fields = $("<div/>").addClass("w-100");
+        const $fields = $("<div/>").addClass("w-100");
         this.$el
             .empty()
             .addClass("d-flex flex-row")
@@ -382,7 +384,7 @@ var View = Backbone.View.extend({
 
     /** Change of wait flag */
     _changeWait: function() {
-        var self = this;
+        const self = this;
         _.each(this.fields, field => {
             field[self.model.get("wait") ? "wait" : "unwait"]();
         });
@@ -390,9 +392,9 @@ var View = Backbone.View.extend({
 
     /** Change of available options */
     _changeData: function() {
-        var options = this.model.get("data");
-        var self = this;
-        var select_options = {};
+        const options = this.model.get("data");
+        const self = this;
+        const select_options = {};
         _.each(options, (items, src) => {
             select_options[src] = [];
             _.each(items, item => {
@@ -401,9 +403,10 @@ var View = Backbone.View.extend({
                     keep: item.keep,
                     label: `${item.hid}: ${item.name}`,
                     value: item.id,
+                    origin: item.origin,
                     tags: item.tags
                 });
-                self.history[`${item.id}_${src}`] = item;
+                self.cache[`${item.id}_${src}`] = item;
             });
         });
         _.each(this.config, (c, i) => {
@@ -413,19 +416,19 @@ var View = Backbone.View.extend({
 
     /** Change of incoming value */
     _changeValue: function() {
-        var new_value = this.model.get("value");
+        const new_value = this.model.get("value");
         if (new_value && new_value.values && new_value.values.length > 0) {
             // create list with content ids
-            var list = [];
+            const list = [];
             _.each(new_value.values, value => {
                 list.push(value.id);
             });
             // sniff first suitable field type from config list
-            var src = new_value.values[0].src;
-            var multiple = new_value.values.length > 1;
-            for (var i = 0; i < this.config.length; i++) {
-                var field = this.fields[i];
-                var c = this.config[i];
+            const src = new_value.values[0].src;
+            const multiple = new_value.values.length > 1;
+            for (let i = 0; i < this.config.length; i++) {
+                const field = this.fields[i];
+                const c = this.config[i];
                 if (c.src == src && [multiple, true].indexOf(c.multiple) !== -1) {
                     this.model.set("current", i);
                     field.value(list);
@@ -444,27 +447,50 @@ var View = Backbone.View.extend({
         return v.history_content_type == "dataset_collection" ? "hdca" : "hda";
     },
 
+    /** Library datasets are displayed and selected together with history datasets **/
+    _patchValue: function(v) {
+        if (v.src == "ldda") {
+            v.src = "hda";
+            v.origin = "ldda";
+            v.id = `${v.origin}${v.id}`;
+        }
+    },
+
+    /** Restores original value e.g. after patching library datasets **/
+    _unpatchValue: function(v) {
+        if (v.origin) {
+            const d = Object.assign({}, v);
+            d.id = d.id.substr(d.origin.length);
+            d.src = d.origin;
+            return d;
+        }
+        return v;
+    },
+
     /** Add values from drag/drop */
     _handleDropValues: function(drop_data, drop_partial = true) {
-        let data = this.model.get("data");
-        let current = this.model.get("current");
-        let config = this.config[current];
-        let field = this.fields[current];
+        const self = this;
+        const data = this.model.get("data");
+        const current = this.model.get("current");
+        const config = this.config[current];
+        const field = this.fields[current];
         if (data) {
-            let values = $.isArray(drop_data) ? drop_data : [drop_data];
+            const values = $.isArray(drop_data) ? drop_data : [drop_data];
             if (values.length > 0) {
                 let data_changed = false;
                 _.each(values, v => {
-                    let new_id = v.id;
-                    let new_src = (v.src = this._getSource(v));
-                    let new_value = { id: new_id, src: new_src };
+                    self._patchValue(v);
+                    const new_id = v.id;
+                    const new_src = (v.src = this._getSource(v));
+                    const new_value = { id: new_id, src: new_src };
                     if (!_.findWhere(data[new_src], new_value)) {
                         data_changed = true;
                         data[new_src].push({
                             id: new_id,
                             src: new_src,
                             hid: v.hid || "Selected",
-                            name: v.hid ? v.name : new_id,
+                            name: v.name ? v.name : new_id,
+                            origin: v.origin,
                             keep: true,
                             tags: []
                         });
@@ -473,10 +499,10 @@ var View = Backbone.View.extend({
                 if (data_changed) {
                     this._changeData();
                 }
-                let first_id = values[0].id;
-                let first_src = values[0].src;
+                const first_id = values[0].id;
+                const first_src = values[0].src;
                 if (config.src == first_src && drop_partial) {
-                    var current_value = field.value();
+                    let current_value = field.value();
                     if (current_value && config.multiple) {
                         _.each(values, v => {
                             if (current_value.indexOf(v.id) == -1) {
@@ -499,7 +525,7 @@ var View = Backbone.View.extend({
 
     /** Highlight drag result */
     _handleDropStatus: function(status) {
-        var self = this;
+        const self = this;
         this.$el.removeClass("ui-dragover").addClass(`ui-dragover-${status}`);
         setTimeout(() => {
             self.$el.removeClass(`ui-dragover-${status}`);
@@ -509,10 +535,10 @@ var View = Backbone.View.extend({
     /** Assists in identifying the batch mode */
     _batch: function(result) {
         result["batch"] = false;
-        var current = this.model.get("current");
-        var config = this.config[current];
+        const current = this.model.get("current");
+        const config = this.config[current];
         if (config.src == "hdca") {
-            var hdca = this.history[`${this.fields[current].value()}_hdca`];
+            const hdca = this.cache[`${this.fields[current].value()}_hdca`];
             if (hdca && hdca.map_over_type) {
                 result["batch"] = true;
             }

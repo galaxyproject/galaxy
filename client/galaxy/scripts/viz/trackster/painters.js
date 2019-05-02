@@ -982,7 +982,7 @@ class ReadPainter extends FeaturePainter {
                         // Draw base if showing all (i.e. not showing differences) or there is a mismatch.
                         if ((cur_seq && !this.prefs.show_differences) || cig_op === "X") {
                             // Draw base.
-                            let c_start = Math.floor(Math.max(0, (start_pos + c - tile_low) * w_scale));
+                            const c_start = Math.floor(Math.max(0, (start_pos + c - tile_low) * w_scale));
                             ctx.fillStyle = this.base_color_fn(cur_seq[c]);
                             if (pack_mode && w_scale > char_width_px) {
                                 ctx.fillText(cur_seq[c], c_start, y_start + 9);
@@ -1057,7 +1057,7 @@ class ReadPainter extends FeaturePainter {
                                 }
                                 // Draw sequence.
                                 for (let c = 0, str_len = seq.length; c < str_len; c++) {
-                                    let c_start = Math.floor(Math.max(0, (seq_start + c - tile_low) * w_scale));
+                                    const c_start = Math.floor(Math.max(0, (seq_start + c - tile_low) * w_scale));
                                     ctx.fillText(seq[c], c_start - (s_end - s_start) / 2, y_start);
                                 }
                             } else {

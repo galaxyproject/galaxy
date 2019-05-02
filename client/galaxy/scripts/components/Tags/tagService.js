@@ -52,13 +52,13 @@ export class TagService {
      * @returns Promise yielding new tag model
      */
     async save(rawTag) {
-        let { id, itemClass, context } = this;
-        let tag = createTag(rawTag);
+        const { id, itemClass, context } = this;
+        const tag = createTag(rawTag);
         if (!tag.valid) {
             throw new Error("Invalid tag");
         }
-        let url = `/tag/add_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&new_tag=${tag.text}`;
-        let response = await axios.get(url);
+        const url = `/tag/add_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&new_tag=${tag.text}`;
+        const response = await axios.get(url);
         if (response.status !== 200) {
             throw new Error(`Unable to save tag: ${tag}`);
         }
@@ -71,10 +71,10 @@ export class TagService {
      * @returns Promise yielding deleted tag model
      */
     async delete(rawTag) {
-        let { id, itemClass, context } = this;
-        let tag = createTag(rawTag);
-        let url = `/tag/remove_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&tag_name=${tag.text}`;
-        let response = await axios.get(url);
+        const { id, itemClass, context } = this;
+        const tag = createTag(rawTag);
+        const url = `/tag/remove_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&tag_name=${tag.text}`;
+        const response = await axios.get(url);
         if (response.status !== 200) {
             throw new Error(`Unable to delete tag: ${tag}`);
         }
@@ -87,9 +87,9 @@ export class TagService {
      * @returns Promise yielding an array of tag models
      */
     async autocomplete(searchText) {
-        let { id, itemClass } = this;
-        let url = `/tag/tag_autocomplete_data?item_id=${id}&item_class=${itemClass}&q=${searchText}`;
-        let response = await axios.get(url);
+        const { id, itemClass } = this;
+        const url = `/tag/tag_autocomplete_data?item_id=${id}&item_class=${itemClass}&q=${searchText}`;
+        const response = await axios.get(url);
         if (response.status !== 200) {
             throw new Error(`Unable to retrieve autocomplete tags for search string: ${searchText}`);
         }

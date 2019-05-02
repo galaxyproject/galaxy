@@ -11,8 +11,8 @@ import Buttons from "mvc/ui/ui-buttons";
 
 var ToolPanel = Backbone.View.extend({
     initialize: function(page, options) {
-        let Galaxy = getGalaxyInstance();
-        let appRoot = getAppRoot();
+        const Galaxy = getGalaxyInstance();
+        const appRoot = getAppRoot();
 
         // access configuration options
         var config = options.config;
@@ -96,7 +96,7 @@ var ToolPanel = Backbone.View.extend({
 
     /** build a link to one tool */
     _templateTool: function(tool) {
-        let appRoot = getAppRoot();
+        const appRoot = getAppRoot();
         return `<div class="toolTitle">
                     <a href="${appRoot}${tool.href}" target="galaxy_main">
                         ${tool.title}
@@ -106,7 +106,7 @@ var ToolPanel = Backbone.View.extend({
 
     /** build a link to 'All Workflows' */
     _templateAllWorkflow: function(tool) {
-        let appRoot = getAppRoot();
+        const appRoot = getAppRoot();
         return `<div class="toolTitle">
                     <a href="${appRoot}${tool.href}">
                         ${tool.title}
@@ -116,7 +116,7 @@ var ToolPanel = Backbone.View.extend({
 
     /** build links to workflows in toolpanel */
     _templateWorkflowLink: function(wf) {
-        let appRoot = getAppRoot();
+        const appRoot = getAppRoot();
         return `<div class="toolTitle">
                     <a class="${wf.cls}" href="${appRoot}${wf.href}">
                         ${_.escape(wf.title)}

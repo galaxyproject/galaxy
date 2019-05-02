@@ -376,7 +376,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
 
     toolTPSSelectionEvents: function() {
         $(".tool_panel_section_picker").on("change", ev => {
-            let element = $(ev.target);
+            const element = $(ev.target);
             var new_value = element.find("option:selected").val();
             var default_tps = $("#tool_panel_section_select")
                 .find("option:selected")

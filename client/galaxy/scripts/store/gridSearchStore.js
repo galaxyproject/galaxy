@@ -17,12 +17,12 @@ export const gridSearchStore = {
     },
     actions: {
         toggleSearchTag({ state, commit }, { text }) {
-            let tags = new Set(state.searchTags);
+            const tags = new Set(state.searchTags);
             tags.has(text) ? tags.delete(text) : tags.add(text);
             commit("setSearchTags", tags);
         },
         removeSearchTag({ state, commit }, { text }) {
-            let tags = new Set(state.searchTags);
+            const tags = new Set(state.searchTags);
             tags.delete(text);
             commit("setSearchTags", tags);
         },

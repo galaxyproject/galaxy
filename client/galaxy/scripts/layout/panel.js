@@ -231,7 +231,7 @@ var CenterPanel = Backbone.View.extend({
 
     /** Display a view in the center panel, hide iframe */
     display: function(view) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         let contentWindow = this.$frame[0].contentWindow || {};
         let message;
         try {

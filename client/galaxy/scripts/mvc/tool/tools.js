@@ -367,7 +367,7 @@ var ToolSearch = Backbone.Model.extend({
      * Do the search and update the results.
      */
     do_search: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var query = this.attributes.query;
 
         // If query is too short, do not search.
@@ -436,16 +436,24 @@ var ToolPanel = Backbone.Model.extend({
 
         var // Helper to recursively parse tool panel.
             parse_elt = elt_dict => {
-                var type = elt_dict.model_class;
+                const type = elt_dict.model_class;
                 // There are many types of tools; for now, anything that ends in 'Tool'
-                // is treated as a generic tool.
+                // and is not a ExpressionTool is treated as a generic tool.
                 if (type.indexOf("Tool") === type.length - 4) {
-                    return self.attributes.tools.get(elt_dict.id);
+                    const tool = self.attributes.tools.get(elt_dict.id);
+                    if (type === "ExpressionTool") {
+                        tool.hide();
+                    }
+                    return tool;
                 } else if (type === "ToolSection") {
                     // Parse elements.
-                    var elems = _.map(elt_dict.elems, parse_elt);
+                    const elems = _.map(elt_dict.elems, parse_elt).filter(el => el.is_visible());
                     elt_dict.elems = elems;
-                    return new ToolSection(elt_dict);
+                    const section = new ToolSection(elt_dict);
+                    if (elems.length == 0) {
+                        section.hide();
+                    }
+                    return section;
                 } else if (type === "ToolSectionLabel") {
                     return new ToolSectionLabel(elt_dict);
                 }
@@ -529,7 +537,7 @@ var ToolLinkView = BaseView.extend({
         if (this.model.id === "upload1") {
             $link.find("a").on("click", e => {
                 e.preventDefault();
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 Galaxy.upload.show();
             });
         } else if (formStyle === "regular") {
@@ -537,7 +545,7 @@ var ToolLinkView = BaseView.extend({
             var self = this;
             $link.find("a").on("click", e => {
                 e.preventDefault();
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 Galaxy.router.push("/", {
                     tool_id: self.model.id,
                     version: self.model.get("version")

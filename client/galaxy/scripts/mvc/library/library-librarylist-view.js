@@ -51,7 +51,7 @@ var LibraryListView = Backbone.View.extend({
      * or render an empty list in case no data is given.
      */
     render: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         this.setElement("#libraries_element");
         var template = this.templateLibraryList();
@@ -182,7 +182,7 @@ var LibraryListView = Backbone.View.extend({
      * @return {[type]} [description]
      */
     sort_clicked: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (Galaxy.libraries.preferences.get("sort_order") === "asc") {
             Galaxy.libraries.preferences.set({ sort_order: "desc" });
         } else {
@@ -196,7 +196,7 @@ var LibraryListView = Backbone.View.extend({
      * Currently supports only sorting by name.
      */
     sortLibraries: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (Galaxy.libraries.preferences.get("sort_by") === "name") {
             if (Galaxy.libraries.preferences.get("sort_order") === "asc") {
                 this.collection.sortLibraries("name", "asc");

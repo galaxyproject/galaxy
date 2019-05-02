@@ -9,10 +9,10 @@ import re
 import string
 import subprocess
 import sys
-from cgi import escape
 from itertools import islice
 
 import bx.align.maf
+from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import metadata

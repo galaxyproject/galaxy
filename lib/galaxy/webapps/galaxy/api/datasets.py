@@ -126,10 +126,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         Displays information about and/or content of a dataset.
         """
         # Get dataset.
-        try:
-            dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
-        except Exception as e:
-            return str(e)
+        dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
 
         # Use data type to return particular type of data.
         try:
