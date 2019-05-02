@@ -43,7 +43,7 @@ var ToolPanel = Backbone.View.extend({
             default_genome: config.default_genome,
             default_extension: config.default_extension
         });
-        let panel_buttons = [this.upload_button];
+        const panel_buttons = [this.upload_button];
 
         // add favorite filter button
         if (Galaxy.user && Galaxy.user.id){
