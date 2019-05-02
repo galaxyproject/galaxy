@@ -754,18 +754,33 @@ var FolderToolbarView = Backbone.View.extend({
         history_contents.fetch({
             success: history_contents => {
                 var history_contents_template = this.templateHistoryContents();
-                this.histories.get(history_id).set({ contents: history_contents });
-                this.modal.$el.find(".library_selected_history_content").html(
-                    history_contents_template({
-                        history_contents: history_contents.models.reverse()
-                    })
-                );
-                this.modal.$el.find(".history-import-select-all").bind("click", () => {
-                    $(".library_selected_history_content [type=checkbox]").prop("checked", true);
-                });
-                this.modal.$el.find(".history-import-unselect-all").bind("click", () => {
-                    $(".library_selected_history_content [type=checkbox]").prop("checked", false);
-                });
+
+                if (history_contents.length > 0) {
+                    this.histories.get(history_id).set({contents: history_contents});
+                    this.modal.$el.find(".library_selected_history_content").html(
+                        history_contents_template({
+                            history_contents: history_contents.models.reverse()
+                        })
+                    );
+                    this.modal.$el.find(".history-import-select-all").bind("click", () => {
+                        $(".library_selected_history_content [type=checkbox]").prop("checked", true);
+                    });
+                    this.modal.$el.find(".history-import-unselect-all").bind("click", () => {
+                        $(".library_selected_history_content [type=checkbox]").prop("checked", false);
+                    });
+
+                    this.modal.$el.find(".history-import-toggle-all").bind("click", (e) => {
+                        this.selectAll(e);
+                    });
+
+                    this.modal.$el.find(".dataset_row").bind("click", (e) => {
+                        this.selectClickedRow(e);
+                    });
+                } else {
+                    this.modal.$el.find(".library_selected_history_content").html(
+                        `<p>Selected history is empty.</p>`
+                    );
+                }
             },
             error: (model, response) => {
                 if (typeof response.responseJSON !== "undefined") {
@@ -791,11 +806,11 @@ var FolderToolbarView = Backbone.View.extend({
             this.modal.disableButton("Add");
             checked_hdas.each(function() {
                 var hid = $(this)
-                    .closest("li")
+                    .closest("tr")
                     .data("id");
                 if (hid) {
                     var item_type = $(this)
-                        .closest("li")
+                        .closest("tr")
                         .data("name");
                     history_item_ids.push(hid);
                     history_item_types.push(item_type);
@@ -818,6 +833,85 @@ var FolderToolbarView = Backbone.View.extend({
             });
             this.chainCallAddingHdas(items_to_add);
         }
+    },
+
+    /**
+     * User clicked the checkbox in the table heading
+     * @param  {context} event
+     */
+    selectAll: function(event) {
+        var selected = event.target.checked;
+        var self = this;
+        // Iterate each checkbox
+        $(":checkbox", "#dataset_list").each(function() {
+            this.checked = selected;
+            var $row = $(this).closest("tr");
+            // Change color of selected/unselected
+            if (selected) {
+                self.makeDarkRow($row);
+            } else {
+                self.makeWhiteRow($row);
+            }
+        });
+    },
+
+    /**
+     * Check checkbox if user clicks on the whole row or
+     *  on the checkbox itself
+     */
+    selectClickedRow: function(event) {
+        var checkbox = "";
+        var $row;
+        var source;
+        $row = $(event.target).closest("tr");
+        if (event.target.localName === "input") {
+            checkbox = event.target;
+            source = "input";
+        } else if (event.target.localName === "td") {
+            checkbox = $row.find(":checkbox")[0];
+            source = "td";
+        }
+        if (checkbox.checked) {
+            if (source === "td") {
+                checkbox.checked = "";
+                this.makeWhiteRow($row);
+            } else if (source === "input") {
+                this.makeDarkRow($row);
+            }
+        } else {
+            if (source === "td") {
+                checkbox.checked = "selected";
+                this.makeDarkRow($row);
+            } else if (source === "input") {
+                this.makeWhiteRow($row);
+            }
+        }
+    },
+
+    makeDarkRow: function($row) {
+        $row.removeClass("light").addClass("dark");
+        $row.find("a")
+            .removeClass("light")
+            .addClass("dark");
+        $row.find(".fa-file-o")
+            .removeClass("fa-file-o")
+            .addClass("fa-file");
+        $row.find(".fa-folder-o")
+            .removeClass("fa-folder-o")
+            .addClass("fa-folder");
+    },
+
+    makeWhiteRow: function($row) {
+        $row.removeClass("dark").addClass("light");
+        $row.find("a")
+            .removeClass("dark")
+            .addClass("light");
+        $row.find(".fa-file")
+            .removeClass("fa-file")
+            .addClass("fa-file-o");
+        $row.find(".fa-folder")
+            .removeClass("fa-folder")
+            .addClass("fa-folder-o");
     },
 
     /**
@@ -1668,7 +1762,6 @@ var FolderToolbarView = Backbone.View.extend({
 
     templateBrowserModal: function() {
         return _.template(
-            [
                 `<div id="file_browser_modal">
                     <div style="margin-bottom:1em;">
                         <label title="Switch to selecting files" class="radio-inline import-type-switch">
@@ -1710,9 +1803,8 @@ var FolderToolbarView = Backbone.View.extend({
                     <button title="Select no files" type="button" class="button primary-button libimport-select-none">
                         Unselect all
                     </button>
-                    <hr />`,
-                // append jstree object here
-                `   <div id="jstree_browser">
+                    <hr /> <!-- append jstree object here -->
+                    <div id="jstree_browser">
                     </div>
                     <hr />
                     <p>You can set extension type and genome for all imported datasets at once:</p>
@@ -1728,7 +1820,6 @@ var FolderToolbarView = Backbone.View.extend({
                         </label>
                     </div>
                 </div>`
-            ].join("")
         );
     },
 
@@ -1778,114 +1869,89 @@ var FolderToolbarView = Backbone.View.extend({
 
     templateAddFilesFromHistory: function() {
         return _.template(
-            [
-                `<div id="add_files_modal">
-                    <div>
-                        1.&nbsp;Select history:&nbsp;
-                        <select id="dataset_add_bulk" name="dataset_add_bulk" style="width:66%; "> 
-                            <% _.each(histories, function(history) { %>`, //history select box
-                `               <option value="<%= _.escape(history.get("id")) %>">
-                                    <%= _.escape(history.get("name")) %>
-                                </option>
-                            <% }); %>
-                        </select>
-                    </div>
-                    <br/>
-                    <div class="library_selected_history_content">
-                    </div>
-                </div>`
-            ].join("")
+            `<div id="add_files_modal">
+                <div class="form-group">
+                    <label>1. Select history:</label>
+                    <select id="dataset_add_bulk" name="dataset_add_bulk" class="form-control"> 
+                        <% _.each(histories, function(history) { %> <!-- history select box -->
+                            <option value="<%= _.escape(history.get("id")) %>">
+                                <%= _.escape(history.get("name")) %>
+                            </option>
+                        <% }); %>
+                    </select>
+                </div>
+                <div class="library_selected_history_content">
+                </div>
+            </div>`
         );
     },
 
     templateHistoryContents: function() {
         return _.template(
-            `<p>2.&nbsp;Choose the datasets to import:</p>
-            <div>
-                <button title="Select all datasets" type="button"
-                    class="button primary-button history-import-select-all">
-                    Select all
-                </button>
-                <button title="Select all datasets" type="button"
-                    class="button primary-button history-import-unselect-all">
-                    Unselect all
-                </button>
-            </div>
-            <br>
-            <ul>
-                <% _.each(history_contents, function(history_item) { %>
-                    <% if (history_item.get("deleted") != true ) { %>
-                        <% var item_name = history_item.get("name") %>
-                        <% if (history_item.get("type") === "collection") { %>
-                            <% var collection_type = history_item.get("collection_type") %>
-                            <% if (collection_type === "list") { %>
-                                <li data-id="<%= _.escape(history_item.get("id")) %>"
-                                    data-name="<%= _.escape(history_item.get("type")) %>">
-                                    <label title="<%= _.escape(item_name) %>">
-                                        <input style="margin: 0;" type="checkbox">
-                                            <%= _.escape(history_item.get("hid")) %>: 
-                                            <%= item_name.length > 75 ? _.escape("...".concat(item_name.substr(-75))) : _.escape(item_name) %>
-                                            (Dataset Collection)
-                                    </label>
-                                </li>
-                            <% } else { %>
-                                <li>
-                                    <input
-                                        style="margin: 0;" type="checkbox" onclick="return false;" disabled="disabled" />
-                                    <span
-                                        title="You can convert this collection into a collection of type list using the Collection Tools">
-                                        <%= _.escape(history_item.get("hid")) %>: 
-                                        <%= item_name.length > 75 ? _.escape("...".concat(item_name.substr(-75))) : _.escape(item_name) %>
-                                        (Dataset Collection of type <%= _.escape(collection_type) %> not supported.)
-                                    </span>
-                                </li>
-                            <% } %>
-                        <% } else if (history_item.get("visible") === true && history_item.get("state") === "ok") { %>
-                            <li data-id="<%= _.escape(history_item.get("id")) %>"
-                                data-name="<%= _.escape(history_item.get("type")) %>">
-                                <label title="<%= _.escape(item_name) %>">
-                                    <input style="margin: 0;" type="checkbox">
-                                        <%= _.escape(history_item.get("hid")) %>: 
-                                        <%= item_name.length > 75 ? _.escape("...".concat(item_name.substr(-75))) : _.escape(item_name) %>
-                                </label>
-                            </li>
-                        <% } %>
-                    <% } %>
-                <% }); %>
-            </ul>`
+            `<div class="form-group">
+                <label>2. Choose the datasets to import:</label>
+                <div class="library_style_container" style="width: 100%;" id="dataset_list">
+                    <table class="grid table table-sm">
+                        <thead>
+                            <tr>
+                                <th style="width: 30px;" class="mid" title="Check to select all datasets">
+                                    <input class="history-import-toggle-all" style="margin: 0;" type="checkbox" />
+                                </th>
+                                <th style="width: 30px;"></th>
+                                <th>name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% _.each(history_contents, function(history_item) { %>
+                                <% if (history_item.get("deleted") != true ) { %>
+                                    <% var item_name = history_item.get("name") %>
+                                    <% if (history_item.get("type") === "collection") { %>
+                                        <% var collection_type = history_item.get("collection_type") %>
+                                        <% if (collection_type === "list") { %>
+                                            <tr class="light dataset_row" data-id="<%= _.escape(history_item.get("id")) %>"
+                                                data-name="<%= _.escape(history_item.get("type")) %>">
+                                                <td><input style="margin: 0;" type="checkbox"></td>
+                                                <td><%= _.escape(history_item.get("hid")) %></td>
+                                                <td>
+                                                    <%= item_name.length > 75 ? _.escape("...".concat(item_name.substr(-75))) : _.escape(item_name) %>
+                                                    (Dataset Collection)
+                                                </td>
+                                            </tr>
+                                        <% } else { %>
+                                            <tr class="light dataset_row" title="You can convert this collection into a collection of type list using the Collection Tools">
+                                                <td><input style="margin: 0;" type="checkbox" onclick="return false;" disabled="disabled" /></td>
+                                                <td><%= _.escape(history_item.get("hid")) %></td>
+                                                <td>
+                                                    <%= item_name.length > 75 ? _.escape("...".concat(item_name.substr(-75))) : _.escape(item_name) %>
+                                                    (Dataset Collection of type <%= _.escape(collection_type) %> not supported.)
+                                                </td>
+                                            </tr>
+                                        <% } %>
+                                    <% } else if (history_item.get("visible") === true && history_item.get("state") === "ok") { %>
+                                        <tr class="light dataset_row" data-id="<%= _.escape(history_item.get("id")) %>"
+                                            data-name="<%= _.escape(history_item.get("type")) %>">
+                                            <td><input style="margin: 0;" type="checkbox"></td>
+                                            <td><%= _.escape(history_item.get("hid")) %></td>
+                                            <td>
+                                                <%= item_name.length > 75 ? _.escape("...".concat(item_name.substr(-75))) : _.escape(item_name) %>
+                                            </td>
+                                        </tr>
+                                    <% } %>
+                                <% } %>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>`
         );
     },
 
     templatePaginator: function() {
         return _.template(
-            [
-                `<ul class="pagination mr-1">
-                    <% if ( ( show_page - 1 ) > 0 ) { %>
-                        <% if ( ( show_page - 1 ) > page_count ) { %>`, // we are on higher page than total page count
-                `           <li class="page-item">
-                                <a class="page-link" href="#folders/<%= id %>/page/1">
-                                    <span class="fa fa-angle-double-left"></span>
-                                </a>
-                            </li>
-                            <li class="page-item disabled">
-                                <a class="page-link" href="#folders/<%= id %>/page/<% print( show_page ) %>">
-                                    <% print( show_page - 1 ) %>
-                                </a>
-                            </li>
-                        <% } else { %>
-                            <li class="page-item">
-                                <a class="page-link" href="#folders/<%= id %>/page/1">
-                                    <span class="fa fa-angle-double-left"></span>
-                                </a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="#folders/<%= id %>/page/<% print( show_page - 1 ) %>">
-                                    <% print( show_page - 1 ) %>
-                                </a>
-                            </li>
-                        <% } %>
-                    <% } else { %>`, // we are on the first page
-                `       <li class="page-item disabled">
+            `<ul class="pagination mr-1">
+                <% if ( ( show_page - 1 ) > 0 ) { %>
+                    <% if ( ( show_page - 1 ) > page_count ) { %> <!-- we are on higher page than total page count -->
+                        <li class="page-item">
                             <a class="page-link" href="#folders/<%= id %>/page/1">
                                 <span class="fa fa-angle-double-left"></span>
                             </a>
@@ -1895,96 +1961,115 @@ var FolderToolbarView = Backbone.View.extend({
                                 <% print( show_page - 1 ) %>
                             </a>
                         </li>
+                    <% } else { %>
+                        <li class="page-item">
+                            <a class="page-link" href="#folders/<%= id %>/page/1">
+                                <span class="fa fa-angle-double-left"></span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#folders/<%= id %>/page/<% print( show_page - 1 ) %>">
+                                <% print( show_page - 1 ) %>
+                            </a>
+                        </li>
                     <% } %>
-                    <li class="page-item active">
-                        <a class="page-link" href="#folders/<%= id %>/page/<% print( show_page ) %>">
-                            <% print( show_page ) %>
+                <% } else { %> <!-- we are on the first page -->
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#folders/<%= id %>/page/1">
+                            <span class="fa fa-angle-double-left"></span>
                         </a>
                     </li>
-                    <% if ( ( show_page ) < page_count ) { %>
-                        <li class="page-item">
-                            <a class="page-link" href="#folders/<%= id %>/page/<% print( show_page + 1 ) %>">
-                                <% print( show_page + 1 ) %>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="#folders/<%= id %>/page/<% print( page_count ) %>">
-                                <span class="fa fa-angle-double-right"></span>
-                            </a>
-                        </li>
-                    <% } else { %>
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#folders/<%= id %>/page/<% print( show_page  ) %>">
-                                <% print( show_page + 1 ) %>
-                            </a>
-                        </li>
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#folders/<%= id %>/page/<% print( page_count ) %>">
-                                <span class="fa fa-angle-double-right"></span>
-                            </a>
-                        </li>
-                    <% } %>
-                </ul>
-                <span class="mr-1">
-                    <%- items_shown %> items shown <a href="" data-toggle="tooltip" data-placement="top"
-                        title="currently <%- folder_page_size %> per page" class="page-size-prompt">(change)</a>
-                </span>
-                <span class="mr-1">
-                    <%- total_items_count %> total
-                </span>`
-            ].join("")
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#folders/<%= id %>/page/<% print( show_page ) %>">
+                            <% print( show_page - 1 ) %>
+                        </a>
+                    </li>
+                <% } %>
+                <li class="page-item active">
+                    <a class="page-link" href="#folders/<%= id %>/page/<% print( show_page ) %>">
+                        <% print( show_page ) %>
+                    </a>
+                </li>
+                <% if ( ( show_page ) < page_count ) { %>
+                    <li class="page-item">
+                        <a class="page-link" href="#folders/<%= id %>/page/<% print( show_page + 1 ) %>">
+                            <% print( show_page + 1 ) %>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#folders/<%= id %>/page/<% print( page_count ) %>">
+                            <span class="fa fa-angle-double-right"></span>
+                        </a>
+                    </li>
+                <% } else { %>
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#folders/<%= id %>/page/<% print( show_page  ) %>">
+                            <% print( show_page + 1 ) %>
+                        </a>
+                    </li>
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#folders/<%= id %>/page/<% print( page_count ) %>">
+                            <span class="fa fa-angle-double-right"></span>
+                        </a>
+                    </li>
+                <% } %>
+            </ul>
+            <span class="mr-1">
+                <%- items_shown %> items shown <a href="" data-toggle="tooltip" data-placement="top"
+                    title="currently <%- folder_page_size %> per page" class="page-size-prompt">(change)</a>
+            </span>
+            <span class="mr-1">
+                <%- total_items_count %> total
+            </span>`
         );
     },
 
     templateCollectionSelectModal: function() {
         return _.template(
-            [
-                `<div>`,
-                // elements selection
-                `   <div class="library-modal-item">
-                        <h4>Which datasets?</h4>
-                        <form class="form-inline">
-                            <label class="radio-inline">
-                                <input type="radio" name="radio_elements" id="selection_radio" value="selection" 
-                                    <% if (!selected_datasets) { %> disabled <% } else { %> checked <% } %> > current selection
-                                <% if (selected_datasets) { %>
-                                    (<%- selected_datasets %>)
-                                <% } %>
-                            </label>
-                            <label class="radio-inline">
-                                <input type="radio" name="radio_elements" id="folder_radio" value="folder" <% if (!selected_datasets) { %> checked <% } %> > all datasets in current folder
-                            </label>
-                        </form>
-                    </div>`,
-                // type selection
-                `   <div class="library-modal-item">
-                        <h4>Collection type</h4>
-                        <span class="library-collection-type-select"></span>
-                        <h5>Which type to choose?</h5>
-                        <ul>
-                            <li>
-                                List: Generic collection which groups any number of datasets into a set; similar to file system folder.
-                            </li>
-                            <li>
-                                Paired: Simple collection containing exactly two sequence datasets; one reverse and the other forward.
-                            </li>
-                            <li>
-                                List of Pairs: Advanced collection containing any number of Pairs; imagine as Pair-type collections inside of a List-type collection.
-                            </li>
-                            <li>
-                                From Rules: Use Galaxy's rule builder to describe collections. This is more of an advanced feature that allows building any number of collections or any type.
-                            </li>
-                        </ul>
-                    </div>`,
-                // history selection/creation
-                `   <div class="library-modal-item">
-                        <h4>Select history</h4>
-                        <span class="library-collection-history-select"></span>
-                        or create new: 
-                        <input type="text" name="history_name" value="" placeholder="name of the new history" />
-                    </div>
-                </div>`
-            ].join("")
+            `<div> <!-- elements selection -->
+                <div class="library-modal-item">
+                    <h4>Which datasets?</h4>
+                    <form class="form-inline">
+                        <label class="radio-inline">
+                            <input type="radio" name="radio_elements" id="selection_radio" value="selection" 
+                                <% if (!selected_datasets) { %> disabled <% } else { %> checked <% } %> > current selection
+                            <% if (selected_datasets) { %>
+                                (<%- selected_datasets %>)
+                            <% } %>
+                        </label>
+                        <label class="radio-inline">
+                            <input type="radio" name="radio_elements" id="folder_radio" value="folder" <% if (!selected_datasets) { %> checked <% } %> > all datasets in current folder
+                        </label>
+                    </form>
+                </div>
+                <!-- type selection -->
+                <div class="library-modal-item">
+                    <h4>Collection type</h4>
+                    <span class="library-collection-type-select"></span>
+                    <h5>Which type to choose?</h5>
+                    <ul>
+                        <li>
+                            List: Generic collection which groups any number of datasets into a set; similar to file system folder.
+                        </li>
+                        <li>
+                            Paired: Simple collection containing exactly two sequence datasets; one reverse and the other forward.
+                        </li>
+                        <li>
+                            List of Pairs: Advanced collection containing any number of Pairs; imagine as Pair-type collections inside of a List-type collection.
+                        </li>
+                        <li>
+                            From Rules: Use Galaxy's rule builder to describe collections. This is more of an advanced feature that allows building any number of collections or any type.
+                        </li>
+                    </ul>
+                </div>
+                <!-- history selection/creation -->
+                <div class="library-modal-item">
+                    <h4>Select history</h4>
+                    <span class="library-collection-history-select"></span>
+                    or create new: 
+                    <input type="text" name="history_name" value="" placeholder="name of the new history" />
+                </div>
+            </div>`
         );
     }
 });
