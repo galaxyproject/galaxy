@@ -57,6 +57,7 @@ class ConfiguresHandlers(object):
                     log.error("Handler '%s' overlaps handler with the same name, ignoring", handler_id)
                 else:
                     log.debug("Read definition for handler '%s'", handler_id)
+                    self._parse_handler(handler_id, handler)
                     self.add_handler(
                         handler_id,
                         [x.strip() for x in handler.get('tags', self.DEFAULT_HANDLER_TAG).split(',')]

@@ -230,6 +230,16 @@ class JobConfXmlParserTestCase(unittest.TestCase):
 
         assert env_dest.env[3]["execute"] == "module load javastuff/2.10"
 
+    def test_handler_runner_plugins(self):
+        self.__with_advanced_config()
+        assert self.job_config.handler_runner_plugins["sge_handler"] == ["sge"]
+        assert "special_handler1" not in self.job_config.handler_runner_plugins
+
+    def test_resource_groups(self):
+        self.__with_advanced_config()
+        assert self.job_config.default_resource_group == "default"
+        assert self.job_config.resource_groups["memoryonly"] == ["memory"]
+
     def test_macro_expansion(self):
         self.__with_advanced_config()
         for name in ["foo_small", "foo_medium", "foo_large", "foo_longrunning"]:
