@@ -23,6 +23,13 @@ export default Backbone.View.extend({
         this.setElement(this._template());
 
         // create button section
+        this.btnReset = new Ui.Button({
+            id: "btn-reset",
+            title: _l("Reset"),
+            onclick: function() {
+                self._eventReset();
+            }
+        })
         this.btnStart = new Ui.Button({
             title: _l("Start"),
             onclick: function() {
@@ -37,7 +44,7 @@ export default Backbone.View.extend({
         });
 
         // append buttons to dom
-        _.each([this.btnStart, this.btnClose], button => {
+        _.each([this.btnReset, this.btnStart, this.btnClose], button => {
             self.$(".upload-buttons").prepend(button.$el);
         });
 
@@ -149,6 +156,16 @@ export default Backbone.View.extend({
                 self._eventProgress(percentage);
             }
         });
+    },
+
+    /** Remove all */
+    _eventReset: function() {
+        if (this.collection.where({ status: "running" }).length == 0) {
+            this.collection.reset();
+            this.select_extension.value(this.options.default_extension);
+            this.select_genome.value(this.options.default_genome);
+            this.render();
+        }
     },
 
     /** Refresh progress state */
