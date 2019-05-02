@@ -173,6 +173,8 @@ export default Backbone.View.extend({
                                 file: it.get("file_data")
                             });
                     }
+                } else if (it.get("optional")) {
+                    continue;
                 } else {
                     data.error_message = "Upload content incomplete.";
                     it.set("status", "error");

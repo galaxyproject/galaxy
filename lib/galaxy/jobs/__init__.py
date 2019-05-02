@@ -1348,7 +1348,7 @@ class JobWrapper(HasResourceParameters):
                 # Handle composite datatypes of auto_primary_file type
                 if dataset.datatype.composite_type == 'auto_primary_file' and not dataset.has_data():
                     try:
-                        with NamedTemporaryFile() as temp_fh:
+                        with NamedTemporaryFile(mode='w') as temp_fh:
                             temp_fh.write(dataset.datatype.generate_primary_file(dataset))
                             temp_fh.flush()
                             self.object_store.update_from_file(dataset.dataset, file_name=temp_fh.name, create=True)
