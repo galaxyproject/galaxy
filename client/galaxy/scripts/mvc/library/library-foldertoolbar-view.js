@@ -2004,8 +2004,6 @@ var FolderToolbarView = Backbone.View.extend({
             <span class="mr-1 form-inline">
                 <input min="0" max="999" class="page_size form-control" type="number" value="<%- folder_page_size %>" />
                 <label class="ml-1">items per page,</label>
-<!--                <%- items_shown %> items shown <a href="" data-toggle="tooltip" data-placement="top"-->
-<!--                    title="currently <%- folder_page_size %> per page" class="page-size-prompt">(change)</a>-->
             </span>
             <span class="mr-1">
                 <%- items_shown %> items shown,
