@@ -259,6 +259,12 @@ class JobConfXmlParserTestCase(unittest.TestCase):
         assert container_override1["identifier"] == "/path/to/default/container"
         assert not container_override1["resolve_dependencies"]
 
+    def test_tool_mapping_parameters(self):
+        self.__with_advanced_config()
+        assert self.job_config.tools["foo"][-1].params["source"] == "trackster"
+        assert self.job_config.tools["longbar"][-1].destination == "dynamic"
+        assert self.job_config.tools["longbar"][-1].resources == "all"
+
     def test_handler_runner_plugins(self):
         self.__with_advanced_config()
         assert self.job_config.handler_runner_plugins["sge_handler"] == ["sge"]
