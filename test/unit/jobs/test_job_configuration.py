@@ -230,6 +230,25 @@ class JobConfXmlParserTestCase(unittest.TestCase):
 
         assert env_dest.env[3]["execute"] == "module load javastuff/2.10"
 
+    def test_container_tag_in_destination(self):
+        self.__with_advanced_config()
+        container_dest = self.job_config.destinations["customized_container"][0]
+        assert "container" in container_dest.params
+        assert "container_override" in container_dest.params
+        container = container_dest.params["container"]
+        assert len(container) == 2
+        container0 = container[0]
+        assert container0["type"] == "docker"
+        assert container0["identifier"] == "busybox:ubuntu-14.04"
+
+        container_override = container_dest.params["container_override"]
+        assert len(container_override) == 2
+
+        container_override1 = container_override[1]
+        assert container_override1["type"] == "singularity"
+        assert container_override1["identifier"] == "/path/to/default/container"
+        assert not container_override1["resolve_dependencies"]
+
     def test_handler_runner_plugins(self):
         self.__with_advanced_config()
         assert self.job_config.handler_runner_plugins["sge_handler"] == ["sge"]

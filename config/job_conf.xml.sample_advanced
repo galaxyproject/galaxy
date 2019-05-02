@@ -566,14 +566,14 @@
                such containers are defined (as in the example below), the first one matching
                the enabled container types for this destination will be used.
           -->
-          <!-- <param id="container_override">
+          <param id="container_override">
               <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:ubuntu-14.04</container>
               <container type="singularity" shell="/bin/sh" resolve_dependencies="false">/path/to/default/container</container>
-          </param> -->
-          <!-- <param id="container">
+          </param>
+          <param id="container">
               <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:ubuntu-14.04</container>
               <container type="singularity" shell="/bin/sh" resolve_dependencies="false">/path/to/default/container</container>
-          </param> -->
+          </param>
         </destination>
         <destination id="pbs" runner="pbs" tags="mycluster"/>
         <destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
