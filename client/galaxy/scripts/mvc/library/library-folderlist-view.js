@@ -331,7 +331,6 @@ var FolderListView = Backbone.View.extend({
     makeDarkRow: function($row) {
         $row.removeClass("light").addClass("dark");
         $row.find("a")
-            .removeClass("light")
             .addClass("dark");
         $row.find(".fa-file-o")
             .removeClass("fa-file-o")
@@ -345,7 +344,6 @@ var FolderListView = Backbone.View.extend({
         $row.removeClass("dark").addClass("light");
         $row.find("a")
             .removeClass("dark")
-            .addClass("light");
         $row.find(".fa-file")
             .removeClass("fa-file")
             .addClass("fa-file-o");
