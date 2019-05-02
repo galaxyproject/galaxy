@@ -10,6 +10,8 @@
         <destination id="local" runner="local">
         </destination>
         <destination id="pulsar_embed" runner="pulsar_embed">
+            <param id="remote_metadata">true</param>
+            <param id="default_file_action">copy</param>
         </destination>
     </destinations>
     <tools>
