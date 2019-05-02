@@ -1345,64 +1345,35 @@ var FolderToolbarView = Backbone.View.extend({
         let Galaxy = getGalaxyInstance();
         var checked_items = this.findCheckedItems();
         var template = this.templateCollectionSelectModal();
-        this.modal = Galaxy.modal;
-        this.modal.show({
-            closing_events: true,
-            title: "Create History Collection from Datasets",
-            body: template({ selected_datasets: checked_items.dataset_ids.length }),
-            buttons: {
-                Continue: () => {
-                    this.showCollectionBuilder(checked_items.dataset_ids);
-                },
-                Close: () => {
-                    Galaxy.modal.hide();
-                }
-            }
-        });
-        this.prepareCollectionTypeSelect();
-        this.prepareHistoryTypeSelect();
-    },
 
-    prepareCollectionTypeSelect: function() {
-        this.collectionType = "list";
-        this.select_collection_type = new mod_select.View({
-            css: "library-collection-type-select",
-            container: this.modal.$el.find(".library-collection-type-select"),
-            data: [
-                { id: "list", text: "List" },
-                { id: "paired", text: "Paired" },
-                { id: "list:paired", text: "List of Pairs" },
-                { id: "rules", text: "From Rules" }
-            ],
-            value: "list",
-            onchange: collectionType => {
-                this.updateCollectionType(collectionType);
-            }
-        });
-    },
-
-    prepareHistoryTypeSelect: function() {
         var promise = this.fetchUserHistories();
-        promise.done(() => {
-            var history_options = [];
-            for (let i = this.histories.length - 1; i >= 0; i--) {
-                history_options.unshift({
-                    id: this.histories.models[i].id,
-                    text: this.histories.models[i].get("name")
+        promise
+            .done(() => {
+                this.modal = Galaxy.modal;
+                this.modal.show({
+                    closing_events: true,
+                    title: "Create History Collection from Datasets",
+                    body: template({
+                        selected_datasets: checked_items.dataset_ids.length,
+                        histories: this.histories.models
+                    }),
+                    buttons: {
+                        Continue: () => {
+                            this.showCollectionBuilder(checked_items.dataset_ids);
+                        },
+                        Close: () => {
+                            Galaxy.modal.hide();
+                        }
+                    }
                 });
-            }
-            this.select_collection_history = new mod_select.View({
-                css: "library-collection-history-select",
-                container: this.modal.$el.find(".library-collection-history-select"),
-                data: history_options,
-                value: history_options[0].id
+            })
+            .fail((model, response) => {
+                if (typeof response.responseJSON !== "undefined") {
+                    Toast.error(response.responseJSON.err_msg);
+                } else {
+                    Toast.error("An error occurred.");
+                }
             });
-        });
-    },
-
-    /** Update collection type */
-    updateCollectionType: function(collectionType) {
-        this.collectionType = collectionType;
     },
 
     /**
@@ -1442,8 +1413,9 @@ var FolderToolbarView = Backbone.View.extend({
                     Toast.error("An error occurred.");
                 });
         } else {
-            let selected_history_id = this.select_collection_history.value();
-            let selected_history_name = this.select_collection_history.text();
+            this.select_collection_history = this.modal.$el.find("#library-collection-history-select");
+            let selected_history_id = this.select_collection_history.val();
+            let selected_history_name = this.select_collection_history.find('option:selected').text();
             this.collectionImport(collection_elements, selected_history_id, selected_history_name);
         }
     },
@@ -1452,6 +1424,7 @@ var FolderToolbarView = Backbone.View.extend({
         let modal_title = `Creating Collection in ${history_name}`;
         let creator_class;
         let creationFn;
+        this.collectionType = this.modal.$el.find("#library-collection-type-select").val();
         if (this.collectionType === "list") {
             creator_class = LIST_CREATOR.ListCollectionCreator;
             creationFn = (elements, name, hideSourceItems) => {
@@ -2030,44 +2003,62 @@ var FolderToolbarView = Backbone.View.extend({
                 <div class="library-modal-item">
                     <h4>Which datasets?</h4>
                     <form class="form-inline">
-                        <label class="radio-inline">
-                            <input type="radio" name="radio_elements" id="selection_radio" value="selection" 
-                                <% if (!selected_datasets) { %> disabled <% } else { %> checked <% } %> > current selection
-                            <% if (selected_datasets) { %>
-                                (<%- selected_datasets %>)
-                            <% } %>
-                        </label>
-                        <label class="radio-inline">
-                            <input type="radio" name="radio_elements" id="folder_radio" value="folder" <% if (!selected_datasets) { %> checked <% } %> > all datasets in current folder
-                        </label>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="radio_elements" id="selection_radio" value="selection" 
+                                <% if (!selected_datasets) { %> disabled <% } else { %> checked <% } %> />
+                            <label class="form-check-label" for="selection_radio">
+                                current selection
+                                <% if (selected_datasets) { %>
+                                    (<%- selected_datasets %>)
+                                <% } %>
+                            </label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="radio_elements" id="folder_radio" value="folder" <% if (!selected_datasets) { %> checked <% } %> >
+                            <label class="form-check-label" for="folder_radio">all datasets in current folder</label>
+                        </div>
                     </form>
                 </div>
                 <!-- type selection -->
                 <div class="library-modal-item">
                     <h4>Collection type</h4>
-                    <span class="library-collection-type-select"></span>
+                    <div class="form-group">
+                        <select id="library-collection-type-select" name="library-collection-type-select" class="form-control"> 
+                            <option value="list">List</option>
+                            <option value="paired">Paired</option>
+                            <option value="list:paired">List of Pairs</option>
+                            <option value="rules">From Rules</option>
+                        </select>
+                    </div>
                     <h5>Which type to choose?</h5>
-                    <ul>
-                        <li>
-                            List: Generic collection which groups any number of datasets into a set; similar to file system folder.
-                        </li>
-                        <li>
-                            Paired: Simple collection containing exactly two sequence datasets; one reverse and the other forward.
-                        </li>
-                        <li>
-                            List of Pairs: Advanced collection containing any number of Pairs; imagine as Pair-type collections inside of a List-type collection.
-                        </li>
-                        <li>
-                            From Rules: Use Galaxy's rule builder to describe collections. This is more of an advanced feature that allows building any number of collections or any type.
-                        </li>
-                    </ul>
+                    <dl class="row">
+                        <dt class="col-sm-3">List</dt>
+                        <dd class="col-sm-9">Generic collection which groups any number of datasets into a set; similar to file system folder.</dd>
+                        
+                        <dt class="col-sm-3">Paired</dt>
+                        <dd class="col-sm-9">Simple collection containing exactly two sequence datasets; one reverse and the other forward.</dd>
+                        
+                        <dt class="col-sm-3">List of Pairs</dt>
+                        <dd class="col-sm-9">Advanced collection containing any number of Pairs; imagine as Pair-type collections inside of a List-type collection.</dd>
+                        
+                        <dt class="col-sm-3">From Rules</dt>
+                        <dd class="col-sm-9">Use Galaxy's rule builder to describe collections. This is more of an advanced feature that allows building any number of collections or any type.</dd>
+                    </dl>
                 </div>
                 <!-- history selection/creation -->
                 <div class="library-modal-item">
                     <h4>Select history</h4>
-                    <span class="library-collection-history-select"></span>
-                    or create new: 
-                    <input type="text" name="history_name" value="" placeholder="name of the new history" />
+                    <div class="form-group">
+                        <select id="library-collection-history-select" name="library-collection-history-select" class="form-control"> 
+                            <% _.each(histories, function(history) { %> <!-- history select box -->
+                                <option value="<%= _.escape(history.get("id")) %>">
+                                    <%= _.escape(history.get("name")) %>
+                                </option>
+                            <% }); %>
+                        </select>
+                        <label>or create new:</label> 
+                        <input class="form-control" type="text" name="history_name" value="" placeholder="name of the new history" />
+                    </div>
                 </div>
             </div>`
         );
