@@ -230,6 +230,16 @@ class JobConfXmlParserTestCase(unittest.TestCase):
 
         assert env_dest.env[3]["execute"] == "module load javastuff/2.10"
 
+    def test_runners_kwds(self):
+        self.__with_advanced_config()
+        sge_runner = [r for r in self.job_config.runner_plugins if r["id"] == "sge"][0]
+        assert sge_runner["kwds"]["drmaa_library_path"] == "/sge/lib/libdrmaa.so"
+
+        drmaa_runner = [r for r in self.job_config.runner_plugins if r["id"] == "drmaa"][0]
+        assert drmaa_runner["kwds"]["invalidjobexception_state"] == "ok"
+
+        assert self.job_config.dynamic_params["rules_module"] == "galaxy.jobs.rules"
+
     def test_container_tag_in_destination(self):
         self.__with_advanced_config()
         container_dest = self.job_config.destinations["customized_container"][0]
