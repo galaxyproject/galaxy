@@ -241,68 +241,62 @@ var FolderRowView = Backbone.View.extend({
 
     templateRowFolder: function() {
         return _.template(
-            [
-                `<tr class="folder_row light library-row" data-id="<%- content_item.id %>">
-                    <td class="mid">
-                        <span title="Folder" class="fa fa-folder-o"></span>
-                    </td>
-                    <td class="mid"><input style="margin: 0;" type="checkbox"></td>
-                    <% if(!edit_mode) { %>
-                        <td>
-                            <a href="#folders/<%- content_item.id %>"><%- content_item.get("name") %></a>
-                        </td>
-                        <td>
-                            <%- content_item.get("description") %>
-                        </td>
-                    <% } else if(edit_mode){ %>
-                        <td>
-                            <textarea rows="4" class="form-control input_folder_name" placeholder="name" >
-                                <%- content_item.get("name") %>
-                            </textarea>
-                        </td>
-                        <td>
-                            <textarea rows="4" class="form-control input_folder_description" placeholder="description" >
-                                <%- content_item.get("description") %>
-                            </textarea>
-                        </td>
-                    <% } %>
-                    <td>folder</td>
-                    <td></td>
+            `<tr class="folder_row light library-row" data-id="<%- content_item.id %>">
+                <td class="mid">
+                    <span title="Folder" class="fa fa-folder-o"></span>
+                </td>
+                <td class="mid"><input style="margin: 0;" type="checkbox"></td>
+                <% if(!edit_mode) { %>
                     <td>
-                        <%= _.escape(content_item.get("update_time")) %>
+                        <a href="#folders/<%- content_item.id %>"><%- content_item.get("name") %></a>
                     </td>
-                    <td></td>
                     <td>
-                        <% if(edit_mode) { %>`, // start edit mode
-                `           <button data-toggle="tooltip" data-placement="top" title="Save changes"
-                                class="primary-button btn-sm save_folder_btn" type="button"
-                                style="<% if(button_config.save_folder_btn === false) { print("display:none;") } %>">
-                                <span class="fa fa-floppy-o"></span> Save
+                        <%- content_item.get("description") %>
+                    </td>
+                <% } else if(edit_mode){ %>
+                    <td>
+                        <textarea rows="4" class="form-control input_folder_name" placeholder="name" ><%- content_item.get("name") %></textarea>
+                    </td>
+                    <td>
+                        <textarea rows="4" class="form-control input_folder_description" placeholder="description" ><%- content_item.get("description") %></textarea>
+                    </td>
+                <% } %>
+                <td>folder</td>
+                <td></td>
+                <td>
+                    <%= _.escape(content_item.get("update_time")) %>
+                </td>
+                <td></td>
+                <td>
+                    <% if(edit_mode) { %> <!-- start edit mode -->
+                        <button data-toggle="tooltip" data-placement="top" title="Save changes"
+                            class="primary-button btn-sm save_folder_btn" type="button"
+                            style="<% if(button_config.save_folder_btn === false) { print("display:none;") } %>">
+                            <span class="fa fa-floppy-o"></span> Save
+                        </button>
+                        <button data-toggle="tooltip" data-placement="top" title="Discard changes"
+                            class="primary-button btn-sm cancel_folder_btn" type="button"
+                            style="<% if(button_config.cancel_folder_btn === false) { print("display:none;") } %>">
+                            <span class="fa fa-times"></span> Cancel
+                        </button>
+                    <% } else if (!edit_mode){%> <!-- start no edit mode -->
+                        <button data-toggle="tooltip" data-placement="top"
+                            title="Modify '<%- content_item.get("name") %>'"
+                            class="primary-button btn-sm edit_folder_btn" type="button"
+                            style="<% if(button_config.edit_folder_btn === false) { print("display:none;") } %>">
+                            <span class="fa fa-pencil"></span> Edit
+                        </button>
+                        <a href="#/folders/<%- content_item.id %>/permissions">
+                            <button data-toggle="tooltip" data-placement="top"
+                                class="primary-button btn-sm permission_folder_btn"
+                                title="Permissions of '<%- content_item.get("name") %>'"
+                                    style="<% if(button_config.permission_folder_btn === false) { print("display:none;") } %>">
+                                <span class="fa fa-group"></span> Manage
                             </button>
-                            <button data-toggle="tooltip" data-placement="top" title="Discard changes"
-                                class="primary-button btn-sm cancel_folder_btn" type="button"
-                                style="<% if(button_config.cancel_folder_btn === false) { print("display:none;") } %>">
-                                <span class="fa fa-times"></span> Cancel
-                            </button>
-                        <% } else if (!edit_mode){%>`, // start no edit mode
-                `           <button data-toggle="tooltip" data-placement="top"
-                                title="Modify '<%- content_item.get("name") %>'"
-                                class="primary-button btn-sm edit_folder_btn" type="button"
-                                style="<% if(button_config.edit_folder_btn === false) { print("display:none;") } %>">
-                                <span class="fa fa-pencil"></span> Edit
-                            </button>
-                            <a href="#/folders/<%- content_item.id %>/permissions">
-                                <button data-toggle="tooltip" data-placement="top"
-                                    class="primary-button btn-sm permission_folder_btn"
-                                    title="Permissions of '<%- content_item.get("name") %>'"
-                                        style="<% if(button_config.permission_folder_btn === false) { print("display:none;") } %>">
-                                    <span class="fa fa-group"></span> Manage
-                                </button>
-                            </a>
-                        <% } %>`, //end no edit mode
-                `   </td>
-                </tr>`
-            ].join("")
+                        </a>
+                    <% } %> <!-- end no edit mode -->
+               </td>
+            </tr>`
         );
     },
 
