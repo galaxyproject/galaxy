@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<tool name="OmicsDI" id="omicsdi" tool_type="data_source" version="1.0.0">
+	<description>Sync dataset's files from OmicsDI</description>
+    <command interpreter="python">
+        data_source.py $output $__app__.config.output_size_limit
+    </command>
+    <inputs action="https://www.omicsdi.org" check_values="false" method="get" target="_top">
+		<display>go to OmicsDI server $GALAXY_URL</display>
+    </inputs>
+    <request_param_translation>
+        <request_param galaxy_name="URL" remote_name="URL" missing="" />
+        <request_param galaxy_name="URL_method" remote_name="URL_method" missing="get" />
+    </request_param_translation>
+	<uihints minwidth="800"/>
+	<outputs>
+		<data name="output" format="json" />
+	</outputs>
+	<options sanitize="False" refresh="True"/>
+</tool>
