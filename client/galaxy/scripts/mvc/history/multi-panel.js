@@ -1055,36 +1055,40 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     },
 
     optionsPopoverTemplate: _.template(
-        [
-            '<div class="more-options d-flex flex-column">',
-            '<div class="order btn-group mb-2">',
-            '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
-            `${_l("Order histories by")} `,
-            '<span class="current-order"><%- view.orderDescriptions[ view.collection.order ] %></span> ',
-            '<span class="caret"></span>',
-            "</button>",
-            '<div class="dropdown-menu" role="menu">',
-            "<% _.each( view.orderDescriptions, function( text, order ){ %>",
-            '<a href="javascript:void(0);" class="dropdown-item set-order" data-order="<%- order %>">',
-            "<%- text %>",
-            "</a>",
-            "<% }); %>",
-            "</div>",
-            "</div>",
-
-            '<div class="checkbox"><label><input id="include-deleted" type="checkbox"',
-            '<%= view.collection.includeDeleted? " checked" : "" %>>',
-            _l("Include deleted histories"),
-            "</label></div>",
-
-            '<div class="checkbox"><label><input id="toggle-deleted" type="checkbox">',
-            _l("Include deleted datasets"),
-            "</label></div>",
-            '<div class="checkbox"><label><input id="toggle-hidden" type="checkbox">',
-            _l("Include hidden datasets"),
-            "</label></div>",
-            "</div>"
-        ].join(""),
+        `<div class="more-options d-flex flex-column">
+            <div class="order btn-group mb-2">
+                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
+                    ${_l("Order histories by")}
+                    <span class="current-order"><%- view.orderDescriptions[ view.collection.order ] %></span>
+                    <span class="caret"/>
+                </button>
+                <div class="dropdown-menu" role="menu">
+                    <% _.each( view.orderDescriptions, function( text, order ){ %>
+                        <a href="javascript:void(0);" class="dropdown-item set-order" data-order="<%- order %>">
+                            <%- text %>
+                        </a>
+                    <% }); %>
+                </div>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input id="include-deleted" type="checkbox" <%= view.collection.includeDeleted? " checked" : "" %>>
+                    ${ _l("Include deleted histories") }
+                </label>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input id="toggle-deleted" type="checkbox">
+                    ${ _l("Include deleted datasets") }
+                </label>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input id="toggle-hidden" type="checkbox">
+                    ${ _l("Include hidden datasets") }
+                </label>
+            </div>
+        </div>`,
         { variable: "view" }
     )
 });
