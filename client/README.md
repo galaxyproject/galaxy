@@ -185,8 +185,8 @@ come after you. It will be a lot easier to modify, repair and upgrade your code
 if they can figure out what you were originally hoping to accomplish.
 
 Add a couple comments. Use variable names that mean something. Use the assertion
-failure description parameters when possible. I'm not sure what your mom told
-you, but your code is almost definitely not self-documenting.
+failure description parameters when possible. Nobody's code is as
+self-documenting as they believe it to be.
 
 ```javascript
 
