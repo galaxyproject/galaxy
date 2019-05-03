@@ -83,7 +83,7 @@ As mentioned above, `make client` will rebuild styles, as a part of the webpack 
 # Client-Side Unit Testing
 
 Galaxy's client is undergoing an extensive refactoring and modernizing process.
-As part of initiatve, we would like to request that all new client-side code
+As part of this initiative, we would like to request that all new client-side code
 submissions come with accompanying javascript unit-tests for the
 developer-facing API of your new code.
 
