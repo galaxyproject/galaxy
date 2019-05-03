@@ -56,15 +56,14 @@ var PopupMenu = Backbone.View.extend({
                 var option = menu.options[i];
                 // if the option has 'func', call that function when the anchor is clicked
                 if (option.func) {
-                    $(this)
-                        .click(event => {
-                            option.func.call(menu, event, option);
-                            // We must preventDefault otherwise clicking "cancel"
-                            // on a purge or something still navigates and causes
-                            // the action.
-                            event.preventDefault();
-                            // bubble up so that an option click will call the close behavior
-                        });
+                    $(this).click(event => {
+                        option.func.call(menu, event, option);
+                        // We must preventDefault otherwise clicking "cancel"
+                        // on a purge or something still navigates and causes
+                        // the action.
+                        event.preventDefault();
+                        // bubble up so that an option click will call the close behavior
+                    });
                 }
             });
         }
@@ -89,10 +88,8 @@ var PopupMenu = Backbone.View.extend({
             }
             var href = option.href || "javascript:void(0);";
             var target = option.target ? `target="${option.target}"` : "";
-            var check = option.checked ? '<span class="fa fa-check"/>' : "";
-            return `<a class="popupmenu-option dropdown-item" href="${href}" ${target}>
-                        ${check} ${option.html}
-                    </a>`;
+            var check = option.checked ? '<span class="fa fa-check mr-1"/>' : "";
+            return `<a class="popupmenu-option dropdown-item" href="${href}" ${target}>${check}${option.html}</a>`;
         }).join("");
     },
 
