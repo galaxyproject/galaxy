@@ -184,7 +184,7 @@ Please remember that these tests are not *for* you. They're for the people who
 come after you. It will be a lot easier to modify, repair and upgrade your code
 if they can figure out what you were originally hoping to accomplish.
 
-Add a couple comments. Use variable names that mean something. Use the assertion
+Add a couple of comments. Use variable names that mean something. Use the assertion
 failure description parameters when possible. Nobody's code is as
 self-documenting as they believe it to be.
 
