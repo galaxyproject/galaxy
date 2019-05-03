@@ -65,7 +65,11 @@ def parse_citation(elem, directory, citation_manager):
     if not citation_class:
         log.warning("Unknown or unspecified citation type: %s" % citation_type)
         return None
-    return citation_class(elem, directory, citation_manager)
+    try:
+        citation = citation_class(elem, directory, citation_manager)
+    except Exception as e:
+        raise Exception("Invalid citation of type '%s' with content '%s': %s" % (citation_type, elem.text, e))
+    return citation
 
 
 class CitationCollection(object):
