@@ -291,6 +291,6 @@ Maintainable software is testable software. If you can run a unit test on your
 code, then that means you must have necessarily separated your code into
 testable units and you will have almost definitely written better, more modular,
 more easily manipulated code, and nobody will ever contemplate using git-blame
-to hunt you down.
+figure out what went wrong.
 
 Probably.
