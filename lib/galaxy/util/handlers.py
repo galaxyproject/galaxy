@@ -62,7 +62,8 @@ class ConfiguresHandlers(object):
                         handler_id,
                         [x.strip() for x in handler.get('tags', self.DEFAULT_HANDLER_TAG).split(',')]
                     )
-            self.default_handler_id = self._get_default(self.app.config, config_element, list(self.handlers.keys()))
+            self.default_handler_id = self._get_default(
+                self.app.config, config_element, list(self.handlers.keys()), required=False)
 
     def _init_handler_assignment_methods(self, config_element=None):
         self.__is_handler = None
@@ -116,7 +117,7 @@ class ConfiguresHandlers(object):
     def _parse_handler(self, handler_id, handler_def):
         pass
 
-    def _get_default(self, config, parent, names, auto=False):
+    def _get_default(self, config, parent, names, auto=False, required=True):
         """
         Returns the default attribute set in a parent tag like <handlers> or
         <destinations>, or return the ID of the child, if there is no explicit
@@ -128,6 +129,8 @@ class ConfiguresHandlers(object):
         :type names: list of str
         :param auto: Automatically set a default if there is no default in the parent tag and there is only one child.
         :type auto: bool
+        :param required: Require a default to be set or determined automatically, else raise Exception
+        :type required: bool
 
         :returns: str -- id or tag representing the default.
         """
@@ -142,12 +145,14 @@ class ConfiguresHandlers(object):
 
         if rval is not None:
             # If the parent element has a 'default' attribute, use the id or tag in that attribute
-            if self.deterministic_handler_assignment and rval not in names:
+            if required and rval not in names:
                 raise Exception("<%s> default attribute '%s' does not match a defined id or tag in a child element" % (parent.tag, rval))
             log.debug("<%s> default set to child with id or tag '%s'" % (parent.tag, rval))
         elif auto and len(names) == 1:
             log.info("Setting <%s> default to child with id '%s'" % (parent.tag, names[0]))
             rval = names[0]
+        elif required:
+            raise Exception("No <%s> default specified, please specify a valid id or tag with the 'default' attribute" % parent.tag)
         return rval
 
     def _findall_with_required(self, parent, match, attribs=None):
@@ -181,7 +186,7 @@ class ConfiguresHandlers(object):
 
     @property
     def deterministic_handler_assignment(self):
-        return self.handler_assignment_methods and all(
+        return self.handler_assignment_methods and any(
             filter(lambda x: x in (
                 HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE,
                 HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN,
