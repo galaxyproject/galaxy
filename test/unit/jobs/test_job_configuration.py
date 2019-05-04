@@ -153,7 +153,7 @@ class SimpleJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
         self._with_handlers_config(handlers=[{'id': 'handler0'}, {'id': 'handler1'}])
         assert self.job_config.handler_assignment_methods == ['db-preassign']
         assert self.job_config.default_handler_id is None
-        assert self.job_config.handlers['_default_'] == ['handler0', 'handler1']
+        assert sorted(self.job_config.handlers['_default_']) == ['handler0', 'handler1']
 
     def test_implict_uwsgi_mule_message_handler_assign(self):
         self._with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
@@ -166,7 +166,7 @@ class SimpleJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
         self._with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
         assert self.job_config.handler_assignment_methods == ['uwsgi-mule-message', 'db-preassign'], self.job_config.handler_assignment_methods
         assert self.job_config.default_handler_id is None
-        assert self.job_config.handlers['_default_'] == ['handler0', 'handler1', 'main.job-handlers.1']
+        assert sorted(self.job_config.handlers['_default_']) == ['handler0', 'handler1', 'main.job-handlers.1']
 
     def test_explicit_mem_self_handler_assign(self):
         self._with_handlers_config(assign_with='mem-self')
@@ -186,7 +186,7 @@ class SimpleJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
         self._with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
         assert self.job_config.handler_assignment_methods == ['db-preassign']
         assert self.job_config.default_handler_id is None
-        assert self.job_config.handlers['_default_'] == ['handler0', 'main.job-handlers.1']
+        assert sorted(self.job_config.handlers['_default_']) == ['handler0', 'main.job-handlers.1']
 
     def test_explicit_db_transaction_isolation_handler_assign(self):
         self._with_handlers_config(assign_with='db-transaction-isolation')
@@ -199,7 +199,7 @@ class SimpleJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
         self._with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
         assert self.job_config.handler_assignment_methods == ['db-transaction-isolation']
         assert self.job_config.default_handler_id is None
-        assert self.job_config.handlers['_default_'] == ['handler0', 'main.job-handlers.1']
+        assert sorted(self.job_config.handlers['_default_']) == ['handler0', 'main.job-handlers.1']
 
     def test_explicit_db_skip_locked_handler_assign(self):
         self._with_handlers_config(assign_with='db-skip-locked')
@@ -212,7 +212,7 @@ class SimpleJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
         self._with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
         assert self.job_config.handler_assignment_methods == ['db-skip-locked']
         assert self.job_config.default_handler_id is None
-        assert self.job_config.handlers['_default_'] == ['handler0', 'main.job-handlers.1']
+        assert sorted(self.job_config.handlers['_default_']) == ['handler0', 'main.job-handlers.1']
 
     def test_uwsgi_farms_as_handler_tags(self):
         self._with_uwsgi_application_stack(
