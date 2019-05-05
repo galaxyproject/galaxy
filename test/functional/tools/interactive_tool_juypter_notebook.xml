@@ -1,0 +1,77 @@
+<tool id="interactive_tool_juypter_notebook" tool_type="realtime" name="Interactive Jupyter Notebook" version="0.1">
+    <requirements>
+        <container type="docker">bgruening/docker-jupyter-notebook:ie2</container>
+    </requirements>
+    <ports>
+        <port name="Jypter Interactive Environment" url_entry_point="ipython/tree">8888</port>
+    </ports>
+    <command detect_errors="aggressive"><![CDATA[
+        #import re
+        export GALAXY_WORKING_DIR=`pwd` &&
+        mkdir -p ./jupyter/outputs/ &&
+        mkdir -p ./jupyter/data &&
+
+        #for $i, $input in enumerate($inputs):
+            #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+            ln -sf '$input' './jupyter/data/${cleaned_name}_${i}' &&
+        #end for
+
+        ## change into the directory where the notebooks are located
+        cd ./jupyter/ &&
+
+        #if $mode.mode_select == 'scratch':
+            ## copy default notebook
+            cp '$__tool_directory__/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
+            /startup.sh
+        #else:
+
+            #for $i, $ipynb in enumerate($mode.ipynbs):
+                #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+                cp '$ipynb' ./${cleaned_name}_${i}.ipynb &&
+            #end for
+            #if $mode.run_it:
+                jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
+                mv ./ipython_galaxy_notebook.ipynb $jupyter_notebook
+            #else:
+                /startup.sh
+            #end if
+
+        #end if
+    ]]>
+    </command>
+    <inputs>
+
+        <conditional name="mode">
+            <param argument="mode_select" type="select" label="Do you already have a notebook?" help="If not, no problem we will provide you with a default one.">
+                <option value="scratch">Start with a fresh notebook</option>
+                <option value="previous">Load a previous notebook</option>
+            </param>
+            <when value="scratch"/>
+            <when value="previous">
+                <param name="ipynbs" type="data" format="ipynb" multiple="true" label="IPython Notebook"/>
+                <param name="run_it" type="boolean" truevalue="true" falsevalue="false" label="Execute notebook and return a new one."
+                    help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>
+            </when>
+        </conditional>
+
+        <param name="inputs" type="data" optional="true" multiple="true" label="Include data into the environment"/>
+
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt">
+            <filter>(mode['mode_select'] == 'previous' and not mode['run_it']) or mode['mode_select'] == 'scratch'</filter>
+        </data>
+        <data name="jupyter_notebook" format="ipynb" label="Executed Notebook">
+            <filter>mode['mode_select'] == 'previous'</filter>
+            <filter>mode['run_it']</filter>
+        </data>
+        <!--data auto_format="true" name="collected_container_data">
+            <discover_datasets pattern="__designation__" directory="./jupyter/outputs/" visible="true" recurse="true" />
+        </data-->
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    Interactive tool.
+    </help>
+</tool>
