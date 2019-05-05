@@ -273,7 +273,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             volumes_from=volumes_from,
             env_directives=env_directives,
             working_directory=working_directory,
-            net=self.prop("net", "none"),  # By default, docker instance has networking disabled
+            net=self.prop("net", None),  # By default, docker instance has networking disabled
             auto_rm=asbool(self.prop("auto_rm", docker_util.DEFAULT_AUTO_REMOVE)),
             set_user=self.prop("set_user", docker_util.DEFAULT_SET_USER),
             run_extra_arguments=self.prop("run_extra_arguments", docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
