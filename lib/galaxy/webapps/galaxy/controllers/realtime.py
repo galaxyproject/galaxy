@@ -102,7 +102,7 @@ class RealTime(BaseUIController):
                     rval = '%s//%s.%s.%s.%s.%s/' % (trans.request.host_url.split('//', 1)[0], entry_point.__class__.__name__.lower(), trans.security.encode_id(entry_point.id),
                             entry_point.token, trans.app.config.realtime_prefix, trans.request.host)
                     if entry_point.entry_url:
-                        rval = '%s%s' % (rval, entry_point.entry_url)
+                        rval = '%s/%s' % (rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
                     return trans.response.send_redirect(rval)
                 elif entry_point.deleted:
                     return trans.show_error_message('RealTimeTool has ended. You will have to start a new one.')
