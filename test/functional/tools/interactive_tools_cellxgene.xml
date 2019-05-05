@@ -1,0 +1,23 @@
+<tool id="interactive_tool_cellxgene" tool_type="realtime" name="Interactive CellXgene Environment" version="0.1">
+    <requirements>
+        <container type="docker">quay.io/galaxy/cellxgene-galaxy-ie:ie2</container>
+    </requirements>
+    <ports>
+        <port name="cellxgene_single_cell_visualisation" url="0.0.0.0">8080</port>
+    </ports>
+    <command>
+        cp '$input' /tmp/galaxy_cellxgene_${input.element_identifier}.h5ad;
+        /run_cellxgene.sh
+    </command>
+    <inputs>
+        <param name="input" type="data" format="h5ad" label="Concatenate Dataset"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+    Interactive tool for visualising AnnData.
+    </help>
+</tool>
