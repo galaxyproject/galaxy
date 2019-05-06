@@ -52,22 +52,18 @@ var PopupMenu = Backbone.View.extend({
         // set up behavior on each link/anchor elem
         if (this.options.length) {
             var menu = this;
-            //precondition: there should be one option per li
-            this.$el.find("li").each(function(i, li) {
+            this.$(".popupmenu-option").each(function(i) {
                 var option = menu.options[i];
-
                 // if the option has 'func', call that function when the anchor is clicked
                 if (option.func) {
-                    $(this)
-                        .children("a.popupmenu-option")
-                        .click(event => {
-                            option.func.call(menu, event, option);
-                            // We must preventDefault otherwise clicking "cancel"
-                            // on a purge or something still navigates and causes
-                            // the action.
-                            event.preventDefault();
-                            // bubble up so that an option click will call the close behavior
-                        });
+                    $(this).click(event => {
+                        option.func.call(menu, event, option);
+                        // We must preventDefault otherwise clicking "cancel"
+                        // on a purge or something still navigates and causes
+                        // the action.
+                        event.preventDefault();
+                        // bubble up so that an option click will call the close behavior
+                    });
                 }
             });
         }
@@ -75,34 +71,25 @@ var PopupMenu = Backbone.View.extend({
     },
 
     template: function(id, options) {
-        return ['<ul id="', id, '-menu" class="dropdown-menu">', this._templateOptions(options), "</ul>"].join("");
+        return `<div id="${id}-menu" class="dropdown-menu">
+                    ${this._templateOptions(options)}
+                </div>`;
     },
 
     _templateOptions: function(options) {
         if (!options.length) {
-            return "<li>(no options)</li>";
+            return '<div class="dropdown-header">(no options)</div>';
         }
         return _.map(options, option => {
             if (option.divider) {
-                return '<li class="divider"></li>';
+                return '<div class="popupmenu-option dropdown-divider"/>';
             } else if (option.header) {
-                return ['<li class="head"><a href="javascript:void(0);">', option.html, "</a></li>"].join("");
+                return `<div class="popupmenu-option dropdown-header">${option.html}</div>`;
             }
             var href = option.href || "javascript:void(0);";
-            var target = option.target ? ` target="${option.target}"` : "";
-
-            var check = option.checked ? '<span class="fa fa-check"></span>' : "";
-
-            return [
-                '<li><a class="popupmenu-option" href="',
-                href,
-                '"',
-                target,
-                ">",
-                check,
-                option.html,
-                "</a></li>"
-            ].join("");
+            var target = option.target ? `target="${option.target}"` : "";
+            var check = option.checked ? '<span class="fa fa-check mr-1"/>' : "";
+            return `<a class="popupmenu-option dropdown-item" href="${href}" ${target}>${check}${option.html}</a>`;
         }).join("");
     },
 
