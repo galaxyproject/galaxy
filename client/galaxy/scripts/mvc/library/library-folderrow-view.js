@@ -250,9 +250,18 @@ var FolderRowView = Backbone.View.extend({
                     <td>
                         <a href="#folders/<%- content_item.id %>"><%- content_item.get("name") %></a>
                     </td>
-                    <td>
-                        <%- content_item.get("description") %>
-                    </td>
+                    <% if( content_item.get("description") ) { %>
+                        <% if( content_item.get("description").length> 80 ) { %>
+                            <td data-toggle="tooltip" data-placement="auto"
+                                title='<%= _.escape(content_item.get("description")) %>'>
+                                <%= _.escape(content_item.get("description")).substring(0, 80) + "..." %>
+                            </td>
+                        <% } else { %>
+                            <td><%= _.escape(content_item.get("description"))%></td>
+                        <% } %>
+                    <% } else { %>
+                        <td></td>
+                    <% } %>
                 <% } else if(edit_mode){ %>
                     <td>
                         <textarea rows="4" class="form-control input_folder_name" placeholder="name" ><%- content_item.get("name") %></textarea>
@@ -267,7 +276,7 @@ var FolderRowView = Backbone.View.extend({
                     <%= _.escape(content_item.get("update_time")) %>
                 </td>
                 <td></td>
-                <td>
+                <td class="right-center">
                     <% if(edit_mode) { %> <!-- start edit mode -->
                         <button data-toggle="tooltip" data-placement="top" title="Save changes"
                             class="primary-button btn-sm save_folder_btn" type="button"
@@ -324,7 +333,7 @@ var FolderRowView = Backbone.View.extend({
                         <%= _.escape(content_item.get("state")) %>
                     <% } %>
                 </td>
-                <td>
+                <td class="right-center">
                     <% if (content_item.get("is_unrestricted")) { %>
                         <span data-toggle="tooltip" data-placement="top" title="Unrestricted dataset"
                             class="fa fa-globe"></span>
@@ -378,7 +387,7 @@ var FolderRowView = Backbone.View.extend({
                         <%= _.escape(content_item.get("state")) %>
                     <% } %>
                 </td>
-                <td>
+                <td class="right-center">
                     <span data-toggle="tooltip" data-placement="top"
                         title="Marked deleted" class="fa fa-ban"></span>
                     <button data-toggle="tooltip" data-placement="top"
@@ -401,9 +410,18 @@ var FolderRowView = Backbone.View.extend({
                 <td style="color:grey;">
                     <%- content_item.get("name") %>
                 </td>
-                <td>
-                    <%- content_item.get("description") %>
-                </td>
+                <% if( content_item.get("description") ) { %>
+                    <% if( content_item.get("description").length> 80 ) { %>
+                        <td data-toggle="tooltip" data-placement="bottom"
+                            title='<%= _.escape(content_item.get("description")) %>'>
+                            <%= _.escape(content_item.get("description")).substring(0, 80) + "..." %>
+                        </td>
+                    <% } else { %>
+                        <td><%= _.escape(content_item.get("description"))%></td>
+                    <% } %>
+                <% } else { %>
+                    <td></td>
+                <% } %>
                 <td>
                     folder
                 </td>
@@ -412,7 +430,7 @@ var FolderRowView = Backbone.View.extend({
                     <%= _.escape(content_item.get("update_time")) %>
                 </td>
                 <td></td>
-                <td>
+                <td class="right-center">
                     <span data-toggle="tooltip" data-placement="top"
                         title="Marked deleted" class="fa fa-ban"></span>
                     <button data-toggle="tooltip" data-placement="top"
