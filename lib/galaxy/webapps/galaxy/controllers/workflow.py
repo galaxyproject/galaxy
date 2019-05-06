@@ -535,7 +535,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return_url = url_for('/') + 'workflow?status=done&message=%s' % escape(message)
         trans.response.send_redirect(return_url)
 
-    @web.expose_api
+    @web.legacy_expose_api
     def create(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
             return {

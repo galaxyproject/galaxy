@@ -19,7 +19,7 @@ var Collection = Backbone.Collection.extend({
 
 var View = Backbone.View.extend({
     initialize: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var self = this;
         this.active_tab = "user";
         var history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;

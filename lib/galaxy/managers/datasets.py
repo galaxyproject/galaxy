@@ -291,6 +291,12 @@ class DatasetAssociationManager(base.ModelManager,
         """
         Stops an dataset_assoc's creating job if all the job's other outputs are deleted.
         """
+
+        # Optimize this to skip other checks if this dataset is terminal - we can infer the
+        # job is already complete.
+        if dataset_assoc.state in model.Dataset.terminal_states:
+            return False
+
         if dataset_assoc.parent_id is None and len(dataset_assoc.creating_job_associations) > 0:
             # Mark associated job for deletion
             job = dataset_assoc.creating_job_associations[0].job

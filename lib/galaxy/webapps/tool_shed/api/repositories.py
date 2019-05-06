@@ -24,9 +24,9 @@ from galaxy.exceptions import (
 )
 from galaxy.util import checkers
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
-    _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
+    expose_api,
+    expose_api_anonymous_and_sessionless,
+    expose_api_raw_anonymous_and_sessionless
 )
 from galaxy.web.base.controller import (
     BaseAPIController,
@@ -54,7 +54,7 @@ log = logging.getLogger(__name__)
 class RepositoriesController(BaseAPIController):
     """RESTful controller for interactions with repositories in the Tool Shed."""
 
-    @web.expose_api
+    @web.legacy_expose_api
     def add_repository_registry_entry(self, trans, payload, **kwd):
         """
         POST /api/repositories/add_repository_registry_entry
@@ -96,7 +96,7 @@ class RepositoriesController(BaseAPIController):
             % (name, owner)
         return response_dict
 
-    @web.expose_api_anonymous
+    @web.legacy_expose_api_anonymous
     def get_ordered_installable_revisions(self, trans, name=None, owner=None, **kwd):
         """
         GET /api/repositories/get_ordered_installable_revisions
@@ -128,7 +128,7 @@ class RepositoriesController(BaseAPIController):
             return []
         return [revision[1] for revision in repository.installable_revisions(self.app, sort_revisions=True)]
 
-    @web.expose_api_anonymous
+    @web.legacy_expose_api_anonymous
     def get_repository_revision_install_info(self, trans, name, owner, changeset_revision, **kwd):
         """
         GET /api/repositories/get_repository_revision_install_info
@@ -253,7 +253,7 @@ class RepositoriesController(BaseAPIController):
             log.debug(debug_msg)
             return {}, {}, {}
 
-    @web.expose_api_anonymous
+    @web.legacy_expose_api_anonymous
     def get_installable_revisions(self, trans, **kwd):
         """
         GET /api/repositories/get_installable_revisions
@@ -279,7 +279,7 @@ class RepositoriesController(BaseAPIController):
                         'user_id': trans.security.encode_id}
         return value_mapper
 
-    @web.expose_api
+    @web.legacy_expose_api
     def import_capsule(self, trans, payload, **kwd):
         """
         POST /api/repositories/new/import_capsule
@@ -518,7 +518,7 @@ class RepositoriesController(BaseAPIController):
         results['hostname'] = web.url_for('/', qualified=True)
         return results
 
-    @web.expose_api
+    @web.legacy_expose_api
     def remove_repository_registry_entry(self, trans, payload, **kwd):
         """
         POST /api/repositories/remove_repository_registry_entry
@@ -560,7 +560,7 @@ class RepositoriesController(BaseAPIController):
             % (name, owner)
         return response_dict
 
-    @web.expose_api
+    @web.legacy_expose_api
     def repository_ids_for_setting_metadata(self, trans, my_writable=False, **kwd):
         """
         GET /api/repository_ids_for_setting_metadata
@@ -591,7 +591,7 @@ class RepositoriesController(BaseAPIController):
                 repository_ids.append(trans.security.encode_id(repository.id))
         return repository_ids
 
-    @web.expose_api
+    @web.legacy_expose_api
     def reset_metadata_on_repositories(self, trans, payload, **kwd):
         """
         PUT /api/repositories/reset_metadata_on_repositories
@@ -685,7 +685,7 @@ class RepositoriesController(BaseAPIController):
         results['stop_time'] = stop_time
         return json.dumps(results, sort_keys=True, indent=4)
 
-    @web.expose_api
+    @web.legacy_expose_api
     def reset_metadata_on_repository(self, trans, payload, **kwd):
         """
         PUT /api/repositories/reset_metadata_on_repository
@@ -1034,7 +1034,7 @@ class RepositoriesController(BaseAPIController):
             [trans.security.encode_id(x.category.id) for x in repo.categories]
         return repository_dict
 
-    @web.expose_api
+    @web.legacy_expose_api
     def create_changeset_revision(self, trans, id, payload, **kwd):
         """
         POST /api/repositories/{encoded_repository_id}/changeset_revision

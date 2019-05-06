@@ -4,15 +4,11 @@
 -->
 <job_conf>
     <plugins>
-        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="1"/>
         <plugin id="dynamic" type="runner">
             <param id="rules_module">integration.delay_rules</param>
         </plugin>
     </plugins>
-
-    <handlers>
-        <handler id="main"/>
-    </handlers>
 
     <destinations default="local_dest">
 

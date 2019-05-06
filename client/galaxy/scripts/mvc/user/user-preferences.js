@@ -12,7 +12,7 @@ import QueryStringParsing from "utils/query-string-parsing";
 /** Contains descriptive dictionaries describing user forms */
 var Model = Backbone.Model.extend({
     initialize: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         options = options || {};
         options.user_id = options.user_id || Galaxy.user.id;
         this.set({
@@ -158,7 +158,7 @@ var View = Backbone.View.extend({
 
     render: function() {
         var self = this;
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var config = Galaxy.config;
         $.getJSON(`${getAppRoot()}api/users/${Galaxy.user.id}`, data => {
             self.$preferences = $("<div/>")
@@ -223,7 +223,7 @@ var View = Backbone.View.extend({
     },
 
     _templateFooter: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         return `<p class="mt-2">You are using <strong>${
             options.nice_total_disk_usage
         }</strong> of disk space in this Galaxy instance. ${

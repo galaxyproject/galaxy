@@ -851,14 +851,14 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     _l("Create a different kind of collection"),
                     ' <span class="caret"></span>',
                     "</button>",
-                    '<ul class="dropdown-menu" role="menu">',
-                    '<li><a href="#">',
+                    '<div class="dropdown-menu" role="menu">',
+                    '<a class="dropdown-item" href="#">',
                     _l("Create a <i>single</i> pair"),
-                    "</a></li>",
-                    '<li><a href="#">',
+                    "</a>",
+                    '<a class="dropdown-item" href="#">',
                     _l("Create a list of <i>unpaired</i> datasets"),
-                    "</a></li>",
-                    "</ul>",
+                    "</a>",
+                    "</div>",
                     "</div>",
                     "</div>",
 
@@ -1011,7 +1011,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
 const collectionCreatorModalSetup = function _collectionCreatorModalSetup(options) {
     const deferred = jQuery.Deferred();
-    let Galaxy = getGalaxyInstance();
+    const Galaxy = getGalaxyInstance();
     const modal = Galaxy.modal || new UI_MODAL.View();
 
     const creatorOptions = _.defaults(options || {}, {

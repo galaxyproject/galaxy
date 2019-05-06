@@ -26,8 +26,10 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import (
+    expose_api,
+    expose_api_anonymous_and_sessionless,
+)
 from galaxy.web.base.controller import (
     BaseAPIController,
     SharableMixin,
@@ -421,14 +423,15 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/workflows/{encoded_workflow_id}/download
 
-        Returns a selected workflow as a json dictionary.
+        Returns a selected workflow.
 
         :type   style:  str
         :param  style:  Style of export. The default is 'export', which is the meant to be used
                         with workflow import endpoints. Other formats such as 'instance', 'editor',
                         'run' are more tied to the GUI and should not be considered stable APIs.
-                        By default the 'export' format in 19.05 is "ga" files, in 19.09 this will
-                        become 'format2'. Style can be specified as either 'ga' or 'format2' directly
+                        The default format for 'export' is specified by the
+                        admin with the `default_workflow_export_format` config
+                        option. Style can be specified as either 'ga' or 'format2' directly
                         to be explicit about which format to download.
         """
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
@@ -797,9 +800,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         else:
             history_id = None
 
-        if stored_workflow_id is None and encoded_history_id is None:
+        if not trans.user_is_admin:
+            # We restrict the query to the current users' invocations
             user_id = trans.user.id
         else:
+            # Get all invocation if user is admin
             user_id = None
 
         invocations = self.workflow_manager.build_invocations_query(

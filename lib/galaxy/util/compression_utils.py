@@ -81,11 +81,32 @@ class CompressedFile(object):
         else:
             raise NameError('File type %s specified, no open method found.' % self.file_type)
 
+    @property
+    def common_prefix_dir(self):
+        """
+        Get the common prefix directory for all the files in the archive, if any.
+
+        Returns '' if the archive contains multiple files and/or directories at
+        the root of the archive.
+        """
+        contents = self.getmembers()
+        common_prefix = ''
+        if len(contents) > 1:
+            common_prefix = os.path.commonprefix([self.getname(item) for item in contents])
+            # If the common_prefix does not end with a slash, check that is a
+            # directory and all other files are contained in it
+            if len(common_prefix) >= 1 and not common_prefix.endswith(os.sep) and self.isdir(self.getmember(common_prefix)) \
+                    and all(self.getname(item).startswith(common_prefix + os.sep) for item in contents if self.isfile(item)):
+                common_prefix += os.sep
+            if not common_prefix.endswith(os.sep):
+                common_prefix = ''
+        return common_prefix
+
     def extract(self, path):
         '''Determine the path to which the archive should be extracted.'''
         contents = self.getmembers()
         extraction_path = path
-        common_prefix = ''
+        common_prefix_dir = self.common_prefix_dir
         if len(contents) == 1:
             # The archive contains a single file, return the extraction path.
             if self.isfile(contents[0]):
@@ -94,14 +115,7 @@ class CompressedFile(object):
                     os.makedirs(extraction_path)
                 self.archive.extractall(extraction_path, members=self.safemembers())
         else:
-            # Get the common prefix for all the files in the archive. If the common prefix ends with a slash,
-            # or self.isdir() returns True, the archive contains a single directory with the desired contents.
-            # Otherwise, it contains multiple files and/or directories at the root of the archive.
-            common_prefix = os.path.commonprefix([self.getname(item) for item in contents])
-            if len(common_prefix) >= 1 and not common_prefix.endswith(os.sep) and self.isdir(self.getmember(common_prefix)):
-                common_prefix += os.sep
-            if not common_prefix.endswith(os.sep):
-                common_prefix = ''
+            if not common_prefix_dir:
                 extraction_path = os.path.join(path, self.file_name)
                 if not os.path.exists(extraction_path):
                     os.makedirs(extraction_path)
@@ -120,24 +134,25 @@ class CompressedFile(object):
                         os.chmod(absolute_filepath, unix_permissions)
                     else:
                         log.warning("Unable to change permission on extracted file '%s' as it does not exist" % absolute_filepath)
-        return os.path.abspath(os.path.join(extraction_path, common_prefix))
+        return os.path.abspath(os.path.join(extraction_path, common_prefix_dir))
 
     def safemembers(self):
         members = self.archive
+        common_prefix_dir = self.common_prefix_dir
         if self.file_type == "tar":
             for finfo in members:
                 if not safe_relpath(finfo.name):
-                    raise Exception(finfo.name + " is blocked (illegal path).")
-                elif (finfo.issym() or finfo.islnk()) and not safe_relpath(finfo.linkname):
-                    raise Exception(finfo.name + " is blocked.")
-                else:
-                    yield finfo
+                    raise Exception("Path '%s' is blocked (illegal path)." % finfo.name)
+                if finfo.issym() or finfo.islnk():
+                    link_target = os.path.join(os.path.dirname(finfo.name), finfo.linkname)
+                    if not safe_relpath(link_target) or not os.path.normpath(link_target).startswith(common_prefix_dir):
+                        raise Exception("Link '%s' to '%s' is blocked." % (finfo.name, finfo.linkname))
+                yield finfo
         elif self.file_type == "zip":
             for name in members.namelist():
                 if not safe_relpath(name):
                     raise Exception(name + " is blocked (illegal path).")
-                else:
-                    yield name
+                yield name
 
     def getmembers_tar(self):
         return self.archive.getmembers()

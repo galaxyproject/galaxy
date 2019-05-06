@@ -340,7 +340,7 @@ export function getQueryString(key) {
 }
 
 export function setWindowTitle(title) {
-    let Galaxy = getGalaxyInstance();
+    const Galaxy = getGalaxyInstance();
     if (title) {
         window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""} | ${_l(title)}`;
     } else {

@@ -2,6 +2,7 @@
   <description>data by a column and perform aggregate operation on other columns.</description>
   <requirements>
     <requirement type="package" version="1.15.4">numpy</requirement>
+    <requirement type="package" version="8.31">coreutils</requirement>
   </requirements>
   <command detect_errors="exit_code">
   python '$__tool_directory__/grouping.py'
@@ -79,7 +80,7 @@
     </test>
     <!-- Test with an empty first field-->
     <test>
-      <param name="input1" value="1.tabular"/>
+      <param name="input1" value="groupby_in_1.tabular"/>
       <param name="groupcol" value="1"/>
       <param name="ignorecase" value="true"/>
       <repeat name="operations">
@@ -170,7 +171,7 @@
       </assert_stderr>
     </test>
     <test>
-      <param name="input1" value="1.tabular"/>
+      <param name="input1" value="groupby_in_1.tabular"/>
       <param name="groupcol" value="1"/>
       <param name="ignorecase" value="true"/>
       <repeat name="operations">

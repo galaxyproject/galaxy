@@ -49,7 +49,7 @@ var CollectionViewEdit = _super.extend(
             }
 
             // anon users shouldn't have access to any of the following
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             if (!Galaxy.user || Galaxy.user.isAnonymous()) {
                 return;
             }
@@ -78,22 +78,22 @@ var CollectionViewEdit = _super.extend(
                     }
                 });
 
-            let el = $where.find(".tags-display")[0];
-            let propsData = {
+            const el = $where.find(".tags-display")[0];
+            const propsData = {
                 model: this.model,
                 disabled: false,
                 context: "collection-view-edit"
             };
 
-            let vm = mountModelTags(propsData, el);
+            const vm = mountModelTags(propsData, el);
 
-            let toggleEditor = () => {
+            const toggleEditor = () => {
                 $(vm.$el).toggleClass("active");
                 this.tagsEditorShown = $(vm.$el).hasClass("active");
             };
 
             if (this.tagsEditorShown) {
-                let editorIsOpen = $(vm.$el).hasClass("active");
+                const editorIsOpen = $(vm.$el).hasClass("active");
                 if (!editorIsOpen) {
                     toggleEditor();
                 }

@@ -129,8 +129,7 @@ class CustosAuthnz(IdentityProvider):
         redirect_uri = self.config['redirect_uri']
         if (redirect_uri.startswith('http://localhost')
                 and os.environ.get("OAUTHLIB_INSECURE_TRANSPORT", None) != "1"):
-            log.warn("Setting OAUTHLIB_INSECURE_TRANSPORT to '1' to "
-                     "allow plain HTTP (non-SSL) callback")
+            log.warning("Setting OAUTHLIB_INSECURE_TRANSPORT to '1' to allow plain HTTP (non-SSL) callback")
             os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = "1"
         session = OAuth2Session(client_id,
                              scope=scope,

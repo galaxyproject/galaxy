@@ -8,7 +8,7 @@ import { getGalaxyInstance } from "app";
 /** Masthead **/
 var View = Backbone.View.extend({
     initialize: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         var self = this;
         this.options = options;

@@ -113,7 +113,7 @@ class XmlToolSource(ToolSource):
         return ((command_el is not None) and command_el.text) or None
 
     def parse_expression(self):
-        """ Return string contianing command to run.
+        """ Return string containing command to run.
         """
         expression_el = self.root.find("expression")
         if expression_el is not None:
@@ -270,6 +270,7 @@ class XmlToolSource(ToolSource):
 
         def _parse_expression(output_elem, **kwds):
             output_def = self._parse_expression_output(output_elem, tool, **kwds)
+            output_def.filters = output_elem.findall('filter')
             data_dict[output_def.name] = output_def
             return output_def
 
@@ -329,7 +330,7 @@ class XmlToolSource(ToolSource):
                 output_collection.outputs[output_name] = data
             output_collections[name] = output_collection
 
-        for out_child in out_elem.getchildren():
+        for out_child in out_elem:
             if out_child.tag == "data":
                 _parse(out_child)
             elif out_child.tag == "collection":
@@ -345,7 +346,7 @@ class XmlToolSource(ToolSource):
                 else:
                     _parse_expression(out_child)
             else:
-                log.warn("Unknown output tag encountered [%s]" % out_child.tag)
+                log.warning("Unknown output tag encountered [%s]" % out_child.tag)
 
         for output_def in data_dict.values():
             outputs[output_def.name] = output_def

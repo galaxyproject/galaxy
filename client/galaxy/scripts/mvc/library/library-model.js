@@ -91,7 +91,7 @@ var FolderContainer = Backbone.Model.extend({
         id: "unknown"
     },
     parse: function(obj) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         // empty the collection
         this.get("folder").reset();
         // response is not a simple array, it contains metadata

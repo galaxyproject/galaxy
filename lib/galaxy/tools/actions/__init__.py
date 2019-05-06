@@ -260,7 +260,6 @@ class DefaultToolAction(object):
         for data in inp_data.values():
             if not data:
                 continue
-
             for tag in data.auto_propagated_tags:
                 preserved_tags[tag.value] = tag
 
@@ -616,6 +615,7 @@ class DefaultToolAction(object):
                         self.__remap_parameters(job_to_remap, jtid, jtod, out_data)
                         trans.sa_session.add(job_to_remap)
                         trans.sa_session.add(jtid)
+                        job_to_remap.resume()
                 jtod.dataset.visible = False
                 trans.sa_session.add(jtod)
             for jtodc in old_job.output_dataset_collection_instances:
@@ -639,12 +639,6 @@ class DefaultToolAction(object):
         return remapped_hdas
 
     def __remap_parameters(self, job_to_remap, jtid, jtod, out_data):
-        if job_to_remap.state == job_to_remap.states.PAUSED:
-            job_to_remap.state = job_to_remap.states.NEW
-        for hda in [dep_jtod.dataset for dep_jtod in job_to_remap.output_datasets]:
-            if hda.state == hda.states.PAUSED:
-                hda.state = hda.states.NEW
-                hda.info = None
         input_values = dict([(p.name, json.loads(p.value)) for p in job_to_remap.parameters])
         old_dataset_id = jtod.dataset_id
         new_dataset_id = out_data[jtod.name].id

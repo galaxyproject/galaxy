@@ -100,4 +100,12 @@ Please mind `http` and `https`.
         <!-- (Optional) Override the default idp hint -->
         <!-- <idphint>cilogon</idphint> -->
     </provider>
+    <!-- Documentation: https://galaxyproject.org/authnz/config/oidc/idps/elixir-aai  -->
+    <provider name="Elixir">
+        <client_id>...</client_id>
+        <client_secret>...</client_secret>
+        <redirect_uri>http://localhost:8080/authnz/elixir/callback</redirect_uri>
+        <prompt>consent</prompt>
+    </provider>
+
 </OIDC>

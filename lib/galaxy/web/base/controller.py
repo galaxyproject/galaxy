@@ -238,6 +238,12 @@ class BaseAPIController(BaseController):
             keys = keys.split(',')
         return dict(view=view, keys=keys, default_view=default_view)
 
+    def _parse_order_by(self, manager, order_by_string):
+        ORDER_BY_SEP_CHAR = ','
+        if ORDER_BY_SEP_CHAR in order_by_string:
+            return [manager.parse_order_by(o) for o in order_by_string.split(ORDER_BY_SEP_CHAR)]
+        return manager.parse_order_by(order_by_string)
+
 
 class JSAppLauncher(BaseUIController):
     """
@@ -1410,7 +1416,7 @@ class SharableMixin(object):
         item.slug = new_slug
         return item.slug == cur_slug
 
-    @web.expose_api
+    @web.legacy_expose_api
     def sharing(self, trans, id, payload=None, **kwd):
         skipped = False
         class_name = self.manager.model_class.__name__

@@ -129,11 +129,14 @@ release-check-blocking-prs: ## Check github for release blocking PRs
 release-bootstrap-history: ## bootstrap history for a new release
 	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
 
-update-dependencies:  ## update linting + dev dependencies
-	sh lib/galaxy/dependencies/pipfiles/update.sh
+build-dependencies-docker: ## Builds the docker container used for dependency updates
+	$(MAKE) -C lib/galaxy/dependencies/pipfiles/docker
 
-update-and-commit-dependencies:  ## update and commit linting + dev dependencies
-	sh lib/galaxy/dependencies/pipfiles/update.sh -c
+update-dependencies:  build-dependencies-docker ## update linting + dev dependencies
+	sh lib/galaxy/dependencies/pipfiles/update.sh -d
+
+update-and-commit-dependencies: build-dependencies-docker ## update and commit linting + dev dependencies
+	sh lib/galaxy/dependencies/pipfiles/update.sh -d -c
 
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN

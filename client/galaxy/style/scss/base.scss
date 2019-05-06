@@ -500,6 +500,7 @@ div.unified-panel-body-background {
         @extend .text-dark;
         font-size: 12px;
         text-decoration: none;
+        display: block;
     }
 }
 
@@ -681,6 +682,11 @@ div.form-row-input label {
     padding-top: 10px;
     padding-bottom: 10px;
     margin-top: 5px;
+}
+
+#run-workflow {
+    @extend .float-right;
+    @extend .mt-3;
 }
 
 .workflow-right {
@@ -1323,34 +1329,11 @@ div.popmenu-wrapper {
     top: 100%;
     z-index: 20000;
 
-    ul.dropdown-menu {
+    .dropdown-menu {
         // Since our menus are contained in a positioned div, need to override some styles
         display: block;
         position: relative;
         float: none;
-    }
-}
-
-// For all dropdowns, define some additional item types
-ul.dropdown-menu {
-    a {
-        text-decoration: none;
-    }
-    li.head > a {
-        // From nav-list nav-header
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-        font-size: 11px;
-        font-weight: bold;
-        line-height: $line-height-base;
-        color: $text-color;
-        text-transform: uppercase;
-    }
-    li.head > a:hover {
-        background: inherit;
-        border-color: transparent;
-    }
-    li > a {
-        @extend .dropdown-item;
     }
 }
 
@@ -1502,88 +1485,58 @@ div.permissionContainer {
 @import "ui/error-modal.scss";
 
 // ==== Tool menu styles
-
 .toolMenuContainer {
     color: $panel-text-color;
     a {
         color: $panel-text-color;
-        // text-decoration: none;
     }
     background: $panel-bg-color;
     min-height: 100%;
     @extend .m-3;
 }
 
-div.toolSectionPad {
-    margin: 0;
-    padding: 0;
-    height: 5px;
-    font-size: 0px;
-}
-
 div.toolSectionWrapper {
-    margin-bottom: 5px;
-}
-
-div.toolSectionDetailsInner {
-    margin-left: 5px;
-    margin-right: 5px;
+    @extend .mb-1;
 }
 
 div.toolSectionTitle {
     font-weight: 500;
-    font-size: 1rem;
+    font-size: $h4-font-size;
 }
 
 div.toolPanelLabel {
-    padding-top: 10px;
-    padding-bottom: 5px;
+    @extend .mt-3;
+    @extend .mb-2;
     font-weight: bold;
-    color: gray;
+    color: $gray-600;
     text-transform: uppercase;
 }
 
 div.toolTitle {
-    margin-left: 10px;
-    margin-right: 10px;
+    @extend .m-2;
     display: block;
     .labels {
         float: right;
-        margin-left: 2px;
     }
 }
 
 div a.tool-link {
     text-decoration: none;
     display: block;
-    padding-top: 5px;
-    padding-bottom: 5px;
-
     span.tool-old-link {
         text-decoration: underline;
     }
-
     &:hover {
         background: darken($panel-bg-color, 5%);
     }
 }
 
-div.toolSectionBody div.toolPanelLabel {
-    padding-top: 5px;
-    padding-bottom: 5px;
-    margin-left: 16px;
-    margin-right: 10px;
-    display: list-item;
-    list-style: none outside;
-}
-
 div.toolTitleNoSection {
-    padding-bottom: 5px;
+    @extend .pb-1;
     font-weight: bold;
 }
 
 // Dataset Display Styles
-
 #loading_indicator {
     position: fixed;
     right: 10px;
@@ -1943,7 +1896,8 @@ div.toolTitleNoSection {
 }
 
 /* Toolshed, reports custom styles from mako templates */
-body.toolshed {
+body.toolshed,
+body.reports {
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -1955,15 +1909,6 @@ body.toolshed {
     }
     .toolMenu {
         margin-left: 10px;
-    }
-}
-
-body.reports {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    #left {
-        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
     }
 }
 

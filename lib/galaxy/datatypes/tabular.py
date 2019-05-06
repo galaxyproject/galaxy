@@ -12,10 +12,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from cgi import escape
 from json import dumps
 
 import pysam
+from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import binary, data, metadata
@@ -1193,6 +1193,8 @@ class MatrixMarket(TabularData):
     True
     >>> MatrixMarket().sniff( get_test_fname( '2.mtx' ) )
     True
+    >>> MatrixMarket().sniff( get_test_fname( '3.mtx' ) )
+    True
     """
     file_ext = "mtx"
 
@@ -1200,7 +1202,7 @@ class MatrixMarket(TabularData):
         super(MatrixMarket, self).__init__(**kwd)
 
     def sniff_prefix(self, file_prefix):
-        return file_prefix.startswith('%%MatrixMarket matrix coordinate real general')
+        return file_prefix.startswith('%%MatrixMarket matrix coordinate')
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
         if dataset.has_data():

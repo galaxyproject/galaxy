@@ -27,7 +27,7 @@ from galaxy import model, util
 from galaxy.datatypes import sniff
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
-from galaxy.jobs.mapper import JobRunnerMapper
+from galaxy.jobs.mapper import JobMappingException, JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
@@ -994,6 +994,17 @@ class JobWrapper(HasResourceParameters):
         """
         job = self.get_job()
         self.sa_session.refresh(job)
+
+        # If this fail method is being called because a dynamic rule raised JobMappingException, the call to
+        # self.get_destination_configuration() below accesses self.job_destination and will just cause
+        # JobMappingException to be raised again.
+        try:
+            self.job_destination
+        except JobMappingException as exc:
+            log.debug("(%s) fail(): Job destination raised JobMappingException('%s'), caching fake '__fail__' "
+                      "destination for completion of fail method", self.get_id_tag(), str(exc.failure_message))
+            self.job_runner_mapper.cached_job_destination = JobDestination(id='__fail__')
+
         # if the job was deleted, don't fail it
         if not job.state == job.states.DELETED:
             # Check if the failure is due to an exception
@@ -1337,7 +1348,7 @@ class JobWrapper(HasResourceParameters):
                 # Handle composite datatypes of auto_primary_file type
                 if dataset.datatype.composite_type == 'auto_primary_file' and not dataset.has_data():
                     try:
-                        with NamedTemporaryFile() as temp_fh:
+                        with NamedTemporaryFile(mode='w') as temp_fh:
                             temp_fh.write(dataset.datatype.generate_primary_file(dataset))
                             temp_fh.flush()
                             self.object_store.update_from_file(dataset.dataset, file_name=temp_fh.name, create=True)

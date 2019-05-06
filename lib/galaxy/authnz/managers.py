@@ -40,6 +40,7 @@ class AuthnzManager(object):
         :param config: sets the path for OIDC configuration
             file (e.g., oidc_backends_config.xml).
         """
+        self.app = app
         self._parse_oidc_config(oidc_config_file)
         self._parse_oidc_backends_config(oidc_backends_config_file)
 
@@ -93,9 +94,11 @@ class AuthnzManager(object):
                 if idp in BACKENDS_NAME:
                     self.oidc_backends_config[idp] = self._parse_idp_config(child)
                     self.oidc_backends_implementation[idp] = 'psa'
+                    self.app.config.oidc.append(idp)
                 elif idp == 'custos':
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = 'custos'
+                    self.app.config.oidc.append(idp)
             if len(self.oidc_backends_config) == 0:
                 raise ParseError("No valid provider configuration parsed.")
         except ImportError:
@@ -190,7 +193,7 @@ class AuthnzManager(object):
         if qres.user_id != trans.user.id:
             msg = "The request authentication with ID `{}` is not accessible to user with ID " \
                   "`{}`.".format(trans.security.encode_id(authn_id), trans.security.encode_id(trans.user.id))
-            log.warn(msg)
+            log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
 
     @staticmethod
@@ -217,7 +220,7 @@ class AuthnzManager(object):
         if user_id != qres.user_id:
             msg = "The request authorization configuration (with ID:`{}`) is not accessible for user with " \
                   "ID:`{}`.".format(qres.id, user_id)
-            log.warn(msg)
+            log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
         return qres
 
