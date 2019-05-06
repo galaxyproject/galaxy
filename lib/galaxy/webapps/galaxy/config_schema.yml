@@ -144,7 +144,7 @@ mapping:
 
       database_wait_sleep:
         type: float
-        default: 1
+        default: 1.
         required: false
         desc: |
           Time to sleep between attempts if database_wait is enabled (in seconds).
