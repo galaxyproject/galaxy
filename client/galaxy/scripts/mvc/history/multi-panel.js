@@ -1073,19 +1073,19 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             <div class="checkbox">
                 <label>
                     <input id="include-deleted" type="checkbox" <%= view.collection.includeDeleted? " checked" : "" %>>
-                    ${ _l("Include deleted histories") }
+                    ${_l("Include deleted histories")}
                 </label>
             </div>
             <div class="checkbox">
                 <label>
                     <input id="toggle-deleted" type="checkbox">
-                    ${ _l("Include deleted datasets") }
+                    ${_l("Include deleted datasets")}
                 </label>
             </div>
             <div class="checkbox">
                 <label>
                     <input id="toggle-hidden" type="checkbox">
-                    ${ _l("Include hidden datasets") }
+                    ${_l("Include hidden datasets")}
                 </label>
             </div>
         </div>`,
