@@ -247,12 +247,12 @@ var LibraryListView = Backbone.View.extend({
                         <thead>
                             <th style="width:30%;">
                                 <a class="sort-libraries-link" title="Click to reverse order" href="#">
-                                    name
+                                    Name
                                 </a>
                                 <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span>
                             </th>
-                            <th style="width:22%;">description</th>
-                            <th style="width:22%;">synopsis</th> 
+                            <th style="width:22%;">Description</th>
+                            <th style="width:22%;">Synopsis</th> 
                             <th style="width:26%;"></th>
                         </thead>
                         <tbody id="library_list_body">

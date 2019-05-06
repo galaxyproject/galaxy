@@ -1595,7 +1595,7 @@ var FolderToolbarView = Backbone.View.extend({
             `<div>
                 <table class="grid table table-sm">
                     <thead>
-                        <th style="width: 25%;">library</th>
+                        <th style="width: 25%;">Library</th>
                         <th></th>
                     </thead>
                     <tbody>
@@ -1633,7 +1633,7 @@ var FolderToolbarView = Backbone.View.extend({
                 </table>
                 <table class="grid table table-sm">
                     <thead>
-                        <th style="width: 25%;">folder</th>
+                        <th style="width: 25%;">Folder</th>
                         <th></th>
                     </thead>
                     <tbody>
@@ -1869,7 +1869,7 @@ var FolderToolbarView = Backbone.View.extend({
                                     <input class="history-import-toggle-all" style="margin: 0;" type="checkbox" />
                                 </th>
                                 <th style="width: 30px;"></th>
-                                <th>name</th>
+                                <th>Name</th>
                             </tr>
                         </thead>
                         <tbody>

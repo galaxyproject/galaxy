@@ -379,22 +379,22 @@ var FolderListView = Backbone.View.extend({
                         <input id="select-all-checkboxes" style="margin: 0;" type="checkbox">
                     </th>
                     <th>
-                        <a class="sort-folder-name" title="Click to reverse order" href="#">name</a>
+                        <a class="sort-folder-name" title="Click to reverse order" href="#">Name</a>
                         <span title="Sorted alphabetically"
                             class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span>
                     </th>
                     <th style="width:20%;">
-                        <a class="sort-folder-description" title="Click to reverse order" href="#">description</a>
+                        <a class="sort-folder-description" title="Click to reverse order" href="#">Description</a>
                         <span title="Sorted alphabetically" class="sort-icon-description fa"></span>
                     </th>
                     <th style="width:5%;">
-                        <a class="sort-folder-file_ext" title="Click to reverse order" href="#">data type</a>
+                        <a class="sort-folder-file_ext" title="Click to reverse order" href="#">Data Type</a>
                         <span title="Sorted alphabetically" class="sort-icon-file_ext fa"></span>
                     </th>
-                    <th style="width:10%;">size</th>
-                    <th style="width:160px;">time updated (UTC)</th>
+                    <th style="width:10%;">Size</th>
+                    <th style="width:160px;">Time Updated (UTC)</th>
                     <th style="width:5%;">
-                        <a class="sort-folder-state" title="Click to reverse order" href="#">state</a>
+                        <a class="sort-folder-state" title="Click to reverse order" href="#">State</a>
                         <span title="Sorted alphabetically" class="sort-icon-state fa"></span>
                     </th>
                     <th style="width:160px;"></th> 
