@@ -225,7 +225,7 @@ var LibraryListView = Backbone.View.extend({
     },
 
     /**
-     * Create new library inline
+     * Create the new library inline
      */
     createLibraryInline: function() {
         var template = this.templateNewRow();
@@ -264,7 +264,11 @@ var LibraryListView = Backbone.View.extend({
                     this.$el.find('tr.new-row').remove();
                     Galaxy.libraries.libraryListView.render();
 
-                    $(`tr[data-id="${library.attributes.id}"`).addClass('table-success');
+                    $(`tr[data-id="${library.attributes.id}"`)
+                        .addClass('table-success')
+                        .on('mouseover click', function() {
+                            $(this).removeClass('table-success');
+                        });
 
                     Toast.success("Library created.");
                 },
