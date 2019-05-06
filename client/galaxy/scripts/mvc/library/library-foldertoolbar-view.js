@@ -18,7 +18,7 @@ var FolderToolbarView = Backbone.View.extend({
     el: "#center",
 
     events: {
-        "click .toolbtn-create-folder": "createFolderFromModal",
+        "click .toolbtn-create-folder": "createFolderInline",
         "click .toolbtn-bulk-import": "importToHistoryModal",
         "click .include-deleted-datasets-chk": "checkIncludeDeleted",
         "click .toolbtn-bulk-delete": "deleteSelectedItems",
@@ -151,6 +151,11 @@ var FolderToolbarView = Backbone.View.extend({
             $(".dataset-manipulation").hide();
         }
         this.$el.find('[data-toggle="tooltip"]').tooltip({ trigger: "hover" });
+    },
+
+    createFolderInline: function() {
+        const Galaxy = getGalaxyInstance();
+        Galaxy.libraries.folderListView.createFolderInline();
     },
 
     createFolderFromModal: function(event) {

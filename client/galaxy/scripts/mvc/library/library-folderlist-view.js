@@ -26,7 +26,7 @@ var FolderListView = Backbone.View.extend({
         "click .sort-folder-name": "sortColumnClicked",
         "click .sort-folder-file_ext": "sortColumnClicked",
         "click .sort-folder-description": "sortColumnClicked",
-        "click .sort-folder-state": "sortColumnClicked"
+        "click .sort-folder-state": "sortColumnClicked",
     },
 
     collection: null,
@@ -345,6 +345,106 @@ var FolderListView = Backbone.View.extend({
         } else {
             $(`.sort-icon-${this.current_sort_key}`).addClass("fa-sort-alpha-desc");
         }
+    },
+
+    /**
+     * Create the new folder inline
+     */
+    createFolderInline: function() {
+        var template = this.templateNewFolder();
+        this.$el.find("#first_folder_item").after(template);
+
+        this.$el.find('tr.new-row textarea')[0].focus();
+
+        this.$el.find('tr.new-row .save_folder_btn').click(() => {
+            this.createNewFolder(
+                this.$el.find('tr.new-row textarea')[0].value,
+                this.$el.find('tr.new-row textarea')[1].value,
+            );
+        });
+
+        this.$el.find('tr.new-row .cancel_folder_btn').click(() => {
+            this.$el.find('tr.new-row').remove();
+        });
+    },
+
+    /**
+     * Create the new library using the API asynchronously.
+     */
+    createNewFolder: function(name, description) {
+        const Galaxy = getGalaxyInstance();
+        const folderDetails = {
+            name,
+            description
+        };
+        if (folderDetails.name !== "") {
+            var folder = new mod_library_model.FolderAsModel();
+            var url_items = Backbone.history.fragment.split("/");
+            var current_folder_id;
+            if (url_items.indexOf("page") > -1) {
+                current_folder_id = url_items[url_items.length - 3];
+            } else {
+                current_folder_id = url_items[url_items.length - 1];
+            }
+            folder.url = folder.urlRoot + current_folder_id;
+
+            folder.save(folderDetails, {
+                success: (folder) => {
+                    Toast.success("Folder created.");
+                    folder.set({ type: "folder" });
+                    this.$el.find('tr.new-row').remove();
+                    Galaxy.libraries.folderListView.collection.add(folder);
+
+                    $(`tr[data-id="${folder.attributes.id}"`)
+                        .addClass('table-success')
+                        .on('mouseover click', function() {
+                            $(this).removeClass('table-success');
+                        });
+                },
+                error: (model, response) => {
+                    Galaxy.modal.hide();
+                    if (typeof response.responseJSON !== "undefined") {
+                        Toast.error(response.responseJSON.err_msg);
+                    } else {
+                        Toast.error("An error occurred.");
+                    }
+                }
+            });
+        } else {
+            Toast.error("Folder's name is missing.");
+        }
+        return false;
+    },
+
+    templateNewFolder: function() {
+        return _.template(
+            `<tr class="new-row">
+                <td class="mid">
+                    <span title="Folder" class="fa fa-folder-o"></span>
+                </td>
+                <td></td>
+                <td>
+                    <textarea rows="4" class="form-control input_folder_name" placeholder="name" ></textarea>
+                </td>
+                <td>
+                    <textarea rows="4" class="form-control input_folder_description" placeholder="description" ></textarea>
+                </td>
+                <td>folder</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="right-center">
+                    <button data-toggle="tooltip" data-placement="left" title="Save changes"
+                        class="btn btn-secondary btn-sm save_folder_btn" type="button">
+                        <span class="fa fa-floppy-o"></span> Save
+                    </button>
+                    <button data-toggle="tooltip" data-placement="left" title="Discard changes"
+                        class="btn btn-secondary btn-sm cancel_folder_btn" type="button">
+                        <span class="fa fa-times"></span> Cancel
+                    </button>
+                </td>
+            </tr>`
+        );
     },
 
     templateFolder: function() {
