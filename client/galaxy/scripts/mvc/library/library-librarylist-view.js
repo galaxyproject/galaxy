@@ -224,9 +224,93 @@ var LibraryListView = Backbone.View.extend({
         }
     },
 
+    /**
+     * Create new library inline
+     */
+    createLibraryInline: function() {
+        var template = this.templateNewRow();
+        this.$el.find("#library_list_body").prepend(template);
+
+        this.$el.find('tr.new-row textarea')[0].focus();
+
+        this.$el.find('tr.new-row .save_library_btn').click(() => {
+            this.createNewLibrary(
+                this.$el.find('tr.new-row textarea')[0].value,
+                this.$el.find('tr.new-row textarea')[1].value,
+                this.$el.find('tr.new-row textarea')[2].value,
+            );
+        });
+
+        this.$el.find('tr.new-row .cancel_library_btn').click(() => {
+            this.$el.find('tr.new-row').remove();
+        });
+    },
+
+    /**
+     * Create the new library using the API asynchronously.
+     */
+    createNewLibrary: function(name, description, synopsis) {
+        const Galaxy = getGalaxyInstance();
+        const libraryDetails = {
+            name,
+            description,
+            synopsis
+        };
+        if (libraryDetails.name !== "") {
+            var library = new mod_library_model.Library();
+            library.save(libraryDetails, {
+                success: (library) => {
+                    Galaxy.libraries.libraryListView.collection.add(library);
+                    this.$el.find('tr.new-row').remove();
+                    Galaxy.libraries.libraryListView.render();
+
+                    $(`tr[data-id="${library.attributes.id}"`).addClass('table-success');
+
+                    Toast.success("Library created.");
+                },
+                error: (model, response) => {
+                    if (typeof response.responseJSON !== "undefined") {
+                        Toast.error(response.responseJSON.err_msg);
+                    } else {
+                        Toast.error("An error occurred.");
+                    }
+                }
+            });
+        } else {
+            Toast.error("Library's name is missing.");
+        }
+        return false;
+    },
+
     // MMMMMMMMMMMMMMMMMM
     // === TEMPLATES ====
     // MMMMMMMMMMMMMMMMMM
+
+    templateNewRow: function() {
+        return _.template(
+            `<tr class="new-row">
+                    <td>
+                        <textarea rows="4" class="form-control input_library_name" placeholder="name" ></textarea>
+                    </td>
+                    <td>
+                        <textarea rows="4" class="form-control input_library_description" placeholder="description"></textarea>
+                    </td>
+                    <td>
+                        <textarea rows="4" class="form-control input_library_synopsis" placeholder="synopsis"></textarea>
+                    </td>
+                    <td class="right-center">
+                        <button data-toggle="tooltip" data-placement="left" title="Save changes"
+                            class="btn btn-secondary btn-sm save_library_btn" type="button">
+                            <span class="fa fa-floppy-o"></span> Save
+                        </button>
+                        <button data-toggle="tooltip" data-placement="left" title="Discard changes"
+                            class="btn btn-secondary btn-sm cancel_library_btn" type="button">
+                            <span class="fa fa-times"></span> Cancel
+                        </button>
+                    </td>     
+            </tr>`
+        );
+    },
 
     templateLibraryList: function() {
         return _.template(

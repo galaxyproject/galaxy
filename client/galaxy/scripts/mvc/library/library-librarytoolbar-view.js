@@ -75,21 +75,22 @@ var LibraryToolbarView = Backbone.View.extend({
         event.preventDefault();
         event.stopPropagation();
         const Galaxy = getGalaxyInstance();
-        var self = this;
-        this.modal = Galaxy.modal;
-        this.modal.show({
-            closing_events: true,
-            title: _l("Create New Library"),
-            body: this.templateNewLibraryInModal(),
-            buttons: {
-                Create: function() {
-                    self.createNewLibrary();
-                },
-                Close: function() {
-                    self.modal.hide();
-                }
-            }
-        });
+        Galaxy.libraries.libraryListView.createLibraryInline();
+        // var self = this;
+        // this.modal = Galaxy.modal;
+        // this.modal.show({
+        //     closing_events: true,
+        //     title: _l("Create New Library"),
+        //     body: this.templateNewLibraryInModal(),
+        //     buttons: {
+        //         Create: function() {
+        //             self.createNewLibrary();
+        //         },
+        //         Close: function() {
+        //             self.modal.hide();
+        //         }
+        //     }
+        // });
     },
 
     /**
