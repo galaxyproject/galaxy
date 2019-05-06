@@ -844,7 +844,7 @@ var FolderToolbarView = Backbone.View.extend({
         var selected = event.target.checked;
         var self = this;
         // Iterate each checkbox
-        $(":checkbox", "#dataset_list").each(function() {
+        $(":checkbox", "#dataset_list tbody").each(function() {
             this.checked = selected;
             var $row = $(this).closest("tr");
             // Change color of selected/unselected
@@ -890,27 +890,11 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     makeDarkRow: function($row) {
-        $row.removeClass("light").addClass("dark");
-        $row.find("a")
-            .addClass("dark");
-        $row.find(".fa-file-o")
-            .removeClass("fa-file-o")
-            .addClass("fa-file");
-        $row.find(".fa-folder-o")
-            .removeClass("fa-folder-o")
-            .addClass("fa-folder");
+        $row.addClass("table-primary");
     },
 
     makeWhiteRow: function($row) {
-        $row.removeClass("dark").addClass("light");
-        $row.find("a")
-            .removeClass("dark");
-        $row.find(".fa-file")
-            .removeClass("fa-file")
-            .addClass("fa-file-o");
-        $row.find(".fa-folder")
-            .removeClass("fa-folder")
-            .addClass("fa-folder-o");
+        $row.removeClass("table-primary");
     },
 
     /**
@@ -1878,7 +1862,7 @@ var FolderToolbarView = Backbone.View.extend({
             `<div class="form-group">
                 <label>2. Choose the datasets to import:</label>
                 <div class="library_style_container" style="width: 100%;" id="dataset_list">
-                    <table class="grid table table-sm">
+                    <table class="grid table table-hover table-sm">
                         <thead>
                             <tr>
                                 <th style="width: 30px;" class="mid" title="Check to select all datasets">
@@ -1895,7 +1879,7 @@ var FolderToolbarView = Backbone.View.extend({
                                     <% if (history_item.get("type") === "collection") { %>
                                         <% var collection_type = history_item.get("collection_type") %>
                                         <% if (collection_type === "list") { %>
-                                            <tr class="light dataset_row" data-id="<%= _.escape(history_item.get("id")) %>"
+                                            <tr class="dataset_row" data-id="<%= _.escape(history_item.get("id")) %>"
                                                 data-name="<%= _.escape(history_item.get("type")) %>">
                                                 <td><input style="margin: 0;" type="checkbox"></td>
                                                 <td><%= _.escape(history_item.get("hid")) %></td>
@@ -1905,7 +1889,7 @@ var FolderToolbarView = Backbone.View.extend({
                                                 </td>
                                             </tr>
                                         <% } else { %>
-                                            <tr class="light dataset_row" title="You can convert this collection into a collection of type list using the Collection Tools">
+                                            <tr class="dataset_row" title="You can convert this collection into a collection of type list using the Collection Tools">
                                                 <td><input style="margin: 0;" type="checkbox" onclick="return false;" disabled="disabled" /></td>
                                                 <td><%= _.escape(history_item.get("hid")) %></td>
                                                 <td>
@@ -1915,7 +1899,7 @@ var FolderToolbarView = Backbone.View.extend({
                                             </tr>
                                         <% } %>
                                     <% } else if (history_item.get("visible") === true && history_item.get("state") === "ok") { %>
-                                        <tr class="light dataset_row" data-id="<%= _.escape(history_item.get("id")) %>"
+                                        <tr class="dataset_row" data-id="<%= _.escape(history_item.get("id")) %>"
                                             data-name="<%= _.escape(history_item.get("type")) %>">
                                             <td><input style="margin: 0;" type="checkbox"></td>
                                             <td><%= _.escape(history_item.get("hid")) %></td>
