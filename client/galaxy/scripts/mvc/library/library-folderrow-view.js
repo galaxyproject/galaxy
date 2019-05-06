@@ -241,7 +241,7 @@ var FolderRowView = Backbone.View.extend({
 
     templateRowFolder: function() {
         return _.template(
-            `<tr class="folder_row light library-row" data-id="<%- content_item.id %>">
+            `<tr class="folder_row library-row" data-id="<%- content_item.id %>">
                 <td class="mid">
                     <span title="Folder" class="fa fa-folder-o"></span>
                 </td>
@@ -302,7 +302,7 @@ var FolderRowView = Backbone.View.extend({
 
     templateRowFile: function() {
         return _.template(
-            `<tr class="dataset_row light library-row" data-id="<%- content_item.id %>">
+            `<tr class="dataset_row library-row" data-id="<%- content_item.id %>">
                 <td class="mid">
                     <span title="Dataset" class="fa fa-file-o"></span>
                 </td>
@@ -327,15 +327,15 @@ var FolderRowView = Backbone.View.extend({
                 <td>
                     <% if (content_item.get("is_unrestricted")) { %>
                         <span data-toggle="tooltip" data-placement="top" title="Unrestricted dataset"
-                            style="color:grey;" class="fa fa-globe"></span>
+                            class="fa fa-globe"></span>
                     <% } %>
                     <% if (content_item.get("is_private")) { %>
                         <span data-toggle="tooltip" data-placement="top" title="Private dataset"
-                            style="color:grey;" class="fa fa-key"></span>
+                            class="fa fa-key"></span>
                     <% } %>
                     <% if ((content_item.get("is_unrestricted") === false) && (content_item.get("is_private") === false)) { %>
                         <span data-toggle="tooltip" data-placement="top" title="Restricted dataset"
-                            style="color:grey;" class="fa fa-shield"></span>
+                            class="fa fa-shield"></span>
                     <% } %>
                     <% if (content_item.get("can_manage")) { %>
                         <a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>/permissions">
@@ -380,7 +380,7 @@ var FolderRowView = Backbone.View.extend({
                 </td>
                 <td>
                     <span data-toggle="tooltip" data-placement="top"
-                        title="Marked deleted" style="color:grey;" class="fa fa-ban"></span>
+                        title="Marked deleted" class="fa fa-ban"></span>
                     <button data-toggle="tooltip" data-placement="top"
                         title="Undelete '<%- content_item.get("name") %>'"
                         class="primary-button btn-sm undelete_dataset_btn" type="button" style="margin-left:1em;">
@@ -393,7 +393,7 @@ var FolderRowView = Backbone.View.extend({
 
     templateRowDeletedFolder: function() {
         return _.template(
-            `<tr class="active deleted_folder light library-row" data-id="<%- content_item.id %>">
+            `<tr class="active deleted_folder library-row" data-id="<%- content_item.id %>">
                 <td class="mid">
                     <span title="Folder" class="fa fa-folder-o"></span>
                 </td>
@@ -414,7 +414,7 @@ var FolderRowView = Backbone.View.extend({
                 <td></td>
                 <td>
                     <span data-toggle="tooltip" data-placement="top"
-                        title="Marked deleted" style="color:grey;" class="fa fa-ban"></span>
+                        title="Marked deleted" class="fa fa-ban"></span>
                     <button data-toggle="tooltip" data-placement="top"
                         title="Undelete '<%- content_item.get("name") %>'"
                         class="primary-button btn-sm undelete_folder_btn" type="button" style="margin-left:1em;">

@@ -329,27 +329,11 @@ var FolderListView = Backbone.View.extend({
     },
 
     makeDarkRow: function($row) {
-        $row.removeClass("light").addClass("dark");
-        $row.find("a")
-            .addClass("dark");
-        $row.find(".fa-file-o")
-            .removeClass("fa-file-o")
-            .addClass("fa-file");
-        $row.find(".fa-folder-o")
-            .removeClass("fa-folder-o")
-            .addClass("fa-folder");
+        $row.addClass("table-primary");
     },
 
     makeWhiteRow: function($row) {
-        $row.removeClass("dark").addClass("light");
-        $row.find("a")
-            .removeClass("dark")
-        $row.find(".fa-file")
-            .removeClass("fa-file")
-            .addClass("fa-file-o");
-        $row.find(".fa-folder")
-            .removeClass("fa-folder")
-            .addClass("fa-folder-o");
+        $row.removeClass("table-primary");
     },
 
     renderSortIcon: function() {
@@ -387,7 +371,7 @@ var FolderListView = Backbone.View.extend({
             </ol>
 
             <!-- FOLDER CONTENT -->
-            <table data-library-id="<%- parent_library_id  %>" class="grid table table-sm">
+            <table data-library-id="<%- parent_library_id  %>" class="grid table table-hover table-sm">
                 <thead>
                     <th class="button_heading"></th>
                     <th class="mid" style="width: 20px;"
