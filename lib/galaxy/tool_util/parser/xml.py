@@ -949,6 +949,8 @@ class StdioParser(object):
             if err_level:
                 if (re.search("log", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.LOG
+                elif (re.search("qc", err_level, re.IGNORECASE)):
+                    return_level = StdioErrorLevel.QC
                 elif (re.search("warning", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.WARNING
                 elif (re.search("fatal_oom", err_level, re.IGNORECASE)):

@@ -998,6 +998,24 @@ class ToolsTestCase(api.ApiTestCase):
             details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output)
             assert details["state"] == "ok"
 
+    @skip_without_tool("qc_stdout")
+    @uses_test_history(require_new=False)
+    def test_qc_messages(self, history_id):
+        new_dataset1 = self.dataset_populator.new_dataset(history_id, content='123\n456\n789')
+        inputs = {
+            'input1': dataset_to_param(new_dataset1),
+            'quality': 3,
+        }
+        create = self._run("qc_stdout", history_id, inputs, wait_for_job=True, assert_ok=True)
+        assert "jobs" in create, create
+        job_id = create["jobs"][0]["id"]
+        details = self.dataset_populator.get_job_details(job_id, full=True).json()
+        assert "job_messages" in details, details
+        qc_message = details["job_messages"][0]
+        assert qc_message["code_desc"] == "QC Metrics for Tool", qc_message
+        assert qc_message["match"] == "Quality of sample is 30%."
+        assert qc_message["error_level"] == 1.1
+
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)
     def test_multirun_cat1(self, history_id):
