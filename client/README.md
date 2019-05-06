@@ -8,8 +8,8 @@ the client as a part of server startup, when it detects changes, unless that
 functionality is explicitly disabled.
 
 The base dependencies used are Node.js and Yarn.  Galaxy now includes these in
-the virtual environment, and they can be accessed by activating that with
-`. .venv/bin/activate` from the Galaxy root directory.
+the virtual environment, and they can be accessed by activating that with `.
+.venv/bin/activate` from the Galaxy root directory.
 
 If you'd like to install your own dependencies, on OSX the easiest way to get
 set up is using `homebrew` and the command `brew install nodejs yarn`.  More
@@ -18,10 +18,9 @@ https://nodejs.org/ and https://yarnpkg.com/ .
 
 The Galaxy client build has necessarily grown more complex in the past several
 years, but we are still trying to keep things as simple as possible for
-everyone.  If you're having any trouble with building the
-client after following the instructions below, please create an issue on GitHub
-or reach out for help directly on Gitter at
-https://gitter.im/galaxyproject/Lobby .
+everyone.  If you're having any trouble with building the client after
+following the instructions below, please create an issue on GitHub or reach out
+for help directly on Gitter at https://gitter.im/galaxyproject/Lobby .
 
 
 Complete Client Build
@@ -37,7 +36,8 @@ during the build process.
 
     make client
 
-For a production build, suitable for deploying to a live server, use the following:
+For a production build, suitable for deploying to a live server, use the
+following:
 
     make client-production
 
@@ -77,14 +77,16 @@ do not apply site-wide.
 
 On build, the compiled css bundle is served at `/static/style/base.css`.
 
-As mentioned above, `make client` will rebuild styles, as a part of the webpack build.  For iterative development, "Watch Mode" rebuilds as described above do include style changes.
+As mentioned above, `make client` will rebuild styles, as a part of the webpack
+build.  For iterative development, "Watch Mode" rebuilds as described above do
+include style changes.
 
 
 # Client-Side Unit Testing
 
 Galaxy's client is undergoing an extensive refactoring and modernizing process.
-As part of this initiative, we would like to request that all new client-side code
-submissions come with accompanying javascript unit-tests for the
+As part of this initiative, we would like to request that all new client-side
+code submissions come with accompanying javascript unit-tests for the
 developer-facing API of your new code.
 
 ## Testing Technologies
@@ -100,8 +102,8 @@ utils](https://vue-test-utils.vuejs.org/) to mount individual components in a
 test bed and check them for rendered features.
 
 We use the [babel plugin
-Rewire](https://github.com/speedskater/babel-plugin-rewire) to mock imported ES6
-dependencies during unit-testing. [Sinon](https://sinonjs.org/) is also
+Rewire](https://github.com/speedskater/babel-plugin-rewire) to mock imported
+ES6 dependencies during unit-testing. [Sinon](https://sinonjs.org/) is also
 available for more robust stubbing, mocking and spying utilities.
 
 A set of older qUnit tests also exist which will likely be phased-out as the
@@ -184,8 +186,8 @@ Please remember that these tests are not *for* you. They're for the people who
 come after you. It will be a lot easier to modify, repair and upgrade your code
 if they can figure out what you were originally hoping to accomplish.
 
-Add a couple of comments. Use variable names that mean something. Use the assertion
-failure description parameters when possible. Nobody's code is as
+Add a couple of comments. Use variable names that mean something. Use the
+assertion failure description parameters when possible. Nobody's code is as
 self-documenting as they believe it to be.
 
 ```javascript
@@ -213,9 +215,9 @@ it("should have resolved to an array of integer IDs", async () => {
 
 ### Only test the public API that you define (carefully!)
 
-Internal implementations come and go with library upgrades and new tech. But the
-point of the unit test is to make sure your units work as designed.... which
-means you need to... you know... design your code to work in units.
+Internal implementations come and go with library upgrades and new tech. But
+the point of the unit test is to make sure your units work as designed....
+which means you need to... you know... design your code to work in units.
 
 Separate your concerns and identify the developer-facing methods and functions
 you expect them to use. Test THOSE. Everything else should probably be
@@ -260,7 +262,7 @@ describe("some module", () => {
 })
 ```
 
-### Functionalize as much of your logic as possible.
+### Implement logic in pure functions when possible
 
 The more of your logic that is written in deterministic functions (i.e. no
 side-effects, same inputs always result in same outputs) the easier it is to
@@ -289,8 +291,8 @@ it's actually about software design.
 
 Maintainable software is testable software. If you can run a unit test on your
 code, then that means you must have necessarily separated your code into
-testable units and you will have almost definitely written better, more modular,
-more easily manipulated code, and nobody will ever contemplate using git-blame
-to figure out what went wrong.
+testable units and you will have almost definitely written better, more
+modular, more easily manipulated code, and nobody will ever contemplate using
+git-blame to figure out what went wrong.
 
 Probably.
