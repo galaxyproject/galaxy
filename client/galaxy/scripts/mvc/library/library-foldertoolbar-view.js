@@ -1499,13 +1499,6 @@ var FolderToolbarView = Backbone.View.extend({
                     </a>
                     <div>
                         <form class="form-inline">
-                            <div class="form-check logged-dataset-manipulation mr-1" style="display:none;">
-                                <input class="form-check-input include-deleted-datasets-chk"
-                                    id="include_deleted_datasets_chk" type="checkbox" />
-                                <label class="form-check-label" for="include_deleted_datasets_chk">
-                                    include deleted
-                                </label>
-                            </div>
                             <button style="display:none;" title="Create new folder"
                                 class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1"
                                 type="button">
@@ -1581,6 +1574,13 @@ var FolderToolbarView = Backbone.View.extend({
                                     <span class="fa fa-info-circle"></span>&nbsp;Details
                                 </button>
                             </span>
+                            <div class="form-check logged-dataset-manipulation mr-1" style="display:none;">
+                                <input class="form-check-input include-deleted-datasets-chk"
+                                    id="include_deleted_datasets_chk" type="checkbox" />
+                                <label class="form-check-label" for="include_deleted_datasets_chk">
+                                    include deleted
+                                </label>
+                            </div>
                         </form>
                     </div>
                 </div>
