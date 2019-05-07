@@ -708,7 +708,7 @@ var FolderToolbarView = Backbone.View.extend({
                 var history_contents_template = this.templateHistoryContents();
 
                 if (history_contents.length > 0) {
-                    this.histories.get(history_id).set({contents: history_contents});
+                    this.histories.get(history_id).set({ contents: history_contents });
                     this.modal.$el.find(".library_selected_history_content").html(
                         history_contents_template({
                             history_contents: history_contents.models.reverse()
@@ -721,17 +721,15 @@ var FolderToolbarView = Backbone.View.extend({
                         $(".library_selected_history_content [type=checkbox]").prop("checked", false);
                     });
 
-                    this.modal.$el.find(".history-import-toggle-all").bind("click", (e) => {
+                    this.modal.$el.find(".history-import-toggle-all").bind("click", e => {
                         this.selectAll(e);
                     });
 
-                    this.modal.$el.find(".dataset_row").bind("click", (e) => {
+                    this.modal.$el.find(".dataset_row").bind("click", e => {
                         this.selectClickedRow(e);
                     });
                 } else {
-                    this.modal.$el.find(".library_selected_history_content").html(
-                        `<p>Selected history is empty.</p>`
-                    );
+                    this.modal.$el.find(".library_selected_history_content").html(`<p>Selected history is empty.</p>`);
                 }
             },
             error: (model, response) => {
@@ -1364,7 +1362,7 @@ var FolderToolbarView = Backbone.View.extend({
         } else {
             this.select_collection_history = this.modal.$el.find("#library-collection-history-select");
             const selected_history_id = this.select_collection_history.val();
-            const selected_history_name = this.select_collection_history.find('option:selected').text();
+            const selected_history_name = this.select_collection_history.find("option:selected").text();
             this.collectionImport(collection_elements, selected_history_id, selected_history_name);
         }
     },
@@ -1443,10 +1441,6 @@ var FolderToolbarView = Backbone.View.extend({
                 <div class="d-flex align-items-center mb-2">
                     <a class="mr-1 btn btn-secondary" href="list" data-toggle="tooltip" title="Go to first page">
                         <span class="fa fa-home"/>
-                    </a>
-                    <a class="mr-1 btn btn-secondary" data-toggle="tooltip" title="See this screen annotated"
-                        href="https://galaxyproject.org/data-libraries/screen/folder-contents/" target="_blank">
-                        <span class="fa fa-question"/>
                     </a>
                     <div>
                         <form class="form-inline">
@@ -1536,7 +1530,7 @@ var FolderToolbarView = Backbone.View.extend({
                     </div>
                 </div>
                 <div id="folder_items_element" />
-                
+
                 <div class="d-flex justify-content-center align-items-center folder-paginator mt-2 mb-2">
                     <ul class="pagination paginator mr-1" />
                     <input style="width: initial;" min="0" max="999" class="page_size form-control" type="number" value="<%- folder_page_size %>" />
@@ -1617,7 +1611,7 @@ var FolderToolbarView = Backbone.View.extend({
         return _.template(
             `<div>
                 <div class="library-modal-item">
-                    Select history: 
+                    Select history:
                     <select name="import_to_history" style="width:50%; margin-bottom: 1em; " autofocus>
                         <% _.each(histories, function(history) { %>
                             <option value="<%= _.escape(history.get("id")) %>">
@@ -1627,7 +1621,7 @@ var FolderToolbarView = Backbone.View.extend({
                     </select>
                 </div>
                 <div class="library-modal-item">
-                    or create new: 
+                    or create new:
                     <input type="text" name="history_name" value=""
                         placeholder="name of the new history" style="width:50%;" />
                 </div>
@@ -1678,7 +1672,7 @@ var FolderToolbarView = Backbone.View.extend({
 
     templateBrowserModal: function() {
         return _.template(
-                `<div id="file_browser_modal">
+            `<div id="file_browser_modal">
                     <div style="margin-bottom:1em;">
                         <label title="Switch to selecting files" class="radio-inline import-type-switch">
                             <input type="radio" name="jstree-radio" value="jstree-disable-folders" checked="checked">
@@ -1788,7 +1782,7 @@ var FolderToolbarView = Backbone.View.extend({
             `<div id="add_files_modal">
                 <div class="form-group">
                     <label>1. Select history:</label>
-                    <select id="dataset_add_bulk" name="dataset_add_bulk" class="form-control"> 
+                    <select id="dataset_add_bulk" name="dataset_add_bulk" class="form-control">
                         <% _.each(histories, function(history) { %> <!-- history select box -->
                             <option value="<%= _.escape(history.get("id")) %>">
                                 <%= _.escape(history.get("name")) %>
@@ -1933,7 +1927,7 @@ var FolderToolbarView = Backbone.View.extend({
         );
     },
 
-    templatePaginatorText: function () {
+    templatePaginatorText: function() {
         return _.template(`<% if ( folder_page_size == 1 ) { %> item <% } else { %> items <% } %> per page,
             <%- items_shown %>
             <% if ( items_shown == 1 ) { %> item <% } else { %> items <% } %> shown,
@@ -1947,7 +1941,7 @@ var FolderToolbarView = Backbone.View.extend({
                     <h4>Which datasets?</h4>
                     <form class="form-inline">
                         <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="radio_elements" id="selection_radio" value="selection" 
+                            <input class="form-check-input" type="radio" name="radio_elements" id="selection_radio" value="selection"
                                 <% if (!selected_datasets) { %> disabled <% } else { %> checked <% } %> />
                             <label class="form-check-label" for="selection_radio">
                                 current selection
@@ -1966,7 +1960,7 @@ var FolderToolbarView = Backbone.View.extend({
                 <div class="library-modal-item">
                     <h4>Collection type</h4>
                     <div class="form-group">
-                        <select id="library-collection-type-select" name="library-collection-type-select" class="form-control"> 
+                        <select id="library-collection-type-select" name="library-collection-type-select" class="form-control">
                             <option value="list">List</option>
                             <option value="paired">Paired</option>
                             <option value="list:paired">List of Pairs</option>
@@ -1977,13 +1971,13 @@ var FolderToolbarView = Backbone.View.extend({
                     <dl class="row">
                         <dt class="col-sm-3">List</dt>
                         <dd class="col-sm-9">Generic collection which groups any number of datasets into a set; similar to file system folder.</dd>
-                        
+
                         <dt class="col-sm-3">Paired</dt>
                         <dd class="col-sm-9">Simple collection containing exactly two sequence datasets; one reverse and the other forward.</dd>
-                        
+
                         <dt class="col-sm-3">List of Pairs</dt>
                         <dd class="col-sm-9">Advanced collection containing any number of Pairs; imagine as Pair-type collections inside of a List-type collection.</dd>
-                        
+
                         <dt class="col-sm-3">From Rules</dt>
                         <dd class="col-sm-9">Use Galaxy's rule builder to describe collections. This is more of an advanced feature that allows building any number of collections or any type.</dd>
                     </dl>
@@ -1992,14 +1986,14 @@ var FolderToolbarView = Backbone.View.extend({
                 <div class="library-modal-item">
                     <h4>Select history</h4>
                     <div class="form-group">
-                        <select id="library-collection-history-select" name="library-collection-history-select" class="form-control"> 
+                        <select id="library-collection-history-select" name="library-collection-history-select" class="form-control">
                             <% _.each(histories, function(history) { %> <!-- history select box -->
                                 <option value="<%= _.escape(history.get("id")) %>">
                                     <%= _.escape(history.get("name")) %>
                                 </option>
                             <% }); %>
                         </select>
-                        <label>or create new:</label> 
+                        <label>or create new:</label>
                         <input class="form-control" type="text" name="history_name" value="" placeholder="name of the new history" />
                     </div>
                 </div>

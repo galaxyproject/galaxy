@@ -37,11 +37,13 @@ var LibraryToolbarView = Backbone.View.extend({
             is_admin = Galaxy.user.isAdmin();
             is_anonym = Galaxy.user.isAnonymous();
         }
-        this.$el.html(toolbar_template({
-            admin_user: is_admin,
-            anon_user: is_anonym,
-            library_page_size: Galaxy.libraries.preferences.get("library_page_size")
-        }));
+        this.$el.html(
+            toolbar_template({
+                admin_user: is_admin,
+                anon_user: is_anonym,
+                library_page_size: Galaxy.libraries.preferences.get("library_page_size")
+            })
+        );
         if (is_admin) {
             this.$el.find("#include_deleted_chk")[0].checked = Galaxy.libraries.preferences.get("with_deleted");
             this.$el.find("#exclude_restricted_chk")[0].checked = Galaxy.libraries.preferences.get(
@@ -161,18 +163,14 @@ var LibraryToolbarView = Backbone.View.extend({
                     <a class="btn btn-secondary mr-1" data-toggle="tooltip" data-placement="top" title="Go to first page" href="#">
                         <span class="fa fa-home"/>
                     </a>
-                    <a class="library-help-button btn btn-secondary mr-1" data-toggle="tooltip" title="See this screen annotated" href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">
-                        <span class="fa fa-question"/>
-                    </a>
                     <% if(admin_user === true) { %>
                         <button data-toggle="tooltip" data-placement="top" title="Create new library" id="create_new_library_btn" class="mr-1 btn btn-secondary" type="button">
-                            <span class="fa fa-plus"/>
+                            <span class="fa fa-plus" /> Library
                         </button>
                     <% } %>
                     <div class="d-flex align-items-center mr-1" />
                         <form class="form-inline mr-1">
-                            <label class="mr-1" for="library-filter"><span class="fa fa-filter"></span></label>
-                            <input type="text" id="library-filter" class="form-control library-search-input mr-1" placeholder="Filter" size="15">
+                            <input type="text" id="library-filter" class="form-control library-search-input mr-1" placeholder="Search" size="15">
                             <% if(admin_user === true) { %>
                                 <div class="form-check mr-1">
                                     <input class="form-check-input" id="include_deleted_chk" type="checkbox"/>
@@ -186,7 +184,7 @@ var LibraryToolbarView = Backbone.View.extend({
                         </form>
                     </div>
                     <div id="libraries_element" />
-                    
+
                     <div class="d-flex justify-content-center align-items-center library-paginator mt-2 mb-2">
                         <ul class="pagination paginator mr-1" />
                         <input style="width: initial;" min="0" max="999" class="page_size form-control" type="number" value="<%- library_page_size %>" />
@@ -199,7 +197,7 @@ var LibraryToolbarView = Backbone.View.extend({
 
     templatePaginator: function() {
         return _.template(
-                `
+            `
                         <% if ( ( show_page - 1 ) > 0 ) { %>
                             <% if ( ( show_page - 1 ) > page_count ) { %> <!-- we are on higher page than total page count -->
                                <li class="page-item">
@@ -267,7 +265,7 @@ var LibraryToolbarView = Backbone.View.extend({
                 `
         );
     },
-    templatePaginatorText: function () {
+    templatePaginatorText: function() {
         return _.template(`<% if ( library_page_size == 1 ) { %> item <% } else { %> items <% } %> per page,
             <%- libraries_shown %>
             <% if ( libraries_shown == 1 ) { %> library <% } else { %> libraries <% } %> shown,

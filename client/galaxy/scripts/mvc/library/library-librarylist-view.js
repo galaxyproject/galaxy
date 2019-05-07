@@ -228,24 +228,24 @@ var LibraryListView = Backbone.View.extend({
      * Create the new library inline
      */
     createLibraryInline: function() {
-        if (this.$el.find('tr.new-row').length) {
-            this.$el.find('tr.new-row textarea')[0].focus();
+        if (this.$el.find("tr.new-row").length) {
+            this.$el.find("tr.new-row textarea")[0].focus();
         } else {
             const template = this.templateNewRow();
             this.$el.find("#library_list_body").prepend(template);
 
-            this.$el.find('tr.new-row textarea')[0].focus();
+            this.$el.find("tr.new-row textarea")[0].focus();
 
-            this.$el.find('tr.new-row .save_library_btn').click(() => {
+            this.$el.find("tr.new-row .save_library_btn").click(() => {
                 this.createNewLibrary(
-                    this.$el.find('tr.new-row textarea')[0].value,
-                    this.$el.find('tr.new-row textarea')[1].value,
-                    this.$el.find('tr.new-row textarea')[2].value,
+                    this.$el.find("tr.new-row textarea")[0].value,
+                    this.$el.find("tr.new-row textarea")[1].value,
+                    this.$el.find("tr.new-row textarea")[2].value
                 );
             });
 
-            this.$el.find('tr.new-row .cancel_library_btn').click(() => {
-                this.$el.find('tr.new-row').remove();
+            this.$el.find("tr.new-row .cancel_library_btn").click(() => {
+                this.$el.find("tr.new-row").remove();
             });
         }
     },
@@ -263,15 +263,15 @@ var LibraryListView = Backbone.View.extend({
         if (libraryDetails.name !== "") {
             var library = new mod_library_model.Library();
             library.save(libraryDetails, {
-                success: (library) => {
+                success: library => {
                     Galaxy.libraries.libraryListView.collection.add(library);
-                    this.$el.find('tr.new-row').remove();
+                    this.$el.find("tr.new-row").remove();
                     Galaxy.libraries.libraryListView.render();
 
                     $(`tr[data-id="${library.attributes.id}"`)
-                        .addClass('table-success')
-                        .on('mouseover click', function() {
-                            $(this).removeClass('table-success');
+                        .addClass("table-success")
+                        .on("mouseover click", function() {
+                            $(this).removeClass("table-success");
                         });
 
                     Toast.success("Library created.");

@@ -26,7 +26,7 @@ var FolderListView = Backbone.View.extend({
         "click .sort-folder-name": "sortColumnClicked",
         "click .sort-folder-file_ext": "sortColumnClicked",
         "click .sort-folder-description": "sortColumnClicked",
-        "click .sort-folder-state": "sortColumnClicked",
+        "click .sort-folder-state": "sortColumnClicked"
     },
 
     collection: null,
@@ -351,23 +351,23 @@ var FolderListView = Backbone.View.extend({
      * Create the new folder inline
      */
     createFolderInline: function() {
-        if (this.$el.find('tr.new-row').length) {
-            this.$el.find('tr.new-row textarea')[0].focus();
+        if (this.$el.find("tr.new-row").length) {
+            this.$el.find("tr.new-row textarea")[0].focus();
         } else {
             const template = this.templateNewFolder();
             this.$el.find("#first_folder_item").after(template);
 
-            this.$el.find('tr.new-row textarea')[0].focus();
+            this.$el.find("tr.new-row textarea")[0].focus();
 
-            this.$el.find('tr.new-row .save_folder_btn').click(() => {
+            this.$el.find("tr.new-row .save_folder_btn").click(() => {
                 this.createNewFolder(
-                    this.$el.find('tr.new-row textarea')[0].value,
-                    this.$el.find('tr.new-row textarea')[1].value,
+                    this.$el.find("tr.new-row textarea")[0].value,
+                    this.$el.find("tr.new-row textarea")[1].value
                 );
             });
 
-            this.$el.find('tr.new-row .cancel_folder_btn').click(() => {
-                this.$el.find('tr.new-row').remove();
+            this.$el.find("tr.new-row .cancel_folder_btn").click(() => {
+                this.$el.find("tr.new-row").remove();
             });
         }
     },
@@ -393,16 +393,16 @@ var FolderListView = Backbone.View.extend({
             folder.url = folder.urlRoot + current_folder_id;
 
             folder.save(folderDetails, {
-                success: (folder) => {
+                success: folder => {
                     Toast.success("Folder created.");
                     folder.set({ type: "folder" });
-                    this.$el.find('tr.new-row').remove();
+                    this.$el.find("tr.new-row").remove();
                     Galaxy.libraries.folderListView.collection.add(folder);
 
                     $(`tr[data-id="${folder.attributes.id}"`)
-                        .addClass('table-success')
-                        .on('mouseover click', function() {
-                            $(this).removeClass('table-success');
+                        .addClass("table-success")
+                        .on("mouseover click", function() {
+                            $(this).removeClass("table-success");
                         });
                 },
                 error: (model, response) => {
