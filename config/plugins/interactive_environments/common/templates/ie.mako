@@ -15,9 +15,10 @@ var ie_readiness_url = '${ h.url_for("/interactive_environments/ready") }';
 
 <%def name="load_default_js()">
 ${h.css( 'base' ) }
-${h.js( 'libs/jquery/jquery',
-        'libs/toastr',
-        'libs/require')}
+${h.js('libs/require',
+       'bundled/libs.chunk',
+       'bundled/base.chunk',
+       'bundled/generic.bundled')}
 </%def>
 
 <%def name="plugin_require_config()">
