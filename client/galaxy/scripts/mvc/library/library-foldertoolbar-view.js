@@ -86,7 +86,8 @@ var FolderToolbarView = Backbone.View.extend({
             is_admin: false,
             is_anonym: true,
             multiple_add_dataset_options: false,
-            Galaxy: Galaxy
+            Galaxy: Galaxy,
+            folder_page_size: Galaxy.libraries.preferences.get("folder_page_size")
         };
         if (Galaxy.user) {
             template_defaults.is_admin = Galaxy.user.isAdmin();
@@ -110,10 +111,23 @@ var FolderToolbarView = Backbone.View.extend({
         this.options = _.extend(this.options, options);
         const Galaxy = getGalaxyInstance();
         var paginator_template = this.templatePaginator();
+        var paginator_text_template = this.templatePaginatorText();
         $("body")
-            .find(".folder-paginator")
+            .find(".folder-paginator > .paginator")
             .html(
                 paginator_template({
+                    id: this.options.id,
+                    show_page: parseInt(this.options.show_page),
+                    page_count: parseInt(this.options.page_count),
+                    total_items_count: this.options.total_items_count,
+                    items_shown: this.options.items_shown,
+                    folder_page_size: Galaxy.libraries.preferences.get("folder_page_size")
+                })
+            );
+        $("body")
+            .find(".folder-paginator > .paginator-text")
+            .html(
+                paginator_text_template({
                     id: this.options.id,
                     show_page: parseInt(this.options.show_page),
                     page_count: parseInt(this.options.page_count),
@@ -1522,7 +1536,12 @@ var FolderToolbarView = Backbone.View.extend({
                     </div>
                 </div>
                 <div id="folder_items_element" />
-                <div class="d-flex justify-content-center align-items-center folder-paginator mt-2 mb-2" />
+                
+                <div class="d-flex justify-content-center align-items-center folder-paginator mt-2 mb-2">
+                    <ul class="pagination paginator mr-1" />
+                    <input style="width: initial;" min="0" max="999" class="page_size form-control" type="number" value="<%- folder_page_size %>" />
+                    <span class="text-muted ml-1 paginator-text" />
+                </div>
             </div>`
         );
     },
@@ -1845,7 +1864,7 @@ var FolderToolbarView = Backbone.View.extend({
 
     templatePaginator: function() {
         return _.template(
-            `<ul class="pagination mr-1">
+            `
                 <% if ( ( show_page - 1 ) > 0 ) { %>
                     <% if ( ( show_page - 1 ) > page_count ) { %> <!-- we are on higher page than total page count -->
                         <li class="page-item">
@@ -1910,18 +1929,15 @@ var FolderToolbarView = Backbone.View.extend({
                         </a>
                     </li>
                 <% } %>
-            </ul>
-            <span class="mr-1 form-inline">
-                <input min="0" max="999" class="page_size form-control" type="number" value="<%- folder_page_size %>" />
-                <label class="ml-1">items per page,</label>
-            </span>
-            <span class="mr-1">
-                <%- items_shown %> items shown,
-            </span>
-            <span class="mr-1">
-                <%- total_items_count %> total
-            </span>`
+            `
         );
+    },
+
+    templatePaginatorText: function () {
+        return _.template(`<% if ( folder_page_size == 1 ) { %> item <% } else { %> items <% } %> per page,
+            <%- items_shown %>
+            <% if ( items_shown == 1 ) { %> item <% } else { %> items <% } %> shown,
+            <%- total_items_count %> total`);
     },
 
     templateCollectionSelectModal: function() {

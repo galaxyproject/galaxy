@@ -40,7 +40,11 @@ var LibraryToolbarView = Backbone.View.extend({
             is_admin = Galaxy.user.isAdmin();
             is_anonym = Galaxy.user.isAnonymous();
         }
-        this.$el.html(toolbar_template({ admin_user: is_admin, anon_user: is_anonym }));
+        this.$el.html(toolbar_template({
+            admin_user: is_admin,
+            anon_user: is_anonym,
+            library_page_size: Galaxy.libraries.preferences.get("library_page_size")
+        }));
         if (is_admin) {
             this.$el.find("#include_deleted_chk")[0].checked = Galaxy.libraries.preferences.get("with_deleted");
             this.$el.find("#exclude_restricted_chk")[0].checked = Galaxy.libraries.preferences.get(
@@ -56,8 +60,18 @@ var LibraryToolbarView = Backbone.View.extend({
         const Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         var paginator_template = this.templatePaginator();
-        this.$el.find(".library-paginator").html(
+        var paginator_text_template = this.templatePaginatorText();
+        this.$el.find(".library-paginator > .paginator").html(
             paginator_template({
+                show_page: parseInt(this.options.show_page),
+                page_count: parseInt(this.options.page_count),
+                total_libraries_count: this.options.total_libraries_count,
+                libraries_shown: this.options.libraries_shown,
+                library_page_size: Galaxy.libraries.preferences.get("library_page_size")
+            })
+        );
+        this.$el.find(".library-paginator > .paginator-text").html(
+            paginator_text_template({
                 show_page: parseInt(this.options.show_page),
                 page_count: parseInt(this.options.page_count),
                 total_libraries_count: this.options.total_libraries_count,
@@ -175,7 +189,12 @@ var LibraryToolbarView = Backbone.View.extend({
                         </form>
                     </div>
                     <div id="libraries_element" />
-                    <div class="d-flex justify-content-center align-items-center library-paginator mt-2 mb-2" />
+                    
+                    <div class="d-flex justify-content-center align-items-center library-paginator mt-2 mb-2">
+                        <ul class="pagination paginator mr-1" />
+                        <input style="width: initial;" min="0" max="999" class="page_size form-control" type="number" value="<%- library_page_size %>" />
+                        <span class="text-muted ml-1 paginator-text" />
+                    </div>
                 </div>
             </div>`
         );
@@ -184,7 +203,6 @@ var LibraryToolbarView = Backbone.View.extend({
     templatePaginator: function() {
         return _.template(
                 `
-                        <ul class="pagination mr-1">
                         <% if ( ( show_page - 1 ) > 0 ) { %>
                             <% if ( ( show_page - 1 ) > page_count ) { %> <!-- we are on higher page than total page count -->
                                <li class="page-item">
@@ -249,16 +267,14 @@ var LibraryToolbarView = Backbone.View.extend({
                                 </a>
                             </li>
                         <% } %>
-                    </ul>
-                    <input style="width: initial;" min="0" max="999" class="page_size form-control" type="number" value="<%- library_page_size %>" />
-                    <span class="text-muted ml-1">
-                        <% if ( library_page_size == 1 ) { %> item <% } else { %> items <% } %> per page,
-                        <%- libraries_shown %>
-                        <% if ( libraries_shown == 1 ) { %> library <% } else { %> libraries <% } %> shown,
-                        <%- total_libraries_count %> total
-                    </span>
                 `
         );
+    },
+    templatePaginatorText: function () {
+        return _.template(`<% if ( library_page_size == 1 ) { %> item <% } else { %> items <% } %> per page,
+            <%- libraries_shown %>
+            <% if ( libraries_shown == 1 ) { %> library <% } else { %> libraries <% } %> shown,
+            <%- total_libraries_count %> total`);
     }
 });
 
