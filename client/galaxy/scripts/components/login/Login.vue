@@ -24,7 +24,8 @@
                                 <a id="register-toggle" href="#" @click.prevent="toggleLogin">Register here.</a>
                             </span>
                             <span v-else>
-                                Registration for this Galaxy instance is disabled.  Please contact an administrator for assistance.
+                                Registration for this Galaxy instance is disabled. Please contact an administrator for
+                                assistance.
                             </span>
                         </b-card-footer>
                     </b-card>

@@ -194,7 +194,7 @@ class GalaxyInteractorApi(object):
         """
         metadata = attributes.get('metadata', {}).copy()
         for key, value in metadata.copy().items():
-            if key not in ['name', 'info', 'tags']:
+            if key not in ['name', 'info', 'tags', 'created_from_basename']:
                 new_key = "metadata_%s" % key
                 metadata[new_key] = metadata[key]
                 del metadata[key]

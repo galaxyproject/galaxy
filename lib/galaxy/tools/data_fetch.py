@@ -108,6 +108,7 @@ def _fetch_target(upload_config, target):
         dbkey = item.get("dbkey", "?")
         requested_ext = item.get("ext", "auto")
         info = item.get("info", None)
+        created_from_basename = item.get("created_from_basename", None)
         tags = item.get("tags", [])
         object_id = item.get("object_id", None)
         link_data_only = upload_config.link_data_only
@@ -162,6 +163,8 @@ def _fetch_target(upload_config, target):
             rval["object_id"] = object_id
         if tags:
             rval["tags"] = tags
+        if created_from_basename:
+            rval["created_from_basename"] = created_from_basename
         return rval
 
     elements = elements_tree_map(_resolve_src, items)

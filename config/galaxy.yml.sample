@@ -1530,6 +1530,11 @@ galaxy:
   # configuration file.
   #job_config_file: config/job_conf.xml
 
+  # Description of job running configuration, can be embedded into
+  # Galaxy configuration or loaded from an additional file with the
+  # job_config_file option.
+  #job_config: null
+
   # When jobs fail due to job runner problems, Galaxy can be configured
   # to retry these or reroute the jobs to new destinations. Very fine
   # control of this is available with resubmit declarations in

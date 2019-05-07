@@ -226,8 +226,9 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         details = self.dataset_populator.get_job_details(result['jobs'][0]['id'], full=True).json()
 
         assert details['state'] == 'error', details
-        assert details['stdout'] == 'The bool is not true\n', details
-        assert details['stderr'] == 'Fatal error: Exit code 127 (Failing exit code.)\nThe bool is very not true\n'
+        assert details['stdout'].strip() == 'The bool is not true', details
+        assert details['stderr'].strip() == 'The bool is very not true', details
+        assert details['exit_code'] == 127, details
 
     @skip_without_tool('Count1')
     def test_python_dep(self):

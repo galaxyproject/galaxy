@@ -73,7 +73,9 @@ export class TagService {
     async delete(rawTag) {
         const { id, itemClass, context } = this;
         const tag = createTag(rawTag);
-        const url = `/tag/remove_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&tag_name=${tag.text}`;
+        const url = `/tag/remove_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&tag_name=${
+            tag.text
+        }`;
         const response = await axios.get(url);
         if (response.status !== 200) {
             throw new Error(`Unable to delete tag: ${tag}`);

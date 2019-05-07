@@ -323,22 +323,18 @@ export var DatasetListItemView = _super.extend(
             )}">
                         <span class="fa fa-floppy-o"></span>
                     </a>
-                    <ul class="dropdown-menu" role="menu">
-                        <li>
-                            <a href="${urls.download}">
-                                ${_l("Download dataset")}
-                            </a>
-                        </li>
+                    <div class="dropdown-menu" role="menu">
+                        <a class="dropdown-item" href="${urls.download}">
+                            ${_l("Download dataset")}
+                        </a>
                         ${_.map(
                             this.model.get("meta_files"),
                             meta_file =>
-                                `<li>
-                                    <a href="${urls.meta_download + meta_file.file_type}">
-                                        ${_l("Download")} ${meta_file.file_type}
-                                    </a>
-                                </li>`
+                                `<a class="dropdown-item" href="${urls.meta_download + meta_file.file_type}">
+                                    ${_l("Download")} ${meta_file.file_type}
+                                </a>`
                         )}
-                    </ul>
+                    </div>
                 </div>`);
         },
 
