@@ -32,6 +32,7 @@ export { default as HDAModel } from "mvc/history/hda-model";
 export { default as LegacyGridView } from "legacy/grid/grid-view";
 export { create_chart, create_histogram } from "reports/run_stats";
 export { default as ToolshedGroups } from "toolshed/toolshed.groups";
+export { default as IES } from "galaxy.interactive_environments";
 
 export function adminToolshed(options) {
     new AdminToolshed.GalaxyApp(options);
