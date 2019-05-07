@@ -1,9 +1,6 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import _l from "utils/localization";
-import { Toast } from "ui/toast";
-import mod_library_model from "mvc/library/library-model";
 import { getGalaxyInstance } from "app";
 
 /**
