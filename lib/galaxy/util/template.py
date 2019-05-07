@@ -1,17 +1,22 @@
 """Entry point for the usage of Cheetah templating within Galaxy."""
 from __future__ import absolute_import
 
-import subprocess
 import sys
-import tempfile
 import traceback
+from lib2to3.refactor import RefactoringTool
 
 import packaging.version
 from Cheetah.Compiler import Compiler
 from Cheetah.NameMapper import NotFound
 from Cheetah.Template import Template
+from past.translation import myfixes
 
 from . import unicodify
+
+# Skip libpasteurize fixers, which make sure code is py2 and py3 compatible.
+# This is not needed, we only translate code on py3.
+myfixes = [f for f in myfixes if not f.startswith('libpasteurize')]
+refactoring_tool = RefactoringTool(myfixes, {'print_function': True})
 
 
 class FixedModuleCodeCompiler(Compiler):
@@ -106,11 +111,7 @@ def fill_template(template_text,
 
 
 def futurize_preprocessor(source):
-    with tempfile.NamedTemporaryFile(mode='w') as module_out:
-        module_out.write(source)
-        module_out.flush()
-        subprocess.check_call(['futurize', '-w', module_out.name])
-        with open(module_out.name) as fixed_module:
-            source = fixed_module.read()
-            source = source.replace('from Cheetah.compat import str', 'from Cheetah.compat import unicode')
+    source = str(refactoring_tool.refactor_string(source, name='auto_translate_cheetah'))
+    # libfuturize.fixes.fix_unicode_keep_u' breaks from Cheetah.compat import unicode
+    source = source.replace('from Cheetah.compat import str', 'from Cheetah.compat import unicode')
     return source
