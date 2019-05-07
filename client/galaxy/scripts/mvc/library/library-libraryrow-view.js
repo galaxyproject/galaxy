@@ -280,7 +280,7 @@ var LibraryRowView = Backbone.View.extend({
                 <td class="right-center">
                     <% if( (library.get("public")) && (library.get("deleted") === false) ) { %>
                         <span data-toggle="tooltip" data-placement="left" title="Unrestricted library"
-                            style="color:grey;" class="fa fa-globe fa-lg"></span>
+                            class="fa fa-globe fa-lg"></span>
                     <% }%>
                     <button data-toggle="tooltip" data-placement="left" title="Modify '<%- library.get("name") %>'"
                         class="btn btn-secondary btn-sm edit_library_btn" type="button"
