@@ -1459,7 +1459,7 @@ var FolderToolbarView = Backbone.View.extend({
                                 <div title="Add datasets to current folder"
                                     class="dropdown add-library-items add-library-items-datasets mr-1" style="display:none;">
                                     <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
-                                        <span class="fa fa-file"/> Add Datasets <span class="caret"/>
+                                        <span class="fa fa-plus"></span> Datasets <span class="caret"/>
                                     </button>
                                 <div class="dropdown-menu">
                                     <a class="dropdown-item" href="#folders/<%= id %>/import/history"> from History</a>
