@@ -442,7 +442,8 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                 data: JSON.stringify({
                     content: id,
                     source: contentType,
-                    type: type
+                    type: type,
+                    copy_elements: true
                 })
             })
             .done(response => {

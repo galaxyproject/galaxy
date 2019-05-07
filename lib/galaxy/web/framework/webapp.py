@@ -650,24 +650,27 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         Associate the user's last accessed history (if exists) with their new session
         """
         history = None
+        set_permissions = False
         try:
             users_last_session = user.galaxy_sessions[0]
-            last_accessed = True
         except Exception:
             users_last_session = None
-            last_accessed = False
         if (prev_galaxy_session and
                 prev_galaxy_session.current_history and not
                 prev_galaxy_session.current_history.deleted and
-                prev_galaxy_session.current_history.datasets):
-            if prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user:
-                # If the previous galaxy session had a history, associate it with the new
-                # session, but only if it didn't belong to a different user.
-                history = prev_galaxy_session.current_history
-                if prev_galaxy_session.user is None:
-                    # Increase the user's disk usage by the amount of the previous history's datasets if they didn't already own it.
-                    for hda in history.datasets:
-                        user.adjust_total_disk_usage(hda.quota_amount(user))
+                prev_galaxy_session.current_history.datasets and
+                (prev_galaxy_session.current_history.user is None or
+                 prev_galaxy_session.current_history.user == user)):
+            # If the previous galaxy session had a history, associate it with the new session, but only if it didn't
+            # belong to a different user.
+            history = prev_galaxy_session.current_history
+            if prev_galaxy_session.user is None:
+                # Increase the user's disk usage by the amount of the previous history's datasets if they didn't already
+                # own it.
+                for hda in history.datasets:
+                    user.adjust_total_disk_usage(hda.quota_amount(user))
+                # Only set default history permissions if the history is from the previous session and anonymous
+                set_permissions = True
         elif self.galaxy_session.current_history:
             history = self.galaxy_session.current_history
         if (not history and users_last_session and
@@ -681,8 +684,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         if history.user is None:
             history.user = user
         self.galaxy_session.current_history = history
-        if not last_accessed:
-            # Only set default history permissions if current history is not from a previous session
+        if set_permissions:
             self.app.security_agent.history_set_default_permissions(history, dataset=True, bypass_manage_permission=True)
         self.sa_session.add_all((prev_galaxy_session, self.galaxy_session, history))
 

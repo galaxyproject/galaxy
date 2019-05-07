@@ -95,7 +95,7 @@ class ConfiguresHandlers(object):
                 self._parse_handler(handler_id, process)
                 self.add_handler(handler_id, process.get("tags") or [self.DEFAULT_HANDLER_TAG])
 
-        self.default_handler_id = self._ensure_default_set(handling_config_dict.get("default"), self.handlers.keys())
+        self.default_handler_id = self._ensure_default_set(handling_config_dict.get("default"), list(self.handlers.keys()), required=False)
 
     def _init_handler_assignment_methods(self, handling_config_dict=None):
         handling_config_dict = handling_config_dict or {}
@@ -162,7 +162,7 @@ class ConfiguresHandlers(object):
             rval = config.config_dict.get(config_val, rval)
         return rval
 
-    def _get_default(self, config, parent, names, auto=False):
+    def _get_default(self, config, parent, names, auto=False, required=True):
         """
         Returns the default attribute set in a parent tag like <handlers> or
         <destinations>, or return the ID of the child, if there is no explicit
@@ -174,21 +174,25 @@ class ConfiguresHandlers(object):
         :type names: list of str
         :param auto: Automatically set a default if there is no default in the parent tag and there is only one child.
         :type auto: bool
+        :param required: Require a default to be set or determined automatically, else raise Exception
+        :type required: bool
 
         :returns: str -- id or tag representing the default.
         """
         rval = ConfiguresHandlers.get_xml_default(config, parent)
-        return self._ensure_default_set(rval, names, auto=auto)
+        return self._ensure_default_set(rval, names, auto=auto, required=required)
 
-    def _ensure_default_set(self, rval, names, auto=False):
+    def _ensure_default_set(self, rval, names, auto=False, required=True):
         if rval is not None:
             # If the parent element has a 'default' attribute, use the id or tag in that attribute
-            if self.deterministic_handler_assignment and rval not in names:
+            if required and rval not in names:
                 raise Exception("default attribute '%s' does not match a defined id or tag in a child element" % (rval))
             log.debug("default set to child with id or tag '%s'" % (rval))
         elif auto and len(names) == 1:
             log.info("Setting default to child with id '%s'" % (names[0]))
             rval = names[0]
+        elif required:
+            raise Exception("No default specified, please specify a valid id or tag with the 'default' attribute")
         return rval
 
     @staticmethod
@@ -223,7 +227,7 @@ class ConfiguresHandlers(object):
 
     @property
     def deterministic_handler_assignment(self):
-        return self.handler_assignment_methods and all(
+        return self.handler_assignment_methods and any(
             filter(lambda x: x in (
                 HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE,
                 HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN,
