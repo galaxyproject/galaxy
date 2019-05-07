@@ -17,9 +17,9 @@ class LibraryLandingTestCase(SeleniumTestCase):
     def test_create_new_close(self):
         num_displayed_libraries = self._num_displayed_libraries()
         self.libraries_index_click_create_new()
-        self.wait_for_selector_visible(".ui-modal")
+        self.wait_for_selector_visible(".new-row")
         self.screenshot("libraries_new")
-        close_button = self.wait_for_selector_clickable("#button-1")
+        close_button = self.wait_for_selector_clickable(".cancel_library_btn")
         close_button.click()
         self.wait_for_overlays_cleared()
         assert self._num_displayed_libraries() == num_displayed_libraries
