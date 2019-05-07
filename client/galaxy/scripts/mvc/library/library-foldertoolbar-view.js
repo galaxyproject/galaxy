@@ -158,74 +158,6 @@ var FolderToolbarView = Backbone.View.extend({
         Galaxy.libraries.folderListView.createFolderInline();
     },
 
-    createFolderFromModal: function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        const Galaxy = getGalaxyInstance();
-        var template = this.templateNewFolderInModal();
-        this.modal = Galaxy.modal;
-        this.modal.show({
-            closing_events: true,
-            title: _l("Create New Folder"),
-            body: template(),
-            buttons: {
-                Create: () => {
-                    this.createNewFolderEvent();
-                },
-                Close: () => {
-                    Galaxy.modal.hide();
-                }
-            }
-        });
-    },
-
-    createNewFolderEvent: function() {
-        const Galaxy = getGalaxyInstance();
-        var folderDetails = this.serializeNewFolder();
-        if (this.validateNewFolder(folderDetails)) {
-            var folder = new mod_library_model.FolderAsModel();
-            var url_items = Backbone.history.fragment.split("/");
-            var current_folder_id;
-            if (url_items.indexOf("page") > -1) {
-                current_folder_id = url_items[url_items.length - 3];
-            } else {
-                current_folder_id = url_items[url_items.length - 1];
-            }
-            folder.url = folder.urlRoot + current_folder_id;
-
-            folder.save(folderDetails, {
-                success: function(folder) {
-                    Galaxy.modal.hide();
-                    Toast.success("Folder created.");
-                    folder.set({ type: "folder" });
-                    Galaxy.libraries.folderListView.collection.add(folder);
-                },
-                error: function(model, response) {
-                    Galaxy.modal.hide();
-                    if (typeof response.responseJSON !== "undefined") {
-                        Toast.error(response.responseJSON.err_msg);
-                    } else {
-                        Toast.error("An error occurred.");
-                    }
-                }
-            });
-        } else {
-            Toast.error("Folder's name is missing.");
-        }
-        return false;
-    },
-
-    serializeNewFolder: function() {
-        return {
-            name: $("input[name='Name']").val(),
-            description: $("input[name='Description']").val()
-        };
-    },
-
-    validateNewFolder: function(folderDetails) {
-        return folderDetails.name !== "";
-    },
-
     importToHistoryModal: function(e) {
         e.preventDefault();
         const Galaxy = getGalaxyInstance();
@@ -1658,17 +1590,6 @@ var FolderToolbarView = Backbone.View.extend({
                         </tr>
                     </tbody>
                 </table>
-            </div>`
-        );
-    },
-
-    templateNewFolderInModal: function() {
-        return _.template(
-            `<div id="new_folder_modal">
-                <form>
-                    <input type="text" name="Name" value="" placeholder="Name" autofocus>
-                    <input type="text" name="Description" value="" placeholder="Description">
-                </form>
             </div>`
         );
     },

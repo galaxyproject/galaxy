@@ -18,7 +18,7 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     events: {
-        "click #create_new_library_btn": "createLibraryFromModal",
+        "click #create_new_library_btn": "createLibraryInline",
         "click #include_deleted_chk": "includeDeletedChecked",
         "click #exclude_restricted_chk": "excludeRestrictedChecked",
         "click .page_size_prompt": "showPageSizePrompt",
@@ -68,60 +68,11 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     /**
-     * User clicked on 'New library' button. Show modal to
-     * satisfy the wish.
+     * Crreate the new library inline
      */
-    createLibraryFromModal: function(event) {
-        event.preventDefault();
-        event.stopPropagation();
+    createLibraryInline: function() {
         const Galaxy = getGalaxyInstance();
         Galaxy.libraries.libraryListView.createLibraryInline();
-        // var self = this;
-        // this.modal = Galaxy.modal;
-        // this.modal.show({
-        //     closing_events: true,
-        //     title: _l("Create New Library"),
-        //     body: this.templateNewLibraryInModal(),
-        //     buttons: {
-        //         Create: function() {
-        //             self.createNewLibrary();
-        //         },
-        //         Close: function() {
-        //             self.modal.hide();
-        //         }
-        //     }
-        // });
-    },
-
-    /**
-     * Create the new library using the API asynchronously.
-     */
-    createNewLibrary: function() {
-        const Galaxy = getGalaxyInstance();
-        var libraryDetails = this.serializeNewLibrary();
-        if (this.validateNewLibrary(libraryDetails)) {
-            var library = new mod_library_model.Library();
-            var self = this;
-            library.save(libraryDetails, {
-                success: function(library) {
-                    Galaxy.libraries.libraryListView.collection.add(library);
-                    self.modal.hide();
-                    self.clearLibraryModal();
-                    Galaxy.libraries.libraryListView.render();
-                    Toast.success("Library created.");
-                },
-                error: function(model, response) {
-                    if (typeof response.responseJSON !== "undefined") {
-                        Toast.error(response.responseJSON.err_msg);
-                    } else {
-                        Toast.error("An error occurred.");
-                    }
-                }
-            });
-        } else {
-            Toast.error("Library's name is missing.");
-        }
-        return false;
     },
 
     /**
@@ -152,33 +103,6 @@ var LibraryToolbarView = Backbone.View.extend({
             library_page_size: parseInt(e.target.value)
         });
         Galaxy.libraries.libraryListView.render({ show_page: 1 });
-    },
-
-    /**
-     * Clear the library modal once it is saved.
-     */
-    clearLibraryModal: function() {
-        $("input[name='Name']").val("");
-        $("input[name='Description']").val("");
-        $("input[name='Synopsis']").val("");
-    },
-
-    /**
-     * Prepare new library variables to be submitted to API.
-     */
-    serializeNewLibrary: function() {
-        return {
-            name: $("input[name='Name']").val(),
-            description: $("input[name='Description']").val(),
-            synopsis: $("input[name='Synopsis']").val()
-        };
-    },
-
-    /**
-     * Check whether entered values are valid.
-     */
-    validateNewLibrary: function(libraryDetails) {
-        return libraryDetails.name !== "";
     },
 
     /**
@@ -333,27 +257,6 @@ var LibraryToolbarView = Backbone.View.extend({
                 <span class="mr-1">
                     <%- total_libraries_count %> total
                 </span>`
-        );
-    },
-
-    templateNewLibraryInModal: function() {
-        return _.template(
-            `<div id="new_library_modal">
-                <form>
-                    <div class="form-group">
-                        <label>Name</label>
-                        <input type="text" class="form-control" name="Name" value="" placeholder="Name" autofocus>
-                    </div>
-                    <div class="form-group">
-                        <label>Description</label>
-                        <input type="text" class="form-control" name="Description" value="" placeholder="Description">
-                    </div>
-                    <div class="form-group">
-                        <label>Synopsis</label>
-                        <input type="text" class="form-control" name="Synopsis" value="" placeholder="Synopsis">
-                    </div>
-                </form>
-            </div>`
         );
     }
 });
