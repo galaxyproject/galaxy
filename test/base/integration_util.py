@@ -62,6 +62,10 @@ class IntegrationInstance(UsesApiTestCaseMixin):
         cls._test_driver.tear_down()
         cls._app_available = False
 
+    def tearDown(self):
+        for job in self.galaxy_interactor.get('jobs?state=running&?user_details=true').json():
+            self._delete("jobs/%s" % job['id'])
+
     def setUp(self):
         self.test_data_resolver = TestDataResolver()
         self._configure_interactor()
