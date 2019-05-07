@@ -230,8 +230,9 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
 
     def __init_handlers(self, config_element=None):
         assert not self.__handlers_configured
-        self._init_handler_assignment_methods(config_element)
-        self._init_handlers(config_element)
+        handling_config_dict = ConfiguresHandlers.xml_to_dict(self.app.config, config_element)
+        self._init_handler_assignment_methods(handling_config_dict)
+        self._init_handlers(handling_config_dict)
         if not self.handler_assignment_methods_configured:
             self._set_default_handler_assignment_methods()
         else:

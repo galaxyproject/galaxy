@@ -12,6 +12,7 @@ from time import sleep
 
 import packaging.version
 import pulsar.core
+import six
 import yaml
 from pulsar.client import (
     build_client_manager,
@@ -449,7 +450,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         user = job_wrapper.get_job().user
         if user:
             for key, value in params.items():
-                if value:
+                if value and isinstance(value, six.string_types):
                     params[key] = model.User.expand_user_properties(user, value)
 
         env = getattr(job_wrapper.job_destination, "env", [])
