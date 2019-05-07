@@ -38,8 +38,8 @@
     ${ ie.plugin_require_config() }
 
 
-    requirejs(['galaxy.interactive_environments', 'plugin/hicbrowser'], function (IES) {
-        window.IES = IES;
+    requirejs(['plugin/hicbrowser'], function () {
+        window.IES = bundleEntries.IES;
         load_hicexplorer(url);
     });
 

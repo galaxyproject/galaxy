@@ -26,8 +26,8 @@ var url = '${ url }';
 ${ ie.plugin_require_config() }
 
 // Keep container running and load IE
-requirejs(['galaxy.interactive_environments', 'plugin/ethercalc'], function(IES){
-    window.IES = IES;
+requirejs(['plugin/ethercalc'], function(){
+    window.IES = bundleEntries.IES;
     IES.keepAlive(url);
     IES.load_when_ready(ie_readiness_url, function(){
         load_notebook(url);

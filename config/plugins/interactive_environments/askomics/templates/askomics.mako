@@ -40,8 +40,8 @@ ${ ie.load_default_js() }
 ${ ie.default_javascript_variables() }
 var url = '${ url }';
 ${ ie.plugin_require_config() }
-requirejs(['galaxy.interactive_environments', 'plugin/askomics'], function(IES){
-    window.IES = IES;
+requirejs(['plugin/askomics'], function(){
+    window.IES = bundleEntries.IES;
     load_askomics(url);
 });
 </script>
