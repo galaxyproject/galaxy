@@ -444,3 +444,208 @@ steps:
       input1: input1
       queries_0|input2: input1
 """
+
+WORKFLOW_WITH_CUSTOM_REPORT_1 = """
+class: GalaxyWorkflow
+name: My Cool Workflow
+inputs:
+  input_1: data
+  image_input: data
+  input_list: collection
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+  output_image:
+    outputSource: image_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+  image_cat:
+    tool_id: cat
+    in:
+      input1: image_input
+  qc_step:
+    tool_id: qc_stdout
+    state:
+      quality: 9
+    in:
+      input: input_1
+report:
+  sections:
+    - type: free_markdown
+      content: |
+        The next three sections (inputs, outputs, and workflow) are auto generated sections
+        of the 'core' invocation report generator plugin. That plugin automatically
+        produces Galaxy Workflow Flavored Markdown from an invocation run.
+
+        This section and the last one are custom markdown (``free_markdown``) sections. The
+        auto-generated sections could easily hand-crafted from free markdown also - the auto
+        generated sections are for convenience and for supplying a default report for workflows
+        that don't define one.
+
+        As you'll see below in the last section, "Galaxy Workflow Flavored Markdown" is an
+        extension to markdown that allow referencing and embedding Galaxy objects. In particular
+        "Galaxy Workflow Flavored Markdown" contains workflow-relative references. The report generator
+        plugin translates this to "Galaxy Flavored Markdown" where the references are stored
+        by actual object ids.
+
+        The upshot of translating this to a neutral format that has no
+        concept of the workflow invocation is that client side rendering (and much of the backend
+        processing) is completely general and not tied to workflows or workflow invocations.
+        The same markdown component could potentially be used to render pages, history annotations,
+        libraries, etc..
+    - type: inputs
+    - type: outputs
+    - type: workflow
+    - type: free_markdown
+      title: Custom Section Example
+      content: |
+        This is a my **custom** content, I defined this section with free Markdown.
+
+        If I want to reference an output and embed, I can do it as follows:
+
+        ```
+        ::: history_dataset_display output=output_1
+        :::
+        ```
+
+        ::: history_dataset_display output=output_1
+        :::
+
+        If I want to reference an input, I can do that *also* as follows:
+
+        ```
+        ::: history_dataset_display input=input_1
+        :::
+        ```
+
+        ::: history_dataset_display input=input_1
+        :::
+
+        I can embed an output (or input) directly into the report as an image as follows:
+
+        ```
+        ::: history_dataset_as_image output=output_image
+        :::
+        ```
+
+        ::: history_dataset_as_image output=output_image
+        :::
+
+        ---
+
+        I can also embed just a dataset peek:
+
+        ```
+        ::: history_dataset_peek output=output_1
+        :::
+        ```
+
+        ::: history_dataset_peek output=output_1
+        :::
+
+        ---
+
+        Or a dataset "info" content:
+
+        ```
+        ::: history_dataset_info input=input_1
+        :::
+        ```
+
+        ::: history_dataset_info input=input_1
+        :::
+
+        ---
+
+        Collections can also be displayed:
+
+        ```
+        ::: history_dataset_collection_display input=input_list
+        :::
+        ```
+
+        ::: history_dataset_collection_display input=input_list
+        :::
+
+        ---
+
+        I can actually embed the whole workflow, which looks like this:
+
+        ```
+        ::: workflow_display
+        :::
+        ```
+
+        ::: workflow_display
+        :::
+
+        ---
+
+        Job parameters can be summarized:
+
+        ```
+        ::: job_parameters step=qc_step
+        :::
+        ```
+
+        ::: job_parameters step=qc_step
+        :::
+
+        ---
+
+        Job metrics can be summarized as well:
+
+        ```
+        ::: job_metrics step=image_cat
+        :::
+        ```
+
+        ::: job_metrics step=image_cat
+        :::
+
+        ---
+
+        Tool standard out and error are also available for steps.
+
+        ```
+        ::: tool_stdout step=qc_step
+        :::
+        ```
+
+        ::: tool_stdout step=qc_step
+        :::
+
+        ```
+        ::: tool_stderr step=qc_step
+        :::
+        ```
+
+        ::: tool_stderr step=qc_step
+        :::
+
+        ---
+
+        There is some content down here. *fin*
+
+"""
+
+WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA = """
+input_1:
+  value: 1.bed
+  type: File
+  name: my bed file
+image_input:
+  value: 454Score.png
+  type: File
+  file_type: png
+  name: my input image
+input_list:
+  type: list
+  elements:
+    - identifier: i1
+      content: "0"
+  name: example list
+"""

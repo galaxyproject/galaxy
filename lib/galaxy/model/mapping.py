@@ -958,6 +958,7 @@ model.Workflow.table = Table(
     Column("name", TEXT),
     Column("has_cycles", Boolean),
     Column("has_errors", Boolean),
+    Column("reports_config", JSONType),
     Column("uuid", UUIDType, nullable=True))
 
 model.WorkflowStep.table = Table(

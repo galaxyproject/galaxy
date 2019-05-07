@@ -308,7 +308,7 @@
     </datatype>
     <datatype extension="obo" type="galaxy.datatypes.text:Obo" mimetype="text/html" display_in_upload="true"/>
     <datatype extension="owl" type="galaxy.datatypes.xml:Owl" mimetype="text/html" display_in_upload="true"/>
-    <datatype extension="png" type="galaxy.datatypes.images:Png" mimetype="image/png"/>
+    <datatype extension="png" type="galaxy.datatypes.images:Png" mimetype="image/png" display_in_upload="true"/>
     <datatype extension="qual" type="galaxy.datatypes.qualityscore:QualityScore"/>
     <datatype extension="qualsolexa" type="galaxy.datatypes.qualityscore:QualityScoreSolexa" display_in_upload="true"/>
     <datatype extension="qualillumina" type="galaxy.datatypes.qualityscore:QualityScoreIllumina" display_in_upload="true"/>

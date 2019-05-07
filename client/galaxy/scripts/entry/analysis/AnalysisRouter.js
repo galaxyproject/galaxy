@@ -27,6 +27,7 @@ import Workflows from "mvc/workflow/workflow";
 import WorkflowImport from "components/WorkflowImport.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryView from "components/HistoryView.vue";
+import WorkflowInvocationReport from "components/WorkflowInvocationReport.vue";
 import HistoryList from "mvc/history/history-list";
 import PluginList from "components/PluginList.vue";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
@@ -61,6 +62,7 @@ export const getAnalysisRouter = Galaxy =>
             "(/)workflows/import": "show_workflows_import",
             "(/)workflows/run(/)": "show_workflows_run",
             "(/)workflows(/)list": "show_workflows",
+            "(/)workflows/invocations/report": "show_workflow_invocation_report",
             "(/)workflows/list_published(/)": "show_workflows_published",
             "(/)workflows/create(/)": "show_workflows_create",
             "(/)histories(/)citations(/)": "show_history_citations",
@@ -169,6 +171,14 @@ export const getAnalysisRouter = Galaxy =>
             var vm = document.createElement("div");
             this.page.display(vm);
             new historyInstance({ propsData: { id: QueryStringParsing.get("id") } }).$mount(vm);
+        },
+
+        show_workflow_invocation_report: function() {
+            const invocationId = QueryStringParsing.get("id");
+            var reportInstance = Vue.extend(WorkflowInvocationReport);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new reportInstance({ propsData: { invocationId: invocationId } }).$mount(vm);
         },
 
         show_history_structure: function() {

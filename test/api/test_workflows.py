@@ -23,6 +23,8 @@ from base.workflow_fixtures import (  # noqa: I100
     WORKFLOW_ONE_STEP_DEFAULT,
     WORKFLOW_RENAME_ON_INPUT,
     WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
+    WORKFLOW_WITH_CUSTOM_REPORT_1,
+    WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
@@ -1219,6 +1221,59 @@ test_data:
             assert nested_collection['element_count'] == 1
             assert nested_collection['elements'][0]['object']['populated']
             assert nested_collection['elements'][0]['object']['element_count'] == 2
+
+    @skip_without_tool("cat")
+    def test_workflow_invocation_report_1(self):
+        test_data = """
+input_1:
+  value: 1.bed
+  type: File
+"""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_jobs(r"""
+class: GalaxyWorkflow
+inputs:
+  input_1: data
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+""", test_data=test_data, history_id=history_id)
+            workflow_id = summary.workflow_id
+            invocation_id = summary.invocation_id
+            report_json = self.workflow_populator.workflow_report_json(workflow_id, invocation_id)
+            assert "markdown" in report_json
+            self._assert_has_keys(report_json , "markdown", "render_format")
+            assert report_json["render_format"] == "markdown"
+            markdown_content = report_json["markdown"]
+            assert "## Workflow Outputs" in markdown_content
+            assert "## Workflow Inputs" in markdown_content
+            assert "Custom Section Example" not in markdown_content
+
+    @skip_without_tool("cat")
+    def test_workflow_invocation_report_custom(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_jobs(
+                WORKFLOW_WITH_CUSTOM_REPORT_1,
+                test_data=WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
+                history_id=history_id
+            )
+            workflow_id = summary.workflow_id
+            invocation_id = summary.invocation_id
+            report_json = self.workflow_populator.workflow_report_json(workflow_id, invocation_id)
+            print(report_json)
+            assert "markdown" in report_json
+            self._assert_has_keys(report_json , "markdown", "render_format")
+            assert report_json["render_format"] == "markdown"
+            markdown_content = report_json["markdown"]
+            assert "## Workflow Outputs" in markdown_content
+            assert "\n::: history_dataset_display history_dataset_id=" in markdown_content
+            assert "## Workflow Inputs" in markdown_content
+            assert "## Custom Section Example" in markdown_content
 
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):

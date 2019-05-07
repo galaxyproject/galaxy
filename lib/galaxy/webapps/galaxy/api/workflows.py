@@ -38,6 +38,7 @@ from galaxy.web.base.controller import (
 )
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
+from galaxy.workflow.reports import generate_report_json
 from galaxy.workflow.run import invoke, queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
 from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -867,6 +868,21 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.cancel_invocation(trans, decoded_workflow_invocation_id)
         return self.__encode_invocation(workflow_invocation, **kwd)
+
+    @expose_api
+    def show_invocation_report(self, trans, workflow_id, invocation_id, **kwd):
+        """
+        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/report
+
+        Get JSON summarizing invocation for reporting.
+        """
+        decoded_workflow_invocation_id = self.decode_id(invocation_id)
+        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
+        generator_plugin_type = kwd.get("generator_plugin_type")
+        runtime_report_config_json = kwd.get("runtime_report_config_json")
+        return generate_report_json(
+            trans, workflow_invocation, runtime_report_config_json=runtime_report_config_json, plugin_type=generator_plugin_type
+        )
 
     @expose_api
     def invocation_step(self, trans, workflow_id, invocation_id, step_id, **kwd):
