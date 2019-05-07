@@ -46,7 +46,7 @@ log = logging.getLogger(__name__)
 # that import Galaxy internals - but it shouldn't be used in Galaxy's code
 # itself.
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
-TOOL_PROVIDED_JOB_METADATA_KEYS = ['name', 'info', 'dbkey']
+TOOL_PROVIDED_JOB_METADATA_KEYS = ['name', 'info', 'dbkey', 'created_from_basename']
 
 # Override with config.default_job_shell.
 DEFAULT_JOB_SHELL = '/bin/bash'
