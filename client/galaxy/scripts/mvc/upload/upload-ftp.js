@@ -15,7 +15,7 @@ export default Backbone.View.extend({
             class_remove: "upload-icon-button fa fa-check-square-o",
             class_partial: "upload-icon-button fa fa-minus-square-o",
             help_enabled: true,
-            oidc_text: `<br/>If you are signed-in to Galaxy using a third-party identity and you <strong>do not have a Galaxy password</strong> please use the reset password link in the login form to create a password for your account.`,
+            oidc_text: `<br/>If you are signed-in to Galaxy using a third-party identity and you <strong>do not have a Galaxy password</strong> please use the reset password option in the login form with your email to create a password for your account.`,
             help_text: `This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>${
                 options.ftp_upload_site
             }</strong> using your Galaxy credentials.
