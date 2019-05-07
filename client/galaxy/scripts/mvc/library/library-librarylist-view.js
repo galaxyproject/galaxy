@@ -228,22 +228,26 @@ var LibraryListView = Backbone.View.extend({
      * Create the new library inline
      */
     createLibraryInline: function() {
-        var template = this.templateNewRow();
-        this.$el.find("#library_list_body").prepend(template);
+        if (this.$el.find('tr.new-row').length) {
+            this.$el.find('tr.new-row textarea')[0].focus();
+        } else {
+            const template = this.templateNewRow();
+            this.$el.find("#library_list_body").prepend(template);
 
-        this.$el.find('tr.new-row textarea')[0].focus();
+            this.$el.find('tr.new-row textarea')[0].focus();
 
-        this.$el.find('tr.new-row .save_library_btn').click(() => {
-            this.createNewLibrary(
-                this.$el.find('tr.new-row textarea')[0].value,
-                this.$el.find('tr.new-row textarea')[1].value,
-                this.$el.find('tr.new-row textarea')[2].value,
-            );
-        });
+            this.$el.find('tr.new-row .save_library_btn').click(() => {
+                this.createNewLibrary(
+                    this.$el.find('tr.new-row textarea')[0].value,
+                    this.$el.find('tr.new-row textarea')[1].value,
+                    this.$el.find('tr.new-row textarea')[2].value,
+                );
+            });
 
-        this.$el.find('tr.new-row .cancel_library_btn').click(() => {
-            this.$el.find('tr.new-row').remove();
-        });
+            this.$el.find('tr.new-row .cancel_library_btn').click(() => {
+                this.$el.find('tr.new-row').remove();
+            });
+        }
     },
 
     /**

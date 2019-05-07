@@ -351,21 +351,25 @@ var FolderListView = Backbone.View.extend({
      * Create the new folder inline
      */
     createFolderInline: function() {
-        var template = this.templateNewFolder();
-        this.$el.find("#first_folder_item").after(template);
+        if (this.$el.find('tr.new-row').length) {
+            this.$el.find('tr.new-row textarea')[0].focus();
+        } else {
+            const template = this.templateNewFolder();
+            this.$el.find("#first_folder_item").after(template);
 
-        this.$el.find('tr.new-row textarea')[0].focus();
+            this.$el.find('tr.new-row textarea')[0].focus();
 
-        this.$el.find('tr.new-row .save_folder_btn').click(() => {
-            this.createNewFolder(
-                this.$el.find('tr.new-row textarea')[0].value,
-                this.$el.find('tr.new-row textarea')[1].value,
-            );
-        });
+            this.$el.find('tr.new-row .save_folder_btn').click(() => {
+                this.createNewFolder(
+                    this.$el.find('tr.new-row textarea')[0].value,
+                    this.$el.find('tr.new-row textarea')[1].value,
+                );
+            });
 
-        this.$el.find('tr.new-row .cancel_folder_btn').click(() => {
-            this.$el.find('tr.new-row').remove();
-        });
+            this.$el.find('tr.new-row .cancel_folder_btn').click(() => {
+                this.$el.find('tr.new-row').remove();
+            });
+        }
     },
 
     /**
