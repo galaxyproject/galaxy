@@ -3,7 +3,7 @@
   <edam_operations>
     <edam_operation>operation_3434</edam_operation>
   </edam_operations>
-  <command interpreter="python">bed_to_gff_converter.py $input $out_file1</command>
+  <command>python '$__tool_directory__/bed_to_gff_converter.py' '$input' '$out_file1'</command>
   <inputs>
     <param format="bed" name="input" type="data" label="Convert this dataset"/>
   </inputs>
@@ -13,7 +13,12 @@
   <tests>
     <test>
       <param name="input" value="9.bed"/>
-      <output name="out_file1" file="bed2gff_out.gff"/>
+      <output name="out_file1">
+          <assert_contents>
+              <has_line line="chr28&#009;bed2gff&#009;mRNA&#009;346188&#009;388197&#009;0&#009;+&#009;.&#009;mRNA BC114771;"/>
+              <has_line line="chr28&#009;bed2gff&#009;exon&#009;388086&#009;388197&#009;0&#009;+&#009;.&#009;exon BC114771;"/>
+          </assert_contents>
+      </output>
     </test>
   </tests>
   <help>
