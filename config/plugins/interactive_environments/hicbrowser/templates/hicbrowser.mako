@@ -39,7 +39,6 @@
 
 
     requirejs(['plugin/main'], function () {
-        window.IES = bundleEntries.IES;
         load_hicexplorer(url);
     });
 

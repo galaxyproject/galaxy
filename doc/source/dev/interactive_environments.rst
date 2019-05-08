@@ -225,7 +225,6 @@ We'll continue appending to our ``helloworld.mako`` the HTML code that's actuall
     // things like Login. The load_notebook function will eventually append
     // an IFrame to the <div id="main" /> below.
     requirejs(['plugin/helloworld'], function(){
-        window.IES = bundleEntries.IES
         IES.load_when_ready(ie_readiness_url, function(){
             load_notebook(notebook_access_url);
         });

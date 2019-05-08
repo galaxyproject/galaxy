@@ -33,7 +33,6 @@
 
 
     requirejs(['plugin/main'], function () {
-        window.IES = bundleEntries.IES;
         IES.load_when_ready(ie_readiness_url, function(){
             load_notebook(url);
         });

@@ -27,7 +27,6 @@ ${ ie.plugin_require_config() }
 
 // Keep container running and load IE
 requirejs(['plugin/main'], function(){
-    window.IES = bundleEntries.IES;
     IES.keepAlive(url);
     IES.load_when_ready(ie_readiness_url, function(){
         load_notebook(url);

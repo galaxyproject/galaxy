@@ -64,7 +64,6 @@ ${ ie.plugin_require_config() }
 
 requirejs(['plugin/main'], function(){
     // This global is not awesome, get rid of it when possible (when IES are a part of the build process)
-    window.IES = bundleEntries.IES;
     IES.load_when_ready(ie_readiness_url, function(){
         load_notebook(ie_password, notebook_login_url, notebook_access_url);
     });

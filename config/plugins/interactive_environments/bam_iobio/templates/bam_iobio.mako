@@ -33,7 +33,6 @@ root = h.url_for( '/' )
         var notebook_access_url = '${ notebook_access_url }';
         ${ ie.plugin_require_config() }
 
-        window.IES = bundleEntries.IES;
         IES.display_spinner();
 
         toastr.info(

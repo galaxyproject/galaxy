@@ -35,7 +35,6 @@ ${ ie.default_javascript_variables() }
 var notebook_access_url = '${ notebook_access_url }';
 ${ ie.plugin_require_config() }
 requirejs(['plugin/main'], function(){
-    window.IES = bundleEntries.IES;
     IES.load_when_ready(ie_readiness_url, function(){
         load_notebook(notebook_access_url);
     });

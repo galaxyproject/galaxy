@@ -1,3 +1,11 @@
+<%def name="load_default_js()">
+${h.css( 'base' ) }
+${h.js('libs/require',
+       'bundled/libs.chunk',
+       'bundled/base.chunk',
+       'bundled/generic.bundled')}
+</%def>
+
 <%def name="default_javascript_variables()">
 // Globals
 
@@ -10,15 +18,12 @@ ie_password = '${ ie_request.notebook_pw }';
 var galaxy_root = '${ ie_request.attr.root }';
 var app_root = '${ ie_request.attr.app_root }';
 var ie_readiness_url = '${ h.url_for("/interactive_environments/ready") }';
-</%def>
 
+window.IES = bundleEntries.IES;
 
-<%def name="load_default_js()">
-${h.css( 'base' ) }
-${h.js('libs/require',
-       'bundled/libs.chunk',
-       'bundled/base.chunk',
-       'bundled/generic.bundled')}
+window.onbeforeunload = function() {
+    return 'You are leaving your Interactive Environment.';
+};
 </%def>
 
 <%def name="plugin_require_config()">
@@ -30,8 +35,5 @@ require.config({
     urlArgs: "v=${app.server_starttime}",
 });
 
-window.onbeforeunload = function() {
-    return 'You are leaving your Interactive Environment.';
-};
 
 </%def>
