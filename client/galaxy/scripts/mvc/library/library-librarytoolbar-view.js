@@ -18,8 +18,8 @@ var LibraryToolbarView = Backbone.View.extend({
         "click #create_new_library_btn": "createLibraryInline",
         "click #include_deleted_chk": "includeDeletedChecked",
         "click #exclude_restricted_chk": "excludeRestrictedChecked",
-        "click .page_size_prompt": "showPageSizePrompt",
-        "change .page_size": "changePageSize",
+        "keydown .page_size": "changePageSize",
+        "blur .page_size": "changePageSize",
         "keyup .library-search-input": "searchLibraries"
     },
 
@@ -89,33 +89,17 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     /**
-     * Show user the propmpt to change the number of libs shown on page.
-     */
-    showPageSizePrompt: function(e) {
-        e.preventDefault();
-        const Galaxy = getGalaxyInstance();
-        var library_page_size = prompt(
-            "How many libraries per page do you want to see?",
-            Galaxy.libraries.preferences.get("library_page_size")
-        );
-        if (library_page_size != null && library_page_size == parseInt(library_page_size)) {
-            Galaxy.libraries.preferences.set({
-                library_page_size: parseInt(library_page_size)
-            });
-            Galaxy.libraries.libraryListView.render({ show_page: 1 });
-        }
-    },
-
-    /**
      * Change the number of libs shown on page.
      */
     changePageSize: function(e) {
-        e.preventDefault();
-        const Galaxy = getGalaxyInstance();
-        Galaxy.libraries.preferences.set({
-            library_page_size: parseInt(e.target.value)
-        });
-        Galaxy.libraries.libraryListView.render({ show_page: 1 });
+        if (e.type === 'focusout' || (e.type === 'input' && e.keyCode === 13)) {
+            e.preventDefault();
+            const Galaxy = getGalaxyInstance();
+            Galaxy.libraries.preferences.set({
+                library_page_size: parseInt(e.target.value)
+            });
+            Galaxy.libraries.libraryListView.render({show_page: 1});
+        }
     },
 
     /**

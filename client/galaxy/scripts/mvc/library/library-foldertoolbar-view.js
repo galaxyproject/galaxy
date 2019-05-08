@@ -23,8 +23,8 @@ var FolderToolbarView = Backbone.View.extend({
         "click .include-deleted-datasets-chk": "checkIncludeDeleted",
         "click .toolbtn-bulk-delete": "deleteSelectedItems",
         "click .toolbtn-show-locinfo": "showLocInfo",
-        "click .page-size-prompt": "showPageSizePrompt",
-        "click .page_size": "changePageSize",
+        "keydown .page_size": "changePageSize",
+        "blur .page_size": "changePageSize",
         "click .toolbtn-collection-import": "showCollectionSelect"
     },
 
@@ -1231,39 +1231,20 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     /**
-     * Show user the prompt to change the number of items shown on page.
+     * Change the number of libs shown on page.
      */
-    showPageSizePrompt: function(e) {
-        e.preventDefault();
-        const Galaxy = getGalaxyInstance();
-        var folder_page_size = prompt(
-            "How many items per page do you want to see?",
-            Galaxy.libraries.preferences.get("folder_page_size")
-        );
-        if (folder_page_size != null && folder_page_size == parseInt(folder_page_size)) {
+    changePageSize: function(e) {
+        if (e.type === 'focusout' || (e.type === 'keydown' && e.keyCode === 13)) {
+            e.preventDefault();
+            const Galaxy = getGalaxyInstance();
             Galaxy.libraries.preferences.set({
-                folder_page_size: parseInt(folder_page_size)
+                folder_page_size: parseInt(e.target.value)
             });
             Galaxy.libraries.folderListView.render({
                 id: this.options.id,
                 show_page: 1
             });
         }
-    },
-
-    /**
-     * Change the number of libs shown on page.
-     */
-    changePageSize: function(e) {
-        e.preventDefault();
-        const Galaxy = getGalaxyInstance();
-        Galaxy.libraries.preferences.set({
-            folder_page_size: parseInt(e.target.value)
-        });
-        Galaxy.libraries.folderListView.render({
-            id: this.options.id,
-            show_page: 1
-        });
     },
 
     findCheckedRows: function() {
