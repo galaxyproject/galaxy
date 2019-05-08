@@ -23,12 +23,18 @@ class DatasetPath(object):
         real_path,
         false_path=None,
         false_extra_files_path=None,
-        mutable=True
+        false_metadata_path=None,
+        mutable=True,
+        dataset_uuid=None,
+        object_store_id=None,
     ):
         self.dataset_id = dataset_id
+        self.dataset_uuid = dataset_uuid
+        self.object_store_id = object_store_id
         self.real_path = real_path
         self.false_path = false_path
         self.false_extra_files_path = false_extra_files_path
+        self.false_metadata_path = false_metadata_path
         self.mutable = mutable
 
     def __str__(self):
@@ -37,7 +43,7 @@ class DatasetPath(object):
         else:
             return self.false_path
 
-    def with_path_for_job(self, false_path, false_extra_files_path=None):
+    def with_path_for_job(self, false_path, false_extra_files_path=None, false_metadata_path=None):
         """
         Clone the dataset path but with a new false_path.
         """
@@ -48,6 +54,7 @@ class DatasetPath(object):
                 real_path=self.real_path,
                 false_path=false_path,
                 false_extra_files_path=false_extra_files_path,
+                false_metadata_path=false_metadata_path,
                 mutable=self.mutable,
             )
         return dataset_path
