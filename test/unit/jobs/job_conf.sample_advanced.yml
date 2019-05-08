@@ -150,6 +150,7 @@ handling:
 
 
 execution:
+  default: local
   environments:
     local:
       runner: local
