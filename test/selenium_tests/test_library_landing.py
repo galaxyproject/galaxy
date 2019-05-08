@@ -54,11 +54,6 @@ class LibraryLandingTestCase(SeleniumTestCase):
         self._search_for_only_with_name(new_name)
 
     @selenium_test
-    def test_help(self):
-        help_link = self.wait_for_selector_clickable(".library-help-button")
-        self.assertEqual(help_link.get_attribute("href"), "https://galaxyproject.org/data-libraries/screen/list-of-libraries/")
-
-    @selenium_test
     def test_sorting(self):
         # Throw in another library to ensure filtering is working...
         other = self._get_random_name(prefix="notthesame")
