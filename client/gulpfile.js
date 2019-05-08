@@ -2,6 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const del = require("del");
 const { src, dest, series, parallel } = require("gulp");
+const staticRoot = process.env.GALAXY_STATIC_ROOT ? process.env.GALAXY_STATIC_ROOT : '..';
 
 const paths = {
     node_modules: "./node_modules",
@@ -47,16 +48,16 @@ function stageLibs(callback) {
 
 function fonts() {
     return src(path.resolve(path.join(paths.node_modules, "font-awesome/fonts/**/*"))).pipe(
-        dest("../static/images/fonts")
+        dest(staticRoot + "/static/images/fonts")
     );
 }
 
 function stagePlugins() {
-    return src(paths.plugin_dirs).pipe(dest("../static/plugins/"));
+    return src(paths.plugin_dirs).pipe(dest(staticRoot + "/static/plugins/"));
 }
 
 function cleanPlugins() {
-    return del(["../static/plugins/{visualizations,interactive_environments}/*"], { force: true });
+    return del([staticRoot + "/static/plugins/{visualizations,interactive_environments}/*"], { force: true });
 }
 
 module.exports.fonts = fonts;

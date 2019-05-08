@@ -9,7 +9,8 @@ const DuplicatePackageCheckerPlugin = require("duplicate-package-checker-webpack
 const scriptsBase = path.join(__dirname, "galaxy/scripts");
 const libsBase = path.join(scriptsBase, "libs");
 const styleBase = path.join(__dirname, "galaxy/style");
-const imageBase = path.join(__dirname, "../static/style");
+const staticRoot = process.env.GALAXY_STATIC_ROOT ? path.join(process.env.GALAXY_STATIC_ROOT, 'x/') : __dirname;
+const imageBase = path.join(staticRoot, "../static/style");
 
 let buildconfig = {
     entry: {
@@ -19,7 +20,7 @@ let buildconfig = {
         generic: ["polyfills", "bundleEntries", "entry/generic"]
     },
     output: {
-        path: path.join(__dirname, "../", "static/scripts/bundled"),
+        path: path.join(staticRoot, "../", "static/scripts/bundled"),
         publicPath: "/static/scripts/bundled/",
         filename: "[name].bundled.js",
         chunkFilename: "[name].chunk.js"
