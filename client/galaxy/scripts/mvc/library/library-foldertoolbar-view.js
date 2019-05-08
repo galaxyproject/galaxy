@@ -1234,7 +1234,7 @@ var FolderToolbarView = Backbone.View.extend({
      * Change the number of libs shown on page.
      */
     changePageSize: function(e) {
-        if (e.type === 'focusout' || (e.type === 'keydown' && e.keyCode === 13)) {
+        if (e.type === "focusout" || (e.type === "keydown" && e.keyCode === 13)) {
             e.preventDefault();
             const Galaxy = getGalaxyInstance();
             Galaxy.libraries.preferences.set({
