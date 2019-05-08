@@ -250,10 +250,7 @@ var LibraryToolbarView = Backbone.View.extend({
         );
     },
     templatePaginatorText: function() {
-        return _.template(`<% if ( library_page_size == 1 ) { %> item <% } else { %> items <% } %> per page,
-            <%- libraries_shown %>
-            <% if ( libraries_shown == 1 ) { %> library <% } else { %> libraries <% } %> shown,
-            <%- total_libraries_count %> total`);
+        return _.template(`per page, <%- total_libraries_count %> total`);
     }
 });
 

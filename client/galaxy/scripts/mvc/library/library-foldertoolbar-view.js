@@ -1909,9 +1909,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     templatePaginatorText: function() {
-        return _.template(`<% if ( folder_page_size == 1 ) { %> item <% } else { %> items <% } %> per page,
-            <%- items_shown %>
-            <% if ( items_shown == 1 ) { %> item <% } else { %> items <% } %> shown,
+        return _.template(`per page,
             <%- total_items_count %> total`);
     },
 
