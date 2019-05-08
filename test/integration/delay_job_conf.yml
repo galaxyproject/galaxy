@@ -5,6 +5,7 @@ runners:
   dynamic:
     rules_module: integration.delay_rules
 execution:
+  default: local_dest
   environments:
     local_dest:
       runner: dynamic
