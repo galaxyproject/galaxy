@@ -21,20 +21,18 @@ url = ie_request.url_template('${PROXY_URL}/phinch/')
 %>
 <html>
 <head>
-${ ie.load_default_js() }
+    ${ ie.load_default_js() }
+    ${ ie.load_default_app() }
 </head>
 <body>
 <script type="text/javascript">
 ${ ie.default_javascript_variables() }
 var url = '${ url }';
-${ ie.plugin_require_config() }
 
 // Keep container running and load notebook
-requirejs(['plugin/main'], function(){
-    keep_alive(url);
-    IES.load_when_ready(ie_readiness_url, function(){
-        load_notebook(url);
-    });
+keep_alive(url);
+IES.load_when_ready(ie_readiness_url, function(){
+    load_notebook(url);
 });
 
 </script>

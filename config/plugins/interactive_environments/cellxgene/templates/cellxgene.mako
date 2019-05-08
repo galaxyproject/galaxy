@@ -21,7 +21,6 @@
 
     ${ ie.default_javascript_variables() }
     var url = '${ url }';
-    ${ ie.plugin_require_config() }
 
     $( document ).ready(function() {
         IES.keepAlive(url);
