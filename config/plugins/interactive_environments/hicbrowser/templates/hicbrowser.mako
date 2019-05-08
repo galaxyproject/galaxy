@@ -38,7 +38,7 @@
     ${ ie.plugin_require_config() }
 
 
-    requirejs(['plugin/hicbrowser'], function () {
+    requirejs(['plugin/main'], function () {
         window.IES = bundleEntries.IES;
         load_hicexplorer(url);
     });

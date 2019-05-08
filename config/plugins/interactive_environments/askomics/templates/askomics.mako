@@ -40,7 +40,7 @@ ${ ie.load_default_js() }
 ${ ie.default_javascript_variables() }
 var url = '${ url }';
 ${ ie.plugin_require_config() }
-requirejs(['plugin/askomics'], function(){
+requirejs(['plugin/main'], function(){
     window.IES = bundleEntries.IES;
     load_askomics(url);
 });

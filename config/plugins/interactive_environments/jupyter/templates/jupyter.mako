@@ -62,7 +62,7 @@ ${ ie.plugin_require_config() }
 
 // Load notebook
 
-requirejs(['plugin/jupyter'], function(){
+requirejs(['plugin/main'], function(){
     // This global is not awesome, get rid of it when possible (when IES are a part of the build process)
     window.IES = bundleEntries.IES;
     IES.load_when_ready(ie_readiness_url, function(){

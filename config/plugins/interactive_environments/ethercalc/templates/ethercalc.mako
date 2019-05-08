@@ -26,7 +26,7 @@ var url = '${ url }';
 ${ ie.plugin_require_config() }
 
 // Keep container running and load IE
-requirejs(['plugin/ethercalc'], function(){
+requirejs(['plugin/main'], function(){
     window.IES = bundleEntries.IES;
     IES.keepAlive(url);
     IES.load_when_ready(ie_readiness_url, function(){

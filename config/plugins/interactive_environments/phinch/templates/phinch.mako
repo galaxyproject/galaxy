@@ -30,7 +30,7 @@ var url = '${ url }';
 ${ ie.plugin_require_config() }
 
 // Keep container running and load notebook
-requirejs(['plugin/phinch'], function(){
+requirejs(['plugin/main'], function(){
     window.IES = bundleEntries.IES;
     keep_alive(url);
     IES.load_when_ready(ie_readiness_url, function(){
