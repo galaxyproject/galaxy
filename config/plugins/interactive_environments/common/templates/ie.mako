@@ -1,7 +1,6 @@
 <%def name="load_default_js()">
 ${h.css( 'base' ) }
-${h.js('libs/require',
-       'bundled/libs.chunk',
+${h.js('bundled/libs.chunk',
        'bundled/base.chunk',
        'bundled/generic.bundled')}
 </%def>
@@ -26,14 +25,6 @@ window.onbeforeunload = function() {
 };
 </%def>
 
-<%def name="plugin_require_config()">
-require.config({
-    baseUrl: app_root,
-    paths: {
-        "plugin" : app_root + "js",
-    },
-    urlArgs: "v=${app.server_starttime}",
-});
-
-
+<%def name="load_default_app()">
+<script src="${'%sjs/main.js?v=%s' % (ie_request.attr.app_root, app.server_starttime)}" type="text/javascript"></script>
 </%def>
