@@ -1,6 +1,5 @@
 import functools
 import logging
-import os
 
 import requests
 from beaker.cache import CacheManager
@@ -26,8 +25,8 @@ class CitationsManager(object):
                 citation_collection.add(citation)
         return citation_collection.citations
 
-    def parse_citation(self, citation_elem, tool_directory):
-        return parse_citation(citation_elem, tool_directory, self)
+    def parse_citation(self, citation_elem):
+        return parse_citation(citation_elem, self)
 
     def _get_tool(self, tool_id):
         tool = self.app.toolbox.get_tool(tool_id)
@@ -55,10 +54,9 @@ class DoiCache(object):
         return self._cache.get(key=doi, createfunc=createfunc)
 
 
-def parse_citation(elem, directory, citation_manager):
-    """ Parse an abstract citation entry from the specified XML element.
-    The directory parameter should be used to find external files for this
-    citation.
+def parse_citation(elem, citation_manager):
+    """
+    Parse an abstract citation entry from the specified XML element.
     """
     citation_type = elem.attrib.get('type', None)
     citation_class = CITATION_CLASSES.get(citation_type, None)
@@ -66,7 +64,7 @@ def parse_citation(elem, directory, citation_manager):
         log.warning("Unknown or unspecified citation type: %s" % citation_type)
         return None
     try:
-        citation = citation_class(elem, directory, citation_manager)
+        citation = citation_class(elem, citation_manager)
     except Exception as e:
         raise Exception("Invalid citation of type '%s' with content '%s': %s" % (citation_type, elem.text, e))
     return citation
@@ -118,16 +116,8 @@ class BaseCitation(object):
 
 class BibtexCitation(BaseCitation):
 
-    def __init__(self, elem, directory, citation_manager):
-        bibtex_file = elem.attrib.get("file", None)
-        if bibtex_file:
-            raw_bibtex = open(os.path.join(directory, bibtex_file), "r").read()
-        else:
-            raw_bibtex = elem.text.strip()
-        self._set_raw_bibtex(raw_bibtex)
-
-    def _set_raw_bibtex(self, raw_bibtex):
-        self.raw_bibtex = raw_bibtex
+    def __init__(self, elem, citation_manager):
+        self.raw_bibtex = elem.text.strip()
 
     def to_bibtex(self):
         return self.raw_bibtex
@@ -136,7 +126,7 @@ class BibtexCitation(BaseCitation):
 class DoiCitation(BaseCitation):
     BIBTEX_UNSET = object()
 
-    def __init__(self, elem, directory, citation_manager):
+    def __init__(self, elem, citation_manager):
         self.__doi = elem.text.strip()
         self.doi_cache = citation_manager.doi_cache
         self.raw_bibtex = DoiCitation.BIBTEX_UNSET

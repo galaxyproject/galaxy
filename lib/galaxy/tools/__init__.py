@@ -1065,7 +1065,7 @@ class Tool(Dictifiable):
             if citation_elem.tag != "citation":
                 pass
             if hasattr(self.app, 'citations_manager'):
-                citation = self.app.citations_manager.parse_citation(citation_elem, self.tool_dir)
+                citation = self.app.citations_manager.parse_citation(citation_elem)
                 if citation:
                     citations.append(citation)
         return citations
