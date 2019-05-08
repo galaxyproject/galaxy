@@ -1,3 +1,5 @@
+import packaging.version
+
 from galaxy.tools.deps import requirements
 from galaxy.util.odict import odict
 from .interface import InputSource
@@ -161,6 +163,12 @@ class YamlToolSource(ToolSource):
 
     def parse_profile(self):
         return self.root_dict.get("profile", "16.04")
+
+    def parse_python_template_version(self):
+        python_template_version = self.root_dict.get("python_template_version", None)
+        if python_template_version is not None:
+            python_template_version = packaging.version.parse(python_template_version)
+        return python_template_version
 
 
 def _parse_test(i, test_dict):
