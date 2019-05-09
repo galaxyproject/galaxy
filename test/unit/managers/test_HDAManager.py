@@ -654,13 +654,15 @@ class HDAFilterParserTestCase(HDATestCase):
         self.assertORMFilter(self.filter_parser.parse_filter('state', 'eq', 'ok'))
         self.assertORMFilter(self.filter_parser.parse_filter('state', 'in', ['queued', 'running']))
         self.assertORMFilter(self.filter_parser.parse_filter('visible', 'eq', True))
+        # taggable
+        self.assertORMFunctionFilter(self.filter_parser.parse_filter('tag', 'eq', 'wot'))
+        self.assertORMFunctionFilter(self.filter_parser.parse_filter('tag', 'has', 'wot'))
+        # genomebuild
         self.assertFnFilter(self.filter_parser.parse_filter('genome_build', 'eq', 'wot'))
         self.assertFnFilter(self.filter_parser.parse_filter('genome_build', 'contains', 'wot'))
+        # data_type
         self.assertFnFilter(self.filter_parser.parse_filter('data_type', 'eq', 'wot'))
         self.assertFnFilter(self.filter_parser.parse_filter('data_type', 'isinstance', 'wot'))
-        # taggable
-        self.assertFnFilter(self.filter_parser.parse_filter('tag', 'eq', 'wot'))
-        self.assertFnFilter(self.filter_parser.parse_filter('tag', 'has', 'wot'))
         # annotatable
         self.assertFnFilter(self.filter_parser.parse_filter('annotation', 'has', 'wot'))
 

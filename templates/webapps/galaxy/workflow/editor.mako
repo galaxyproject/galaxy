@@ -225,10 +225,18 @@
 <%def name="center_panel()">
 
     <div class="unified-panel-header" unselectable="on">
-        <div class="panel-header-buttons">
-            <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
-        </div>
         <div class="unified-panel-header-inner">
+            <div class="panel-header-buttons">
+                <a id="workflow-run-button" class="panel-header-button" href="#" title="Run" style="display: inline-block;" aria-label="Run">
+                    <span class="fa fa-play"></span>
+                </a>
+                <a id="workflow-save-button" class="panel-header-button" href="#" title="Save" style="display: inline-block;" aria-label="Save">
+                    <span class="fa fa-floppy-o"></span>
+                </a>
+                <a id="workflow-options-button" class="panel-header-button" href="#" title="Workflow options" style="display: inline-block;" aria-label="Workflow options">
+                    <span class="fa fa-cog"></span>
+                </a>
+            </div>
             ${h.to_unicode( stored.name ) | h}
         </div>
     </div>

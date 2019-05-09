@@ -257,13 +257,13 @@ export var Upload = Backbone.View.extend({
  * what we need where we need it, allowing for better package optimization.
  */
 
-export let Button = Buttons.Button;
-export let ButtonCheck = Buttons.ButtonCheck;
-export let ButtonMenu = Buttons.ButtonMenu;
-export let ButtonLink = Buttons.ButtonLink;
-export let Checkbox = Options.Checkbox;
-export let RadioButton = Options.RadioButton;
-export let Radio = Options.Radio;
+export const Button = Buttons.Button;
+export const ButtonCheck = Buttons.ButtonCheck;
+export const ButtonMenu = Buttons.ButtonMenu;
+export const ButtonLink = Buttons.ButtonLink;
+export const Checkbox = Options.Checkbox;
+export const RadioButton = Options.RadioButton;
+export const Radio = Options.Radio;
 export { Select, Slider, Drilldown };
 
 export default {

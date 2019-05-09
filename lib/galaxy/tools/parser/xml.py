@@ -5,6 +5,8 @@ import traceback
 import uuid
 from math import isinf
 
+import packaging.version
+
 from galaxy.tools.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
@@ -113,7 +115,7 @@ class XmlToolSource(ToolSource):
         return ((command_el is not None) and command_el.text) or None
 
     def parse_expression(self):
-        """ Return string contianing command to run.
+        """ Return string containing command to run.
         """
         expression_el = self.root.find("expression")
         if expression_el is not None:
@@ -285,6 +287,7 @@ class XmlToolSource(ToolSource):
 
         def _parse_expression(output_elem, **kwds):
             output_def = self._parse_expression_output(output_elem, tool, **kwds)
+            output_def.filters = output_elem.findall('filter')
             data_dict[output_def.name] = output_def
             return output_def
 
@@ -344,7 +347,7 @@ class XmlToolSource(ToolSource):
                 output_collection.outputs[output_name] = data
             output_collections[name] = output_collection
 
-        for out_child in out_elem.getchildren():
+        for out_child in out_elem:
             if out_child.tag == "data":
                 _parse(out_child)
             elif out_child.tag == "collection":
@@ -360,7 +363,7 @@ class XmlToolSource(ToolSource):
                 else:
                     _parse_expression(out_child)
             else:
-                log.warn("Unknown output tag encountered [%s]" % out_child.tag)
+                log.warning("Unknown output tag encountered [%s]" % out_child.tag)
 
         for output_def in data_dict.values():
             outputs[output_def.name] = output_def
@@ -496,6 +499,12 @@ class XmlToolSource(ToolSource):
         # - Auto-check for $param_file.
         # - Enable buggy interpreter attribute.
         return self.root.get("profile", "16.01")
+
+    def parse_python_template_version(self):
+        python_template_version = self.root.get("python_template_version", None)
+        if python_template_version is not None:
+            python_template_version = packaging.version.parse(python_template_version)
+        return python_template_version
 
 
 def _test_elem_to_dict(test_elem, i):

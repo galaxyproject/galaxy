@@ -1,17 +1,3 @@
-~~~~~~~~~~~~~~~
-``cookie_path``
-~~~~~~~~~~~~~~~
-
-:Description:
-    When running multiple Galaxy instances under separate URL prefixes
-    on a single hostname, you will want to set this to the same path
-    as the prefix set in the uWSGI "mount" configuration option above.
-    This value becomes the "path" attribute set in the cookie so the
-    cookies from one instance will not clobber those from another.
-:Default: ````
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -154,6 +140,38 @@
     not recommended for production use.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~
+``database_wait``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Wait for database to become available instead of failing
+    immediately.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``database_wait_attempts``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Number of attempts before failing if database_wait is enabled.
+:Default: ``60``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``database_wait_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time to sleep between attempts if database_wait is enabled (in
+    seconds).
+:Default: ``1``
+:Type: float
 
 
 ~~~~~~~~~~~~~
@@ -3167,6 +3185,18 @@
     job configuration file.
 :Default: ``config/job_conf.xml``
 :Type: str
+
+
+~~~~~~~~~~~~~~
+``job_config``
+~~~~~~~~~~~~~~
+
+:Description:
+    Description of job running configuration, can be embedded into
+    Galaxy configuration or loaded from an additional file with the
+    job_config_file option.
+:Default: ``None``
+:Type: map
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

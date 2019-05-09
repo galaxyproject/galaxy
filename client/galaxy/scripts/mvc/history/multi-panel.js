@@ -218,25 +218,25 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                     <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
                         <span class="caret"></span>
                     </button>
-                    <ul class="dropdown-menu" role="menu">
+                    <div class="dropdown-menu" role="menu">
                         <% if( !data.history.deleted ){ %>
-                            <li><a href="javascript:void(0);" class="copy-history">
+                            <a class="dropdown-item" href="javascript:void(0);" class="copy-history">
                                 ${_l("Copy")}
-                            </a></li>
-                            <li><a href="javascript:void(0);" class="delete-history">
+                            </a>
+                            <a class="dropdown-item" href="javascript:void(0);" class="delete-history">
                                 ${_l("Delete")}
-                            </a></li>
+                            </a>
                         <% } else /* if is deleted */ { %>
-                            <li><a href="javascript:void(0);" class="undelete-history">
+                            <a class="dropdown-item" href="javascript:void(0);" class="undelete-history">
                                 ${_l("Undelete")}
-                            </a></li>
+                            </a>
                         <% } %>
                         <% if( data.view.purgeAllowed ){ %>
-                            <li><a href="javascript:void(0);" class="purge-history">
+                            <a class="dropdown-item" href="javascript:void(0);" class="purge-history">
                                 ${_l("Purge")}
-                            </a></li>
+                            </a>
                         <% } %>
-                    </ul>
+                    </div>
                 </div>
             <% } %>
         </div>`,
@@ -473,7 +473,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     /** create a column and its panel and set up any listeners to them */
     createColumn: function createColumn(history, options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         // options passed can be re-used, so extend them before adding the model to prevent pollution for the next
         options = _.extend({}, options, {
             model: history,
@@ -1055,36 +1055,40 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     },
 
     optionsPopoverTemplate: _.template(
-        [
-            '<div class="more-options d-flex flex-column">',
-            '<div class="order btn-group mb-2">',
-            '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
-            `${_l("Order histories by")} `,
-            '<span class="current-order"><%- view.orderDescriptions[ view.collection.order ] %></span> ',
-            '<span class="caret"></span>',
-            "</button>",
-            '<ul class="dropdown-menu" role="menu">',
-            "<% _.each( view.orderDescriptions, function( text, order ){ %>",
-            '<li class="dropdown-item"><a href="javascript:void(0);" class="set-order" data-order="<%- order %>">',
-            "<%- text %>",
-            "</a></li>",
-            "<% }); %>",
-            "</ul>",
-            "</div>",
-
-            '<div class="checkbox"><label><input id="include-deleted" type="checkbox"',
-            '<%= view.collection.includeDeleted? " checked" : "" %>>',
-            _l("Include deleted histories"),
-            "</label></div>",
-
-            '<div class="checkbox"><label><input id="toggle-deleted" type="checkbox">',
-            _l("Include deleted datasets"),
-            "</label></div>",
-            '<div class="checkbox"><label><input id="toggle-hidden" type="checkbox">',
-            _l("Include hidden datasets"),
-            "</label></div>",
-            "</div>"
-        ].join(""),
+        `<div class="more-options d-flex flex-column">
+            <div class="order btn-group mb-2">
+                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
+                    ${_l("Order histories by")}
+                    <span class="current-order"><%- view.orderDescriptions[ view.collection.order ] %></span>
+                    <span class="caret"/>
+                </button>
+                <div class="dropdown-menu" role="menu">
+                    <% _.each( view.orderDescriptions, function( text, order ){ %>
+                        <a href="javascript:void(0);" class="dropdown-item set-order" data-order="<%- order %>">
+                            <%- text %>
+                        </a>
+                    <% }); %>
+                </div>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input id="include-deleted" type="checkbox" <%= view.collection.includeDeleted? " checked" : "" %>>
+                    ${_l("Include deleted histories")}
+                </label>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input id="toggle-deleted" type="checkbox">
+                    ${_l("Include deleted datasets")}
+                </label>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input id="toggle-hidden" type="checkbox">
+                    ${_l("Include hidden datasets")}
+                </label>
+            </div>
+        </div>`,
         { variable: "view" }
     )
 });

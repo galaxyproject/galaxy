@@ -194,6 +194,13 @@ class Configuration(object):
         self.install_database_connection = kwargs.get("install_database_connection", None)
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
 
+        # Wait for database to become available instead of failing
+        self.database_wait = string_as_bool(kwargs.get("database_wait", "False"))
+        # Attempts before failing
+        self.database_wait_attempts = int(kwargs.get("database_wait_attempts", 60))
+        # Sleep period between attepmts (seconds)
+        self.database_wait_sleep = float(kwargs.get("database_wait_sleep", 1))
+
         # Where dataset files are stored
         self.file_path = resolve_path(kwargs.get("file_path", "database/files"), self.root)
         # new_file_path and legacy_home_dir can be overridden per destination in job_conf.
@@ -203,7 +210,7 @@ class Configuration(object):
             tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir", None)
         self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "database/openid_consumer_cache"), self.root)
-        self.cookie_path = kwargs.get("cookie_path", "/")
+        self.cookie_path = kwargs.get("cookie_path", None)
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', False))
         self.enable_unique_workflow_defaults = string_as_bool(kwargs.get('enable_unique_workflow_defaults', False))
         self.tool_path = resolve_path(kwargs.get("tool_path", "tools"), self.root)
@@ -1158,6 +1165,9 @@ class ConfiguresGalaxyMixin(object):
         combined_install_database = not(install_db_url and install_db_url != db_url)
         install_db_url = install_db_url or db_url
 
+        if self.config.database_wait:
+            self._wait_for_database(db_url)
+
         if getattr(self.config, "max_metadata_value_size", None):
             from galaxy.model import custom_types
             custom_types.MAX_METADATA_VALUE_SIZE = self.config.max_metadata_value_size
@@ -1200,3 +1210,15 @@ class ConfiguresGalaxyMixin(object):
     def _configure_signal_handlers(self, handlers):
         for sig, handler in handlers.items():
             signal.signal(sig, handler)
+
+    def _wait_for_database(self, url):
+        from sqlalchemy_utils import database_exists
+        attempts = self.config.database_wait_attempts
+        pause = self.config.database_wait_sleep
+        for i in range(1, attempts):
+            try:
+                database_exists(url)
+                break
+            except Exception:
+                log.info("Waiting for database: attempt %d of %d" % (i, attempts))
+                time.sleep(pause)

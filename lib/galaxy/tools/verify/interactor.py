@@ -194,7 +194,7 @@ class GalaxyInteractorApi(object):
         """
         metadata = attributes.get('metadata', {}).copy()
         for key, value in metadata.copy().items():
-            if key not in ['name', 'info', 'tags']:
+            if key not in ['name', 'info', 'tags', 'created_from_basename']:
                 new_key = "metadata_%s" % key
                 metadata[new_key] = metadata[key]
                 del metadata[key]
@@ -265,8 +265,8 @@ class GalaxyInteractorApi(object):
     def __get_job_stdio(self, job_id):
         return self._get('jobs/%s?full=true' % job_id)
 
-    def new_history(self):
-        history_json = self._post("histories", {"name": "test_history"}).json()
+    def new_history(self, history_name='test_history'):
+        history_json = self._post("histories", {"name": history_name}).json()
         return history_json['id']
 
     @nottest
@@ -717,13 +717,24 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
             shutil.rmtree(path)
 
 
-def verify_tool(tool_id, galaxy_interactor, resource_parameters=None, register_job_data=None, test_index=0, tool_version=None, quiet=False, test_history=None, force_path_paste=False):
+def verify_tool(tool_id,
+                galaxy_interactor,
+                resource_parameters=None,
+                register_job_data=None,
+                test_index=0,
+                tool_version=None,
+                quiet=False,
+                test_history=None,
+                force_path_paste=False,
+                maxseconds=None,
+                tool_test_dicts=None):
     if resource_parameters is None:
         resource_parameters = {}
-    tool_test_dicts = galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
+    tool_test_dicts = tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
     tool_test_dict = tool_test_dicts[test_index]
     testdef = ToolTestDescription(tool_test_dict)
-
+    if maxseconds is not None:
+        testdef.maxseconds = int(maxseconds)
     _handle_def_errors(testdef)
 
     if test_history is None:

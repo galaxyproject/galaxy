@@ -54,14 +54,14 @@ export function library(options) {
 }
 
 export function multiHistory(options) {
-    let histories = new HistoryCollection([], {
+    const histories = new HistoryCollection([], {
         includeDeleted: options.includingDeleted,
         order: options.order,
         limitOnFirstFetch: options.limit,
         limitPerFetch: options.limit,
         currentHistoryId: options.current_history_id
     });
-    let multipanel = new MultiPanel.MultiPanelColumns({
+    const multipanel = new MultiPanel.MultiPanelColumns({
         el: $("#center").get(0),
         histories: histories
     });
@@ -88,7 +88,7 @@ export function chart(options) {
     return new Client(options);
 }
 
-export let chartUtilities = {
+export const chartUtilities = {
     Datasets: Datasets,
     Jobs: Jobs,
     Series: Series

@@ -11,9 +11,9 @@ import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
 
 function logoutClick() {
-    let galaxy = getGalaxyInstance();
-    let session_csrf_token = galaxy.session_csrf_token;
-    let url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
+    const galaxy = getGalaxyInstance();
+    const session_csrf_token = galaxy.session_csrf_token;
+    const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
     axios.get(url).then(() => {
         if (galaxy.user) {
             galaxy.user.clearSessionStorage();
@@ -33,7 +33,7 @@ var Collection = Backbone.Collection.extend({
         options = options || {};
         this.reset();
 
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         //
         // Chat server tab
@@ -141,7 +141,7 @@ var Collection = Backbone.Collection.extend({
                             };
 
                             // Galaxy.page is undefined for data libraries, workflows pages
-                            let Galaxy = getGalaxyInstance();
+                            const Galaxy = getGalaxyInstance();
                             if (Galaxy.page) {
                                 Galaxy.page.masthead.collection.add(obj);
                             } else if (Galaxy.masthead) {
@@ -240,7 +240,7 @@ var Collection = Backbone.Collection.extend({
                     title: _l("Login or Register"),
                     cls: "loggedout-only",
                     url: "login",
-                    tooltip: _l("Account registration or login")
+                    tooltip: _l("Log in or register a new account")
                 };
             } else {
                 userTab = {
@@ -248,7 +248,7 @@ var Collection = Backbone.Collection.extend({
                     title: _l("Login"),
                     cls: "loggedout-only",
                     tooltip: _l("Login"),
-                    url: "user/login",
+                    url: "login",
                     target: "galaxy_main",
                     noscratchbook: true
                 };
@@ -409,7 +409,7 @@ var Tab = Backbone.View.extend({
                 if (options.onclick) {
                     options.onclick();
                 } else {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     if (options.target == "__use_router__" && typeof Galaxy.page != "undefined") {
                         Galaxy.page.router.executeUseRouter(options.url);
                     } else {
@@ -448,7 +448,7 @@ var Tab = Backbone.View.extend({
                 if (model.get("onclick")) {
                     model.get("onclick")();
                 } else {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     if (model.attributes.target == "__use_router__" && typeof Galaxy.page != "undefined") {
                         Galaxy.page.router.executeUseRouter(model.attributes.url);
                     } else {

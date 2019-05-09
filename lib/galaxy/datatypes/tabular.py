@@ -12,10 +12,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from cgi import escape
 from json import dumps
 
 import pysam
+from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import binary, data, metadata

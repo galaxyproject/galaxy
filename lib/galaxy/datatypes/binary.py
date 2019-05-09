@@ -1595,7 +1595,7 @@ class GAFASQLite(SQlite):
                 raise Exception('Multiple versions found in meta table')
             dataset.metadata.gafa_schema_version = results[0][0]
         except Exception as e:
-            log.warn("%s, set_meta Exception: %s", self, e)
+            log.warning("%s, set_meta Exception: %s", self, e)
 
     def sniff(self, filename):
         if super(GAFASQLite, self).sniff(filename):

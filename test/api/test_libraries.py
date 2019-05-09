@@ -101,7 +101,7 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
 
     def test_fetch_upload_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("flat_zip")
-        items = [{"src": "files", "dbkey": "hg19", "info": "my cool bed"}]
+        items = [{"src": "files", "dbkey": "hg19", "info": "my cool bed", "created_from_basename": "4.bed"}]
         targets = [{
             "destination": destination,
             "items": items
@@ -117,6 +117,7 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         assert dataset["genome_build"] == "hg19", dataset
         assert dataset["misc_info"] == "my cool bed", dataset
         assert dataset["file_ext"] == "bed", dataset
+        assert dataset["created_from_basename"] == "4.bed"
 
     def test_fetch_zip_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("flat_zip")

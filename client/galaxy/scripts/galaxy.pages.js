@@ -327,7 +327,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
             url_base: item_info.list_ajax_url,
             embedded: true
         });
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         Galaxy.modal.show({
             title: `Insert Link to ${item_info.singular}`,
             body: $("<div/>")
@@ -416,11 +416,11 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
                 break;
         }
 
-        let grid = new GridView({
+        const grid = new GridView({
             url_base: item_info.list_ajax_url,
             embedded: true
         });
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         Galaxy.modal.show({
             title: `Insert Link to ${item_info.singular}`,
             body: $("<div/>")

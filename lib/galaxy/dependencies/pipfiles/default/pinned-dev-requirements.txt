@@ -38,7 +38,7 @@ pytest-html==1.20.0
 pytest-metadata==1.8.0
 pytest-postgresql==1.4.0
 pytest-pythonpath==0.7.3
-pytest==4.4.0
+pytest==4.4.1
 pytz==2019.1
 pyyaml==5.1
 recommonmark==0.5.0
@@ -54,5 +54,5 @@ sphinxcontrib-websupport==1.1.0
 testfixtures==6.7.0
 twill==0.9.1 ; python_version < '3'
 typing==3.6.6 ; python_version < '3.5'
-urllib3==1.24.1 ; python_version == '2.7'
+urllib3==1.24.2 ; python_version == '2.7'
 watchdog==0.9.0

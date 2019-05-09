@@ -670,7 +670,7 @@ const ColumnSelector = {
                 return colHeaders;
             }
             const remaining = {};
-            for (let key in colHeaders) {
+            for (const key in colHeaders) {
                 if (this.target.indexOf(parseInt(key)) === -1) {
                     remaining[key] = colHeaders[key];
                 }
@@ -685,7 +685,7 @@ const ColumnSelector = {
         handleInput(value) {
             if (this.multiple) {
                 // https://stackoverflow.com/questions/262427/why-does-parseint-yield-nan-with-arraymap
-                let val = value.map(idx => parseInt(idx));
+                const val = value.map(idx => parseInt(idx));
                 this.$emit("update:target", val);
             } else {
                 let val = parseInt(value);
@@ -951,7 +951,7 @@ export default {
                 if (this.initialElements !== null) {
                     const collectionType = this.initialElements.collection_type;
                     const collectionTypeRanks = collectionType.split(":");
-                    for (let index in collectionTypeRanks) {
+                    for (const index in collectionTypeRanks) {
                         rules.push({
                             type: "add_column_metadata",
                             value: "identifier" + index
@@ -1187,7 +1187,7 @@ export default {
         },
         mappedTargets() {
             const targets = [];
-            for (let mapping of this.mapping) {
+            for (const mapping of this.mapping) {
                 targets.push(mapping.type);
             }
             return targets;
@@ -1195,7 +1195,7 @@ export default {
         unmappedTargets() {
             const targets = [];
             const mappedTargets = this.mappedTargets;
-            for (let target in MAPPING_TARGETS) {
+            for (const target in MAPPING_TARGETS) {
                 const targetModes = MAPPING_TARGETS[target].modes;
 
                 if (targetModes && targetModes.indexOf(this.elementsType) < 0) {
@@ -1217,16 +1217,16 @@ export default {
             return targets;
         },
         colHeaders() {
-            let { data, columns } = this.hotData;
+            const { data, columns } = this.hotData;
             return RuleDefs.colHeadersFor(data, columns);
         },
         colHeadersDisplay() {
             const formattedHeaders = [];
-            for (let colIndex in this.colHeaders) {
+            for (const colIndex in this.colHeaders) {
                 const colHeader = this.colHeaders[colIndex];
                 formattedHeaders[colIndex] = `<b>${_.escape(colHeader)}</b>`;
                 const mappingDisplay = [];
-                for (let mapping of this.mapping) {
+                for (const mapping of this.mapping) {
                     if (mapping.columns.indexOf(parseInt(colIndex)) !== -1) {
                         const mappingDef = MAPPING_TARGETS[mapping.type];
                         mappingDisplay.push(`<i>${_.escape(mappingDef.columnHeader || mappingDef.label)}</i>`);
@@ -1245,7 +1245,7 @@ export default {
         },
         mappingAsDict() {
             const asDict = {};
-            for (let mapping of this.mapping) {
+            for (const mapping of this.mapping) {
                 asDict[mapping.type] = mapping;
             }
             return asDict;
@@ -1261,7 +1261,7 @@ export default {
                     collectionType = "list:list:list:paired";
                 }
                 const collectionTypeRanks = collectionType.split(":");
-                for (let index in collectionTypeRanks) {
+                for (const index in collectionTypeRanks) {
                     const collectionTypeRank = collectionTypeRanks[index];
                     if (collectionTypeRank == "list") {
                         // TODO: drop the numeral at the end if only flat list
@@ -1487,7 +1487,7 @@ export default {
             this.mapping.splice(index, 1);
         },
         refreshAndWait(response) {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel) {
                 Galaxy.currHistoryPanel.refreshContents();
             }
@@ -1506,7 +1506,7 @@ export default {
                         "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";
                     this.doFullJobCheck(jobId);
                 } else {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     const history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
                     history.refresh();
                     this.oncreate();
@@ -1592,13 +1592,13 @@ export default {
                     this.oncreate();
                 }
             } else {
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 const historyId = Galaxy.currHistoryPanel.model.id;
                 let elements, targets;
                 if (collectionType) {
                     targets = [];
                     const elementsByCollectionName = this.creationElementsForFetch();
-                    for (let collectionName in elementsByCollectionName) {
+                    for (const collectionName in elementsByCollectionName) {
                         const target = {
                             destination: { type: "hdca" },
                             elements: elementsByCollectionName[collectionName],
@@ -1656,11 +1656,11 @@ export default {
             const collectionType = this.collectionType;
             const elementsByName = {};
 
-            let dataByCollection = {};
+            const dataByCollection = {};
             const collectionNameMap = this.mappingAsDict.collection_name;
             if (collectionNameMap) {
                 const collectionNameTarget = collectionNameMap.columns[0];
-                for (let dataIndex in data) {
+                for (const dataIndex in data) {
                     const row = data[dataIndex];
                     const name = row[collectionNameTarget];
                     if (!dataByCollection[name]) {
@@ -1673,11 +1673,11 @@ export default {
                 dataByCollection[this.collectionName] = data;
             }
 
-            for (let collectionName in dataByCollection) {
+            for (const collectionName in dataByCollection) {
                 const elements = [];
                 const identifiers = [];
 
-                for (let dataIndex in dataByCollection[collectionName]) {
+                for (const dataIndex in dataByCollection[collectionName]) {
                     const rowData = data[dataIndex];
 
                     // For each row, find place in depth for this element.
@@ -1724,7 +1724,7 @@ export default {
                                 .slice(1)
                                 .join(":");
                             let found = false;
-                            for (let element of elementsAtDepth) {
+                            for (const element of elementsAtDepth) {
                                 if (element["name"] == identifier) {
                                     elementsAtDepth = element[subElementProp];
                                     identifiersAtDepth = identifiersAtDepth[identifier];
@@ -1795,7 +1795,7 @@ export default {
 
             const datasets = [];
 
-            for (let dataIndex in data) {
+            for (const dataIndex in data) {
                 const res = this._datasetFor(dataIndex, data, mappingAsDict);
                 datasets.push(res);
             }
@@ -1806,7 +1806,7 @@ export default {
             const parentIdentifiers = parentIdentifiers_ ? parentIdentifiers_ : [];
             let data = [];
             let sources = [];
-            for (let element of elements) {
+            for (const element of elements) {
                 const elementObject = element.object;
                 const identifiers = parentIdentifiers.concat([element.element_identifier]);
                 const collectionTypeLevelSepIndex = collectionType.indexOf(":");
@@ -1818,7 +1818,7 @@ export default {
                     sources.push(source);
                 } else {
                     const restCollectionType = collectionType.slice(collectionTypeLevelSepIndex + 1);
-                    let elementObj = this.populateElementsFromCollectionDescription(
+                    const elementObj = this.populateElementsFromCollectionDescription(
                         elementObject.elements,
                         restCollectionType,
                         identifiers
@@ -1919,7 +1919,7 @@ export default {
         if (this.elementsType !== "collection_contents") {
             let columnCount = null;
             if (this.elementsType == "datasets") {
-                for (let element of this.initialElements) {
+                for (const element of this.initialElements) {
                     if (element.history_content_type == "dataset_collection") {
                         this.errorMessage =
                             "This component can only be used with datasets, you have specified one or more collections.";
@@ -1927,7 +1927,7 @@ export default {
                     }
                 }
             } else {
-                for (let row of this.initialElements) {
+                for (const row of this.initialElements) {
                     if (columnCount == null) {
                         columnCount = row.length;
                     } else {

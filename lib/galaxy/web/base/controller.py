@@ -238,6 +238,12 @@ class BaseAPIController(BaseController):
             keys = keys.split(',')
         return dict(view=view, keys=keys, default_view=default_view)
 
+    def _parse_order_by(self, manager, order_by_string):
+        ORDER_BY_SEP_CHAR = ','
+        if ORDER_BY_SEP_CHAR in order_by_string:
+            return [manager.parse_order_by(o) for o in order_by_string.split(ORDER_BY_SEP_CHAR)]
+        return manager.parse_order_by(order_by_string)
+
 
 class JSAppLauncher(BaseUIController):
     """

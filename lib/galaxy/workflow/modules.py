@@ -993,7 +993,9 @@ class ToolModule(WorkflowModule):
                         params = make_dict_copy(self.state.inputs)
                         params['on_string'] = 'input dataset(s)'
                         params['tool'] = self.tool
-                        extra_kwds['label'] = fill_template(tool_output.label, context=params)
+                        extra_kwds['label'] = fill_template(tool_output.label,
+                                                            context=params,
+                                                            python_template_version=self.tool.python_template_version)
                     except Exception:
                         pass
                 data_outputs.append(
@@ -1230,7 +1232,7 @@ class ToolModule(WorkflowModule):
 
             unmatched_input_connections = expected_replacement_keys - found_replacement_keys
             if unmatched_input_connections:
-                log.warn("Failed to use input connections for inputs [%s]" % unmatched_input_connections)
+                log.warning("Failed to use input connections for inputs [%s]" % unmatched_input_connections)
 
             param_combinations.append(execution_state.inputs)
 

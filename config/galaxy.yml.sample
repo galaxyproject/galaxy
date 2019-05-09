@@ -98,13 +98,6 @@ uwsgi:
 
 galaxy:
 
-  # When running multiple Galaxy instances under separate URL prefixes
-  # on a single hostname, you will want to set this to the same path as
-  # the prefix set in the uWSGI "mount" configuration option above. This
-  # value becomes the "path" attribute set in the cookie so the cookies
-  # from one instance will not clobber those from another.
-  #cookie_path: ''
-
   # By default, Galaxy uses a SQLite database at
   # 'database/universe.sqlite'.  You may use a SQLAlchemy connection
   # string to specify an external database instead.  This string takes
@@ -169,6 +162,17 @@ galaxy:
   # automatically migrate the database forward after updates. This is
   # not recommended for production use.
   #database_auto_migrate: false
+
+  # Wait for database to become available instead of failing
+  # immediately.
+  #database_wait: false
+
+  # Number of attempts before failing if database_wait is enabled.
+  #database_wait_attempts: 60
+
+  # Time to sleep between attempts if database_wait is enabled (in
+  # seconds).
+  #database_wait_sleep: 1
 
   # Where dataset files are stored. It must accessible at the same path
   # on any cluster nodes that will run Galaxy jobs, unless using Pulsar.
@@ -1525,6 +1529,11 @@ galaxy:
   # job running capabilities can be configured through the job
   # configuration file.
   #job_config_file: config/job_conf.xml
+
+  # Description of job running configuration, can be embedded into
+  # Galaxy configuration or loaded from an additional file with the
+  # job_config_file option.
+  #job_config: null
 
   # When jobs fail due to job runner problems, Galaxy can be configured
   # to retry these or reroute the jobs to new destinations. Very fine

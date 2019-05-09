@@ -1,4 +1,3 @@
-import inspect
 import logging
 from functools import wraps
 from json import loads
@@ -12,6 +11,7 @@ from galaxy.util import (
     parse_non_hex_float,
     unicodify
 )
+from galaxy.util.getargspec import getfullargspec
 from galaxy.util.json import safe_dumps
 from galaxy.web.framework import url_for
 
@@ -176,7 +176,7 @@ def __extract_payload_from_request(trans, func, kwargs):
         # in the payload. Therefore, the decorated method's formal arguments are discovered through reflection and removed from
         # the payload dictionary. This helps to prevent duplicate argument conflicts in downstream methods.
         payload = kwargs.copy()
-        named_args, _, _, _ = inspect.getargspec(func)
+        named_args = getfullargspec(func).args
         for arg in named_args:
             payload.pop(arg, None)
         for k, v in payload.items():

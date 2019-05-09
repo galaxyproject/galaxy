@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import re
 from json import dumps
 
@@ -260,7 +261,6 @@ class DefaultToolAction(object):
         for data in inp_data.values():
             if not data:
                 continue
-
             for tag in data.auto_propagated_tags:
                 preserved_tags[tag.value] = tag
 
@@ -378,7 +378,8 @@ class DefaultToolAction(object):
                     wrapped_params.params,
                     inp_data,
                     inp_dataset_collections,
-                    input_ext
+                    input_ext,
+                    python_template_version=tool.python_template_version,
                 )
                 create_datasets = True
                 dataset = None
@@ -392,6 +393,10 @@ class DefaultToolAction(object):
                             break
 
                 data = app.model.HistoryDatasetAssociation(extension=ext, dataset=dataset, create_dataset=create_datasets, flush=False)
+                if create_datasets:
+                    from_work_dir = output.from_work_dir
+                    if from_work_dir is not None:
+                        data.dataset.created_from_basename = os.path.basename(from_work_dir)
                 if hidden is None:
                     hidden = output.hidden
                 if not hidden and dataset_collection_elements is not None:  # Mapping over a collection - hide datasets
@@ -745,7 +750,7 @@ class DefaultToolAction(object):
         if output.label:
             params['tool'] = tool
             params['on_string'] = on_text
-            return fill_template(output.label, context=params)
+            return fill_template(output.label, context=params, python_template_version=tool.python_template_version)
         else:
             return self._get_default_data_name(dataset, tool, on_text=on_text, trans=trans, incoming=incoming, history=history, params=params, job_params=job_params)
 
@@ -762,7 +767,7 @@ class DefaultToolAction(object):
         if output.actions:
             for action in output.actions.actions:
                 if action.tag == "metadata" and action.default:
-                    metadata_new_value = fill_template(action.default, context=params).split(",")
+                    metadata_new_value = fill_template(action.default, context=params, python_template_version=tool.python_template_version).split(",")
                     dataset.metadata.__setattr__(str(action.name), metadata_new_value)
 
     def _get_default_data_name(self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd):
@@ -925,7 +930,7 @@ def get_ext_or_implicit_ext(hda):
     return hda.ext
 
 
-def determine_output_format(output, parameter_context, input_datasets, input_dataset_collections, random_input_ext):
+def determine_output_format(output, parameter_context, input_datasets, input_dataset_collections, random_input_ext, python_template_version='3'):
     """ Determines the output format for a dataset based on an abstract
     description of the output (galaxy.tools.parser.ToolOutput), the parameter
     wrappers, a map of the input datasets (name => HDA), and the last input
@@ -987,7 +992,7 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
                         if '$' not in check:
                             # allow a simple name or more complex specifications
                             check = '${%s}' % check
-                        if str(fill_template(check, context=parameter_context)) == when_elem.get('value', None):
+                        if fill_template(check, context=parameter_context, python_template_version=python_template_version) == when_elem.get('value', None):
                             ext = when_elem.get('format', ext)
                     except Exception:  # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
                         continue

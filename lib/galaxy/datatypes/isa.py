@@ -14,7 +14,6 @@ import re
 import shutil
 import sys
 import tempfile
-from cgi import escape
 
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
@@ -22,6 +21,7 @@ from isatools import (
     isajson,
     isatab_meta
 )
+from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import data

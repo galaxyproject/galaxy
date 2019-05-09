@@ -25,17 +25,6 @@ mapping:
     required: true
     mapping:
 
-      cookie_path:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          When running multiple Galaxy instances under separate URL prefixes on a
-          single hostname, you will want to set this to the same path as the prefix set
-          in the uWSGI "mount" configuration option above. This value becomes the "path"
-          attribute set in the cookie so the cookies from one instance will not clobber
-          those from another.
-
       database_connection:
         type: str
         default: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
@@ -138,6 +127,27 @@ mapping:
           Setting the following option to true will cause Galaxy to automatically
           migrate the database forward after updates. This is not recommended for production
           use.
+
+      database_wait:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Wait for database to become available instead of failing immediately.
+
+      database_wait_attempts:
+        type: int
+        default: 60
+        required: false
+        desc: |
+          Number of attempts before failing if database_wait is enabled.
+
+      database_wait_sleep:
+        type: float
+        default: 1.
+        required: false
+        desc: |
+          Time to sleep between attempts if database_wait is enabled (in seconds).
 
       file_path:
         type: str
@@ -2349,6 +2359,9 @@ mapping:
           notifies itself of new jobs via in-memory queues.  Jobs are run locally on
           the system on which Galaxy is started.  Advanced job running capabilities can
           be configured through the job configuration file.
+
+      job_config:
+        !include job_config_schema.yml
 
       default_job_resubmission_condition:
         type: str
