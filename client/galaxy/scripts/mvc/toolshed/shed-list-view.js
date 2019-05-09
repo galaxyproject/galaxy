@@ -5,7 +5,6 @@ import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
 
 var ShedListView = Backbone.View.extend({
-
     initialize: function(options) {
         this.options = _.defaults(this.options || {}, this.defaults);
         this.model = new toolshed_model.ShedsCollection();
@@ -30,7 +29,7 @@ var ShedListView = Backbone.View.extend({
 
     templateToolshedList: function() {
         return _.template(
-                `<div class='shed-style-container'>
+            `<div class='shed-style-container'>
                 <div class='header'>
                 <h2>
                 ${_l("Configured Tool Sheds")}

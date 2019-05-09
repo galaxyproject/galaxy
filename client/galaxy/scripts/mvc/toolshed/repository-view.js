@@ -507,7 +507,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         );
     },
 
-    templateRepoDependencies: function(){
+    templateRepoDependencies: function() {
         return _.template(
             `<div class="toolFormTitle">Repository Dependencies</div>
             <div class="toolFormBody tables container-table" id="repository_dependencies">
@@ -525,7 +525,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         );
     },
 
-    templateRepoDependency: function(){
+    templateRepoDependency: function() {
         return _.template(
             `<li id="metadata_<%= id %>" class="datasetRow repository_dependency_row">
             Repository <b><%= repository.name %></b> revision <b><%= changeset_revision %></b> owned by <b><%= repository.owner %></b>
@@ -541,7 +541,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         );
     },
 
-    templateShedToolConf: function(){
+    templateShedToolConf: function() {
         return _.template(
             `<div class="toolFormTitle">Shed tool configuration file:</div>
             <div class="toolFormBody">
@@ -570,7 +570,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
     //     );
     // },
 
-    templateGlobalSectionCreate: function(){
+    templateGlobalSectionCreate: function() {
         return _.template(
             `<div id="tool_panel_section">
             <div class="form-row" id="new_tps">
@@ -584,7 +584,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         );
     },
 
-    templateGlobalSectionSelect: function(){
+    templateGlobalSectionSelect: function() {
         return _.template(
             `<div id="tool_panel_section">
             <div class="toolFormTitle">Tool Panel Section</div>
@@ -603,7 +603,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         );
     },
 
-    templateToolSectionCreate: function(){
+    templateToolSectionCreate: function() {
         return _.template(
             `<div id="new_tps_<%= tool.clean %>" data-clean="<%= tool.clean %>" class="form-row">
             <input data-toolguid="<%= tool.guid %>" class="tool_panel_section_picker" size="40" name="new_tool_panel_section" id="new_tool_panel_section_<%= tool.clean %>" type="text">
@@ -612,7 +612,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         );
     },
 
-    templateToolSectionSelect: function(){
+    templateToolSectionSelect: function() {
         return _.template(
             `<div id="select_tps_<%= tool.clean %>" data-clean="<%= tool.clean %>" class="tps_creator">
             <select default="active" style="width: 30em;" data-toolguid="<%= tool.guid %>" class="tool_panel_section_picker" name="tool_panel_section_id" id="tool_panel_section_select_<%= tool.clean %>">
@@ -624,7 +624,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         );
     },
 
-    templatePanelSelectOptions: function(){
+    templatePanelSelectOptions: function() {
         return _.template(
             `<% _.each(sections, function(section) { %>
             <option value="<%= section.id %>"><%= section.name %></option>

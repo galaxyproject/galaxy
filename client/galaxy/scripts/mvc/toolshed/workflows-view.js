@@ -75,7 +75,7 @@ var View = Backbone.View.extend({
         $("#from_workflow").on("click", this.loadWorkflows);
     },
 
-    templateWorkflows: function(){
+    templateWorkflows: function() {
         _.template(
             `<div class="unified-panel-header" id="panel_header" unselectable="on">
             <div class="unified-panel-header-inner"><%= title %><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>

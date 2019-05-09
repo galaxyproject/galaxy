@@ -12,7 +12,7 @@ var AdminToolshedRouter = Backbone.Router.extend({
     routes: {
         "": "toolsheds",
         sheds: "toolsheds",
-        "queue": "queue",
+        queue: "queue",
         workflows: "workflows",
         "status/r/:repositories": "status",
         status: "status",

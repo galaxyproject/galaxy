@@ -47,7 +47,7 @@ var View = Backbone.View.extend({
         });
         $("#clear_queue").on("click", () => {
             let repo_queue = JSON.parse(window.localStorage.repositories);
-            for (let [key, value] of Object.entries(repo_queue)){
+            for (let [key, value] of Object.entries(repo_queue)) {
                 this.removeRow(repo_queue[key].id);
             }
             window.localStorage.repositories = "{}";
@@ -60,7 +60,7 @@ var View = Backbone.View.extend({
         });
     },
 
-    removeRow: function(row_id){
+    removeRow: function(row_id) {
         $(`#queued_repository_${row_id}`).remove();
     },
 
