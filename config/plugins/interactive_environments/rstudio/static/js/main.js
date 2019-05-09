@@ -19,12 +19,6 @@ function load_notebook(notebook_access_url) {
     // Test notebook_login_url for accessibility, executing the login+load function whenever
     // we've successfully connected to the IE.
     IES.test_ie_availability(notebook_access_url, function() {
-        $.ajax({
-            type: "GET",
-            url: notebook_access_url,
-            success: function(response_text) {
-                IES.append_notebook(notebook_access_url);
-            }
-        });
+        IES.append_notebook(notebook_access_url);
     });
 }
