@@ -467,41 +467,8 @@ DatasetListItemEdit.prototype.templates = (() => {
             "dataset"
         )
     });
-
-    var visualizationsTemplate = BASE_MVC.wrapTemplate(
-        [
-            "<% if( visualizations.length === 1 ){ %>",
-            '<a class="visualization-link icon-btn" href="<%- visualizations[0].href %>"',
-            ' target="<%- visualizations[0].target %>" title="',
-            _l("Visualize in"),
-            ' <%- visualizations[0].html %>">',
-            '<span class="fa fa-bar-chart-o"></span>',
-            "</a>",
-
-            "<% } else { %>",
-            '<div class="visualizations-dropdown dropdown icon-btn">',
-            '<a data-toggle="dropdown" title="',
-            _l("Visualize"),
-            '">',
-            '<span class="fa fa-bar-chart-o"></span>',
-            "</a>",
-            '<ul class="dropdown-menu" role="menu">',
-            "<% _.each( visualizations, function( visualization ){ %>",
-            '<li><a class="visualization-link" href="<%- visualization.href %>"',
-            ' target="<%- visualization.target %>">',
-            "<%- visualization.html %>",
-            "</a></li>",
-            "<% }); %>",
-            "</ul>",
-            "</div>",
-            "<% } %>"
-        ],
-        "visualizations"
-    );
-
     return _.extend({}, _super.prototype.templates, {
-        warnings: warnings,
-        visualizations: visualizationsTemplate
+        warnings: warnings
     });
 })();
 

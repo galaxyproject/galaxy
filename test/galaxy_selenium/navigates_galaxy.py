@@ -837,10 +837,10 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_index_create(self, name):
         self.libraries_index_click_create_new()
-        name_text_box = self.wait_for_selector_clickable("input[name='Name']")
+        name_text_box = self.wait_for_selector_visible("textarea[name='input_library_name']")
         name_text_box.send_keys(name)
 
-        self.wait_for_and_click_selector("#button-0")
+        self.wait_for_and_click_selector(".save_library_btn")
 
     def libraries_index_click_search(self):
         self.sleep_for(WAIT_TYPES.UX_RENDER)
@@ -868,10 +868,10 @@ class NavigatesGalaxy(HasDriver):
     def libraries_folder_create(self, name):
         self.components.libraries.folder.add_folder.wait_for_and_click()
 
-        name_text_box = self.wait_for_selector_clickable("input[name='Name']")
+        name_text_box = self.wait_for_selector_visible("textarea[name='input_folder_name']")
         name_text_box.send_keys(name)
 
-        create_button = self.wait_for_selector_clickable("#button-0")
+        create_button = self.wait_for_selector_clickable(".save_folder_btn")
         create_button.click()
 
     def libraries_click_dataset_import(self):
@@ -1086,7 +1086,7 @@ class NavigatesGalaxy(HasDriver):
 
         # Click labelled option
         self.wait_for_visible(self.navigation.history_panel.options_menu)
-        menu_item_sizzle_selector = '#history-options-button-menu > li > a:contains("%s")' % option_label
+        menu_item_sizzle_selector = '#history-options-button-menu > a:contains("%s")' % option_label
         menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
 

@@ -34,20 +34,46 @@ class ConditionalDependencies(object):
 
     def parse_configs(self):
         self.config = load_app_properties(config_file=self.config_file)
-        job_conf_xml = self.config.get(
-            "job_config_file",
-            join(dirname(self.config_file), 'job_conf.xml'))
-        try:
-            for plugin in ElementTree.parse(job_conf_xml).find('plugins').findall('plugin'):
-                if 'load' in plugin.attrib:
-                    self.job_runners.append(plugin.attrib['load'])
-        except (OSError, IOError):
-            pass
-        try:
-            for plugin in ElementTree.parse(job_conf_xml).findall('.//destination/param[@id="rules_module"]'):
-                self.job_rule_modules.append(plugin.text)
-        except (OSError, IOError):
-            pass
+
+        def load_job_config_dict(job_conf_dict):
+            for runner in job_conf_dict.get("runners"):
+                if "load" in runner:
+                    self.job_runners.append(runner.get("load"))
+                if "rules_module" in runner:
+                    self.job_rule_modules.append(plugin.text)
+                if "params" in runner:
+                    runner_params = runner["params"]
+                    if "rules_module" in runner_params:
+                        self.job_rule_modules.append(plugin.text)
+
+        if "job_config" in self.config:
+            load_job_config_dict(self.config.get("job_config"))
+        else:
+            job_conf_path = self.config.get(
+                "job_config_file",
+                join(dirname(self.config_file), 'job_conf.xml'))
+            if '.xml' in job_conf_path:
+                try:
+                    try:
+                        for plugin in ElementTree.parse(job_conf_path).find('plugins').findall('plugin'):
+                            if 'load' in plugin.attrib:
+                                self.job_runners.append(plugin.attrib['load'])
+                    except (OSError, IOError):
+                        pass
+                    try:
+                        for plugin in ElementTree.parse(job_conf_path).findall('.//destination/param[@id="rules_module"]'):
+                            self.job_rule_modules.append(plugin.text)
+                    except (OSError, IOError):
+                        pass
+                except ElementTree.ParseError:
+                    pass
+            else:
+                try:
+                    job_conf_dict = yaml.safe_load(job_conf_path)
+                    load_job_config_dict(job_conf_dict)
+                except (OSError, IOError):
+                    pass
+
         object_store_conf_xml = self.config.get(
             "object_store_config_file",
             join(dirname(self.config_file), 'object_store_conf.xml'))

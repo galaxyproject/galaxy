@@ -464,6 +464,7 @@ class Tool(Dictifiable):
         self.guid = guid
         self.old_id = None
         self.version = None
+        self.python_template_version = None
         self._lineage = None
         self.dependencies = []
         # populate toolshed repository info, if available
@@ -642,6 +643,14 @@ class Tool(Dictifiable):
             template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
             message = template % (self.id, self.profile)
             raise Exception(message)
+
+        self.python_template_version = tool_source.parse_python_template_version()
+        if self.python_template_version is None:
+            # If python_template_version not specified we assume tools with profile versions >= 19.05 are python 3 ready
+            if self.profile >= 19.05:
+                self.python_template_version = '3.5'
+            else:
+                self.python_template_version = '2.7'
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
@@ -1065,7 +1074,7 @@ class Tool(Dictifiable):
             if citation_elem.tag != "citation":
                 pass
             if hasattr(self.app, 'citations_manager'):
-                citation = self.app.citations_manager.parse_citation(citation_elem, self.tool_dir)
+                citation = self.app.citations_manager.parse_citation(citation_elem)
                 if citation:
                     citations.append(citation)
         return citations

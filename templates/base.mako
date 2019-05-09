@@ -51,7 +51,6 @@
 <%def name="javascripts()">
     ## TODO: remove when all libs are required directly in modules
     ${h.js(
-        'libs/require',
         'bundled/libs.chunk',
         'bundled/base.chunk'
     )}

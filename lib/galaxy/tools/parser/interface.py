@@ -218,6 +218,12 @@ class ToolSource(object):
         """ Return tool profile version as Galaxy major e.g. 16.01 or 16.04.
         """
 
+    @abstractmethod
+    def parse_python_template_version(self):
+        """
+        Return minimum python version that the tool template has been developed against.
+        """
+
     def macro_paths(self):
         return []
 

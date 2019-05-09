@@ -263,6 +263,7 @@ model.Dataset.table = Table(
     Column("object_store_id", TrimmedString(255), index=True),
     Column("external_filename", TEXT),
     Column("_extra_files_path", TEXT),
+    Column("created_from_basename", TEXT),
     Column('file_size', Numeric(15, 0)),
     Column('total_size', Numeric(15, 0)),
     Column('uuid', UUIDType()))

@@ -993,7 +993,9 @@ class ToolModule(WorkflowModule):
                         params = make_dict_copy(self.state.inputs)
                         params['on_string'] = 'input dataset(s)'
                         params['tool'] = self.tool
-                        extra_kwds['label'] = fill_template(tool_output.label, context=params)
+                        extra_kwds['label'] = fill_template(tool_output.label,
+                                                            context=params,
+                                                            python_template_version=self.tool.python_template_version)
                     except Exception:
                         pass
                 data_outputs.append(
