@@ -232,6 +232,10 @@ var LibraryListView = Backbone.View.extend({
             this.$el.find("tr.new-row textarea")[0].focus();
         } else {
             const template = this.templateNewRow();
+            this.$el
+                .find("#library_list_body")
+                .closest("table")
+                .show();
             this.$el.find("#library_list_body").prepend(template);
 
             this.$el.find("tr.new-row textarea")[0].focus();
@@ -323,6 +327,24 @@ var LibraryListView = Backbone.View.extend({
     templateLibraryList: function() {
         return _.template(
             `<div class="library_container table-responsive">
+                <table class="grid table table-sm"
+                    <% if(length === 0) { %> style="display:none;" <% }%> >
+                    <thead>
+                        <th style="width:30%;">
+                            <a class="sort-libraries-link" title="Click to reverse order" href="#">
+                                Name
+                            </a>
+                            <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span>
+                        </th>
+                        <th style="width:22%;">Description</th>
+                        <th style="width:22%;">Synopsis</th> 
+                        <th style="width:26%;"></th>
+                    </thead>
+                    <tbody id="library_list_body">
+                    <!-- library item views will attach here -->
+                   </tbody>
+                </table>
+                    
                 <% if(length === 0) { %>
                     <% if(search_term.length > 0) { %>
                         <div>
@@ -334,23 +356,6 @@ var LibraryListView = Backbone.View.extend({
                             <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">library security wikipage</a>.
                         </div>
                     <% }%>
-                <% } else{ %>
-                    <table class="grid table table-sm">
-                        <thead>
-                            <th style="width:30%;">
-                                <a class="sort-libraries-link" title="Click to reverse order" href="#">
-                                    Name
-                                </a>
-                                <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span>
-                            </th>
-                            <th style="width:22%;">Description</th>
-                            <th style="width:22%;">Synopsis</th> 
-                            <th style="width:26%;"></th>
-                        </thead>
-                        <tbody id="library_list_body">
-                        <!-- library item views will attach here -->
-                       </tbody>
-                    </table>
                 <% }%>
             </div>`
         );
