@@ -298,7 +298,7 @@ var LibraryListView = Backbone.View.extend({
         return _.template(
             `<tr class="new-row">
                     <td>
-                        <textarea rows="4" class="form-control input_library_name" placeholder="name" ></textarea>
+                        <textarea name="input_library_name" rows="4" class="form-control input_library_name" placeholder="name" ></textarea>
                     </td>
                     <td>
                         <textarea rows="4" class="form-control input_library_description" placeholder="description"></textarea>

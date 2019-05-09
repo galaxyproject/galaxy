@@ -428,7 +428,7 @@ var FolderListView = Backbone.View.extend({
                 </td>
                 <td></td>
                 <td>
-                    <textarea rows="4" class="form-control input_folder_name" placeholder="name" ></textarea>
+                    <textarea name="input_folder_name" rows="4" class="form-control input_folder_name" placeholder="name" ></textarea>
                 </td>
                 <td>
                     <textarea rows="4" class="form-control input_folder_description" placeholder="description" ></textarea>

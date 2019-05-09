@@ -837,7 +837,7 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_index_create(self, name):
         self.libraries_index_click_create_new()
-        name_text_box = self.wait_for_selector_visible(".input_library_name")
+        name_text_box = self.wait_for_selector_visible("textarea[name='input_library_name']")
         name_text_box.send_keys(name)
 
         self.wait_for_and_click_selector(".save_library_btn")
@@ -868,7 +868,7 @@ class NavigatesGalaxy(HasDriver):
     def libraries_folder_create(self, name):
         self.components.libraries.folder.add_folder.wait_for_and_click()
 
-        name_text_box = self.wait_for_selector_visible(".input_folder_name")
+        name_text_box = self.wait_for_selector_visible("textarea[name='input_folder_name']")
         name_text_box.send_keys(name)
 
         create_button = self.wait_for_selector_clickable(".save_folder_btn")
