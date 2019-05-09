@@ -39,7 +39,7 @@ const View = Backbone.View.extend({
                 }
                 input.value = input.value.replace(/[^0-9eE.-]/g, '');
             });
-            
+
         // build slider, cannot be rebuild in render
         const opts = this.model.attributes;
         this.has_slider = opts.max !== null && opts.min !== null && opts.max > opts.min;
