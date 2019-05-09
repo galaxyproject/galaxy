@@ -500,6 +500,7 @@ div.unified-panel-body-background {
         @extend .text-dark;
         font-size: 12px;
         text-decoration: none;
+        display: block;
     }
 }
 
@@ -1328,34 +1329,11 @@ div.popmenu-wrapper {
     top: 100%;
     z-index: 20000;
 
-    ul.dropdown-menu {
+    .dropdown-menu {
         // Since our menus are contained in a positioned div, need to override some styles
         display: block;
         position: relative;
         float: none;
-    }
-}
-
-// For all dropdowns, define some additional item types
-ul.dropdown-menu {
-    a {
-        text-decoration: none;
-    }
-    li.head > a {
-        // From nav-list nav-header
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-        font-size: 11px;
-        font-weight: bold;
-        line-height: $line-height-base;
-        color: $text-color;
-        text-transform: uppercase;
-    }
-    li.head > a:hover {
-        background: inherit;
-        border-color: transparent;
-    }
-    li > a {
-        @extend .dropdown-item;
     }
 }
 

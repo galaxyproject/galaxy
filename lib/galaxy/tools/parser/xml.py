@@ -5,6 +5,8 @@ import traceback
 import uuid
 from math import isinf
 
+import packaging.version
+
 from galaxy.tools.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
@@ -482,6 +484,12 @@ class XmlToolSource(ToolSource):
         # - Auto-check for $param_file.
         # - Enable buggy interpreter attribute.
         return self.root.get("profile", "16.01")
+
+    def parse_python_template_version(self):
+        python_template_version = self.root.get("python_template_version", None)
+        if python_template_version is not None:
+            python_template_version = packaging.version.parse(python_template_version)
+        return python_template_version
 
 
 def _test_elem_to_dict(test_elem, i):

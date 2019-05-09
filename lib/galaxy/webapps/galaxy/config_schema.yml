@@ -144,7 +144,7 @@ mapping:
 
       database_wait_sleep:
         type: float
-        default: 1
+        default: 1.
         required: false
         desc: |
           Time to sleep between attempts if database_wait is enabled (in seconds).
@@ -2359,6 +2359,9 @@ mapping:
           notifies itself of new jobs via in-memory queues.  Jobs are run locally on
           the system on which Galaxy is started.  Advanced job running capabilities can
           be configured through the job configuration file.
+
+      job_config:
+        !include job_config_schema.yml
 
       default_job_resubmission_condition:
         type: str

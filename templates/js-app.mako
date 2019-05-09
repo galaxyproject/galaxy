@@ -37,7 +37,6 @@
 
 <%def name="javascripts()">
     ${ h.js(
-        'libs/require',
         'bundled/libs.chunk',
         'bundled/base.chunk'
     )}

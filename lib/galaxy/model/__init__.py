@@ -2510,6 +2510,16 @@ class DatasetInstance(object):
         """Detects whether there is any data"""
         return self.dataset.has_data()
 
+    def get_created_from_basename(self):
+        return self.dataset.created_from_basename
+
+    def set_created_from_basename(self, created_from_basename):
+        if self.dataset.created_from_basename is not None:
+            raise Exception("Underlying dataset already has a created_from_basename set.")
+        self.dataset.created_from_basename = created_from_basename
+
+    created_from_basename = property(get_created_from_basename, set_created_from_basename)
+
     def get_raw_data(self):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
         return self.datatype.get_raw_data(self)
@@ -3393,6 +3403,7 @@ class LibraryDataset(RepresentById):
                     state=ldda.state,
                     name=ldda.name,
                     file_name=ldda.file_name,
+                    created_from_basename=ldda.created_from_basename,
                     uploaded_by=ldda.user.email,
                     message=ldda.message,
                     date_uploaded=ldda.create_time.isoformat(),
@@ -3545,7 +3556,8 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                     data_type=ldda.datatype.__class__.__module__ + '.' + ldda.datatype.__class__.__name__,
                     genome_build=ldda.dbkey,
                     misc_info=ldda.info,
-                    misc_blurb=ldda.blurb)
+                    misc_blurb=ldda.blurb,
+                    created_from_basename=ldda.created_from_basename)
         if ldda.dataset.uuid is None:
             rval['uuid'] = None
         else:
