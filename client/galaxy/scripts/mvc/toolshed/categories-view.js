@@ -57,40 +57,38 @@ var ToolShedCategories = Backbone.View.extend({
 
     templateCategoryList: function() {
         return _.template(
-            [
-                "<div class='shed-style-container'>",
-                    "<div class='header'>",
-                        "<h2>Categories in <%= tool_shed.replace(/%2f/g, '/') %></h2>",
-                        "<span><a href='#/queue'>Repository Queue (<%= queue %>)</a></span>",
-                        "<span style='clear:both; '></span>",
-                    "</div>", // end header
-                    "<div id='standard-search' style='height: 2em; margin: 1em;'>",
-                        "<span class='ui-widget' >",
-                        "<input class='search-box-input' id='search_box' data-shedurl='<%= tool_shed.replace(/%2f/g, '/') %>' name='search' placeholder='Search repositories' size='30' type='text' />",
-                        "</span>",
-                    "</div>", // end search
-                    "<div style='clear: both; margin-top: 1em;'>",
-                        "<table class='grid'>",
-                        "<thead id='grid-table-header'>",
-                        "<tr>",
-                        "<th>Name</th>",
-                        "<th>Description</th>",
-                        "<th>Repositories</th>",
-                        "</tr>",
-                        "</thead>",
-                        "<% _.each(categories, function(category) { %>",
-                        "<tr>",
-                        "<td>",
-                        "<a href='#/category/s/<%= tool_shed %>/c/<%= category.get('id') %>/k/name/p/1/t/asc'><%= category.get('name') %></a>",
-                        "</td>",
-                        "<td><%= category.get('description') %></td>",
-                        "<td><%= category.get('repositories') %></td>",
-                        "</tr>",
-                        "<% }); %>",
-                        "</table>",
-                    "</div>",
-                "</div>",
-            ].join("")
+            `<div class='shed-style-container'>
+                <div class='header'>
+                    <h2>Categories in <%= tool_shed.replace(/%2f/g, '/') %></h2>
+                    <span><a href='#/queue'>Repository Queue (<%= queue %>)</a></span>
+                    <span style='clear:both; '></span>
+                </div>
+                <div id='standard-search' style='height: 2em; margin: 1em;'>
+                    <span class='ui-widget' >
+                    <input class='search-box-input' id='search_box' data-shedurl='<%= tool_shed.replace(/%2f/g, '/') %>' name='search' placeholder='Search repositories' size='30' type='text' />
+                    </span>
+                </div>
+                <div style='clear: both; margin-top: 1em;'>
+                    <table class='grid'>
+                    <thead id='grid-table-header'>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Repositories</th>
+                    </tr>
+                    </thead>
+                    <% _.each(categories, function(category) { %>
+                    <tr>
+                        <td>
+                        <a href='#/category/s/<%= tool_shed %>/c/<%= category.get('id') %>/k/name/p/1/t/asc'><%= category.get('name') %></a>
+                        </td>
+                        <td><%= category.get('description') %></td>
+                        <td><%= category.get('repositories') %></td>
+                    </tr>
+                    <% }); %>
+                    </table>
+                </div>
+            </div>`
         );
     }
 });

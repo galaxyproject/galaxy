@@ -30,22 +30,20 @@ var ShedListView = Backbone.View.extend({
 
     templateToolshedList: function() {
         return _.template(
-            [
-                "<div class='shed-style-container'>",
-                "<div class='header'>",
-                "<h2>",
-                _l("Configured Tool Sheds"),
-                "</h2>",
-                "<span><a href='#/queue'>Repository Queue (<%= queue %>)</a></span>",
-                "<div style='clear:both;'></div>",
-                "</div'>", // end header
-                "<% _.each(tool_sheds, function(shed) { %>",
-                    "<div>",
-                    "<a href='#/categories/s/<%= shed.get('url') %>'><%= shed.get('name') %></a>",
-                    "</div>",
-                "<% }); %>",
-                "</div>",
-            ].join("")
+                `<div class='shed-style-container'>
+                <div class='header'>
+                <h2>
+                ${_l("Configured Tool Sheds")}
+                </h2>
+                <span><a href='#/queue'>Repository Queue (<%= queue %>)</a></span>
+                <div style='clear:both;'></div>
+                </div'>
+                <% _.each(tool_sheds, function(shed) { %>
+                    <div>
+                    <a href='#/categories/s/<%= shed.get('url') %>'><%= shed.get('name') %></a>
+                    </div>
+                <% }); %>
+                </div>`
         );
     }
 });
