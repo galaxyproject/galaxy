@@ -347,7 +347,7 @@ var View = Backbone.View.extend({
     _getViewResult: function(response) {
         var vr = "";
         if (response.view_result) {
-            for (let i in response.view_result) {
+            for (const i in response.view_result) {
                 vr += `<div class="infomessagelarge">
                             <p>
                                 <a href="${response.view_result[i]}">
