@@ -178,7 +178,7 @@ class ToolShedController(BaseAPIController):
                 category['url'] = api_url
                 categories.append(category)
         except Exception:
-            raise exceptions.ObjectNotFound('The specified Toolshed is not responding.')
+            raise exceptions.ObjectNotFound("Tool Shed %s is not responding." % tool_shed_url)
         return categories
 
     @expose_api
