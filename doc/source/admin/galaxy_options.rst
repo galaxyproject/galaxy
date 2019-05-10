@@ -1302,7 +1302,8 @@
     within your local network - if specified used as a default by
     pulsar file staging and Jupyter Docker container for communicating
     back with Galaxy via the API.  If you are attempting to set up
-    GIEs on Mac OS X with Docker Desktop for Mac this should be
+    GIEs on Mac OS X with Docker Desktop for Mac and your Galaxy
+    instance runs on port 8080 this should be
     'http://host.docker.internal:8080'.  For more details see
     https://docs.docker.com/docker-for-mac/networking/
 :Default: ``http://localhost:8080``

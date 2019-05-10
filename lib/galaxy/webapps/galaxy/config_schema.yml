@@ -976,8 +976,9 @@ mapping:
           Galaxy via the API.
 
           If you are attempting to set up GIEs on Mac OS X with Docker Desktop
-          for Mac this should be 'http://host.docker.internal:8080'.  For more
-          details see https://docs.docker.com/docker-for-mac/networking/
+          for Mac and your Galaxy instance runs on port 8080 this should be
+          'http://host.docker.internal:8080'.  For more details see
+          https://docs.docker.com/docker-for-mac/networking/
 
       galaxy_infrastructure_web_port:
         type: int
