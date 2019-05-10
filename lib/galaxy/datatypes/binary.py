@@ -1107,6 +1107,63 @@ class Cool(H5):
             return "Cool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
 
 
+class MCool(H5):
+    """
+    Class describing the multi-resolution cool format (https://github.com/mirnylab/cooler)
+    """
+
+    file_ext = "mcool"
+
+    def sniff(self, filename):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('matrix.mcool')
+        >>> MCool().sniff(fname)
+        True
+        >>> fname = get_test_fname('test.mz5')
+        >>> MCool().sniff(fname)
+        False
+        >>> fname = get_test_fname('wiggle.wig')
+        >>> MCool().sniff(fname)
+        False
+        >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom2')
+        >>> MCool().sniff(fname)
+        False
+        """
+
+        MAGIC = "HDF5::Cooler"
+        URL = "https://github.com/mirnylab/cooler"
+
+        if super(MCool, self).sniff(filename):
+            keys0 = ['resolutions']
+            with h5py.File(filename, 'r') as handle:
+                if not all(name in handle.keys() for name in keys0):
+                    return False
+                res0 = handle['resolutions'].keys()[0]
+                keys = ['chroms', 'bins', 'pixels', 'indexes']
+                fmt = handle['resolutions'][res0].attrs.get('format', None)
+                url = handle['resolutions'][res0].attrs.get('format-url', None)
+                if fmt == MAGIC or url == URL:
+                    if not all(name in handle['resolutions'][res0].keys() for name in keys):
+                        return False
+                    return True
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Multi-resolution Cool (HDF5) file for storing genomic interaction data."
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "MCool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
+            
+
 class Scf(Binary):
     """Class describing an scf binary sequence file"""
     edam_format = "format_1632"
