@@ -117,6 +117,8 @@ export default {
                 } else {
                     this.finalize();
                 }
+            } else {
+                this.load(record.url);
             }
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
