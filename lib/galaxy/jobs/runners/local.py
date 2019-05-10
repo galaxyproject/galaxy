@@ -181,7 +181,7 @@ class LocalJobRunner(BaseJobRunner):
                 return
         else:
             log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" % (job.id, pid))
-        self.__kill_container(job_wrapper)
+        self._kill_container(job_wrapper)
 
     def recover(self, job, job_wrapper):
         # local jobs can't be recovered
