@@ -517,7 +517,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Container resolvers configuration (beta). Setup a file describing
+    Container resolvers configuration (beta). Set up a file describing
     container resolvers to use when discovering containers for Galaxy.
     If this is set to None, the default containers loaded is
     determined by enable_beta_mulled_containers.
@@ -1301,11 +1301,10 @@
     URL (with schema http/https) of the Galaxy instance as accessible
     within your local network - if specified used as a default by
     pulsar file staging and Jupyter Docker container for communicating
-    back with Galaxy via the API.  If you are attempting to setup GIEs
-    on Mac OS X with Docker for Mac - this should likely be the IP
-    address of your machine on the virtualbox network (vboxnet0) setup
-    for the Docker host VM. This can found by running ifconfig and
-    using the IP address of the network vboxnet0.
+    back with Galaxy via the API.  If you are attempting to set up
+    GIEs on Mac OS X with Docker Desktop for Mac this should be
+    'http://host.docker.internal:8080'.  For more details see
+    https://docs.docker.com/docker-for-mac/networking/
 :Default: ``http://localhost:8080``
 :Type: str
 
