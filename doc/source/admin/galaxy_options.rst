@@ -105,7 +105,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable's a per request sql debugging option. If this is set to
+    Enables a per request sql debugging option. If this is set to
     true, append ?sql_debug=1 to web request URLs to enable detailed
     logging on the backend of SQL queries generated during that
     request. This is useful for debugging slow endpoints during
@@ -1175,7 +1175,7 @@
 :Description:
     Galaxy can display data at various external browsers.  These
     options specify which browsers should be available.  URLs and
-    builds available at these browsers are defined in the specifield
+    builds available at these browsers are defined in the specified
     files.  If use_remote_user = True, display application servers
     will be denied access to Galaxy and so displaying datasets in
     these sites will fail. display_servers contains a list of
@@ -1731,9 +1731,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set the port and IP for the the dynamic proxy to bind to, this
-    must match the external configuration if dynamic_proxy_manage is
-    False.
+    Set the port and IP for the dynamic proxy to bind to, this must
+    match the external configuration if dynamic_proxy_manage is False.
 :Default: ``8800``
 :Type: int
 
@@ -1743,9 +1742,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set the port and IP for the the dynamic proxy to bind to, this
-    must match the external configuration if dynamic_proxy_manage is
-    False.
+    Set the port and IP for the dynamic proxy to bind to, this must
+    match the external configuration if dynamic_proxy_manage is False.
 :Default: ``0.0.0.0``
 :Type: str
 
