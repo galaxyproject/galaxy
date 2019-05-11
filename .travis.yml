@@ -1,6 +1,7 @@
 os: osx
 # No version of Python is available via virtualenv on OS X workers, see https://github.com/travis-ci/travis-ci/issues/2312
 language: generic
+sudo: required
 
 env:
   - TOX_ENV=py27-first_startup
