@@ -32,8 +32,8 @@ IS_OS_X = sys.platform == "darwin"
 
 # BSD 3-clause
 CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
-VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
-UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
+VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)_ver_(.*)")
+UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)_unver")
 USE_PATH_EXEC_DEFAULT = False
 CONDA_VERSION = "4.3.33"
 CONDA_BUILD_VERSION = "2.1.18"
@@ -398,9 +398,9 @@ class CondaTarget(object):
         a fixed and predictable name given package and version.
         """
         if self.version:
-            return "__%s@%s" % (self.package, self.version)
+            return "__%s_ver_%s" % (self.package, self.version)
         else:
-            return "__%s@_uv_" % (self.package)
+            return "__%s_unver" % (self.package)
 
     def __hash__(self):
         return hash((self.package, self.version, self.channel))
