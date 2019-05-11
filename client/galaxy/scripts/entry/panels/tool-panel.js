@@ -46,7 +46,7 @@ var ToolPanel = Backbone.View.extend({
         const panel_buttons = [this.upload_button];
 
         // add favorite filter button
-        if (Galaxy.user && Galaxy.user.id){
+        if (Galaxy.user && Galaxy.user.id) {
             this.favorite_button = new Buttons.ButtonLink({
                 cls: "panel-header-button",
                 title: _l("Show favorites"),
