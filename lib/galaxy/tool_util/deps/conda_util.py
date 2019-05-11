@@ -59,11 +59,17 @@ def find_conda_prefix(conda_prefix=None):
         home = os.path.expanduser("~")
         miniconda_2_dest = os.path.join(home, "miniconda2")
         miniconda_3_dest = os.path.join(home, "miniconda3")
+        anaconda_2_dest = os.path.join(home, "anaconda2")
+        anaconda_3_dest = os.path.join(home, "anaconda3")
         # Prefer miniconda3 install if both available
         if os.path.exists(miniconda_3_dest):
             return miniconda_3_dest
         elif os.path.exists(miniconda_2_dest):
             return miniconda_2_dest
+        elif os.path.exists(anaconda_3_dest):
+            return anaconda_3_dest
+        elif os.path.exists(anaconda_2_dest):
+            return anaconda_2_dest
         else:
             return miniconda_3_dest
     return conda_prefix
