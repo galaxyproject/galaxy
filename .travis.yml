@@ -8,7 +8,7 @@ env:
 
 before_install:
   # Install Singularity
-  - sudo apt-get install -y build-essential libssl-dev uuid-dev libgpgme11-dev squashfs-tools wget git
+  - sudo apt install -y build-essential libssl-dev uuid-dev libgpgme11-dev squashfs-tools wget git
   - wget https://dl.google.com/go/go1.12.5.linux-amd64.tar.gz
   - sudo tar -C /usr/local -xzf go1.12.5.linux-amd64.tar.gz
   - echo 'export GOPATH=${HOME}/go' >> ~/.bashrc
