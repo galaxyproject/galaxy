@@ -283,6 +283,7 @@ def test_import_export_composite_datasets():
     h = model.History(name="Test History", user=u)
 
     d1 = _create_datasets(sa_session, h, 1, extension="html")[0]
+    app.object_store.create(d1.dataset, dir_only=True, extra_dir=d1.dataset._extra_files_rel_path)
     sa_session.add_all((h, d1))
     sa_session.flush()
 
