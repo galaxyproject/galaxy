@@ -1619,7 +1619,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         job_ids = util.listify(stop)
         if job_ids and stop_msg in [None, '']:
             message = 'Please enter an error message to display to the user describing why the job was terminated'
-            status = 'error'
+            return self.message_exception(trans, message)
         elif job_ids:
             if stop_msg[-1] not in PUNCTUATION:
                 stop_msg += '.'

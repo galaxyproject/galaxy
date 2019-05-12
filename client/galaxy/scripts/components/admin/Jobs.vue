@@ -3,7 +3,9 @@
         <h2 class="mb-3">
             <span id="jobs-title">Jobs</span>
         </h2>
-        <Alert :message="message" :variant="status" />
+        <b-alert v-if="this.message !== ''" :variant="galaxyKwdToBootstrap(status)" show>
+            {{ message }}
+        </b-alert>
         <b-alert variant="info" show>
             <p>
                 Unfinished and recently finished jobs are displayed on this page. The 'cutoff' input box will do two
@@ -15,7 +17,9 @@
             "This job was stopped by an administrator: <strong>&lt;YOUR MESSAGE&gt;</strong> For more information or
             help, report this error".
         </b-alert>
-        <Alert v-if="loading" message="Waiting for data" variant="info" />
+        <b-alert v-if="loading" variant="info" show>
+            Waiting for data
+        </b-alert>
         <div v-else>
             <b-container class="mb-3">
                 <b-row>
@@ -84,13 +88,7 @@
                         </b-button>
                     </b-col>
                     <b-col>
-                        <b-card
-                            v-if="jobsItemsComputed.length"
-                            header="Stop Selected Jobs"
-                            header-bg-variant="info"
-                            header-text-variant="white"
-                            border-variant="info"
-                        >
+                        <b-card v-if="jobsItemsComputed.length" header="Stop Selected Jobs">
                             <b-form @submit.prevent="onStopJobs">
                                 <b-form-group label-for="stop-message" description="will be displayed to the user">
                                     <b-input-group>
@@ -156,7 +154,9 @@
                 <template slot="row-details" slot-scope="row">
                     <b-card>
                         <h5>Command Line</h5>
-                        <pre class="code"><code class="break-word">{{ row.item.command_line }}</code></pre>
+                        <pre
+                            class="text-white bg-dark"
+                        ><code class="break-word">{{ row.item.command_line }}</code></pre>
                     </b-card>
                 </template>
             </b-table>
@@ -188,7 +188,9 @@
                 <template slot="row-details" slot-scope="row">
                     <b-card>
                         <h5>Command Line</h5>
-                        <pre class="code"><code class="break-word">{{ row.item.command_line }}</code></pre>
+                        <pre
+                            class="text-white bg-dark"
+                        ><code class="break-word">{{ row.item.command_line }}</code></pre>
                     </b-card>
                 </template>
             </b-table>
@@ -202,9 +204,6 @@ import axios from "axios";
 import Alert from "components/Alert.vue";
 
 export default {
-    components: {
-        Alert
-    },
     data() {
         return {
             jobsItems: [],
@@ -270,7 +269,9 @@ export default {
                     this.busy = false;
                 })
                 .catch(error => {
-                    console.error(error);
+                    this.message = error.response.data.err_msg;
+                    this.status = "error";
+                    console.log(error.response);
                 });
         },
         onRefresh() {
@@ -321,7 +322,7 @@ export default {
             if (this.showCommandLine) {
                 f.splice(6, 0, {
                     key: "command_line",
-                    tdClass: ["code", "break-word"]
+                    tdClass: ["text-white", "bg-dark", "break-word"]
                 });
             }
             return f;
@@ -330,6 +331,23 @@ export default {
             this.selectedStopJobIds = checked
                 ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["job_info"]["id"]], [])
                 : [];
+        },
+        galaxyKwdToBootstrap(status) {
+            let variant = "info";
+            if (status !== "") {
+                variant = status;
+            }
+            const galaxyKwdToBoostrapDict = {
+                done: "success",
+                info: "info",
+                warning: "warning",
+                error: "danger"
+            };
+            if (variant in galaxyKwdToBoostrapDict) {
+                return galaxyKwdToBoostrapDict[variant];
+            } else {
+                return variant;
+            }
         }
     },
     computed: {
@@ -341,7 +359,7 @@ export default {
         },
         jobsFieldsComputed() {
             let f = this.jobsFields.slice(0);
-            f.splice(0, 0, { key: "selected", label: "", variant: "info" });
+            f.splice(0, 0, { key: "selected", label: "" });
             f.splice(2, 0, { key: "update_time", label: "Last Update", sortable: true });
             return this.computeFields(f);
         },
