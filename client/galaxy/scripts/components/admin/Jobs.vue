@@ -317,7 +317,7 @@ export default {
             });
         },
         computeFields(fields) {
-            let f = Array.from(fields).slice(0);
+            const f = Array.from(fields).slice(0);
             if (this.showCommandLine) {
                 f.splice(6, 0, {
                     key: "command_line",
@@ -357,13 +357,13 @@ export default {
             return this.computeItems(this.recentJobsItems);
         },
         jobsFieldsComputed() {
-            let f = this.jobsFields.slice(0);
+            const f = this.jobsFields.slice(0);
             f.splice(0, 0, { key: "selected", label: "" });
             f.splice(2, 0, { key: "update_time", label: "Last Update", sortable: true });
             return this.computeFields(f);
         },
         recentJobsFieldsComputed() {
-            let f = this.jobsFields.slice(0);
+            const f = this.jobsFields.slice(0);
             f.splice(2, 0, { key: "update_time", label: "Finished", sortable: true });
             return this.computeFields(f);
         }
