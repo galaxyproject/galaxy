@@ -6,7 +6,10 @@ from six import string_types, text_type
 from six.moves import shlex_quote
 
 from galaxy import exceptions
-from galaxy.util import odict
+from galaxy.util import (
+    odict,
+    sanitize_for_filename
+)
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.object_wrapper import wrap_with_safe_string
 
@@ -280,6 +283,15 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
                 log.warning("Datatype class not found for extension '%s', which is used as parameter of 'is_of_type()' method" % (e))
         return self.dataset.datatype.matches_any(datatypes)
 
+    @property
+    def safe_element_identifier(self):
+        """
+        creates a string from the element identifier that can be used safely as filename
+        by replacing the the only character that is forbidden in bash script (the slash)
+        with an underscore.
+        """
+        return self.element_identifier.replace("/","_")
+
     def __str__(self):
         if self.false_path is not None:
             return self.false_path
@@ -463,6 +475,14 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     @property
     def is_input_supplied(self):
         return self.__input_supplied
+
+    def safe_element_identifier(self):
+        """
+        creates a string from the element identifier that can be used safely as filename
+        by replacing the the only character that is forbidden in bash script (the slash)
+        with an underscore.
+        """
+        return self.element_identifier.replace("/","_")
 
     def __getitem__(self, key):
         if not self.__input_supplied:
