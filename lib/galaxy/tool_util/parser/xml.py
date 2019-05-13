@@ -7,7 +7,7 @@ from math import isinf
 
 import packaging.version
 
-from galaxy.tools.deps import requirements
+from galaxy.tool_util.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
 from .error_level import StdioErrorLevel

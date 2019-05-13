@@ -9,7 +9,7 @@ Build mulled images for requirements defined in a tool:
 
 """
 
-from galaxy.tools.parser import get_tool_source
+from galaxy.tool_util.parser import get_tool_source
 from ._cli import arg_parser
 from .mulled_build import (
     add_build_arguments,

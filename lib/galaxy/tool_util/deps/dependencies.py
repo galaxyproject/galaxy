@@ -1,4 +1,4 @@
-from galaxy.tools.deps.requirements import ToolRequirements
+from galaxy.tool_util.deps.requirements import ToolRequirements
 from galaxy.util import bunch
 from .mulled.mulled_build import DEFAULT_CHANNELS
 

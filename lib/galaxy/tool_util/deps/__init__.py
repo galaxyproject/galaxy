@@ -257,8 +257,8 @@ class DependencyManager(object):
         return plugin_config.load_plugins(self.resolver_classes, plugin_source, extra_kwds)
 
     def __resolvers_dict(self):
-        import galaxy.tools.deps.resolvers
-        return plugin_config.plugins_dict(galaxy.tools.deps.resolvers, 'resolver_type')
+        import galaxy.tool_util.deps.resolvers
+        return plugin_config.plugins_dict(galaxy.tool_util.deps.resolvers, 'resolver_type')
 
 
 class CachedDependencyManager(DependencyManager):

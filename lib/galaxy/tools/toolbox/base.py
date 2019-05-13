@@ -11,7 +11,7 @@ from six import iteritems
 from six.moves.urllib.parse import urlparse
 
 from galaxy.exceptions import MessageException, ObjectNotFound
-from galaxy.tools.deps import build_dependency_manager
+from galaxy.tool_util.deps import build_dependency_manager
 from galaxy.tools.loader_directory import looks_like_a_tool
 from galaxy.util import (
     ExecutionTimer,

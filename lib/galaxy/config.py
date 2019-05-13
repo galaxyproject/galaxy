@@ -25,7 +25,7 @@ from six.moves import configparser
 
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
-from galaxy.tools.deps.container_resolvers.mulled import DEFAULT_CHANNELS
+from galaxy.tool_util.deps.container_resolvers.mulled import DEFAULT_CHANNELS
 from galaxy.util import ExecutionTimer
 from galaxy.util import listify
 from galaxy.util import string_as_bool
@@ -513,7 +513,7 @@ class Configuration(object):
         else:
             self.conda_mapping_files = [
                 self.local_conda_mapping_file,
-                os.path.join(self.root, "lib", "galaxy", "tools", "deps", "resolvers", "default_conda_mapping.yml"),
+                os.path.join(self.root, "lib", "galaxy", "tool_util", "deps", "resolvers", "default_conda_mapping.yml"),
             ]
 
         self.enable_beta_mulled_containers = string_as_bool(kwargs.get('enable_beta_mulled_containers', 'False'))
@@ -1053,8 +1053,8 @@ class ConfiguresGalaxyMixin(object):
     def _configure_toolbox(self):
         from galaxy import tools
         from galaxy.managers.citations import CitationsManager
-        from galaxy.tools.deps import containers
-        from galaxy.tools.deps.dependencies import AppInfo
+        from galaxy.tool_util.deps import containers
+        from galaxy.tool_util.deps.dependencies import AppInfo
         import galaxy.tools.search
 
         self.citations_manager = CitationsManager(self)

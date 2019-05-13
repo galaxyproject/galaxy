@@ -6,7 +6,7 @@ from galaxy import (
     model,
     util
 )
-from galaxy.tools.parser import output_collection_def
+from galaxy.tool_util.parser import output_collection_def
 from galaxy.tools.provided_metadata import LegacyToolProvidedMetadata, NullToolProvidedMetadata
 from .. import tools_support
 

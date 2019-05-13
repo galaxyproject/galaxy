@@ -14,8 +14,8 @@ from six import string_types
 from webob.compat import cgi_FieldStorage
 
 import galaxy.model
-import galaxy.tools.parser
 from galaxy import util
+from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
     sanitize_param,
     string_as_bool,
@@ -35,7 +35,6 @@ from .dataset_matcher import (
     get_dataset_matcher_factory,
 )
 from .sanitize import ToolParameterSanitizer
-from ..parser import get_input_source as ensure_input_source
 
 log = logging.getLogger(__name__)
 

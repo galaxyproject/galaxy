@@ -25,7 +25,7 @@ from galaxy.jobs.runners.util.job_script import (
     job_script,
     write_script
 )
-from galaxy.tools.deps.dependencies import (
+from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo
 )

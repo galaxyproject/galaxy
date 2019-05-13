@@ -5,7 +5,7 @@ import logging
 
 import yaml
 
-from galaxy.tools.loader import load_tool_with_refereces
+from galaxy.tool_util.loader import load_tool_with_refereces
 from galaxy.util.odict import odict
 from .cwl import CwlToolSource
 from .interface import InputSource

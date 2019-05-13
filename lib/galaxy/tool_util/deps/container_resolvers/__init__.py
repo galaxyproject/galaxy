@@ -37,7 +37,7 @@ class ContainerResolver(Dictifiable):
     def resolve(self, enabled_container_types, tool_info, **kwds):
         """Find a container matching all supplied requirements for tool.
 
-        The supplied argument is a :class:`galaxy.tools.deps.containers.ToolInfo` description
+        The supplied argument is a :class:`galaxy.tool_util.deps.containers.ToolInfo` description
         of the tool and its requirements.
         """
 
