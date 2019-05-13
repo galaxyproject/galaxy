@@ -425,7 +425,9 @@ class ToolEvaluator(object):
                 ep_dict[key] = val
             rtt.append(ep_dict)
         self.realtimetools = rtt
-        self.app.realtime_manager.create_realtime(self.job, self.tool, rtt)
+        rtt_man = getattr(self.app, "realtime_manager", None)
+        if rtt_man:
+            rtt_man.create_realtime(self.job, self.tool, rtt)
         return rtt
 
     def __sanitize_param_dict(self, param_dict):

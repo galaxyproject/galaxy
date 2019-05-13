@@ -28,14 +28,14 @@ Note that name, port, and url are each able to be templated from the RealTimeToo
 Some important benefits of using Galaxy RealTimeTools
 -----------------------------------------------------
 
-- You can have and access any number of RealTimeTools at a time (admin configurable)
-- If you accidentally close the RealTimeTool browser window, you can regain access by selecting from a list of active RealTimeTools
-- A single RealTimeTool can grant access to multiple running applications, servers,  and interfaces
-- RealTimeTools can be added to Galaxy Workflows
-- Native, out-of-the box support for RealTimeTools in Galaxy via uWSGI proxying
-- RealTimeTools are bonafide Galaxy Tools; just specify tool_type as "realtime" and list the ports you want to expose 
-- RealTimeTools can be added to and installed from the ToolShed.
-- R Shiny apps, Javascript-based VNC access to desktop environments, genome-browsers-in-a-box, interactive notebook environments, etc, are all possible with RealTimeTools
+- You can have and access **any number of RealTimeTools at a time** (admin configurable)
+- If you accidentally close the **RealTimeTool browser window**, you can **regain access** by selecting from a **list of active RealTimeTools**
+- A single **RealTimeTool** can **grant access** to **multiple running applications, servers, and interfaces**
+- **RealTimeTools** can be **added to** Galaxy **Workflows**
+- **Native, out-of-the box support for RealTimeTools** in Galaxy via uWSGI proxying
+- **RealTimeTools** are **bonafide Galaxy Tools**; just specify tool_type as "realtime" and list the ports you want to expose
+- **RealTimeTools** can be **added** to and **installed from the ToolShed**.
+- **R Shiny apps**, **Javascript-based VNC** access to desktop environments, **genome-browsers-in-a-box**, **interactive notebook environments**, etc, are all possible with **RealTimeTools**
 
 
 
