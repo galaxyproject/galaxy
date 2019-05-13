@@ -1046,6 +1046,7 @@ class JobWrapper(HasResourceParameters):
         # if the server was stopped and restarted before the job finished
         job.command_line = unicodify(self.command_line)
         job.dependencies = self.tool.dependencies
+        self.realtimetools = tool_evaluator.realtimetools
         self.sa_session.add(job)
         self.sa_session.flush()
         # Return list of all extra files

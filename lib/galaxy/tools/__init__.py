@@ -2444,7 +2444,6 @@ class ImportHistoryTool(Tool):
 
 class RealTimeTool(Tool):
     tool_type = 'realtime'
-    default_tool_action = RealTimeToolAction
 
     def __remove_realtime_by_job(self, job):
         if job:
@@ -2466,9 +2465,7 @@ class RealTimeTool(Tool):
 
     def get_view_result(self, job=None):
         if job:
-            eps = job.realtimetool_entry_points
-            if eps:
-                return self.app.url_for(controller='realtime', action='index', entry_point_id=[self.app.security.encode_id(ep.id) for ep in eps])
+            return self.app.url_for(controller='realtime', action='index', job_id=self.app.security.encode_id(job.id))
         return None
 
 

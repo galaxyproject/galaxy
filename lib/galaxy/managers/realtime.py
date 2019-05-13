@@ -151,8 +151,9 @@ class RealTimeManager(object):
         self.job_manager = app.job_manager
         self.propagator = RealtimeSqlite(app.config.realtime_map, app.security.encode_id)
 
-    def create_entry_points(self, job, tool, flush=True):
-        for entry in tool.ports:
+    def create_entry_points(self, job, tool, entry_points=None, flush=True):
+        entry_points = entry_points or tool.ports
+        for entry in entry_points:
             ep = self.model.RealTimeToolEntryPoint(job=job, tool_port=entry['port'], entry_url=entry['url'], name=entry['name'])
             self.sa_session.add(ep)
         if flush:
@@ -192,10 +193,10 @@ class RealTimeManager(object):
         """
         self.propagator.save_entry_point(entry_point)
 
-    def create_realtime(self, job, tool):
+    def create_realtime(self, job, tool, entry_points):
         # create from initial job
         if job and tool:
-            self.create_entry_points(job, tool)
+            self.create_entry_points(job, tool, entry_points)
         else:
             log.warning('Called RealTimeManager.create_realtime, but job (%s) or tool (%s) is None', job, tool)
 
