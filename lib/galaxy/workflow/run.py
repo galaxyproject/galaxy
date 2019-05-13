@@ -376,6 +376,8 @@ class WorkflowProgress(object):
                 if not replacement.is_ok:
                     raise modules.CancelWorkflowEvaluation()
             else:
+                if not replacement.collection.populated:
+                    raise modules.DelayedWorkflowEvaluation()
                 pending = False
                 for dataset_instance in replacement.dataset_instances:
                     if dataset_instance.is_pending:
