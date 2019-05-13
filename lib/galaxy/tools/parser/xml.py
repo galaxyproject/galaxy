@@ -195,21 +195,23 @@ class XmlToolSource(ToolSource):
             return ParallelismInfo(parallelism)
         return parallelism_info
 
-    def parse_ports(self):
-        ports_el = self.root.find("ports")
-        ports = []
-        if ports_el is None:
-            return ports
-        for port_el in ports_el.findall("port"):
-            port = port_el.text.strip()
-            url = port_el.find("url")
+    def parse_realtime(self):
+        realtimetool_el = self.root.find("realtime")
+        rtt = []
+        if realtimetool_el is None:
+            return rtt
+        for ep_el in realtimetool_el.findall("entry_point"):
+            port = ep_el.find("port")
+            assert port is not None, ValueError('A port is required for RealTimeTools')
+            port = port.text.strip()
+            url = ep_el.find("url")
             if url is not None:
                 url = url.text.strip()
-            name = port_el.get('name', None)
+            name = ep_el.get('name', None)
             if name:
                 name = name.strip()
-            ports.append(dict(port=port, url=url, name=name))
-        return ports
+            rtt.append(dict(port=port, url=url, name=name))
+        return rtt
 
     def parse_hidden(self):
         hidden = xml_text(self.root, "hidden")

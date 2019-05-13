@@ -164,8 +164,8 @@ class YamlToolSource(ToolSource):
     def parse_profile(self):
         return self.root_dict.get("profile", "16.04")
 
-    def parse_ports(self):
-        return self.root_dict.get("ports", [])
+    def parse_realtime(self):
+        return self.root_dict.get("realtime", [])
 
     def parse_python_template_version(self):
         python_template_version = self.root_dict.get("python_template_version", None)
