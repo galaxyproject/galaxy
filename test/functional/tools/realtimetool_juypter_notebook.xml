@@ -2,9 +2,12 @@
     <requirements>
         <container type="docker">bgruening/docker-jupyter-notebook:ie2</container>
     </requirements>
-    <ports>
-        <port name="Jypter Interactive Environment" url_entry_point="ipython/tree">8888</port>
-    </ports>
+    <realtime>
+        <entry_point name="Jypter Interactive Environment">
+            <port>8888</port>
+            <url>ipython/tree</url>
+        </entry_point>
+    </realtime>
     <command detect_errors="aggressive"><![CDATA[
         #import re
         export GALAXY_WORKING_DIR=`pwd` &&

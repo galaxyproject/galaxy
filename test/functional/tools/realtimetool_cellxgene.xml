@@ -2,9 +2,11 @@
     <requirements>
         <container type="docker">quay.io/galaxy/cellxgene-galaxy-ie:ie2</container>
     </requirements>
-    <ports>
-        <port name="cellxgene_single_cell_visualisation" url="0.0.0.0">8080</port>
-    </ports>
+    <realtime>
+        <entry_point name="cellxgene_single_cell_visualisation">
+            <port>8080</port>
+        </entry_point>
+    </realtime>
     <command>
         cp '$input' /tmp/galaxy_cellxgene_${input.element_identifier}.h5ad;
         /run_cellxgene.sh
