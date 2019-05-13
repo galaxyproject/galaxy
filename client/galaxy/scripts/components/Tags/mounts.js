@@ -43,8 +43,6 @@ const makoClickHandler = (options, vm) =>
         const { tagClickFn = "none", clickUrl } = options;
 
         switch (tagClickFn) {
-            // I made this match the existing behavior, but I am not clear on
-            // the reason why this link redirects to a raw json page
             case "community_tag_click":
                 if (undefined !== clickUrl) {
                     const suffix = tag.value ? `:${tag.value}` : "";

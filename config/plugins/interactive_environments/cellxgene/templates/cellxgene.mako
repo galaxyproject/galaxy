@@ -21,14 +21,11 @@
 
     ${ ie.default_javascript_variables() }
     var url = '${ url }';
-    ${ ie.plugin_require_config() }
 
-    requirejs(['galaxy.interactive_environments'], function (IES) {
-        $( document ).ready(function() {
-            IES.keepAlive(url);
-            IES.test_ie_availability(url, function() {
-                IES.append_notebook(url);
-            });
+    $( document ).ready(function() {
+        IES.keepAlive(url);
+        IES.test_ie_availability(url, function() {
+            IES.append_notebook(url);
         });
     });
 
