@@ -34,7 +34,6 @@ from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.actions.realtime import RealTimeToolAction
 from galaxy.tools.deps import (
     CachedDependencyManager,
 )
