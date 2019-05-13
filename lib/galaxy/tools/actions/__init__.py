@@ -932,7 +932,7 @@ def get_ext_or_implicit_ext(hda):
 
 def determine_output_format(output, parameter_context, input_datasets, input_dataset_collections, random_input_ext, python_template_version='3'):
     """ Determines the output format for a dataset based on an abstract
-    description of the output (galaxy.tools.parser.ToolOutput), the parameter
+    description of the output (galaxy.tool_util.parser.ToolOutput), the parameter
     wrappers, a map of the input datasets (name => HDA), and the last input
     extensions in the tool form.
 

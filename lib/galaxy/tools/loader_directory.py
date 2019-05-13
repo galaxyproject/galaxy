@@ -8,9 +8,9 @@ import sys
 
 import yaml
 
+from galaxy.tool_util import loader
+from galaxy.tool_util.parser import get_tool_source
 from galaxy.util import checkers
-from .parser import get_tool_source
-from ..tools import loader
 
 log = logging.getLogger(__name__)
 

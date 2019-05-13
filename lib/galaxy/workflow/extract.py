@@ -4,6 +4,7 @@ histories.
 import logging
 
 from galaxy import exceptions, model
+from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter
@@ -13,7 +14,6 @@ from galaxy.tools.parameters.grouping import (
     Repeat,
     Section
 )
-from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.util.odict import odict
 from .steps import (
     attach_ordered_steps,

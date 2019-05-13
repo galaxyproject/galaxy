@@ -217,8 +217,8 @@ class ContainerRegistry(object):
         return default_resolvers
 
     def __resolvers_dict(self):
-        import galaxy.tools.deps.container_resolvers
-        return plugin_config.plugins_dict(galaxy.tools.deps.container_resolvers, 'resolver_type')
+        import galaxy.tool_util.deps.container_resolvers
+        return plugin_config.plugins_dict(galaxy.tool_util.deps.container_resolvers, 'resolver_type')
 
     def find_best_container_description(self, enabled_container_types, tool_info):
         """Yield best container description of supplied types matching tool info."""

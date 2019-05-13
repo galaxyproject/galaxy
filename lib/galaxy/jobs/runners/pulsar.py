@@ -36,7 +36,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
-from galaxy.tools.deps import dependencies
+from galaxy.tool_util.deps import dependencies
 from galaxy.util import (
     galaxy_directory,
     specs,

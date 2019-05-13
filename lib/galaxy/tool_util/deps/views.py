@@ -2,7 +2,7 @@ from galaxy import exceptions
 
 
 class DependencyResolversView(object):
-    """ Provide a RESTfulish/JSONy interface to a galaxy.tools.deps.DependencyResolver
+    """ Provide a RESTfulish/JSONy interface to a galaxy.tool_util.deps.DependencyResolver
     object. This can be adapted by the Galaxy web framework or other web apps.
     """
 

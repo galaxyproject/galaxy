@@ -18,6 +18,7 @@ from galaxy.exceptions import ToolMissingException
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
 from galaxy.model.dataset_collections import matching
+from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
 from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
@@ -45,7 +46,6 @@ from galaxy.tools.parameters.basic import (
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
 from galaxy.tools.parameters.wrapped import make_dict_copy
-from galaxy.tools.parser.output_objects import ToolExpressionOutput
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict

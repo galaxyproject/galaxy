@@ -1,6 +1,6 @@
 import packaging.version
 
-from galaxy.tools.deps import requirements
+from galaxy.tool_util.deps import requirements
 from galaxy.util.odict import odict
 from .interface import InputSource
 from .interface import PageSource

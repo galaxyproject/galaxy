@@ -7,8 +7,8 @@ import logging
 import os
 import re
 
-import galaxy.tools.deps.installable
-import galaxy.tools.deps.requirements
+import galaxy.tool_util.deps.installable
+import galaxy.tool_util.deps.requirements
 from . import (
     Dependency,
     DependencyException,
@@ -133,7 +133,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
         auto_install = _string_as_bool(get_option("auto_install"))
         self.auto_init = _string_as_bool(get_option("auto_init"))
         self.conda_context = conda_context
-        self.disabled = not galaxy.tools.deps.installable.ensure_installed(conda_context, install_conda, self.auto_init)
+        self.disabled = not galaxy.tool_util.deps.installable.ensure_installed(conda_context, install_conda, self.auto_init)
         if self.auto_init and not self.disabled:
             self.conda_context.ensure_conda_build_installed_if_needed()
         self.auto_install = auto_install
@@ -206,7 +206,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             if requirement.type != "package":
                 return []
 
-        ToolRequirements = galaxy.tools.deps.requirements.ToolRequirements
+        ToolRequirements = galaxy.tool_util.deps.requirements.ToolRequirements
         expanded_requirements = ToolRequirements([self._expand_requirement(r) for r in requirements])
         if self.versionless:
             conda_targets = [CondaTarget(r.name, version=None) for r in expanded_requirements]

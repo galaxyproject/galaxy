@@ -12,7 +12,7 @@ import packaging.version
 import six
 from six.moves import shlex_quote
 
-from galaxy.tools.deps.commands import CommandLineException
+from galaxy.tool_util.deps.commands import CommandLineException
 from galaxy.util import (
     smart_str,
     unicodify

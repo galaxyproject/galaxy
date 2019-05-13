@@ -29,15 +29,26 @@ from galaxy.managers.jobs import JobSearch
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import send_control_task
+from galaxy.tool_util.deps import (
+    CachedDependencyManager,
+)
+from galaxy.tool_util.fetcher import ToolLocationFetcher
+from galaxy.tool_util.loader import (
+    imported_macro_paths,
+    raw_tool_xml_tree,
+    template_macro_params
+)
+from galaxy.tool_util.parser import (
+    get_tool_source,
+    get_tool_source_from_representation,
+    ToolOutputCollectionPart
+)
+from galaxy.tool_util.parser.xml import XmlPageSource
 from galaxy.tools import expressions
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.deps import (
-    CachedDependencyManager,
-)
-from galaxy.tools.fetcher import ToolLocationFetcher
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -64,12 +75,6 @@ from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repea
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.tools.parameters.wrapped_json import json_wrap
-from galaxy.tools.parser import (
-    get_tool_source,
-    get_tool_source_from_representation,
-    ToolOutputCollectionPart
-)
-from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.test import parse_tests
 from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
@@ -95,11 +100,6 @@ from tool_shed.util import common_util
 from .execute import (
     execute as execute_job,
     MappingParameters,
-)
-from .loader import (
-    imported_macro_paths,
-    raw_tool_xml_tree,
-    template_macro_params
 )
 from .provided_metadata import parse_tool_provided_metadata
 

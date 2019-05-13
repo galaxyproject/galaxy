@@ -20,7 +20,7 @@ from galaxy.model.store.discover import (
     RegexCollectedDatasetMatch,
     UNSET,
 )
-from galaxy.tools.parser.output_collection_def import (
+from galaxy.tool_util.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
     INPUT_DBKEY_TOKEN,
     ToolProvidedMetadataDatasetCollection,
@@ -417,7 +417,7 @@ class DatasetCollector(object):
     def __init__(self, dataset_collection_description):
         self.discover_via = dataset_collection_description.discover_via
         # dataset_collection_description is an abstract description
-        # built from the tool parsing module - see galaxy.tools.parser.output_colleciton_def
+        # built from the tool parsing module - see galaxy.tool_util.parser.output_colleciton_def
         self.sort_key = dataset_collection_description.sort_key
         self.sort_reverse = dataset_collection_description.sort_reverse
         self.sort_comp = dataset_collection_description.sort_comp

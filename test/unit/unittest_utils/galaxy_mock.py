@@ -15,7 +15,7 @@ from galaxy.datatypes import registry
 from galaxy.jobs.manager import NoopManager
 from galaxy.model import mapping, tags
 from galaxy.security import idencoding
-from galaxy.tools.deps.containers import NullContainerFinder
+from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web.stack import ApplicationStack
