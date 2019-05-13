@@ -5,7 +5,7 @@ A Galaxy RealTimeTool allows launching a container-backed Galaxy Tool
 and enabling a Galaxy User to gain access to content inside in real-time.
 
 
-How Galaxy RealTimeTools Work
+How Galaxy RealTimeTools work
 -----------------------------
 
 A RealTimeTool is defined in the same familiar way as standard Galaxy Tools,
@@ -39,8 +39,8 @@ Some important benefits of using Galaxy RealTimeTools
 
 
 
-Server configuration of Galaxy RealTimeTools
---------------------------------------------
+Server-side configuration of Galaxy RealTimeTools
+-------------------------------------------------
 
 The **galaxy.yml** file will need to be populated as seen in config/galaxy.yml.realtime.
 
