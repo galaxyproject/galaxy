@@ -54,6 +54,7 @@
   <tool file="checksum.xml" />
   <tool file="composite_shapefile.xml" />
   <tool file="is_valid_xml.xml" />
+  <tool file="param_value_from_file.xml"/>
   <!--
   TODO: Figure out why this transiently fails on Jenkins.
   <tool file="maxseconds.xml" />
