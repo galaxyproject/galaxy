@@ -12,9 +12,7 @@ it at this time.
 """
 import logging
 import os
-import shlex
 import subprocess
-import tempfile
 import time
 
 from galaxy import model
@@ -231,7 +229,7 @@ class CondorJobRunner(AsynchronousJobRunner):
         if job.container:
             try:
                 log.info("stop_job(): %s: trying to stop container .... (%s)" % (job.id, external_id))
-                #self.watched = [cjs for cjs in self.watched if cjs.job_id != external_id]
+                # self.watched = [cjs for cjs in self.watched if cjs.job_id != external_id]
                 new_watch_list = list()
                 cjs = None
                 for tcjs in self.watched:
@@ -242,15 +240,13 @@ class CondorJobRunner(AsynchronousJobRunner):
                         break
                 self.watched = new_watch_list
                 self._stop_container(job_wrapper)
-                #self.watched.append(cjs)
+                # self.watched.append(cjs)
                 if cjs.job_wrapper.get_state() != model.Job.states.DELETED:
                     external_metadata = not asbool(cjs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
                     if external_metadata:
                         self._handle_metadata_externally(cjs.job_wrapper, resolve_requirements=True)
                     log.debug("(%s/%s) job has completed" % (galaxy_id_tag, external_id))
                     self.work_queue.put((self.finish_job, cjs))
-                
-                
             except Exception as e:
                 log.warning("stop_job(): %s: trying to stop container failed. (%s)" % (job.id, e))
                 try:
@@ -289,8 +285,6 @@ class CondorJobRunner(AsynchronousJobRunner):
             cjs.running = False
             self.monitor_queue.put(cjs)
 
-
-
     def _stop_container(self, job_wrapper):
         return self._run_container_command(job_wrapper, 'stop')
 
@@ -317,7 +311,7 @@ class CondorJobRunner(AsynchronousJobRunner):
             ret = stdout.strip()
         else:
             log.debug(stderr)
-        #exit_code = subprocess.call(command,
+        # exit_code = subprocess.call(command,
         #                            shell=True,
         #                            preexec_fn=os.setpgrp)
         log.debug('_run_command(%s) exit code (%s) and failure: %s', command, exit_code, stderr)
@@ -335,10 +329,9 @@ class CondorJobRunner(AsynchronousJobRunner):
                         max_command_attempts = 10 + 1
                         ports_raw = None
                         for i in range(1, max_command_attempts):
-                            with tempfile.TemporaryFile() as stdout_file:
-                                exit_code, ports_raw = self._run_command(cont.container_info['commands']['port'], external_job_id)
-                                if exit_code == 0:
-                                    break
+                            exit_code, ports_raw = self._run_command(cont.container_info['commands']['port'], external_job_id)
+                            if exit_code == 0:
+                                break
                             if i != max_command_attempts:
                                 t = 2 * i
                                 log.debug("Container not found during port check, sleeping for %s seconds.", t)
@@ -348,5 +341,3 @@ class CondorJobRunner(AsynchronousJobRunner):
                             self.app.realtime_manager.configure_entry_points_raw_docker_ports(job, ports_raw)
                         else:
                             log.error('Unable to run port command (%s): %s', cont.container_info['commands']['port'], exit_code)
-
-
