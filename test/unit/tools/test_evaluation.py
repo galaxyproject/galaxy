@@ -270,6 +270,7 @@ class MockTool(object):
         self.app = app
         self.hooks_called = []
         self.environment_variables = []
+        self.ports = []
         self._config_files = []
         self._command_line = "bwa --thresh=$thresh --in=$input1 --out=$output1"
         self._params = {"thresh": self.test_thresh_param()}
