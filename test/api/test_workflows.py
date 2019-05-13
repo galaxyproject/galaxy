@@ -2126,7 +2126,7 @@ steps:
 - label: consume_expression_parameter
   tool_id: validation_default
   in:
-    input1: param_out#string_param
+    input1: param_out#text_param
   outputs:
     out_file1:
       rename: "replaced_param_collection"
