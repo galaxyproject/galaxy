@@ -20,7 +20,14 @@
                 <div class="fa fa-caret-left mr-1" />
                 Back
             </b-btn>
-            <b-btn size="sm" class="float-right ml-1" variant="primary" @click="finalize" :disabled="!hasValue">
+            <b-btn
+                v-if="multiple"
+                size="sm"
+                class="float-right ml-1"
+                variant="primary"
+                @click="finalize"
+                :disabled="!hasValue"
+            >
                 Ok
             </b-btn>
             <b-btn size="sm" class="float-right" @click="modalShow = false"> Cancel </b-btn>
@@ -117,6 +124,8 @@ export default {
                 } else {
                     this.finalize();
                 }
+            } else {
+                this.load(record.url);
             }
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
