@@ -730,6 +730,7 @@ class IQTree(Text):
         return file_prefix.startswith("IQ-TREE")
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 @build_sniff_from_prefix
 class Paf(Text):
@@ -858,6 +859,9 @@ class Gfa2(Text):
             found_valid_lines = True
         return found_valid_lines
 =======
+=======
+
+>>>>>>> 8cffc5cc03... linted
 @build_sniff_from_prefix
 class Yaml(Text):
     """Yaml files"""
