@@ -107,9 +107,19 @@ Alternatively to the local job runner, RealTimeTools have been enabled for the c
         </destination>
 
 
+**Note on resource consumption:** Keep in mind that Distributed Resource Management (DRM) / cluster systems may have a maximum runtime configured for jobs. From the Galaxy point of view, such a container could run as long as the user desires, this may not be scalable and an admin may want to restrict the runtime of RealTimeTools (and jobs in general). However, if the job is killed by the DRM, the user is not informed beforehand and data in the container could be discarded.
+
 Two example test RealTimeTools have been defined, and can be added to the **tool_conf.xml**:
 
 .. code-block:: xml
 
         <tool file="../test/functional/tools/realtimetool_juypter_notebook.xml" />
         <tool file="../test/functional/tools/realtimetool_cellxgene.xml" />
+
+
+A few words on the condor integration
+-------------------------------------
+
+Galaxy needs to be able to stop a container gracefully. This is not a problem with the local job runner, where we assume that Docker is either running on the same host. However, if you are using production scale DRM, like condor, then your job is running
+somewhere on your cluster and you can not easily **docker stop** your container. For the condor integration we are using a great
+condor feature and commandline utility called **condor_ssh_to_job**. This tool (assuming your condor setup is configured correctly) will bring us directly to the host in question and we can execute the **docker stop** command. Galaxy will simply run **condor_ssh_to_job <condor_job_id> docker stop <container_name>** to stop the container gracefully.
