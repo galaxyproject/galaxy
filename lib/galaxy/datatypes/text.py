@@ -727,6 +727,7 @@ class IQTree(Text):
         """
         return file_prefix.startswith("IQ-TREE")
 
+
 @build_sniff_from_prefix
 class Yaml(Text):
     """Yaml files"""
