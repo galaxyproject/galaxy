@@ -103,28 +103,63 @@ def stream_to_file(stream, suffix='', prefix='', dir=None, text=False, **kwd):
     return stream_to_open_named_file(stream, fd, temp_name, **kwd)
 
 
-def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
+def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", block_size=128 * 1024):
     """
     Converts in place a file from universal line endings
     to Posix line endings.
 
-    >>> fname = get_test_fname('temp.txt')
-    >>> with open(fname, 'wt') as fh:
-    ...     _ = fh.write("1 2\\r3 4")
-    >>> convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
-    (2, None)
-    >>> open(fname).read()
-    '1 2\\n3 4\\n'
+    >>> def assert_converts_to_1234(content, block_size=1024):
+    ...       fname = get_test_fname('temp.txt')
+    ...       with open(fname, 'w') as fh:
+    ...           _ = fh.write(content)
+    ...       rval = convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), block_size=block_size)
+    ...       assert rval == (2, None), rval
+    ...       actual_contents = open(fname).read()
+    ...       assert '1 2\\n3 4\\n' == actual_contents, actual_contents
+    >>> # Verify ends with newline - with or without that on inputs - for any of
+    >>> # \\r \\n or \\r\\n newlines.
+    >>> assert_converts_to_1234("1 2\\r3 4")
+    >>> assert_converts_to_1234("1 2\\n3 4")
+    >>> assert_converts_to_1234("1 2\\r\\n3 4")
+    >>> assert_converts_to_1234("1 2\\r3 4\\r")
+    >>> assert_converts_to_1234("1 2\\n3 4\\n")
+    >>> assert_converts_to_1234("1 2\\r\\n3 4\\r\\n")
+    >>> assert_converts_to_1234("1 2\\r3 4", block_size=2)
+    >>> assert_converts_to_1234("1 2\\n3 4", block_size=2)
+    >>> assert_converts_to_1234("1 2\\r\\n3 4", block_size=2)
+    >>> assert_converts_to_1234("1 2\\r3 4\\r", block_size=2)
+    >>> assert_converts_to_1234("1 2\\n3 4\\n", block_size=2)
+    >>> assert_converts_to_1234("1 2\\r\\n3 4\\r\\n", block_size=2)
+    >>> assert_converts_to_1234("1 2\\r3 4", block_size=3)
+    >>> assert_converts_to_1234("1 2\\n3 4", block_size=3)
+    >>> assert_converts_to_1234("1 2\\r\\n3 4", block_size=3)
+    >>> assert_converts_to_1234("1 2\\r3 4\\r", block_size=3)
+    >>> assert_converts_to_1234("1 2\\n3 4\\n", block_size=3)
+    >>> assert_converts_to_1234("1 2\\r\\n3 4\\r\\n", block_size=3)
     """
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
+    i = 0
     with io.open(fd, mode="wt", encoding='utf-8') as fp:
-        i = None
-        for i, line in enumerate(io.open(fname, encoding='utf-8')):
-            fp.write("%s\n" % line.rstrip("\r\n"))
-    if i is None:
-        i = 0
-    else:
-        i += 1
+        with io.open(fname, encoding='utf-8') as fi:
+            partial_line = False
+            while True:
+                line = fi.readline(block_size)
+                if not line:
+                    if partial_line:
+                        fp.write(u"\n")
+                        i += 1
+                    break
+
+                if line[-1] == u"\n":
+                    partial_line = False
+                    fp.write(line)
+                    i += 1
+                    continue
+
+                # We have a block... maybe at the end of the file.
+                partial_line = True
+                fp.write(line)
+
     if in_place:
         shutil.move(temp_name, fname)
         # Return number of lines in file.
@@ -136,24 +171,20 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
 def sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, tmp_prefix="gxupload"):
     """
     Transforms in place a 'sep' separated file to a tab separated one
-
-    >>> fname = get_test_fname('temp.txt')
-    >>> with open(fname, 'wt') as fh:
-    ...     _ = fh.write(u"1 2\\n3 4\\n")
-    >>> sep2tabs(fname)
-    (2, None)
-    >>> open(fname).read()
-    '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    with io.open(fd, mode="wt", encoding='utf-8') as fp:
+    with io.open(fd, mode="w", encoding='utf-8') as fp:
         i = None
-        for i, line in enumerate(io.open(fname, encoding='utf-8')):
+        for i, line in enumerate(io.open(fname, encoding='utf-8', newline='')):
             if line.endswith("\r"):
                 line = line.rstrip('\r')
                 elems = regexp.split(line)
                 fp.write(u"%s\r" % '\t'.join(elems))
+            elif line.endswith("\r\n"):
+                line = line.rstrip('\r\n')
+                elems = regexp.split(line)
+                fp.write(u"%s\r\n" % '\t'.join(elems))
             else:
                 line = line.rstrip('\n')
                 elems = regexp.split(line)
@@ -186,16 +217,21 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, t
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     with io.open(fd, mode="wt", encoding='utf-8') as fp:
+        i = None
         for i, line in enumerate(io.open(fname, encoding='utf-8')):
             line = line.rstrip('\r\n')
             elems = regexp.split(line)
             fp.write(u"%s\n" % '\t'.join(elems))
+    if i is None:
+        i = 0
+    else:
+        i = i + 1
     if in_place:
         shutil.move(temp_name, fname)
         # Return number of lines in file.
-        return (i + 1, None)
+        return (i, None)
     else:
-        return (i + 1, temp_name)
+        return (i, temp_name)
 
 
 def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
