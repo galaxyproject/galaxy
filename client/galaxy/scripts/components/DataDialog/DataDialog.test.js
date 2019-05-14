@@ -153,11 +153,9 @@ describe("DataDialog.vue", () => {
         emitted = wrapper.emitted();
         expect(wrapper.classes()).contain("data-dialog-modal");
         expect(wrapper.find(".fa-spinner").text()).to.equals("");
-        expect(wrapper.find(".btn-secondary").text()).to.equals("Clear");
-        expect(wrapper.find(".btn-primary").text()).to.equals("Ok");
         expect(wrapper.contains(".fa-spinner")).to.equals(true);
         return Vue.nextTick().then(() => {
-            expect(wrapper.findAll(".fa-copy").length).to.equals(2);
+            expect(wrapper.findAll(".fa-folder").length).to.equals(2);
             expect(wrapper.findAll(".fa-file-o").length).to.equals(2);
         });
     });
@@ -169,11 +167,9 @@ describe("DataDialog.vue", () => {
         emitted = wrapper.emitted();
         expect(wrapper.classes()).contain("data-dialog-modal");
         expect(wrapper.find(".fa-spinner").text()).to.equals("");
-        expect(wrapper.find(".btn-secondary").text()).to.equals("Clear");
-        expect(wrapper.find(".btn-primary").text()).to.equals("Ok");
         expect(wrapper.contains(".fa-spinner")).to.equals(true);
         return Vue.nextTick().then(() => {
-            expect(wrapper.findAll(".fa-copy").length).to.equals(2);
+            expect(wrapper.findAll(".fa-folder").length).to.equals(2);
             expect(wrapper.findAll(".fa-file-o").length).to.equals(2);
         });
     });
