@@ -42,27 +42,12 @@
                         </b-form>
                     </b-col>
                     <b-col>
-                        <b-form @submit.prevent="onUpdateJobLock">
-                            <b-form-group label="Administrative Job Lock" label-for="prevent-job-dispatching">
-                                <template slot="description">
-                                    Job dispatching is currently
-                                    <strong>{{ jobLockDisplay ? "locked" : "unlocked" }}</strong
-                                    >.
-                                </template>
-                                <b-container>
-                                    <b-row>
-                                        <b-col md="auto">
-                                            <b-form-checkbox id="prevent-job-dispatching" v-model="jobLock">
-                                                <strong>Prevent jobs from dispatching</strong>
-                                            </b-form-checkbox>
-                                        </b-col>
-                                        <b-col>
-                                            <b-btn type="submit">Update</b-btn>
-                                        </b-col>
-                                    </b-row>
-                                </b-container>
-                            </b-form-group>
-                        </b-form>
+                        <b-form-group label="Administrative Job Lock" label-for="prevent-job-dispatching">
+                            <b-form-checkbox id="prevent-job-dispatching" v-model="jobLock" switch>
+                                Job dispatching is currently
+                                <strong>{{ jobLockDisplay ? "locked" : "unlocked" }}</strong>
+                            </b-form-checkbox>
+                        </b-form-group>
                     </b-col>
                 </b-row>
                 <b-row>
@@ -234,6 +219,17 @@ export default {
         };
     },
     watch: {
+        jobLock(newVal) {
+            axios
+                .get(`${getAppRoot()}admin/jobs_control?job_lock=${this.jobLock}`)
+                .then(response => {
+                    this.jobLock = response.data.job_lock;
+                    this.jobLockDisplay = response.data.job_lock;
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        },
         selectedStopJobIds(newVal) {
             if (newVal.length === 0) {
                 this.indeterminate = false;
@@ -263,6 +259,7 @@ export default {
                     this.cutoffDisplay = response.data.cutoff;
                     this.message = response.data.message;
                     this.status = response.data.status;
+                    this.jobLock = response.data.job_lock;
                     this.jobLockDisplay = response.data.job_lock;
                     this.loading = false;
                     this.busy = false;
@@ -275,16 +272,6 @@ export default {
         },
         onRefresh() {
             this.update();
-        },
-        onUpdateJobLock() {
-            axios
-                .get(`${getAppRoot()}admin/jobs_control?job_lock=${this.jobLock}`)
-                .then(response => {
-                    this.jobLockDisplay = response.data.job_lock;
-                })
-                .catch(error => {
-                    console.error(error);
-                });
         },
         onStopJobs() {
             this.update();

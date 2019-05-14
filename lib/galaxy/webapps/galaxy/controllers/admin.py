@@ -1605,7 +1605,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     def jobs_control(self, trans, job_lock=None, **kwd):
         if job_lock is not None:
             job_lock = True if job_lock == 'true' else False
-            galaxy.queue_worker.send_control_task(trans.app, 'admin_job_lock', kwargs={'job_lock': job_lock})
+            galaxy.queue_worker.send_control_task(trans.app, 'admin_job_lock', kwargs={'job_lock': job_lock}, get_response=True)
         job_lock = trans.app.job_manager.job_lock
         return {'job_lock': job_lock}
 
