@@ -4,13 +4,13 @@
 
 import gzip
 import json
-import yaml
 import logging
 import os
 import re
 import subprocess
 import tempfile
 
+import yaml
 from six.moves import shlex_quote
 
 from galaxy.datatypes.data import get_file_peek, Text
