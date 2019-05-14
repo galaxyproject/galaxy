@@ -2407,6 +2407,13 @@ class WiffTar(BafTar):
         return "Sciex WIFF/SCAN archive"
 
 
+class Tensorflow(Binary):
+    """
+    Checkpoint files for tensorflow models
+    """
+    file_ext = "ckpt"
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod(sys.modules[__name__])
