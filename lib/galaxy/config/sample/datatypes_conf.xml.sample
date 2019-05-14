@@ -247,6 +247,7 @@
     </datatype>
     <datatype extension="directory" type="galaxy.datatypes.data:Directory">
     </datatype>
+    <datatype extension="yaml" type="galaxy.datatypes.text:Yaml" display_in_upload="true" />
     <!-- Proteomics Datatypes -->
     <datatype extension="mrm" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" subclass="true"/>
     <datatype extension="dta" type="galaxy.datatypes.proteomics:Dta" display_in_upload="true" />
@@ -1117,6 +1118,7 @@
     <sniffer type="galaxy.datatypes.media:Mpg"/>
     <sniffer type="galaxy.datatypes.speech:TextGrid" />
     <sniffer type="galaxy.datatypes.speech:BPF" />
+    <sniffer type="galaxy.datatypes.text:Yaml" />
     <!--
     Keep this commented until the sniff method in the assembly.py
     module is fixed to not read the entire file.
