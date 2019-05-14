@@ -913,6 +913,7 @@
     <sniffer type="galaxy.datatypes.images:Xpm"/>
     <sniffer type="galaxy.datatypes.images:Eps"/>
     <sniffer type="galaxy.datatypes.images:Rast"/>
+    <sniffer type="galaxy.datatypes.text:Yaml"/>
 
     <!--
     Keep this commented until the sniff method in the assembly.py

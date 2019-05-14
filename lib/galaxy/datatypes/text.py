@@ -4,6 +4,7 @@
 
 import gzip
 import json
+import yaml
 import logging
 import os
 import re
@@ -732,3 +733,32 @@ class IQTree(Text):
 class Yaml(Text):
     """Yaml files"""
     file_ext = "yaml"
+
+    def sniff_prefix(self, file_prefix):
+        """
+            Try to load the string with the yaml module. If successful it's a yaml file.
+        """
+        return self._looks_like_yaml(file_prefix)
+
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'application/yaml'
+
+    def _looks_like_yaml(self, file_prefix):
+        # Pattern used by SequenceSplitLocations
+        if file_prefix.file_size < 50000 and not file_prefix.truncated:
+            # If the file is small enough - don't guess just check.
+            try:
+                item = yaml.load(file_prefix.contents_header)
+                # exclude simple types, must set format in these cases
+                assert isinstance(item, (list, dict))
+                return True
+            except Exception:
+                return False
+        else:
+            start = file_prefix.string_io().read(100).strip()
+            if start:
+                # If file is too big,
+                # can't load in and must set explicitly
+                return ":" in start
+            return False
