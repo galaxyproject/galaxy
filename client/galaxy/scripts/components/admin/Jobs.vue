@@ -363,11 +363,6 @@ export default {
 
 <style>
 /* Can not be scoped because of command line tdClass */
-.code {
-    background: black;
-    color: white;
-    padding: 1em;
-}
 .break-word {
     white-space: pre-wrap;
     word-break: break-word;
