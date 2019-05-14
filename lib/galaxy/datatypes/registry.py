@@ -15,7 +15,6 @@ import yaml
 import galaxy.util
 from galaxy.util.bunch import Bunch
 from . import (
-    ml,
     binary,
     coverage,
     data,
