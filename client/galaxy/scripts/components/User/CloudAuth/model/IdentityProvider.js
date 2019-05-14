@@ -1,7 +1,6 @@
 import { safeAssign } from "utils/safeAssign";
 
 export class IdentityProvider {
-
     constructor(props = {}) {
         this.id = "";
         this.provider = "";

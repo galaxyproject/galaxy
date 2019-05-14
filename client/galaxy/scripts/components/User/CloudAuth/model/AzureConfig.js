@@ -37,24 +37,25 @@ AzureConfig.setValidator(function(model) {
 });
 
 AzureConfig.fields = {
-    "tenant_id": {
+    tenant_id: {
         label: "Tenant ID",
         mask: "********-****-****-****-************",
         placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
         maxlength: 36,
         description: "Your Tenant ID (or Directory ID) on Azure."
     },
-    "client_id": {
+    client_id: {
         label: "Client ID",
         mask: "********-****-****-****-************",
         placeholder: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
         maxlength: 36,
         description: "The Client ID (or Application ID) you defined for Galaxy on your Azure directory."
     },
-    "client_secret": {
+    client_secret: {
         label: "Client Secret",
         mask: "",
         placeholder: "Client Secret",
-        description: "A secret string you obtained from Azure portal that Galaxy can use to prove its identity when requesting tokens to access your resources."
+        description:
+            "A secret string you obtained from Azure portal that Galaxy can use to prove its identity when requesting tokens to access your resources."
     }
-}
+};

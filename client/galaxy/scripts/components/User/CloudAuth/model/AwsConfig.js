@@ -19,9 +19,9 @@ AwsConfig.setValidator(function(model) {
 });
 
 AwsConfig.fields = {
-    "role_arn": {
+    role_arn: {
         label: "Role ARN",
         description: "The Amazon resource name (ARN) of the role to be assumed by Galaxy.",
         placeholder: "arn:aws:iam::XXXXXXXXXXXX:role/XXXXXXXXXXX"
     }
-}
+};

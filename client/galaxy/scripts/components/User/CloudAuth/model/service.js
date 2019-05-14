@@ -37,7 +37,7 @@ export async function saveCredential(newItem) {
 
 async function saveOrUpdate(model) {
     return model.id
-        ? axios.put(getUrl(`api/cloud/authz/${model.id}`), model) 
+        ? axios.put(getUrl(`api/cloud/authz/${model.id}`), model)
         : axios.post(getUrl("api/cloud/authz"), model);
 }
 
@@ -69,10 +69,10 @@ export async function getIdentityProviders() {
     return identityProviders;
 }
 
-export default { 
+export default {
     listCredentials,
     getCredential,
     saveCredential,
     deleteCredential,
     getIdentityProviders
-}
+};

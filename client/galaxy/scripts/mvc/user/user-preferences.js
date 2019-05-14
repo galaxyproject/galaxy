@@ -92,7 +92,9 @@ var Model = Backbone.Model.extend({
             },
             cloud_auth: {
                 title: _l("Manage Cloud Authorization"),
-                description: _l("Add or modify the configuration that grants Galaxy to access your cloud-based resources."),
+                description: _l(
+                    "Add or modify the configuration that grants Galaxy to access your cloud-based resources."
+                ),
                 icon: "fa-cloud",
                 submit_title: "Create a new key",
                 submit_icon: "fa-check"

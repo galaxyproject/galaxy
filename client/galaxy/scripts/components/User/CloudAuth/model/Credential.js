@@ -3,7 +3,6 @@ import { ResourceProviders } from "./ResourceProviders";
 import { BaseModel } from "./BaseModel";
 
 export class Credential extends BaseModel {
-
     constructor(props = {}) {
         super();
 
@@ -11,7 +10,7 @@ export class Credential extends BaseModel {
         this.description = "";
         this.authn_id = null; // identity provider
         this.provider = null; // resource provider
-        
+
         // transient props, exclude from state
         this.expanded = false;
         this.loading = false;
@@ -21,7 +20,7 @@ export class Credential extends BaseModel {
         safeAssign(this, options);
 
         // init nested config
-        this.config = new this.configClass(options.config); 
+        this.config = new this.configClass(options.config);
 
         // initialize state
         this.updateState();
@@ -35,7 +34,6 @@ export class Credential extends BaseModel {
         return super.valid && this.config.valid;
     }
 
-
     // Alias for provider also changes config object when updated
     // Set this when updating in the UI
 
@@ -48,28 +46,25 @@ export class Credential extends BaseModel {
         this.config = new this.configClass({});
     }
 
-
     // Polymorphic config class
 
     get configClass() {
         return ResourceProviders.get(this.provider).klass;
     }
 
-
     // Methods
-    
+
     match(searchText = "") {
         // TODO: more robust object matching?
         return searchText.length ? this.title.includes(searchText) : true;
     }
-
 
     // Statics
 
     static get defaults() {
         return {
             authn_id: null,
-            provider: 'aws',
+            provider: "aws",
             expanded: false
         };
     }
@@ -91,7 +86,6 @@ Credential.setTransient("expanded", "loading");
  * error messages.
  */
 Credential.setValidator(function(model) {
-
     let errors = {};
 
     if (!model.provider) {
@@ -107,4 +101,4 @@ Credential.setValidator(function(model) {
     }
 
     return errors;
-})
+});

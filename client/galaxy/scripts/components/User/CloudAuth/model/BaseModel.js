@@ -7,18 +7,15 @@ const counter = new WeakMap();
 let instanceCounter = 0;
 
 export class BaseModel {
-
     constructor() {
         counter.set(this, instanceCounter++);
     }
-
 
     /* object ID */
 
     get counter() {
         return counter.get(this);
     }
-
 
     /* Dirty state tracking */
 
@@ -52,7 +49,7 @@ export class BaseModel {
         }
         return transients.get(key);
     }
-    
+
     updateState() {
         lastState.set(this, this.state);
     }
@@ -60,18 +57,15 @@ export class BaseModel {
     // Setting a property name as transient for a class means its
     // state will be caclulated without regard to that propety
     static setTransient(...fieldNames) {
-
         let klass = this; // this will be a class
         if (!transients.has(klass)) {
             transients.set(klass, new Set());
         }
 
         let fields = transients.get(klass);
-        fieldNames.forEach(fieldName => fields.add(fieldName))
+        fieldNames.forEach(fieldName => fields.add(fieldName));
         transients.set(klass, fields);
     }
-
-
 
     /* Validation */
 
@@ -105,5 +99,4 @@ export class BaseModel {
     static setValidator(validationFunction) {
         validators.set(this, validationFunction);
     }
-
 }

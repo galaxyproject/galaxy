@@ -4,15 +4,15 @@ import { createMask } from "imask";
 export default {
     extends: BInput,
     props: {
-        mask: { 
-            type: String, 
-            required: false, 
+        mask: {
+            type: String,
+            required: false,
             default: ""
         }
     },
     computed: {
         masker() {
-            return createMask({ 
+            return createMask({
                 mask: this.mask
             });
         }
@@ -26,4 +26,4 @@ export default {
             return result;
         }
     }
-}
+};

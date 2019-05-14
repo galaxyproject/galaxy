@@ -29,7 +29,7 @@ export default Backbone.View.extend({
             onclick: function() {
                 self._eventReset();
             }
-        })
+        });
         this.btnStart = new Ui.Button({
             title: _l("Start"),
             onclick: function() {
@@ -63,7 +63,7 @@ export default Backbone.View.extend({
                         self.collection.add({
                             id: self.collection.size(),
                             file_desc: item.description || item.name,
-                            optional: item.optional,
+                            optional: item.optional
                         });
                     });
                 }
@@ -113,7 +113,11 @@ export default Backbone.View.extend({
             this.select_genome.enable();
             this.select_extension.enable();
         }
-        if (this.collection.where({ status: "ready" }).length + this.collection.where({ optional: true }).length == this.collection.length && this.collection.length > 0) {
+        if (
+            this.collection.where({ status: "ready" }).length + this.collection.where({ optional: true }).length ==
+                this.collection.length &&
+            this.collection.length > 0
+        ) {
             this.btnStart.enable();
             this.btnStart.$el.addClass("btn-primary");
         } else {
