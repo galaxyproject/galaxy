@@ -47,6 +47,7 @@ The **galaxy.yml** file will need to be populated as seen in config/galaxy.yml.r
 In the **uwsgi:** section:
 
 .. code-block:: yaml
+
   http-raw-body: true
   # master: true
 
@@ -64,6 +65,9 @@ In the **galaxy:** section:
 .. code-block:: yaml
 
   realtime_prefix: realtime
+
+
+The admin should modify the **route-host**s and **realtime_prefix** to match their preferred configuration.
 
 
 An example **job_conf.xml** file as seen in config/galaxy.yml.realtime:
@@ -91,3 +95,21 @@ An example **job_conf.xml** file as seen in config/galaxy.yml.realtime:
                 </destination>
             </destinations>
         </job_conf> 
+
+
+Alternatively to the local job runner, RealTimeTools have been enabled for the condor job runner, e.g.:
+
+.. code-block:: xml
+
+        <destination id="condor" runner="condor">
+            <param id="docker_enabled">true</param>
+            <param id="docker_sudo">false</param>
+        </destination>
+
+
+Two example test RealTimeTools have been defined, and can be added to the **tool_conf.xml**:
+
+.. code-block:: xml
+
+        <tool file="../test/functional/tools/realtimetool_juypter_notebook.xml" />
+        <tool file="../test/functional/tools/realtimetool_cellxgene.xml" />
