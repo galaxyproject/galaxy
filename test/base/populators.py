@@ -1292,11 +1292,13 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
 
 def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_populator):
 
-    def read_test_data(test_dict):
+    def open_test_data(test_dict, mode="rb"):
         test_data_resolver = TestDataResolver()
         filename = test_data_resolver.get_filename(test_dict["value"])
-        content = open(filename, "r").read()
-        return content
+        return open(filename, mode)
+
+    def read_test_data(test_dict):
+        return open_test_data(test_dict, mode="r").read()
 
     inputs = {}
     label_map = {}
@@ -1342,7 +1344,7 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
         elif is_dict and "type" in value:
             input_type = value["type"]
             if input_type == "File":
-                content = read_test_data(value)
+                content = open_test_data(value)
                 new_dataset_kwds = {
                     "content": content
                 }
