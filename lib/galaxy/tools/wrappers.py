@@ -286,11 +286,18 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     @property
     def safe_element_identifier(self):
         """
-        creates a string from the element identifier that can be used safely as filename
-        by replacing the the only character that is forbidden in bash script (the slash)
-        with an underscore.
+        creates a string from the element identifier that can be used safely as
+        filename (as long as it is used in single quotes). Allowed characters
+        are alpha numeric characters, space, dash, and underscore. All other
+        characters are replaced by '_'. For empty identifiers a single underscore
+        is returned.
         """
-        return self.element_identifier.replace("/","_")
+        sid = self.element_identifier
+        if len(sid) == 0:
+            return "_"
+        if sid[0] == '-':
+            sid = "_" + sid[1:]
+        return re.sub('[^\w- ]', '_', sid)
 
     def __str__(self):
         if self.false_path is not None:
