@@ -750,7 +750,6 @@ class Yaml(Text):
             # If the file is small enough - don't guess just check.
             try:
                 item = yaml.load(file_prefix.contents_header)
-                # exclude simple types, must set format in these cases
                 assert isinstance(item, (list, dict))
                 return True
             except Exception:
@@ -759,6 +758,6 @@ class Yaml(Text):
             start = file_prefix.string_io().read(100).strip()
             if start:
                 # If file is too big,
-                # can't load in and must set explicitly
-                return ":" in start
+                # don't load in and must set explicitly
+                return "\n---\n" in start
             return False
