@@ -16,7 +16,7 @@ import os
 
 from galaxy import util
 from galaxy.util import plugin_config
-from ..metrics import formatting
+from ..job_metrics import formatting
 
 log = logging.getLogger(__name__)
 
@@ -59,8 +59,8 @@ class JobMetrics(object):
         return self.job_instrumenters[destination_id].collect_properties(job_id, job_directory)
 
     def __plugins_dict(self):
-        import galaxy.jobs.metrics.instrumenters
-        return plugin_config.plugins_dict(galaxy.jobs.metrics.instrumenters, 'plugin_type')
+        import galaxy.job_metrics.instrumenters
+        return plugin_config.plugins_dict(galaxy.job_metrics.instrumenters, 'plugin_type')
 
 
 class NullJobInstrumenter(object):

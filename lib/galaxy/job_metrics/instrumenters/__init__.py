@@ -10,7 +10,7 @@ from abc import (
 
 import six
 
-from ...metrics import formatting
+from .. import formatting
 
 INSTRUMENT_FILE_PREFIX = "__instrument"
 

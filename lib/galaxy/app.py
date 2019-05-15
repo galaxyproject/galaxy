@@ -10,9 +10,8 @@ import galaxy.model.security
 import galaxy.queues
 import galaxy.quota
 import galaxy.security
-from galaxy import config, jobs
+from galaxy import config, job_metrics, jobs
 from galaxy.containers import build_container_interfaces
-from galaxy.jobs import metrics as job_metrics
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.histories import HistoryManager
