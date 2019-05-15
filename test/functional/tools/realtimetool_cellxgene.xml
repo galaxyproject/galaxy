@@ -8,7 +8,7 @@
         </entry_point>
     </realtime>
     <command><![CDATA[
-        cp '${inpu}' '/tmp/galaxy_cellxgene_${input.element_identifier}.h5ad'
+        cp '${input}' '/tmp/galaxy_cellxgene_${input.element_identifier}.h5ad'
         &&
         cellxgene launch --host 0.0.0.0 --port 80 /tmp/galaxy_cellxgene*
     ]]>
