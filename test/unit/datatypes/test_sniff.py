@@ -1,6 +1,11 @@
 import tempfile
 
-from galaxy.datatypes.sniff import convert_newlines_sep2tabs, sep2tabs
+from galaxy.datatypes.sniff import (
+    convert_newlines,
+    convert_newlines_sep2tabs,
+    get_test_fname,
+    sep2tabs,
+)
 
 
 def assert_converts_to_1234_sep2tabs(content, line_ending="\n"):
@@ -21,6 +26,13 @@ def assert_converts_to_1234_convert_sep2tabs(content, expected='1\t2\n3\t4\n', l
     rval = convert_newlines_sep2tabs(tf.name, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     assert rval == (2, None), rval
     assert expected == open(tf.name).read()
+
+
+def test_convert_newlines_non_utf():
+    fname = get_test_fname("dosimzml")
+    rval = convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), in_place=False)
+    new_file = rval[1]
+    assert open(new_file, "rb").read() == open(get_test_fname("1.imzml"), "rb").read()
 
 
 def test_sep2tabs():
