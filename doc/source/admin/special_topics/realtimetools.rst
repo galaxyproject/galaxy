@@ -21,7 +21,7 @@ information:
             </entry_point>
         </realtime>
 
-Note that name, port, and url are each able to be templated from the RealTimeTool's parameter dictionary.
+**Note** that name, port, and url are each able to be templated from the RealTimeTool's parameter dictionary.
 
 
 
@@ -42,7 +42,7 @@ Some important benefits of using Galaxy RealTimeTools
 Server-side configuration of Galaxy RealTimeTools
 -------------------------------------------------
 
-The **galaxy.yml** file will need to be populated as seen in config/galaxy.yml.realtime.
+The **galaxy.yml** file will need to be populated as seen in **config/galaxy.yml.realtime**.
 
 In the **uwsgi:** section:
 
@@ -70,7 +70,7 @@ In the **galaxy:** section:
 The admin should modify the **route-host**s and **realtime_prefix** to match their preferred configuration.
 
 
-An example **job_conf.xml** file as seen in config/galaxy.yml.realtime:
+An example **job_conf.xml** file as seen in **config/galaxy.yml.realtime**:
 
 .. code-block:: xml
 
@@ -107,9 +107,9 @@ Alternatively to the local job runner, RealTimeTools have been enabled for the c
         </destination>
 
 
-**Note on resource consumption:** Keep in mind that Distributed Resource Management (DRM) / cluster systems may have a maximum runtime configured for jobs. From the Galaxy point of view, such a container could run as long as the user desires, this may not be scalable and an admin may want to restrict the runtime of RealTimeTools (and jobs in general). However, if the job is killed by the DRM, the user is not informed beforehand and data in the container could be discarded.
+**Note on resource consumption:** Keep in mind that Distributed Resource Management (DRM) / cluster systems may have a maximum runtime configured for jobs. From the Galaxy point of view, such a container could run as long as the user desires, this may not be advisable and an admin may want to restrict the runtime of RealTimeTools *(and jobs in general)*. However, if the job is killed by the DRM, the user is not informed beforehand and data in the container could be discarded.
 
-Two example test RealTimeTools have been defined, and can be added to the **tool_conf.xml**:
+Two **example test RealTimeTools** have been defined, and can be added to the **config/tool_conf.xml**:
 
 .. code-block:: xml
 

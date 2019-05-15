@@ -411,7 +411,7 @@ class ToolEvaluator(object):
         Populate RealTimeTools templated values.
         """
         rtt = []
-        for ep in self.tool.ports:
+        for ep in getattr(self.tool, 'ports', []):
             ep_dict = {}
             for key in 'port', 'name', 'url':
                 val = ep.get(key, None)
