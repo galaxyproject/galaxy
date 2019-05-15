@@ -41,7 +41,7 @@
         display_href = h.url_for( controller=item_controller, action='display_by_username_and_slug', username=item_user.username, slug=item_slug )
     %>
     <div style="float: left">
-        <a class="display_in_embed icon-button toggle-expand" item_id="${trans.security.encode_id( item.id )}" item_class="$item.__class__.__name__" href="${display_href}"
+        <a class="display_in_embed icon-button toggle-expand" item_id="${trans.security.encode_id( item.id )}" item_class="${item.__class__.__name__}" href="${display_href}"
             title="Show ${item_display_name} content"></a>
         <a class="toggle icon-button" href="${display_href}" title="Hide ${item_display_name} content"></a>
     </div>
