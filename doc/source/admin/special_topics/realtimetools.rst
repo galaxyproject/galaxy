@@ -33,7 +33,7 @@ Some important benefits of using Galaxy RealTimeTools
 - A single **RealTimeTool** can **grant access** to **multiple running applications, servers, and interfaces**
 - **RealTimeTools** can be **added to** Galaxy **Workflows**
 - **Native, out-of-the box support for RealTimeTools** in Galaxy via uWSGI proxying
-- **RealTimeTools** are **bonafide Galaxy Tools**; just specify tool_type as "realtime" and list the ports you want to expose
+- **RealTimeTools** are **bonafide Galaxy Tools**; just specify **tool_type as "realtime"** and list the ports you want to expose
 - **RealTimeTools** can be **added** to and **installed from the ToolShed**.
 - **R Shiny apps**, **Javascript-based VNC** access to desktop environments, **genome-browsers-in-a-box**, **interactive notebook environments**, etc, are all possible with **RealTimeTools**
 
