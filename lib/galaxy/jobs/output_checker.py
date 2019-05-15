@@ -77,7 +77,6 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             max_error_level = StdioErrorLevel.NO_ERROR
             if tool_exit_code is not None:
                 for stdio_exit_code in stdio_exit_codes:
-                    log.debug("checking exit code: $d-%d" % (stdio_exit_code.range_start, stdio_exit_code.range_end))
                     if (tool_exit_code >= stdio_exit_code.range_start and
                             tool_exit_code <= stdio_exit_code.range_end):
                         # Tack on a generic description of the code
@@ -152,7 +151,7 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
                 peak = stderr[0:ERROR_PEAK]
             else:
                 peak = ""
-            log.debug("job failed, detected %s, standard error is - [%s]" % peak)
+            log.debug("job failed, detected state %s, standard error is - [%s]" % (state, peak))
     except Exception:
         log.exception("Job state check encountered unexpected exception; assuming execution successful")
 
