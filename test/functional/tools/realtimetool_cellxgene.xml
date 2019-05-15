@@ -4,12 +4,14 @@
     </requirements>
     <realtime>
         <entry_point name="cellxgene_single_cell_visualisation">
-            <port>8080</port>
+            <port>80</port>
         </entry_point>
     </realtime>
-    <command>
-        cp '$input' /tmp/galaxy_cellxgene_${input.element_identifier}.h5ad;
-        /run_cellxgene.sh
+    <command><![CDATA[
+        cp '${inpu}' '/tmp/galaxy_cellxgene_${input.element_identifier}.h5ad'
+        &&
+        cellxgene launch --host 0.0.0.0 --port 80 /tmp/galaxy_cellxgene*
+    ]]>
     </command>
     <inputs>
         <param name="input" type="data" format="h5ad" label="Concatenate Dataset"/>
