@@ -1,0 +1,56 @@
+from galaxy_selenium.navigates_galaxy import retry_call_during_transitions
+
+from .framework import (
+    managed_history,
+    retry_assertion_during_transitions,
+    selenium_test,
+    SeleniumTestCase,
+    UsesHistoryItemAssertions,
+)
+
+
+class PagesTestCase(SeleniumTestCase):
+
+    ensure_registered = True
+
+    @selenium_test
+    @managed_history
+    def test_simple_page_creation_edit_and_view(self):
+        # Upload a file to test embedded object stuff (TODO)
+        test_path = self.get_filename("1.fasta")
+        self.perform_upload(test_path)
+        self.history_panel_wait_for_hid_ok(1)
+        self.naviage_to_pages()
+        self.screenshot("pages_grid")
+
+        self.components.pages.create.wait_for_and_click()
+        name = self._get_random_name(prefix="page")
+        slug = self._get_random_name(prefix="pageslug")
+        self.tool_set_value("title", name)
+        self.tool_set_value("slug", slug)
+        self.screenshot("pages_create_form")
+
+        # Sometimes 'submit' button not yet hooked up?
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.components.pages.submit.wait_for_and_click()
+
+        self.click_grid_popup_option(name, "Edit content")
+        self.components.pages.editor.wym_iframe.wait_for_visible()
+        self.screenshot("pages_editor_new")
+        self.driver.switch_to.frame(0)
+        try:
+            self.components.pages.editor.wym_iframe_content.wait_for_and_send_keys("moo\ncow")
+        finally:
+            self.driver.switch_to.default_content()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.pages.editor.save.wait_for_and_click()
+        self.screenshot("pages_editor_saved")
+        self.home()
+        self.naviage_to_pages()
+        self.click_grid_popup_option(name, "View")
+        self.screenshot("pages_view_simple")
+
+    def naviage_to_pages(self):
+        self.click_masthead_user()  # Open masthead menu
+        self.components.masthead.pages.wait_for_and_click()
