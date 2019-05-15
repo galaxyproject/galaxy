@@ -11,7 +11,6 @@
         ${self.render_title( item )}
     </div>
     <div class='summary-content'>
-        ${self.render_summary_content( item, item_data )}
     </div>
     <div class='expanded-content'>
         <div class='item-content'></div>
@@ -56,8 +55,4 @@
     
     ## Use a hidden var to store the ajax URL for getting an item's content.
     <input type="hidden" name="ajax-item-content-url" value="${h.url_for( controller=item_controller, action='get_item_content_async', id=trans.security.encode_id( item.id ) )}"/>
-</%def>
-
-## Methods to override to render summary content.
-<%def name="render_summary_content( item, item_data )">
 </%def>
