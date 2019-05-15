@@ -425,6 +425,8 @@ class SubWorkflowModule(WorkflowModule):
                 )
                 if step.type == 'data_collection_input':
                     input['collection_type'] = step.tool_inputs.get('collection_type') if step.tool_inputs else None
+                if step_type == 'parameter_input':
+                    input['type'] = step.tool_inputs['parameter_type']
                 inputs.append(input)
         return inputs
 
