@@ -19,7 +19,7 @@ var ToolShedCategories = Backbone.View.extend({
     },
 
     render: function(options) {
-        let category_list_template = this.templateCategoryList();
+        const category_list_template = this.templateCategoryList();
         this.options = _.extend(this.options, options);
         this.options.categories = this.model.models;
         this.options.queue = toolshed_util.queueLength();

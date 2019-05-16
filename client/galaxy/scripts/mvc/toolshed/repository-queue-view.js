@@ -33,12 +33,12 @@ var View = Backbone.View.extend({
 
     bindEvents: function() {
         $(".install_one").on("click", ev => {
-            let repository_metadata = this.loadFromQueue($(ev.target).attr("data-repokey"));
+            const repository_metadata = this.loadFromQueue($(ev.target).attr("data-repokey"));
             this.installFromQueue(repository_metadata, $(ev.target).attr("data-repokey"));
         });
         $(".remove_one").on("click", ev => {
-            let queue_key = $(ev.target).attr("data-repokey");
-            let repo_queue = JSON.parse(window.localStorage.repositories);
+            const queue_key = $(ev.target).attr("data-repokey");
+            const repo_queue = JSON.parse(window.localStorage.repositories);
             if (repo_queue.hasOwnProperty(queue_key)) {
                 this.removeRow(repo_queue[queue_key].id);
                 delete repo_queue[queue_key];
@@ -46,8 +46,8 @@ var View = Backbone.View.extend({
             window.localStorage.repositories = JSON.stringify(repo_queue);
         });
         $("#clear_queue").on("click", () => {
-            let repo_queue = JSON.parse(window.localStorage.repositories);
-            for (let [key, value] of Object.entries(repo_queue)) {
+            const repo_queue = JSON.parse(window.localStorage.repositories);
+            for (const key of Object.keys(repo_queue)) {
                 this.removeRow(repo_queue[key].id);
             }
             window.localStorage.repositories = "{}";
