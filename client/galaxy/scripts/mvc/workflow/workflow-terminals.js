@@ -435,6 +435,10 @@ var InputTerminal = BaseInputTerminal.extend({
             }
             if (thisMapOver.isCollection && thisMapOver.canMatch(otherCollectionType)) {
                 return this._producesAcceptableDatatype(other);
+            } else if (this.multiple && new CollectionTypeDescription('list').canMatch(otherCollectionType)) {
+                // This handles the special case of a list input being connected to a multiple="true" data input.
+                // Nested lists would be correctly mapped over by the above condition.
+                return this._producesAcceptableDatatype(other);
             } else {
                 //  Need to check if this would break constraints...
                 var mappingConstraints = this._mappingConstraints();
