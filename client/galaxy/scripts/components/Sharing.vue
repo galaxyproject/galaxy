@@ -170,7 +170,8 @@ export default {
             return this.item.published ? "accessible via link and published" : "accessible via link";
         },
         item_url() {
-            return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${getAppRoot()}${
+            const port = window.location.port ? `:${window.location.port}` : "";
+            return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}${
                 this.item.username_and_slug
             }`;
         },
