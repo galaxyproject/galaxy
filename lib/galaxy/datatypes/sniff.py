@@ -110,53 +110,10 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
     """
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     i = 0
-    try:
-        with io.open(fd, mode="wt", encoding='utf-8') as fp:
-            with io.open(fname, encoding='utf-8') as fi:
-                partial_line = False
-                while True:
-                    line = fi.readline(block_size)
-                    if not line:
-                        if partial_line:
-                            fp.write(u"\n")
-                            i += 1
-                        break
-
-                    if line[-1] == u"\n":
-                        partial_line = False
-                        fp.write(line)
-                        i += 1
-                        continue
-
-                    # We have a block... maybe at the end of the file.
-                    partial_line = True
-                    fp.write(line)
-    except UnicodeDecodeError:
-        fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-        i = 0
-        with io.open(fd, mode="wb") as fp:
-            with io.open(fname, mode="rb") as fi:
-                partial_line = False
-                while True:
-                    line = fi.readline(block_size)
-                    if not line:
-                        if partial_line:
-                            fp.write(b"\n")
-                            i += 1
-                        break
-
-                    strip_line = line.rstrip(b"\r\n")
-                    if len(strip_line) != len(line):
-                        partial_line = False
-                        fp.write(strip_line)
-                        fp.write(b"\n")
-                        i += 1
-                        continue
-
-                    # We have a block... maybe at the end of the file.
-                    partial_line = True
-                    fp.write(line)
-
+    with io.open(fd, mode="wb") as fp:
+        with io.open(fname, mode="rb") as fi:
+            for i, line in enumerate(fi):
+                fp.write(b"%s\n" % line.rstrip(b"\r\n"))
     if in_place:
         shutil.move(temp_name, fname)
         # Return number of lines in file.
