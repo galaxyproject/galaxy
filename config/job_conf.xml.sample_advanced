@@ -66,7 +66,7 @@
           <!-- <param id="persistence_directory">/path/to/dir</param> -->
           <!-- Number of seconds to wait for an acknowledgement before
                republishing a message. -->
-          <!-- <param id="amqp_republish_time">30</param> -->
+          <!-- <param id="amqp_ack_republish_time">30</param> -->
           <!-- Pulsar job manager to communicate with (see Pulsar
                docs for information on job managers). -->
           <!-- <param id="manager">_default_</param> -->
