@@ -536,6 +536,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.mtx')
     >>> guess_ext(fname, sniff_order)
     'mtx'
+    >>> fname = get_test_fname('1imzml')
+    >>> guess_ext(fname, sniff_order)  # This test case is ensuring doesn't throw exception, actual value could change if non-utf encoding handling improves.
+    'data'
     """
     file_prefix = FilePrefix(fname)
     file_ext = run_sniffers_raw(file_prefix, sniff_order, is_binary)
@@ -617,8 +620,9 @@ def zip_single_fileobj(path):
 class FilePrefix(object):
 
     def __init__(self, filename):
-        binary = False
+        non_utf8_error = None
         compressed_format = None
+        contents_header_bytes = None
         contents_header = None  # First MAX_BYTES of the file.
         truncated = False
         # A future direction to optimize sniffing even more for sniffers at the top of the list
@@ -627,20 +631,23 @@ class FilePrefix(object):
         # populates contents_header while providing a StringIO-like interface until the file is read
         # but then would fallback to native string_io()
         try:
-            compressed_format, f = compression_utils.get_fileobj_raw(filename)
+            compressed_format, f = compression_utils.get_fileobj_raw(filename, "rb")
             try:
-                contents_header = f.read(SNIFF_PREFIX_BYTES)
-                truncated = len(contents_header) == SNIFF_PREFIX_BYTES
+                contents_header_bytes = f.read(SNIFF_PREFIX_BYTES)
+                truncated = len(contents_header_bytes) == SNIFF_PREFIX_BYTES
+                contents_header = contents_header_bytes.decode("utf-8")
             finally:
                 f.close()
-        except UnicodeDecodeError:
-            binary = True
+        except UnicodeDecodeError as e:
+            non_utf8_error = e
 
         self.truncated = truncated
         self.filename = filename
-        self.binary = binary
+        self.non_utf8_error = non_utf8_error
+        self.binary = non_utf8_error is not None  # obviously wrong
         self.compressed_format = compressed_format
         self.contents_header = contents_header
+        self.contents_header_bytes = contents_header_bytes
         self._file_size = None
 
     @property
@@ -650,8 +657,8 @@ class FilePrefix(object):
         return self._file_size
 
     def string_io(self):
-        if self.binary:
-            raise Exception("Attempting to create a StringIO object for binary data.")
+        if self.non_utf8_error is not None:
+            raise self.non_utf8_error
         rval = StringIO(self.contents_header)
         return rval
 
