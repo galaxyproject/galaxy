@@ -107,35 +107,6 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
     """
     Converts in place a file from universal line endings
     to Posix line endings.
-
-    >>> def assert_converts_to_1234(content, block_size=1024):
-    ...       fname = get_test_fname('temp.txt')
-    ...       with open(fname, 'w') as fh:
-    ...           _ = fh.write(content)
-    ...       rval = convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), block_size=block_size)
-    ...       assert rval == (2, None), rval
-    ...       actual_contents = open(fname).read()
-    ...       assert '1 2\\n3 4\\n' == actual_contents, actual_contents
-    >>> # Verify ends with newline - with or without that on inputs - for any of
-    >>> # \\r \\n or \\r\\n newlines.
-    >>> assert_converts_to_1234("1 2\\r3 4")
-    >>> assert_converts_to_1234("1 2\\n3 4")
-    >>> assert_converts_to_1234("1 2\\r\\n3 4")
-    >>> assert_converts_to_1234("1 2\\r3 4\\r")
-    >>> assert_converts_to_1234("1 2\\n3 4\\n")
-    >>> assert_converts_to_1234("1 2\\r\\n3 4\\r\\n")
-    >>> assert_converts_to_1234("1 2\\r3 4", block_size=2)
-    >>> assert_converts_to_1234("1 2\\n3 4", block_size=2)
-    >>> assert_converts_to_1234("1 2\\r\\n3 4", block_size=2)
-    >>> assert_converts_to_1234("1 2\\r3 4\\r", block_size=2)
-    >>> assert_converts_to_1234("1 2\\n3 4\\n", block_size=2)
-    >>> assert_converts_to_1234("1 2\\r\\n3 4\\r\\n", block_size=2)
-    >>> assert_converts_to_1234("1 2\\r3 4", block_size=3)
-    >>> assert_converts_to_1234("1 2\\n3 4", block_size=3)
-    >>> assert_converts_to_1234("1 2\\r\\n3 4", block_size=3)
-    >>> assert_converts_to_1234("1 2\\r3 4\\r", block_size=3)
-    >>> assert_converts_to_1234("1 2\\n3 4\\n", block_size=3)
-    >>> assert_converts_to_1234("1 2\\r\\n3 4\\r\\n", block_size=3)
     """
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     i = 0
