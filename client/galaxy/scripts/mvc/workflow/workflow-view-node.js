@@ -115,7 +115,7 @@ export default Backbone.View.extend({
         this.tool_body.append(outputView.$el.append(terminalView.terminalElements()));
     },
 
-    updateDataOutputView(output){
+    updateDataOutputView: function(output) {
         const terminalView = this.terminalViewForOutput(output);
         const outputView = this.outputViews[output.name];
         const newOutputView = this.outputViewforOutput(output, terminalView);

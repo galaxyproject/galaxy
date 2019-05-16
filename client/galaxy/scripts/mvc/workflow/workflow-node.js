@@ -63,10 +63,11 @@ var Node = Backbone.Model.extend({
     changeOutputDatatype: function(outputName, datatype) {
         const output_terminal = this.output_terminals[outputName];
         const output = this.nodeView.outputViews[outputName].output;
-        output_terminal.datatypes = [datatype];
-        output.extensions = [datatype];
+        output_terminal.force_datatype = datatype;
+        output.force_datatype = datatype;
         this.nodeView.updateDataOutputView(output);
         this.markChanged();
+        output_terminal.destroyInvalidConnections();
     },
     connectedOutputTerminals: function() {
         return this._connectedTerminals(this.output_terminals);
@@ -284,6 +285,7 @@ var Node = Backbone.Model.extend({
                 // the output already exists, but the output formats may have changed.
                 // Therefore we update the datatypes and destroy invalid connections.
                 node.output_terminals[output.name].datatypes = output.extensions;
+                node.output_terminals[output.name].force_datatype = output.force_datatype;
                 if (node.type == "parameter_input") {
                     node.output_terminals[output.name].attributes.type = output.type;
                 }
