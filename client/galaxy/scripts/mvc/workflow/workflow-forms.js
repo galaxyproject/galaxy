@@ -276,7 +276,10 @@ function _makeSection(output_id, label, options) {
                 ignore: "__empty__",
                 value: "__empty__",
                 options: extensions,
-                help: "This action will change the datatype of the output to the indicated value."
+                help: "This action will change the datatype of the output to the indicated datatype.",
+                onchange: function(new_value) {
+                    workflow.updateDatatype(node, output_id, new_value);
+                }
             },
             {
                 action: "TagDatasetAction",

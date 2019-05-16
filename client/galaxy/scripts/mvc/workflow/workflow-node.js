@@ -60,6 +60,14 @@ var Node = Backbone.Model.extend({
         }
         return changed;
     },
+    changeOutputDatatype: function(outputName, datatype) {
+        const output_terminal = this.output_terminals[outputName];
+        const output = this.nodeView.outputViews[outputName].output;
+        output_terminal.datatypes = [datatype];
+        output.extensions = [datatype];
+        this.nodeView.updateDataOutputView(output);
+        this.markChanged();
+    },
     connectedOutputTerminals: function() {
         return this._connectedTerminals(this.output_terminals);
     },
