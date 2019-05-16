@@ -31,3 +31,21 @@ def assert_has_h5_keys(output_bytes, keys):
     output_temp = io.BytesIO(output_bytes)
     local_keys = sorted(list(h5py.File(output_temp, 'r').keys()))
     assert local_keys == h5_keys, "Not a HDF5 file or H5 keys do not match:\n\t%s\n\t%s" % (local_keys, h5_keys)
+
+
+def assert_contains_h5_keys(output_bytes, keys):
+    """ Asserts the specified HDF5 output contains the given keys, including recursive group paths."""
+    _assert_h5py()
+    keys = [k.strip() for k in keys.strip().split(',')]
+    h5_keys = sorted(keys)
+    output_temp = io.BytesIO(output_bytes)
+    local_keys = []
+    def append_keys(key):
+        local_keys.append(key)
+        return None
+    h5py.File(output_temp, 'r').visit(append_keys)
+    missing = 0
+    for key in h5_keys:
+        if key not in local_keys:
+            missing += 1
+    assert missing == 0, "Not a HDF5 file or H5 keys missing:\n\t%s\n\t%s" % (local_keys, h5_keys)
