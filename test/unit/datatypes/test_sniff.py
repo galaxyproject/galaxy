@@ -1,4 +1,3 @@
-import io
 import tempfile
 
 import pytest
@@ -10,12 +9,12 @@ from galaxy.datatypes.sniff import (
 )
 
 
-def assert_converts_to_1234_convert_sep2tabs(content, expected='1\t2\n3\t4\n', line_ending="\n"):
+def assert_converts_to_1234_convert_sep2tabs(content, expected='1\t2\n3\t4\n'):
     with tempfile.NamedTemporaryFile(delete=False, mode='w') as tf:
         tf.write(content)
     rval = convert_newlines_sep2tabs(tf.name, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
-    assert rval == (2, None), rval
     assert expected == open(tf.name).read()
+    assert rval == (2, None), rval
 
 
 def assert_converts_to_1234_convert(content, block_size=1024):
@@ -23,9 +22,9 @@ def assert_converts_to_1234_convert(content, block_size=1024):
     with open(fname, 'w') as fh:
         fh.write(content)
     rval = convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), block_size=block_size)
-    assert rval == (2, None), "rval != %s for %s" % (rval, content)
     actual_contents = open(fname).read()
     assert '1 2\n3 4\n' == actual_contents, actual_contents
+    assert rval == (2, None), "rval != %s for %s" % (rval, content)
 
 
 @pytest.mark.parametrize('source,block_size', [
