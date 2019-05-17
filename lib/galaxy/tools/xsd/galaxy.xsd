@@ -1652,8 +1652,6 @@ module.
       </xs:element>
       <xs:element name="has_h5_keys" type="AssertHasH5Keys">
       </xs:element>
-      <xs:element name="contains_h5_keys" type="AssertContainsH5Keys">
-      </xs:element>
       <xs:element name="has_h5_attribute" type="AssertHasH5Attribute">
       </xs:element>
       <xs:element name="has_archive_member" type="AssertHasArchiveMember">
@@ -1662,17 +1660,7 @@ module.
   </xs:group>
   <xs:complexType name="AssertHasH5Keys">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output has a set of attributes (``keys``), specified as a comma-separated list (e.g. ``<has_h5_keys keys="bins,chroms,indexes,pixels" />``).]]></xs:documentation>
-    </xs:annotation>
-    <xs:attribute name="keys" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Comma-separated list of HDF5 attributes to check for.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-  </xs:complexType>
-  <xs:complexType name="AssertContainsH5Keys">
-    <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output includes a set of attributes (``keys``) including nested attributes, specified as a comma-separated list (e.g. ``<contains_h5_keys keys="bins,resolution/chroms,indexes,pixels" />``).]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output has a set of attributes (``keys``), specified as a comma-separated list (e.g. ``<has_h5_keys keys="bins,chroms,indexes,pixels,chroms/lengths" />``).]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="keys" type="xs:string">
       <xs:annotation>
