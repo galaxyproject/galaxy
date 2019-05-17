@@ -17,7 +17,21 @@
                 </template>
                 <template slot="row-details" slot-scope="row">
                     <b-card>
-                        <div class="mb-4">{{ row.item.long_description}}</div>
+                        <div class="mb-4">{{ row.item.long_description }}</div>
+                        <b-form-group
+                            description="There are multiple revisions available for this repository.">
+                            <b-form-select
+                                v-model="repositoryVersion"
+                                :options="repositoryVersions"
+                            />
+                        </b-form-group>
+                        <b-form-group
+                            description="Choose an existing section in your tool panel to contain the installed tools (optional).">
+                            <b-form-select
+                                v-model="toolPanelSection"
+                                :options="toolPanelSections"
+                            />
+                        </b-form-group>
                         <b-button variant="primary">Install</b-button>
                     </b-card>
                 </template>
@@ -34,8 +48,18 @@ export default {
     data() {
         return {
             toolshedUrl: "https://toolshed.g2.bx.psu.edu/",
+            toolPanelSections: ["Sec1", "Sec2", "Sec3"],
+            toolPanelSection: null,
+            repositoryVersions: ["V1", "V2", "V3"],
+            repositoryVersion: null,
             repositories: [],
-            fields: ["name", "description", "last_updated", "repo_owner_username", "times_downloaded"],
+            fields: [
+                { key: "name" },
+                { key: "description" },
+                { key: "last_updated", label: "Updated" },
+                { key: "repo_owner_username", label: "Owner" },
+                { key: "times_downloaded", label: "Downloaded" }
+            ],
             search: "",
             selected: null,
             name: null,
