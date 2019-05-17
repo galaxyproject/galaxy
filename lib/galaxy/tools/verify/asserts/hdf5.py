@@ -30,7 +30,7 @@ def assert_has_h5_keys(output_bytes, keys):
     h5_keys = sorted(keys)
     output_temp = io.BytesIO(output_bytes)
     local_keys = []
-    
+
     def append_keys(key):
         local_keys.append(key)
         return None
