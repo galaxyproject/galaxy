@@ -467,7 +467,10 @@ class DiskObjectStore(ObjectStore):
             # construct and return hashed path
             if os.path.exists(path):
                 return path
-        return self._construct_path(obj, **kwargs)
+        path = self._construct_path(obj, **kwargs)
+        if not os.path.exists(path):
+            raise ObjectNotFound
+        return path
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
         """`create` parameter is not used in this implementation."""
