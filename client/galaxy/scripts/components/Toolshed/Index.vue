@@ -1,5 +1,5 @@
 <template>
-    <div class="ui-thumbnails">
+    <div class="overflow-auto h-100" @scroll="onScroll">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
             <b-input
@@ -60,6 +60,7 @@ export default {
                 { key: "repo_owner_username", label: "Owner" },
                 { key: "times_downloaded", label: "Downloaded" }
             ],
+            page: 1,
             search: "",
             selected: null,
             name: null,
@@ -107,16 +108,15 @@ export default {
                 this.error = "This option requires an accessible history.";
             }*/
         },
-        match: function(plugin) {
-            return (
-                !this.search ||
-                plugin.name.indexOf(this.search) != -1 ||
-                (plugin.description && plugin.description.indexOf(this.search) != -1)
-            );
-        },
         _errorMessage: function(e) {
             const message = e && e.response && e.response.data && e.response.data.err_msg;
             return message || "Request failed for an unknown reason.";
+        },
+        onScroll: function({ target: { scrollTop, clientHeight, scrollHeight }}) {
+            window.console.log("scrolling");
+            if (scrollTop + clientHeight >= scrollHeight) {
+                window.console.log("reached");
+            }
         }
     }
 };
