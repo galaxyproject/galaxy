@@ -1120,6 +1120,9 @@ class MCool(Cool):
         >>> fname = get_test_fname('matrix.mcool')
         >>> MCool().sniff(fname)
         True
+        >>> fname = get_test_fname('matrix.cool')
+        >>> MCool().sniff(fname)
+        False
         >>> fname = get_test_fname('test.mz5')
         >>> MCool().sniff(fname)
         False
