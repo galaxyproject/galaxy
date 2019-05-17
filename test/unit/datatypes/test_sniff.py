@@ -1,6 +1,8 @@
 import io
 import tempfile
 
+import pytest
+
 from galaxy.datatypes.sniff import (
     convert_newlines,
     convert_newlines_sep2tabs,
@@ -35,27 +37,33 @@ def assert_converts_to_1234_convert(content, block_size=1024):
     assert '1 2\n3 4\n' == actual_contents, actual_contents
 
 
-def test_convert_newlines():
+@pytest.mark.parametrize('source,block_size', [
+    ("1 2\r3 4", None),
+    ("1 2\n3 4", None),
+    ("1 2\r\n3 4", None),
+    ("1 2\r3 4\r", None),
+    ("1 2\n3 4\n", None),
+    ("1 2\r\n3 4\r\n", None),
+    ("1 2\r3 4", 2),
+    ("1 2\n3 4", 2),
+    ("1 2\r\n3 4", 2),
+    ("1 2\r3 4\r", 2),
+    ("1 2\n3 4\n", 2),
+    ("1 2\r\n3 4\r\n", 2),
+    ("1 2\r3 4", 3),
+    ("1 2\n3 4", 3),
+    ("1 2\r\n3 4", 3),
+    ("1 2\r3 4\r", 3),
+    ("1 2\n3 4\n", 3),
+    ("1 2\r\n3 4\r\n", 3),
+])
+def test_convert_newlines(source, block_size):
     # Verify ends with newline - with or without that on inputs - for any of
     # \r \\n or \\r\\n newlines.
-    assert_converts_to_1234_convert("1 2\r3 4")
-    assert_converts_to_1234_convert("1 2\n3 4")
-    assert_converts_to_1234_convert("1 2\r\n3 4")
-    assert_converts_to_1234_convert("1 2\r3 4\r")
-    assert_converts_to_1234_convert("1 2\n3 4\n")
-    assert_converts_to_1234_convert("1 2\r\n3 4\r\n")
-    assert_converts_to_1234_convert("1 2\r3 4", block_size=2)
-    assert_converts_to_1234_convert("1 2\n3 4", block_size=2)
-    assert_converts_to_1234_convert("1 2\r\n3 4", block_size=2)
-    assert_converts_to_1234_convert("1 2\r3 4\r", block_size=2)
-    assert_converts_to_1234_convert("1 2\n3 4\n", block_size=2)
-    assert_converts_to_1234_convert("1 2\r\n3 4\r\n", block_size=2)
-    assert_converts_to_1234_convert("1 2\r3 4", block_size=3)
-    assert_converts_to_1234_convert("1 2\n3 4", block_size=3)
-    assert_converts_to_1234_convert("1 2\r\n3 4", block_size=3)
-    assert_converts_to_1234_convert("1 2\r3 4\r", block_size=3)
-    assert_converts_to_1234_convert("1 2\n3 4\n", block_size=3)
-    assert_converts_to_1234_convert("1 2\r\n3 4\r\n", block_size=3)
+    if block_size:
+        assert_converts_to_1234_convert(source, block_size)
+    else:
+        assert_converts_to_1234_convert(source)
 
 
 def test_convert_newlines_non_utf():
@@ -65,19 +73,31 @@ def test_convert_newlines_non_utf():
     assert open(new_file, "rb").read() == open(get_test_fname("1imzml"), "rb").read()
 
 
-def test_sep2tabs():
-    assert_converts_to_1234_sep2tabs("1 2\n3 4\n")
-    assert_converts_to_1234_sep2tabs("1    2\n3    4\n")
-    assert_converts_to_1234_sep2tabs("1\t2\n3\t4\n")
-    assert_converts_to_1234_sep2tabs("1\t2\r3\t4\r", line_ending='\r')
-    assert_converts_to_1234_sep2tabs("1\t2\r\n3\t4\r\n", line_ending='\r\n')
+@pytest.mark.parametrize('source,line_ending', [
+    ("1 2\n3 4\n", None),
+    ("1    2\n3    4\n", None),
+    ("1\t2\n3\t4\n", None),
+    ("1\t2\r3\t4\r", '\r'),
+    ("1\t2\r\n3\t4\r\n", '\r\n'),
+])
+def test_sep2tabs(source, line_ending):
+    if line_ending:
+        assert_converts_to_1234_sep2tabs(source, line_ending)
+    else:
+        assert_converts_to_1234_sep2tabs(source)
 
 
-def test_convert_sep2tabs():
-    assert_converts_to_1234_convert_sep2tabs("1 2\n3 4\n")
-    assert_converts_to_1234_convert_sep2tabs("1    2\n3    4\n")
-    assert_converts_to_1234_convert_sep2tabs("1\t2\n3\t4\n")
-    assert_converts_to_1234_convert_sep2tabs("1\t2\r3\t4\r")
-    assert_converts_to_1234_convert_sep2tabs("1\t2\r\n3\t4\r\n")
-    assert_converts_to_1234_convert_sep2tabs("1    2\r\n3       4\r\n")
-    assert_converts_to_1234_convert_sep2tabs("1 2     \n3 4 \n", expected='1\t2\t\n3\t4\t\n')
+@pytest.mark.parametrize('source,expected', [
+    ("1 2\n3 4\n", None),
+    ("1    2\n3    4\n", None),
+    ("1\t2\n3\t4\n", None),
+    ("1\t2\r3\t4\r", None),
+    ("1\t2\r\n3\t4\r\n", None),
+    ("1    2\r\n3       4\r\n", None),
+    ("1 2     \n3 4 \n", '1\t2\t\n3\t4\t\n'),
+])
+def test_convert_sep2tabs(source, expected):
+    if expected:
+        assert_converts_to_1234_convert_sep2tabs(source, expected=expected)
+    else:
+        assert_converts_to_1234_convert_sep2tabs(source)
