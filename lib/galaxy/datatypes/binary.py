@@ -1162,7 +1162,7 @@ class MCool(Cool):
             return dataset.peek
         except Exception:
             return "MCool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
-            
+
 
 class Scf(Binary):
     """Class describing an scf binary sequence file"""
