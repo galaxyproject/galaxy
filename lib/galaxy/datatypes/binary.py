@@ -1107,7 +1107,7 @@ class Cool(H5):
             return "Cool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
 
 
-class MCool(H5):
+class MCool(Cool):
     """
     Class describing the multi-resolution cool format (https://github.com/mirnylab/cooler)
     """
