@@ -107,7 +107,7 @@ def stream_to_file(stream, suffix='', prefix='', dir=None, text=False, **kwd):
     return stream_to_open_named_file(stream, fd, temp_name, **kwd)
 
 
-def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", block_size=128 * 1024):
+def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", block_size=128 * 1024, regexp=None):
     """
     Converts in place a file from universal line endings
     to Posix line endings.
@@ -133,6 +133,8 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
                 if block:
                     last_char = block[-1]
                     block = block.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+                    if regexp:
+                        block = b"\t".join(regexp.split(block))
                     fp.write(block)
                     i += block.count(b"\n")
                     last_block = block
@@ -148,7 +150,7 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
         return (i, temp_name)
 
 
-def convert_newlines_sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, tmp_prefix="gxupload"):
+def convert_newlines_sep2tabs(fname, in_place=True, patt=br"[^\S\n]+", tmp_dir=None, tmp_prefix="gxupload"):
     """
     Combines above methods: convert_newlines() and sep2tabs()
     so that files do not need to be read twice
@@ -162,23 +164,7 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, t
     '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile(patt)
-    fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    with io.open(fd, mode="wt", encoding='utf-8') as fp:
-        i = None
-        for i, line in enumerate(io.open(fname, encoding='utf-8')):
-            line = line.rstrip('\r\n')
-            elems = regexp.split(line)
-            fp.write(u"%s\n" % '\t'.join(elems))
-    if i is None:
-        i = 0
-    else:
-        i = i + 1
-    if in_place:
-        shutil.move(temp_name, fname)
-        # Return number of lines in file.
-        return (i, None)
-    else:
-        return (i, temp_name)
+    return convert_newlines(fname, in_place, tmp_dir, tmp_prefix, regexp=regexp)
 
 
 def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
