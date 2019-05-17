@@ -1030,8 +1030,14 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
     :param is_multi_byte: deprecated
     :type  is_multi_byte: bool
 
-    >>> fname = get_test_fname('4.bed')
-    >>> assert get_file_peek(fname, LINE_COUNT=1) == u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n'
+    >>> def assert_peek_is(file_name, expected, *args, **kwd):
+    ...     path = get_test_fname(file_name)
+    ...     peek = get_file_peek(path, *args, **kwd)
+    ...     assert peek == expected, "%s != %s" % (peek, expected)
+    >>> assert_peek_is('0_nonewline', u'0')
+    >>> assert_peek_is('0.txt', u'0\\n')
+    >>> assert_peek_is('4.bed', u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n', LINE_COUNT=1)
+    >>> assert_peek_is('1.bed', u'chr1\\t147962192\\t147962580\\tCCDS989.1_cds_0_0_chr1_147962193_r\\t0\\t-\\nchr1\\t147984545\\t147984630\\tCCDS990.1_cds_0_0_chr1_147984546_f\\t0\\t+\\n', LINE_COUNT=2)
     """
     # Set size for file.readline() to a negative number to force it to
     # read until either a newline or EOF.  Needed for datasets with very
@@ -1042,20 +1048,27 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
         skipchars = []
     lines = []
     count = 0
+
+    last_line_break = False
     with compression_utils.get_fileobj(file_name, "U") as temp:
         while count < LINE_COUNT:
             try:
                 line = temp.readline(WIDTH)
             except UnicodeDecodeError:
                 return "binary file"
-            if not line_wrap:
-                if line.endswith('\n'):
-                    line = line[:-1]
-                else:
-                    while True:
-                        i = temp.read(1)
-                        if not i or i == '\n':
-                            break
+            if line == "":
+                break
+            last_line_break = False
+            if line.endswith('\n'):
+                line = line[:-1]
+                last_line_break = True
+            elif not line_wrap:
+                while True:
+                    i = temp.read(1)
+                    if i == '\n':
+                        last_line_break = True
+                    if not i or i == '\n':
+                        break
             skip_line = False
             for skipchar in skipchars:
                 if line.startswith(skipchar):
@@ -1064,4 +1077,4 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
             if not skip_line:
                 lines.append(line)
                 count += 1
-    return '\n'.join(lines)
+    return '\n'.join(lines) + ('\n' if last_line_break else '')
