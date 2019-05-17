@@ -17,7 +17,8 @@
                 </template>
                 <template slot="row-details" slot-scope="row">
                     <b-card>
-                        Details
+                        <div class="mb-4">{{ row.item.long_description}}</div>
+                        <b-button variant="primary">Install</b-button>
                     </b-card>
                 </template>
             </b-table>
