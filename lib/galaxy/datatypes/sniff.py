@@ -120,28 +120,27 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
     else:
         NEWLINE_BYTE = "\n"
         CR_BYTE = "\r"
-    with io.open(fd, mode="wb") as fp:
-        with io.open(fname, mode="rb") as fi:
-            last_char = None
-            block = fi.read(block_size)
-            last_block = b""
-            while block:
-                if last_char == CR_BYTE and block.startswith(b"\n"):
-                    # Last block ended with CR, new block startswith newline.
-                    # Since we replace CR with newline in the previous iteration we skip the first byte
-                    block = block[1:]
-                if block:
-                    last_char = block[-1]
-                    block = block.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
-                    if regexp:
-                        block = b"\t".join(regexp.split(block))
-                    fp.write(block)
-                    i += block.count(b"\n")
-                    last_block = block
-                    block = fi.read(block_size)
-            if last_block and last_block[-1] != NEWLINE_BYTE:
-                i += 1
-                fp.write(b"\n")
+    with io.open(fd, mode="wb") as fp, io.open(fname, mode="rb") as fi:
+        last_char = None
+        block = fi.read(block_size)
+        last_block = b""
+        while block:
+            if last_char == CR_BYTE and block.startswith(b"\n"):
+                # Last block ended with CR, new block startswith newline.
+                # Since we replace CR with newline in the previous iteration we skip the first byte
+                block = block[1:]
+            if block:
+                last_char = block[-1]
+                block = block.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+                if regexp:
+                    block = b"\t".join(regexp.split(block))
+                fp.write(block)
+                i += block.count(b"\n")
+                last_block = block
+                block = fi.read(block_size)
+        if last_block and last_block[-1] != NEWLINE_BYTE:
+            i += 1
+            fp.write(b"\n")
     if in_place:
         shutil.move(temp_name, fname)
         # Return number of lines in file.
@@ -152,8 +151,7 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
 
 def convert_newlines_sep2tabs(fname, in_place=True, patt=br"[^\S\n]+", tmp_dir=None, tmp_prefix="gxupload"):
     """
-    Combines above methods: convert_newlines() and sep2tabs()
-    so that files do not need to be read twice
+    Converts newlines in a file to posix newlines and replaces spaces with tabs.
 
     >>> fname = get_test_fname('temp.txt')
     >>> with open(fname, 'wt') as fh:
