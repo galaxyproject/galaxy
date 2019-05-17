@@ -1142,7 +1142,7 @@ class MCool(H5):
             with h5py.File(filename, 'r') as handle:
                 if not all(name in handle.keys() for name in keys0):
                     return False
-                res0 = handle['resolutions'].keys()[0]
+                res0 = list(handle['resolutions'].keys())[0]
                 keys = ['chroms', 'bins', 'pixels', 'indexes']
                 fmt = handle['resolutions'][res0].attrs.get('format', None)
                 url = handle['resolutions'][res0].attrs.get('format-url', None)
