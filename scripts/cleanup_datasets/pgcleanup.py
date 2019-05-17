@@ -991,7 +991,7 @@ class Cleanup(object):
             # TODO: is this per session or cursor?
             if self.args.work_mem is not None:
                 log.info('Setting work_mem to %s' % self.args.work_mem)
-                self._conn.cursor().execute('SET work_mem TO %s', (self.args.work_mem,))
+                self.__conn.cursor().execute('SET work_mem TO %s', (self.args.work_mem,))
         return self.__conn
 
     def __parse_args(self):
