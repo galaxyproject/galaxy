@@ -113,7 +113,7 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
     with io.open(fd, mode="wb") as fp:
         with io.open(fname, mode="rb") as fi:
             line = b''
-            clean_line = b""
+            converted_line = b""
             last_char = None
             block = fi.read(block_size)
             while block:
@@ -124,11 +124,14 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
                 # splitlines(True) splits at line terminators but keeps them so we can replace them
                 lines = block.splitlines(True)
                 for line in lines:
-                    clean_line = line.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
-                    fp.write(clean_line)
+                    converted_line = line.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+                    if b"\n" in converted_line:
+                        i += 1
+                    fp.write(converted_line)
                 last_char = util.unicodify(line, error='replace')[-1]
                 block = fi.read(block_size)
-            if not clean_line.endswith(b"\n"):
+            if not converted_line.endswith(b"\n"):
+                i += 1
                 fp.write(b"\n")
     if in_place:
         shutil.move(temp_name, fname)
