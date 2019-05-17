@@ -1,3 +1,4 @@
+import io
 import tempfile
 
 from galaxy.datatypes.sniff import (
@@ -9,20 +10,16 @@ from galaxy.datatypes.sniff import (
 
 
 def assert_converts_to_1234_sep2tabs(content, line_ending="\n"):
-    print("\r" in content)
-    tf = tempfile.NamedTemporaryFile(delete=False, mode='w')
-    tf.write(content)
-    tf.close()
+    with tempfile.NamedTemporaryFile(delete=False, mode='w') as tf:
+        tf.write(content)
     rval = sep2tabs(tf.name, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     assert rval == (2, None), rval
-    assert '1\t2%s3\t4%s' % (line_ending, line_ending) == open(tf.name).read()
+    assert '1\t2%s3\t4%s' % (line_ending, line_ending) == io.open(tf.name, newline='').read()
 
 
 def assert_converts_to_1234_convert_sep2tabs(content, expected='1\t2\n3\t4\n', line_ending="\n"):
-    print("\r" in content)
-    tf = tempfile.NamedTemporaryFile(delete=False, mode='w')
-    tf.write(content)
-    tf.close()
+    with tempfile.NamedTemporaryFile(delete=False, mode='w') as tf:
+        tf.write(content)
     rval = convert_newlines_sep2tabs(tf.name, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     assert rval == (2, None), rval
     assert expected == open(tf.name).read()
@@ -31,9 +28,9 @@ def assert_converts_to_1234_convert_sep2tabs(content, expected='1\t2\n3\t4\n', l
 def assert_converts_to_1234_convert(content, block_size=1024):
     fname = get_test_fname('temp2.txt')
     with open(fname, 'w') as fh:
-        _ = fh.write(content)
+        fh.write(content)
     rval = convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), block_size=block_size)
-    #assert rval == (2, None), "rval != %s for %s" % (rval, content)
+    assert rval == (2, None), "rval != %s for %s" % (rval, content)
     actual_contents = open(fname).read()
     assert '1 2\n3 4\n' == actual_contents, actual_contents
 
