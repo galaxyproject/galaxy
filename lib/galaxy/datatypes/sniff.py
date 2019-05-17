@@ -103,28 +103,36 @@ def stream_to_file(stream, suffix='', prefix='', dir=None, text=False, **kwd):
     return stream_to_open_named_file(stream, fd, temp_name, **kwd)
 
 
-def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
+def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", block_size=128 * 1024):
     """
     Converts in place a file from universal line endings
     to Posix line endings.
-
-    >>> fname = get_test_fname('temp.txt')
-    >>> with open(fname, 'wt') as fh:
-    ...     _ = fh.write("1 2\\r3 4")
-    >>> convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
-    (2, None)
-    >>> open(fname).read()
-    '1 2\\n3 4\\n'
     """
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    with io.open(fd, mode="wt", encoding='utf-8') as fp:
-        i = None
-        for i, line in enumerate(io.open(fname, encoding='utf-8')):
-            fp.write("%s\n" % line.rstrip("\r\n"))
-    if i is None:
-        i = 0
-    else:
-        i += 1
+    i = 0
+    with io.open(fd, mode="wb") as fp:
+        with io.open(fname, mode="rb") as fi:
+            line = b''
+            converted_line = b""
+            last_char = None
+            block = fi.read(block_size)
+            while block:
+                if last_char == "\r" and block.startswith(b"\n"):
+                    # last block ended with "\r", new block startswith "\n"
+                    # since we replace "\r" with "\n" in the previous iteration we skip the first byte
+                    block = block[1:]
+                # splitlines(True) splits at line terminators but keeps them so we can replace them
+                lines = block.splitlines(True)
+                for line in lines:
+                    converted_line = line.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+                    if b"\n" in converted_line:
+                        i += 1
+                    fp.write(converted_line)
+                last_char = util.unicodify(line, error='replace')[-1]
+                block = fi.read(block_size)
+            if not converted_line.endswith(b"\n"):
+                i += 1
+                fp.write(b"\n")
     if in_place:
         shutil.move(temp_name, fname)
         # Return number of lines in file.
@@ -136,24 +144,20 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
 def sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, tmp_prefix="gxupload"):
     """
     Transforms in place a 'sep' separated file to a tab separated one
-
-    >>> fname = get_test_fname('temp.txt')
-    >>> with open(fname, 'wt') as fh:
-    ...     _ = fh.write(u"1 2\\n3 4\\n")
-    >>> sep2tabs(fname)
-    (2, None)
-    >>> open(fname).read()
-    '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    with io.open(fd, mode="wt", encoding='utf-8') as fp:
+    with io.open(fd, mode="w", encoding='utf-8') as fp:
         i = None
-        for i, line in enumerate(io.open(fname, encoding='utf-8')):
+        for i, line in enumerate(io.open(fname, encoding='utf-8', newline='')):
             if line.endswith("\r"):
                 line = line.rstrip('\r')
                 elems = regexp.split(line)
                 fp.write(u"%s\r" % '\t'.join(elems))
+            elif line.endswith("\r\n"):
+                line = line.rstrip('\r\n')
+                elems = regexp.split(line)
+                fp.write(u"%s\r\n" % '\t'.join(elems))
             else:
                 line = line.rstrip('\n')
                 elems = regexp.split(line)
@@ -186,16 +190,21 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, t
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     with io.open(fd, mode="wt", encoding='utf-8') as fp:
+        i = None
         for i, line in enumerate(io.open(fname, encoding='utf-8')):
             line = line.rstrip('\r\n')
             elems = regexp.split(line)
             fp.write(u"%s\n" % '\t'.join(elems))
+    if i is None:
+        i = 0
+    else:
+        i = i + 1
     if in_place:
         shutil.move(temp_name, fname)
         # Return number of lines in file.
-        return (i + 1, None)
+        return (i, None)
     else:
-        return (i + 1, temp_name)
+        return (i, temp_name)
 
 
 def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
@@ -474,6 +483,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.mtx')
     >>> guess_ext(fname, sniff_order)
     'mtx'
+    >>> fname = get_test_fname('1imzml')
+    >>> guess_ext(fname, sniff_order)  # This test case is ensuring doesn't throw exception, actual value could change if non-utf encoding handling improves.
+    'data'
     """
     file_prefix = FilePrefix(fname)
     file_ext = run_sniffers_raw(file_prefix, sniff_order, is_binary)
@@ -555,8 +567,9 @@ def zip_single_fileobj(path):
 class FilePrefix(object):
 
     def __init__(self, filename):
-        binary = False
+        non_utf8_error = None
         compressed_format = None
+        contents_header_bytes = None
         contents_header = None  # First MAX_BYTES of the file.
         truncated = False
         # A future direction to optimize sniffing even more for sniffers at the top of the list
@@ -565,20 +578,23 @@ class FilePrefix(object):
         # populates contents_header while providing a StringIO-like interface until the file is read
         # but then would fallback to native string_io()
         try:
-            compressed_format, f = compression_utils.get_fileobj_raw(filename)
+            compressed_format, f = compression_utils.get_fileobj_raw(filename, "rb")
             try:
-                contents_header = f.read(SNIFF_PREFIX_BYTES)
-                truncated = len(contents_header) == SNIFF_PREFIX_BYTES
+                contents_header_bytes = f.read(SNIFF_PREFIX_BYTES)
+                truncated = len(contents_header_bytes) == SNIFF_PREFIX_BYTES
+                contents_header = contents_header_bytes.decode("utf-8")
             finally:
                 f.close()
-        except UnicodeDecodeError:
-            binary = True
+        except UnicodeDecodeError as e:
+            non_utf8_error = e
 
         self.truncated = truncated
         self.filename = filename
-        self.binary = binary
+        self.non_utf8_error = non_utf8_error
+        self.binary = non_utf8_error is not None  # obviously wrong
         self.compressed_format = compressed_format
         self.contents_header = contents_header
+        self.contents_header_bytes = contents_header_bytes
         self._file_size = None
 
     @property
@@ -588,8 +604,8 @@ class FilePrefix(object):
         return self._file_size
 
     def string_io(self):
-        if self.binary:
-            raise Exception("Attempting to create a StringIO object for binary data.")
+        if self.non_utf8_error is not None:
+            raise self.non_utf8_error
         rval = StringIO(self.contents_header)
         return rval
 
