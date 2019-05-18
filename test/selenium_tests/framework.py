@@ -534,9 +534,17 @@ class SeleniumSessionGetPostMixin(object):
         response = requests.get(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
         return response
 
-    def _post(self, route, data={}):
+    def _post(self, route, data=None, files=None):
         full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
-        response = requests.post(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
+        if data is None:
+            data = {}
+
+        if files is None:
+            files = data.get("__files", None)
+            if files is not None:
+                del data["__files"]
+
+        response = requests.post(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies(), files=files)
         return response
 
     def _delete(self, route, data={}):
