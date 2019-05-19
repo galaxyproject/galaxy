@@ -19,6 +19,7 @@
                     <b-card>
                         <div class="mb-4">{{ row.item.long_description }}</div>
                         <b-form-group
+                            class="ui-select"
                             description="There are multiple revisions available for this repository.">
                             <b-form-select
                                 v-model="repositoryVersion"
@@ -27,10 +28,13 @@
                         </b-form-group>
                         <b-form-group
                             description="Choose an existing section in your tool panel to contain the installed tools (optional).">
-                            <b-form-select
+                            <b-form-input
+                                list="sectionLabels"
                                 v-model="toolPanelSection"
-                                :options="toolPanelSections"
                             />
+                            <datalist id="sectionLabels">
+                                <option v-for="section in toolPanelSections">{{ section }}</option>
+                            </datalist>
                         </b-form-group>
                         <b-button variant="primary">Install</b-button>
                     </b-card>
@@ -48,7 +52,7 @@ export default {
     data() {
         return {
             toolshedUrl: "https://toolshed.g2.bx.psu.edu/",
-            toolPanelSections: ["Sec1", "Sec2", "Sec3"],
+            toolPanelSections: [],
             toolPanelSection: null,
             repositoryVersions: ["V1", "V2", "V3"],
             repositoryVersion: null,
@@ -68,9 +72,16 @@ export default {
         };
     },
     created() {
+        this.setToolPanelSections();
         this.load("blast");
     },
     methods: {
+        setToolPanelSections() {
+            const galaxy = getGalaxyInstance();
+            const sections = galaxy.config.toolbox_in_panel;
+            this.toolPanelSections = sections.filter(x => x.model_class == "ToolSection")
+                                             .map(x => x.name);
+        },
         load(query) {
             const params = [
                 `tool_shed_url=${this.toolshedUrl}`,
