@@ -1372,7 +1372,7 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
 def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "new", "ready"], assert_ok=False, timeout=DEFAULT_TIMEOUT):
     def get_state():
         response = state_func()
-        assert response.status_code == 200, "Failed to fetch state update while waiting."
+        assert response.status_code == 200, "Failed to fetch state update while waiting. [%s]" % response.content
         state = response.json()["state"]
         if state in skip_states:
             return None
