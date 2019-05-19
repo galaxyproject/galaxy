@@ -12,24 +12,25 @@ from sqlalchemy import or_
 from galaxy import exceptions
 from galaxy import model
 from galaxy import util
-from galaxy.managers.datasets import DatasetManager
-from galaxy.managers.jobs import JobSearch
+from galaxy.managers.jobs import JobManager, JobSearch
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
 )
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesLibraryMixinItems
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    UsesVisualizationMixin
+)
 from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
 
 
-class JobController(BaseAPIController, UsesLibraryMixinItems):
+class JobController(BaseAPIController, UsesVisualizationMixin):
 
     def __init__(self, app):
         super(JobController, self).__init__(app)
-        self.dataset_manager = DatasetManager(app)
+        self.job_manager = JobManager(app)
         self.job_search = JobSearch(app)
 
     @expose_api
@@ -166,7 +167,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                         raw_value=str(metric_value),
                     )
 
-                job_dict['job_metrics'] = [metric_to_dict(metric) for metric in job.metrics]
+                job_dict['job_metrics'] = self._metrics_as_dict(trans, job)
         return job_dict
 
     @expose_api
@@ -266,6 +267,51 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
 
     @expose_api_anonymous
+    def metrics(self, trans, **kwd):
+        """
+        * GET /api/jobs/{job_id}/metrics
+        * GET /api/datasets/{dataset_id}/metrics
+            Return job metrics for specified job. Job accessibility checks are slightly
+            different than dataset checks, so both methods are available.
+
+        :type   job_id: string
+        :param  job_id: Encoded job id
+
+        :type   dataset_id: string
+        :param  dataset_id: Encoded HDA or LDDA id
+
+        :type   hda_ldda: string
+        :param  hda_ldda: hda if dataset_id is an HDA id (default), ldda if
+                          it is an ldda id.
+
+        :rtype:     list
+        :returns:   list containing job metrics
+        """
+        job = self.__get_job(trans, **kwd)
+        if not trans.user_is_admin and not trans.app.config.expose_potentially_sensitive_job_metrics:
+            return []
+
+        return self._metrics_as_dict(trans, job)
+
+    def _metrics_as_dict(self, trans, job):
+
+        def metric_to_dict(metric):
+            metric_name = metric.metric_name
+            metric_value = metric.metric_value
+            metric_plugin = metric.plugin
+            title, value = trans.app.job_metrics.format(metric_plugin, metric_name, metric_value)
+            return dict(
+                title=title,
+                value=value,
+                plugin=metric_plugin,
+                name=metric_name,
+                raw_value=str(metric_value),
+            )
+
+        metrics = [m for m in job.metrics if m.plugin != 'env' or trans.user_is_admin]
+        return list(map(metric_to_dict, metrics))
+
+    @expose_api_anonymous
     def build_for_rerun(self, trans, id, **kwd):
         """
         * GET /api/jobs/{id}/build_for_rerun
@@ -306,23 +352,18 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                 dataset_dict = dict(src="ldda", id=trans.security.encode_id(dataset.id))
         return dict(name=job_dataset_association.name, dataset=dataset_dict)
 
-    def __get_job(self, trans, id):
-        try:
-            decoded_job_id = self.decode_id(id)
-        except Exception:
-            raise exceptions.MalformedId()
-        job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
-        if job is None:
-            raise exceptions.ObjectNotFound()
-        belongs_to_user = (job.user == trans.user) if job.user else (job.session_id == trans.get_galaxy_session().id)
-        if not trans.user_is_admin and not belongs_to_user:
-            # Check access granted via output datasets.
-            if not job.output_datasets:
-                raise exceptions.ItemAccessibilityException("Job has no output datasets.")
-            for data_assoc in job.output_datasets:
-                if not self.dataset_manager.is_accessible(data_assoc.dataset.dataset, trans.user):
-                    raise exceptions.ItemAccessibilityException("You are not allowed to rerun this job.")
-        return job
+    def __get_job(self, trans, job_id=None, dataset_id=None, **kwd):
+        if job_id is not None:
+            try:
+                decoded_job_id = self.decode_id(job_id)
+            except Exception:
+                raise exceptions.MalformedId()
+            return self.job_manager.get_accessible_job(trans, decoded_job_id)
+        else:
+            hda_ldda = kwd.get("hda_ldda", "hda")
+            # Following checks dataset accessible
+            dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
+            return dataset_instance.creating_job
 
     @expose_api
     def create(self, trans, payload, **kwd):

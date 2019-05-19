@@ -256,26 +256,8 @@ ${ job.command_line | h }</pre>
 %endif
 
 %if job and (trans.user_is_admin or trans.app.config.expose_potentially_sensitive_job_metrics):
-<h3>Job Metrics</h3>
-<% job_metrics = trans.app.job_metrics %>
-<% plugins = set([metric.plugin for metric in job.metrics]) %>
-    %for plugin in sorted(plugins):
-    %if trans.user_is_admin or plugin != 'env':
-    <h4>${ plugin | h }</h4>
-    <table class="tabletip info_data_table">
-        <tbody>
-        <%
-            plugin_metrics = filter(lambda x: x.plugin == plugin, job.metrics)
-            plugin_metric_displays = [job_metrics.format( metric.plugin, metric.metric_name, metric.metric_value ) for metric in plugin_metrics]
-            plugin_metric_displays = sorted(plugin_metric_displays, key=lambda pair: pair[0])  # Sort on displayed title
-        %>
-            %for metric_title, metric_value in plugin_metric_displays:
-                <tr><td>${ metric_title | h }</td><td>${ metric_value | h }</td></tr>
-            %endfor
-        </tbody>
-    </table>
-    %endif
-    %endfor
+<div class="job-metrics" dataset_id="${encoded_hda_id}" dataset_type="hda">
+</div>
 %endif
 
 %if trans.user_is_admin:
@@ -352,5 +334,6 @@ $(function(){
             window.parent.Galaxy.currHistoryPanel.scrollToId( 'dataset-' + $( this ).data( 'hda-id' ) );
         }
     })
+    window.bundleEntries.mountJobMetrics();
 });
 </script>
