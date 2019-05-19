@@ -19,14 +19,7 @@
                     <b-card>
                         <div class="mb-4">{{ row.item.long_description }}</div>
                         <b-form-group
-                            class="ui-select"
-                            description="There are multiple revisions available for this repository.">
-                            <b-form-select
-                                v-model="repositoryVersion"
-                                :options="repositoryVersions"
-                            />
-                        </b-form-group>
-                        <b-form-group
+                            label="Target Section:"
                             description="Choose an existing section in your tool panel to contain the installed tools (optional).">
                             <b-form-input
                                 list="sectionLabels"
@@ -54,8 +47,6 @@ export default {
             toolshedUrl: "https://toolshed.g2.bx.psu.edu/",
             toolPanelSections: [],
             toolPanelSection: null,
-            repositoryVersions: ["V1", "V2", "V3"],
-            repositoryVersion: null,
             repositories: [],
             fields: [
                 { key: "name" },
@@ -93,7 +84,6 @@ export default {
                 .then(response => {
                     this.repositories = response.data.hits.map(x => x.repository);
                     this.error = null;
-                    window.console.log(this.repositories);
                 })
                 .catch(e => {
                     this.error = this._errorMessage(e);
