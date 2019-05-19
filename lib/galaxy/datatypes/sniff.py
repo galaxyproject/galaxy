@@ -14,7 +14,11 @@ import sys
 import tempfile
 import zipfile
 
-from six import StringIO, text_type
+from six import (
+    PY3,
+    StringIO,
+    text_type,
+)
 from six.moves import filter
 from six.moves.urllib.request import urlopen
 
@@ -103,36 +107,40 @@ def stream_to_file(stream, suffix='', prefix='', dir=None, text=False, **kwd):
     return stream_to_open_named_file(stream, fd, temp_name, **kwd)
 
 
-def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", block_size=128 * 1024):
+def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", block_size=128 * 1024, regexp=None):
     """
     Converts in place a file from universal line endings
     to Posix line endings.
     """
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     i = 0
-    with io.open(fd, mode="wb") as fp:
-        with io.open(fname, mode="rb") as fi:
-            line = b''
-            converted_line = b""
-            last_char = None
-            block = fi.read(block_size)
-            while block:
-                if last_char == "\r" and block.startswith(b"\n"):
-                    # last block ended with "\r", new block startswith "\n"
-                    # since we replace "\r" with "\n" in the previous iteration we skip the first byte
-                    block = block[1:]
-                # splitlines(True) splits at line terminators but keeps them so we can replace them
-                lines = block.splitlines(True)
-                for line in lines:
-                    converted_line = line.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
-                    if b"\n" in converted_line:
-                        i += 1
-                    fp.write(converted_line)
-                last_char = util.unicodify(line, error='replace')[-1]
+    if PY3:
+        NEWLINE_BYTE = 10
+        CR_BYTE = 13
+    else:
+        NEWLINE_BYTE = "\n"
+        CR_BYTE = "\r"
+    with io.open(fd, mode="wb") as fp, io.open(fname, mode="rb") as fi:
+        last_char = None
+        block = fi.read(block_size)
+        last_block = b""
+        while block:
+            if last_char == CR_BYTE and block.startswith(b"\n"):
+                # Last block ended with CR, new block startswith newline.
+                # Since we replace CR with newline in the previous iteration we skip the first byte
+                block = block[1:]
+            if block:
+                last_char = block[-1]
+                block = block.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+                if regexp:
+                    block = b"\t".join(regexp.split(block))
+                fp.write(block)
+                i += block.count(b"\n")
+                last_block = block
                 block = fi.read(block_size)
-            if not converted_line.endswith(b"\n"):
-                i += 1
-                fp.write(b"\n")
+        if last_block and last_block[-1] != NEWLINE_BYTE:
+            i += 1
+            fp.write(b"\n")
     if in_place:
         shutil.move(temp_name, fname)
         # Return number of lines in file.
@@ -141,43 +149,9 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload", 
         return (i, temp_name)
 
 
-def sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, tmp_prefix="gxupload"):
+def convert_newlines_sep2tabs(fname, in_place=True, patt=br"[^\S\n]+", tmp_dir=None, tmp_prefix="gxupload"):
     """
-    Transforms in place a 'sep' separated file to a tab separated one
-    """
-    regexp = re.compile(patt)
-    fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    with io.open(fd, mode="w", encoding='utf-8') as fp:
-        i = None
-        for i, line in enumerate(io.open(fname, encoding='utf-8', newline='')):
-            if line.endswith("\r"):
-                line = line.rstrip('\r')
-                elems = regexp.split(line)
-                fp.write(u"%s\r" % '\t'.join(elems))
-            elif line.endswith("\r\n"):
-                line = line.rstrip('\r\n')
-                elems = regexp.split(line)
-                fp.write(u"%s\r\n" % '\t'.join(elems))
-            else:
-                line = line.rstrip('\n')
-                elems = regexp.split(line)
-                fp.write(u"%s\n" % '\t'.join(elems))
-    if i is None:
-        i = 0
-    else:
-        i += 1
-    if in_place:
-        shutil.move(temp_name, fname)
-        # Return number of lines in file.
-        return (i, None)
-    else:
-        return (i, temp_name)
-
-
-def convert_newlines_sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, tmp_prefix="gxupload"):
-    """
-    Combines above methods: convert_newlines() and sep2tabs()
-    so that files do not need to be read twice
+    Converts newlines in a file to posix newlines and replaces spaces with tabs.
 
     >>> fname = get_test_fname('temp.txt')
     >>> with open(fname, 'wt') as fh:
@@ -188,23 +162,7 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, t
     '1\\t2\\n3\\t4\\n'
     """
     regexp = re.compile(patt)
-    fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    with io.open(fd, mode="wt", encoding='utf-8') as fp:
-        i = None
-        for i, line in enumerate(io.open(fname, encoding='utf-8')):
-            line = line.rstrip('\r\n')
-            elems = regexp.split(line)
-            fp.write(u"%s\n" % '\t'.join(elems))
-    if i is None:
-        i = 0
-    else:
-        i = i + 1
-    if in_place:
-        shutil.move(temp_name, fname)
-        # Return number of lines in file.
-        return (i, None)
-    else:
-        return (i, temp_name)
+    return convert_newlines(fname, in_place, tmp_dir, tmp_prefix, regexp=regexp)
 
 
 def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):

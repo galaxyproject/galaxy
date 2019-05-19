@@ -1,4 +1,3 @@
-import io
 import tempfile
 
 import pytest
@@ -7,24 +6,15 @@ from galaxy.datatypes.sniff import (
     convert_newlines,
     convert_newlines_sep2tabs,
     get_test_fname,
-    sep2tabs,
 )
 
 
-def assert_converts_to_1234_sep2tabs(content, line_ending="\n"):
-    with tempfile.NamedTemporaryFile(delete=False, mode='w') as tf:
-        tf.write(content)
-    rval = sep2tabs(tf.name, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
-    assert rval == (2, None), rval
-    assert '1\t2%s3\t4%s' % (line_ending, line_ending) == io.open(tf.name, newline='').read()
-
-
-def assert_converts_to_1234_convert_sep2tabs(content, expected='1\t2\n3\t4\n', line_ending="\n"):
+def assert_converts_to_1234_convert_sep2tabs(content, expected='1\t2\n3\t4\n'):
     with tempfile.NamedTemporaryFile(delete=False, mode='w') as tf:
         tf.write(content)
     rval = convert_newlines_sep2tabs(tf.name, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
-    assert rval == (2, None), rval
     assert expected == open(tf.name).read()
+    assert rval == (2, None), rval
 
 
 def assert_converts_to_1234_convert(content, block_size=1024):
@@ -32,9 +22,9 @@ def assert_converts_to_1234_convert(content, block_size=1024):
     with open(fname, 'w') as fh:
         fh.write(content)
     rval = convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), block_size=block_size)
-    assert rval == (2, None), "rval != %s for %s" % (rval, content)
     actual_contents = open(fname).read()
     assert '1 2\n3 4\n' == actual_contents, actual_contents
+    assert rval == (2, None), "rval != %s for %s" % (rval, content)
 
 
 @pytest.mark.parametrize('source,block_size', [
@@ -71,20 +61,6 @@ def test_convert_newlines_non_utf():
     rval = convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), in_place=False)
     new_file = rval[1]
     assert open(new_file, "rb").read() == open(get_test_fname("1imzml"), "rb").read()
-
-
-@pytest.mark.parametrize('source,line_ending', [
-    ("1 2\n3 4\n", None),
-    ("1    2\n3    4\n", None),
-    ("1\t2\n3\t4\n", None),
-    ("1\t2\r3\t4\r", '\r'),
-    ("1\t2\r\n3\t4\r\n", '\r\n'),
-])
-def test_sep2tabs(source, line_ending):
-    if line_ending:
-        assert_converts_to_1234_sep2tabs(source, line_ending)
-    else:
-        assert_converts_to_1234_sep2tabs(source)
 
 
 @pytest.mark.parametrize('source,expected', [
