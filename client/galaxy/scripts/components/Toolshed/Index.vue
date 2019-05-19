@@ -73,6 +73,11 @@ export default {
             this.toolPanelSections = sections.filter(x => x.model_class == "ToolSection")
                                              .map(x => x.name);
         },
+        formatCount(value) {
+            if (value > 1000)
+                return `>${Math.floor(value/1000)}k`;
+            return(value);
+        },
         load(query) {
             const params = [
                 `tool_shed_url=${this.toolshedUrl}`,
@@ -83,6 +88,9 @@ export default {
                 .get(url)
                 .then(response => {
                     this.repositories = response.data.hits.map(x => x.repository);
+                    this.repositories.forEach(x => {
+                        x.times_downloaded = this.formatCount(x.times_downloaded);
+                    });
                     this.error = null;
                 })
                 .catch(e => {
