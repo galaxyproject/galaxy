@@ -1012,7 +1012,8 @@ class ToolsTestCase(api.ApiTestCase):
         details = self.dataset_populator.get_job_details(job_id, full=True).json()
         assert "job_messages" in details, details
         qc_message = details["job_messages"][0]
-        assert qc_message["code_desc"] == "QC Metrics for Tool", qc_message
+        # assert qc_message["code_desc"] == "QC Metrics for Tool", qc_message
+        assert qc_message["desc"] == "QC: Matched on Quality of sample is 30%."
         assert qc_message["match"] == "Quality of sample is 30%."
         assert qc_message["error_level"] == 1.1
 

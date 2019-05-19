@@ -1,13 +1,13 @@
 <tool id="qc_stdout" name="qc_stdout" version="1.0.0">
     <stdio>
-       <regex match="Quality of sample is .*%\." source="stdout" level="qc" description="QC Metrics for Tool"/>
+       <regex match="Quality of sample is .*%\." source="stdout" level="qc" />
     </stdio>
     <command detect_errors="exit_code">
         cp $input $output;
         echo "Quality of sample is ${int($quality) * 10}%."
     </command>
     <inputs>
-        <param name="input" type="data" format="txt" />
+        <param name="input" type="data" format="txt" label="Input data" />
         <param name="quality" type="integer" value="9" />
     </inputs>
     <outputs>
