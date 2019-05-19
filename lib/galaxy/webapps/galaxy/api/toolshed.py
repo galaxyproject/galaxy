@@ -295,7 +295,7 @@ class ToolShedController(BaseAPIController):
 
     @expose_api
     @web.require_admin
-    def search(self, trans, **kwd):
+    def search(self, trans, tool_shed_url, **params):
         """
         GET /api/tool_shed/search
         Search for a specific repository in the toolshed.
@@ -304,9 +304,5 @@ class ToolShedController(BaseAPIController):
         :param tool_shed_url:   the URL of the toolshed to search
         :param tool_shed_url:   str
         """
-        tool_shed_url = kwd.get('tool_shed_url', None)
-        q = kwd.get('term', None)
-        if None in [q, tool_shed_url]:
-            return {}
-        response = json.loads(util.url_get(tool_shed_url, params=dict(q=q), pathspec=['api', 'repositories']))
+        response = json.loads(util.url_get(tool_shed_url, params=dict(params), pathspec=['api', 'repositories']))
         return response

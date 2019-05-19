@@ -6,8 +6,8 @@
                 class="mb-3"
                 placeholder="search repositories"
                 type="text"
-                v-model="search"
-                @change="load(search)"
+                v-model="query"
+                @change="load()"
             />
             <b-table striped :items="repositories" :fields="fields">
                 <template slot="name" slot-scope="row">
@@ -33,6 +33,9 @@
                     </b-card>
                 </template>
             </b-table>
+            <div v-if="pageLoading">
+                <span class="fa fa-spinner fa-spin mb-4" /> <span>Loading repositories...</span>
+            </div>
         </div>
     </div>
 </template>
@@ -40,7 +43,9 @@
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-
+const READY = 0;
+const LOADING = 1;
+const COMPLETE = 2;
 export default {
     data() {
         return {
@@ -56,15 +61,23 @@ export default {
                 { key: "times_downloaded", label: "Downloaded" }
             ],
             page: 1,
-            search: "",
+            pageSize: 10,
+            pageState: READY,
+            query: "",
             selected: null,
             name: null,
             error: null
         };
     },
+    computed: {
+        pageLoading() {
+            return this.pageState === LOADING;
+        }
+    },
     created() {
         this.setToolPanelSections();
-        this.load("blast");
+        this.query = "blast";
+        this.load();
     },
     methods: {
         setToolPanelSections() {
@@ -78,23 +91,37 @@ export default {
                 return `>${Math.floor(value/1000)}k`;
             return(value);
         },
-        load(query) {
+        load(page=1) {
+            this.page = page;
+            this.pageState = LOADING;
             const params = [
                 `tool_shed_url=${this.toolshedUrl}`,
-                `term=${query}`
+                `q=${this.query}`,
+                `page=${this.page}`,
+                `page_size=${this.pageSize}`
             ];
             const url = `${getAppRoot()}api/tool_shed/search?${params.join("&")}`;
             axios
                 .get(url)
                 .then(response => {
-                    this.repositories = response.data.hits.map(x => x.repository);
-                    this.repositories.forEach(x => {
+                    let incoming = response.data.hits.map(x => x.repository);
+                    incoming.forEach(x => {
                         x.times_downloaded = this.formatCount(x.times_downloaded);
                     });
+                    if (this.page === 1) {
+                        this.repositories = incoming;
+                    } else {
+                        this.repositories = this.repositories.concat(incoming);
+                    }
+                    if (incoming.length < this.pageSize) {
+                        this.pageState = COMPLETE;
+                    } else {
+                        this.pageState = READY;
+                    }
                     this.error = null;
                 })
                 .catch(e => {
-                    this.error = this._errorMessage(e);
+                    this.error = this.setErrorMessage(e);
                 });
         },
         select: function(repo) {
@@ -111,20 +138,21 @@ export default {
                         }
                     })
                     .catch(e => {
-                        this.error = this._errorMessage(e);
+                        this.error = this.setErrorMessage(e);
                     });
             } else {
                 this.error = "This option requires an accessible history.";
             }*/
         },
-        _errorMessage: function(e) {
+        setErrorMessage: function(e) {
             const message = e && e.response && e.response.data && e.response.data.err_msg;
             return message || "Request failed for an unknown reason.";
         },
         onScroll: function({ target: { scrollTop, clientHeight, scrollHeight }}) {
-            window.console.log("scrolling");
             if (scrollTop + clientHeight >= scrollHeight) {
-                window.console.log("reached");
+                if (this.pageState === READY) {
+                    this.load(this.page + 1);
+                }
             }
         }
     }
