@@ -22,6 +22,7 @@ import UserPreferences from "mvc/user/user-preferences";
 import CustomBuilds from "mvc/user/user-custom-builds";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
+import EntryPointGridView from "mvc/entrypoints/view";
 import GridShared from "mvc/grid/grid-shared";
 import Workflows from "mvc/workflow/workflow";
 import WorkflowImport from "components/WorkflowImport.vue";
@@ -115,7 +116,7 @@ export const getAnalysisRouter = Galaxy =>
 
         show_realtime_list: function() {
             this.page.display(
-                new GridView({
+                new EntryPointGridView({
                     url_base: `${getAppRoot()}realtime/list`,
                     active_tab: "analysis"
                 })

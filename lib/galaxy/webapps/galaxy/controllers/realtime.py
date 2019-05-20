@@ -4,9 +4,11 @@ Provides web interaction with RealTimeTools
 import logging
 
 from galaxy import (
+    exceptions,
     model,
     web
 )
+from galaxy.managers.realtime import RealTimeManager
 from galaxy.web import url_for
 from galaxy.web.base.controller import (
     BaseUIController,
@@ -22,6 +24,11 @@ log = logging.getLogger(__name__)
 class JobStatusColumn(grids.StateColumn):
     def get_value(self, trans, grid, item):
         return super(JobStatusColumn, self).get_value(trans, grid, item.job)
+
+
+class EntryPointLinkColumn(grids.GridColumn):
+    def get_value(self, trans, grid, item):
+        return '<a class="entry-point-link" entry_point_id="%s">%s</div>' % (trans.security.encode_id(item.id), item.name)
 
 
 class RealTimeToolEntryPointListGrid(grids.Grid):
@@ -45,7 +52,7 @@ class RealTimeToolEntryPointListGrid(grids.Grid):
     default_filter = {"name": "All"}
     default_sort_key = "-update_time"
     columns = [
-        grids.TextColumn("Name", key="name", filterable="advanced", link=get_url_args),
+        EntryPointLinkColumn("Name", filterable="advanced"),
         grids.GridColumn("Active", key="active"),
         JobStatusColumn("Job Info", key="job_state", model_class=model.Job),
         grids.GridColumn("Created", key="created_time", format=time_ago),
@@ -71,44 +78,17 @@ class RealTime(BaseUIController):
     entry_point_grid = RealTimeToolEntryPointListGrid()
 
     @web.expose
-    def index(self, trans, entry_point_id=None, job_id=None, **kwd):
-        eps = []
-        if entry_point_id:
-            if not isinstance(entry_point_id, list):
-                entry_point_id = [entry_point_id]
-            eps = [trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).get(self.decode_id(ep_id)) for ep_id in entry_point_id]
-        if job_id:
-            job = trans.sa_session.query(trans.app.model.Job).get(self.decode_id(job_id))
-            for ep in job.realtimetool_entry_points:
-                eps.append(ep)
-        if eps:
-            if trans.app.realtime_manager.can_access_entry_points(trans, eps):
-                if len(eps) == 1:
-                    return self.access_entry_point(trans, id=trans.security.encode_id(eps[0].id))
-                else:
-                    return trans.response.send_redirect(url_for(controller="realtime", action="list"))
+    def index(self, trans, job_id=None, **kwd):
+        job = trans.sa_session.query(trans.app.model.Job).get(self.decode_id(job_id))
+        eps = job.realtimetool_entry_points
+        try:
+            if eps and len(eps) == 1:
+                redirect_target = RealTimeManager(self.app).access_entry_point_target(trans, eps[0].id)
             else:
-                return trans.show_error_message('Access not authorized.')
-        return trans.show_error_message('RealTimeTool instance not found')
-
-    @web.expose
-    def access_entry_point(self, trans, id=None):
-        # Because of auto id encoding needed for link from grid, the item.id keyword must be 'id'
-        if id:
-            entry_point_id = self.decode_id(id)
-            entry_point = trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).get(entry_point_id)
-            if trans.app.realtime_manager.can_access_entry_point(trans, entry_point):
-                if entry_point.active:
-                    rval = '%s//%s.%s.%s.%s.%s/' % (trans.request.host_url.split('//', 1)[0], entry_point.__class__.__name__.lower(), trans.security.encode_id(entry_point.id),
-                            entry_point.token, trans.app.config.realtime_prefix, trans.request.host)
-                    if entry_point.entry_url:
-                        rval = '%s/%s' % (rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
-                    return trans.response.send_redirect(rval)
-                elif entry_point.deleted:
-                    return trans.show_error_message('RealTimeTool has ended. You will have to start a new one.')
-                else:
-                    return trans.show_error_message('RealTimeTool is not active. If you recently launched this tool it may not be ready yet, please wait a moment and refresh this page.')
-        return trans.show_error_message('Access not authorized.')
+                redirect_target = url_for(controller="realtime", action="list")
+            return trans.response.send_redirect(redirect_target)
+        except exceptions.MessageException as e:
+            return trans.show_error_message(str(e))
 
     @web.expose_api_anonymous
     def list(self, trans, **kwargs):

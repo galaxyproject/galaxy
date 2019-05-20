@@ -6,6 +6,10 @@ from six import string_types
 from sqlalchemy import or_
 
 
+from galaxy import (
+    model,
+    exceptions
+)
 from galaxy.tool_util.deps.docker_util import parse_port_text as docker_parse_port_text
 from galaxy.util.filelock import FileLock
 
@@ -145,6 +149,7 @@ class RealTimeManager(object):
     """
 
     def __init__(self, app):
+        self.app = app
         self.model = app.model
         self.security = app.security
         self.sa_session = app.model.context
@@ -273,3 +278,18 @@ class RealTimeManager(object):
         if flush:
             self.sa_session.flush()
         self.propagator.remove_entry_point(entry_point)
+
+    def access_entry_point_target(self, trans, entry_point_id):
+        entry_point = trans.sa_session.query(model.RealTimeToolEntryPoint).get(entry_point_id)
+        if self.app.realtime_manager.can_access_entry_point(trans, entry_point):
+            if entry_point.active:
+                rval = '%s//%s.%s.%s.%s.%s/' % (trans.request.host_url.split('//', 1)[0], entry_point.__class__.__name__.lower(), trans.security.encode_id(entry_point.id),
+                        entry_point.token, self.app.config.realtime_prefix, trans.request.host)
+                if entry_point.entry_url:
+                    rval = '%s/%s' % (rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
+                return rval
+            elif entry_point.deleted:
+                raise exceptions.MessageException('RealTimeTool has ended. You will have to start a new one.')
+            else:
+                raise exceptions.MessageException('RealTimeTool is not active. If you recently launched this tool it may not be ready yet, please wait a moment and refresh this page.')
+        raise exceptions.ItemAccessibilityException("You do not have access to this RealTimeTool entry point.")
