@@ -13,7 +13,7 @@ export class AzureConfig extends BaseModel {
 }
 
 AzureConfig.setValidator(function(model) {
-    let errors = {};
+    const errors = {};
 
     if (model.tenant_id.length < 36) {
         errors.tenant_id = "Tenant ID too short";

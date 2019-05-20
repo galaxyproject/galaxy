@@ -29,7 +29,7 @@ export class BaseModel {
 
     get state() {
         // build state JSON ignoring transient fields
-        let tFields = this.transientFields;
+        const tFields = this.transientFields;
         return JSON.stringify(this, function(key) {
             if (!tFields.has(key)) {
                 return this[key];
@@ -43,7 +43,7 @@ export class BaseModel {
     }
 
     get transientFields() {
-        let key = this.constructor;
+        const key = this.constructor;
         if (!transients.has(key)) {
             transients.set(key, new Set());
         }
@@ -57,12 +57,12 @@ export class BaseModel {
     // Setting a property name as transient for a class means its
     // state will be caclulated without regard to that propety
     static setTransient(...fieldNames) {
-        let klass = this; // this will be a class
+        const klass = this; // this will be a class
         if (!transients.has(klass)) {
             transients.set(klass, new Set());
         }
 
-        let fields = transients.get(klass);
+        const fields = transients.get(klass);
         fieldNames.forEach(fieldName => fields.add(fieldName));
         transients.set(klass, fields);
     }
@@ -90,7 +90,7 @@ export class BaseModel {
 
     static validate(model) {
         if (validators.has(this)) {
-            let validator = validators.get(this);
+            const validator = validators.get(this);
             return validator(model);
         }
         throw new Error("Missing validator");

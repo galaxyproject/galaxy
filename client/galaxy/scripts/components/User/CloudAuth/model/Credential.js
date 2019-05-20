@@ -16,7 +16,7 @@ export class Credential extends BaseModel {
         this.loading = false;
 
         // populate props
-        let options = Object.assign({}, Credential.defaults, props);
+        const options = Object.assign({}, Credential.defaults, props);
         safeAssign(this, options);
 
         // init nested config
@@ -86,7 +86,7 @@ Credential.setTransient("expanded", "loading");
  * error messages.
  */
 Credential.setValidator(function(model) {
-    let errors = {};
+    const errors = {};
 
     if (!model.provider) {
         errors.provider = "Provider must be set";

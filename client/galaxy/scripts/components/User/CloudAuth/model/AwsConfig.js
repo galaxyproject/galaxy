@@ -11,7 +11,7 @@ export class AwsConfig extends BaseModel {
 }
 
 AwsConfig.setValidator(function(model) {
-    let errors = {};
+    const errors = {};
     if (!model.role_arn.length) {
         errors.role_arn = "Missing role_arn";
     }

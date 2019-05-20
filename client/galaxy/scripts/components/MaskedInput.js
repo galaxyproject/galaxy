@@ -19,7 +19,7 @@ export default {
     },
     methods: {
         getFormatted(value) {
-            let result = this.stringifyValue(value);
+            const result = this.stringifyValue(value);
             if (this.mask.length) {
                 return this.masker.resolve(result);
             }

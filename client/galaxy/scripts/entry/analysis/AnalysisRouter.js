@@ -85,10 +85,10 @@ export const getAnalysisRouter = Galaxy =>
         },
 
         _display_vue_helper: function(component, props = {}) {
-            let instance = Vue.extend(component);
-            let container = document.createElement("div");
+            const instance = Vue.extend(component);
+            const container = document.createElement("div");
             this.page.display(container);
-            let vm = new instance(props).$mount(container);
+            const vm = new instance(props).$mount(container);
             return vm;
         },
 

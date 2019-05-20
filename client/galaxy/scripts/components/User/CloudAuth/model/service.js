@@ -9,8 +9,8 @@ import { getRootFromIndexLink } from "onload";
 const getUrl = path => getRootFromIndexLink() + path;
 
 export async function listCredentials() {
-    let url = getUrl("api/cloud/authz");
-    let response = await axios.get(url);
+    const url = getUrl("api/cloud/authz");
+    const response = await axios.get(url);
     if (response.status != 200) {
         throw new Error("Unexpected response from listing.");
     }
@@ -18,8 +18,8 @@ export async function listCredentials() {
 }
 
 export async function getCredential(id) {
-    let url = getUrl("api/cloud/authz/${id}");
-    let response = await axios.get(url);
+    const url = getUrl("api/cloud/authz/${id}");
+    const response = await axios.get(url);
     if (response.status != 200) {
         throw new Error("Unexpected response loading key.");
     }
@@ -27,8 +27,8 @@ export async function getCredential(id) {
 }
 
 export async function saveCredential(newItem) {
-    let model = Credential.create(newItem);
-    let response = await saveOrUpdate(model);
+    const model = Credential.create(newItem);
+    const response = await saveOrUpdate(model);
     if (response.status != 200) {
         throw new Error("Save failure.");
     }
@@ -42,10 +42,10 @@ async function saveOrUpdate(model) {
 }
 
 export async function deleteCredential(doomed) {
-    let model = Credential.create(doomed);
+    const model = Credential.create(doomed);
     if (model.id) {
-        let url = getUrl(`api/cloud/authz/${doomed.id}`);
-        let response = await axios.delete(url);
+        const url = getUrl(`api/cloud/authz/${doomed.id}`);
+        const response = await axios.delete(url);
         if (response.status != 200) {
             throw new Error("Delete failure.");
         }
@@ -59,8 +59,8 @@ let identityProviders;
 
 export async function getIdentityProviders() {
     if (!identityProviders) {
-        let url = getUrl("authnz");
-        let response = await axios.get(url);
+        const url = getUrl("authnz");
+        const response = await axios.get(url);
         if (response.status != 200) {
             throw new Error("Unable to load identity providers");
         }

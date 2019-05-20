@@ -66,7 +66,7 @@ export default {
     },
     computed: {
         statusClasses() {
-            let { expanded, valid, dirty, loading } = this.credential;
+            const { expanded, valid, dirty, loading } = this.credential;
             return { loading, expanded, valid, dirty, collapsed: !expanded };
         },
         variant() {
@@ -87,7 +87,7 @@ export default {
     },
     methods: {
         expand(forceState) {
-            let expanded = forceState !== undefined ? forceState : !this.expanded;
+            const expanded = forceState !== undefined ? forceState : !this.expanded;
             this.$emit("expand", { expanded });
         }
     }

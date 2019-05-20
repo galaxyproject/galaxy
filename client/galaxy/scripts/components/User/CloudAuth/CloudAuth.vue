@@ -153,7 +153,7 @@ export default {
                 .finally(() => (this.loading = false));
         },
         onCreate() {
-            let newItem = Credential.create({ expanded: true });
+            const newItem = Credential.create({ expanded: true });
             this.addItem(newItem);
         },
         onSave(item) {
