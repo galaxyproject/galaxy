@@ -68,7 +68,7 @@ class Container(object):
         self.destination_info = destination_info
         self.job_info = job_info
         self.container_description = container_description
-        self.container_name = container_name
+        self.container_name = container_name or uuid4().get_hex()
         self.container_info = {}
 
     def prop(self, name, default):
@@ -90,10 +90,6 @@ class Container(object):
         container_id, and command to build a new command that runs
         input command in container.
         """
-
-    def set_name(self, job_wrapper=None):
-        self.container_name = uuid4().get_hex()
-        job_wrapper.set_container(self)
 
 
 def preprocess_volumes(volumes_raw_str, container_type):

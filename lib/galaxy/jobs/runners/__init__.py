@@ -433,8 +433,7 @@ class BaseJobRunner(object):
             destination_info,
             job_info
         )
-        if container:
-            container.set_name(job_wrapper=job_wrapper)
+        job_wrapper.set_container(container)
         return container
 
     def _handle_runner_state(self, runner_state, job_state):
