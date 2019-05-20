@@ -38,6 +38,7 @@ import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import Vue from "vue";
+import { CloudAuth } from "components/User/CloudAuth";
 
 /** Routes */
 export const getAnalysisRouter = Galaxy =>
@@ -47,6 +48,7 @@ export const getAnalysisRouter = Galaxy =>
             "(/)root*": "home",
             "(/)tours(/)(:tour_id)": "show_tours",
             "(/)user(/)": "show_user",
+            "(/)user(/)cloud_auth": "show_cloud_auth",
             "(/)user(/)(:form_id)": "show_user_form",
             "(/)pages(/)create(/)": "show_pages_create",
             "(/)pages(/)edit(/)": "show_pages_edit",
@@ -76,18 +78,19 @@ export const getAnalysisRouter = Galaxy =>
             "(/)realtime_entry_points(/)list": "show_realtime_list"
         },
 
-        require_login: ["show_user", "show_user_form", "show_workflows"],
+        require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth"],
 
         authenticate: function(args, name) {
             const Galaxy = getGalaxyInstance();
             return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
-        _display_vue_helper: function(component, props) {
+        _display_vue_helper: function(component, props = {}) {
             const instance = Vue.extend(component);
-            const vm = document.createElement("div");
-            this.page.display(vm);
-            new instance(props).$mount(vm);
+            const container = document.createElement("div");
+            this.page.display(container);
+            const vm = new instance(props).$mount(container);
+            return vm;
         },
 
         show_tours: function(tour_id) {
@@ -117,6 +120,10 @@ export const getAnalysisRouter = Galaxy =>
                     active_tab: "analysis"
                 })
             );
+        },
+
+        show_cloud_auth: function() {
+            this._display_vue_helper(CloudAuth);
         },
 
         show_visualizations: function(action_id) {
