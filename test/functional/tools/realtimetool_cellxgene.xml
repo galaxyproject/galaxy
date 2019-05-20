@@ -8,9 +8,11 @@
         </entry_point>
     </realtime>
     <command><![CDATA[
-        cp '${input}' '/tmp/galaxy_cellxgene_${input.element_identifier}.h5ad'
+        #import re
+        #set $fancy_name = '/tmp/galaxy_cellxgene_' + re.sub('[^\w\-_]', '_', $input.element_identifier) + '.h5ad'
+        cp '${input}' '${fancy_name}'
         &&
-        cellxgene launch --host 0.0.0.0 --port 80 /tmp/galaxy_cellxgene*
+        cellxgene launch --host 0.0.0.0 --port 80 '${fancy_name}'
     ]]>
     </command>
     <inputs>
