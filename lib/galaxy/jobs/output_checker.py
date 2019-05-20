@@ -146,11 +146,8 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             if stderr:
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
 
-        if state != DETECTED_JOB_STATE.OK and stderr:
-            if stderr:
-                peak = stderr[0:ERROR_PEAK]
-            else:
-                peak = ""
+        if state != DETECTED_JOB_STATE.OK:
+            peak = stderr[0:ERROR_PEAK] if stderr else ""
             log.debug("job failed, detected state %s, standard error is - [%s]" % (state, peak))
     except Exception:
         log.exception("Job state check encountered unexpected exception; assuming execution successful")
