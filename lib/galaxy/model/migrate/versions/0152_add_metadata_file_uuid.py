@@ -6,9 +6,10 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, MetaData, Table
+from sqlalchemy import Column, MetaData
 
 from galaxy.model.custom_types import UUIDType
+from galaxy.model.migrate.versions.util import add_column, drop_column
 
 log = logging.getLogger(__name__)
 
@@ -19,14 +20,8 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    metadata_file_table = Table("metadata_file", metadata, autoload=True)
-
-    try:
-        uuid_column = Column('uuid', UUIDType())
-        uuid_column.create(metadata_file_table)
-        assert uuid_column is metadata_file_table.c.uuid
-    except Exception:
-        log.exception("Adding column 'uuid' to `MetadataFile` table failed.")
+    uuid_column = Column('uuid', UUIDType())
+    add_column(uuid_column, 'metadata_file', metadata)
 
 
 def downgrade(migrate_engine):
@@ -34,10 +29,4 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    metadata_file_table = Table("metadata_file", metadata, autoload=True)
-
-    try:
-        column = metadata_file_table.c.uuid
-        column.drop()
-    except Exception:
-        log.exception("Dropping 'uuid' column from `metadata_file` table failed.")
+    drop_column('uuid', 'metadata_file', metadata)

@@ -36,17 +36,13 @@ and `Ansible Galaxy <https://galaxy.ansible.com/detail#/role/6056>`__.
 Setting up the Proxy
 ^^^^^^^^^^^^^^^^^^^^
 
-Currently the Galaxy proxy is a NodeJS+Sqlite3 proxy.
+The Galaxy IE Proxy is a NodeJS+Sqlite3 application.  The NodeJS that is
+installed by default into the Galaxy Virtualenv is suitable for an execution
+environment for the Galaxy IE Proxy.
 
-- Node has recently upgraded, and our proxy is pinned to an old version of
-  sqlite3. As such you'll currently need to have an older version of Node
-  available (0.10.X - 0.11.X vintage).
-- One can use `NVM <https://github.com/creationix/nvm>`__ to install and manage multiple versions of Node.
-- We're working on solutions in this space to provide a better deployment
-  mechanism here and fewer dependencies.
-- Please note that if you have NodeJS installed under Ubuntu, it often
-  installs to ``/usr/bin/nodejs``, whereas ``npm`` expects it to be
-  ``/usr/bin/node``. You will need to create that symlink yourself.
+- Note that if you have NodeJS installed under Ubuntu, it often installs to
+  ``/usr/bin/nodejs``, whereas ``npm`` expects it to be ``/usr/bin/node``. You
+  may need to create that symlink yourself.
 
 Once Node and npm are ready to go, you'll need to install the dependencies
 

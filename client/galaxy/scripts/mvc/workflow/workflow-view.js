@@ -258,7 +258,7 @@ export default Backbone.View.extend({
 
             for (let i = 0; i < workflow_versions.length; i++) {
                 const current_wf = workflow_versions[i];
-                let version_text = `Version ${current_wf["version"]}, ${current_wf["steps"]} steps`;
+                let version_text = `Version ${current_wf.version}, ${current_wf.steps} steps`;
                 let selected = false;
                 if (i == self.workflow.workflow_version) {
                     version_text = `${version_text} (active)`;
@@ -287,7 +287,9 @@ export default Backbone.View.extend({
                 $("#workflow-version-switch").unbind("change");
                 if (this.value != self.workflow.workflow_version) {
                     if (self.workflow && self.workflow.has_changes) {
-                        const r = confirm("There are unsaved changes to your workflow which will be lost. Continue ?");
+                        const r = window.confirm(
+                            "There are unsaved changes to your workflow which will be lost. Continue ?"
+                        );
                         if (r == false) {
                             // We rebuild the version select list, to reset the selected version
                             self.build_version_select();
@@ -774,6 +776,7 @@ export default Backbone.View.extend({
         // Fix width to computed width
         // Now add floats
         var buttons = $("<div class='buttons' style='float: right;'></div>");
+        buttons.append($(`<div class="sr-only"><a href="#right">Node Details</a></div>`));
         if (type !== "subworkflow") {
             buttons.append(
                 $("<div/>")

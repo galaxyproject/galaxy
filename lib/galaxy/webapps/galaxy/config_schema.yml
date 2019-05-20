@@ -102,10 +102,10 @@ mapping:
         default: false
         required: false
         desc: |
-          Enable's a per request sql debugging option. If this is set to true, append
-          ?sql_debug=1 to web request URLs to enable detailed logging on the backend of SQL
-          queries generated during that request. This is useful for debugging slow endpoints
-          during development.
+          Enables a per request sql debugging option. If this is set to true,
+          append ?sql_debug=1 to web request URLs to enable detailed logging on
+          the backend of SQL queries generated during that request. This is
+          useful for debugging slow endpoints during development.
 
       install_database_connection:
         type: str
@@ -144,7 +144,7 @@ mapping:
 
       database_wait_sleep:
         type: float
-        default: 1
+        default: 1.
         required: false
         desc: |
           Time to sleep between attempts if database_wait is enabled (in seconds).
@@ -397,9 +397,9 @@ mapping:
         default: ''
         required: false
         desc: |
-          Container resolvers configuration (beta). Setup a file describing container
-          resolvers to use when discovering containers for Galaxy. If this is set to
-          None, the default containers loaded is determined by
+          Container resolvers configuration (beta). Set up a file describing
+          container resolvers to use when discovering containers for Galaxy. If
+          this is set to None, the default containers loaded is determined by
           enable_beta_mulled_containers.
 
       involucro_path:
@@ -874,7 +874,7 @@ mapping:
         desc: |
           Galaxy can display data at various external browsers.  These options specify
           which browsers should be available.  URLs and builds available at these
-          browsers are defined in the specifield files.
+          browsers are defined in the specified files.
 
           If use_remote_user = True, display application servers will be denied access
           to Galaxy and so displaying datasets in these sites will fail.
@@ -970,14 +970,15 @@ mapping:
         default: http://localhost:8080
         required: false
         desc: |
-          URL (with schema http/https) of the Galaxy instance as accessible within your
-          local network - if specified used as a default by pulsar file staging and
-          Jupyter Docker container for communicating back with Galaxy via the API.
+          URL (with schema http/https) of the Galaxy instance as accessible
+          within your local network - if specified used as a default by pulsar
+          file staging and Jupyter Docker container for communicating back with
+          Galaxy via the API.
 
-          If you are attempting to setup GIEs on Mac OS X with Docker for Mac - this
-          should likely be the IP address of your machine on the virtualbox network (vboxnet0)
-          setup for the Docker host VM. This can found by running ifconfig and using the
-          IP address of the network vboxnet0.
+          If you are attempting to set up GIEs on Mac OS X with Docker Desktop
+          for Mac and your Galaxy instance runs on port 8080 this should be
+          'http://host.docker.internal:8080'.  For more details see
+          https://docs.docker.com/docker-for-mac/networking/
 
       galaxy_infrastructure_web_port:
         type: int
@@ -1292,7 +1293,7 @@ mapping:
         default: 8800
         required: false
         desc: |
-          Set the port and IP for the the dynamic proxy to bind to, this must match
+          Set the port and IP for the dynamic proxy to bind to, this must match
           the external configuration if dynamic_proxy_manage is False.
 
       dynamic_proxy_bind_ip:
@@ -1300,7 +1301,7 @@ mapping:
         default: 0.0.0.0
         required: false
         desc: |
-          Set the port and IP for the the dynamic proxy to bind to, this must match
+          Set the port and IP for the dynamic proxy to bind to, this must match
           the external configuration if dynamic_proxy_manage is False.
 
       dynamic_proxy_debug:
@@ -2359,6 +2360,9 @@ mapping:
           notifies itself of new jobs via in-memory queues.  Jobs are run locally on
           the system on which Galaxy is started.  Advanced job running capabilities can
           be configured through the job configuration file.
+
+      job_config:
+        !include job_config_schema.yml
 
       default_job_resubmission_condition:
         type: str

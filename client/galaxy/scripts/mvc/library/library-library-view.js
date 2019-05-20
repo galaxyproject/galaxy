@@ -245,55 +245,58 @@ var LibraryView = Backbone.View.extend({
 
     templateLibraryPermissions: function() {
         return _.template(
-            [
-                '<div class="library_style_container">',
-                "<div>",
-                '<a href="#">',
-                '<button data-toggle="tooltip" data-placement="top" title="Go back to the list of Libraries" class="btn btn-secondary primary-button" type="button">',
-                '<span class="fa fa-list"/>',
-                "&nbsp;Libraries",
-                "</button>",
-                "</a>",
-                "</div>",
-                "<h1>",
-                'Library: <%= _.escape(library.get("name")) %>',
-                "</h1>",
-                '<div class="alert alert-warning">',
-                "<% if (is_admin) { %>",
-                "You are logged in as an <strong>administrator</strong> therefore you can manage any library on this Galaxy instance. Please make sure you understand the consequences.",
-                "<% } else { %>",
-                "You can assign any number of roles to any of the following permission types. However please read carefully the implications of such actions.",
-                "<% }%>",
-                "</div>",
-                '<div class="dataset_table">',
-                "<h2>Library permissions</h2>",
-                "<h4>Roles that can access the library</h4>",
-                '<div id="access_perm" class="access_perm roles-selection"/>',
-                '<div class="alert alert-info roles-selection">',
-                "User with <strong>any</strong> of these roles can access this library. If there are no access roles set on the library it is considered <strong>unrestricted</strong>.",
-                "</div>",
-                "<h4>Roles that can manage permissions on this library</h4>",
-                '<div id="manage_perm" class="manage_perm roles-selection"/>',
-                '<div class="alert alert-info roles-selection">',
-                "User with <strong>any</strong> of these roles can manage permissions on this library (includes giving access).",
-                "</div>",
-                "<h4>Roles that can add items to this library</h4>",
-                '<div id="add_perm" class="add_perm roles-selection"/>',
-                '<div class="alert alert-info roles-selection">',
-                "User with <strong>any</strong> of these roles can add items to this library (folders and datasets).",
-                "</div>",
-                "<h4>Roles that can modify this library</h4>",
-                '<div id="modify_perm" class="modify_perm roles-selection"/>',
-                '<div class="alert alert-info roles-selection">',
-                "User with <strong>any</strong> of these roles can modify this library (name, synopsis, etc.).",
-                "</div>",
-                '<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-secondary toolbtn_save_permissions primary-button" type="button">',
-                '<span class="fa fa-floppy-o"/>',
-                "&nbsp;Save",
-                "</button>",
-                "</div>",
-                "</div>"
-            ].join("")
+            `<div class="library_style_container">
+                <div>
+                    <a href="#">
+                        <button data-toggle="tooltip" data-placement="top"
+                            title="Go back to the list of Libraries" class="btn btn-secondary primary-button" type="button">
+                            <span class="fa fa-list"></span>&nbsp;Libraries
+                        </button>
+                    </a>
+                </div>
+                <h1>
+                    Library: <%= _.escape(library.get("name")) %>
+                </h1>
+                <div class="alert alert-warning">
+                    <% if (is_admin) { %>
+                        You are logged in as an <strong>administrator</strong> therefore you can manage any library
+                        on this Galaxy instance. Please make sure you understand the consequences.
+                    <% } else { %>
+                        You can assign any number of roles to any of the following permission types.
+                        However please read carefully the implications of such actions.
+                    <% }%>
+                </div>
+                <div class="dataset_table">
+                    <h2>Library permissions</h2>
+                    <h4>Roles that can access the library</h4>
+                    <div id="access_perm" class="access_perm roles-selection"></div>
+                    <div class="alert alert-info roles-selection">
+                        User with <strong>any</strong> of these roles can access this library.
+                        If there are no access roles set on the library it is considered <strong>unrestricted</strong>.
+                    </div>
+                    <h4>Roles that can manage permissions on this library</h4>
+                    <div id="manage_perm" class="manage_perm roles-selection"></div>
+                    <div class="alert alert-info roles-selection">
+                        User with <strong>any</strong> of these roles can manage permissions on this library
+                        (includes giving access).
+                    </div>
+                    <h4>Roles that can add items to this library</h4>
+                    <div id="add_perm" class="add_perm roles-selection"></div>
+                    <div class="alert alert-info roles-selection">
+                        User with <strong>any</strong> of these roles can add items to this library (folders and datasets).
+                    </div>
+                    <h4>Roles that can modify this library</h4>
+                    <div id="modify_perm" class="modify_perm roles-selection"></div>
+                    <div class="alert alert-info roles-selection">
+                        User with <strong>any</strong> of these roles can modify this library (name, synopsis, etc.).
+                    </div>
+                    <button data-toggle="tooltip" data-placement="top"
+                        title="Save modifications made on this page"
+                        class="btn btn-secondary toolbtn_save_permissions primary-button" type="button">
+                        <span class="fa fa-floppy-o"></span>&nbsp;Save
+                    </button>
+                </div>
+            </div>`
         );
     }
 });

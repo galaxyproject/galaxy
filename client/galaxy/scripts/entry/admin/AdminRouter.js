@@ -7,6 +7,7 @@ import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
+import Jobs from "components/admin/Jobs.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
 import Register from "components/login/Register.vue";
@@ -33,6 +34,7 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin(/)form(/)(:form_id)": "show_form",
             "(/)admin/data_tables": "show_data_tables",
             "(/)admin/data_types": "show_data_types",
+            "(/)admin/jobs": "show_jobs",
             "(/)admin/data_manager*path": "show_data_manager",
             "*notFound": "not_found"
         },
@@ -113,6 +115,10 @@ export const getAdminRouter = (Galaxy, options) => {
 
         show_data_types: function() {
             this._display_vue_helper(DataTypes);
+        },
+
+        show_jobs: function() {
+            this._display_vue_helper(Jobs);
         },
 
         show_error_stack: function() {

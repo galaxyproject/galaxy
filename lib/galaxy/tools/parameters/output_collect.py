@@ -316,6 +316,7 @@ def collect_primary_datasets(job_context, output, input_ext):
                 extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
                 if extra_files_path:
                     extra_files_path_joined = os.path.join(job_working_directory, extra_files_path)
+                    primary_data.dataset.create_extra_files_path()
                     for root, dirs, files in os.walk(extra_files_path_joined):
                         extra_dir = os.path.join(primary_data.extra_files_path, root.replace(extra_files_path_joined, '', 1).lstrip(os.path.sep))
                         extra_dir = os.path.normpath(extra_dir)

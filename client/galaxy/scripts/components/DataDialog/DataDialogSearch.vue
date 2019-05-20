@@ -2,7 +2,7 @@
     <b-input-group>
         <b-input v-model="filter" placeholder="Type to Search" />
         <b-input-group-append>
-            <b-btn :disabled="!filter" @click="filter = ''">Clear</b-btn>
+            <b-btn :disabled="!filter" @click="filter = ''"><i class="fa fa-times"/></b-btn>
         </b-input-group-append>
     </b-input-group>
 </template>

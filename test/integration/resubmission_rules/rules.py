@@ -1,20 +1,20 @@
 from galaxy.jobs import JobDestination
 
-DEFAULT_INITIAL_DESTINATION = "fail_first_try"
+DEFAULT_INITIAL_ENVIRONMENT = "fail_first_try"
 
 
-def initial_destination(resource_params):
-    return resource_params.get("initial_destination", None) or DEFAULT_INITIAL_DESTINATION
+def initial_target_environment(resource_params):
+    return resource_params.get("initial_target_environment", None) or DEFAULT_INITIAL_ENVIRONMENT
 
 
 def dynamic_resubmit_once(resource_params):
-    """Build destination that always fails first time and always re-routes to passing destination."""
+    """Build environment that always fails first time and always re-routes to passing environment."""
     job_destination = JobDestination()
     # Always fail on the first attempt.
     job_destination['runner'] = "failure_runner"
-    # Resubmit to a valid destination.
+    # Resubmit to a valid environment.
     job_destination['resubmit'] = [dict(
         condition="any_failure",
-        destination="local",
+        environment="local",
     )]
     return job_destination

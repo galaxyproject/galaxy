@@ -36,7 +36,7 @@ cachetools==3.1.0
 certifi==2019.3.9
 cffi==1.12.3
 chardet==3.0.4
-cheetah3==3.2.1
+cheetah3==3.2.2
 cliff==2.14.1
 cloudauthz==0.2.0
 cloudbridge==2.0.0
