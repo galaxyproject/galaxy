@@ -635,6 +635,8 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
         self.__zero_disk_usage_user_ids.add(row.zero_disk_usage_user_id)
 
     def zero_disk_usage(self):
+        if not self.__zero_disk_usage_user_ids:
+            return
         log.info('Zeroing disk usage for users who were purged')
         sql = """
             UPDATE galaxy_user
