@@ -1,4 +1,3 @@
-import json
 import logging
 import uuid
 
@@ -369,15 +368,24 @@ class WorkflowProgress(object):
                 delayed_why = "dependent collection [%s] not yet populated with datasets" % replacement.id
                 raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
-        is_hda = isinstance(replacement, model.HistoryDatasetAssociation)
-        if not is_data and is_hda:
-            if replacement.is_ok:
-                with open(replacement.file_name, 'r') as f:
-                    replacement = json.load(f)
-            elif replacement.is_pending:
-                raise modules.DelayedWorkflowEvaluation()
+        data_inputs = (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation, model.DatasetCollection)
+        if not is_data and isinstance(replacement, data_inputs):
+            if isinstance(replacement, model.HistoryDatasetAssociation):
+                if replacement.is_pending:
+                    raise modules.DelayedWorkflowEvaluation()
+                if not replacement.is_ok:
+                    raise modules.CancelWorkflowEvaluation()
             else:
-                raise modules.CancelWorkflowEvaluation()
+                if not replacement.collection.populated:
+                    raise modules.DelayedWorkflowEvaluation()
+                pending = False
+                for dataset_instance in replacement.dataset_instances:
+                    if dataset_instance.is_pending:
+                        pending = True
+                    elif not dataset_instance.is_ok:
+                        raise modules.CancelWorkflowEvaluation()
+                if pending:
+                    raise modules.DelayedWorkflowEvaluation()
 
         return replacement
 

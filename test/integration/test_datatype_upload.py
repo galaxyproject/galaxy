@@ -32,7 +32,7 @@ def find_datatype(registry, filename):
 
 
 def collect_test_data(registry):
-    test_files = os.listdir(TEST_FILE_DIR)
+    test_files = [f for f in os.listdir(TEST_FILE_DIR) if "." in f]
     files = [os.path.join(TEST_FILE_DIR, f) for f in test_files]
     datatypes = [find_datatype(registry, f) for f in test_files]
     uploadable = [datatype.file_ext in registry.upload_file_formats for datatype in datatypes]

@@ -1733,7 +1733,7 @@ module.
   </xs:group>
   <xs:complexType name="AssertHasH5Keys">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output has a set of attributes (``keys``), specified as a comma-separated list (e.g. ``<has_h5_keys keys="bins,chroms,indexes,pixels" />``).]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output has a set of attributes (``keys``), specified as a comma-separated list (e.g. ``<has_h5_keys keys="bins,chroms,indexes,pixels,chroms/lengths" />``).]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="keys" type="xs:string">
       <xs:annotation>
