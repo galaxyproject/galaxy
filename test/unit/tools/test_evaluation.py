@@ -12,6 +12,7 @@ from galaxy.model import (
     JobParameter,
     JobToInputDatasetAssociation
 )
+from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.evaluation import ToolEvaluator
 # For MockTool
 from galaxy.tools.parameters import params_from_strings
@@ -25,7 +26,6 @@ from galaxy.tools.parameters.grouping import (
     ConditionalWhen,
     Repeat
 )
-from galaxy.tools.parser.output_objects import ToolOutput
 from galaxy.util.bunch import Bunch
 # Test fixtures for Galaxy infrastructure.
 from ..tools_support import UsesApp
