@@ -19,7 +19,7 @@ var Model = Backbone.Model.extend({
             user_id: options.user_id,
             information: {
                 title: _l("Manage information"),
-                description: "Edit your email, addresses and custom parameters or change your username.",
+                description: "Edit your email, addresses and custom parameters or change your public name.",
                 url: `api/users/${options.user_id}/information/inputs`,
                 icon: "fa-user",
                 redirect: "user"
