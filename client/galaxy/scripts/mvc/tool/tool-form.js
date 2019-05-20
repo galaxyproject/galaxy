@@ -242,7 +242,10 @@ var View = Backbone.View.extend({
                         toolId: job_def.tool_id
                     });
                 }
-                Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshContents();
+                if (Galaxy.currHistoryPanel) {
+                    self.form.stopListening(Galaxy.currHistoryPanel.collection);
+                    Galaxy.currHistoryPanel.refreshContents();
+                }
             },
             error: function(response) {
                 callback && callback();

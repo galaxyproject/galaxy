@@ -274,6 +274,9 @@ class MockObjectStore(object):
         self.first_create = True
         self.object_store_id = "mycoolid"
 
+    def exists(self, *args, **kwargs):
+        return True
+
     def create(self, dataset):
         self.created_datasets.append(dataset)
         if self.first_create:

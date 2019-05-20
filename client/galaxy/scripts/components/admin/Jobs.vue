@@ -24,7 +24,7 @@
             <b-container class="mb-3">
                 <b-row>
                     <b-col md="6">
-                        <b-form @submit.prevent="onRefresh">
+                        <b-form name="jobs" @submit.prevent="onRefresh">
                             <b-form-group
                                 id="cutoff"
                                 label="Update Jobs"
