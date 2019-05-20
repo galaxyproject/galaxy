@@ -162,7 +162,10 @@ let buildconfig = {
                         loader: "sass-loader",
                         options: { 
                             sourceMap: true,
-                            includePaths: ["galaxy/style/scss"]
+                            includePaths: [
+                                "galaxy/style/scss", 
+                                path.resolve(__dirname, './node_modules') 
+                            ]
                         }
                     }
                 ]
