@@ -303,13 +303,13 @@ def files_re_match_multiline(file1, file2, attributes=None):
 
 def files_contains(file1, file2, attributes=None):
     """Check the contents of file2 for substrings found in file1, on a per-line basis."""
-    local_file = io.open(file1, encoding='utf-8').readlines()  # regex file
+    local_file = open(file1, 'rb').readlines()  # regex file
     # TODO: allow forcing ordering of contains
-    history_data = io.open(file2, encoding='utf-8').read()
+    history_data = open(file2, 'rb').read()
     lines_diff = int(attributes.get('lines_diff', 0))
     line_diff_count = 0
     while local_file:
-        contains = local_file.pop(0).rstrip('\n\r')
+        contains = local_file.pop(0).rstrip(b'\n\r')
         if contains not in history_data:
             line_diff_count += 1
         if line_diff_count > lines_diff:
