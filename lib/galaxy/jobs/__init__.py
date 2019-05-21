@@ -32,6 +32,7 @@ from galaxy.jobs.mapper import JobMappingException, JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.tool_util.deps import requirements
 from galaxy.util import safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -551,7 +552,6 @@ class JobConfiguration(ConfiguresHandlers):
         for param in parent.findall('param'):
             key = param.get('id')
             if key in ["container", "container_override"]:
-                from galaxy.tools.deps import requirements
                 containers = map(requirements.container_from_element, param.findall('container'))
                 param_value = list(map(lambda c: c.to_dict(), containers))
             else:

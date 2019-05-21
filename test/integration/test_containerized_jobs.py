@@ -8,7 +8,7 @@ from base.populators import (
     DatasetPopulator,
 )
 
-from galaxy.tools.deps.commands import which
+from galaxy.tool_util.deps.commands import which
 from .test_job_environments import RunsEnvironmentJobs
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
