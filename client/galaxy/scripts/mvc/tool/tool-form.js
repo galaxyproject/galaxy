@@ -11,6 +11,8 @@ import Ui from "mvc/ui/ui-misc";
 import Modal from "mvc/ui/ui-modal";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import Webhooks from "mvc/webhooks";
+import Vue from "Vue";
+import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 
 var View = Backbone.View.extend({
     initialize: function(options) {
@@ -233,6 +235,19 @@ var View = Backbone.View.extend({
             success: function(response) {
                 callback && callback();
                 self.$el.children().hide();
+                if (response.produces_entry_points) {
+                    for (let job of response.jobs) {
+                        let toolEntryPointsInstance = Vue.extend(ToolEntryPoints);
+                        let vm = document.createElement("div");
+                        self.$el.append(vm);
+                        let instance = new toolEntryPointsInstance({
+                            propsData: {
+                                jobId: job.id
+                            }
+                        });
+                        instance.$mount(vm);
+                    }
+                }
                 self.$el.append(self._templateSuccess(response, job_def));
                 // Show Webhook if job is running
                 if (response.jobs && response.jobs.length > 0) {
@@ -347,24 +362,6 @@ var View = Backbone.View.extend({
         return inputs;
     },
 
-    _getViewResult: function(response) {
-        var vr = "";
-        if (response.view_result) {
-            for (const i in response.view_result) {
-                vr += `<div class="infomessagelarge">
-                            <p>
-                                <a href="${response.view_result[i]}">
-                                There is a RealTimeTool result view available, click here to display.</a>
-                            </p>
-                            <p>
-                                You may also access all active RealTimeTools from the User menu.
-                            </p>
-                        </div>`;
-            }
-        }
-        return vr;
-    },
-
     _templateRow: function(list, title, max = 3) {
         var blurb = "";
         list.sort(function(a, b) {
@@ -395,9 +392,7 @@ var View = Backbone.View.extend({
             var ninputsText = ninputs > 1 ? `${ninputs} inputs` : `this input`;
             var noutputsText = noutputs > 1 ? `${noutputs} outputs` : `this output`;
             var tool_name = this.form.model.get("name");
-            var view_result = this._getViewResult(response);
-            return `${view_result}
-                    <div class="donemessagelarge">
+            return `<div class="donemessagelarge">
                         <p>
                             Executed <b>${tool_name}</b> and successfully added ${njobsText} to the queue.
                         </p>

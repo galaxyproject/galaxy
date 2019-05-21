@@ -1463,7 +1463,10 @@ class JobContainerAssociation(RepresentById):
         self.container_info = container_info or {}
 
 
-class RealTimeToolEntryPoint(RepresentById):
+class RealTimeToolEntryPoint(Dictifiable, RepresentById):
+    dict_collection_visible_keys = ['id', 'name', 'active']
+    dict_element_visible_keys = ['id', 'name', 'active']
+
     def __init__(self, job=None, name=None, token=None, tool_port=None, host=None, port=None, protocol=None,
                  entry_url=None, info=None, configured=False, deleted=False):
         self.job = job
@@ -1479,12 +1482,6 @@ class RealTimeToolEntryPoint(RepresentById):
         self.info = info or {}
         self.configured = configured
         self.deleted = deleted
-
-    def to_dict(self, *args, **kwds):
-        rval = dict(realtime_id=self.realtime.id)
-        for val in ['id', 'name', 'token', 'tool_port', 'entry_url', 'host', 'port', 'protocol', 'configured', 'created_time', 'modified_time', 'active']:
-            rval[val] = getattr(self, val)
-        return rval
 
     @property
     def active(self):

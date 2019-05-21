@@ -411,6 +411,7 @@ class Tool(Dictifiable):
 
     tool_type = 'default'
     requires_setting_metadata = True
+    produces_entry_points = False
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
 
@@ -1464,8 +1465,7 @@ class Tool(Dictifiable):
                         job_errors=execution_tracker.execution_errors,
                         jobs=execution_tracker.successful_jobs,
                         output_collections=execution_tracker.output_collections,
-                        implicit_collections=execution_tracker.implicit_collections,
-                        view_result=execution_tracker.view_result)
+                        implicit_collections=execution_tracker.implicit_collections)
 
     def handle_single_execution(self, trans, rerun_remap_job_id, execution_slice, history, execution_cache=None, completed_job=None, collection_info=None):
         """
@@ -2054,10 +2054,6 @@ class Tool(Dictifiable):
             else:
                 group_inputs[input_index] = tool_dict
 
-    def get_view_result(self, job=None, dataset=None, **kwd):
-        """Returns a special view for a tool and a set of provided objects."""
-        return None
-
     def _get_job_remap(self, job):
         if job:
             if job.state == job.states.ERROR:
@@ -2443,6 +2439,7 @@ class ImportHistoryTool(Tool):
 
 class RealTimeTool(Tool):
     tool_type = 'realtime'
+    produces_entry_points = True
 
     def __remove_realtime_by_job(self, job):
         if job:
@@ -2461,11 +2458,6 @@ class RealTimeTool(Tool):
         super(RealTimeTool, self).job_failed(job_wrapper, message, exception=exception)
         job = job_wrapper.sa_session.query(model.Job).get(job_wrapper.job_id)
         self.__remove_realtime_by_job(job)
-
-    def get_view_result(self, job=None):
-        if job:
-            return self.app.url_for(controller='realtime', action='index', job_id=self.app.security.encode_id(job.id))
-        return None
 
 
 class DataManagerTool(OutputParameterJSONTool):

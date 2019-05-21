@@ -526,7 +526,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])
         rval = {'outputs': [], 'output_collections': [], 'jobs': [], 'implicit_collections': []}
-
+        rval['produces_entry_points'] = tool.produces_entry_points
         job_errors = vars.get('job_errors', [])
         if job_errors:
             # If we are here - some jobs were successfully executed but some failed.
@@ -557,7 +557,6 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             output_dict['output_name'] = output_name
             rval['implicit_collections'].append(output_dict)
 
-        rval['view_result'] = vars.get('view_result', None)
         return rval
 
     def _patch_library_inputs(self, trans, inputs, target_history):

@@ -283,8 +283,10 @@ class RealTimeManager(object):
         entry_point = trans.sa_session.query(model.RealTimeToolEntryPoint).get(entry_point_id)
         if self.app.realtime_manager.can_access_entry_point(trans, entry_point):
             if entry_point.active:
+                request_host = trans.request.host
+                log.info("building access for host %s" % request_host)
                 rval = '%s//%s.%s.%s.%s.%s/' % (trans.request.host_url.split('//', 1)[0], entry_point.__class__.__name__.lower(), trans.security.encode_id(entry_point.id),
-                        entry_point.token, self.app.config.realtime_prefix, trans.request.host)
+                        entry_point.token, self.app.config.realtime_prefix, request_host)
                 if entry_point.entry_url:
                     rval = '%s/%s' % (rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
                 return rval

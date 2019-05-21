@@ -77,19 +77,6 @@ class RealTimeToolEntryPointListGrid(grids.Grid):
 class RealTime(BaseUIController):
     entry_point_grid = RealTimeToolEntryPointListGrid()
 
-    @web.expose
-    def index(self, trans, job_id=None, **kwd):
-        job = trans.sa_session.query(trans.app.model.Job).get(self.decode_id(job_id))
-        eps = job.realtimetool_entry_points
-        try:
-            if eps and len(eps) == 1:
-                redirect_target = RealTimeManager(self.app).access_entry_point_target(trans, eps[0].id)
-            else:
-                redirect_target = url_for(controller="realtime", action="list")
-            return trans.response.send_redirect(redirect_target)
-        except exceptions.MessageException as e:
-            return trans.show_error_message(str(e))
-
     @web.expose_api_anonymous
     def list(self, trans, **kwargs):
         """List all available realtimetools"""

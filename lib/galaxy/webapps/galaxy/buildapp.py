@@ -359,6 +359,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('tool', 'tools', path_prefix='/api')
     webapp.mapper.resource('dynamic_tools', 'dynamic_tools', path_prefix='/api')
 
+    webapp.mapper.connect('/api/entry_points', action='index', controller="tool_entry_points")
     webapp.mapper.connect('/api/entry_points/{id:.+?}/access', action='access_entry_point', controller="tool_entry_points")
 
     webapp.mapper.connect('/api/dependency_resolvers/clean', action="clean", controller="tool_dependencies", conditions=dict(method=["POST"]))
