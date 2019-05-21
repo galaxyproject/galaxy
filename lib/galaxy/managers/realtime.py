@@ -6,7 +6,7 @@ from six import string_types
 from sqlalchemy import or_
 
 
-from galaxy.tools.deps.docker_util import parse_port_text as docker_parse_port_text
+from galaxy.tool_util.deps.docker_util import parse_port_text as docker_parse_port_text
 from galaxy.util.filelock import FileLock
 
 
