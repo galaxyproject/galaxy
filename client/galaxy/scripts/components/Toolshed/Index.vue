@@ -13,7 +13,7 @@
                     <b-card>
                         <div class="mb-1">{{ row.item.long_description }}</div>
                         <div class="mb-3">
-                            <b-link :href="row.item.details_url" target="_blank"
+                            <b-link :href="row.item.repository_url" target="_blank"
                                 >Click here for additional details and dependencies.</b-link
                             >
                         </div>
@@ -102,7 +102,7 @@ export default {
                     let incoming = response.data.hits.map(x => x.repository);
                     incoming.forEach(x => {
                         x.times_downloaded = this.formatCount(x.times_downloaded);
-                        x.details_url = `${this.toolshedUrl}/repository?repository_id=${x.id}`;
+                        x.repository_url = `${this.toolshedUrl}repository?repository_id=${x.id}`;
                     });
                     if (this.page === 1) {
                         this.repositories = incoming;
