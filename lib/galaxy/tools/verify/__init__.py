@@ -3,7 +3,6 @@
 import difflib
 import filecmp
 import hashlib
-import io
 import logging
 import os
 import os.path
@@ -268,9 +267,9 @@ def files_diff(file1, file2, attributes=None):
 
 def files_re_match(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match."""
-    local_file = io.open(file1, encoding='utf-8').readlines()  # regex file
-    history_data = io.open(file2, encoding='utf-8').readlines()
-    assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), ''.join(history_data[:40]))
+    local_file = open(file1, 'rb').readlines()  # regex file
+    history_data = open(file2, 'rb').readlines()
+    assert len(local_file) == len(history_data), b'Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), b''.join(history_data[:40]))
     if attributes is None:
         attributes = {}
     if attributes.get('sort', False):
@@ -279,24 +278,24 @@ def files_re_match(file1, file2, attributes=None):
     line_diff_count = 0
     diffs = []
     for i in range(len(history_data)):
-        if not re.match(local_file[i].rstrip('\r\n'), history_data[i].rstrip('\r\n')):
+        if not re.match(local_file[i].rstrip(b'\r\n'), history_data[i].rstrip(b'\r\n')):
             line_diff_count += 1
-            diffs.append('Regular Expression: %s\nData file         : %s' % (local_file[i].rstrip('\r\n'), history_data[i].rstrip('\r\n')))
+            diffs.append(b'Regular Expression: %s\nData file         : %s' % (local_file[i].rstrip(b'\r\n'), history_data[i].rstrip(b'\r\n')))
         if line_diff_count > lines_diff:
-            raise AssertionError("Regular expression did not match data file (allowed variants=%i):\n%s" % (lines_diff, "".join(diffs)))
+            raise AssertionError(b"Regular expression did not match data file (allowed variants=%i):\n%s" % (lines_diff, b"".join(diffs)))
 
 
 def files_re_match_multiline(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match in multiline mode."""
-    local_file = io.open(file1, encoding='utf-8').read()  # regex file
+    local_file = open(file1, 'rb').read()  # regex file
     if attributes is None:
         attributes = {}
     if attributes.get('sort', False):
-        history_data = io.open(file2, encoding='utf-8').readlines()
+        history_data = open(file2, 'rb').readlines()
         history_data.sort()
-        history_data = ''.join(history_data)
+        history_data = b''.join(history_data)
     else:
-        history_data = io.open(file2, encoding='utf-8').read()
+        history_data = open(file2, 'rb').read()
     # lines_diff not applicable to multiline matching
     assert re.match(local_file, history_data, re.MULTILINE), "Multiline Regular expression did not match data file"
 
