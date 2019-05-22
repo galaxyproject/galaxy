@@ -260,7 +260,7 @@ class BaseJobRunner(object):
         container = self._find_container(job_wrapper)
         if not container and job_wrapper.requires_containerization:
             raise Exception("Failed to find a container when required, contact Galaxy admin.")
-        built = build_command(
+        return build_command(
             self,
             job_wrapper,
             include_metadata=include_metadata,
@@ -270,11 +270,6 @@ class BaseJobRunner(object):
             stdout_file=stdout_file,
             stderr_file=stderr_file,
         )
-        stored_container = job_wrapper.get_job().container
-        if container and stored_container:
-            if container.container_info:
-                stored_container.container_info = container.container_info
-        return built
 
     def get_work_dir_outputs(self, job_wrapper, job_working_directory=None, tool_working_directory=None):
         """

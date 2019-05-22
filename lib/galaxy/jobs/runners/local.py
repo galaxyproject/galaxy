@@ -147,15 +147,6 @@ class LocalJobRunner(BaseJobRunner):
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         job = job_wrapper.get_job()
         job_ext_output_metadata = job.get_external_output_metadata()
-        if job.container:
-            try:
-                self._stop_container(job_wrapper)
-            except Exception as e:
-                log.warning("stop_job(): %s: trying to stop container failed. (%s)" % (job.id, e))
-                try:
-                    self._kill_container(job_wrapper)
-                except Exception as e:
-                    log.warning("stop_job(): %s: trying to kill container failed. (%s)" % (job.id, e))
         try:
             pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             assert pid not in [None, '']
@@ -181,7 +172,6 @@ class LocalJobRunner(BaseJobRunner):
                 return
         else:
             log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" % (job.id, pid))
-        self._kill_container(job_wrapper)
 
     def recover(self, job, job_wrapper):
         # local jobs can't be recovered
@@ -230,28 +220,6 @@ class LocalJobRunner(BaseJobRunner):
         if proc.poll() is None:
             os.killpg(proc.pid, 9)
         return proc.wait()  # reap
-
-    def _stop_container(self, job_wrapper):
-        return self._run_container_command(job_wrapper, 'stop')
-
-    def _kill_container(self, job_wrapper):
-        return self._run_container_command(job_wrapper, 'kill')
-
-    def _run_container_command(self, job_wrapper, command):
-        job = job_wrapper.get_job()
-        if job:
-            cont = job.container
-            if cont:
-                if cont.container_type == 'docker':
-                    return self._run_command(cont.container_info['commands'][command])
-
-    def _run_command(self, command):
-        exit_code = subprocess.call(command,
-                                    shell=True,
-                                    env=self._environ,
-                                    preexec_fn=os.setpgrp)
-        log.debug('_run_command(%s) exit code %s', command, exit_code)
-        return exit_code
 
     def _handle_container(self, job_wrapper, proc):
         if not job_wrapper.tool.produces_entry_points:
