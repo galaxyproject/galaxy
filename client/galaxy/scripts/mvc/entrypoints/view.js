@@ -1,27 +1,34 @@
 import $ from "jquery";
-import axios from "axios";
 import GridView from "mvc/grid/grid-view";
-import { getAppRoot } from "onload";
-import { Toast } from "ui/toast";
+import { clearPolling, pollUntilActive } from "mvc/entrypoints/poll";
+
 
 export default GridView.extend({
     init_grid_elements: function() {
         GridView.prototype.init_grid_elements.call(this);
-        $(".entry-point-link").click(event => {
-            const $link = $(event.target);
-            const entry_point_id = $link.attr("entry_point_id");
-            const url = `${getAppRoot()}api/entry_points/${entry_point_id}/access`;
-            const handlerError = err => {
-                let message = "Problem finding entry point target, please contact an admin.";
-                if (err.response) {
-                    message = err.response.data.err_msg;
+
+        const activated = {};
+
+        let onUpdate = (entryPoints) => {
+            entryPoints.forEach((entryPoint) => {
+                const entryPointId = entryPoint.id;
+                if (entryPoint.active && ! activated[entryPointId]) {
+                    const $link = $(`.entry-point-link[entry_point_id='${entryPointId}']`)
+                    if ($link.length > 0) {
+                        $link.attr("href", entryPoint["target"]);
+                        activated[entryPointId] = true;
+                    }
                 }
-                Toast.error(message);
-            };
-            axios
-                .get(url)
-                .then(response => (window.location = response.data.target))
-                .catch(handlerError);
-        });
+            });
+        }
+        let onError = (e) => {
+            console.error(e);
+        }
+        pollUntilActive(onUpdate, onError, {"running": true});
+    },
+    remove: function() {
+        // Your processing code here
+        clearPolling();
+        GridView.prototype.remove.apply(this, arguments);
     }
 });

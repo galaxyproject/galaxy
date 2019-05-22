@@ -28,23 +28,10 @@ class JobStatusColumn(grids.StateColumn):
 
 class EntryPointLinkColumn(grids.GridColumn):
     def get_value(self, trans, grid, item):
-        return '<a class="entry-point-link" entry_point_id="%s">%s</div>' % (trans.security.encode_id(item.id), item.name)
+        return '<a class="entry-point-link" entry_point_id="%s">%s</a>' % (trans.security.encode_id(item.id), item.name)
 
 
 class RealTimeToolEntryPointListGrid(grids.Grid):
-    def get_url_args(item):
-        """
-        Returns dictionary used to create item link.
-        """
-        url_kwargs = dict(controller="realtime", action="access_entry_point", id=item.id)
-        return url_kwargs
-
-    def get_url_args_job(item):
-        """
-        Returns dictionary used to create item link.
-        """
-        url_kwargs = dict(controller="api/jobs", action='show', id=item.job.id)
-        return url_kwargs
 
     use_panels = True
     title = "Available RealTimeTools"
@@ -53,7 +40,6 @@ class RealTimeToolEntryPointListGrid(grids.Grid):
     default_sort_key = "-update_time"
     columns = [
         EntryPointLinkColumn("Name", filterable="advanced"),
-        grids.GridColumn("Active", key="active"),
         JobStatusColumn("Job Info", key="job_state", model_class=model.Job),
         grids.GridColumn("Created", key="created_time", format=time_ago),
         grids.GridColumn("Last Updated", key="modified_time", format=time_ago),
