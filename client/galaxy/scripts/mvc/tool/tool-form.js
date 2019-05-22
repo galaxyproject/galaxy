@@ -68,15 +68,15 @@ var View = Backbone.View.extend({
                                     );
                                 } else {
                                     Galaxy.modal &&
-                                        Galaxy.modal.show({
-                                            title: _l("Tool request failed"),
-                                            body: error_message,
-                                            buttons: {
-                                                Close: function() {
-                                                    Galaxy.modal.hide();
-                                                }
+                                    Galaxy.modal.show({
+                                        title: _l("Tool request failed"),
+                                        body: error_message,
+                                        buttons: {
+                                            Close: function() {
+                                                Galaxy.modal.hide();
                                             }
-                                        });
+                                        }
+                                    });
                                 }
                                 Galaxy.emit.debug(
                                     "tool-form-base::_buildModel()",
@@ -395,7 +395,7 @@ var View = Backbone.View.extend({
             .append(
                 $("<p/>").text(
                     `The server could not complete the request. Please contact the Galaxy Team if this error persists. ${err_msg ||
-                        ""}`
+                    ""}`
                 )
             )
             .append($("<pre/>").text(JSON.stringify(response, null, 4)));
