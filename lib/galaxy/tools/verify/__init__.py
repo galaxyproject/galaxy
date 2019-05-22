@@ -195,7 +195,7 @@ def files_diff(file1, file2, attributes=None):
                 count += 1
         return count
 
-    if not filecmp.cmp(file1, file2):
+    if not filecmp.cmp(file1, file2, shallow=False):
         if attributes is None:
             attributes = {}
         decompress = attributes.get("decompress", None)
