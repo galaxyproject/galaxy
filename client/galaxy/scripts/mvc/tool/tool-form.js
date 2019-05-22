@@ -15,14 +15,13 @@ import Webhooks from "mvc/webhooks";
 var View = Backbone.View.extend({
     initialize: function(options) {
         const Galaxy = getGalaxyInstance();
-        const self = this;
         this.modal = Galaxy.modal || new Modal.View();
         this.form = new ToolFormBase(
             Utils.merge(
                 {
                     listen_to_history: true,
                     always_refresh: false,
-                    buildmodel: function(process, form) {
+                    buildmodel: (process, form) => {
                         var options = form.model.attributes;
 
                         // build request url
@@ -42,17 +41,17 @@ var View = Backbone.View.extend({
                         Utils.get({
                             url: build_url,
                             data: build_data,
-                            success: function(data) {
+                            success: data => {
                                 if (!data.display) {
                                     window.location = getAppRoot();
                                     return;
                                 }
                                 form.model.set(data);
-                                self._customize(form);
+                                this._customize(form);
                                 Galaxy.emit.debug("tool-form-base::_buildModel()", "Initial tool model ready.", data);
                                 process.resolve();
                             },
-                            error: function(response, status) {
+                            error: (response, status) => {
                                 var error_message = (response && response.err_msg) || "Uncaught error.";
                                 if (status == 401) {
                                     window.location = `${getAppRoot()}user/login?${$.param({
@@ -72,7 +71,7 @@ var View = Backbone.View.extend({
                                         title: _l("Tool request failed"),
                                         body: error_message,
                                         buttons: {
-                                            Close: function() {
+                                            Close: () => {
                                                 Galaxy.modal.hide();
                                             }
                                         }
@@ -87,7 +86,7 @@ var View = Backbone.View.extend({
                             }
                         });
                     },
-                    postchange: function(process, form) {
+                    postchange: (process, form) => {
                         var current_state = {
                             tool_id: form.model.get("id"),
                             tool_version: form.model.get("version"),
@@ -99,13 +98,13 @@ var View = Backbone.View.extend({
                             type: "POST",
                             url: `${getAppRoot()}api/tools/${form.model.get("id")}/build`,
                             data: current_state,
-                            success: function(data) {
+                            success: data => {
                                 form.update(data);
                                 form.wait(false);
                                 Galaxy.emit.debug("tool-form::postchange()", "Received new model.", data);
                                 process.resolve();
                             },
-                            error: function(response) {
+                            error: response => {
                                 Galaxy.emit.debug("tool-form::postchange()", "Refresh request failed.", response);
                                 process.reject();
                             }
@@ -121,7 +120,6 @@ var View = Backbone.View.extend({
     },
 
     _customize: function(form) {
-        var self = this;
         var options = form.model.attributes;
         // build execute button
         var execute_button = new Ui.Button({
@@ -130,10 +128,10 @@ var View = Backbone.View.extend({
             title: _l("Execute"),
             cls: "btn btn-primary",
             wait_cls: "btn btn-info",
-            onclick: function() {
+            onclick: () => {
                 execute_button.wait();
                 form.portlet.disable();
-                self.submit(options, () => {
+                this.submit(options, () => {
                     execute_button.unwait();
                     form.portlet.enable();
                 });
@@ -196,7 +194,6 @@ var View = Backbone.View.extend({
     submit: function(options, callback) {
         const Galaxy = getGalaxyInstance();
         const history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
-        const self = this;
         const job_def = {
             history_id: history_id,
             tool_id: options.id,
@@ -204,7 +201,7 @@ var View = Backbone.View.extend({
             inputs: this.form.data.create()
         };
         this.form.trigger("reset");
-        if (!self.validate(job_def)) {
+        if (!this.validate(job_def)) {
             Galaxy.emit.debug("tool-form::submit()", "Submission canceled. Validation failed.");
             callback && callback();
             return;
@@ -230,42 +227,42 @@ var View = Backbone.View.extend({
             type: "POST",
             url: `${getAppRoot()}api/tools`,
             data: job_def,
-            success: function(response) {
+            success: response => {
                 callback && callback();
-                self.$el.children().hide();
-                self.$el.append(self._templateSuccess(response, job_def));
+                this.$el.children().hide();
+                this.$el.append(this._templateSuccess(response, job_def));
                 // Show Webhook if job is running
                 if (response.jobs && response.jobs.length > 0) {
-                    self.$el.append($("<div/>", { id: "webhook-view" }));
+                    this.$el.append($("<div/>", { id: "webhook-view" }));
                     new Webhooks.WebhookView({
                         type: "tool",
                         toolId: job_def.tool_id
                     });
                 }
                 if (Galaxy.currHistoryPanel) {
-                    self.form.stopListening(Galaxy.currHistoryPanel.collection);
+                    this.form.stopListening(Galaxy.currHistoryPanel.collection);
                     Galaxy.currHistoryPanel.refreshContents();
                 }
             },
-            error: function(response) {
+            error: response => {
                 callback && callback();
                 Galaxy.emit.debug("tool-form::submit", "Submission failed.", response);
                 let input_found = false;
                 if (response && response.err_data) {
-                    const error_messages = self.form.data.matchResponse(response.err_data);
+                    const error_messages = this.form.data.matchResponse(response.err_data);
                     for (const input_id in error_messages) {
-                        self.form.highlight(input_id, error_messages[input_id]);
+                        this.form.highlight(input_id, error_messages[input_id]);
                         input_found = true;
                         break;
                     }
                 }
                 if (!input_found) {
-                    self.modal.show({
+                    this.modal.show({
                         title: _l("Job submission failed"),
-                        body: self._templateError(job_def, response && response.err_msg),
+                        body: this._templateError(job_def, response && response.err_msg),
                         buttons: {
-                            Close: function() {
-                                self.modal.hide();
+                            Close: () => {
+                                this.modal.hide();
                             }
                         }
                     });
