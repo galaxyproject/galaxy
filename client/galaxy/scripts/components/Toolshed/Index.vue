@@ -2,13 +2,7 @@
     <div class="overflow-auto h-100" @scroll="onScroll">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <b-input
-                class="mb-3"
-                placeholder="search repositories"
-                type="text"
-                v-model="query"
-                @change="load()"
-            />
+            <b-input class="mb-3" placeholder="search repositories" type="text" v-model="query" @change="load()" />
             <b-table striped :items="repositories" :fields="fields">
                 <template slot="name" slot-scope="row">
                     <b-link href="#" class="font-weight-bold" @click="row.toggleDetails">
@@ -19,15 +13,15 @@
                     <b-card>
                         <div class="mb-1">{{ row.item.long_description }}</div>
                         <div class="mb-3">
-                            <b-link :href="row.item.details_url" target="_blank">Click here for additional details and dependencies.</b-link>
+                            <b-link :href="row.item.details_url" target="_blank"
+                                >Click here for additional details and dependencies.</b-link
+                            >
                         </div>
                         <b-form-group
                             label="Target Section:"
-                            description="Choose an existing section in your tool panel to contain the installed tools (optional).">
-                            <b-form-input
-                                list="sectionLabels"
-                                v-model="toolPanelSection"
-                            />
+                            description="Choose an existing section in your tool panel to contain the installed tools (optional)."
+                        >
+                            <b-form-input list="sectionLabels" v-model="toolPanelSection" />
                             <datalist id="sectionLabels">
                                 <option v-for="section in toolPanelSections">{{ section }}</option>
                             </datalist>
@@ -86,15 +80,13 @@ export default {
         setToolPanelSections() {
             const galaxy = getGalaxyInstance();
             const sections = galaxy.config.toolbox_in_panel;
-            this.toolPanelSections = sections.filter(x => x.model_class == "ToolSection")
-                                             .map(x => x.name);
+            this.toolPanelSections = sections.filter(x => x.model_class == "ToolSection").map(x => x.name);
         },
         formatCount(value) {
-            if (value > 1000)
-                return `>${Math.floor(value/1000)}k`;
-            return(value);
+            if (value > 1000) return `>${Math.floor(value / 1000)}k`;
+            return value;
         },
-        load(page=1) {
+        load(page = 1) {
             this.page = page;
             this.pageState = LOADING;
             const params = [
@@ -149,13 +141,12 @@ export default {
                 this.error = "This option requires an accessible history.";
             }*/
         },
-        uninstallRepository: function(repo) {
-        },
+        uninstallRepository: function(repo) {},
         setErrorMessage: function(e) {
             const message = e && e.response && e.response.data && e.response.data.err_msg;
             return message || "Request failed for an unknown reason.";
         },
-        onScroll: function({ target: { scrollTop, clientHeight, scrollHeight }}) {
+        onScroll: function({ target: { scrollTop, clientHeight, scrollHeight } }) {
             if (scrollTop + clientHeight >= scrollHeight) {
                 if (this.pageState === READY) {
                     this.load(this.page + 1);
