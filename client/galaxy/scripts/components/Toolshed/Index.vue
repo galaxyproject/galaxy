@@ -10,24 +10,7 @@
                     </b-link>
                 </template>
                 <template slot="row-details" slot-scope="row">
-                    <b-card>
-                        <div class="mb-1">{{ row.item.long_description }}</div>
-                        <div class="mb-3">
-                            <b-link :href="row.item.repository_url" target="_blank"
-                                >Click here for additional details and dependencies.</b-link
-                            >
-                        </div>
-                        <b-form-group
-                            label="Target Section:"
-                            description="Choose an existing section in your tool panel to contain the installed tools (optional)."
-                        >
-                            <b-form-input list="sectionLabels" v-model="toolPanelSection" />
-                            <datalist id="sectionLabels">
-                                <option v-for="section in toolPanelSections">{{ section }}</option>
-                            </datalist>
-                        </b-form-group>
-                        <b-button variant="primary" @click="installRepository(row.item)">Install</b-button>
-                    </b-card>
+                    <repositoryoptions :repo="row.item" :toolSections="toolSections"/>
                 </template>
             </b-table>
             <div v-if="noResultsFound">
@@ -40,18 +23,23 @@
     </div>
 </template>
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
+import RepositoryOptions from "./RepositoryOptions.vue";
 import axios from "axios";
 const READY = 0;
 const LOADING = 1;
 const COMPLETE = 2;
 export default {
+    components: {
+        repositoryoptions: RepositoryOptions
+    },
     data() {
         return {
             toolshedUrl: "https://toolshed.g2.bx.psu.edu/",
-            toolPanelSections: [],
-            toolPanelSection: null,
+            toolSections: [],
             repositories: [],
             fields: [
                 { key: "name" },
@@ -63,9 +51,7 @@ export default {
             page: 1,
             pageSize: 10,
             pageState: READY,
-            query: "",
-            selected: null,
-            name: null,
+            query: null,
             error: null
         };
     },
@@ -78,15 +64,15 @@ export default {
         }
     },
     created() {
-        this.setToolPanelSections();
+        this.setToolSections();
         this.query = "blast";
         this.load();
     },
     methods: {
-        setToolPanelSections() {
+        setToolSections() {
             const galaxy = getGalaxyInstance();
             const sections = galaxy.config.toolbox_in_panel;
-            this.toolPanelSections = sections.filter(x => x.model_class == "ToolSection").map(x => x.name);
+            this.toolSections = sections.filter(x => x.model_class == "ToolSection").map(x => x.name);
         },
         formatCount(value) {
             if (value > 1000) return `>${Math.floor(value / 1000)}k`;
@@ -126,28 +112,6 @@ export default {
                     this.error = this.setErrorMessage(e);
                 });
         },
-        installRepository: function(repo) {
-            window.console.log(repo);
-            /*const Galaxy = getGalaxyInstance();
-            const history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
-            if (history_id) {
-                axios
-                    .get(`${getAppRoot()}api/repositories/${plugin.name}?history_id=${history_id}`)
-                    .then(response => {
-                        this.name = plugin.name;
-                        this.hdas = response.data && response.data.hdas;
-                        if (this.hdas && this.hdas.length > 0) {
-                            this.selected = this.hdas[0].id;
-                        }
-                    })
-                    .catch(e => {
-                        this.error = this.setErrorMessage(e);
-                    });
-            } else {
-                this.error = "This option requires an accessible history.";
-            }*/
-        },
-        uninstallRepository: function(repo) {},
         setErrorMessage: function(e) {
             const message = e && e.response && e.response.data && e.response.data.err_msg;
             return message || "Request failed for an unknown reason.";
