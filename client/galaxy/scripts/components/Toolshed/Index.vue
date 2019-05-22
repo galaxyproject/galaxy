@@ -28,6 +28,7 @@ import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import RepositoryOptions from "./RepositoryOptions.vue";
+import { Services } from "./services.js";
 import axios from "axios";
 const READY = 0;
 const LOADING = 1;
@@ -64,6 +65,7 @@ export default {
         }
     },
     created() {
+        this.services = new Services();
         this.setToolSections();
         this.query = "blast";
         this.load();
@@ -74,10 +76,6 @@ export default {
             const sections = galaxy.config.toolbox_in_panel;
             this.toolSections = sections.filter(x => x.model_class == "ToolSection").map(x => x.name);
         },
-        formatCount(value) {
-            if (value > 1000) return `>${Math.floor(value / 1000)}k`;
-            return value;
-        },
         load(page = 1) {
             this.page = page;
             this.pageState = LOADING;
@@ -87,17 +85,11 @@ export default {
                 `page=${this.page}`,
                 `page_size=${this.pageSize}`
             ];
-            const url = `${getAppRoot()}api/tool_shed/search?${params.join("&")}`;
-            axios
-                .get(url)
-                .then(response => {
-                    let incoming = response.data.hits.map(x => x.repository);
-                    incoming.forEach(x => {
-                        x.times_downloaded = this.formatCount(x.times_downloaded);
-                        x.repository_url = `${this.toolshedUrl}repository?repository_id=${x.id}`;
-                    });
+            this.services
+                .getRepositories(params)
+                .then(incoming => {
                     if (this.page === 1) {
-                        this.repositories = incoming;
+                    this.repositories = incoming;
                     } else {
                         this.repositories = this.repositories.concat(incoming);
                     }
@@ -108,13 +100,9 @@ export default {
                     }
                     this.error = null;
                 })
-                .catch(e => {
-                    this.error = this.setErrorMessage(e);
+                .catch(errorMessage => {
+                    this.error = errorMessage;
                 });
-        },
-        setErrorMessage: function(e) {
-            const message = e && e.response && e.response.data && e.response.data.err_msg;
-            return message || "Request failed for an unknown reason.";
         },
         onScroll: function({ target: { scrollTop, clientHeight, scrollHeight } }) {
             if (scrollTop + clientHeight >= scrollHeight) {

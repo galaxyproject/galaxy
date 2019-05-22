@@ -22,8 +22,8 @@
                 </datalist>
             </b-form-group>
         </div>
-        <b-button variant="primary" @click="installRepository(item)">Install</b-button>
-        <b-button variant="danger" @click="uninstallRepository(item)">Uninstall</b-button>
+        <b-button variant="primary" @click="installRepository(repo)">Install</b-button>
+        <b-button variant="danger" @click="uninstallRepository(repo)">Uninstall</b-button>
     </b-card>
 </template>
 <script>
