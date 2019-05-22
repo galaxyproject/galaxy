@@ -17,7 +17,10 @@
                 </template>
                 <template slot="row-details" slot-scope="row">
                     <b-card>
-                        <div class="mb-4">{{ row.item.long_description }}</div>
+                        <div class="mb-1">{{ row.item.long_description }}</div>
+                        <div class="mb-3">
+                            <b-link :href="row.item.details_url" target="_blank">Click here for additional details and dependencies.</b-link>
+                        </div>
                         <b-form-group
                             label="Target Section:"
                             description="Choose an existing section in your tool panel to contain the installed tools (optional).">
@@ -29,7 +32,7 @@
                                 <option v-for="section in toolPanelSections">{{ section }}</option>
                             </datalist>
                         </b-form-group>
-                        <b-button variant="primary">Install</b-button>
+                        <b-button variant="primary" @click="installRepository(row.item)">Install</b-button>
                     </b-card>
                 </template>
             </b-table>
@@ -107,6 +110,7 @@ export default {
                     let incoming = response.data.hits.map(x => x.repository);
                     incoming.forEach(x => {
                         x.times_downloaded = this.formatCount(x.times_downloaded);
+                        x.details_url = `${this.toolshedUrl}/repository?repository_id=${x.id}`;
                     });
                     if (this.page === 1) {
                         this.repositories = incoming;
@@ -124,7 +128,8 @@ export default {
                     this.error = this.setErrorMessage(e);
                 });
         },
-        select: function(repo) {
+        installRepository: function(repo) {
+            window.console.log(repo);
             /*const Galaxy = getGalaxyInstance();
             const history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
             if (history_id) {
@@ -143,6 +148,8 @@ export default {
             } else {
                 this.error = "This option requires an accessible history.";
             }*/
+        },
+        uninstallRepository: function(repo) {
         },
         setErrorMessage: function(e) {
             const message = e && e.response && e.response.data && e.response.data.err_msg;
