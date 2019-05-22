@@ -1,6 +1,6 @@
 <tool id="realtimetool_two_entry_points" name="realtimetool_two_entry_points" tool_type="realtime" version="0.1">
     <requirements>
-        <container type="docker">galaxyproject/test-http-example:0.1</container>
+        <container type="docker">galaxy/test-http-example:0.1</container>
     </requirements>
     <realtime>
         <entry_point name="Server 1">

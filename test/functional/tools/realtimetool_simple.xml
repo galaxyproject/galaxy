@@ -1,6 +1,6 @@
 <tool id="realtimetool_simple" name="realtimetool_simple" tool_type="realtime" version="0.1">
     <requirements>
-        <container type="docker">galaxyproject/test-http-example:0.1</container>
+        <container type="docker">galaxy/test-http-example:0.1</container>
     </requirements>
     <realtime>
         <entry_point name="Simple">

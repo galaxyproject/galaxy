@@ -1,3 +1,3 @@
 
 all:
-	docker build . -t galaxyproject/test-http-example:0.1
+	docker build . -t galaxy/test-http-example:0.1
