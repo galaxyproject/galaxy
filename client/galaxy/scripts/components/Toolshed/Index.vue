@@ -30,6 +30,9 @@
                     </b-card>
                 </template>
             </b-table>
+            <div v-if="noResultsFound">
+                No matching repositories found.
+            </div>
             <div v-if="pageLoading">
                 <span class="fa fa-spinner fa-spin mb-4" /> <span>Loading repositories...</span>
             </div>
@@ -69,6 +72,9 @@ export default {
     computed: {
         pageLoading() {
             return this.pageState === LOADING;
+        },
+        noResultsFound() {
+            return this.repositories.length === 0 && !this.pageLoading;
         }
     },
     created() {
