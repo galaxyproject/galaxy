@@ -3,8 +3,8 @@
 import os
 import string
 
-from base import integration_util  # noqa: I202
-from base.populators import (
+from ...base import integration_util  # noqa: I202
+from ...base.populators import (
     DatasetPopulator,
 )
 
