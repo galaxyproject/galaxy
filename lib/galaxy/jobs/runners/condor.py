@@ -167,9 +167,6 @@ class CondorJobRunner(AsynchronousJobRunner):
         # Add to our 'queue' of jobs to monitor
         self.monitor_queue.put(cjs)
 
-        log.info('########### CondorExternalJobID befor handle_container %s' % external_job_id)
-        self.__handle_container(job_wrapper, external_job_id)
-
     def check_watched_items(self):
         """
         Called by the monitor thread to look at each watched job and deal
@@ -196,6 +193,11 @@ class CondorJobRunner(AsynchronousJobRunner):
                 cjs.fail_message = "Cluster could not complete job"
                 self.work_queue.put((self.fail_job, cjs))
                 continue
+
+            if job_running:
+                # If running, check for entry points...
+                cjs.job_wrapper.job_wrapper.check_for_entry_points()
+
             if job_running and not cjs.running:
                 log.debug("(%s/%s) job is now running" % (galaxy_id_tag, job_id))
                 cjs.job_wrapper.change_state(model.Job.states.RUNNING)
@@ -316,28 +318,3 @@ class CondorJobRunner(AsynchronousJobRunner):
         #                            preexec_fn=os.setpgrp)
         log.debug('_run_command(%s) exit code (%s) and failure: %s', command, exit_code, stderr)
         return (exit_code, ret)
-
-    def __handle_container(self, job_wrapper, external_job_id):
-        job = job_wrapper.get_job()
-        if job:
-            cont = job.container
-            if cont:
-                if cont.container_type == 'docker':
-                    # Handle getting RealTimeTool ports, if applicable
-                    eps = job.realtimetool_entry_points
-                    if eps:
-                        max_command_attempts = 10 + 1
-                        ports_raw = None
-                        for i in range(1, max_command_attempts):
-                            exit_code, ports_raw = self._run_command(cont.container_info['commands']['port'], external_job_id)
-                            if exit_code == 0:
-                                break
-                            if i != max_command_attempts:
-                                t = 2 * i
-                                log.debug("Container not found during port check, sleeping for %s seconds.", t)
-                                time.sleep(t)
-                        log.warn('\n\n RAW ports: (%s)' % ports_raw)
-                        if ports_raw is not None:
-                            self.app.realtime_manager.configure_entry_points_raw_docker_ports(job, ports_raw)
-                        else:
-                            log.error('Unable to run port command (%s): %s', cont.container_info['commands']['port'], exit_code)

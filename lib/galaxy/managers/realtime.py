@@ -172,7 +172,7 @@ class RealTimeManager(object):
         configured = []
         not_configured = []
         for ep in job.realtimetool_entry_points:
-            port_dict = ports_dict.get(ep.tool_port, None)
+            port_dict = ports_dict.get(str(ep.tool_port), None)
             if port_dict is None:
                 log.error("Did not find port to assign to RealTimeToolEntryPoint by tool port: %s.", ep.tool_port)
                 not_configured.append(ep)
@@ -187,10 +187,6 @@ class RealTimeManager(object):
         if configured:
             self.sa_session.flush()
         return dict(not_configured=not_configured, configured=configured)
-
-    def configure_entry_points_raw_docker_ports(self, job, port_text):
-        ports_dict = docker_parse_port_text(port_text)
-        return self.configure_entry_points(job, ports_dict)
 
     def save_entry_point(self, entry_point):
         """

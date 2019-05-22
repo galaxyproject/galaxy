@@ -924,6 +924,14 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     def add_post_job_action(self, pja):
         self.post_job_actions.append(PostJobActionAssociation(pja, self))
 
+    @property
+    def all_entry_points_configured(self):
+        # consider an actual DB attribute for this.
+        all_configured = True
+        for ep in self.realtimetool_entry_points:
+            all_configured = ep.configured and all_configured
+        return all_configured
+
     def set_state(self, state):
         """
         Save state history

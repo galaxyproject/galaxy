@@ -107,7 +107,7 @@ class LocalJobRunner(BaseJobRunner):
                 job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
                 job_wrapper.change_state(model.Job.states.RUNNING)
 
-                self.__handle_container(job_wrapper, proc)
+                self._handle_container(job_wrapper, proc)
 
                 terminated = self.__poll_if_needed(proc, job_wrapper, job_id)
                 if terminated:
@@ -225,8 +225,6 @@ class LocalJobRunner(BaseJobRunner):
             return False
 
     def _terminate(self, proc):
-        if proc.container_commands:
-            self._run_command(proc.container_commands['kill'])
         os.killpg(proc.pid, 15)
         sleep(1)
         if proc.poll() is None:
@@ -255,39 +253,15 @@ class LocalJobRunner(BaseJobRunner):
         log.debug('_run_command(%s) exit code %s', command, exit_code)
         return exit_code
 
-    def __handle_container(self, job_wrapper, proc):
-        proc.container_commands = None
-        job = job_wrapper.get_job()
-        if job:
-            cont = job.container
-            if cont:
-                if cont.container_type == 'docker':
-                    # Handle getting RealTimeTool ports, if applicable
-                    eps = job.realtimetool_entry_points
-                    if eps:
-                        max_command_attempts = 10 + 1
-                        ports_raw = None
-                        for i in range(1, max_command_attempts):
-                            with tempfile.TemporaryFile() as stdout_file:
-                                exit_code = subprocess.call(cont.container_info['commands']['port'],
-                                                        shell=True,
-                                                        stdout=stdout_file,
-                                                        env=self._environ,
-                                                        preexec_fn=os.setpgrp)
-                                if exit_code == 0:
-                                    stdout_file.seek(0)
-                                    ports_raw = stdout_file.read()
-                                    break
-                            if i != max_command_attempts:
-                                t = 2 * i
-                                log.debug("Container not found during port check, sleeping for %s seconds.", t)
-                                sleep(t)
+    def _handle_container(self, job_wrapper, proc):
+        if not job_wrapper.tool.produces_entry_points:
+            return
 
-                        if ports_raw is not None:
-                            self.app.realtime_manager.configure_entry_points_raw_docker_ports(job, ports_raw)
-                        else:
-                            log.error('Unable to run port command (%s): %s', cont.container_info['commands']['port'], exit_code)
-                    proc.container_commands = cont.container_info['commands']
+        while proc.poll() is None:
+            if job_wrapper.check_for_entry_points(check_already_configured=False):
+                return
+
+            sleep(0.5)
 
     def __poll_if_needed(self, proc, job_wrapper, job_id):
         # Only poll if needed (i.e. job limits are set)

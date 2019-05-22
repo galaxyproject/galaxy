@@ -223,6 +223,10 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         )
         return docker_host_props
 
+    @property
+    def connection_configuration(self):
+        return self.docker_host_props
+
     def build_pull_command(self):
         return docker_util.build_pull_command(self.container_id, **self.docker_host_props)
 
@@ -278,7 +282,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             **docker_host_props
         )
         self.container_info['commands'] = {}
-        for cmd in ['inspect', 'port', 'kill', 'stop']:
+        for cmd in ['inspect', 'kill', 'stop']:
             self.container_info['commands'][cmd] = docker_util.build_docker_simple_command(cmd, container_name=self.container_name, **docker_host_props)
         return "%s\n%s" % (cache_command, run_command)
 
@@ -322,6 +326,10 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             sudo=asbool(self.prop("sudo", singularity_util.DEFAULT_SUDO)),
             sudo_cmd=self.prop("sudo_cmd", singularity_util.DEFAULT_SUDO_COMMAND),
         )
+
+    @property
+    def connection_configuration(self):
+        return self.get_singularity_target_kwds()
 
     def build_mulled_singularity_pull_command(self, cache_directory, namespace="biocontainers"):
         return singularity_util.pull_mulled_singularity_command(

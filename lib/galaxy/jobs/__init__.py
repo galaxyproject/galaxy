@@ -4,6 +4,7 @@ Support for running a tool in Galaxy via an internal job management system
 import copy
 import datetime
 import errno
+import json
 import logging
 import os
 import pwd
@@ -1972,6 +1973,50 @@ class JobWrapper(HasResourceParameters):
                     dependency_shell_commands = "; ".join(dependency_shell_commands)
                     command = "%s; %s" % (dependency_shell_commands, command)
         return command
+
+    def check_for_entry_points(self, check_already_configured=True):
+        if not self.tool.produces_entry_points:
+            return True
+
+        job = self.get_job()
+        if check_already_configured and job.all_entry_points_configured:
+            return True
+
+        working_directory = self.working_directory
+        container_runtime_path = os.path.join(working_directory, "container_runtime.json")
+        if os.path.exists(container_runtime_path):
+            with open(container_runtime_path, "r") as f:
+                container_runtime = json.load(f)
+            log.debug("found container runtime %s" % container_runtime)
+            self.app.realtime_manager.configure_entry_points(job, container_runtime)
+            return True
+
+    def container_montior_command(self, container, **kwds):
+        if not container or not self.tool.produces_entry_points:
+            return None
+
+        from os.path import abspath
+        from os import getcwd
+        exec_dir = kwds.get('exec_dir', abspath(getcwd()))
+        work_dir = self.working_directory
+        container_config = os.path.join(work_dir, "container_config.json")
+
+        # TODO: implement callback via URL callback for configuring ports instead
+        #       of fs polling.
+        # if self.app.config.galaxy_infrastructure_url_set:
+        #    # TODO: settable from job destination...
+        #    infrastructure_url = self.app.config.galaxy_infrastructure_url
+        # else:
+        #    infrastructure_url = "host.docker.internal"
+
+        with open(container_config, "w") as f:
+            json.dump({
+                "container_name": container.container_name,
+                "container_type": container.container_type,
+                "connection_configuration": container.connection_configuration,
+            }, f)
+
+        return "(python '%s'/lib/galaxy_ext/container_monitor/monitor.py &) " % exec_dir
 
     @property
     def user(self):
