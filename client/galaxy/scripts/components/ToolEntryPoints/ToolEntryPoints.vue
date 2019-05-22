@@ -5,7 +5,7 @@
         </p>
         <p v-else-if="entryPoints.length==1" >
             <span v-if="entryPoints[0].active" >
-                There is a RealTimeTool result view available, click here to display.
+                There is a RealTimeTool result view available, <a :href="entryPoints[0].target">click here to display</a>.
             </span>
             <span v-else>
                 There is a RealTimeTool result view available, waiting for view to become active...
@@ -17,7 +17,7 @@
                 <li v-for="entryPoint of entryPoints" v-bind:key="entryPoint.id" >
                     {{ entryPoint.name }}
                     <span v-if="entryPoint.active">
-                        (active)
+                        (<a :href="entryPoints[0].target">click here to display</a>)
                     </span>
                     <span v-else>
                         (waiting to become active...)
@@ -32,6 +32,7 @@
 
 <script>
 import { getAppRoot } from "onload/loadConfig";
+import { clearPolling, pollUntilActive } from "mvc/entrypoints/poll";
 import axios from "axios";
 export default {
     props: {
@@ -43,40 +44,23 @@ export default {
     data() {
         return {
             entryPoints: [],
-            interval: null,
         };
     },
     created: function() {
-        this.reloadEntryPoints();
+        this.pollEntryPoints();
     },
     beforeDestroy: function(){
-        clearInterval(this.interval);
+        clearPolling();
     },
     methods: {
-        reloadEntryPoints: function() {
-            clearInterval(this.interval);
-            const url = getAppRoot() + `api/entry_points?job_id=${this.jobId}`;
-            axios
-                .get(url)
-                .then(response => {
-                    const entryPoints = [];
-                    let allReady = true;
-                    response.data.forEach((entryPoint, i) => {
-                        entryPoints.push(entryPoint);
-                        if(! entryPoint.active) {
-                            allReady = false;
-                        }
-                    });
-                    this.entryPoints = entryPoints;
-                    if(! allReady || entryPoints.length == 0) {
-                        this.interval = setInterval(() => {
-                            this.reloadEntryPoints();
-                        }, 5000);
-                    }
-                })
-                .catch(e => {
-                    console.error(e);
-                });
+        pollEntryPoints: function() {
+            let onUpdate = (entryPoints) => {
+                this.entryPoints = entryPoints;
+            }
+            let onError = (e) => {
+                console.error(e);
+            }
+            pollUntilActive(onUpdate, onError, {"job_id": this.jobId})
         }
     }
 };

@@ -279,17 +279,20 @@ class RealTimeManager(object):
             self.sa_session.flush()
         self.propagator.remove_entry_point(entry_point)
 
+    def target_if_active(self, trans, entry_point):
+        if entry_point.active and not entry_point.deleted:
+            request_host = trans.request.host
+            rval = '%s//%s.%s.%s.%s.%s/' % (trans.request.host_url.split('//', 1)[0], entry_point.__class__.__name__.lower(), trans.security.encode_id(entry_point.id),
+                    entry_point.token, self.app.config.realtime_prefix, request_host)
+            if entry_point.entry_url:
+                rval = '%s/%s' % (rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
+            return rval
+
     def access_entry_point_target(self, trans, entry_point_id):
         entry_point = trans.sa_session.query(model.RealTimeToolEntryPoint).get(entry_point_id)
         if self.app.realtime_manager.can_access_entry_point(trans, entry_point):
             if entry_point.active:
-                request_host = trans.request.host
-                log.info("building access for host %s" % request_host)
-                rval = '%s//%s.%s.%s.%s.%s/' % (trans.request.host_url.split('//', 1)[0], entry_point.__class__.__name__.lower(), trans.security.encode_id(entry_point.id),
-                        entry_point.token, self.app.config.realtime_prefix, request_host)
-                if entry_point.entry_url:
-                    rval = '%s/%s' % (rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
-                return rval
+                return self.target_if_active(entry_point)
             elif entry_point.deleted:
                 raise exceptions.MessageException('RealTimeTool has ended. You will have to start a new one.')
             else:

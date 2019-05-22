@@ -3,9 +3,8 @@ related to running and queued jobs.
 """
 import logging
 
-from galaxy import exceptions
+from galaxy import exceptions, util
 from galaxy.managers.realtime import RealTimeManager
-from galaxy.util.dictifiable import dict_for
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 
@@ -19,7 +18,7 @@ class ToolEntryPointsAPIController(BaseAPIController):
         self.realtime_manager = RealTimeManager(app)
 
     @expose_api_anonymous_and_sessionless
-    def index(self, trans, job_id=None, **kwd):
+    def index(self, trans, running=False, job_id=None, **kwd):
         """
         * GET /api/entry_points
             Returns tool entry point information. Currently passing a job_id
@@ -29,17 +28,34 @@ class ToolEntryPointsAPIController(BaseAPIController):
         :type   job_id: string
         :param  job_id: Encoded job id
 
+        :type   running: boolean
+        :param  running: filter to only include running job entry points.
+
         :rtype:     list
         :returns:   list of entry point dictionaries.
         """
-        job = trans.sa_session.query(trans.app.model.Job).get(self.decode_id(job_id))
-        if not self.realtime_manager.can_access_job(trans, job):
-            raise exceptions.ItemAccessibilityException()
-        entry_points = job.realtimetool_entry_points
+        running = util.asbool(running)
+        if job_id is None and not running:
+            raise exceptions.RequestParameterInvalidException("Currently this API must passed a job id or running=true")
+
+        if job_id is not None and running:
+            raise exceptions.RequestParameterInvalidException("Currently this API must passed only a job id or running=true")
+
+        if job_id is not None:
+            job = trans.sa_session.query(trans.app.model.Job).get(self.decode_id(job_id))
+            if not self.realtime_manager.can_access_job(trans, job):
+                raise exceptions.ItemAccessibilityException()
+            entry_points = job.realtimetool_entry_points
+        if running:
+            entry_points = self.realtime_manager.get_nonterminal_for_user_by_trans(trans)
 
         rval = []
         for entry_point in entry_points:
-            rval.append(self.encode_all_ids(trans, entry_point.to_dict(), True))
+            as_dict = self.encode_all_ids(trans, entry_point.to_dict(), True)
+            target = self.realtime_manager.target_if_active(trans, entry_point)
+            if target:
+                as_dict["target"] = target
+            rval.append(as_dict)
         return rval
 
     @expose_api_anonymous_and_sessionless
