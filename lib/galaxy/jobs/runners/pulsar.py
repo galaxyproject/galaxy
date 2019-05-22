@@ -253,6 +253,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def _update_job_state_for_status(self, job_state, pulsar_status, full_status=None):
         if pulsar_status == "complete":
+            job_state.running = False
+            job_state.job_wrapper.change_state(model.Job.states.OK)
             self.mark_as_finished(job_state)
             return None
         if pulsar_status in ["failed", "lost"]:
