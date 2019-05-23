@@ -75,17 +75,17 @@ export default {
             .get(`${getAppRoot()}api/${this.source}/${this.id}/citations`)
             .then(response => {
                 this.content = "";
-                for (var rawCitation of response.data) {
+                for (const rawCitation of response.data) {
                     try {
-                        var citation = {
+                        const citation = {
                             fields: {},
                             entryType: undefined
                         };
-                        var parsed = bibtexParse.toJSON(rawCitation.content);
+                        let parsed = bibtexParse.toJSON(rawCitation.content);
                         if (parsed) {
                             parsed = _.first(parsed);
                             citation.entryType = parsed.entryType || undefined;
-                            for (var key in parsed.entryTags) {
+                            for (const key in parsed.entryTags) {
                                 citation.fields[key.toLowerCase()] = parsed.entryTags[key];
                             }
                         }
@@ -102,18 +102,18 @@ export default {
     },
     methods: {
         formattedReference: function(citation) {
-            var entryType = citation.entryType;
-            var fields = citation.fields;
+            const entryType = citation.entryType;
+            const fields = citation.fields;
 
-            var ref = "";
-            var authorsAndYear = `${this._asSentence(
+            let ref = "";
+            const authorsAndYear = `${this._asSentence(
                 (fields.author ? fields.author : "") + (fields.year ? ` (${fields.year})` : "")
             )} `;
-            var title = fields.title || "";
-            var pages = fields.pages ? `pp. ${fields.pages}` : "";
-            var address = fields.address;
+            const title = fields.title || "";
+            const pages = fields.pages ? `pp. ${fields.pages}` : "";
+            const address = fields.address;
             if (entryType == "article") {
-                var volume =
+                const volume =
                     (fields.volume ? fields.volume : "") +
                     (fields.number ? ` (${fields.number})` : "") +
                     (pages ? `, ${pages}` : "");
@@ -148,19 +148,19 @@ export default {
                     fields.howpublished
                 )}${this._asSentence(fields.note)}`;
             }
-            var doiUrl = "";
+            let doiUrl = "";
             if (fields.doi) {
                 doiUrl = `https://doi.org/${fields.doi}`;
                 ref += `[<a href="${doiUrl}" target="_blank">doi:${fields.doi}</a>]`;
             }
-            var url = fields.url || doiUrl;
+            const url = fields.url || doiUrl;
             if (url) {
                 ref += `[<a href="${url}" target="_blank">Link</a>]`;
             }
             return convertLaTeX({ onError: (error, latex) => `{${stringifyLaTeX(latex)}}` }, ref);
         },
         _formatBookInfo: function(fields) {
-            var info = "";
+            let info = "";
             if (fields.chapter) {
                 info += `${fields.chapter} in `;
             }
