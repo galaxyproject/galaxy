@@ -59,7 +59,7 @@ masthead:
     # user menu
     logout: 'Logout'
     custom_builds: 'Custom Builds'
-    saved_histories: 'Saved Histories'
+    saved_histories: 'Histories'
 
     # Shared data
     libraries: 'Data Libraries'
