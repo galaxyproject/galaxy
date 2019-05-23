@@ -35,8 +35,8 @@ GALAXY_FLAVORED_MARKDOWN_CONTAINERS = [
 ]
 GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = "(%s)" % "|".join(GALAXY_FLAVORED_MARKDOWN_CONTAINERS)
 
-FENCE_START = re.compile(r'```.*')
-FENCE_END = re.compile(r'```[\w]*')
+BLOCK_FENCE_START = re.compile(r'```.*')
+BLOCK_FENCE_END = re.compile(r'```[\w]*')
 
 OUTPUT_LABEL_PATTERN = re.compile(r'output=([\w_\-]+)')
 INPUT_LABEL_PATTERN = re.compile(r'input=([\w_\-]+)')
@@ -46,6 +46,9 @@ ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collec
 GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
     r":::\s+%s.*\n" % GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX
 )
+VALID_CONTAINER_START_PATTERN = re.compile(r"^:::\s+[\w]+.*$")
+VALID_CONTAINER_END_PATTERN = re.compile(r"^:::\s*$")
+WHITE_SPACE_ONLY_PATTERN = re.compile(r"^[\s]+$")
 
 
 def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
@@ -181,18 +184,47 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
     return rval
 
 
+def validate_galaxy_markdown(galaxy_markdown, internal=True):
+    expecting_container_close_for = None
+    for (line, fenced, line_no) in _split_markdown_lines(galaxy_markdown):
+        if fenced:
+            continue
+
+        def invalid_line(template, **kwd):
+            if "line" in kwd:
+                kwd["line"] = line.rstrip("\r\n")
+            raise Exception("Invalid line %d: %s" % (line_no + 1, template.format(**kwd)))
+
+        expecting_container_close = expecting_container_close_for is not None
+        if line.startswith(":::"):
+            if expecting_container_close:
+                if not VALID_CONTAINER_END_PATTERN.match(line):
+                    invalid_line("Invalid container close line [{line}] for [{expected_for}]", line=line, expected_for=expecting_container_close_for)
+                # else closing container and we're done
+                expecting_container_close_for = None
+                continue
+
+            if VALID_CONTAINER_END_PATTERN.match(line):
+                invalid_line("Found container close without matching opening [{line}]", line=line)
+
+            if not GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN.match(line):
+                invalid_line("Invalid markdown container line [{line}]", line=line)
+
+            # TODO: check IDs and attributes and stuff...
+            expecting_container_close_for = line
+            continue
+        elif expecting_container_close:
+            invalid_line("[{line}] is not expected close line for [{expected_for}]", line=line, expected_for=expecting_container_close_for)
+            continue
+
+        # Markdown unrelated to Galaxy object containers.
+        continue
+
+
 def _remap_galaxy_markdown_containers(func, markdown):
     remapped_lines = []
-    fenced = False
-    for line in markdown.splitlines(True):
-        if not fenced:
-            if FENCE_START.match(line):
-                fenced = True
-                remapped_lines.append(line)
-                continue
-        elif fenced:
-            if FENCE_END.match(line):
-                fenced = False
+    for (line, fenced, _) in _split_markdown_lines(markdown):
+        if fenced:
             remapped_lines.append(line)
             continue
 
@@ -206,6 +238,24 @@ def _remap_galaxy_markdown_containers(func, markdown):
             remapped_lines.append(line)
     rval = "".join(remapped_lines)
     return rval
+
+
+def _split_markdown_lines(markdown):
+    """Yield lines of a markdown document line-by-line keeping track of fencing.
+
+    'Fenced' lines are code-like block (e.g. between ```) that shouldn't contain
+    Markdown markup.
+    """
+    block_fenced = False
+    indent_fenced = False
+    for line_number, line in enumerate(markdown.splitlines(True)):
+        indent_fenced = line.startswith("    ") or (indent_fenced and WHITE_SPACE_ONLY_PATTERN.match(line))
+        if not block_fenced:
+            if BLOCK_FENCE_START.match(line):
+                block_fenced = True
+        yield (line, block_fenced or indent_fenced, line_number)
+        if BLOCK_FENCE_END.match(line):
+            block_fenced = False
 
 
 __all__ = (
