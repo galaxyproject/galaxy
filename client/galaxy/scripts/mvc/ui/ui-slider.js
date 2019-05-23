@@ -32,11 +32,10 @@ const View = Backbone.View.extend({
                 const input = e.currentTarget;
                 if (this._isParameter(input.value)) {
                     return;
-                }
-                else if (!this.model.get("precise")) {
+                } else if (!this.model.get("precise")) {
                     input.value = input.value.split(".")[0];
                 }
-                input.value = input.value.replace(/[^0-9eE.-]/g, '');
+                input.value = input.value.replace(/[^0-9eE.-]/g, "");
             });
 
         // build slider, cannot be rebuild in render
