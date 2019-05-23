@@ -61,35 +61,6 @@ var menu = [
         href: "workflow/build_from_current_history"
     },
     {
-        html: _l("Delete"),
-        anon: true,
-        func: function() {
-            const Galaxy = getGalaxyInstance();
-            if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really delete the current history?"))) {
-                Galaxy.currHistoryPanel.model._delete().done(() => {
-                    Galaxy.currHistoryPanel.loadCurrentHistory();
-                });
-            }
-        }
-    },
-    {
-        html: _l("Delete Permanently"),
-        purge: true,
-        anon: true,
-        func: function() {
-            const Galaxy = getGalaxyInstance();
-            if (
-                Galaxy &&
-                Galaxy.currHistoryPanel &&
-                confirm(_l("Really delete the current history permanently? This cannot be undone."))
-            ) {
-                Galaxy.currHistoryPanel.model.purge().done(() => {
-                    Galaxy.currHistoryPanel.loadCurrentHistory();
-                });
-            }
-        }
-    },
-    {
         html: _l("Make Data Private"),
         anon: true,
         func: function() {
