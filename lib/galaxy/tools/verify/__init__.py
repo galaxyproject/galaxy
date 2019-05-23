@@ -3,6 +3,7 @@
 import difflib
 import filecmp
 import hashlib
+import io
 import logging
 import os
 import os.path
@@ -15,6 +16,7 @@ try:
 except ImportError:
     pysam = None
 
+from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
 from .asserts import verify_assertions
 from .test_data import TestDataResolver
@@ -109,9 +111,9 @@ def verify(
                 log.error(error_log_msg, exc_info=True)
             else:
                 log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (keep_outputs_dir, ofn))
+        compare = attributes.get('compare', 'diff')
         try:
-            compare = attributes.get('compare', 'diff')
-            if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam']:
+            if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam', 'cram']:
                 try:
                     local_fh, temp_name = _bam_to_sam(local_name, temp_name)
                     local_name = local_fh.name
@@ -204,17 +206,9 @@ def files_diff(file1, file2, attributes=None):
             compressed_formats = None
         else:
             compressed_formats = []
-        is_pdf = False
-        try:
-            local_file = get_fileobj(file1, compressed_formats=compressed_formats).readlines()
-            history_data = get_fileobj(file2, compressed_formats=compressed_formats).readlines()
-        except UnicodeDecodeError:
-            if file1.endswith('.pdf') or file2.endswith('.pdf'):
-                is_pdf = True
-                local_file = open(file1, 'rb').readlines()
-                history_data = open(file2, 'rb').readlines()
-            else:
-                raise AssertionError("Binary data detected, not displaying diff")
+        local_file = [unicodify(l) for l in get_fileobj(file1, mode='rb', compressed_formats=compressed_formats)]
+        history_data = [unicodify(l) for l in get_fileobj(file2, mode='rb', compressed_formats=compressed_formats)]
+        is_pdf = file1.endswith('.pdf') or file2.endswith('.pdf')
         if attributes.get('sort', False):
             local_file.sort()
             history_data.sort()
@@ -267,9 +261,9 @@ def files_diff(file1, file2, attributes=None):
 
 def files_re_match(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match."""
-    local_file = open(file1, 'rb').readlines()  # regex file
-    history_data = open(file2, 'rb').readlines()
-    assert len(local_file) == len(history_data), b'Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), b''.join(history_data[:40]))
+    local_file = io.open(file1, 'r', encoding='utf-8', errors='replace').readlines()  # regex file
+    history_data = io.open(file2, 'r', encoding='utf-8', errors='replace').readlines()
+    assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), ''.join(history_data[:40]))
     if attributes is None:
         attributes = {}
     if attributes.get('sort', False):
@@ -277,38 +271,40 @@ def files_re_match(file1, file2, attributes=None):
     lines_diff = int(attributes.get('lines_diff', 0))
     line_diff_count = 0
     diffs = []
-    for i in range(len(history_data)):
-        if not re.match(local_file[i].rstrip(b'\r\n'), history_data[i].rstrip(b'\r\n')):
+    for regex_line, data_line in zip(local_file, history_data):
+        if not re.match(regex_line.rstrip('\r\n'), data_line.rstrip('\r\n')):
             line_diff_count += 1
-            diffs.append(b'Regular Expression: %s\nData file         : %s' % (local_file[i].rstrip(b'\r\n'), history_data[i].rstrip(b'\r\n')))
-        if line_diff_count > lines_diff:
-            raise AssertionError(b"Regular expression did not match data file (allowed variants=%i):\n%s" % (lines_diff, b"".join(diffs)))
+            diffs.append('Regular Expression: %s, Data file: %s\n' % (regex_line.rstrip('\r\n'), data_line.rstrip('\r\n')))
+    if line_diff_count > lines_diff:
+        raise AssertionError("Regular expression did not match data file (allowed variants=%i):\n%s" % (lines_diff, "".join(diffs)))
 
 
 def files_re_match_multiline(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match in multiline mode."""
-    local_file = open(file1, 'rb').read()  # regex file
+    local_file = io.open(file1, 'r', encoding='utf-8', errors='replace').read()  # regex file
     if attributes is None:
         attributes = {}
     if attributes.get('sort', False):
-        history_data = open(file2, 'rb').readlines()
+        history_data = io.open(file2, 'r', encoding='utf-8', errors='replace').readlines()
         history_data.sort()
-        history_data = b''.join(history_data)
+        history_data = ''.join(history_data)
     else:
-        history_data = open(file2, 'rb').read()
+        history_data = io.open(file2, 'r', encoding='utf-8', errors='replace').read()
     # lines_diff not applicable to multiline matching
     assert re.match(local_file, history_data, re.MULTILINE), "Multiline Regular expression did not match data file"
 
 
 def files_contains(file1, file2, attributes=None):
     """Check the contents of file2 for substrings found in file1, on a per-line basis."""
-    local_file = open(file1, 'rb').readlines()  # regex file
+    if attributes is None:
+        attributes = {}
+    local_file = io.open(file1, 'r', encoding='utf-8', errors='replace').readlines()  # regex file
     # TODO: allow forcing ordering of contains
-    history_data = open(file2, 'rb').read()
+    history_data = io.open(file2, 'r', encoding='utf-8', errors='replace').read()
     lines_diff = int(attributes.get('lines_diff', 0))
     line_diff_count = 0
-    while local_file:
-        contains = local_file.pop(0).rstrip(b'\n\r')
+    for contains in local_file:
+        contains = contains.rstrip('\r\n')
         if contains not in history_data:
             line_diff_count += 1
         if line_diff_count > lines_diff:
