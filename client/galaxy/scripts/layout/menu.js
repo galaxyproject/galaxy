@@ -279,22 +279,27 @@ var Collection = Backbone.Collection.extend({
                         onclick: logoutClick
                     },
                     {
-                        title: _l("Saved Datasets"),
+                        title: _l("Datasets"),
                         url: "datasets/list",
                         target: "__use_router__"
                     },
                     {
-                        title: _l("Saved Histories"),
+                        title: _l("Histories"),
                         url: "histories/list",
                         target: "__use_router__"
                     },
                     {
-                        title: _l("Saved Pages"),
+                        title: _l("Histories shared with me"),
+                        url: "histories/list_shared",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: _l("Pages"),
                         url: "pages/list",
                         target: "__use_router__"
                     },
                     {
-                        title: _l("Saved Visualizations"),
+                        title: _l("Visualizations"),
                         url: "visualizations/list",
                         target: "__use_router__"
                     }
