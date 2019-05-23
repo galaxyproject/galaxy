@@ -147,7 +147,7 @@ class ToolShedRepositoryCache(object):
         except AttributeError:
             self.rebuild()
             repositories = self.cache.repositories
-        if repositories and not repositories[0]._sa_instance_state._attached:
+        if repositories and any(_ for _ in repositories if hasattr(_, '_sa_instance_state') and not _._sa_instance_state.attached):
             self.rebuild()
             repositories = self.cache.repositories
         return repositories
