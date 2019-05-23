@@ -59,6 +59,7 @@
     <style type="text/css">
     canvas { position: absolute; z-index: 10; }
     canvas.dragging { position: absolute; z-index: 1000; }
+    .workflow-report-content { display: none; }
     </style>
 </%def>
 
@@ -233,6 +234,12 @@
                 <a id="workflow-save-button" class="panel-header-button" href="#" title="Save" style="display: inline-block;" aria-label="Save">
                     <span class="fa fa-floppy-o"></span>
                 </a>
+                <a id="workflow-report-button" class="panel-header-button workflow-canvas-content" href="#" title="Edit Report" aria-label="Edit Report">
+                    <span class="fa fa-edit"></span>
+                </a>
+                <a id="workflow-canvas-button" class="panel-header-button workflow-report-content" href="#" title="Edit Workflow" aria-label="Edit Workflow">
+                    <span class="fa fa-edit"></span>
+                </a>
                 <a id="workflow-options-button" class="panel-header-button" href="#" title="Workflow options" style="display: inline-block;" aria-label="Workflow options">
                     <span class="fa fa-cog"></span>
                 </a>
@@ -241,8 +248,11 @@
         </div>
     </div>
     <div class="unified-panel-body" id="workflow-canvas-body">
-        <div id="canvas-viewport">
+        <div id="canvas-viewport" class="workflow-canvas-content">
             <div id="canvas-container" style="position: absolute; width: 100%; height: 100%;"></div>
+        </div>
+        <div id="report-editor-container" class="workflow-report-content" style="position: absolute; width: 100%; height: 100%; display: none">
+            <textarea id="workflow-report-editor" style="width: 100%; height: 100%;"></textarea>
         </div>
         <div id='workflow-parameters-box' style="display:none; position: absolute; right:0px; border: solid grey 1px; padding: 5px; background: #EEEEEE; z-index: 20000; overflow: auto; max-width: 300px; max-height: 300px;">
             <div style="margin-bottom:5px;">
@@ -251,7 +261,7 @@
             <div id="workflow-parameters-container">
             </div>
         </div>
-        <div class="workflow-overview">
+        <div class="workflow-overview workflow-canvas-content">
             <div style="position: relative; overflow: hidden; width: 100%; height: 100%; border-top: solid gray 1px; border-left: solid grey 1px;">
                 <div id="overview" style="position: absolute;">
                     <canvas width="0" height="0" style="background: white; width: 100%; height: 100%;" id="overview-canvas"></canvas>

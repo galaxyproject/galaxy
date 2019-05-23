@@ -109,7 +109,7 @@ class CanvasManager {
         this.app.workflow.fit_canvas_to_nodes();
     }
     initZoomControls() {
-        var zoomControl = $('<div class="btn-group-vertical"/>').css({
+        var zoomControl = $('<div class="btn-group-vertical workflow-canvas-content"/>').css({
             position: "absolute",
             left: "1rem",
             bottom: "1rem"
