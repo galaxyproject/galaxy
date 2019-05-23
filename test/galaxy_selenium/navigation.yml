@@ -211,6 +211,13 @@ pages:
       wym_iframe: 'div.wym_iframe iframe'
       wym_iframe_content: '.text-content'
       save: '#save-button'
+      embed_button: '#embed-galaxy-object'
+      dataset_selector: '.saved-datasets'
+
+    labels:
+      embed_dataset: 'Embed Dataset'
+      # TODO: decorate DOM and make following a class.
+      embed_dialog_add_button: 'Embed'
 
 login:
   selectors:
