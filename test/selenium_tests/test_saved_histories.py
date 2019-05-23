@@ -9,15 +9,15 @@ from .framework import (
 class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
     @selenium_test
-    def test_saved_histories_list(self):
+    def test_histories_list(self):
         self._login()
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
         self.assert_histories_in_grid([self.history2_name, self.history3_name])
 
     @selenium_test
     def test_history_switch(self):
         self._login()
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
         self.screenshot("histories_saved_grid")
         self.click_popup_option(self.history2_name, 'Switch')
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -31,7 +31,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_history_view(self):
         self._login()
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
         self.click_popup_option(self.history2_name, 'View')
         history_name = self.wait_for_selector('.name.editable-text')
         self.assertEqual(history_name.text, self.history2_name)
@@ -39,13 +39,13 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_history_publish(self):
         self._login()
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
 
         # Publish the history
         self.click_popup_option(self.history2_name, 'Share or Publish')
         self.components.histories.sharing.make_accessible_and_publish.wait_for_and_click()
 
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
 
         self.histories_click_advanced_search()
         self.select_filter('sharing', 'published')
@@ -56,7 +56,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_rename_history(self):
         self._login()
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
 
         self.click_popup_option('Unnamed history', 'Rename')
 
@@ -67,14 +67,14 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         self.wait_for_and_click_selector("button#submit")
 
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
 
         self.assert_histories_in_grid([self.history1_name, self.history2_name, self.history3_name])
 
     @selenium_test
     def test_delete_and_undelete_history(self):
         self._login()
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
 
         # Delete the history
         self.click_popup_option(self.history2_name, 'Delete')
@@ -98,7 +98,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self._login()
         self.create_history(self.history4_name)
 
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
         self.assert_histories_in_grid([self.history4_name])
 
         self.click_popup_option(self.history4_name, 'Delete Permanently')
@@ -115,7 +115,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_delete_and_undelete_multiple_histories(self):
         self._login()
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
 
         delete_button_selector = 'input[type="button"][value="Delete"]'
         undelete_button_selector = 'input[type="button"][value="Undelete"]'
@@ -144,7 +144,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_sort_by_name(self):
         self._login()
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
 
         self.wait_for_and_click_selector('.sort-link[sort_key="name"]')
         actual_histories = self.get_histories()
@@ -162,7 +162,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_standard_search(self):
         self._login()
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
 
         input_selector = '#input-free-text-search-filter'
         search_input = self.wait_for_selector(input_selector)
@@ -181,7 +181,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_advanced_search(self):
         self._login()
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
 
         self.histories_click_advanced_search()
 
@@ -209,7 +209,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     @selenium_test
     def test_tags(self):
         self._login()
-        self.navigate_to_saved_histories_page()
+        self.navigate_to_histories_page()
 
         # Insert a tag
         tags_cell = self.get_history_tags_cell(self.history2_name)
@@ -269,10 +269,10 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.wait_for_and_click_selector(close_button_selector)
         self.sleep_for(self.wait_types.UX_RENDER)
 
-    def navigate_to_saved_histories_page(self):
+    def navigate_to_histories_page(self):
         self.home()
         self.click_masthead_user()  # Open masthead menu
-        self.components.masthead.saved_histories.wait_for_and_click()
+        self.components.masthead.histories.wait_for_and_click()
 
     def setup_shared_state(self):
         SavedHistoriesTestCase.user_email = self._get_random_email()
