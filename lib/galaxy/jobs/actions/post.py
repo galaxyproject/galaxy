@@ -277,9 +277,10 @@ class ColumnSetAction(DefaultJobAction):
                 for k, v in action.action_arguments.items():
                     if v:
                         # Try to use both pure integer and 'cX' format.
-                        if v[0] == 'c':
-                            v = v[1:]
-                        v = int(v)
+                        if not isinstance(v, int):
+                            if v[0] == 'c':
+                                v = v[1:]
+                            v = int(v)
                         if v != 0:
                             setattr(dataset_assoc.dataset.metadata, k, v)
 
