@@ -4,9 +4,9 @@ import Backbone from "backbone";
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 
-var AdminPanel = Backbone.View.extend({
+const AdminPanel = Backbone.View.extend({
     initialize: function(page, options) {
-        var self = this;
+        const self = this;
         this.page = page;
         this.root = options.root;
         this.config = options.config;
@@ -143,14 +143,14 @@ var AdminPanel = Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
+        const self = this;
         this.$el.empty();
         this.categories.each(category => {
-            var $section = $(self._templateSection(category.attributes));
-            var $entries = $section.find(".toolSectionBody");
+            const $section = $(self._templateSection(category.attributes));
+            const $entries = $section.find(".toolSectionBody");
             _.each(category.get("items"), item => {
                 if (item.enabled === undefined || item.enabled) {
-                    var $link = $("<a/>")
+                    const $link = $("<a/>")
                         .attr({ href: self.root + item.url })
                         .text(_l(item.title));
                     if (item.id) {

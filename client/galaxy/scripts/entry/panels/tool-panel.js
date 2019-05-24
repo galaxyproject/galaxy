@@ -9,23 +9,23 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import Buttons from "mvc/ui/ui-buttons";
 
-var ToolPanel = Backbone.View.extend({
+const ToolPanel = Backbone.View.extend({
     initialize: function(page, options) {
         const Galaxy = getGalaxyInstance();
         const appRoot = getAppRoot();
 
         // access configuration options
-        var config = options.config;
+        const config = options.config;
         this.root = options.root;
 
         /** @type {Object[]} descriptions of user's workflows to be shown in the tool menu */
         this.stored_workflow_menu_entries = config.stored_workflow_menu_entries || [];
 
         // create tool search, tool panel, and tool panel view.
-        var tool_search = new Tools.ToolSearch({
+        const tool_search = new Tools.ToolSearch({
             hidden: false
         });
-        var tools = new Tools.ToolCollection(config.toolbox);
+        const tools = new Tools.ToolCollection(config.toolbox);
         this.tool_panel = new Tools.ToolPanel({
             tool_search: tool_search,
             tools: tools,
@@ -74,7 +74,7 @@ var ToolPanel = Backbone.View.extend({
 
     render: function() {
         // if there are tools, render panel and display everything
-        var self = this;
+        const self = this;
         if (this.tool_panel.get("layout").size() > 0) {
             this.$el.find(".toolMenu").replaceWith(this.tool_panel_view.$el);
             this.tool_panel_view.render();
