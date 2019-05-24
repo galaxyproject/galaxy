@@ -25,7 +25,9 @@
                         <span id="item-url-text" style="display: none">
                             {{ item_url_parts[0] }}<span id="item-identifier">{{ item_url_parts[1] }}</span>
                         </span>
-                        <a href="javascript:void(0)" id="edit-identifier"><img :src="pencil_url" alt="Edit Share Url"/></a>
+                        <a href="javascript:void(0)" id="edit-identifier"
+                            ><img :src="pencil_url" alt="Edit Share Url"
+                        /></a>
                     </blockquote>
                     <div v-if="item.published">
                         <p>
