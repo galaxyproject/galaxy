@@ -433,6 +433,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
                         )
                 ),
             closing_events: true,
+            extra_class: "pages-embed",
             buttons: {
                 Embed: function() {
                     // Make selected items accessible (importable) ?
