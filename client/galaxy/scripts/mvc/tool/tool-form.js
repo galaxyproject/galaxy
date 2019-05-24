@@ -67,15 +67,15 @@ const View = Backbone.View.extend({
                                     );
                                 } else {
                                     Galaxy.modal &&
-                                    Galaxy.modal.show({
-                                        title: _l("Tool request failed"),
-                                        body: error_message,
-                                        buttons: {
-                                            Close: () => {
-                                                Galaxy.modal.hide();
+                                        Galaxy.modal.show({
+                                            title: _l("Tool request failed"),
+                                            body: error_message,
+                                            buttons: {
+                                                Close: () => {
+                                                    Galaxy.modal.hide();
+                                                }
                                             }
-                                        }
-                                    });
+                                        });
                                 }
                                 Galaxy.emit.debug(
                                     "tool-form-base::_buildModel()",
@@ -348,11 +348,14 @@ const View = Backbone.View.extend({
         let blurb = "";
         if (list.length > 0) {
             blurb += `<p>${title}:</p>`;
-            list.sort((a, b) => { b.hid - a.hid; });
+            list.sort((a, b) => {
+                b.hid - a.hid;
+            });
             const numRows = Math.min(list.length, 4);
             for (let i = 0; i < numRows; i++) {
                 //use ellipses if it is the final row (last loop iteration) and the list length is larger than the number of rows
-                const rowString = (i === numRows - 1 && list.length > numRows) ? "..." : `${list[i].hid}: ${_.escape(list[i].name)}`;
+                const rowString =
+                    i === numRows - 1 && list.length > numRows ? "..." : `${list[i].hid}: ${_.escape(list[i].name)}`;
                 blurb += `<p class="messagerow">
                             <b>${rowString}</b>
                           </p>`;
@@ -392,7 +395,7 @@ const View = Backbone.View.extend({
             .append(
                 $("<p/>").text(
                     `The server could not complete the request. Please contact the Galaxy Team if this error persists. ${err_msg ||
-                    ""}`
+                        ""}`
                 )
             )
             .append($("<pre/>").text(JSON.stringify(response, null, 4)));
