@@ -6,7 +6,7 @@ export default {
     props: ["options", "value", "placeholder"],
     template: `<select><slot></slot></select>`,
     mounted: function() {
-        var vm = this;
+        const vm = this;
         $(this.$el)
             // init select2
             .select2({ data: this.options, placeholder: this.placeholder, allowClear: this.placeholder })
