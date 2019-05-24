@@ -74,22 +74,21 @@ const ToolPanel = Backbone.View.extend({
 
     render: function() {
         // if there are tools, render panel and display everything
-        const self = this;
         if (this.tool_panel.get("layout").size() > 0) {
             this.$el.find(".toolMenu").replaceWith(this.tool_panel_view.$el);
             this.tool_panel_view.render();
         }
         // build the dom for the workflow portion of the tool menu
         // add internal workflow list
-        self.$("#internal-workflows").append(
-            self._templateAllWorkflow({
+        this.$("#internal-workflows").append(
+            this._templateAllWorkflow({
                 title: _l("All workflows"),
                 href: "workflows/list"
             })
         );
         _.each(this.stored_workflow_menu_entries, menu_entry => {
-            self.$("#internal-workflows").append(
-                self._templateWorkflowLink({
+            this.$("#internal-workflows").append(
+                this._templateWorkflowLink({
                     title: menu_entry.stored_workflow.name,
                     href: `workflows/run?id=${menu_entry.encoded_stored_workflow_id}`
                 })
