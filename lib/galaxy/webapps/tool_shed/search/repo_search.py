@@ -26,6 +26,7 @@ schema = Schema(
     times_downloaded=STORED,
     approved=STORED,
     last_updated=STORED,
+    repo_lineage=STORED,
     full_last_updated=STORED)
 
 
@@ -121,6 +122,7 @@ class RepoSearch(object):
                     hit_dict['description'] = hit.get('description')
                     hit_dict['last_updated'] = hit.get('last_updated')
                     hit_dict['full_last_updated'] = hit.get('full_last_updated')
+                    hit_dict['repo_lineage'] = hit.get('repo_lineage')
                     hit_dict['approved'] = hit.get('approved')
                     hit_dict['times_downloaded'] = hit.get('times_downloaded')
                     results['hits'].append({'repository': hit_dict, 'matched_terms': hit.matched_terms(), 'score': hit.score})

@@ -18,9 +18,9 @@ import sys
 from optparse import OptionParser
 
 from six.moves import configparser
+from mercurial import hg, ui
 from whoosh.fields import Schema, STORED, TEXT
 from whoosh.filedb.filestore import FileStorage
-from mercurial import hg, ui
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
