@@ -4,7 +4,10 @@ import { getAppRoot } from "onload/loadConfig";
 /** Request repositories from Toolshed server **/
 export class Services {
     getRepositories(params) {
-        const url = `${getAppRoot()}api/tool_shed/search?${params.join("&")}`;
+        const paramsString = Object.keys(params).reduce(function (previous, key) {
+            return `${previous}${key}=${params[key]}&`;
+        }, "");
+        const url = `${getAppRoot()}api/tool_shed/search?${paramsString}`;
         return new Promise((resolve, reject) => {
             axios
                 .get(url)
@@ -12,7 +15,6 @@ export class Services {
                     const data = response.data;
                     const incoming = data.hits.map(x => x.repository);
                     incoming.forEach(x => {
-
                         x.times_downloaded = this.formatCount(x.times_downloaded);
                         x.repository_url = `${data.hostname}repository?repository_id=${x.id}`;
                     });

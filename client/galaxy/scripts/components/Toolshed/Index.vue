@@ -79,14 +79,13 @@ export default {
         load(page = 1) {
             this.page = page;
             this.pageState = LOADING;
-            const params = [
-                `tool_shed_url=${this.toolshedUrl}`,
-                `q=${this.query}`,
-                `page=${this.page}`,
-                `page_size=${this.pageSize}`
-            ];
             this.services
-                .getRepositories(params)
+                .getRepositories({
+                    tool_shed_url: this.toolshedUrl,
+                    q: this.query,
+                    page: this.page,
+                    page_size: this.pageSize
+                })
                 .then(incoming => {
                     if (this.page === 1) {
                     this.repositories = incoming;
