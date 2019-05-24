@@ -6,11 +6,11 @@ import QuotaMeter from "mvc/user/user-quotameter";
 import { getGalaxyInstance } from "app";
 
 /** Masthead **/
-var View = Backbone.View.extend({
+const View = Backbone.View.extend({
     initialize: function(options) {
         const Galaxy = getGalaxyInstance();
 
-        var self = this;
+        const self = this;
         this.options = options;
         this.setElement(this._template());
         this.$navbarBrandLink = this.$(".navbar-brand");
@@ -53,7 +53,7 @@ var View = Backbone.View.extend({
         // loop through beforeunload functions if the user attempts to unload the page
         $(window)
             .on("click", e => {
-                var $download_link = $(e.target).closest("a[download]");
+                const $download_link = $(e.target).closest("a[download]");
                 if ($download_link.length == 1) {
                     if ($("iframe[id=download]").length === 0) {
                         $("body").append(
@@ -67,9 +67,9 @@ var View = Backbone.View.extend({
                 }
             })
             .on("beforeunload", () => {
-                var text = "";
+                let text = "";
                 self.collection.each(model => {
-                    var q = model.get("onbeforeunload") && model.get("onbeforeunload")();
+                    const q = model.get("onbeforeunload") && model.get("onbeforeunload")();
                     if (q) {
                         text += `${q} `;
                     }
