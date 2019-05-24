@@ -8,14 +8,33 @@ May 2019 Galaxy Release (v 19.05)
 Highlights
 ===========================================================
 
-**Feature1**
-  Feature description.
+**User Facing Release Notes**
+  Galaxy releases now include "user facing" release notes, you are reading
+  the traditional release notes which have always been relatively admin and developer
+  oriented but will likely be even more so now. Features such as favoriting tools,
+  improved workflow editor feedback, and an exciting new cellxgene GIE may have
+  been featured in these release notes in the past but are now featured in the
+  user release notes instead. A huge thanks to `@erasche <https://github.com/erasche>`__
+  for getting the ball rolling on this initiative.
 
-**Feature2**
-  Feature description.
+  Checkout the 19.05 user release notes at https://docs.galaxyproject.org/en/release_19.05/releases/19.05_announce_user.htm.
 
-**Feature3**
-  Feature description.
+**Login and Registration Rewrite**
+  The march toward replacing templated backend generated HTML with modern, reactive
+  components accelerated in Galaxy 19.05. Galaxy's login, logout, and registration pages
+  were replaced with VueJS components. Support for OIDC login options was added and
+  certain deprecated OpenID login options were removed. This release contains many other
+  client code enhancements including a new client initialization pipeline, ESLint based
+  linting, and greatly optimized initial dynamic loading of bundles.
+
+**Improvements to Workflow Expressivity**
+  In 19.01, non-data connections were added to the workflow editor in the form of
+  explicit, typed non-data inputs to workflows. This idea has been generalized in 19.05
+  and tool can now produce non-data outputs and a new class of tools called "Expression"
+  tools has been added to make this especially easy. The Format 2 workflow format is now
+  importable by default and admin-only extensions even allow embedding tool definitions
+  directly into workflows. Many thanks to `@mvdbeek <https://github.com/mvdbeek>`__ for
+  pushing this effort.
 
 Get Galaxy
 ==========

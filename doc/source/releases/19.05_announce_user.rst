@@ -8,116 +8,73 @@ May 2019 Galaxy Release (v 19.05)
 Highlights
 ===========================================================
 
-**Feature1**
-  Feature description.
+**Tool Favorites**
 
-**Feature2**
-  Feature description.
+.. figure:: https://user-images.githubusercontent.com/1814954/51049745-c8d51500-159c-11e9-9445-889777899e0a.png
+   :alt: Adding a favorite tool.
 
-**Feature3**
-  Feature description.
+.. figure:: https://user-images.githubusercontent.com/1814954/51049861-1ea9bd00-159d-11e9-8f51-415312ca8d8e.png
+   :alt: Filtering for favorite tools.
 
+**Workflow Editor Connection Feedback**
 
-New Visualisations
+In addition to numerous bug fixes to improve the correctness and robustness of workflow editor
+connections in this release, the editor now also provides feedback on why connections are
+invalid.
+
+.. figure:: https://user-images.githubusercontent.com/6804901/55383148-c218c700-5527-11e9-96e9-dfa0591dadac.gif
+   :alt: Workflow editor connections provide feedback on why they won't connect.
+
+**Data Dialog for Tool Form**
+
+.. figure:: https://user-images.githubusercontent.com/2105447/54135179-b8e87e80-43ef-11e9-829d-538b3fceb23c.png
+   :alt: Data dialog for selecting dataset in the tool form.
+
+New Visualizations
 ===========================================================
 
-.. datatypes
-* Add converters between tabular and CSV.
-  `Pull Request 7246`_
-* Drop support for Python 3.4. Officially support Python >=3.5
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 7291`_
-* ENH: multifile zip testing
-  (thanks to `@thermokarst <https://github.com/thermokarst>`__).
-  `Pull Request 7400`_
-* Adding microarrays data types Gpr and Gal
-  (thanks to `@bensellak <https://github.com/bensellak>`__).
-  `Pull Request 7457`_
-* Redefining Cel data type
-  (thanks to `@bensellak <https://github.com/bensellak>`__).
-  `Pull Request 7514`_
-* Add mtx datatype
-  (thanks to `@bebatut <https://github.com/bebatut>`__).
-  `Pull Request 7569`_
-* Add ImgtJson datatype for IMGT immune system libraries
-  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
-  `Pull Request 7587`_
-* Continue gracefully in set_meta if unable to count number of dataset lines.
-  `Pull Request 7641`_
-* Fix format_source for implicit conversion inputs and fasta.gz upload
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 7682`_
-* Patch for metadata setting of minimal BIOM1 files
-  (thanks to `@bebatut <https://github.com/bebatut>`__).
-  `Pull Request 7696`_
-* Relax the 1st line sniffing for mtx (not only real coordinate)
-  (thanks to `@bebatut <https://github.com/bebatut>`__).
-  `Pull Request 7702`_
-* Improve error message if GFF file is missing attribute col
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 7708`_
-* Fix mtx datatype sniffer configuration
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 7717`_
-* spaln database type
-  (thanks to `@pvanheus <https://github.com/pvanheus>`__).
-  `Pull Request 7718`_
-* Add GeoJSON datatype
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 7773`_
-* Add shapefile datatype
-  (thanks to `@bgruening <https://github.com/bgruening>`__).
-  `Pull Request 7819`_
-* Fix upload of gzipped VCF files
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 7933`_
+.. visualizations
+
+* Add a Galaxy IE for cellxgene.
+  `Pull Request 7268`_
 
 New Datatypes
 ===========================================================
 
-.. visualizations
-* Fix galaxy instance access in visualizations
-  `Pull Request 7198`_
-* Fix pie chart and portlet height in flexboxes
-  `Pull Request 7396`_
-* Drop d3 from publicly provided libs
-  `Pull Request 7542`_
-* Fix trackster issue w/ constraining (overflow:non-visible) containers
-  `Pull Request 7845`_
-* Interactive Environment Fixes
-  `Pull Request 7917`_
+* Add ``mtx`` datatype
+  (thanks to `@bebatut <https://github.com/bebatut>`__ and
+  `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 7569`_, `Pull Request 7702`_, `Pull Request 7717`_
+* Add ``geojson`` datatype
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 7773`_
+* Add shapefile (``shp``) datatype
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 7819`_
+* Add ``imgt.json`` datatype for IMGT immune system libraries
+  (thanks to `@jj-umn <https://github.com/jj-umn>`__).
+  `Pull Request 7587`_
+* Add microarrays data types ``gpr`` and ``gal``
+  (thanks to `@bensellak <https://github.com/bensellak>`__).
+  `Pull Request 7457`_
+* Add ``spaln`` database type
+  (thanks to `@pvanheus <https://github.com/pvanheus>`__).
+  `Pull Request 7718`_
+* Redefine ``cel`` datatype
+  (thanks to `@bensellak <https://github.com/bensellak>`__).
+  `Pull Request 7514`_
 
 Builtin Tool Updates
 ===========================================================
 
 .. tools
-* Add python to Count1 tool requirements
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 7185`_
-* group: don't remove empty cells at the begin/start of lines
+
+* Don't remove empty cells at the begin/start of lines for grouping tool
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 7205`_
-* ENH: multifile zip testing
-  (thanks to `@thermokarst <https://github.com/thermokarst>`__).
-  `Pull Request 7400`_
-* Fix genomespace_importer tool
-  `Pull Request 7647`_
-* Detect errors using exit_code for sort tool
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 7679`_
-* Fix genomespace exporter tool
-  `Pull Request 7697`_
-* Only check for exit code on actual sort command
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 7699`_
-* Commented-out cloudbridge requirement for the cloud/send tool.
-  `Pull Request 7727`_
 * Add general purpose expression tool
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 7796`_
-* Fix grouping1 with modern sort, fix test data
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 7844`_
 
 Release Notes
 ===========================================================
