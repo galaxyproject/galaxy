@@ -100,6 +100,8 @@ export const chartUtilities = {
 export { initMasthead } from "components/Masthead/initMasthead";
 export { panelManagement } from "onload/globalInits/panelManagement";
 export { mountMakoTags } from "components/Tags";
+export { mountJobMetrics } from "components/JobMetrics";
+export { mountJobParameters } from "components/JobParameters";
 
 // Used in common.mako
 export { default as store } from "storemodern";
