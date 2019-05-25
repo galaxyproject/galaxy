@@ -22,29 +22,9 @@
     </script>
 </%def>
 
-<%def name="stylesheets()">
-    ${parent.stylesheets()}
-    ${h.css( "base", "embed_item" )}
-    <style type='text/css'>
-        .galaxy-page-editor-button
-        {
-            position: relative;
-            float: left;
-            padding: 0.2em;
-        }
-    </style>
-</%def>
-
 <%def name="center_panel()">
 
-    <div class="unified-panel-header" unselectable="on">
-        <div class="unified-panel-header-inner">
-            Page Editor: ${page.title | h}
-            <a id="save-button" class="btn btn-secondary fa fa-save float-right"></a>
-        </div>
-    </div>
-
-    <div class="unified-panel-body page-editor-content" page_id="${trans.security.encode_id(page.id)}">
-    </div>
+    <span id="page-editor-content" class="inbound" page_id="${trans.security.encode_id(page.id)}">
+    </span>
 
 </%def>

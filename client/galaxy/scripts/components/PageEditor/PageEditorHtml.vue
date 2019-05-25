@@ -1,3 +1,19 @@
+<template>
+    <span>
+        <div class="unified-panel-header" unselectable="on">
+            <div class="unified-panel-header-inner">
+                Page Editor: {{ title }}
+                <a id="save-button" class="btn btn-secondary fa fa-save float-right"></a>
+            </div>
+        </div>
+
+        <div class="unified-panel-body">
+            <textarea name="page_content" :val="content"></textarea>
+        </div>
+    </span>
+</template>
+
+<script>
 import $ from "jquery";
 import _l from "utils/localization";
 
@@ -7,8 +23,6 @@ import { make_popupmenu } from "ui/popupmenu";
 import { getGalaxyInstance } from "app";
 import { buildConfig } from "utils/genericConfig";
 import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
-import { Toast } from "ui/toast";
 
 // Built a generic config container for the properties that
 // are passed in from python then used (formerly) globally
@@ -505,7 +519,7 @@ function renderEditorWithContent(pageId, content) {
         editor_base_path: `${appRoot}static/wymeditor/`,
         iframe_base_path: `${appRoot}static/wymeditor/iframe/galaxy/`,
         save_url: `${appRoot}page/save`
-    }
+    };
     setPageConfigs(pageConfigs);
 
     // Generic error handling
@@ -515,54 +529,53 @@ function renderEditorWithContent(pageId, content) {
         show_modal("Server error", message, { "Ignore error": hide_modal });
         return false;
     });
-    $(".page-editor-content").append(
-        `<textarea name="page_content"></textarea>`
-    )
     // Create editor
-    $("[name=page_content]").val(content).wymeditor({
-        skin: "galaxy",
-        basePath: configs.editor_base_path,
-        iframeBasePath: configs.iframe_base_path,
-        // + WYMeditor.HTML
-        boxHtml: `<table class='wym_box' width='100%' height='100%'><tr><td><div class='wym_area_top'>${
-            WYMeditor.TOOLS
-        }</div></td></tr><tr height='100%'><td><div class='wym_area_main' style='height: 100%;'>${
+    $("[name=page_content]")
+        .val(content)
+        .wymeditor({
+            skin: "galaxy",
+            basePath: configs.editor_base_path,
+            iframeBasePath: configs.iframe_base_path,
             // + WYMeditor.HTML
-            WYMeditor.IFRAME
-        }${WYMeditor.STATUS}</div></div></td></tr></table>`,
-        toolsItems: [
-            { name: "Bold", title: "Strong", css: "wym_tools_strong" },
-            { name: "Italic", title: "Emphasis", css: "wym_tools_emphasis" },
-            {
-                name: "Superscript",
-                title: _l("Superscript"),
-                css: "wym_tools_superscript"
-            },
-            {
-                name: "Subscript",
-                title: _l("Subscript"),
-                css: "wym_tools_subscript"
-            },
-            {
-                name: "InsertOrderedList",
-                title: "Ordered_List",
-                css: "wym_tools_ordered_list"
-            },
-            {
-                name: "InsertUnorderedList",
-                title: "Unordered_List",
-                css: "wym_tools_unordered_list"
-            },
-            { name: "Indent", title: "Indent", css: "wym_tools_indent" },
-            { name: "Outdent", title: "Outdent", css: "wym_tools_outdent" },
-            { name: "Undo", title: "Undo", css: "wym_tools_undo" },
-            { name: "Redo", title: "Redo", css: "wym_tools_redo" },
-            { name: "CreateLink", title: "Link", css: "wym_tools_link" },
-            { name: "Unlink", title: "Unlink", css: "wym_tools_unlink" },
-            { name: "InsertImage", title: "Image", css: "wym_tools_image" },
-            { name: "InsertTable", title: "Table", css: "wym_tools_table" }
-        ]
-    });
+            boxHtml: `<table class='wym_box' width='100%' height='100%'><tr><td><div class='wym_area_top'>${
+                WYMeditor.TOOLS
+            }</div></td></tr><tr height='100%'><td><div class='wym_area_main' style='height: 100%;'>${
+                // + WYMeditor.HTML
+                WYMeditor.IFRAME
+            }${WYMeditor.STATUS}</div></div></td></tr></table>`,
+            toolsItems: [
+                { name: "Bold", title: "Strong", css: "wym_tools_strong" },
+                { name: "Italic", title: "Emphasis", css: "wym_tools_emphasis" },
+                {
+                    name: "Superscript",
+                    title: _l("Superscript"),
+                    css: "wym_tools_superscript"
+                },
+                {
+                    name: "Subscript",
+                    title: _l("Subscript"),
+                    css: "wym_tools_subscript"
+                },
+                {
+                    name: "InsertOrderedList",
+                    title: "Ordered_List",
+                    css: "wym_tools_ordered_list"
+                },
+                {
+                    name: "InsertUnorderedList",
+                    title: "Unordered_List",
+                    css: "wym_tools_unordered_list"
+                },
+                { name: "Indent", title: "Indent", css: "wym_tools_indent" },
+                { name: "Outdent", title: "Outdent", css: "wym_tools_outdent" },
+                { name: "Undo", title: "Undo", css: "wym_tools_undo" },
+                { name: "Redo", title: "Redo", css: "wym_tools_redo" },
+                { name: "CreateLink", title: "Link", css: "wym_tools_link" },
+                { name: "Unlink", title: "Unlink", css: "wym_tools_unlink" },
+                { name: "InsertImage", title: "Image", css: "wym_tools_image" },
+                { name: "InsertTable", title: "Table", css: "wym_tools_table" }
+            ]
+        });
     // Get the editor object
     var editor = $.wymeditors(0);
     var save = callback => {
@@ -696,20 +709,32 @@ function renderEditorWithContent(pageId, content) {
     });
 }
 
-export default function pagesEditorOnload() {
-    const pageId = $(".page-editor-content").attr("page_id");
-    console.log(pageId);
-    axios
-        .get(`${getAppRoot()}api/pages/${pageId}`)
-        .then(response => {
-            renderEditorWithContent(pageId, response.data.content);
-        })
-        .catch(e => {
-            const response = e.response;
-            if (typeof response.responseJSON !== "undefined") {
-                Toast.error(response.responseJSON.err_msg);
-            } else {
-                Toast.error("An error occurred.");
-            }
+export default {
+    props: {
+        pageId: {
+            required: true,
+            type: String
+        },
+        content: {
+            type: String
+        },
+        title: {
+            type: String
+        }
+    },
+    created: function() {
+        this.$nextTick(() => {
+            renderEditorWithContent(this.pageId, this.content);
         });
+    }
+};
+</script>
+
+<style lang="scss">
+@import "embed_item";
+.galaxy-page-editor-button {
+    position: relative;
+    float: left;
+    padding: 0.2em;
 }
+</style>
