@@ -7,7 +7,6 @@
     <script type="text/javascript">
         config.addInitialization(function() {
             console.log("page/display.mako, javascript_app", "Setup embedded content");
-
             window.bundleEntries.render_embedded_items();
         });
     </script>

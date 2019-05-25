@@ -16,18 +16,8 @@
         // Apparently pages() relies on these variables being defined
         // in window. 
         config.addInitialization(function(){
-            var pagesConfig = {
-                page_id: "${trans.security.encode_id(page.id)}",
-                page_list_url: '${h.url_for( controller='pages', action='list' )}',
-                list_objects_url: "${h.url_for(controller='page', action='LIST_ACTION' )}",
-                set_accessible_url: "${h.url_for( controller='ITEM_CONTROLLER', action='set_accessible_async' )}",
-                get_name_and_link_url: "${h.url_for( controller='ITEM_CONTROLLER', action='get_name_and_link_async' )}?id=",
-                editor_base_path: "${h.url_for('/static/wymeditor')}/",
-                iframe_base_path: "${h.url_for('/static/wymeditor/iframe/galaxy')}/",
-                save_url: "${h.url_for(controller='page', action='save' )}"
-            };
             console.log("editor.mako, javascript_app", "define variables needed by galaxy.pages script");
-            window.bundleEntries.pages(pagesConfig);
+            window.bundleEntries.pages();
         });
     </script>
 </%def>
@@ -55,7 +45,7 @@
     </div>
 
     <div class="unified-panel-body">
-        <textarea name="page_content">${ content }</textarea>
+        <textarea name="page_content" page_id="${trans.security.encode_id(page.id)}">${ content }</textarea>
     </div>
 
 </%def>

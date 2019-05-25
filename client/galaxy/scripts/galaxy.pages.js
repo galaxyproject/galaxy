@@ -6,6 +6,7 @@ import { show_modal, hide_modal } from "layout/modal";
 import { make_popupmenu } from "ui/popupmenu";
 import { getGalaxyInstance } from "app";
 import { buildConfig } from "utils/genericConfig";
+import { getAppRoot } from "onload/loadConfig";
 
 // Built a generic config container for the properties that
 // are passed in from python then used (formerly) globally
@@ -491,8 +492,20 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
     }
 };
 
-export default function pagesEditorOnload(renderedConfigs = {}) {
-    setPageConfigs(renderedConfigs);
+export default function pagesEditorOnload() {
+    const appRoot = getAppRoot();
+    const pageId = $("[name=page_content]").attr("page_id");
+    const pageConfigs = {
+        page_id: pageId,
+        page_list_url: `${appRoot}pages/list`,
+        list_objects_url: `${appRoot}page/LIST_ACTION`,
+        set_accessible_url: `${appRoot}ITEM_CONTROLLER/set_accessible_async`,
+        get_name_and_link_url: `${appRoot}ITEM_CONTROLLER/get_name_and_link_async?id=`,
+        editor_base_path: `${appRoot}static/wymeditor/`,
+        iframe_base_path: `${appRoot}static/wymeditor/iframe/galaxy/`,
+        save_url: `${appRoot}page/save`
+    }
+    setPageConfigs(pageConfigs);
 
     // Generic error handling
     $(document).ajaxError((e, x) => {
