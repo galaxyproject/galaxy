@@ -80,7 +80,6 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
         assert dynamic_s3 == files_dynamic_s3_count
 
     def test_tool_simple_constructs(self):
-
         with self.dataset_populator.test_history() as history_id:
 
             def _run_tool(tool_id, inputs):
