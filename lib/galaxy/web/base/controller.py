@@ -54,13 +54,6 @@ log = logging.getLogger(__name__)
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
 
-def _is_valid_slug(slug):
-    """ Returns true if slug is valid. """
-
-    VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
-    return VALID_SLUG_RE.match(slug)
-
-
 class BaseController(object):
     """
     Base class for Galaxy web application controllers.
@@ -1118,7 +1111,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         title_err = slug_err = ""
         if not title:
             title_err = "visualization name is required"
-        elif slug and not _is_valid_slug(slug):
+        elif slug and not managers_base.is_valid_slug(slug):
             slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
         elif slug and trans.sa_session.query(trans.model.Visualization).filter_by(user=user, slug=slug, deleted=False).first():
             slug_err = "visualization identifier must be unique"
@@ -1361,7 +1354,7 @@ class SharableMixin(object):
 
     def _is_valid_slug(self, slug):
         """ Returns true if slug is valid. """
-        return _is_valid_slug(slug)
+        return managers_base.is_valid_slug(slug)
 
     @web.expose
     @web.require_login("modify Galaxy items")

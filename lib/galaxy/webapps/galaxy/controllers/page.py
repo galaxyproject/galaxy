@@ -16,11 +16,15 @@ from sqlalchemy.orm import (
 )
 
 from galaxy import (
-    managers,
+    exceptions,
     model,
     util,
     web
 )
+from galaxy.managers import base
+from galaxy.managers.hdas import HDAManager
+from galaxy.managers.histories import HistoryManager, HistorySerializer
+from galaxy.managers.pages import PageManager
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
@@ -473,9 +477,10 @@ class PageController(BaseUIController, SharableMixin,
 
     def __init__(self, app):
         super(PageController, self).__init__(app)
-        self.history_manager = managers.histories.HistoryManager(app)
-        self.history_serializer = managers.histories.HistorySerializer(self.app)
-        self.hda_manager = managers.hdas.HDAManager(app)
+        self.page_manager = PageManager(app)
+        self.history_manager = HistoryManager(app)
+        self.history_serializer = HistorySerializer(self.app)
+        self.hda_manager = HDAManager(app)
 
     @web.expose
     @web.json
@@ -541,37 +546,11 @@ class PageController(BaseUIController, SharableMixin,
                 }]
             }
         else:
-            user = trans.get_user()
-            p_title = payload.get('title')
-            p_slug = payload.get('slug')
-            p_annotation = payload.get('annotation')
-            if not p_title:
-                return self.message_exception(trans, 'Please provide a page name is required.')
-            elif not p_slug:
-                return self.message_exception(trans, 'Please provide a unique identifier.')
-            elif not self._is_valid_slug(p_slug):
-                return self.message_exception(trans, 'Page identifier can only contain lowercase letters, numbers, and dashes (-).')
-            elif trans.sa_session.query(model.Page).filter_by(user=user, slug=p_slug, deleted=False).first():
-                return self.message_exception(trans, 'Page id must be unique.')
-            else:
-                # Create the new stored page
-                p = model.Page()
-                p.title = p_title
-                p.slug = p_slug
-                p.user = user
-                if p_annotation:
-                    p_annotation = sanitize_html(p_annotation)
-                    self.add_item_annotation(trans.sa_session, user, p, p_annotation)
-                # And the first (empty) page revision
-                p_revision = model.PageRevision()
-                p_revision.title = p_title
-                p_revision.page = p
-                p.latest_revision = p_revision
-                p_revision.content = ""
-                # Persist
-                trans.sa_session.add(p)
-                trans.sa_session.flush()
-            return {'message': 'Page \'%s\' successfully created.' % p.title, 'status': 'success'}
+            try:
+                page = self.page_manager.create(trans, payload)
+            except exceptions.MessageException as e:
+                return self.message_exception(trans, str(e))
+            return {'message': 'Page \'%s\' successfully created.' % page.title, 'status': 'success'}
 
     @web.legacy_expose_api
     @web.require_login("edit pages")
@@ -958,20 +937,20 @@ def _placeholderRenderForSave(trans, item_class, item_id, encode=False):
     item_name = ''
     if item_class == 'History':
         history = trans.sa_session.query(trans.model.History).get(decoded_item_id)
-        history = managers.base.security_check(trans, history, False, True)
+        history = base.security_check(trans, history, False, True)
         item_name = history.name
     elif item_class == 'HistoryDatasetAssociation':
         hda = trans.sa_session.query(trans.model.HistoryDatasetAssociation).get(decoded_item_id)
-        hda_manager = managers.hdas.HDAManager(trans.app)
+        hda_manager = HDAManager(trans.app)
         hda = hda_manager.get_accessible(decoded_item_id, trans.user)
         item_name = hda.name
     elif item_class == 'StoredWorkflow':
         wf = trans.sa_session.query(trans.model.StoredWorkflow).get(decoded_item_id)
-        wf = managers.base.security_check(trans, wf, False, True)
+        wf = base.security_check(trans, wf, False, True)
         item_name = wf.name
     elif item_class == 'Visualization':
         visualization = trans.sa_session.query(trans.model.Visualization).get(decoded_item_id)
-        visualization = managers.base.security_check(trans, visualization, False, True)
+        visualization = base.security_check(trans, visualization, False, True)
         item_name = visualization.title
     class_shorthand = PAGE_CLASS_MAPPING[item_class]
     if encode:

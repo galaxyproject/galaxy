@@ -6,6 +6,7 @@ import logging
 from galaxy import exceptions
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.managers.base import get_object
+from galaxy.managers.pages import PageManager
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import expose_api
 from galaxy.web.base.controller import (
@@ -18,6 +19,10 @@ log = logging.getLogger(__name__)
 
 
 class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotations, SharableMixin):
+
+    def __init__(self, app):
+        super(PageRevisionsController, self).__init__(app)
+        self.manager = PageManager(app)
 
     @expose_api
     def index(self, trans, page_id, **kwd):

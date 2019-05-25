@@ -7,13 +7,16 @@ from within Galaxy.
 """
 import logging
 
-from galaxy import model
+from galaxy import exceptions, model
 from galaxy.managers import sharable
+from galaxy.managers.base import is_valid_slug
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.util.sanitize_html import sanitize_html
 
 log = logging.getLogger(__name__)
 
 
-class PageManager(sharable.SharableModelManager):
+class PageManager(sharable.SharableModelManager, UsesAnnotations):
     """
     """
 
@@ -33,6 +36,46 @@ class PageManager(sharable.SharableModelManager):
     def copy(self, trans, page, user, **kwargs):
         """
         """
+        pass
+
+    def create(self, trans, payload):
+        user = trans.get_user()
+
+        if not payload.get("title", None):
+            raise exceptions.ObjectAttributeMissingException("Page name is required")
+        elif not payload.get("slug", None):
+            raise exceptions.ObjectAttributeMissingException("Page id is required")
+        elif not is_valid_slug(payload["slug"]):
+            raise exceptions.ObjectAttributeInvalidException("Page identifier must consist of only lowercase letters, numbers, and the '-' character")
+        elif trans.sa_session.query(trans.app.model.Page).filter_by(user=user, slug=payload["slug"], deleted=False).first():
+            raise exceptions.DuplicatedSlugException("Page identifier must be unique")
+
+        content = payload.get("content", "")
+        content = sanitize_html(content)
+
+        # Create the new stored page
+        page = trans.app.model.Page()
+        page.title = payload['title']
+        page.slug = payload['slug']
+        page_annotation = payload.get("annotation", None)
+        if page_annotation is not None:
+            page_annotation = sanitize_html(page_annotation)
+            self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
+
+        page.user = user
+        # And the first (empty) page revision
+        page_revision = trans.app.model.PageRevision()
+        page_revision.title = payload['title']
+        page_revision.page = page
+        page.latest_revision = page_revision
+        page_revision.content = content
+        # Persist
+        session = trans.sa_session
+        session.add(page)
+        session.flush()
+        return page
+
+    def save_revision(self, trans, page_id, payload):
         pass
 
 
