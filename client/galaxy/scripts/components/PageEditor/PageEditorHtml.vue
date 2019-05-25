@@ -592,36 +592,6 @@ function renderEditorWithContent(pageId, content) {
             hide_modal();
         });
     });
-    // Close button
-    $("#close-button").click(() => {
-        // var new_content = editor.xhtml();
-        // var changed = ( initial_content != new_content );
-        var changed = false;
-        if (changed) {
-            var do_close = () => {
-                window.onbeforeunload = undefined;
-                window.document.location = configs.page_list_url;
-            };
-            show_modal(
-                "Close editor",
-                "There are unsaved changes to your page which will be lost.",
-                {
-                    Cancel: hide_modal,
-                    "Save Changes": function() {
-                        save(do_close);
-                    }
-                },
-                {
-                    "Don't Save": do_close
-                }
-            );
-        } else {
-            window.document.location = configs.page_list_url;
-        }
-    });
-
-    // Initialize galaxy elements.
-    //init_galaxy_elts(editor);
 
     //
     // Containers, Galaxy style
