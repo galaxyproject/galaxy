@@ -7,6 +7,8 @@ import { make_popupmenu } from "ui/popupmenu";
 import { getGalaxyInstance } from "app";
 import { buildConfig } from "utils/genericConfig";
 import { getAppRoot } from "onload/loadConfig";
+import axios from "axios";
+import { Toast } from "ui/toast";
 
 // Built a generic config container for the properties that
 // are passed in from python then used (formerly) globally
@@ -492,9 +494,8 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
     }
 };
 
-export default function pagesEditorOnload() {
+function renderEditorWithContent(pageId, content) {
     const appRoot = getAppRoot();
-    const pageId = $("[name=page_content]").attr("page_id");
     const pageConfigs = {
         page_id: pageId,
         page_list_url: `${appRoot}pages/list`,
@@ -514,8 +515,11 @@ export default function pagesEditorOnload() {
         show_modal("Server error", message, { "Ignore error": hide_modal });
         return false;
     });
+    $(".page-editor-content").append(
+        `<textarea name="page_content"></textarea>`
+    )
     // Create editor
-    $("[name=page_content]").wymeditor({
+    $("[name=page_content]").val(content).wymeditor({
         skin: "galaxy",
         basePath: configs.editor_base_path,
         iframeBasePath: configs.iframe_base_path,
@@ -690,4 +694,22 @@ export default function pagesEditorOnload() {
         //    editor.dialog(CONTROLS.DIALOG_EMBED_PAGE);
         //}
     });
+}
+
+export default function pagesEditorOnload() {
+    const pageId = $(".page-editor-content").attr("page_id");
+    console.log(pageId);
+    axios
+        .get(`${getAppRoot()}api/pages/${pageId}`)
+        .then(response => {
+            renderEditorWithContent(pageId, response.data.content);
+        })
+        .catch(e => {
+            const response = e.response;
+            if (typeof response.responseJSON !== "undefined") {
+                Toast.error(response.responseJSON.err_msg);
+            } else {
+                Toast.error("An error occurred.");
+            }
+        });
 }

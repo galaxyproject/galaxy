@@ -406,9 +406,7 @@ class PageController(BaseUIController, SharableMixin,
         id = self.decode_id(id)
         page = trans.sa_session.query(model.Page).get(id)
         assert page.user == trans.user
-        content = page.latest_revision.content
-        content = self.page_manager.rewrite_content_for_export(trans, {"content": content})["content"]
-        return trans.fill_template("page/editor.mako", page=page, content=content)
+        return trans.fill_template("page/editor.mako", page=page)
 
     @web.expose
     @web.require_login("use Galaxy pages")

@@ -44,8 +44,7 @@
         </div>
     </div>
 
-    <div class="unified-panel-body">
-        <textarea name="page_content" page_id="${trans.security.encode_id(page.id)}">${ content }</textarea>
+    <div class="unified-panel-body page-editor-content" page_id="${trans.security.encode_id(page.id)}">
     </div>
 
 </%def>
