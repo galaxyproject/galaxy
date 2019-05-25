@@ -2,7 +2,7 @@ import $ from "jquery";
 import axios from "axios";
 import { Toast } from "ui/toast";
 import { getAppRoot } from "onload/loadConfig";
-import PageEditorHtml from "components/PageEditor/PageEditorHtml";
+import { PageEditor } from "components/PageEditor";
 import Vue from "vue";
 
 export default function pagesEditorOnload() {
@@ -10,8 +10,8 @@ export default function pagesEditorOnload() {
     axios
         .get(`${getAppRoot()}api/pages/${pageId}`)
         .then(response => {
-            const pageEditorHtmlInstance = Vue.extend(PageEditorHtml);
-            new pageEditorHtmlInstance({
+            const pageEditorInstance = Vue.extend(PageEditor);
+            new pageEditorInstance({
                 propsData: {
                     pageId: pageId,
                     content: response.data.content,

@@ -1,16 +1,7 @@
 <template>
-    <span>
-        <div class="unified-panel-header" unselectable="on">
-            <div class="unified-panel-header-inner">
-                Page Editor: {{ title }}
-                <a id="save-button" class="btn btn-secondary fa fa-save float-right"></a>
-            </div>
-        </div>
-
-        <div class="unified-panel-body">
-            <textarea name="page_content" :val="content"></textarea>
-        </div>
-    </span>
+    <div class="unified-panel-body">
+        <textarea name="page_content" :val="content"></textarea>
+    </div>
 </template>
 
 <script>
@@ -718,9 +709,6 @@ export default {
         content: {
             type: String
         },
-        title: {
-            type: String
-        }
     },
     created: function() {
         this.$nextTick(() => {
