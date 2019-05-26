@@ -4,6 +4,7 @@ API for updating Galaxy Pages
 import logging
 
 from galaxy import exceptions
+from galaxy.managers.base import get_object
 from galaxy.managers.pages import (
     PageManager,
     PageSerializer
@@ -128,7 +129,7 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         :rtype:     dict
         :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request
         """
-        page = self._get_page(trans, id)
+        page = get_object(trans, id, 'Page', check_ownership=True)
 
         # Mark a page as deleted
         page.deleted = True
@@ -147,22 +148,7 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         :rtype:     dict
         :returns:   Dictionary return of the Page.to_dict call with the 'content' field populated by the most recent revision
         """
-        page = self._get_page(trans, id)
-        self.security_check(trans, page, check_ownership=False, check_accessible=True)
+        page = get_object(trans, id, 'Page', check_ownership=False, check_accessible=True)
         rval = self.encode_all_ids(trans, page.to_dict(), True)
         rval['content'] = page.latest_revision.content
         return rval
-
-    def _get_page(self, trans, id):  # Fetches page object and verifies security.
-        try:
-            page = trans.sa_session.query(trans.app.model.Page).get(trans.security.decode_id(id))
-        except Exception:
-            page = None
-
-        if not page:
-            raise exceptions.ObjectNotFound()
-
-        if page.user != trans.user and not trans.user_is_admin:
-            raise exceptions.ItemOwnershipException()
-
-        return page
