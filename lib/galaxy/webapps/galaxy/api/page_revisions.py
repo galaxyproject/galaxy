@@ -3,11 +3,9 @@ API for updating Galaxy Pages
 """
 import logging
 
-from galaxy import exceptions
-from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.managers.base import get_object
 from galaxy.managers.pages import PageManager
-from galaxy.util.sanitize_html import sanitize_html
+from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.web import expose_api
 from galaxy.web.base.controller import (
     BaseAPIController,
@@ -59,26 +57,5 @@ class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, Uses
         :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request
         """
         page = get_object(trans, page_id, 'Page', check_ownership=True)
-
-        content = payload.get("content", None)
-        if not content:
-            raise exceptions.ObjectAttributeMissingException("content undefined or empty")
-
-        if 'title' in payload:
-            title = payload['title']
-        else:
-            title = page.title
-
-        content = sanitize_html(content)
-
-        page_revision = trans.app.model.PageRevision()
-        page_revision.title = title
-        page_revision.page = page
-        page.latest_revision = page_revision
-        page_revision.content = content
-
-        # Persist
-        session = trans.sa_session
-        session.flush()
-
-        return page_revision.to_dict(view="element")
+        page_revision = self.manager.save_new_revision(trans, page, payload)
+        return self.encode_all_ids(trans, page_revision.to_dict(view="element"), True)
