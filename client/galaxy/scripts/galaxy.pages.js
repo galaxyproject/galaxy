@@ -557,8 +557,6 @@ export default function pagesEditorOnload(renderedConfigs = {}) {
             data: {
                 id: configs.page_id,
                 content: editor.xhtml(),
-                annotations: JSON.stringify({}),
-                // annotations: JSON.stringify(annotations),
                 _: "true"
             },
             success: function() {
