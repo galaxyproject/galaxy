@@ -55,8 +55,6 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
     def setUp(self):
         super(ObjectStoreJobsIntegrationTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-
-    def test_tool_simple_constructs(self):
         with self.dataset_populator.test_history() as history_id:
             hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
             create_10_inputs = {
@@ -71,6 +69,25 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
             )
             self.dataset_populator.wait_for_history(history_id)
 
+    def test_tool_simple_constructs(self):
+        """
+        According to the ObjectStore configuration given in the
+        `DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE` variable, datasets
+        can be stored on three backends, named:
+            -   primary/files1;
+            -   primary/files2;
+            -   secondary/files3.
+
+        Objectstore _randomly_ distributes tools outputs on
+        `primary/files1` and `primary/files2`, and will use
+        `secondary/files3` and both `primary` backends fail.
+
+        This test runs a tools that creates ten dummy datasets,
+        and asserts if ObjectStore correctly creates ten files
+        in `primary/files1` and `primary/files2`, and none in
+        `secondary/files3`, assuming it will not fail persisting
+        data in `primary` backend.
+        """
         files_1_count = _files_count(self.files1_path)
         files_2_count = _files_count(self.files2_path)
         files_3_count = _files_count(self.files3_path)
