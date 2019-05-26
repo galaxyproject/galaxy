@@ -49,7 +49,7 @@ var DataOutputView = Backbone.View.extend({
 
         var isInput = output.extensions.indexOf("input") >= 0 || output.extensions.indexOf("input_collection") >= 0;
         if (!isInput) {
-            label = `${label} (${output.extensions.join(", ")})`;
+            label = `${label} (${output.force_datatype || output.extensions.join(", ")})`;
         }
         this.$el.html(label);
         this.calloutView = null;

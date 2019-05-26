@@ -84,26 +84,43 @@ export default Backbone.View.extend({
         return terminalView;
     },
 
-    addDataOutput: function(output) {
-        var terminalViewClass = TerminalViews.OutputTerminalView;
-        var outputViewClass = DataViews.DataOutputView;
+    terminalViewForOutput: function(output) {
+        let terminalViewClass = TerminalViews.OutputTerminalView;
         if (output.collection) {
             terminalViewClass = TerminalViews.OutputCollectionTerminalView;
         } else if (output.parameter) {
             terminalViewClass = TerminalViews.OutputParameterTerminalView;
-            outputViewClass = DataViews.ParameterOutputView;
         }
-        var terminalView = new terminalViewClass({
+        const terminalView = new terminalViewClass({
             node: this.node,
             output: output
-        });
-        var outputView = new outputViewClass({
+        })
+        return terminalView
+    },
+
+    outputViewforOutput: function(output, terminalView) {
+        const outputViewClass = output.parameter ? DataViews.ParameterOutputView : DataViews.DataOutputView;
+        const outputView = new outputViewClass({
             output: output,
             terminalElement: terminalView.el,
             nodeView: this
         });
+        return outputView
+    },
+
+    addDataOutput: function(output) {
+        const terminalView = this.terminalViewForOutput(output);
+        const outputView = this.outputViewforOutput(output, terminalView);
         this.outputViews[output.name] = outputView;
         this.tool_body.append(outputView.$el.append(terminalView.terminalElements()));
+    },
+
+    updateDataOutputView: function(output) {
+        const terminalView = this.terminalViewForOutput(output);
+        const outputView = this.outputViews[output.name];
+        const newOutputView = this.outputViewforOutput(output, terminalView);
+        newOutputView.$el.append(terminalView.terminalElements());
+        outputView.$el.html(newOutputView.$el);
     },
 
     redrawWorkflowOutputs: function() {
