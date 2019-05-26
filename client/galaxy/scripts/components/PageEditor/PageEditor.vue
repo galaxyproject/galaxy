@@ -3,10 +3,10 @@
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 Page Editor: {{ title }}
-                <a id="save-button" class="btn btn-secondary fa fa-save float-right"></a>
+                <a id="save-button" class="btn btn-secondary fa fa-save float-right" @click="saveContent"></a>
             </div>
         </div>
-        <page-editor-html :page-id="pageId" :content="content" />
+        <page-editor-html :page-id="pageId" :content="content" ref="contentEditor" />
     </span>
 </template>
 
@@ -26,8 +26,13 @@ export default {
             type: String
         }
     },
+    methods: {
+        saveContent: function() {
+            this.$refs.contentEditor.saveContent();
+        }
+    },
     components: {
         PageEditorHtml
-    },
-}
+    }
+};
 </script>

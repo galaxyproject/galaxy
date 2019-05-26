@@ -14,6 +14,7 @@ import { make_popupmenu } from "ui/popupmenu";
 import { getGalaxyInstance } from "app";
 import { buildConfig } from "utils/genericConfig";
 import { getAppRoot } from "onload/loadConfig";
+import { save } from "./util";
 
 // Built a generic config container for the properties that
 // are passed in from python then used (formerly) globally
@@ -27,6 +28,8 @@ function setPageConfigs(incoming = {}) {
 }
 
 var WYMeditor = window.WYMeditor;
+
+var editor = null;
 
 var CONTROLS = {
     // Item types.
@@ -508,8 +511,7 @@ function renderEditorWithContent(pageId, content) {
         set_accessible_url: `${appRoot}ITEM_CONTROLLER/set_accessible_async`,
         get_name_and_link_url: `${appRoot}ITEM_CONTROLLER/get_name_and_link_async?id=`,
         editor_base_path: `${appRoot}static/wymeditor/`,
-        iframe_base_path: `${appRoot}static/wymeditor/iframe/galaxy/`,
-        save_url: `${appRoot}page/save`
+        iframe_base_path: `${appRoot}static/wymeditor/iframe/galaxy/`
     };
     setPageConfigs(pageConfigs);
 
@@ -568,30 +570,7 @@ function renderEditorWithContent(pageId, content) {
             ]
         });
     // Get the editor object
-    var editor = $.wymeditors(0);
-    var save = callback => {
-        show_modal("Saving page", "progress");
-
-        // Do save.
-        $.ajax({
-            url: configs.save_url,
-            type: "POST",
-            data: {
-                id: configs.page_id,
-                content: editor.xhtml(),
-                _: "true"
-            },
-            success: function() {
-                callback();
-            }
-        });
-    };
-    // Save button
-    $("#save-button").click(() => {
-        save(() => {
-            hide_modal();
-        });
-    });
+    editor = $.wymeditors(0);
 
     //
     // Containers, Galaxy style
@@ -678,12 +657,17 @@ export default {
         },
         content: {
             type: String
-        },
+        }
     },
     created: function() {
         this.$nextTick(() => {
             renderEditorWithContent(this.pageId, this.content);
         });
+    },
+    methods: {
+        saveContent: function() {
+            save(this.pageId, editor.xhtml());
+        }
     }
 };
 </script>
