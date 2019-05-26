@@ -82,7 +82,10 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         :returns:   Dictionary return of the Page.to_dict call
         """
         page = self.manager.create(trans, payload)
-        return self.encode_all_ids(trans, page.to_dict(), True)
+        rval = self.encode_all_ids(trans, page.to_dict(), True)
+        rval['content'] = page.latest_revision.content
+        self.manager.rewrite_content_for_export(trans, rval)
+        return rval
 
     @expose_api
     def delete(self, trans, id, **kwd):
@@ -118,4 +121,5 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         page = get_object(trans, id, 'Page', check_ownership=False, check_accessible=True)
         rval = self.encode_all_ids(trans, page.to_dict(), True)
         rval['content'] = page.latest_revision.content
+        self.manager.rewrite_content_for_export(trans, rval)
         return rval

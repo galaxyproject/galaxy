@@ -139,6 +139,14 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         session.flush()
         return page_revision
 
+    def rewrite_content_for_export(self, trans, as_dict):
+        content = as_dict["content"]
+        processor = PageContentProcessor(trans, placeholderRenderForEdit)
+        processor.feed(content)
+        content = unicodify(processor.output(), 'utf-8')
+        as_dict["content"] = content
+        return as_dict
+
 
 class PageSerializer(sharable.SharableModelSerializer):
     """

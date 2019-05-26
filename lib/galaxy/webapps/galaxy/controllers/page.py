@@ -23,7 +23,6 @@ from galaxy.managers.pages import (
     get_page_identifiers,
     PageContentProcessor,
     PageManager,
-    placeholderRenderForEdit,
 )
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.util import unicodify
@@ -408,9 +407,7 @@ class PageController(BaseUIController, SharableMixin,
         page = trans.sa_session.query(model.Page).get(id)
         assert page.user == trans.user
         content = page.latest_revision.content
-        processor = PageContentProcessor(trans, placeholderRenderForEdit)
-        processor.feed(content)
-        content = unicodify(processor.output(), 'utf-8')
+        content = self.page_manager.rewrite_content_for_export(trans, {"content": content})["content"]
         return trans.fill_template("page/editor.mako", page=page, content=content)
 
     @web.expose
