@@ -69,7 +69,7 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
             )
             self.dataset_populator.wait_for_history(history_id)
 
-    def test_tool_simple_constructs(self):
+    def test_files_count_in_each_objectstore_backend(self):
         """
         According to the ObjectStore configuration given in the
         `DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE` variable, datasets
