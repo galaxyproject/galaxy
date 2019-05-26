@@ -10,12 +10,15 @@ export default function pagesEditorOnload() {
     axios
         .get(`${getAppRoot()}api/pages/${pageId}`)
         .then(response => {
+            const data = response.data;
             const pageEditorInstance = Vue.extend(PageEditor);
             new pageEditorInstance({
                 propsData: {
+                    publicUrl: `u/${data.username}/p/${data.slug}`,
                     pageId: pageId,
-                    content: response.data.content,
-                    title: response.data.title
+                    content: data.content,
+                    contentFormat: data.content_format,
+                    title: data.title
                 },
                 el: "#page-editor-content"
             });

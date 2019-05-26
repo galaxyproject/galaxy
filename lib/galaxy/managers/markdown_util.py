@@ -13,6 +13,7 @@ context specific processing.
 import logging
 import re
 
+from galaxy.exceptions import MalformedContents, MalformedId
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.hdcas import HDCASerializer
@@ -53,7 +54,8 @@ OUTPUT_LABEL_PATTERN = re.compile(r'output=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 INPUT_LABEL_PATTERN = re.compile(r'input=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 STEP_LABEL_PATTERN = re.compile(r'step=\s*%s\s*' % ARG_VAL_CAPTURED_REGEX)
 # STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
-ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id)=([\d]+)')
+UNENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id)=([\d]+)')
+ENCODED_ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id)=([a-z0-9]+)')
 GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
     r"```\s*galaxy\s*"
 )
@@ -64,6 +66,27 @@ GALAXY_FENCED_BLOCK = re.compile(r'^```\s*galaxy\s*(.*?)^```', re.MULTILINE ^ re
 VALID_CONTAINER_START_PATTERN = re.compile(r"^```\s+[\w]+.*$")
 VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
 WHITE_SPACE_ONLY_PATTERN = re.compile(r"^[\s]+$")
+
+
+def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
+    """Convert from encoded IDs to decoded numeric IDs for storing in the DB."""
+
+    validate_galaxy_markdown(external_galaxy_markdown, internal=False)
+
+    def _remap(container, line):
+        id_match = re.search(ENCODED_ID_PATTERN, line)
+        object_id = None
+        if id_match:
+            object_id = id_match.group(2)
+            try:
+                decoded_id = trans.security.decode_id(object_id)
+            except Exception:
+                raise MalformedId("Invalid encoded ID %s" % object_id)
+            line = line.replace(id_match.group(), "%s=%d" % (id_match.group(1), decoded_id))
+        return (line, False)
+
+    internal_markdown = _remap_galaxy_markdown_calls(_remap, external_galaxy_markdown)
+    return internal_markdown
 
 
 def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
@@ -82,7 +105,7 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
     extra_rendering_data = {}
 
     def _remap(container, line):
-        id_match = re.search(ID_PATTERN, line)
+        id_match = re.search(UNENCODED_ID_PATTERN, line)
         object_id = None
         encoded_id = None
         if id_match:
@@ -238,13 +261,11 @@ history_dataset_collection_display(input=%s)
             line = line.replace(target_match.group(), "%s_id=%s" % (ref_object_type, ref_object.id))
         return (line, False)
 
-    log.debug("workflow markdown is \n%s" % workflow_markdown)
     workflow_markdown = _remap_galaxy_markdown_calls(
         _section_remap,
         workflow_markdown,
     )
     galaxy_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
-    log.debug("galaxy markdown is \n%s" % galaxy_markdown)
     return galaxy_markdown
 
 
@@ -258,7 +279,7 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
         def invalid_line(template, **kwd):
             if "line" in kwd:
                 kwd["line"] = line.rstrip("\r\n")
-            raise Exception("Invalid line %d: %s" % (line_no + 1, template.format(**kwd)))
+            raise MalformedContents("Invalid line %d: %s" % (line_no + 1, template.format(**kwd)))
 
         expecting_container_close = expecting_container_close_for is not None
         if not fenced and expecting_container_close:
@@ -267,13 +288,16 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
         elif not fenced:
             continue
         elif fenced and expecting_container_close and BLOCK_FENCE_END.match(line):
+            # reset
             expecting_container_close_for = None
+            function_calls = 0
         elif open_fence and GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN.match(line):
             if expecting_container_close:
                 if not VALID_CONTAINER_END_PATTERN.match(line):
                     invalid_line("Invalid command close line [{line}] for [{expected_for}]", line=line, expected_for=expecting_container_close_for)
                 # else closing container and we're done
                 expecting_container_close_for = None
+                function_calls = 0
                 continue
 
             expecting_container_close_for = line
@@ -291,7 +315,7 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
         continue
 
     if expecting_container_close_for:
-        raise Exception("Invalid line %d: %s" % (last_line_no, "close of block for [{expected_for}] expected".format(expected_for=expecting_container_close_for)))
+        raise MalformedContents("Invalid line %d: %s" % (last_line_no, "close of block for [{expected_for}] expected".format(expected_for=expecting_container_close_for)))
 
 
 def _remap_galaxy_markdown_containers(func, markdown):
@@ -360,5 +384,6 @@ def _split_markdown_lines(markdown):
 
 __all__ = (
     'ready_galaxy_markdown_for_export',
+    'ready_galaxy_markdown_for_import',
     'resolve_invocation_markdown',
 )

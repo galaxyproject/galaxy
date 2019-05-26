@@ -16,6 +16,7 @@ import MarkdownIt from "markdown-it";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import HDCAModel from "mvc/history/hdca-model";
 import HDCAListItemEdit from "mvc/history/hdca-li-edit";
+import HDCAListItem from "mvc/history/hdca-li";
 
 const FUNCTION_CALL_LINE_TEMPLATE = /\s*(\w+)\s*\((\s*\w+\s*=\s*\w+\s*)\)\s*/m;
 
@@ -140,6 +141,10 @@ export default {
     props: {
         markdownConfig: {
             type: Object
+        },
+        readOnly: {
+            type: Boolean,
+            default: true
         }
     },
     data() {
@@ -190,8 +195,8 @@ export default {
                     jobStateSummariesCollection.historyId = hdca["history_id"];
                     jobStateSummariesCollection.monitor();
                     jobStateSummariesCollection.trackModel(hdcaModel);
-
-                    return new HDCAListItemEdit.HDCAListItemEdit({
+                    const viewClass = this.readOnly ? HDCAListItem.HDCAListItemView : HDCAListItemEdit.HDCAListItemEdit;
+                    return new viewClass({
                         model: hdcaModel,
                         el: $(el),
                         linkTarget: "galaxy_main",

@@ -1246,7 +1246,8 @@ model.PageRevision.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("page_id", Integer, ForeignKey("page.id"), index=True, nullable=False),
     Column("title", TEXT),
-    Column("content", TEXT))
+    Column("content", TEXT),
+    Column("content_format", TrimmedString(32)))
 
 model.PageUserShareAssociation.table = Table(
     "page_user_share_association", metadata,
