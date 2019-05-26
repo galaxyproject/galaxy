@@ -34,6 +34,8 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0
 </object_store>
 """)
 
+TEST_INPUT_FILES_CONTENT = "1 2 3"
+
 
 class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
 
@@ -56,7 +58,7 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
         super(ObjectStoreJobsIntegrationTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         with self.dataset_populator.test_history() as history_id:
-            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+            hda1 = self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_FILES_CONTENT)
             create_10_inputs = {
                 "input1": {"src": "hda", "id": hda1["id"]},
                 "input2": {"src": "hda", "id": hda1["id"]},
@@ -69,7 +71,7 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
             )
             self.dataset_populator.wait_for_history(history_id)
 
-    def test_files_count_in_each_objectstore_backend(self):
+    def test_files_count_and_content_in_each_objectstore_backend(self):
         """
         According to the ObjectStore configuration given in the
         `DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE` variable, datasets
@@ -96,7 +98,7 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
         assert files_3_count == 0
 
         # Ensure the 10 inputs were written to one of the distributed object store's disk
-        # stores (it will have either 10 or 11 depeending on whether the input was also
+        # stores (it will have either 10 or 11 depending on whether the input was also
         # written there. The other disk store may or may not have the input file so should
         # have at most one file.
         assert (files_1_count + files_2_count == 10) or (files_1_count + files_2_count == 11)
@@ -106,6 +108,28 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
         assert (files_1_count <= 11) and (files_2_count <= 11)
         assert (files_1_count >= 0) and (files_2_count >= 0)
 
+        contents = []
+        path1_files = _get_datasets_files_in_path(self.files1_path)
+        path2_files = _get_datasets_files_in_path(self.files2_path)
+        path3_files = _get_datasets_files_in_path(self.files3_path)
+        for filename in set().union(path1_files, path2_files, path3_files):
+            with open(filename) as f:
+                content = f.read().strip('\n').strip('\t')
+                if content != TEST_INPUT_FILES_CONTENT:
+                    contents.append(content)
+
+        for expected_content in range(1, 10):
+            assert str(expected_content) in contents
+
 
 def _files_count(directory):
     return sum(len(files) for _, _, files in os.walk(directory))
+
+
+def _get_datasets_files_in_path(directory):
+    files = []
+    for path, _, filename in os.walk(directory):
+        for f in filename:
+            if f.endswith(".dat"):
+                files.append(os.path.join(path, f))
+    return files
