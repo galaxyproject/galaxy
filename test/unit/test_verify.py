@@ -15,13 +15,13 @@ from galaxy.tools.verify import (
 F1 = b"A\nB\nC"
 F2 = b"A\nB\nD\nE" * 61
 F3 = b"A\nB\n\xfc"
-MULTINE_MATCH = b".*"
+MULTILINE_MATCH = b".*"
 TestFile = collections.namedtuple('TestFile', 'value path')
 
 
 def generate_tests(multiline=False):
     files = []
-    for b, ext in [(F1, '.txt'), (F2, '.txt'), (F3, '.pdf'), (MULTINE_MATCH, '.txt')]:
+    for b, ext in [(F1, '.txt'), (F2, '.txt'), (F3, '.pdf'), (MULTILINE_MATCH, '.txt')]:
         fd, path = tempfile.mkstemp(suffix=ext)
         with os.fdopen(fd, 'wb') as out:
             out.write(b)
