@@ -2,7 +2,6 @@
 Contains functionality needed in every web interface
 """
 import logging
-import re
 
 from six import string_types
 from sqlalchemy import true

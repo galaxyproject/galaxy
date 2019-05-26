@@ -87,7 +87,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             raise exceptions.DuplicatedSlugException("Page identifier must be unique")
 
         content = payload.get("content", "")
-        content = sanitize_html(content)
+        content = self.rewrite_content_for_import(trans, content)
 
         # Create the new stored page
         page = trans.app.model.Page()
@@ -122,11 +122,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         else:
             title = page.title
 
-        content = sanitize_html(content)
-        processor = PageContentProcessor(trans, placeholderRenderForSave)
-        processor.feed(content)
-        # Output is string, so convert to unicode for saving.
-        content = unicodify(processor.output(), 'utf-8')
+        content = self.rewrite_content_for_import(trans, content)
 
         page_revision = trans.app.model.PageRevision()
         page_revision.title = title
@@ -138,6 +134,14 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         session = trans.sa_session
         session.flush()
         return page_revision
+
+    def rewrite_content_for_import(self, trans, content):
+        content = sanitize_html(content)
+        processor = PageContentProcessor(trans, placeholderRenderForSave)
+        processor.feed(content)
+        # Output is string, so convert to unicode for saving.
+        content = unicodify(processor.output(), 'utf-8')
+        return content
 
     def rewrite_content_for_export(self, trans, as_dict):
         content = as_dict["content"]
