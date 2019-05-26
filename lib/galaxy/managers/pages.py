@@ -136,11 +136,16 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         return page_revision
 
     def rewrite_content_for_import(self, trans, content):
-        content = sanitize_html(content)
-        processor = PageContentProcessor(trans, placeholderRenderForSave)
-        processor.feed(content)
-        # Output is string, so convert to unicode for saving.
-        content = unicodify(processor.output(), 'utf-8')
+        try:
+            content = sanitize_html(content)
+            processor = PageContentProcessor(trans, placeholderRenderForSave)
+            processor.feed(content)
+            # Output is string, so convert to unicode for saving.
+            content = unicodify(processor.output(), 'utf-8')
+        except exceptions.MessageException:
+            raise
+        except Exception:
+            raise exceptions.RequestParameterInvalidException("problem with embedded HTML content [%s]" % content)
         return content
 
     def rewrite_content_for_export(self, trans, as_dict):
@@ -364,7 +369,7 @@ def get_page_identifiers(item_id, app):
     except ValueError:
         # It's an encoded id.
         encoded_id = item_id
-        decoded_id = app.security.decode_id(item_id)
+        decoded_id = base.decode_id(app, item_id)
     return (encoded_id, decoded_id)
 
 

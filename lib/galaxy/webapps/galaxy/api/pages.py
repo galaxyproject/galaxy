@@ -3,7 +3,6 @@ API for updating Galaxy Pages
 """
 import logging
 
-from galaxy import exceptions
 from galaxy.managers.base import get_object
 from galaxy.managers.pages import (
     PageManager,
