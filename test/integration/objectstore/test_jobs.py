@@ -99,8 +99,7 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
         # stores (it will have either 10 or 11 depeending on whether the input was also
         # written there. The other disk store may or may not have the input file so should
         # have at most one file.
-        assert (files_1_count >= 10) or (files_2_count >= 10)
-        assert (files_1_count <= 1) or (files_2_count <= 1)
+        assert (files_1_count + files_2_count == 10) or (files_1_count + files_2_count == 11)
 
         # Other sanity checks on the test - just make sure the test was setup as intended
         # and not actually testing object store behavior.
