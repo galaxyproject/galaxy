@@ -5,6 +5,7 @@ import logging
 
 from galaxy import exceptions
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.managers.base import get_object
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import expose_api
 from galaxy.web.base.controller import (
@@ -30,10 +31,8 @@ class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, Uses
         :rtype:     list
         :returns:   dictionaries containing different revisions of the page
         """
-        page = self._get_page(trans, page_id)
-        self._verify_page_ownership(trans, page)
-
-        r = trans.sa_session.query(trans.app.model.PageRevision).filter_by(page_id=trans.security.decode_id(page_id))
+        page = get_object(trans, page_id, 'Page', check_ownership=False, check_accessible=True)
+        r = trans.sa_session.query(trans.app.model.PageRevision).filter_by(page_id=page.id)
         out = []
         for page in r:
             out.append(self.encode_all_ids(trans, page.to_dict(), True))
@@ -54,12 +53,11 @@ class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, Uses
         :rtype:     dictionary
         :returns:   Dictionary with 'success' or 'error' element to indicate the result of the request
         """
+        page = get_object(trans, page_id, 'Page', check_ownership=True)
+
         content = payload.get("content", None)
         if not content:
             raise exceptions.ObjectAttributeMissingException("content undefined or empty")
-
-        page = self._get_page(trans, page_id)
-        self._verify_page_ownership(trans, page)
 
         if 'title' in payload:
             title = payload['title']
@@ -79,17 +77,3 @@ class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, Uses
         session.flush()
 
         return page_revision.to_dict(view="element")
-
-    def _get_page(self, trans, page_id):
-        page = None
-        try:
-            page = trans.sa_session.query(trans.app.model.Page).get(trans.security.decode_id(page_id))
-        except Exception:
-            pass
-        if not page:
-            raise exceptions.ObjectNotFound()
-        return page
-
-    def _verify_page_ownership(self, trans, page):
-        if not self.security_check(trans, page, True, True):
-            raise exceptions.ItemOwnershipException()
