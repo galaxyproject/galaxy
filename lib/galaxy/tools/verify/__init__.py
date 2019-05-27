@@ -16,6 +16,7 @@ try:
 except ImportError:
     pysam = None
 
+from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
 from .asserts import verify_assertions
 from .test_data import TestDataResolver
@@ -110,9 +111,9 @@ def verify(
                 log.error(error_log_msg, exc_info=True)
             else:
                 log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (keep_outputs_dir, ofn))
+        compare = attributes.get('compare', 'diff')
         try:
-            compare = attributes.get('compare', 'diff')
-            if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam']:
+            if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam', 'cram']:
                 try:
                     local_fh, temp_name = _bam_to_sam(local_name, temp_name)
                     local_name = local_fh.name
@@ -196,7 +197,7 @@ def files_diff(file1, file2, attributes=None):
                 count += 1
         return count
 
-    if not filecmp.cmp(file1, file2):
+    if not filecmp.cmp(file1, file2, shallow=False):
         if attributes is None:
             attributes = {}
         decompress = attributes.get("decompress", None)
@@ -207,13 +208,17 @@ def files_diff(file1, file2, attributes=None):
             compressed_formats = []
         is_pdf = False
         try:
-            local_file = get_fileobj(file1, compressed_formats=compressed_formats).readlines()
-            history_data = get_fileobj(file2, compressed_formats=compressed_formats).readlines()
+            with get_fileobj(file2, compressed_formats=compressed_formats) as fh:
+                history_data = fh.readlines()
+            with get_fileobj(file1, compressed_formats=compressed_formats) as fh:
+                local_file = fh.readlines()
         except UnicodeDecodeError:
             if file1.endswith('.pdf') or file2.endswith('.pdf'):
                 is_pdf = True
-                local_file = open(file1, 'rb').readlines()
-                history_data = open(file2, 'rb').readlines()
+                # Replace non-Unicode characters using unicodify(),
+                # difflib.unified_diff doesn't work on list of bytes
+                history_data = [unicodify(l) for l in get_fileobj(file2, mode='rb', compressed_formats=compressed_formats)]
+                local_file = [unicodify(l) for l in get_fileobj(file1, mode='rb', compressed_formats=compressed_formats)]
             else:
                 raise AssertionError("Binary data detected, not displaying diff")
         if attributes.get('sort', False):
@@ -268,9 +273,21 @@ def files_diff(file1, file2, attributes=None):
 
 def files_re_match(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match."""
-    local_file = io.open(file1, encoding='utf-8').readlines()  # regex file
-    history_data = io.open(file2, encoding='utf-8').readlines()
-    assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), ''.join(history_data[:40]))
+    join_char = ''
+    to_strip = os.linesep
+    try:
+        with io.open(file2, encoding='utf-8') as fh:
+            history_data = fh.readlines()
+        with io.open(file1, encoding='utf-8') as fh:
+            local_file = fh.readlines()
+    except UnicodeDecodeError:
+        join_char = b''
+        to_strip = os.linesep.encode('utf-8')
+        with open(file2, 'rb') as fh:
+            history_data = fh.readlines()
+        with open(file1, 'rb') as fh:
+            local_file = fh.readlines()
+    assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), join_char.join(history_data[:40]))
     if attributes is None:
         attributes = {}
     if attributes.get('sort', False):
@@ -278,38 +295,60 @@ def files_re_match(file1, file2, attributes=None):
     lines_diff = int(attributes.get('lines_diff', 0))
     line_diff_count = 0
     diffs = []
-    for i in range(len(history_data)):
-        if not re.match(local_file[i].rstrip('\r\n'), history_data[i].rstrip('\r\n')):
+    for regex_line, data_line in zip(local_file, history_data):
+        regex_line = regex_line.rstrip(to_strip)
+        data_line = data_line.rstrip(to_strip)
+        if not re.match(regex_line, data_line):
             line_diff_count += 1
-            diffs.append('Regular Expression: %s\nData file         : %s' % (local_file[i].rstrip('\r\n'), history_data[i].rstrip('\r\n')))
-        if line_diff_count > lines_diff:
-            raise AssertionError("Regular expression did not match data file (allowed variants=%i):\n%s" % (lines_diff, "".join(diffs)))
+            diffs.append('Regular Expression: %s, Data file: %s\n' % (regex_line, data_line))
+    if line_diff_count > lines_diff:
+        raise AssertionError("Regular expression did not match data file (allowed variants=%i):\n%s" % (lines_diff, "".join(diffs)))
 
 
 def files_re_match_multiline(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match in multiline mode."""
-    local_file = io.open(file1, encoding='utf-8').read()  # regex file
+    join_char = ''
+    try:
+        with io.open(file2, encoding='utf-8') as fh:
+            history_data = fh.readlines()
+        with io.open(file1, encoding='utf-8') as fh:
+            local_file = fh.read()
+    except UnicodeDecodeError:
+        join_char = b''
+        with open(file2, 'rb') as fh:
+            history_data = fh.readlines()
+        with open(file1, 'rb') as fh:
+            local_file = fh.read()
     if attributes is None:
         attributes = {}
     if attributes.get('sort', False):
-        history_data = io.open(file2, encoding='utf-8').readlines()
         history_data.sort()
-        history_data = ''.join(history_data)
-    else:
-        history_data = io.open(file2, encoding='utf-8').read()
+    history_data = join_char.join(history_data)
     # lines_diff not applicable to multiline matching
     assert re.match(local_file, history_data, re.MULTILINE), "Multiline Regular expression did not match data file"
 
 
 def files_contains(file1, file2, attributes=None):
     """Check the contents of file2 for substrings found in file1, on a per-line basis."""
-    local_file = io.open(file1, encoding='utf-8').readlines()  # regex file
     # TODO: allow forcing ordering of contains
-    history_data = io.open(file2, encoding='utf-8').read()
+    to_strip = os.linesep
+    try:
+        with io.open(file2, encoding='utf-8') as fh:
+            history_data = fh.read()
+        with io.open(file1, encoding='utf-8') as fh:
+            local_file = fh.readlines()
+    except UnicodeDecodeError:
+        to_strip = os.linesep.encode('utf-8')
+        with open(file2, 'rb') as fh:
+            history_data = fh.read()
+        with open(file1, 'rb') as fh:
+            local_file = fh.readlines()
+    if attributes is None:
+        attributes = {}
     lines_diff = int(attributes.get('lines_diff', 0))
     line_diff_count = 0
-    while local_file:
-        contains = local_file.pop(0).rstrip('\n\r')
+    for contains in local_file:
+        contains = contains.rstrip(to_strip)
         if contains not in history_data:
             line_diff_count += 1
         if line_diff_count > lines_diff:
