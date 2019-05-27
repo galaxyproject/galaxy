@@ -408,6 +408,9 @@ class MockObjectStore(object):
         path = self.created_datasets[dataset]
         return os.stat(path).st_size
 
+    def exists(self, *args, **kwargs):
+        return True
+
     def get_filename(self, dataset):
         return self.created_datasets[dataset]
 
