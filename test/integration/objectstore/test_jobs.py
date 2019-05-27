@@ -108,6 +108,7 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
         assert (files_1_count <= 11) and (files_2_count <= 11)
         assert (files_1_count >= 0) and (files_2_count >= 0)
 
+        # TODO: ideally the following assertion should be separated in a different test method.
         contents = []
         path1_files = _get_datasets_files_in_path(self.files1_path)
         path2_files = _get_datasets_files_in_path(self.files2_path)
