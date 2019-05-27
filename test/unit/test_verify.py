@@ -15,18 +15,19 @@ from galaxy.tools.verify import (
 F1 = b"A\nB\nC"
 F2 = b"A\nB\nD\nE" * 61
 F3 = b"A\nB\n\xfc"
+F4 = b"A\r\nB\nC"
 MULTILINE_MATCH = b".*"
 TestFile = collections.namedtuple('TestFile', 'value path')
 
 
 def generate_tests(multiline=False):
     files = []
-    for b, ext in [(F1, '.txt'), (F2, '.txt'), (F3, '.pdf'), (MULTILINE_MATCH, '.txt')]:
+    for b, ext in [(F1, '.txt'), (F2, '.txt'), (F3, '.pdf'), (F4, '.txt'), (MULTILINE_MATCH, '.txt')]:
         fd, path = tempfile.mkstemp(suffix=ext)
         with os.fdopen(fd, 'wb') as out:
             out.write(b)
         files.append(TestFile(b, path))
-    f1, f2, f3, multiline_match = files
+    f1, f2, f3, f4, multiline_match = files
     if multiline:
         tests = [(multiline_match, f1, {'lines_diff': 0, 'sort': True}, None)]
     else:
@@ -34,6 +35,7 @@ def generate_tests(multiline=False):
     tests.extend([
         (f1, f2, {'lines_diff': 0, 'sort': True}, AssertionError),
         (f1, f3, None, AssertionError),
+        (f1, f4, None, None),
     ])
     return tests
 
