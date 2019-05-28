@@ -32,7 +32,7 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
     'galaxy.job_metrics',
-    'galaxy.job_metrics.instrumers',
+    'galaxy.job_metrics.instrumenters',
     'galaxy.job_metrics.collectl',
 ]
 ENTRY_POINTS = '''
