@@ -28,7 +28,6 @@ with open('%s/project_galaxy_tool_util.py' % SOURCE_DIR, 'rb') as f:
     PROJECT_EMAIL = get_var("PROJECT_EMAIL")
 
 TEST_DIR = 'tests'
-PROJECT_DESCRIPTION = 'Galaxy Tool Utilities'
 PACKAGES = [
     'galaxy',
     'galaxy.tool_util',
@@ -103,7 +102,6 @@ setup(
         'Natural Language :: English',
         "Programming Language :: Python :: 2",
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',

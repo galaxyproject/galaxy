@@ -26,11 +26,12 @@ with open('%s/project_galaxy_util.py' % SOURCE_DIR, 'rb') as f:
     PROJECT_URL = get_var("PROJECT_URL")
     PROJECT_AUTHOR = get_var("PROJECT_AUTHOR")
     PROJECT_EMAIL = get_var("PROJECT_EMAIL")
+    PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
 TEST_DIR = 'tests'
-PROJECT_DESCRIPTION = 'Galaxy Datatype Framework and Datatypes'
 PACKAGES = [
     'galaxy',
+    'galaxy.exceptions',
     'galaxy.util',
     'galaxy.util.logging',
     'galaxy.util.path',
@@ -93,7 +94,6 @@ setup(
         'Natural Language :: English',
         "Programming Language :: Python :: 2",
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
