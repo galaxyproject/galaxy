@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '19.9.0.dev0'
+__version__ = '19.9.0.dev1'
 
 PROJECT_NAME = "galaxy-job-metrics"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"
