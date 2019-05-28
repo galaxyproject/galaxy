@@ -22,9 +22,7 @@
                                         {{ elVal.hid }}: {{ elVal.name }}
                                     </a>
                                 </span>
-                                <span v-else>
-                                    {{ elVal.hid }}: {{ elVal.name }}
-                                </span>
+                                <span v-else> {{ elVal.hid }}: {{ elVal.name }} </span>
                             </li>
                         </ul>
                     </td>
@@ -88,7 +86,7 @@ export default {
         anyNotes: function() {
             let hasNotes = false;
             this.parameters.forEach(parameter => {
-                hasNotes = hasNotes && parameter.note;
+                hasNotes = hasNotes || parameter.notes;
             });
             return hasNotes;
         }
@@ -100,9 +98,10 @@ export default {
         ajaxCall: function(url) {
             axios
                 .get(url)
-                .then(response => {
-                    this.hasParameterErrors = response.data.has_parameter_errors;
-                    this.parameters = response.data.parameters;
+                .then(response => response.data)
+                .then(data => {
+                    this.hasParameterErrors = data.has_parameter_errors;
+                    this.parameters = data.parameters;
                 })
                 .catch(e => {
                     console.error(e);
@@ -111,7 +110,7 @@ export default {
     }
 };
 </script>
-<style>
+<style scoped>
 table.info_data_table {
     table-layout: fixed;
     word-break: break-word;
