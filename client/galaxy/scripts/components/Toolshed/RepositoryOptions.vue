@@ -13,6 +13,12 @@
         </div>
         <div v-if="showAdvanced">
             <b-form-group
+                label="Available Revisions:"
+                description="Choose an repository revision configuration."
+            >
+                <b-form-select :options="revisions" v-model="revision" />
+            </b-form-group>
+            <b-form-group
                 label="Target Section:"
                 description="Choose an existing section in your tool panel to contain the installed tools (optional)."
             >
@@ -20,6 +26,12 @@
                 <datalist id="sectionLabels">
                     <option v-for="section in toolSections">{{ section }}</option>
                 </datalist>
+            </b-form-group>
+            <b-form-group
+                label="Tool Configuration:"
+                description="Choose an tool configuration."
+            >
+                <b-form-select :options="toolConfigs" v-model="toolConfig" />
             </b-form-group>
         </div>
         <b-button variant="primary" @click="installRepository(repo)">Install</b-button>
@@ -33,8 +45,11 @@ import axios from "axios";
 export default {
     props: ["repo", "toolSections"],
     data() {
+        const galaxy = getGalaxyInstance();
         return {
             toolSection: null,
+            toolConfigs: galaxy.config.tool_configs,
+            repoRevisions: [],
             showAdvanced: false
         }
     },

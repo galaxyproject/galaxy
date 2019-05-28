@@ -306,3 +306,13 @@ class ToolShedController(BaseAPIController):
         """
         response = json.loads(util.url_get(tool_shed_url, params=dict(params), pathspec=['api', 'repositories']))
         return response
+
+    @expose_api
+    @web.require_admin
+    def categories(self, trans, tool_shed_url):
+        """
+        GET /api/tool_shed/categories
+        List all available categories
+        """
+        response = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'categories']))
+        return response

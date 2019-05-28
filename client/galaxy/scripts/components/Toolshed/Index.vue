@@ -3,6 +3,7 @@
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
             <b-input class="mb-3" placeholder="search repositories" type="text" v-model="query" @change="load()" />
+            <categories/>
             <b-table striped :items="repositories" :fields="fields">
                 <template slot="name" slot-scope="row">
                     <b-link href="#" class="font-weight-bold" @click="row.toggleDetails">
@@ -27,6 +28,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
+import Categories from "./Categories.vue";
 import RepositoryOptions from "./RepositoryOptions.vue";
 import { Services } from "./services.js";
 import axios from "axios";
@@ -35,6 +37,7 @@ const LOADING = 1;
 const COMPLETE = 2;
 export default {
     components: {
+        categories: Categories,
         repositoryoptions: RepositoryOptions
     },
     data() {
