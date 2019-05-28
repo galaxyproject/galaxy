@@ -65,7 +65,6 @@ var Node = Backbone.Model.extend({
         const output = this.nodeView.outputViews[outputName].output;
         output_terminal.force_datatype = datatype;
         output.force_datatype = datatype;
-        this.nodeView.updateDataOutputView(output);
         if (datatype) {
             this.post_job_actions['ChangeDatatypeAction' + outputName] = {
                 action_arguments: {newtype: datatype},
