@@ -49,7 +49,7 @@ def main(argv):
     mod_path = os.path.join(PROJECT_DIRECTORY, source_dir, PROJECT_MODULE_FILENAME)
     mod = open(mod_path, "r").read()
     if not DEV_RELEASE:
-        mod = re.sub("__version__ = '[\d\.]+'",
+        mod = re.sub(r"__version__ = '[\d\.]+'",
                     "__version__ = '%s.dev0'" % new_version,
                     mod, 1)
     else:
