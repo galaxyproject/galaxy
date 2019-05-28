@@ -7,7 +7,8 @@ IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 UPSTREAM?=galaxyproject
 SOURCE_DIR?=galaxy
 BUILD_SCRIPTS_DIR=scripts
-VERSION?=$(shell python $(BUILD_SCRIPTS_DIR)/print_version_for_release.py $(SOURCE_DIR))
+DEV_RELEASE?=0
+VERSION?=$(shell DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/print_version_for_release.py $(SOURCE_DIR) $(DEV_RELEASE))
 PROJECT_NAME?="galaxy-$(shell basename $(CURDIR))"
 PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
 TEST_DIR?=test
@@ -74,10 +75,10 @@ _release-artifacts:
 release-artifacts: release-test-artifacts _release-artifacts
 
 commit-version:
-	$(IN_VENV) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(SOURCE_DIR) $(VERSION)
+	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(SOURCE_DIR) $(VERSION)
 
 new-version:
-	$(IN_VENV) python $(BUILD_SCRIPTS_DIR)/new_version.py $(SOURCE_DIR) $(VERSION)
+	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/new_version.py $(SOURCE_DIR) $(VERSION)
 
 release-local: commit-version release-artifacts new-version
 
