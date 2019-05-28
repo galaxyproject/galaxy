@@ -77,6 +77,7 @@ setup(
     version=version,
     description=PROJECT_DESCRIPTION,
     long_description=readme + '\n\n' + history,
+    long_description_content_type='text/x-rst',
     author=PROJECT_AUTHOR,
     author_email=PROJECT_EMAIL,
     url=PROJECT_URL,

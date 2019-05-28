@@ -26,6 +26,7 @@ with open('%s/project_galaxy_tool_util.py' % SOURCE_DIR, 'rb') as f:
     PROJECT_URL = get_var("PROJECT_URL")
     PROJECT_AUTHOR = get_var("PROJECT_AUTHOR")
     PROJECT_EMAIL = get_var("PROJECT_EMAIL")
+    PROJECT_DESCRIPTION = get_var("PROJECT_DESCRIPTION")
 
 TEST_DIR = 'tests'
 PACKAGES = [
@@ -78,6 +79,7 @@ setup(
     version=version,
     description=PROJECT_DESCRIPTION,
     long_description=readme + '\n\n' + history,
+    long_description_content_type='text/x-rst',
     author=PROJECT_AUTHOR,
     author_email=PROJECT_EMAIL,
     url=PROJECT_URL,
