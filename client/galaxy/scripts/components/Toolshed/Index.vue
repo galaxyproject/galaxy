@@ -32,6 +32,13 @@ export default {
             return !this.query;
         }
     },
+    watch: {
+        queryInput() {
+            if (!this.queryInput) {
+                this.changeQuery();
+            }
+        }
+    },
     methods: {
         changeQuery(query) {
             this.query = this.queryInput = query;
