@@ -15,6 +15,7 @@
                 :toolshedUrls="toolshedUrls"
                 @onToolshed="setToolshed"
                 @onCategory="setQuery"
+                @onError="setError"
                 v-show="queryEmpty"
             />
         </div>
@@ -65,6 +66,9 @@ export default {
             } else {
                 this.setQuery(query);
             }
+        },
+        setError(error) {
+            this.error = error;
         },
         setQuery(query) {
             this.clearTimer();

@@ -69,7 +69,8 @@ export default {
                     this.loading = false;
                 })
                 .catch(errorMessage => {
-                    alert(errorMessage);
+                    this.loading = false;
+                    this.$emit("onError", errorMessage);
                 });
         },
         onCategory(category) {
