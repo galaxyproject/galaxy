@@ -1,5 +1,11 @@
 <template>
-    <b-table striped :items="categories" :fields="fields"/>
+    <b-table striped :items="categories" :fields="fields">
+        <template slot="name" slot-scope="data">
+            <b-link href="#" class="font-weight-bold" @click="onCategory(data.value)">
+                {{ data.value }}
+            </b-link>
+        </template>
+    </b-table>
 </template>
 <script>
 import Vue from "vue";
@@ -19,11 +25,15 @@ export default {
             .getCategories(this.toolshedUrl)
             .then(categories => {
                 this.categories = categories;
-                window.console.log(categories);
             })
             .catch(errorMessage => {
                 alert(errorMessage);
             });
+    },
+    methods: {
+        onCategory(category) {
+            this.$emit("onCategory", category);
+        }
     }
 };
 </script>
