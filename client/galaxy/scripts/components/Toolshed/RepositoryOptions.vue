@@ -16,7 +16,9 @@
                 label="Available Revisions:"
                 description="Choose an repository revision configuration."
             >
-                <b-form-select :options="revisions" v-model="revision" />
+                <div class="ui-select">
+                    <b-form-select :options="revisions" v-model="revision" />
+                </div>
             </b-form-group>
             <b-form-group
                 label="Target Section:"
@@ -31,7 +33,9 @@
                 label="Tool Configuration:"
                 description="Choose an tool configuration."
             >
-                <b-form-select :options="toolConfigs" v-model="toolConfig" />
+                <div class="ui-select">
+                    <b-form-select :options="toolConfigs" v-model="toolConfig" />
+                </div>
             </b-form-group>
         </div>
         <b-button variant="primary" @click="installRepository(repo)">Install</b-button>
