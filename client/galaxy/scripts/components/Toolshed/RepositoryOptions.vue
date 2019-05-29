@@ -35,7 +35,6 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import axios from "axios";
 export default {
     props: ["repo", "toolSections"],
     data() {

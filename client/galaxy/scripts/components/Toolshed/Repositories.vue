@@ -49,6 +49,9 @@ export default {
         };
     },
     watch: {
+        toolshedUrl() {
+            this.load();
+        },
         query() {
             this.load();
         },
@@ -68,11 +71,11 @@ export default {
     },
     created() {
         this.services = new Services();
-        this.setToolSections();
+        this.configureToolSections();
         this.load();
     },
     methods: {
-        setToolSections() {
+        configureToolSections() {
             const galaxy = getGalaxyInstance();
             const sections = galaxy.config.toolbox_in_panel;
             this.toolSections = sections.filter(x => x.model_class == "ToolSection").map(x => x.name);
@@ -97,10 +100,9 @@ export default {
                     } else {
                         this.pageState = READY;
                     }
-                    this.error = null;
                 })
                 .catch(errorMessage => {
-                    this.error = errorMessage;
+                    this.$emit("onError", errorMessage);
                 });
         }
     }

@@ -2,19 +2,6 @@
     <div>
         <div v-if="loading"><span class="fa fa-spinner fa-spin mb-4" /> <span>Loading categories...</span></div>
         <div v-else>
-            <div class="m-1 text-muted">
-                {{ total }} repositories available at
-                <span class="dropdown">
-                    <b-link id="dropdownToolshedUrl" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        {{ toolshedUrl }}
-                    </b-link>
-                    <div class="dropdown-menu" aria-labelledby="dropdownToolshedUrl">
-                        <a v-for="url in toolshedUrls" class="dropdown-item" href="#" @click="onToolshed(url)">{{
-                            url
-                        }}</a>
-                    </div>
-                </span>
-            </div>
             <b-table striped :items="categories" :fields="fields">
                 <template slot="name" slot-scope="data">
                     <b-link href="#" class="font-weight-bold" @click="onCategory(data.value)">
@@ -26,16 +13,12 @@
     </div>
 </template>
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services.js";
 export default {
-    props: ["toolshedUrl", "toolshedUrls"],
+    props: ["toolshedUrl", "loading"],
     data() {
         return {
             categories: [],
-            total: 0,
-            loading: true,
             fields: {
                 name: {
                     sortable: true
@@ -60,24 +43,21 @@ export default {
     },
     methods: {
         load() {
-            this.loading = true;
+            this.$emit("onLoading", true);
             this.services
                 .getCategories(this.toolshedUrl)
                 .then(categories => {
                     this.categories = categories;
-                    this.total = this.categories.reduce((value, entry) => value + entry.repositories, 0);
-                    this.loading = false;
+                    this.$emit("onTotal", this.categories.reduce((value, entry) => value + entry.repositories, 0));
+                    this.$emit("onLoading", false);
                 })
                 .catch(errorMessage => {
-                    this.loading = false;
                     this.$emit("onError", errorMessage);
+                    this.$emit("onLoading", false);
                 });
         },
         onCategory(category) {
             this.$emit("onCategory", category);
-        },
-        onToolshed(url) {
-            this.$emit("onToolshed", url);
         }
     }
 };

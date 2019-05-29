@@ -9,28 +9,42 @@
                 @input="delayQuery"
                 @change="setQuery"
             />
-            <repositories :query="query" :scrolled="scrolled" :toolshedUrl="toolshedUrl" v-if="!queryEmpty" />
-            <categories
+            <selector
                 :toolshedUrl="toolshedUrl"
                 :toolshedUrls="toolshedUrls"
+                :total="total"
+                :loading="loading"
                 @onToolshed="setToolshed"
-                @onCategory="setQuery"
+            />
+            <repositories
+                :query="query"
+                :scrolled="scrolled"
+                :toolshedUrl="toolshedUrl"
                 @onError="setError"
+                v-if="!queryEmpty"
+            />
+            <categories
+                :toolshedUrl="toolshedUrl"
+                :loading="loading"
+                @onCategory="setQuery"
+                @onTotal="setTotal"
+                @onError="setError"
+                @onLoading="setLoading"
                 v-show="queryEmpty"
             />
         </div>
     </div>
 </template>
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import Categories from "./Categories.vue";
 import Repositories from "./Repositories.vue";
+import Selector from "./Selector.vue";
 export default {
     components: {
         categories: Categories,
-        repositories: Repositories
+        repositories: Repositories,
+        selector: Selector
     },
     data() {
         return {
@@ -41,6 +55,8 @@ export default {
             queryTimer: null,
             query: null,
             scrolled: false,
+            loading: false,
+            total: 0,
             error: null
         };
     },
@@ -86,6 +102,12 @@ export default {
         },
         setToolshed(url) {
             this.toolshedUrl = url;
+        },
+        setTotal(total) {
+            this.total = total;
+        },
+        setLoading(loading) {
+            this.loading = loading;
         },
         onScroll: function({ target: { scrollTop, clientHeight, scrollHeight } }) {
             this.scrolled = scrollTop + clientHeight >= scrollHeight;
