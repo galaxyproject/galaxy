@@ -18,7 +18,7 @@ export class Services {
     }
 
     getRepositories(params) {
-        const paramsString = Object.keys(params).reduce(function (previous, key) {
+        const paramsString = Object.keys(params).reduce(function(previous, key) {
             return `${previous}${key}=${params[key]}&`;
         }, "");
         const url = `${getAppRoot()}api/tool_shed/search?${paramsString}`;

@@ -7,15 +7,13 @@
                 </b-link>
             </template>
             <template slot="row-details" slot-scope="row">
-                <repositoryoptions :repo="row.item" :toolSections="toolSections"/>
+                <repositoryoptions :repo="row.item" :toolSections="toolSections" />
             </template>
         </b-table>
         <div v-if="noResultsFound">
             No matching repositories found.
         </div>
-        <div v-if="pageLoading">
-            <span class="fa fa-spinner fa-spin mb-4" /> <span>Loading repositories...</span>
-        </div>
+        <div v-if="pageLoading"><span class="fa fa-spinner fa-spin mb-4" /> <span>Loading repositories...</span></div>
     </div>
 </template>
 <script>

@@ -2,7 +2,13 @@
     <div class="overflow-auto h-100 p-1" @scroll="onScroll">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <b-input class="mb-3" placeholder="search repositories" v-model="queryInput" @input="delayQuery" @change="setQuery"/>
+            <b-input
+                class="mb-3"
+                placeholder="search repositories"
+                v-model="queryInput"
+                @input="delayQuery"
+                @change="setQuery"
+            />
             <repositories :query="query" :scrolled="scrolled" :toolshedUrl="toolshedUrl" v-if="!queryEmpty" />
             <categories :toolshedUrl="toolshedUrl" @onCategory="setQuery" v-show="queryEmpty" />
         </div>

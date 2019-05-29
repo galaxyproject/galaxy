@@ -2,20 +2,13 @@
     <b-card>
         <div class="mb-1">{{ repo.long_description }}</div>
         <div class="mb-1">
-            <b-link :href="repo.repository_url" target="_blank"
-                >Show additional details and dependencies.</b-link
-            >
+            <b-link :href="repo.repository_url" target="_blank">Show additional details and dependencies.</b-link>
         </div>
         <div class="mb-3">
-            <b-link href="#" @click="toggleAdvanced"
-                >{{ titleAdvanced }}</b-link
-            >
+            <b-link href="#" @click="toggleAdvanced">{{ titleAdvanced }}</b-link>
         </div>
         <div v-if="showAdvanced">
-            <b-form-group
-                label="Available Revisions:"
-                description="Choose an repository revision configuration."
-            >
+            <b-form-group label="Available Revisions:" description="Choose an repository revision configuration.">
                 <div class="ui-select">
                     <b-form-select :options="revisions" v-model="revision" />
                 </div>
@@ -29,10 +22,7 @@
                     <option v-for="section in toolSections">{{ section }}</option>
                 </datalist>
             </b-form-group>
-            <b-form-group
-                label="Tool Configuration:"
-                description="Choose an tool configuration."
-            >
+            <b-form-group label="Tool Configuration:" description="Choose an tool configuration.">
                 <div class="ui-select">
                     <b-form-select :options="toolConfigs" v-model="toolConfig" />
                 </div>
@@ -56,7 +46,7 @@ export default {
             toolConfigs: galaxy.config.tool_configs,
             repoRevisions: [],
             showAdvanced: false
-        }
+        };
     },
     computed: {
         titleAdvanced() {
