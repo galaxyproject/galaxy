@@ -107,8 +107,9 @@ class JobHandlerQueue(Monitors):
             .where(and_(
                 model.Job.table.c.handler.in_(self.app.job_config.self_handler_tags),
                 model.Job.table.c.state == model.Job.states.NEW)) \
-            .order_by(model.Job.table.c.id) \
-            .limit(self.app.job_config.handler_max_grab)
+            .order_by(model.Job.table.c.id)
+        if self.app.job_config.handler_max_grab:
+            subq = subq.limit(self.app.job_config.handler_max_grab)
         if method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
             subq = subq.with_for_update(skip_locked=True)
         self.__grab_query = model.Job.table.update() \
