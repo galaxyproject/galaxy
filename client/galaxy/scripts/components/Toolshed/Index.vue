@@ -2,9 +2,9 @@
     <div class="overflow-auto h-100 p-1" @scroll="onScroll">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <b-input class="mb-3" placeholder="search repositories" v-model="queryInput" @change="changeQuery" />
+            <b-input class="mb-3" placeholder="search repositories" v-model="queryInput" @input="delayQuery" @change="setQuery"/>
             <repositories :query="query" :scrolled="scrolled" :toolshedUrl="toolshedUrl" v-if="!queryEmpty" />
-            <categories :toolshedUrl="toolshedUrl" @onCategory="changeQuery" v-show="queryEmpty" />
+            <categories :toolshedUrl="toolshedUrl" @onCategory="setQuery" v-show="queryEmpty" />
         </div>
     </div>
 </template>
@@ -22,6 +22,8 @@ export default {
         return {
             toolshedUrl: "https://toolshed.g2.bx.psu.edu/",
             queryInput: null,
+            queryDelay: 1000,
+            queryTimer: null,
             query: null,
             scrolled: false,
             error: null
@@ -32,15 +34,24 @@ export default {
             return !this.query;
         }
     },
-    watch: {
-        queryInput() {
-            if (!this.queryInput) {
-                this.changeQuery();
-            }
-        }
-    },
     methods: {
-        changeQuery(query) {
+        clearTimer() {
+            if (this.queryTimer) {
+                clearTimeout(this.queryTimer);
+            }
+        },
+        delayQuery(query) {
+            this.clearTimer();
+            if (query) {
+                this.queryTimer = setTimeout(() => {
+                    this.setQuery(query);
+                }, this.queryDelay);
+            } else {
+                this.setQuery(query);
+            }
+        },
+        setQuery(query) {
+            this.clearTimer();
             this.query = this.queryInput = query;
         },
         onScroll: function({ target: { scrollTop, clientHeight, scrollHeight } }) {
