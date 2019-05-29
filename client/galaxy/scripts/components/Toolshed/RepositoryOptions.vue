@@ -48,6 +48,7 @@ export default {
         const galaxy = getGalaxyInstance();
         return {
             toolSection: null,
+            toolConfig: null,
             toolConfigs: galaxy.config.tool_configs,
             repoRevisions: [],
             showAdvanced: false

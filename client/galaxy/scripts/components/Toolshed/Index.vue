@@ -1,8 +1,8 @@
 <template>
-    <div class="overflow-auto h-100" @scroll="onScroll">
+    <div class="overflow-auto h-100 p-1" @scroll="onScroll">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <b-input class="mb-3" placeholder="search repositories" type="text" v-model="queryInput" @change="changeQuery" />
+            <b-input class="mb-3" placeholder="search repositories" v-model="queryInput" @change="changeQuery" />
             <repositories :query="query" :scrolled="scrolled" :toolshedUrl="toolshedUrl" v-if="!queryEmpty" />
             <categories :toolshedUrl="toolshedUrl" @onCategory="changeQuery" v-show="queryEmpty" />
         </div>
