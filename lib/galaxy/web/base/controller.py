@@ -314,7 +314,8 @@ class JSAppLauncher(BaseUIController):
             'toolbox'                       : trans.app.toolbox.to_dict(trans, in_panel=False),
             'toolbox_in_panel'              : trans.app.toolbox.to_dict(trans),
             'message_box_visible'           : trans.app.config.message_box_visible,
-            'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active
+            'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active,
+            'tool_shed_urls'                : trans.app.tool_shed_registry.tool_sheds.values()
         }
 
         # TODO: move to user

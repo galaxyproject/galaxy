@@ -24,6 +24,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { getGalaxyInstance } from "app";
 import Categories from "./Categories.vue";
 import Repositories from "./Repositories.vue";
 export default {
@@ -34,7 +35,7 @@ export default {
     data() {
         return {
             toolshedUrl: null,
-            toolshedUrls: ["https://toolshed.g2.bx.psu.edu/", "https://testtoolshed.g2.bx.psu.edu"],
+            toolshedUrls: [],
             queryInput: null,
             queryDelay: 1000,
             queryTimer: null,
@@ -44,7 +45,7 @@ export default {
         };
     },
     created() {
-        this.toolshedUrl = this.toolshedUrls[0];
+        this.configureToolsheds();
     },
     computed: {
         queryEmpty() {
@@ -52,6 +53,15 @@ export default {
         }
     },
     methods: {
+        configureToolsheds() {
+            const galaxy = getGalaxyInstance();
+            this.toolshedUrls = galaxy.config.tool_shed_urls;
+            if (!this.toolshedUrls || this.toolshedUrls.length == 0) {
+                this.setError("Toolshed registry is empty, no servers found.");
+            } else {
+                this.toolshedUrl = this.toolshedUrls[0];
+            }
+        },
         clearTimer() {
             if (this.queryTimer) {
                 clearTimeout(this.queryTimer);
