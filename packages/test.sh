@@ -21,7 +21,11 @@ PACKAGE_DIRS="
 
 for package_dir in $PACKAGE_DIRS; do
     cd "$package_dir"
-    python setup.py install
+    pip install -e .
+    if [ "$package_dir" = "util" ];
+    then
+        pip install -e '.[template,jstree]'
+    fi
     pytest --doctest-modules galaxy tests
     cd ..
 done
