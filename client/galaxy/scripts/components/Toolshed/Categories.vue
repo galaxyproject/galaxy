@@ -16,7 +16,17 @@ export default {
     data() {
         return {
             categories: [],
-            fields: ["name", "description", "repositories"]
+            fields: {
+                name: {
+                    sortable: true
+                },
+                description: {
+                    sortable: false
+                },
+                repositories: {
+                    sortable: true
+                }
+            }
         };
     },
     created() {
