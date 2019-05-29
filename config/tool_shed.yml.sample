@@ -144,6 +144,9 @@ tool_shed:
   # For searching repositories at /api/repositories:
   #repo_owner_username_boost: 0.3
 
+  # For searching repositories at /api/repositories:
+  #categories_boost: 0.5
+
   # For searching tools at /api/tools
   #tool_name_boost: 1.2
 
