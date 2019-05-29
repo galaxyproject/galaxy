@@ -6,9 +6,9 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services.js";
 export default {
+    props: ["toolshedUrl"],
     data() {
         return {
-            toolshedUrl: "https://toolshed.g2.bx.psu.edu/",
             categories: [],
             fields: ["name", "description", "repositories"]
         };

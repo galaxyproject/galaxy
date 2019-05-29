@@ -32,10 +32,9 @@ export default {
     components: {
         repositoryoptions: RepositoryOptions
     },
-    props: ["query", "scrolled"],
+    props: ["query", "scrolled", "toolshedUrl"],
     data() {
         return {
-            toolshedUrl: "https://toolshed.g2.bx.psu.edu/",
             toolSections: [],
             repositories: [],
             fields: [

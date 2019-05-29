@@ -2,13 +2,9 @@
     <div class="overflow-auto h-100" @scroll="onScroll">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <div>
-                <b-input class="mb-3" placeholder="search repositories" type="text" v-model="queryNew" @change="changeQuery()" />
-                <div>
-                    <repositories v-if="hasQuery" :query="query" :scrolled="scrolled" />
-                    <categories v-else />
-                </div>
-            </div>
+            <b-input class="mb-3" placeholder="search repositories" type="text" v-model="queryNew" @change="changeQuery()" />
+            <repositories :query="query" :scrolled="scrolled" :toolshedUrl="toolshedUrl" v-if="hasQuery" />
+            <categories :toolshedUrl="toolshedUrl" v-else />
         </div>
     </div>
 </template>
