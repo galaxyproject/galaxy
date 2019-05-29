@@ -47,21 +47,19 @@ class Node(dictobj.DictionaryObject):
     For example, users may want to pass "attr" or some other valid jsTree options.
 
     Example:
-      >>> import jstree
+      >>> from . import _jstree as jstree
       >>> node = jstree.Node('a', None)
       >>> print(node)
       Node({'text': 'a', 'children': MutableDictionaryObject({})})
       >>> print(node.jsonData())
       {'text': 'a'}
 
-      >>> import jstree
       >>> node = jstree.Node('a', 1)
       >>> print(node)
       Node({'text': 'a', 'children': MutableDictionaryObject({}), 'li_attr': DictionaryObject({'id': 1}), 'id': 1})
       >>> print(node.jsonData())
       {'text': 'a', 'id': 1, 'li_attr': {'id': 1}}
 
-      >>> import jstree
       >>> node = jstree.Node('a', 5, icon="folder", state = {'opened': True})
       >>> print(node)
       Node({'text': 'a', 'id': 5, 'state': DictionaryObject({'opened': True}), 'children': MutableDictionaryObject({}), 'li_attr': DictionaryObject({'id': 5}), 'icon': 'folder'})

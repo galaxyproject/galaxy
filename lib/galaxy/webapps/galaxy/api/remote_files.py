@@ -8,16 +8,14 @@ import time
 from operator import itemgetter
 
 from galaxy import exceptions
-from galaxy.util import (
-    jstree,
-    smart_str
-)
+from galaxy.util import smart_str
 from galaxy.util.path import (
     safe_path,
     safe_walk
 )
 from galaxy.web import expose_api
 from galaxy.web.base.controller import BaseAPIController
+from . import _jstree as jstree
 
 log = logging.getLogger(__name__)
 
