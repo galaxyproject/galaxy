@@ -4,8 +4,9 @@ import sys
 
 import whoosh.index
 from whoosh import scoring
-from whoosh.fields import Schema, STORED, TEXT
+from whoosh.fields import Schema, STORED, TEXT, KEYWORD
 from whoosh.qparser import MultifieldParser
+from whoosh.query import And, Term
 
 from galaxy import exceptions
 from galaxy.exceptions import ObjectNotFound
@@ -13,6 +14,7 @@ from galaxy.exceptions import ObjectNotFound
 if sys.version_info > (3,):
     long = int
 
+RESERVED_SEARCH_TERMS = ["category", "owner"]
 log = logging.getLogger(__name__)
 
 schema = Schema(
@@ -23,6 +25,7 @@ schema = Schema(
     homepage_url=TEXT(stored=True),
     remote_repository_url=TEXT(stored=True),
     repo_owner_username=TEXT(stored=True),
+    categories=KEYWORD(stored=True, commas=True, scorable=True),
     times_downloaded=STORED,
     approved=STORED,
     last_updated=STORED,
@@ -67,8 +70,10 @@ class RepoSearch(object):
 
         :param search_term: unicode encoded string with the search term(s)
         :param boosts: namedtuple containing custom boosts for searchfields, see api/repositories.py
+        :param page_size: integer defining a length of one page
+        :param page: integer with the number of page requested
 
-        :returns results: dictionary containing number of hits, hits themselves and matched terms for each
+        :returns results: dictionary containing hits themselves and the number of hits
         """
         whoosh_index_dir = trans.app.config.whoosh_index_dir
         index_exists = whoosh.index.exists_in(whoosh_index_dir)
@@ -84,26 +89,45 @@ class RepoSearch(object):
                                                         'long_description_B' : boosts.repo_long_description_boost,
                                                         'homepage_url_B' : boosts.repo_homepage_url_boost,
                                                         'remote_repository_url_B' : boosts.repo_remote_repository_url_boost,
-                                                        'repo_owner_username' : boosts.repo_owner_username_boost})
+                                                        'repo_owner_username_B' : boosts.repo_owner_username_boost,
+                                                        'categories_B' : boosts.categories_boost})
 
                 searcher = index.searcher(weighting=repo_weighting)
 
+                allow_q = None
+                allow_terms = []
+                search_term_chunks = search_term.split()
+                reserved_terms = []
+                for term in search_term_chunks:
+                    if ":" in term:
+                        reserved_filter = term.split(":")[0]
+                        reserved_filter_value = term.split(":")[1]
+                        if reserved_filter in RESERVED_SEARCH_TERMS:
+                            reserved_terms.append(reserved_filter + ":" + reserved_filter_value)
+                            if reserved_filter == "category":
+                                allow_terms.append(Term('categories', reserved_filter_value))
+                            elif reserved_filter == "owner":
+                                allow_terms.append(Term('repo_owner_username', reserved_filter_value))
+                if allow_terms:
+                    allow_q = And(allow_terms)
+                search_term_without_filters = " ".join([chunk for chunk in search_term_chunks if chunk not in reserved_terms])
                 parser = MultifieldParser([
                     'name',
                     'description',
                     'long_description',
                     'homepage_url',
                     'remote_repository_url',
-                    'repo_owner_username'], schema=schema)
-
-                user_query = parser.parse('*' + search_term + '*')
+                    'repo_owner_username',
+                    'categories'], schema=schema)
+                user_query = parser.parse('*' + search_term_without_filters + '*')
 
                 try:
-                    hits = searcher.search_page(user_query, page, pagelen=page_size, terms=True)
+                    hits = searcher.search_page(user_query, page, pagelen=page_size, filter=allow_q, terms=True)
                 except ValueError:
                     raise ObjectNotFound('The requested page does not exist.')
 
-                log.debug('searching for: #' + str(search_term))
+                log.debug('user search query: #' + str(search_term))
+                log.debug('term without filters: #' + str(search_term_without_filters))
                 log.debug('total hits: ' + str(len(hits)))
                 log.debug('scored hits: ' + str(hits.scored_length()))
                 results = {}
@@ -112,6 +136,7 @@ class RepoSearch(object):
                 results['page_size'] = str(page_size)
                 results['hits'] = []
                 for hit in hits:
+                    log.debug('matched terms: ' + str(hit.matched_terms()))
                     hit_dict = {}
                     hit_dict['id'] = trans.security.encode_id(hit.get('id'))
                     hit_dict['repo_owner_username'] = hit.get('repo_owner_username')
@@ -123,9 +148,10 @@ class RepoSearch(object):
                     hit_dict['last_updated'] = hit.get('last_updated')
                     hit_dict['full_last_updated'] = hit.get('full_last_updated')
                     hit_dict['repo_lineage'] = hit.get('repo_lineage')
+                    hit_dict['categories'] = hit.get('categories')
                     hit_dict['approved'] = hit.get('approved')
                     hit_dict['times_downloaded'] = hit.get('times_downloaded')
-                    results['hits'].append({'repository': hit_dict, 'matched_terms': hit.matched_terms(), 'score': hit.score})
+                    results['hits'].append({'repository': hit_dict, 'score': hit.score})
                 return results
             finally:
                 searcher.close()

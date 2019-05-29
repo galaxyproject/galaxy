@@ -502,12 +502,14 @@ class RepositoriesController(BaseAPIController):
                                        'repo_long_description_boost',
                                        'repo_homepage_url_boost',
                                        'repo_remote_repository_url_boost',
+                                       'categories_boost',
                                        'repo_owner_username_boost'])
         boosts = Boosts(float(conf.get('repo_name_boost', 0.9)),
                         float(conf.get('repo_description_boost', 0.6)),
                         float(conf.get('repo_long_description_boost', 0.5)),
                         float(conf.get('repo_homepage_url_boost', 0.3)),
                         float(conf.get('repo_remote_repository_url_boost', 0.2)),
+                        float(conf.get('categories_boost', 0.5)),
                         float(conf.get('repo_owner_username_boost', 0.3)))
 
         results = repo_search.search(trans,

@@ -17,9 +17,8 @@ import os
 import sys
 from optparse import OptionParser
 
-from six.moves import configparser
 from mercurial import hg, ui
-from whoosh.fields import Schema, STORED, TEXT
+from six.moves import configparser
 from whoosh.filedb.filestore import FileStorage
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
@@ -32,37 +31,14 @@ from galaxy.util import (
     unicodify
 )
 from galaxy.webapps.tool_shed import config, model
+from galaxy.webapps.tool_shed.search.repo_search import schema as repo_schema
+from galaxy.webapps.tool_shed.search.tool_search import schema as tool_schema
 from galaxy.webapps.tool_shed.util.hgweb_config import HgWebConfigManager
 
 if sys.version_info > (3,):
     long = int
 
 logging.basicConfig(level='DEBUG')
-
-repo_schema = Schema(
-    id=STORED,
-    name=TEXT(stored=True),
-    description=TEXT(stored=True),
-    long_description=TEXT(stored=True),
-    homepage_url=TEXT(stored=True),
-    remote_repository_url=TEXT(stored=True),
-    repo_owner_username=TEXT(stored=True),
-    times_downloaded=STORED,
-    approved=STORED,
-    last_updated=STORED,
-    repo_lineage=STORED,
-    full_last_updated=STORED)
-
-tool_schema = Schema(
-    name=TEXT(stored=True),
-    description=TEXT(stored=True),
-    owner=TEXT(stored=True),
-    id=TEXT(stored=True),
-    help=TEXT(stored=True),
-    version=TEXT(stored=True),
-    repo_name=TEXT(stored=True),
-    repo_owner_username=TEXT(stored=True),
-    repo_id=STORED)
 
 
 def build_index(sa_session, whoosh_index_dir, path_to_repositories, hgweb_config_dir):
@@ -97,6 +73,7 @@ def build_index(sa_session, whoosh_index_dir, path_to_repositories, hgweb_config
                              homepage_url=unicodify(repo.get('homepage_url')),
                              remote_repository_url=unicodify(repo.get('remote_repository_url')),
                              repo_owner_username=unicodify(repo.get('repo_owner_username')),
+                             categories=unicodify(repo.get('categories')),
                              times_downloaded=repo.get('times_downloaded'),
                              approved=repo.get('approved'),
                              last_updated=repo.get('last_updated'),
@@ -133,6 +110,11 @@ def get_repos(sa_session, path_to_repositories, hgweb_config_dir):
     hgwcm.hgweb_config_dir = hgweb_config_dir
     results = []
     for repo in sa_session.query(model.Repository).filter_by(deleted=False).filter_by(deprecated=False).filter(model.Repository.type != 'tool_dependency_definition'):
+        category_names = []
+        for rca in sa_session.query(model.RepositoryCategoryAssociation).filter(model.RepositoryCategoryAssociation.repository_id == repo.id):
+            for category in sa_session.query(model.Category).filter(model.Category.id == rca.category.id):
+                category_names.append(category.name)
+        categories = (",").join(category_names)
         repo_id = repo.id
         name = repo.name
         description = repo.description
@@ -192,7 +174,8 @@ def get_repos(sa_session, path_to_repositories, hgweb_config_dir):
                             last_updated=last_updated,
                             full_last_updated=full_last_updated,
                             tools_list=tools_list,
-                            repo_lineage=repo_lineage))
+                            repo_lineage=repo_lineage,
+                            categories=categories))
     return results
 
 
