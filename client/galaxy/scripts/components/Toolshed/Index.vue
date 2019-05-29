@@ -10,7 +10,13 @@
                 @change="setQuery"
             />
             <repositories :query="query" :scrolled="scrolled" :toolshedUrl="toolshedUrl" v-if="!queryEmpty" />
-            <categories :toolshedUrl="toolshedUrl" @onCategory="setQuery" v-show="queryEmpty" />
+            <categories
+                :toolshedUrl="toolshedUrl"
+                :toolshedUrls="toolshedUrls"
+                @onToolshed="setToolshed"
+                @onCategory="setQuery"
+                v-show="queryEmpty"
+            />
         </div>
     </div>
 </template>
@@ -26,7 +32,8 @@ export default {
     },
     data() {
         return {
-            toolshedUrl: "https://toolshed.g2.bx.psu.edu/",
+            toolshedUrl: null,
+            toolshedUrls: ["https://toolshed.g2.bx.psu.edu/", "https://testtoolshed.g2.bx.psu.edu"],
             queryInput: null,
             queryDelay: 1000,
             queryTimer: null,
@@ -34,6 +41,9 @@ export default {
             scrolled: false,
             error: null
         };
+    },
+    created() {
+        this.toolshedUrl = this.toolshedUrls[0];
     },
     computed: {
         queryEmpty() {
@@ -59,6 +69,9 @@ export default {
         setQuery(query) {
             this.clearTimer();
             this.query = this.queryInput = query;
+        },
+        setToolshed(url) {
+            this.toolshedUrl = url;
         },
         onScroll: function({ target: { scrollTop, clientHeight, scrollHeight } }) {
             this.scrolled = scrollTop + clientHeight >= scrollHeight;

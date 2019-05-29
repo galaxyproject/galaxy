@@ -4,8 +4,16 @@
         <div v-else>
             <div class="m-1 text-muted">
                 {{ total }} repositories available at
-                <b-link :href="toolshedUrl" target="_blank">{{ toolshedUrl }}</b-link
-                >.
+                <span class="dropdown">
+                    <b-link id="dropdownToolshedUrl" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        {{ toolshedUrl }}
+                    </b-link>
+                    <div class="dropdown-menu" aria-labelledby="dropdownToolshedUrl">
+                        <a v-for="url in toolshedUrls" class="dropdown-item" href="#" @click="onToolshed(url)">{{
+                            url
+                        }}</a>
+                    </div>
+                </span>
             </div>
             <b-table striped :items="categories" :fields="fields">
                 <template slot="name" slot-scope="data">
@@ -22,7 +30,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services.js";
 export default {
-    props: ["toolshedUrl"],
+    props: ["toolshedUrl", "toolshedUrls"],
     data() {
         return {
             categories: [],
@@ -43,20 +51,32 @@ export default {
     },
     created() {
         this.services = new Services();
-        this.services
-            .getCategories(this.toolshedUrl)
-            .then(categories => {
-                this.categories = categories;
-                this.total = this.categories.reduce((value, entry) => value + entry.repositories, 0);
-                this.loading = false;
-            })
-            .catch(errorMessage => {
-                alert(errorMessage);
-            });
+        this.load();
+    },
+    watch: {
+        toolshedUrl() {
+            this.load();
+        }
     },
     methods: {
+        load() {
+            this.loading = true;
+            this.services
+                .getCategories(this.toolshedUrl)
+                .then(categories => {
+                    this.categories = categories;
+                    this.total = this.categories.reduce((value, entry) => value + entry.repositories, 0);
+                    this.loading = false;
+                })
+                .catch(errorMessage => {
+                    alert(errorMessage);
+                });
+        },
         onCategory(category) {
             this.$emit("onCategory", category);
+        },
+        onToolshed(url) {
+            this.$emit("onToolshed", url);
         }
     }
 };
