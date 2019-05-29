@@ -3,8 +3,8 @@ from __future__ import absolute_import
 import logging
 import threading
 
-from galaxy.web.stack import register_postfork_function
 from .sleeper import Sleeper
+from .web_compat import register_postfork_function
 
 log = logging.getLogger(__name__)
 
