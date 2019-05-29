@@ -82,6 +82,9 @@ export default {
         load(page = 1) {
             this.page = page;
             this.pageState = LOADING;
+            if (page == 1) {
+                this.repositories = [];
+            }
             this.services
                 .getRepositories({
                     tool_shed_url: this.toolshedUrl,
@@ -90,11 +93,7 @@ export default {
                     page_size: this.pageSize
                 })
                 .then(incoming => {
-                    if (this.page === 1) {
-                    this.repositories = incoming;
-                    } else {
-                        this.repositories = this.repositories.concat(incoming);
-                    }
+                    this.repositories = this.repositories.concat(incoming);
                     if (incoming.length < this.pageSize) {
                         this.pageState = COMPLETE;
                     } else {
