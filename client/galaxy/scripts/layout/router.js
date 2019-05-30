@@ -5,7 +5,7 @@ import { getGalaxyInstance } from "app";
 import QUERY_STRING from "utils/query-string-parsing";
 import Ui from "mvc/ui/ui-misc";
 
-var Router = Backbone.Router.extend({
+const Router = Backbone.Router.extend({
     // TODO: not many client routes at this point - fill and remove from server.
     // since we're at root here, this may be the last to be routed entirely on the client.
     initialize: function(page, options) {
@@ -40,7 +40,7 @@ var Router = Backbone.Router.extend({
     execute: function(callback, args, name) {
         const Galaxy = getGalaxyInstance();
         Galaxy.debug("router execute:", callback, args, name);
-        var queryObj = QUERY_STRING.parse(args.pop());
+        const queryObj = QUERY_STRING.parse(args.pop());
         args.push(queryObj);
         if (callback) {
             if (this.authenticate(args, name)) {
