@@ -4,7 +4,7 @@ import sys
 
 import whoosh.index
 from whoosh import scoring
-from whoosh.fields import Schema, STORED, TEXT, KEYWORD
+from whoosh.fields import KEYWORD, Schema, STORED, TEXT
 from whoosh.qparser import MultifieldParser
 from whoosh.query import And, Term
 
