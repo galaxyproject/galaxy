@@ -7,8 +7,8 @@ from sqlalchemy import or_
 
 
 from galaxy import (
-    model,
-    exceptions
+    exceptions,
+    model
 )
 from galaxy.util.filelock import FileLock
 

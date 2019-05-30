@@ -14,12 +14,13 @@ import sys
 import tempfile
 import threading
 import time
-import yaml
 
 import nose.config
 import nose.core
 import nose.loader
 import nose.plugins.manager
+import yaml
+
 from paste import httpserver
 from six.moves import (
     http_client,
