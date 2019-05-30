@@ -236,11 +236,11 @@ var View = Backbone.View.extend({
                 callback && callback();
                 self.$el.children().hide();
                 if (response.produces_entry_points) {
-                    for (let job of response.jobs) {
-                        let toolEntryPointsInstance = Vue.extend(ToolEntryPoints);
-                        let vm = document.createElement("div");
+                    for (const job of response.jobs) {
+                        const toolEntryPointsInstance = Vue.extend(ToolEntryPoints);
+                        const vm = document.createElement("div");
                         self.$el.append(vm);
-                        let instance = new toolEntryPointsInstance({
+                        const instance = new toolEntryPointsInstance({
                             propsData: {
                                 jobId: job.id
                             }

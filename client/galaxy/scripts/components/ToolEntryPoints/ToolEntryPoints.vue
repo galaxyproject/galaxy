@@ -31,9 +31,7 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import { clearPolling, pollUntilActive } from "mvc/entrypoints/poll";
-import axios from "axios";
 export default {
     props: {
         jobId: {
@@ -54,10 +52,10 @@ export default {
     },
     methods: {
         pollEntryPoints: function() {
-            let onUpdate = (entryPoints) => {
+            const onUpdate = (entryPoints) => {
                 this.entryPoints = entryPoints;
             }
-            let onError = (e) => {
+            const onError = (e) => {
                 console.error(e);
             }
             pollUntilActive(onUpdate, onError, {"job_id": this.jobId})

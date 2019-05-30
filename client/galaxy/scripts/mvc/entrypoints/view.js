@@ -9,7 +9,7 @@ export default GridView.extend({
 
         const activated = {};
 
-        let onUpdate = (entryPoints) => {
+        const onUpdate = (entryPoints) => {
             entryPoints.forEach((entryPoint) => {
                 const entryPointId = entryPoint.id;
                 if (entryPoint.active && ! activated[entryPointId]) {
@@ -21,7 +21,7 @@ export default GridView.extend({
                 }
             });
         }
-        let onError = (e) => {
+        const onError = (e) => {
             console.error(e);
         }
         pollUntilActive(onUpdate, onError, {"running": true});
