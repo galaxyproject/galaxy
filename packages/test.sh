@@ -17,9 +17,9 @@ PACKAGE_DIRS="
     util
     objectstore
     job_metrics
-    tool_util
 "
-# 'data' package doesn't yet work.
+# tool_util seems to need containers...
+# 'data' package doesn't yet work - quota, unit test problems, tool shed install database dependencies...
 
 
 for package_dir in $PACKAGE_DIRS; do
