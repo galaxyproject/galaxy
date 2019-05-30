@@ -10,26 +10,12 @@ import Webhooks from "mvc/webhooks";
 // ============================================================================
 var menu = [
     {
-        html: _l("History Lists"),
-        header: true
-    },
-    {
-        html: _l("Saved Histories"),
-        href: "histories/list",
-        target: "_top"
-    },
-    {
-        html: _l("Histories Shared with Me"),
-        href: "histories/list_shared",
-        target: "_top"
-    },
-    {
-        html: _l("Current History"),
+        html: _l("History Actions"),
         header: true,
         anon: true
     },
     {
-        html: _l("Copy History"),
+        html: _l("Copy"),
         func: function() {
             const Galaxy = getGalaxyInstance();
             historyCopyDialog(Galaxy.currHistoryPanel.model).done(() => {
@@ -61,36 +47,16 @@ var menu = [
         href: "workflow/build_from_current_history"
     },
     {
-        html: _l("Delete"),
-        anon: true,
+        html: _l("Set Permissions"),
         func: function() {
             const Galaxy = getGalaxyInstance();
-            if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really delete the current history?"))) {
-                Galaxy.currHistoryPanel.model._delete().done(() => {
-                    Galaxy.currHistoryPanel.loadCurrentHistory();
-                });
+            if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
+                Galaxy.router.push(`/histories/permissions?id=${Galaxy.currHistoryPanel.model.id}`);
             }
         }
     },
     {
-        html: _l("Delete Permanently"),
-        purge: true,
-        anon: true,
-        func: function() {
-            const Galaxy = getGalaxyInstance();
-            if (
-                Galaxy &&
-                Galaxy.currHistoryPanel &&
-                confirm(_l("Really delete the current history permanently? This cannot be undone."))
-            ) {
-                Galaxy.currHistoryPanel.model.purge().done(() => {
-                    Galaxy.currHistoryPanel.loadCurrentHistory();
-                });
-            }
-        }
-    },
-    {
-        html: _l("Make Data Private"),
+        html: _l("Make Private"),
         anon: true,
         func: function() {
             const Galaxy = getGalaxyInstance();
@@ -110,6 +76,11 @@ var menu = [
         }
     },
     {
+        html: _l("Resume Paused Jobs"),
+        href: "history/resume_paused_jobs?current=True",
+        anon: true
+    },
+    {
         html: _l("Dataset Actions"),
         header: true,
         anon: true
@@ -117,20 +88,6 @@ var menu = [
     {
         html: _l("Copy Datasets"),
         href: "dataset/copy_datasets"
-    },
-    {
-        html: _l("Dataset Security"),
-        func: function() {
-            const Galaxy = getGalaxyInstance();
-            if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
-                Galaxy.router.push(`/histories/permissions?id=${Galaxy.currHistoryPanel.model.id}`);
-            }
-        }
-    },
-    {
-        html: _l("Resume Paused Jobs"),
-        href: "history/resume_paused_jobs?current=True",
-        anon: true
     },
     {
         html: _l("Collapse Expanded Datasets"),

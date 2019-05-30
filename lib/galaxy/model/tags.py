@@ -311,6 +311,8 @@ class TagHandler(object):
     def _get_name_value_pair(self, tag_str):
         """Get name, value pair from a tag string."""
         # Use regular expression to parse name, value.
+        if tag_str.startswith('#'):
+            tag_str = "name:%s" % tag_str[1:]
         reg_exp = re.compile("[" + self.key_value_separators + "]")
         name_value_pair = reg_exp.split(tag_str, 1)
         # Add empty slot if tag does not have value.

@@ -2932,6 +2932,35 @@ input1:
             assert details1["history_content_type"] == "dataset_collection"
             assert details1["tags"][0] == "name:foo", details1
 
+    @skip_without_tool("cat")
+    def test_assign_column_pja(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+    outputs:
+      out_file1:
+        change_datatype: bed
+        set_columns:
+          chromCol: 1
+          endCol: 2
+          startCol: 3
+""", test_data="""
+input1:
+  value: 1.bed
+  type: File
+""", history_id=history_id)
+            details_dataset_new_col = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=True)
+            assert details_dataset_new_col["history_content_type"] == "dataset", details_dataset_new_col
+            assert details_dataset_new_col['metadata_endCol'] == 2
+            assert details_dataset_new_col['metadata_startCol'] == 3
+
     @skip_without_tool("collection_creates_pair")
     @skip_without_tool("cat")
     def test_run_remove_tag_on_collection_output(self):

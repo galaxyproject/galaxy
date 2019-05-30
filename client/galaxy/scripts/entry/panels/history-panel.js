@@ -6,7 +6,7 @@ import historyOptionsMenu from "mvc/history/options-menu";
 import CurrentHistoryView from "mvc/history/history-view-edit-current";
 
 /** the right hand panel in the analysis page that shows the current history */
-var HistoryPanel = Backbone.View.extend({
+const HistoryPanel = Backbone.View.extend({
     initialize: function(page, options) {
         const Galaxy = getGalaxyInstance();
         const panelHeaderButtons = [];

@@ -30,7 +30,7 @@
                             <b-form-group v-if="mailing_join_addr && smtp_server" label="Subscribe to mailing list">
                                 <input name="subscribe" type="checkbox" v-model="subscribe" />
                             </b-form-group>
-                            <b-button name="create" type="submit">Create</b-button>
+                            <b-button name="create" type="submit" :disabled="disableCreate">Create</b-button>
                         </b-card-body>
                         <b-card-footer v-if="!isAdmin">
                             Already have an account?
@@ -73,6 +73,7 @@ export default {
     data() {
         const galaxy = getGalaxyInstance();
         return {
+            disableCreate: false,
             email: null,
             password: null,
             username: null,
@@ -96,6 +97,7 @@ export default {
             }
         },
         submit: function(method) {
+            this.disableCreate = true;
             const rootUrl = getAppRoot();
             axios
                 .post(`${rootUrl}user/create`, this.$data)
@@ -106,6 +108,7 @@ export default {
                     window.location = this.redirect || rootUrl;
                 })
                 .catch(error => {
+                    this.disableCreate = false;
                     this.messageVariant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Registration failed for an unknown reason.";

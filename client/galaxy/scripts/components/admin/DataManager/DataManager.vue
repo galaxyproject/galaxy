@@ -91,7 +91,7 @@ import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Alert from "components/Alert.vue";
 
-var ToolShedButton = {
+const ToolShedButton = {
     template: `
   <b-link href="/admin_toolshed/browse_tool_sheds"
           target="galaxy_main"

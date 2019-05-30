@@ -78,9 +78,9 @@ class ConfiguresHandlers(object):
             assign = listify(config_element.attrib.get('assign_with', []), do_strip=True)
             if len(assign) > 0:
                 handling_config_dict["assign"] = assign
-            max_grap_str = config_element.attrib.get('max_grab', None)
-            if max_grap_str:
-                handling_config_dict["max_grab"] = int(max_grap_str)
+            max_grab_str = config_element.attrib.get('max_grab', None)
+            if max_grab_str:
+                handling_config_dict["max_grab"] = int(max_grab_str)
 
         return handling_config_dict
 
@@ -125,6 +125,8 @@ class ConfiguresHandlers(object):
             if self.handler_assignment_methods == [HANDLER_ASSIGNMENT_METHODS.MEM_SELF]:
                 self.app.config.track_jobs_in_database = False
             self.handler_max_grab = handling_config_dict.get('max_grab', self.handler_max_grab)
+            if self.handler_max_grab is not None:
+                self.handler_max_grab = int(self.handler_max_grab)
 
     def _set_default_handler_assignment_methods(self):
         if not self.handler_assignment_methods_configured:

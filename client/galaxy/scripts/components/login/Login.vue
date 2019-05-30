@@ -6,7 +6,7 @@
                 <b-form id="login" @submit.prevent="submitGalaxyLogin()">
                     <b-card no-body header="Welcome to Galaxy, please log in">
                         <b-card-body>
-                            <b-form-group label="Username or Email Address">
+                            <b-form-group label="Public name or Email Address">
                                 <b-form-input name="login" type="text" v-model="login" />
                             </b-form-group>
                             <b-form-group label="Password">

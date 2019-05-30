@@ -212,6 +212,7 @@ var OutputTerminal = Terminal.extend({
     initialize: function(attr) {
         Terminal.prototype.initialize.call(this, attr);
         this.datatypes = attr.datatypes;
+        this.force_datatype = attr.force_datatype;
     },
 
     resetMappingIfNeeded: function() {
@@ -354,19 +355,8 @@ var BaseInputTerminal = Terminal.extend({
                 return new ConnectionAcceptable(true, null);
             }
             var cat_outputs = [];
-            cat_outputs = cat_outputs.concat(other.datatypes);
-            if (other.node.post_job_actions) {
-                for (var pja_i in other.node.post_job_actions) {
-                    var pja = other.node.post_job_actions[pja_i];
-                    if (
-                        pja.action_type == "ChangeDatatypeAction" &&
-                        (pja.output_name === "" || pja.output_name == other.name) &&
-                        pja.action_arguments
-                    ) {
-                        cat_outputs.push(pja.action_arguments.newtype);
-                    }
-                }
-            }
+            const other_datatypes = other.force_datatype ? [other.force_datatype] : other.datatypes;
+            cat_outputs = cat_outputs.concat(other_datatypes);
             // FIXME: No idea what to do about case when datatype is 'input'
             for (var other_datatype_i in cat_outputs) {
                 var other_datatype = cat_outputs[other_datatype_i];
@@ -435,7 +425,7 @@ var InputTerminal = BaseInputTerminal.extend({
             }
             if (thisMapOver.isCollection && thisMapOver.canMatch(otherCollectionType)) {
                 return this._producesAcceptableDatatype(other);
-            } else if (this.multiple && new CollectionTypeDescription('list').canMatch(otherCollectionType)) {
+            } else if (this.multiple && new CollectionTypeDescription("list").canMatch(otherCollectionType)) {
                 // This handles the special case of a list input being connected to a multiple="true" data input.
                 // Nested lists would be correctly mapped over by the above condition.
                 return this._producesAcceptableDatatype(other);
@@ -615,6 +605,7 @@ var OutputCollectionTerminal = Terminal.extend({
     initialize: function(attr) {
         Terminal.prototype.initialize.call(this, attr);
         this.datatypes = attr.datatypes;
+        this.force_datatype = attr.force_datatype;
         if (attr.collection_type) {
             this.collectionType = new CollectionTypeDescription(attr.collection_type);
         } else {

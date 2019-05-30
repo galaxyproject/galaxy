@@ -1323,7 +1323,7 @@ export default {
             if (requiresSourceColumn && !mappingAsDict.ftp_path && !mappingAsDict.url) {
                 valid = false;
             }
-            for (var rule of this.rules) {
+            for (const rule of this.rules) {
                 if (rule.error) {
                     valid = false;
                 }
@@ -1892,14 +1892,14 @@ export default {
             const tags = [];
             if (mappingAsDict.tags) {
                 const tagColumns = mappingAsDict.tags.columns;
-                for (var tagColumn of tagColumns) {
+                for (const tagColumn of tagColumns) {
                     const tag = data[dataIndex][tagColumn];
                     tags.push(tag);
                 }
             }
             if (mappingAsDict.group_tags) {
                 const groupTagColumns = mappingAsDict.group_tags.columns;
-                for (var groupTagColumn of groupTagColumns) {
+                for (const groupTagColumn of groupTagColumns) {
                     const tag = data[dataIndex][groupTagColumn];
                     tags.push("group:" + tag);
                 }
