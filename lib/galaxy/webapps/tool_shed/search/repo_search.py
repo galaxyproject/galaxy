@@ -176,12 +176,12 @@ class RepoSearch(object):
         allow_terms = []
         search_term_chunks = search_term.split()
         reserved_terms = []
-        for term in search_term_chunks:
-            if ":" in term:
-                reserved_filter = term.split(":")[0]
-                reserved_filter_value = term.split(":")[1]
+        for term_chunk in search_term_chunks:
+            if ":" in term_chunk:
+                reserved_filter = term_chunk.split(":")[0]
+                reserved_filter_value = term_chunk.split(":")[1]
                 if reserved_filter in RESERVED_SEARCH_TERMS:
-                    reserved_terms.append(reserved_filter + ":" + reserved_filter_value)
+                    reserved_terms.append(term_chunk)
                     if reserved_filter == "category":
                         allow_terms.append(Term('categories', reserved_filter_value))
                     elif reserved_filter == "owner":
