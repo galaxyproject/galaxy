@@ -35,19 +35,19 @@ CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_VERSION = "4.3.33"
-CONDA_BUILD_VERSION = "2.1.18"
+CONDA_VERSION = "4.6.14"
+CONDA_BUILD_VERSION = "3.17.8"
 USE_LOCAL_DEFAULT = False
 
 
 def conda_link():
     if IS_OS_X:
-        url = "https://repo.continuum.io/miniconda/Miniconda3-4.3.31-MacOSX-x86_64.sh"
+        url = "https://repo.anaconda.com/miniconda/Miniconda3-4.6.14-MacOSX-x86_64.sh"
     else:
         if sys.maxsize > 2**32:
-            url = "https://repo.continuum.io/miniconda/Miniconda3-4.3.31-Linux-x86_64.sh"
+            url = "https://repo.anaconda.com/miniconda/Miniconda3-4.6.14-Linux-x86_64.sh"
         else:
-            url = "https://repo.continuum.io/miniconda/Miniconda3-4.3.31-Linux-x86.sh"
+            url = "https://repo.anaconda.com/miniconda/Miniconda3-4.5.12-Linux-x86.sh"
     return url
 
 

@@ -125,6 +125,8 @@ class ConfiguresHandlers(object):
             if self.handler_assignment_methods == [HANDLER_ASSIGNMENT_METHODS.MEM_SELF]:
                 self.app.config.track_jobs_in_database = False
             self.handler_max_grab = handling_config_dict.get('max_grab', self.handler_max_grab)
+            if self.handler_max_grab is not None:
+                self.handler_max_grab = int(self.handler_max_grab)
 
     def _set_default_handler_assignment_methods(self):
         if not self.handler_assignment_methods_configured:
