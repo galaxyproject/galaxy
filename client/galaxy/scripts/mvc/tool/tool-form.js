@@ -11,7 +11,7 @@ import Ui from "mvc/ui/ui-misc";
 import Modal from "mvc/ui/ui-modal";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import Webhooks from "mvc/webhooks";
-import Vue from "Vue";
+import Vue from "vue";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 
 var View = Backbone.View.extend({
