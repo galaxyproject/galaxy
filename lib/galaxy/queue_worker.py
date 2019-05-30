@@ -16,7 +16,10 @@ from kombu import (
     uuid,
 )
 from kombu.mixins import ConsumerProducerMixin
-from kombu.pools import producers
+from kombu.pools import (
+    connections,
+    producers,
+)
 from six.moves import reload_module
 
 import galaxy.queues
@@ -308,6 +311,7 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         # Force connection instead of lazy-connecting the first time it is required.
         # Fixes `'kombu.transport.sqlalchemy.Message' is not mapped` error.
         self.connection.connect()
+        self.connection.release()
         self.app = app
         self.task_mapping = task_mapping
         self.exchange_queue = None
@@ -325,8 +329,9 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(self.app.config)
         self.control_queues = [self.exchange_queue, self.direct_queue]
         # Delete messages for the current workers' control queues on startup
-        for q in self.control_queues:
-            q(self.connection).delete()
+        with connections[self.connection].acquire(block=True) as conn:
+            for q in self.control_queues:
+                q(conn).delete()
         self.start()
 
     def get_consumers(self, Consumer, channel):
