@@ -13,7 +13,6 @@ it at this time.
 import logging
 import os
 import subprocess
-import time
 
 from galaxy import model
 from galaxy.jobs.runners import (

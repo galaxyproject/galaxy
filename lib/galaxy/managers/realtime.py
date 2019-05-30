@@ -10,7 +10,6 @@ from galaxy import (
     model,
     exceptions
 )
-from galaxy.tool_util.deps.docker_util import parse_port_text as docker_parse_port_text
 from galaxy.util.filelock import FileLock
 
 

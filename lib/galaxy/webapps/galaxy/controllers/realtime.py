@@ -4,12 +4,9 @@ Provides web interaction with RealTimeTools
 import logging
 
 from galaxy import (
-    exceptions,
     model,
     web
 )
-from galaxy.managers.realtime import RealTimeManager
-from galaxy.web import url_for
 from galaxy.web.base.controller import (
     BaseUIController,
 )

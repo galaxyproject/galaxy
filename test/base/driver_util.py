@@ -14,6 +14,7 @@ import sys
 import tempfile
 import threading
 import time
+import yaml
 
 import nose.config
 import nose.core
@@ -29,7 +30,6 @@ from sqlalchemy_utils import (
     create_database,
     database_exists,
 )
-import yaml
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT

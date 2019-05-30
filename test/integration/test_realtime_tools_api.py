@@ -4,8 +4,10 @@ import os
 
 import requests
 
-from .test_containerized_jobs import ContainerizedIntegrationTestCase
 from base import api_asserts
+
+from .test_containerized_jobs import ContainerizedIntegrationTestCase
+
 from base.populators import (
     DatasetPopulator,
     wait_on,
