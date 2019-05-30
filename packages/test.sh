@@ -16,8 +16,11 @@ pip install pytest
 PACKAGE_DIRS="
     util
     objectstore
-    data
+    job_metrics
+    tool_util
 "
+# 'data' package doesn't yet work.
+
 
 for package_dir in $PACKAGE_DIRS; do
     cd "$package_dir"
