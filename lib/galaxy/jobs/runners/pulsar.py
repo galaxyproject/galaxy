@@ -615,9 +615,14 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def __client_outputs(self, client, job_wrapper):
         work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
         output_files = self.get_output_files(job_wrapper)
+        if self.app.config.metadata_strategy == "legacy":
+            # Drop this branch in 19.09.
+            metadata_directory = job_wrapper.working_directory
+        else:
+            metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
         client_outputs = ClientOutputs(
             working_directory=job_wrapper.tool_working_directory,
-            metadata_directory=job_wrapper.working_directory,
+            metadata_directory=metadata_directory,
             work_dir_outputs=work_dir_outputs,
             output_files=output_files,
             version_file=job_wrapper.get_version_string_path(),
