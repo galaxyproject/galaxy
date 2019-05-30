@@ -94,23 +94,8 @@ class RepoSearch(object):
 
                 searcher = index.searcher(weighting=repo_weighting)
 
-                allow_q = None
-                allow_terms = []
-                search_term_chunks = search_term.split()
-                reserved_terms = []
-                for term in search_term_chunks:
-                    if ":" in term:
-                        reserved_filter = term.split(":")[0]
-                        reserved_filter_value = term.split(":")[1]
-                        if reserved_filter in RESERVED_SEARCH_TERMS:
-                            reserved_terms.append(reserved_filter + ":" + reserved_filter_value)
-                            if reserved_filter == "category":
-                                allow_terms.append(Term('categories', reserved_filter_value))
-                            elif reserved_filter == "owner":
-                                allow_terms.append(Term('repo_owner_username', reserved_filter_value))
-                if allow_terms:
-                    allow_q = And(allow_terms)
-                search_term_without_filters = " ".join([chunk for chunk in search_term_chunks if chunk not in reserved_terms])
+                allow_query, search_term_without_filters = self._parse_reserved_filters(search_term)
+
                 parser = MultifieldParser([
                     'name',
                     'description',
@@ -122,7 +107,7 @@ class RepoSearch(object):
                 user_query = parser.parse('*' + search_term_without_filters + '*')
 
                 try:
-                    hits = searcher.search_page(user_query, page, pagelen=page_size, filter=allow_q, terms=True)
+                    hits = searcher.search_page(user_query, page, pagelen=page_size, filter=allow_query, terms=True)
                 except ValueError:
                     raise ObjectNotFound('The requested page does not exist.')
 
@@ -157,3 +142,55 @@ class RepoSearch(object):
                 searcher.close()
         else:
             raise exceptions.InternalServerError('The search index file is missing.')
+
+    def _parse_reserved_filters(self, search_term):
+        """
+        Support github-like filters for narrowing the results.
+        Order of chunks does not matter, only recognized
+        filter names are allowed.
+
+        :param search_term: the original search str from user input
+
+        :returns allow_query: whoosh Query object used for filtering
+            results of searching in index
+        :returns search_term_without_filters: str that represents user's
+            search phrase without the wildcards
+
+        >>> rs = RepoSearch()
+        >>> rs._parse_reserved_filters("category:assembly")
+        (And([Term('categories', 'assembly')]), '')
+        >>> rs._parse_reserved_filters("category:assembly abyss")
+        (And([Term('categories', 'assembly')]), 'abyss')
+        >>> rs._parse_reserved_filters("abyss category:assembly")
+        (And([Term('categories', 'assembly')]), 'abyss')
+        >>> rs._parse_reserved_filters("abyss category:assembly greg")
+        (And([Term('categories', 'assembly')]), 'abyss greg')
+        >>> rs._parse_reserved_filters("owner:greg")
+        (And([Term('repo_owner_username', 'greg')]), '')
+        >>> rs._parse_reserved_filters("owner:greg category:assembly abyss")
+        (And([Term('repo_owner_username', 'greg'), Term('categories', 'assembly')]), 'abyss')
+        >>> rs._parse_reserved_filters("meaningoflife:42")
+        (None, 'meaningoflife:42')
+        """
+        allow_query = None
+        allow_terms = []
+        search_term_chunks = search_term.split()
+        reserved_terms = []
+        for term in search_term_chunks:
+            if ":" in term:
+                reserved_filter = term.split(":")[0]
+                reserved_filter_value = term.split(":")[1]
+                if reserved_filter in RESERVED_SEARCH_TERMS:
+                    reserved_terms.append(reserved_filter + ":" + reserved_filter_value)
+                    if reserved_filter == "category":
+                        allow_terms.append(Term('categories', reserved_filter_value))
+                    elif reserved_filter == "owner":
+                        allow_terms.append(Term('repo_owner_username', reserved_filter_value))
+                else:
+                    pass  # Treat unrecognized filter as normal search term.
+        if allow_terms:
+            allow_query = And(allow_terms)
+            search_term_without_filters = " ".join([chunk for chunk in search_term_chunks if chunk not in reserved_terms])
+        else:
+            search_term_without_filters = search_term
+        return allow_query, search_term_without_filters
