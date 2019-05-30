@@ -78,9 +78,9 @@ class ConfiguresHandlers(object):
             assign = listify(config_element.attrib.get('assign_with', []), do_strip=True)
             if len(assign) > 0:
                 handling_config_dict["assign"] = assign
-            max_grap_str = config_element.attrib.get('max_grab', None)
-            if max_grap_str:
-                handling_config_dict["max_grab"] = int(max_grap_str)
+            max_grab_str = config_element.attrib.get('max_grab', None)
+            if max_grab_str:
+                handling_config_dict["max_grab"] = int(max_grab_str)
 
         return handling_config_dict
 
