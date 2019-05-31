@@ -192,7 +192,11 @@ def validate_and_load_datatypes_config(datatypes_config):
     galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
 
     if not os.path.exists(datatypes_config):
-        print("Metadata setting failed because registry.xml could not be found. You may retry setting metadata.")
+        # Hack for Pulsar on usegalaxy.org, drop ASAP.
+        datatypes_config = "configs/registry.xml"
+
+    if not os.path.exists(datatypes_config):
+        print("Metadata setting failed because registry.xml [%s] could not be found. You may retry setting metadata." % datatypes_config)
         sys.exit(1)
     import galaxy.datatypes.registry
     datatypes_registry = galaxy.datatypes.registry.Registry()
