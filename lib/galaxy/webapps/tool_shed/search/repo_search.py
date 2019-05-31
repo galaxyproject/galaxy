@@ -1,5 +1,6 @@
 """Module for searching the toolshed repositories"""
 import logging
+import re
 import sys
 
 import whoosh.index
@@ -161,6 +162,10 @@ class RepoSearch(object):
         (And([Term('categories', 'assembly')]), '')
         >>> rs._parse_reserved_filters("category:assembly abyss")
         (And([Term('categories', 'assembly')]), 'abyss')
+        >>> rs._parse_reserved_filters("category:'Climate Analysis' psy_maps")
+        (And([Term('categories', 'Climate Analysis')]), 'psy_maps')
+        >>> rs._parse_reserved_filters("climate category:'Climate Analysis' owner:'bjoern gruening' psy_maps")
+        (And([Term('categories', 'Climate Analysis'), Term('repo_owner_username', 'bjoern gruening')]), 'climate psy_maps')
         >>> rs._parse_reserved_filters("abyss category:assembly")
         (And([Term('categories', 'assembly')]), 'abyss')
         >>> rs._parse_reserved_filters("abyss category:assembly greg")
@@ -174,12 +179,15 @@ class RepoSearch(object):
         """
         allow_query = None
         allow_terms = []
-        search_term_chunks = search_term.split()
+        # Split query string on spaces that are not followed by <anytext>singlequote_space_
+        # to allow for quoting filtering values. Also unify double and single quotes into single quotes.
+        search_term_chunks = re.split(r"\s+(?!\w+'\s)", search_term.replace('"', "'"), re.MULTILINE)
         reserved_terms = []
         for term_chunk in search_term_chunks:
             if ":" in term_chunk:
                 reserved_filter = term_chunk.split(":")[0]
-                reserved_filter_value = term_chunk.split(":")[1]
+                # Remove the quotes used for delimiting values with space(s)
+                reserved_filter_value = term_chunk.split(":")[1].replace("'", "")
                 if reserved_filter in RESERVED_SEARCH_TERMS:
                     reserved_terms.append(term_chunk)
                     if reserved_filter == "category":
