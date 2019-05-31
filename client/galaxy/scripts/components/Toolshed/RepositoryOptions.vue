@@ -1,11 +1,8 @@
 <template>
     <b-card>
         <div class="mb-1">{{ repo.long_description }}</div>
-        <div class="mb-1">
-            <b-link :href="repo.repository_url" target="_blank">Show additional details and dependencies.</b-link>
-        </div>
         <div class="mb-3">
-            <b-link href="#" @click="toggleAdvanced">{{ titleAdvanced }}</b-link>
+            <b-link :href="repo.repository_url" target="_blank">Show additional details and dependencies.</b-link>
         </div>
         <span v-if="loading">
             <span class="fa fa-spinner fa-spin" /> Loading repository details...
@@ -40,17 +37,17 @@
                     <span v-if="data.value" :class="repoChecked"/>
                     <span v-else :class="repoUnchecked"/>
                 </template>
-                <template slot="installed" slot-scope="data">
-                    <b-button v-if="!data.value"
+                <template slot="installed" slot-scope="row">
+                    <b-button v-if="!row.item.installed"
                         class="btn-sm"
                         variant="primary"
-                        @click="installRepository">
+                        @click="installRepository(row.item)">
                             Install
                     </b-button>
                     <b-button v-else
                         class="btn-sm"
                         variant="danger"
-                        @click="uninstallRepository">
+                        @click="uninstallRepository(row.item)">
                             Uninstall
                     </b-button>
                 </template>
@@ -98,12 +95,6 @@ export default {
             loading: true
         };
     },
-    computed: {
-        titleAdvanced() {
-            const prefix = this.showAdvanced ? "Hide" : "Show";
-            return `${prefix} advanced installation options.`;
-        }
-    },
     created() {
         this.toolConfig = this.toolConfigs[0];
         this.services = new Services();
@@ -125,7 +116,6 @@ export default {
                     this.repoTable.forEach(x => {
                         x.installed = revisions[x.changeset_revision];
                     });
-                    window.console.log(revisions);
                     this.loading = false;
                 })
                 .catch(error => {
@@ -135,11 +125,22 @@ export default {
         toggleAdvanced() {
             this.showAdvanced = !this.showAdvanced;
         },
-        installRepository: function(repo) {
-            this.services.installRepository(repo);
+        installRepository: function(details) {
+            window.console.log(details);
+            this.services.installRepository({
+                tool_shed_url: this.toolshedUrl,
+                repositories: [[this.repo.id, details.changeset_revision]]
+            }).then(response => {
+                window.console.log(response)
+            }).catch(error => {
+                window.console.log(error);
+            });
         },
-        uninstallRepository: function(repo) {
-            this.services.uninstallRepository(repo);
+        uninstallRepository: function(details) {
+            this.services.uninstallRepository({
+                id: repo.id,
+                revision: details.changeset_revision
+            });
         }
     }
 };

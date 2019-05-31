@@ -69,6 +69,29 @@ export class Services {
         });
     }
 
+    getInstalled(repo) {
+        const paramsString = `name=${repo.name}&owner=${repo.repo_owner_username}`;
+        const url = `${getAppRoot()}api/tool_shed_repositories?${paramsString}`;
+        return new Promise((resolve, reject) => {
+            axios
+                .get(url)
+                .then(response => {
+                    const data = response.data;
+                    const revisions = {};
+                    data.forEach(x => {
+                        const installed = !x.deleted && !x.uninstalled;
+                        revisions[x.changeset_revision] =
+                            revisions[x.installed_changeset_revision] = installed;
+                    });
+                    window.console.log(revisions);
+                    resolve(revisions);
+                })
+                .catch(e => {
+                    reject(this._errorMessage(e));
+                });
+        });
+    }
+
     _formatCount(value) {
         if (value > 1000) return `>${Math.floor(value / 1000)}k`;
         return value;
@@ -82,52 +105,26 @@ export class Services {
         return message;
     }
 
-    installRepository(repo) {
-        window.console.log(repo);
-        /*const Galaxy = getGalaxyInstance();
-        const history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
-        if (history_id) {
-            axios
-                .get(`${getAppRoot()}api/repositories/${plugin.name}?history_id=${history_id}`)
-                .then(response => {
-                    this.name = plugin.name;
-                    this.hdas = response.data && response.data.hdas;
-                    if (this.hdas && this.hdas.length > 0) {
-                        this.selected = this.hdas[0].id;
-                    }
-                })
-                .catch(e => {
-                    this.error = this.setErrorMessage(e);
-                });
-        } else {
-            this.error = "This option requires an accessible history.";
-        }*/
-    }
-
-    uninstallRepository(repo) {
-    }
-
-    getInstalled(repo) {
-        window.console.log(repo);
-        const paramsString = `name=${repo.name}&owner=${repo.repo_owner_username}`;
-        const url = `${getAppRoot()}api/tool_shed_repositories?${paramsString}`;
-        window.console.log(url);
+    installRepository(payload) {
+        const url = `${getAppRoot()}api/tool_shed_repositories/install_repository`;
+        window.console.log(payload);
+        payload.repositories = payload.repositories;
+        payload.shed_tool_conf = "./config/shed_tool_conf.xml";
+        payload.tool_panel_section_id = "getext";
+        payload.async = "True";
         return new Promise((resolve, reject) => {
             axios
-                .get(url)
+                .post(url, payload)
                 .then(response => {
-                    const data = response.data;
-                    const revisions = [];
-                    data.forEach(x => {
-                        const installed = !x.deleted && !x.uninstalled;
-                        revisions[x.changeset_revision] =
-                            revisions[x.installed_changeset_revision] = installed;
-                    });
-                    resolve(revisions);
+                    resolve(response.data);
                 })
                 .catch(e => {
+                    window.console.log(e);
                     reject(this._errorMessage(e));
                 });
         });
+    }
+
+    uninstallRepository(repo) {
     }
 }

@@ -1003,6 +1003,12 @@ def populate_api_routes(webapp, app):
                           action='install',
                           conditions=dict(method=['POST']))
 
+    webapp.mapper.connect('install_repository',
+                          '/api/tool_shed_repositories/install_repository',
+                          controller='tool_shed_repositories',
+                          action='install_repository',
+                          conditions=dict(method=['POST']))
+
     webapp.mapper.connect('check_for_updates',
                           '/api/tool_shed_repositories/check_for_updates',
                           controller='tool_shed_repositories',
