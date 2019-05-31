@@ -20,7 +20,6 @@ import nose.core
 import nose.loader
 import nose.plugins.manager
 import yaml
-
 from paste import httpserver
 from six.moves import (
     http_client,
