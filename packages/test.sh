@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -13,22 +13,32 @@ virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
 pip install pytest
 
 # ensure ordered by dependency dag
-PACKAGE_DIRS="
+PACKAGE_DIRS=(
     util
     objectstore
     job_metrics
-"
-# tool_util seems to need containers...
-# 'data' package doesn't yet work - quota, unit test problems, tool shed install database dependencies...
+    containers
+    tool_util
+    data
+)
+# containers has no tests, tool_util not yet working 100%,
+# data has many problems quota, tool shed install database, etc..
+RUN_TESTS=(1 1 1 0 0 0 0)
 
+for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
+    package_dir=${PACKAGE_DIRS[$i]}
+    run_tests=${RUN_TESTS[$i]}
 
-for package_dir in $PACKAGE_DIRS; do
     cd "$package_dir"
     pip install -e .
     if [ "$package_dir" = "util" ];
     then
         pip install -e '.[template,jstree]'
     fi
-    pytest --doctest-modules galaxy tests
+
+    if [[ "$run_tests" == "1" ]];
+    then
+        pytest --doctest-modules galaxy tests
+    fi
     cd ..
 done
