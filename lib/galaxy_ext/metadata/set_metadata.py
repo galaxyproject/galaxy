@@ -77,7 +77,8 @@ def set_metadata():
 
 def set_metadata_portable():
     import galaxy.model
-    galaxy.model.metadata.MetadataTempFile.tmp_dir = tool_job_working_directory = os.path.abspath(os.getcwd())
+    tool_job_working_directory = os.path.abspath(os.getcwd())
+    galaxy.model.metadata.MetadataTempFile.tmp_dir = os.path.join(tool_job_working_directory, "metadata")
 
     metadata_params_path = os.path.join("metadata", "params.json")
     try:
