@@ -10,7 +10,7 @@ then
     . "$GALAXY_VIRTUAL_ENV/bin/activate"
 fi
 
-xsd_path="lib/galaxy/tools/xsd/galaxy.xsd"
+xsd_path="lib/galaxy/tool_util/xsd/galaxy.xsd"
 
 err_tmp=`mktemp`
 count=0
