@@ -10,7 +10,7 @@
         <div v-if="showAdvanced">
             <b-form-group label="Available Revisions:" description="Choose an repository revision configuration.">
                 <div class="ui-select">
-                    <b-form-select :options="revisions" v-model="revision" />
+                    <b-form-select :options="repoRevisions" v-model="repoRevision" />
                 </div>
             </b-form-group>
             <b-form-group
@@ -28,13 +28,19 @@
                 </div>
             </b-form-group>
         </div>
-        <b-button variant="primary" @click="installRepository(repo)">Install</b-button>
-        <b-button variant="danger" @click="uninstallRepository(repo)">Uninstall</b-button>
+        <div v-if="loading">
+            <span class="fa fa-spinner fa-spin" />
+        </div>
+        <div v-else>
+            <b-button v-if="!repoInstalled" variant="primary" @click="installRepository">Install</b-button>
+            <b-button v-else variant="danger" @click="uninstallRepository">Uninstall</b-button>
+        </div>
     </b-card>
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
+import { Services } from "./services.js";
 export default {
     props: ["repo", "toolSections"],
     data() {
@@ -43,42 +49,49 @@ export default {
             toolSection: null,
             toolConfig: null,
             toolConfigs: galaxy.config.tool_configs,
-            repoRevisions: [],
-            showAdvanced: false
+            repoRevision: null,
+            repoRevisions: ["01b38f20197e", "01b38f20197d", "01b38f20197c"],
+            showAdvanced: false,
+            loading: true
         };
     },
     computed: {
         titleAdvanced() {
             const prefix = this.showAdvanced ? "Hide" : "Show";
             return `${prefix} advanced installation options.`;
+        },
+        repoInstalled() {
+            return this.installedRevisions[this.repoRevision];
         }
     },
+    created() {
+        this.repoRevision = this.repoRevisions[0];
+        this.toolConfig = this.toolConfigs[0];
+        this.getInstalledRevisions();
+    },
     methods: {
+        getInstalledRevisions() {
+            this.services = new Services();
+            this.services
+                .getInstalledRevisions(this.repo)
+                .then((revisions) => {
+                    this.installedRevisions = {"01b38f20197e": true, "01b38f20197c": true};
+                    window.console.log(revisions);
+                    this.loading = false;
+                })
+                .catch(error => {
+                    alert(error);
+                });
+        },
         toggleAdvanced() {
             this.showAdvanced = !this.showAdvanced;
         },
         installRepository: function(repo) {
-            window.console.log(repo);
-            /*const Galaxy = getGalaxyInstance();
-            const history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
-            if (history_id) {
-                axios
-                    .get(`${getAppRoot()}api/repositories/${plugin.name}?history_id=${history_id}`)
-                    .then(response => {
-                        this.name = plugin.name;
-                        this.hdas = response.data && response.data.hdas;
-                        if (this.hdas && this.hdas.length > 0) {
-                            this.selected = this.hdas[0].id;
-                        }
-                    })
-                    .catch(e => {
-                        this.error = this.setErrorMessage(e);
-                    });
-            } else {
-                this.error = "This option requires an accessible history.";
-            }*/
+            this.services.installRepository(repo);
         },
-        uninstallRepository: function(repo) {}
+        uninstallRepository: function(repo) {
+            this.services.uninstallRepository(repo);
+        }
     }
 };
 </script>

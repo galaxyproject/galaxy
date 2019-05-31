@@ -17,9 +17,6 @@
     </div>
 </template>
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import RepositoryOptions from "./RepositoryOptions.vue";
 import { Services } from "./services.js";
