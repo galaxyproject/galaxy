@@ -75,7 +75,7 @@ def build_command(
     if (container and modify_command_for_container) or job_wrapper.commands_in_new_shell:
         if container and modify_command_for_container:
             # Many Docker containers do not have /bin/bash.
-            external_command_shell = container.shell
+            external_command_shell = container.shell if job_wrapper.commands_in_new_shell else 'none'
         else:
             external_command_shell = shell
         externalized_commands = __externalize_commands(job_wrapper, external_command_shell, commands_builder, remote_command_params)
