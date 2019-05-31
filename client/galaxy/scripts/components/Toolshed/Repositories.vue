@@ -7,7 +7,11 @@
                 </b-link>
             </template>
             <template slot="row-details" slot-scope="row">
-                <repositoryoptions :repo="row.item" :toolSections="toolSections" />
+                <repositoryoptions
+                    :repo="row.item"
+                    :toolSections="toolSections"
+                    :toolshedUrl="toolshedUrl"
+                />
             </template>
         </b-table>
         <div v-if="noResultsFound">

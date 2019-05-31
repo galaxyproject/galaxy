@@ -961,6 +961,12 @@ def populate_api_routes(webapp, app):
                           action='search',
                           conditions=dict(method=["GET", "POST"]))
 
+    webapp.mapper.connect('tool_shed_details',
+                          '/api/tool_shed/details',
+                          controller='toolshed',
+                          action='details',
+                          conditions=dict(method=["GET"]))
+
     webapp.mapper.connect('tool_shed_categories',
                           '/api/tool_shed/categories',
                           controller='toolshed',

@@ -316,3 +316,13 @@ class ToolShedController(BaseAPIController):
         """
         response = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'categories']))
         return response
+
+    @expose_api
+    @web.require_admin
+    def details(self, trans, tool_shed_url, repository_id):
+        """
+        GET /api/tool_shed/details
+        Return details for a given repository id
+        """
+        response = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'repositories', repository_id, 'metadata']))
+        return response

@@ -7,33 +7,54 @@
         <div class="mb-3">
             <b-link href="#" @click="toggleAdvanced">{{ titleAdvanced }}</b-link>
         </div>
-        <div v-if="showAdvanced">
-            <b-form-group label="Available Revisions:" description="Choose an repository revision configuration.">
-                <div class="ui-select">
-                    <b-form-select :options="repoRevisions" v-model="repoRevision" />
-                </div>
-            </b-form-group>
-            <b-form-group
-                label="Target Section:"
-                description="Choose an existing section in your tool panel to contain the installed tools (optional)."
+        <span v-if="loading">
+            <span class="fa fa-spinner fa-spin" /> Loading repository details...
+        </span>
+        <div v-else class="border rounded">
+            <b-table
+                borderless
+                :items="repoTable"
+                :fields="repoFields"
+                class="text_align_center m-0"
             >
-                <b-form-input list="sectionLabels" v-model="toolSection" />
-                <datalist id="sectionLabels">
-                    <option v-for="section in toolSections">{{ section }}</option>
-                </datalist>
-            </b-form-group>
-            <b-form-group label="Tool Configuration:" description="Choose an tool configuration.">
-                <div class="ui-select">
-                    <b-form-select :options="toolConfigs" v-model="toolConfig" />
-                </div>
-            </b-form-group>
-        </div>
-        <div v-if="loading">
-            <span class="fa fa-spinner fa-spin" />
-        </div>
-        <div v-else>
-            <b-button v-if="!repoInstalled" variant="primary" @click="installRepository">Install</b-button>
-            <b-button v-else variant="danger" @click="uninstallRepository">Uninstall</b-button>
+                <template slot="numeric_revision" slot-scope="data">
+                    <span class="font-weight-bold">{{data.value}}</span>
+                </template>
+                <template slot="includes_tools" slot-scope="data">
+                    <span v-if="data.value" :class="repoChecked"/>
+                    <span v-else :class="repoUnchecked"/>
+                </template>
+                <template slot="includes_workflows" slot-scope="data">
+                    <span v-if="data.value" :class="repoChecked"/>
+                    <span v-else :class="repoUnchecked"/>
+                </template>
+                <template slot="includes_datatypes" slot-scope="data">
+                    <span v-if="data.value" :class="repoChecked"/>
+                    <span v-else :class="repoUnchecked"/>
+                </template>
+                <template slot="includes_tool_dependencies" slot-scope="data">
+                    <span v-if="data.value" :class="repoChecked"/>
+                    <span v-else :class="repoUnchecked"/>
+                </template>
+                <template slot="includes_tools_for_display_in_tool_panel" slot-scope="data">
+                    <span v-if="data.value" :class="repoChecked"/>
+                    <span v-else :class="repoUnchecked"/>
+                </template>
+                <template slot="installed" slot-scope="data">
+                    <b-button v-if="!data.value"
+                        class="btn-sm"
+                        variant="primary"
+                        @click="installRepository">
+                            Install
+                    </b-button>
+                    <b-button v-else
+                        class="btn-sm"
+                        variant="danger"
+                        @click="uninstallRepository">
+                            Uninstall
+                    </b-button>
+                </template>
+            </b-table>
         </div>
     </b-card>
 </template>
@@ -42,7 +63,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import { Services } from "./services.js";
 export default {
-    props: ["repo", "toolSections"],
+    props: ["repo", "toolSections", "toolshedUrl"],
     data() {
         const galaxy = getGalaxyInstance();
         return {
@@ -50,7 +71,29 @@ export default {
             toolConfig: null,
             toolConfigs: galaxy.config.tool_configs,
             repoRevision: null,
-            repoRevisions: ["01b38f20197e", "01b38f20197d", "01b38f20197c"],
+            repoChecked: "fa fa-check text-success",
+            repoUnchecked: "fa fa-times text-danger",
+            repoTable: [],
+            repoFields: {
+                numeric_revision: {
+                    label: "Revision"
+                },
+                includes_tools: {
+                    label: "Tools"
+                },
+                includes_workflows: {
+                    label: "Workflows"
+                },
+                includes_datatypes: {
+                    label: "Datatypes"
+                },
+                includes_tool_dependencies: {
+                    label: "Dependencies"
+                },
+                installed: {
+                    label: ""
+                }
+            },
             showAdvanced: false,
             loading: true
         };
@@ -59,23 +102,29 @@ export default {
         titleAdvanced() {
             const prefix = this.showAdvanced ? "Hide" : "Show";
             return `${prefix} advanced installation options.`;
-        },
-        repoInstalled() {
-            return this.installedRevisions[this.repoRevision];
         }
     },
     created() {
-        this.repoRevision = this.repoRevisions[0];
         this.toolConfig = this.toolConfigs[0];
-        this.getInstalledRevisions();
+        this.services = new Services();
+        this.setDetails();
     },
     methods: {
-        getInstalledRevisions() {
-            this.services = new Services();
+        setDetails() {
             this.services
-                .getInstalledRevisions(this.repo)
+                .getDetails(this.toolshedUrl, this.repo.id)
+                .then(response => {
+                    this.repoTable = response;
+                    this.setInstalled();
+                });
+        },
+        setInstalled() {
+            this.services
+                .getInstalled(this.repo)
                 .then((revisions) => {
-                    this.installedRevisions = {"01b38f20197e": true, "01b38f20197c": true};
+                    this.repoTable.forEach(x => {
+                        x.installed = revisions[x.changeset_revision];
+                    });
                     window.console.log(revisions);
                     this.loading = false;
                 })
@@ -95,3 +144,8 @@ export default {
     }
 };
 </script>
+<style>
+.text_align_center {
+    text-align: center;
+}
+</style>
