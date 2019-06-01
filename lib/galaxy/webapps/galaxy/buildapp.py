@@ -913,23 +913,17 @@ def populate_api_routes(webapp, app):
     # ===== REPOSITORIES =====
     # ========================
 
-    webapp.mapper.connect('repositories',
-                          '/api/repositories',
-                          controller='repositories',
-                          action='index',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('repositories',
-                          '/api/repositories/{id}',
-                          controller='repositories',
-                          action='show',
-                          conditions=dict(method=["GET"]))
-
     webapp.mapper.connect('repository_install',
                           '/api/repositories/install',
                           controller='repositories',
                           action='install',
-                          conditions=dict(method=['POST']))
+                          conditions=dict(method=["POST"]))
+
+    webapp.mapper.connect('repository_uninstall',
+                          '/api/repositories/uninstall',
+                          controller='repositories',
+                          action='uninstall',
+                          conditions=dict(method=["GET", "DELETE"]))
 
     '''webapp.mapper.connect('tool_shed_repository',
                           '/api/tool_shed_repositories/{id}',
@@ -953,6 +947,18 @@ def populate_api_routes(webapp, app):
                           '/api/repositories/categories',
                           controller='repositories',
                           action='categories',
+                          conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect('repositories',
+                          '/api/repositories',
+                          controller='repositories',
+                          action='index',
+                          conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect('repositories',
+                          '/api/repositories/{id}',
+                          controller='repositories',
+                          action='show',
                           conditions=dict(method=["GET"]))
 
     # ====================

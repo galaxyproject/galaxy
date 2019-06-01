@@ -21,6 +21,7 @@ from tool_shed.util import (
 )
 import tool_shed.util.shed_util_common as suc
 from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 
 log = logging.getLogger(__name__)
 
@@ -59,11 +60,11 @@ class RepositoriesController(BaseAPIController):
         """
         GET /api/repositories/{id}
         Return the dictionary representation of repositories.
-
-        :param id: the repository's encoded id
+        :param id: encoded repository id
         """
+        encoded_id = self.app.security.decode_id(id)
         tool_shed_repository = self.app.install_model.context.query(self.app.install_model.ToolShedRepository) \
-                                        .filter(self.app.install_model.ToolShedRepository.table.c.id == self.app.security.decode_id(id)) \
+                                        .filter(self.app.install_model.ToolShedRepository.table.c.id == encoded_id) \
                                         .first()
         if tool_shed_repository is None:
             log.debug("Could not find repository id %s." % (str(id)))
@@ -90,7 +91,7 @@ class RepositoriesController(BaseAPIController):
         :param changeset: The changeset to update to after cloning the repository
         """
         irm = InstallRepositoryManager(self.app)
-        tool_shed_url = payload.get('tool_shed_url', None)
+        tool_shed_url = payload.get('tool_shed_url')
         repositories = payload.get('repositories', [])
         repo_info_dict = self.__get_repo_info_dict(trans, repositories, tool_shed_url)
         includes_tools = False
@@ -168,44 +169,32 @@ class RepositoriesController(BaseAPIController):
         return json.loads(util.unicodify(raw_text))
 
     @expose_api
-    def uninstall(self, trans, id=None, **kwd):
+    def uninstall(self, trans, payload={}, **kwd):
         """
-        DELETE /api/repositories/id
         DELETE /api/repositories/
-
-        :param id:  encoded repository id. Either id or name, owner, changeset_revision and tool_shed_url need to be supplied
-        :param kwd: 'remove_from_disk'  : Remove repository from disk or deactivate repository.
-                                          Defaults to `True` (= remove repository from disk).
-                    'name'   : Repository name
-                    'owner'  : Repository owner
-                    'changeset_revision': Changeset revision to uninstall
-                    'tool_shed_url'     : Tool Shed URL
+        :param payload: name: Repository name
+                        author: Repository author
+                        changeset_revision : Changeset revision to uninstall
+                        tool_shed_url : Toolshed url
+                        remove_from_disk : Remove repository from disk or deactivate repository (optional).
         """
-        if id:
-            try:
-                repository = repository_util.get_tool_shed_repository_by_id(self.app, id)
-            except ValueError:
-                raise HTTPBadRequest(detail="No repository with id '%s' found" % id)
-        else:
-            tsr_arguments = ['name', 'owner', 'changeset_revision', 'tool_shed_url']
-            try:
-                tsr_arguments = {key: kwd[key] for key in tsr_arguments}
-            except KeyError as e:
-                raise HTTPBadRequest(detail="Missing required parameter '%s'" % e.args[0])
-            repository = repository_util.get_installed_repository(app=self.app,
-                                                                  tool_shed=tsr_arguments['tool_shed_url'],
-                                                                  name=tsr_arguments['name'],
-                                                                  owner=tsr_arguments['owner'],
-                                                                  changeset_revision=tsr_arguments['changeset_revision'])
-            if not repository:
-                raise HTTPBadRequest(detail="Repository not found")
+        name = payload.get('name')
+        owner = payload.get('owner')
+        tool_shed = util.remove_protocol_from_url(payload.get('tool_shed_url'))
+        changeset_revision = payload.get('changeset_revision')
+        if None in [name, owner, tool_shed, changeset_revision]:
+            raise Exception('Parameters missing, requires name, owner, tool_shed and changeset_revision.')
+        repository = self.app.tool_shed_repository_cache.get_installed_repository(tool_shed=tool_shed, name=name, owner=owner, changeset_revision=changeset_revision)
+        if not repository:
+            raise Exception('Repository not found')
         irm = InstalledRepositoryManager(app=self.app)
-        errors = irm.uninstall_repository(repository=repository, remove_from_disk=kwd.get('remove_from_disk', True))
+        remove_from_disk = payload.get('remove_from_disk', True)
+        errors = irm.uninstall_repository(repository=repository, remove_from_disk=remove_from_disk)
         if not errors:
-            action = 'removed' if kwd.get('remove_from_disk', True) else 'deactivated'
+            action = 'removed' if remove_from_disk else 'disabled'
             return {'message': 'The repository named %s has been %s.' % (repository.name, action)}
         else:
-            raise Exception('Attempting to uninstall tool dependencies for repository named %s resulted in errors: %s' % (repository.name, errors))
+            raise Exception('Attempting to uninstall repository %s resulted in errors: %s' % (repository.name, errors))
 
     @expose_api
     @web.require_admin
@@ -213,10 +202,10 @@ class RepositoriesController(BaseAPIController):
         """
         GET /api/tool_shed/search
         Search for a specific repository in the toolshed.
-        :param q:          the query string to search for
-        :param q:          str
-        :param tool_shed_url:   the URL of the toolshed to search
-        :param tool_shed_url:   str
+        :param q: the query string to search for
+        :param q: str
+        :param tool_shed_url: the URL of the toolshed to search
+        :param tool_shed_url: str
         """
         response = json.loads(util.url_get(tool_shed_url, params=dict(params), pathspec=['api', 'repositories']))
         return response
@@ -227,6 +216,8 @@ class RepositoriesController(BaseAPIController):
         """
         GET /api/tool_shed/categories
         List all available categories
+        :param tool_shed_url: the URL of the toolshed to search
+        :param tool_shed_url: str
         """
         response = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'categories']))
         return response
@@ -236,6 +227,8 @@ class RepositoriesController(BaseAPIController):
     def details(self, trans, tool_shed_url, repository_id):
         """
         GET /api/tool_shed/details
+        :param id: encoded repository id
+        :param id: str
         Return details for a given repository id
         """
         response = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'repositories', repository_id, 'metadata']))

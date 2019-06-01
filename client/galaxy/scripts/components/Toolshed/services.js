@@ -106,8 +106,6 @@ export class Services {
 
     installRepository(payload) {
         const url = `${getAppRoot()}api/repositories/install`;
-        window.console.log(payload);
-        payload.repositories = payload.repositories;
         payload.shed_tool_conf = "./config/shed_tool_conf.xml";
         payload.tool_panel_section_id = "getext";
         payload.async = "True";
@@ -124,16 +122,11 @@ export class Services {
         });
     }
 
-    uninstallRepository(repo) {
+    uninstallRepository(payload) {
         const url = `${getAppRoot()}api/repositories/uninstall`;
-        window.console.log(payload);
-        payload.repositories = payload.repositories;
-        payload.shed_tool_conf = "./config/shed_tool_conf.xml";
-        payload.tool_panel_section_id = "getext";
-        payload.async = "True";
         return new Promise((resolve, reject) => {
             axios
-                .post(url, payload)
+                .delete(url, { data: payload })
                 .then(response => {
                     resolve(response.data);
                 })

@@ -138,8 +138,14 @@ export default {
         },
         uninstallRepository: function(details) {
             this.services.uninstallRepository({
-                id: repo.id,
-                revision: details.changeset_revision
+                tool_shed_url: this.toolshedUrl,
+                name: this.repo.name,
+                owner: this.repo.repo_owner_username,
+                changeset_revision: details.changeset_revision
+            }).then(response => {
+                window.console.log(response)
+            }).catch(error => {
+                window.console.log(error);
             });
         }
     }
