@@ -1,6 +1,19 @@
 <template>
     <b-card>
-        Test
+        <b-form-group
+            label="Target Section:"
+            description="Choose an existing section in your tool panel to contain the installed tools (optional)."
+        >
+            <b-form-input list="sectionSelect" v-model="toolSection" />
+            <datalist id="sectionSelect">
+                <option v-for="section in toolSections">{{ section }}</option>
+            </datalist>
+        </b-form-group>
+        <b-form-group label="Tool Configuration:" description="Choose a tool configuration.">
+            <div class="ui-select">
+                <b-form-select :options="toolConfigs" v-model="toolConfig" />
+            </div>
+        </b-form-group>
     </b-card>
 </template>
 <script>

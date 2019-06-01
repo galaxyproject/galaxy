@@ -1,5 +1,5 @@
 <template>
-    <div v-if="showStatus">
+    <div>
         <span v-if="loading">
             <span class="fa fa-spinner fa-spin" /> Loading repository details...
         </span>
@@ -48,9 +48,9 @@
                     </b-button>
                 </template>
             </b-table>
+            <installationsettings v-if="!showStatus" :toolshedUrl="toolshedUrl" :repoChangeset="repoChangeset" />
         </div>
     </div>
-    <installationsettings v-else :toolshedUrl="toolshedUrl" :repoChangeset="repoChangeset" />
 </template>
 <script>
 import { getGalaxyInstance } from "app";
