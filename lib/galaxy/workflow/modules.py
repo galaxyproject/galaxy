@@ -40,6 +40,7 @@ from galaxy.tools.parameters.basic import (
     workflow_building_modes
 )
 from galaxy.tools.parameters.wrapped import make_dict_copy
+from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
@@ -1124,7 +1125,7 @@ class ToolModule(WorkflowModule):
         replacement_parameters = set()
         for pja in step.post_job_actions:
             for argument in pja.action_arguments.values():
-                for match in re.findall(r'\$\{(.+?)\}', argument):
+                for match in re.findall(r'\$\{(.+?)\}', unicodify(argument)):
                     replacement_parameters.add(match)
 
         return list(replacement_parameters)
