@@ -111,8 +111,8 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/admin/forms', 'admin')
     webapp.add_client_route('/admin/groups', 'admin')
     webapp.add_client_route('/admin/repositories', 'admin')
-    webapp.add_client_route('/admin/toolshed', 'admin')
     webapp.add_client_route('/admin/tool_versions', 'admin')
+    webapp.add_client_route('/admin/toolshed', 'admin')
     webapp.add_client_route('/admin/quotas', 'admin')
     webapp.add_client_route('/admin/form/{form_id}', 'admin')
     webapp.add_client_route('/admin/api_keys', 'admin')
@@ -909,6 +909,52 @@ def populate_api_routes(webapp, app):
                                            name_prefix="history_dataset_",
                                            path_prefix='/api/histories/{history_id}/contents/{history_content_id}')
 
+    # ========================
+    # ===== REPOSITORIES =====
+    # ========================
+
+    webapp.mapper.connect('repositories',
+                          '/api/repositories',
+                          controller='repositories',
+                          action='index',
+                          conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect('repositories',
+                          '/api/repositories/{id}',
+                          controller='repositories',
+                          action='show',
+                          conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect('repository_install',
+                          '/api/repositories/install',
+                          controller='repositories',
+                          action='install',
+                          conditions=dict(method=['POST']))
+
+    '''webapp.mapper.connect('tool_shed_repository',
+                          '/api/tool_shed_repositories/{id}',
+                          controller='tool_shed_repositories',
+                          action='uninstall_repository',
+                          conditions=dict(method=["DELETE"]))'''
+
+    webapp.mapper.connect('repositories_search',
+                          '/api/repositories/search',
+                          controller='repositories',
+                          action='search',
+                          conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect('repositories_details',
+                          '/api/repositories/details',
+                          controller='repositories',
+                          action='details',
+                          conditions=dict(method=["GET"]))
+
+    webapp.mapper.connect('repositories_categories',
+                          '/api/repositories/categories',
+                          controller='repositories',
+                          action='categories',
+                          conditions=dict(method=["GET"]))
+
     # ====================
     # ===== TOOLSHED =====
     # ====================
@@ -961,18 +1007,6 @@ def populate_api_routes(webapp, app):
                           action='search',
                           conditions=dict(method=["GET", "POST"]))
 
-    webapp.mapper.connect('tool_shed_details',
-                          '/api/tool_shed/details',
-                          controller='toolshed',
-                          action='details',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('tool_shed_categories',
-                          '/api/tool_shed/categories',
-                          controller='toolshed',
-                          action='categories',
-                          conditions=dict(method=["GET"]))
-
     webapp.mapper.connect('tool_shed_status',
                           '/api/tool_shed/status',
                           controller='toolshed',
@@ -1001,12 +1035,6 @@ def populate_api_routes(webapp, app):
                           '/api/tool_shed_repositories/install',
                           controller='tool_shed_repositories',
                           action='install',
-                          conditions=dict(method=['POST']))
-
-    webapp.mapper.connect('install_repository',
-                          '/api/tool_shed_repositories/install_repository',
-                          controller='tool_shed_repositories',
-                          action='install_repository',
                           conditions=dict(method=['POST']))
 
     webapp.mapper.connect('check_for_updates',

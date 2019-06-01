@@ -4,7 +4,7 @@ import { getAppRoot } from "onload/loadConfig";
 /** Request repositories, categories etc from toolshed server **/
 export class Services {
     getCategories(toolshedUrl) {
-        const url = `${getAppRoot()}api/tool_shed/categories?tool_shed_url=${toolshedUrl}`;
+        const url = `${getAppRoot()}api/repositories/categories?tool_shed_url=${toolshedUrl}`;
         return new Promise((resolve, reject) => {
             axios
                 .get(url)
@@ -21,7 +21,7 @@ export class Services {
         const paramsString = Object.keys(params).reduce(function(previous, key) {
             return `${previous}${key}=${params[key]}&`;
         }, "");
-        const url = `${getAppRoot()}api/tool_shed/search?${paramsString}`;
+        const url = `${getAppRoot()}api/repositories/search?${paramsString}`;
         return new Promise((resolve, reject) => {
             axios
                 .get(url)
@@ -42,7 +42,7 @@ export class Services {
 
     getDetails(toolshedUrl, repository_id) {
         const params = `tool_shed_url=${toolshedUrl}&repository_id=${repository_id}`;
-        const url = `${getAppRoot()}api/tool_shed/details?${params}`;
+        const url = `${getAppRoot()}api/repositories/details?${params}`;
         return new Promise((resolve, reject) => {
             axios
                 .get(url)
@@ -71,7 +71,7 @@ export class Services {
 
     getInstalled(repo) {
         const paramsString = `name=${repo.name}&owner=${repo.repo_owner_username}`;
-        const url = `${getAppRoot()}api/tool_shed_repositories?${paramsString}`;
+        const url = `${getAppRoot()}api/repositories?${paramsString}`;
         return new Promise((resolve, reject) => {
             axios
                 .get(url)
@@ -83,7 +83,6 @@ export class Services {
                         revisions[x.changeset_revision] =
                             revisions[x.installed_changeset_revision] = installed;
                     });
-                    window.console.log(revisions);
                     resolve(revisions);
                 })
                 .catch(e => {
@@ -106,7 +105,7 @@ export class Services {
     }
 
     installRepository(payload) {
-        const url = `${getAppRoot()}api/tool_shed_repositories/install_repository`;
+        const url = `${getAppRoot()}api/repositories/install`;
         window.console.log(payload);
         payload.repositories = payload.repositories;
         payload.shed_tool_conf = "./config/shed_tool_conf.xml";
@@ -126,5 +125,22 @@ export class Services {
     }
 
     uninstallRepository(repo) {
+        const url = `${getAppRoot()}api/repositories/uninstall`;
+        window.console.log(payload);
+        payload.repositories = payload.repositories;
+        payload.shed_tool_conf = "./config/shed_tool_conf.xml";
+        payload.tool_panel_section_id = "getext";
+        payload.async = "True";
+        return new Promise((resolve, reject) => {
+            axios
+                .post(url, payload)
+                .then(response => {
+                    resolve(response.data);
+                })
+                .catch(e => {
+                    window.console.log(e);
+                    reject(this._errorMessage(e));
+                });
+        });
     }
 }
