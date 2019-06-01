@@ -7,7 +7,7 @@
                 </b-link>
             </template>
             <template slot="row-details" slot-scope="row">
-                <repositoryoptions
+                <repositorydetails
                     :repo="row.item"
                     :toolSections="toolSections"
                     :toolshedUrl="toolshedUrl"
@@ -17,19 +17,22 @@
         <div v-if="noResultsFound">
             No matching repositories found.
         </div>
-        <div v-if="pageLoading"><span class="fa fa-spinner fa-spin mb-4" /> <span>Loading repositories...</span></div>
+        <div v-if="pageLoading">
+            <span class="fa fa-spinner fa-spin mb-4" />
+            <span>Loading repositories...</span>
+        </div>
     </div>
 </template>
 <script>
 import { getGalaxyInstance } from "app";
-import RepositoryOptions from "./RepositoryOptions.vue";
+import RepositoryDetails from "./RepositoryDetails.vue";
 import { Services } from "./services.js";
 const READY = 0;
 const LOADING = 1;
 const COMPLETE = 2;
 export default {
     components: {
-        repositoryoptions: RepositoryOptions
+        repositorydetails: RepositoryDetails
     },
     props: ["query", "scrolled", "toolshedUrl"],
     data() {

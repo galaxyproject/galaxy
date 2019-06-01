@@ -1,9 +1,5 @@
 <template>
     <b-card>
-        <div class="mb-1">{{ repo.long_description }}</div>
-        <div class="mb-3">
-            <b-link :href="repo.repository_url" target="_blank">Show additional details and dependencies.</b-link>
-        </div>
         <span v-if="loading">
             <span class="fa fa-spinner fa-spin" /> Loading repository details...
         </span>
@@ -56,18 +52,13 @@
     </b-card>
 </template>
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import { Services } from "./services.js";
 export default {
-    props: ["repo", "toolSections", "toolshedUrl"],
+    props: ["repo", "toolshedUrl"],
     data() {
         const galaxy = getGalaxyInstance();
         return {
-            toolSection: null,
-            toolConfig: null,
-            toolConfigs: galaxy.config.tool_configs,
-            repoRevision: null,
             repoChecked: "fa fa-check text-success",
             repoUnchecked: "fa fa-times text-danger",
             repoTable: [],
@@ -91,12 +82,10 @@ export default {
                     label: ""
                 }
             },
-            showAdvanced: false,
             loading: true
         };
     },
     created() {
-        this.toolConfig = this.toolConfigs[0];
         this.services = new Services();
         this.setDetails();
     },
@@ -122,16 +111,16 @@ export default {
                     alert(error);
                 });
         },
-        toggleAdvanced() {
-            this.showAdvanced = !this.showAdvanced;
-        },
         installRepository: function(details) {
-            window.console.log(details);
             this.services.installRepository({
                 tool_shed_url: this.toolshedUrl,
                 repositories: [[this.repo.id, details.changeset_revision]]
             }).then(response => {
-                window.console.log(response)
+                window.console.log(response);
+                /*setTimeout(() => {
+                    this.services
+                        .getInstalled(this.repo)
+                }, 1000);*/
             }).catch(error => {
                 alert(error);
             });

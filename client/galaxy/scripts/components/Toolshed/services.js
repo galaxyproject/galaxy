@@ -77,13 +77,16 @@ export class Services {
                 .get(url)
                 .then(response => {
                     const data = response.data;
-                    const revisions = {};
+                    const result = {};
                     data.forEach(x => {
                         const installed = !x.deleted && !x.uninstalled;
-                        revisions[x.changeset_revision] =
-                            revisions[x.installed_changeset_revision] = installed;
-                    });
-                    resolve(revisions);
+                        if (installed) {
+                            result[x.changeset_revision] =
+                                result[x.installed_changeset_revision] = x.status;
+                        }
+                    })
+                    window.console.log(result);
+                    resolve(result);
                 })
                 .catch(e => {
                     reject(this._errorMessage(e));
@@ -106,9 +109,6 @@ export class Services {
 
     installRepository(payload) {
         const url = `${getAppRoot()}api/repositories/install`;
-        payload.shed_tool_conf = "./config/shed_tool_conf.xml";
-        payload.tool_panel_section_id = "getext";
-        payload.async = "True";
         return new Promise((resolve, reject) => {
             axios
                 .post(url, payload)
