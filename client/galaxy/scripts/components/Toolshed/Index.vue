@@ -9,7 +9,7 @@
                 @input="delayQuery"
                 @change="setQuery"
             />
-            <selector
+            <serverselection
                 :toolshedUrl="toolshedUrl"
                 :toolshedUrls="toolshedUrls"
                 :total="total"
@@ -39,12 +39,12 @@
 import { getGalaxyInstance } from "app";
 import Categories from "./Categories.vue";
 import Repositories from "./Repositories.vue";
-import Selector from "./Selector.vue";
+import ServerSelection from "./ServerSelection.vue";
 export default {
     components: {
         categories: Categories,
         repositories: Repositories,
-        selector: Selector
+        serverselection: ServerSelection
     },
     data() {
         return {

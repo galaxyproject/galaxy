@@ -1,5 +1,5 @@
 <template>
-    <b-card>
+    <div v-if="showStatus">
         <span v-if="loading">
             <span class="fa fa-spinner fa-spin" /> Loading repository details...
         </span>
@@ -37,7 +37,7 @@
                     <b-button v-if="!row.item.installed"
                         class="btn-sm"
                         variant="primary"
-                        @click="installRepository(row.item)">
+                        @click="setupRepository(row.item)">
                             Install
                     </b-button>
                     <b-button v-else
@@ -49,18 +49,24 @@
                 </template>
             </b-table>
         </div>
-    </b-card>
+    </div>
+    <installationsettings v-else :toolshedUrl="toolshedUrl" :repoChangeset="repoChangeset" />
 </template>
 <script>
 import { getGalaxyInstance } from "app";
 import { Services } from "./services.js";
+import InstallationSettings from "./InstallationSettings.vue";
 export default {
+    components: {
+        installationsettings: InstallationSettings
+    },
     props: ["repo", "toolshedUrl"],
     data() {
         const galaxy = getGalaxyInstance();
         return {
             repoChecked: "fa fa-check text-success",
             repoUnchecked: "fa fa-times text-danger",
+            repoChangeset: null,
             repoTable: [],
             repoFields: {
                 numeric_revision: {
@@ -82,25 +88,26 @@ export default {
                     label: ""
                 }
             },
+            showStatus: true,
             loading: true
         };
     },
     created() {
         this.services = new Services();
-        this.setDetails();
+        this.loadDetails();
     },
     methods: {
-        setDetails() {
+        loadDetails() {
             this.services
                 .getDetails(this.toolshedUrl, this.repo.id)
                 .then(response => {
                     this.repoTable = response;
-                    this.setInstalled();
+                    this.loadInstalledRepositories();
                 });
         },
-        setInstalled() {
+        loadInstalledRepositories() {
             this.services
-                .getInstalled(this.repo)
+                .getInstalledRepositories(this.repo)
                 .then((revisions) => {
                     this.repoTable.forEach(x => {
                         x.installed = revisions[x.changeset_revision];
@@ -111,19 +118,9 @@ export default {
                     alert(error);
                 });
         },
-        installRepository: function(details) {
-            this.services.installRepository({
-                tool_shed_url: this.toolshedUrl,
-                repositories: [[this.repo.id, details.changeset_revision]]
-            }).then(response => {
-                window.console.log(response);
-                /*setTimeout(() => {
-                    this.services
-                        .getInstalled(this.repo)
-                }, 1000);*/
-            }).catch(error => {
-                alert(error);
-            });
+        setupRepository: function(details) {
+            this.showStatus = false;
+            this.repoChangeset = details.changeset_revision;
         },
         uninstallRepository: function(details) {
             this.services.uninstallRepository({

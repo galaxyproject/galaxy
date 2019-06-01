@@ -9,7 +9,6 @@
             <template slot="row-details" slot-scope="row">
                 <repositorydetails
                     :repo="row.item"
-                    :toolSections="toolSections"
                     :toolshedUrl="toolshedUrl"
                 />
             </template>
@@ -37,7 +36,6 @@ export default {
     props: ["query", "scrolled", "toolshedUrl"],
     data() {
         return {
-            toolSections: [],
             repositories: [],
             fields: [
                 { key: "name" },
@@ -75,15 +73,9 @@ export default {
     },
     created() {
         this.services = new Services();
-        this.configureToolSections();
         this.load();
     },
     methods: {
-        configureToolSections() {
-            const galaxy = getGalaxyInstance();
-            const sections = galaxy.config.toolbox_in_panel;
-            this.toolSections = sections.filter(x => x.model_class == "ToolSection").map(x => x.name);
-        },
         load(page = 1) {
             this.page = page;
             this.pageState = LOADING;

@@ -69,7 +69,7 @@ export class Services {
         });
     }
 
-    getInstalled(repo) {
+    getInstalledRepositories(repo) {
         const paramsString = `name=${repo.name}&owner=${repo.repo_owner_username}`;
         const url = `${getAppRoot()}api/repositories?${paramsString}`;
         return new Promise((resolve, reject) => {
