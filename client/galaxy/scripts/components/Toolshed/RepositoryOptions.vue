@@ -133,7 +133,7 @@ export default {
             }).then(response => {
                 window.console.log(response)
             }).catch(error => {
-                window.console.log(error);
+                alert(error);
             });
         },
         uninstallRepository: function(details) {
@@ -143,9 +143,14 @@ export default {
                 owner: this.repo.repo_owner_username,
                 changeset_revision: details.changeset_revision
             }).then(response => {
-                window.console.log(response)
+                this.repoTable.forEach(x => {
+                    if (x.changeset_revision == details.changeset_revision) {
+                        x.installed = false;
+                    }
+                });
+                this.repoTable = [...this.repoTable];
             }).catch(error => {
-                window.console.log(error);
+                alert(error);
             });
         }
     }
