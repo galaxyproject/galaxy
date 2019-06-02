@@ -1,5 +1,5 @@
 <template>
-    <b-modal v-model="modalShow">
+    <b-modal v-model="modalShow" @ok="onOk" @hide="onHide">
         <template slot="modal-header">
             <h4 class="m-0">
                 {{ modalTitle }}
@@ -30,13 +30,13 @@
         <b-form-group
             label="Dependencies:"
             description="Choose how to handle dependencies.">
-            <b-form-checkbox v-model="resolvableDependency" >
+            <b-form-checkbox v-model="installResolverDependencies" >
                 Install resolvable dependencies
             </b-form-checkbox>
-            <b-form-checkbox v-model="repositoryDependency" >
+            <b-form-checkbox v-model="installRepositoryDependencies" >
                 Install repository dependencies
             </b-form-checkbox>
-            <b-form-checkbox v-model="toolDependency" >
+            <b-form-checkbox v-model="installToolDependencies" >
                 Install tool dependencies
             </b-form-checkbox>
         </b-form-group>
@@ -50,14 +50,13 @@ export default {
     data() {
         return {
             modalShow: true,
+            installToolDependencies: true,
+            installRepositoryDependencies: true,
+            installResolverDependencies: true,
             toolConfigs: [],
             toolConfig: null,
             toolSections: [],
             toolSection: null,
-            toolConfig: null,
-            toolDependency: true,
-            repositoryDependency: true,
-            resolvableDependency: true
         };
     },
     computed: {
@@ -66,6 +65,7 @@ export default {
         }
     },
     created() {
+        this.services = new Services();
         this.loadConfig();
     },
     methods: {
@@ -73,23 +73,28 @@ export default {
             const galaxy = getGalaxyInstance();
             const sections = galaxy.config.toolbox_in_panel;
             this.toolSections = sections.filter(x => x.model_class == "ToolSection").map(x => x.name);
-            this.toolConfigs = galaxy.config.tool_configs;
+            this.toolConfigs = galaxy.config.tool_configs || [];
             this.toolConfig = this.toolConfigs[0];
         },
-        installRepository: function(details) {
+        onOk: function() {
             this.services.installRepository({
                 tool_shed_url: this.toolshedUrl,
-                repositories: [[this.repo.id, this.repoChangeset]]
+                repositories: [[this.repo.id, this.repoChangeset]],
+                tool_section: this.toolSection,
+                tool_configuration: this.toolConfig,
+                install_resolver_dependencies: this.installResolverDependencies,
+                install_tool_dependencies: this.installToolDependencies,
+                install_repository_dependencies: this.installRepositoryDependencies
             }).then(response => {
                 window.console.log(response);
-                /*setTimeout(() => {
-                    this.services
-                        .getInstalled(this.repo)
-                }, 1000);*/
+                this.$emit("ok");
             }).catch(error => {
                 alert(error);
             });
         },
+        onHide: function() {
+            this.$emit("hide");
+        }
     }
 };
 </script>

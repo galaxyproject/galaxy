@@ -81,24 +81,47 @@ class RepositoriesController(BaseAPIController):
         POST /api/repositories/install
         Initiate the installation of a repository.
 
+        :param repositories: The repository id and changeset tuple array
         :param install_resolver_dependencies: True to install resolvable dependencies.
         :param install_tool_dependencies: True to install tool dependencies.
         :param install_repository_dependencies: True to install repository dependencies.
-        :param tool_panel_section_id: The unique identifier for an existing tool panel section
-        :param new_tool_panel_section_label: Create a new tool panel section with this label
-        :param shed_tool_conf: The shed tool config file to use for this installation
+        :param tool_section: Existing or new tool panel section with this label
+        :param tool_configuration: The shed tool config file to use for this installation
         :param tool_shed_url: The URL for the toolshed whence this repository is being installed
-        :param changeset: The changeset to update to after cloning the repository
         """
         irm = InstallRepositoryManager(self.app)
-        tool_shed_url = payload.get('tool_shed_url')
+        install_resolver_dependencies = util.asbool(payload.get('install_resolver_dependencies', False))
+        install_tool_dependencies = util.asbool(payload.get('install_tool_dependencies', False))
+        install_repository_dependencies = util.asbool(payload.get('install_repository_dependencies', False))
         repositories = payload.get('repositories', [])
-        repo_info_dict = self.__get_repo_info_dict(trans, repositories, tool_shed_url)
+        tool_configuration = payload.get('tool_configuration')
+        tool_section = payload.get('tool_section')
+        tool_panel_section_mapping = json.loads(payload.get('tool_panel_section', '{}'))
+        tool_shed_url = payload.get('tool_shed_url')
+        if not tool_shed_url:
+            raise Exception('tool_shed_url missing.')
+        if not repositories:
+            raise Exception('repositories missing.')
+        if not tool_configuration:
+            raise Exception('tool_configuration missing.')
+        # configure tool path from configuration
+        tool_path = suc.get_tool_path_by_shed_tool_conf_filename(self.app, tool_configuration)
+        # identify tool section panel label
+        tool_panel_section_id = None
+        new_tool_panel_section_label = None
+        tool_section_lower = tool_section.lower().strip()
+        for section_id, section_name in self.app.toolbox.get_sections():
+            if tool_section_lower == section_name.lower().strip():
+                tool_panel_section_id = section_id
+                break
+        if tool_panel_section_id is None:
+            new_tool_panel_section_label = tool_section
+        # encode repository dictionaries
+        repo_info_dict = self._get_repo_info_dict(trans, repositories, tool_shed_url)
         includes_tools = False
         includes_tools_for_display_in_tool_panel = False
         has_repository_dependencies = False
         includes_tool_dependencies = False
-        install_resolver_dependencies = util.asbool(payload.get('install_resolver_dependencies', False))
         for encoded_repo_info_dict in repo_info_dict.get('repo_info_dicts', []):
             decoded_repo_info_dict = encoding_util.tool_shed_decode(encoded_repo_info_dict)
             if not includes_tools:
@@ -112,13 +135,6 @@ class RepositoriesController(BaseAPIController):
                 includes_tool_dependencies = util.string_as_bool(repo_info_dict.get('includes_tool_dependencies', False))
         encoded_repo_info_dicts = util.listify(repo_info_dict.get('repo_info_dicts', []))
         repo_info_dicts = [encoding_util.tool_shed_decode(encoded_repo_info_dict) for encoded_repo_info_dict in encoded_repo_info_dicts]
-        tool_panel_section_id = payload.get('tool_panel_section_id', None)
-        new_tool_panel_section_label = payload.get('new_tool_panel_section', None)
-        tool_panel_section_mapping = json.loads(payload.get('tool_panel_section', '{}'))
-        install_tool_dependencies = util.asbool(payload.get('install_tool_dependencies', False))
-        install_repository_dependencies = util.asbool(payload.get('install_repository_dependencies', False))
-        shed_tool_conf = payload.get('shed_tool_conf', None)
-        tool_path = suc.get_tool_path_by_shed_tool_conf_filename(self.app, shed_tool_conf)
         installation_dict = dict(install_repository_dependencies=install_repository_dependencies,
                                  new_tool_panel_section_label=new_tool_panel_section_label,
                                  no_changes_checked=False,
@@ -140,7 +156,7 @@ class RepositoriesController(BaseAPIController):
                                      new_tool_panel_section_label=new_tool_panel_section_label,
                                      tool_panel_section_mapping=tool_panel_section_mapping,
                                      install_resolver_dependencies=install_resolver_dependencies,
-                                     shed_tool_conf=shed_tool_conf,
+                                     shed_tool_conf=tool_configuration,
                                      status='ok',
                                      tool_panel_section_id=tool_panel_section_id,
                                      tool_panel_section_keys=tool_panel_keys,
@@ -148,16 +164,9 @@ class RepositoriesController(BaseAPIController):
                                      tool_shed_url=tool_shed_url)
             encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
                 irm.initiate_repository_installation(installation_dict)
-            return json.dumps(dict(operation='install',
-                                   api=True,
-                                   install_resolver_dependencies=install_resolver_dependencies,
-                                   install_tool_dependencies=install_tool_dependencies,
-                                   encoded_kwd=encoded_kwd,
-                                   reinstalling=False,
-                                   tool_shed_repository_ids=json.dumps([repo[0] for repo in repositories]),
-                                   repositories=[trans.security.encode_id(repo.id) for repo in new_repositories]))
+            return { 'message': 'Success.' }
 
-    def __get_repo_info_dict(self, trans, repositories, tool_shed_url):
+    def _get_repo_info_dict(self, trans, repositories, tool_shed_url):
         repo_ids = []
         changesets = []
         for repository_id, changeset in repositories:

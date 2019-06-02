@@ -16,7 +16,6 @@ export class Services {
                 });
         });
     }
-
     getRepositories(params) {
         const paramsString = Object.keys(params).reduce(function(previous, key) {
             return `${previous}${key}=${params[key]}&`;
@@ -39,7 +38,6 @@ export class Services {
                 });
         });
     }
-
     getDetails(toolshedUrl, repository_id) {
         const params = `tool_shed_url=${toolshedUrl}&repository_id=${repository_id}`;
         const url = `${getAppRoot()}api/repositories/details?${params}`;
@@ -60,15 +58,14 @@ export class Services {
                             includes_tools_for_display_in_tool_panel: d.includes_tools_for_display_in_tool_panel
                         };
                     });
-                    table.sort((a,b) => a.numeric_revision < b.numeric_revision);
+                    table.sort((a,b) => b.numeric_revision - a.numeric_revision);
                     resolve(table);
                 })
                 .catch(e => {
-                    reject(this._errorMessage(e));
+                    reject(`${this._errorMessage(e)}, ${url}`);
                 });
         });
     }
-
     getInstalledRepositories(repo) {
         const paramsString = `name=${repo.name}&owner=${repo.repo_owner_username}`;
         const url = `${getAppRoot()}api/repositories?${paramsString}`;
@@ -92,20 +89,6 @@ export class Services {
                 });
         });
     }
-
-    _formatCount(value) {
-        if (value > 1000) return `>${Math.floor(value / 1000)}k`;
-        return value;
-    }
-
-    _errorMessage(e) {
-        let message = "Request failed.";
-        if (e.response) {
-            message = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
-        }
-        return message;
-    }
-
     installRepository(payload) {
         const url = `${getAppRoot()}api/repositories/install`;
         return new Promise((resolve, reject) => {
@@ -115,12 +98,10 @@ export class Services {
                     resolve(response.data);
                 })
                 .catch(e => {
-                    window.console.log(e);
                     reject(this._errorMessage(e));
                 });
         });
     }
-
     uninstallRepository(payload) {
         const url = `${getAppRoot()}api/repositories/uninstall`;
         return new Promise((resolve, reject) => {
@@ -130,9 +111,19 @@ export class Services {
                     resolve(response.data);
                 })
                 .catch(e => {
-                    window.console.log(e);
                     reject(this._errorMessage(e));
                 });
         });
+    }
+    _formatCount(value) {
+        if (value > 1000) return `>${Math.floor(value / 1000)}k`;
+        return value;
+    }
+    _errorMessage(e) {
+        let message = "Request failed.";
+        if (e.response) {
+            message = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
+        }
+        return message;
     }
 }

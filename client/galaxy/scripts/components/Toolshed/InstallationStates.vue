@@ -3,58 +3,65 @@
         <span v-if="loading">
             <span class="fa fa-spinner fa-spin" /> Loading repository details...
         </span>
-        <div v-else class="border rounded">
-            <b-table
-                borderless
-                :items="repoTable"
-                :fields="repoFields"
-                class="text_align_center m-0"
-            >
-                <template slot="numeric_revision" slot-scope="data">
-                    <span class="font-weight-bold">{{data.value}}</span>
-                </template>
-                <template slot="includes_tools" slot-scope="data">
-                    <span v-if="data.value" :class="repoChecked"/>
-                    <span v-else :class="repoUnchecked"/>
-                </template>
-                <template slot="includes_workflows" slot-scope="data">
-                    <span v-if="data.value" :class="repoChecked"/>
-                    <span v-else :class="repoUnchecked"/>
-                </template>
-                <template slot="includes_datatypes" slot-scope="data">
-                    <span v-if="data.value" :class="repoChecked"/>
-                    <span v-else :class="repoUnchecked"/>
-                </template>
-                <template slot="includes_tool_dependencies" slot-scope="data">
-                    <span v-if="data.value" :class="repoChecked"/>
-                    <span v-else :class="repoUnchecked"/>
-                </template>
-                <template slot="includes_tools_for_display_in_tool_panel" slot-scope="data">
-                    <span v-if="data.value" :class="repoChecked"/>
-                    <span v-else :class="repoUnchecked"/>
-                </template>
-                <template slot="installed" slot-scope="row">
-                    <b-button v-if="!row.item.installed"
-                        class="btn-sm"
-                        variant="primary"
-                        @click="setupRepository(row.item)">
-                            Install
-                    </b-button>
-                    <b-button v-else
-                        class="btn-sm"
-                        variant="danger"
-                        @click="uninstallRepository(row.item)">
-                            Uninstall
-                    </b-button>
-                </template>
-            </b-table>
-            <installationsettings
-                v-if="!showStatus"
-                :repo="repo"
-                :toolshedUrl="toolshedUrl"
-                :repoChangeset="repoChangeset"
-                :repoNumeric="repoNumeric"
-            />
+        <div v-else>
+            <b-alert v-if="error" variant="danger" show>
+                {{ error }}
+            </b-alert>
+            <div v-else class="border rounded">
+                <b-table
+                    borderless
+                    :items="repoTable"
+                    :fields="repoFields"
+                    class="text_align_center m-0"
+                >
+                    <template slot="numeric_revision" slot-scope="data">
+                        <span class="font-weight-bold">{{data.value}}</span>
+                    </template>
+                    <template slot="includes_tools" slot-scope="data">
+                        <span v-if="data.value" :class="repoChecked"/>
+                        <span v-else :class="repoUnchecked"/>
+                    </template>
+                    <template slot="includes_workflows" slot-scope="data">
+                        <span v-if="data.value" :class="repoChecked"/>
+                        <span v-else :class="repoUnchecked"/>
+                    </template>
+                    <template slot="includes_datatypes" slot-scope="data">
+                        <span v-if="data.value" :class="repoChecked"/>
+                        <span v-else :class="repoUnchecked"/>
+                    </template>
+                    <template slot="includes_tool_dependencies" slot-scope="data">
+                        <span v-if="data.value" :class="repoChecked"/>
+                        <span v-else :class="repoUnchecked"/>
+                    </template>
+                    <template slot="includes_tools_for_display_in_tool_panel" slot-scope="data">
+                        <span v-if="data.value" :class="repoChecked"/>
+                        <span v-else :class="repoUnchecked"/>
+                    </template>
+                    <template slot="installed" slot-scope="row">
+                        <b-button v-if="!row.item.installed"
+                            class="btn-sm"
+                            variant="primary"
+                            @click="setupRepository(row.item)">
+                                Install
+                        </b-button>
+                        <b-button v-else
+                            class="btn-sm"
+                            variant="danger"
+                            @click="uninstallRepository(row.item)">
+                                Uninstall
+                        </b-button>
+                    </template>
+                </b-table>
+                <installationsettings
+                    v-if="showSettings"
+                    :repo="repo"
+                    :toolshedUrl="toolshedUrl"
+                    :repoChangeset="repoChangeset"
+                    :repoNumeric="repoNumeric"
+                    @hide="onHide"
+                    @ok="onOk"
+                />
+            </div>
         </div>
     </div>
 </template>
@@ -94,7 +101,8 @@ export default {
                     label: ""
                 }
             },
-            showStatus: true,
+            showSettings: false,
+            error: null,
             loading: true
         };
     },
@@ -109,6 +117,9 @@ export default {
                 .then(response => {
                     this.repoTable = response;
                     this.loadInstalledRepositories();
+                }).catch(error => {
+                    this.error = error;
+                    this.loading = false;
                 });
         },
         loadInstalledRepositories() {
@@ -121,13 +132,21 @@ export default {
                     this.loading = false;
                 })
                 .catch(error => {
-                    alert(error);
+                    this.error = error;
+                    this.loading = false;
                 });
         },
+        onOk: function() {
+            this.showSettings = false;
+            alert('stateok');
+        },
+        onHide: function() {
+            this.showSettings = false;
+        },
         setupRepository: function(details) {
-            this.showStatus = false;
             this.repoChangeset = details.changeset_revision;
             this.repoNumeric = details.numeric_revision;
+            this.showSettings = true;
         },
         uninstallRepository: function(details) {
             this.services.uninstallRepository({
