@@ -1,5 +1,5 @@
 <template>
-    <b-card>
+    <b-modal v-model="modalShow" title="BootstrapVue">
         <b-form-group
             label="Target Section:"
             description="Choose an existing section in your tool panel to contain the installed tools (optional)."
@@ -14,7 +14,7 @@
                 <b-form-select :options="toolConfigs" v-model="toolConfig" />
             </div>
         </b-form-group>
-    </b-card>
+    </b-modal>
 </template>
 <script>
 import { getGalaxyInstance } from "app";
@@ -24,6 +24,7 @@ export default {
     data() {
         const galaxy = getGalaxyInstance();
         return {
+            modalShow: true,
             toolConfigs: [],
             toolConfig: null,
             toolSections: [],
