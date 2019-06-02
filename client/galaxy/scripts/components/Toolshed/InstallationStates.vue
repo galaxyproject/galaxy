@@ -48,7 +48,13 @@
                     </b-button>
                 </template>
             </b-table>
-            <installationsettings v-if="!showStatus" :toolshedUrl="toolshedUrl" :repoChangeset="repoChangeset" />
+            <installationsettings
+                v-if="!showStatus"
+                :repo="repo"
+                :toolshedUrl="toolshedUrl"
+                :repoChangeset="repoChangeset"
+                :repoNumeric="repoNumeric"
+            />
         </div>
     </div>
 </template>
@@ -121,6 +127,7 @@ export default {
         setupRepository: function(details) {
             this.showStatus = false;
             this.repoChangeset = details.changeset_revision;
+            this.repoNumeric = details.numeric_revision;
         },
         uninstallRepository: function(details) {
             this.services.uninstallRepository({

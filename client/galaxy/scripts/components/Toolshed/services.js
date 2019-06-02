@@ -85,7 +85,6 @@ export class Services {
                                 result[x.installed_changeset_revision] = x.status;
                         }
                     })
-                    window.console.log(result);
                     resolve(result);
                 })
                 .catch(e => {
