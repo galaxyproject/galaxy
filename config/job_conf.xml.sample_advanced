@@ -950,12 +950,12 @@
                 <param id="docker_image_default">my-tool</param>
                 <param id="docker_tag_default">latest</param>
             -->
-            <param id="max_pod_retrials">3</param>
+            <param id="max_pod_retries">3</param>
             <!-- Allows pods to retry up to this number of times, before marking the galaxy job failed. k8s is a state
                  setter essentially, so by default it will try to take a job submitted to successful completion. A job
                  submits pods, until the number of successes (1 in this use case) is achieved, assuming that whatever is
                  making the pods fail will be fixed (such as a stale disk or a dead node that it is being restarted).
-                 This option sets a limit of retrials, so that after that number of failed pods, the job is re-scaled to
+                 This option sets a limit of retries, so that after that number of failed pods, the job is re-scaled to
                  zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
                  to failed).
 
