@@ -45,7 +45,7 @@ def test_tool_conf_watcher():
         open(tool_conf_path, "w").write("b")
         wait_for_reload(lambda: callback.called)
         conf_watcher.shutdown()
-        assert not conf_watcher.thread.is_alive()
+        assert conf_watcher.thread is None
 
 
 def wait_for_reload(check):

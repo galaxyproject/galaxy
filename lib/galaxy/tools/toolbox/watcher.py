@@ -78,24 +78,30 @@ class ToolConfWatcher(object):
         self.cache = tool_cache
         self._active = False
         self._lock = threading.Lock()
-        self.thread = threading.Thread(target=self.check, name="ToolConfWatcher.thread")
-        self.thread.daemon = True
+        self.thread = None
+        self.exit = threading.Event()
         self.reload_callback = reload_callback
 
     def start(self):
         if not self._active:
             self._active = True
+            if self.thread is None:
+                self.thread = threading.Thread(target=self.check)
+                self.thread.daemon = True
             register_postfork_function(self.thread.start)
 
     def shutdown(self):
         if self._active:
             self._active = False
-            self.thread.join()
+            if self.thread.isAlive():
+                self.exit.set()
+                self.thread.join()
+            self.thread = None
 
     def check(self):
         """Check for changes in self.paths or self.cache and call the event handler."""
         hashes = {key: None for key in self.paths.keys()}
-        while self._active:
+        while self._active and not self.exit.isSet():
             do_reload = False
             with self._lock:
                 paths = list(self.paths.keys())
@@ -136,7 +142,7 @@ class ToolConfWatcher(object):
                     do_reload = True
             if do_reload:
                 self.reload_callback()
-            time.sleep(1)
+            self.exit.wait(1)
 
     def monitor(self, path):
         mod_time = None

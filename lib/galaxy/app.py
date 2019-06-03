@@ -231,6 +231,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.database_heartbeat = DatabaseHeartbeat(
             application_stack=self.application_stack
         )
+        self.database_heartbeat.add_change_callback(self.watchers.change_state)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
         # Start web stack message handling

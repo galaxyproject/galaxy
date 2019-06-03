@@ -1,9 +1,12 @@
 import datetime
+import logging
 import socket
 import threading
 
 from galaxy.model import WorkerProcess
 from galaxy.model.orm.now import now
+
+log = logging.getLogger(__name__)
 
 
 class DatabaseHeartbeat(object):
@@ -12,6 +15,8 @@ class DatabaseHeartbeat(object):
         self.application_stack = application_stack
         self.heartbeat_interval = heartbeat_interval
         self.hostname = socket.gethostname()
+        self._is_config_watcher = False
+        self._observers = []
         self.exit = threading.Event()
         self.thread = None
         self.active = False
@@ -45,6 +50,20 @@ class DatabaseHeartbeat(object):
         seconds_ago = now() - datetime.timedelta(seconds=last_seen_seconds)
         return self.sa_session.query(WorkerProcess).filter(WorkerProcess.table.c.update_time > seconds_ago).all()
 
+    def add_change_callback(self, callback):
+        self._observers.append(callback)
+
+    @property
+    def is_config_watcher(self):
+        return self._is_config_watcher
+
+    @is_config_watcher.setter
+    def is_config_watcher(self, value):
+        self._is_config_watcher = value
+        log.debug('%s %s config watcher', self.server_name, 'is' if self.is_config_watcher else 'is not')
+        for callback in self._observers:
+            callback(self._is_config_watcher)
+
     def send_database_heartbeat(self):
         if self.active:
             while not self.exit.isSet():
@@ -57,4 +76,9 @@ class DatabaseHeartbeat(object):
                 worker_process.update_time = now()
                 self.sa_session.add(worker_process)
                 self.sa_session.flush()
+                # We only want a single process watching the various config files on the file system.
+                # We just pick the max server name for simplicity
+                is_config_watcher = self.server_name == max((p.server_name for p in self.get_active_processes(self.heartbeat_interval + 1)))
+                if is_config_watcher != self.is_config_watcher:
+                    self.is_config_watcher = is_config_watcher
                 self.exit.wait(self.heartbeat_interval)

@@ -3,9 +3,8 @@ from os.path import dirname
 
 from galaxy.queue_worker import (
     job_rule_modules,
-    reload_data_managers,
     reload_job_rules,
-    reload_toolbox
+    send_control_task,
 )
 from galaxy.tools.toolbox.watcher import (
     get_tool_conf_watcher,
@@ -20,8 +19,9 @@ from galaxy.util.watcher import (
 class ConfigWatchers(object):
     """Contains ToolConfWatcher, ToolWatcher and ToolDataWatcher objects."""
 
-    def __init__(self, app, start_thread=True):
+    def __init__(self, app):
         self.app = app
+        self.active = False
         # ToolConfWatcher objects will watch the tool_cache if the tool_cache is passed into get_tool_conf_watcher.
         # Watching the tool_cache means removing outdated items from the tool_cache.
         # Only the reload_toolbox callback will re-populate the cache, so we pass the tool_cache only to the ToolConfWatcher that
@@ -29,16 +29,25 @@ class ConfigWatchers(object):
         # If there are multiple ToolConfWatcher objects for the same handler or web process a race condition occurs between the two cache_cleanup functions.
         # If the reload_data_managers callback wins, the cache will miss the tools that had been removed from the cache
         # and will be blind to further changes in these tools.
-        self.tool_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_toolbox(self.app), tool_cache=self.app.tool_cache)
-        self.data_manager_config_watcher = get_tool_conf_watcher(reload_callback=lambda: reload_data_managers(self.app))
+        self.tool_config_watcher = get_tool_conf_watcher(
+            reload_callback=lambda: send_control_task(self.app, 'reload_toolbox'),
+            tool_cache=self.app.tool_cache,
+        )
+        self.data_manager_config_watcher = get_tool_conf_watcher(
+            reload_callback=lambda: send_control_task(self.app, 'reload_data_managers'),
+        )
         self.tool_data_watcher = get_tool_data_dir_watcher(self.app.tool_data_tables, config=self.app.config)
         self.tool_watcher = get_tool_watcher(self, app.config)
         if getattr(self.app, 'is_job_handler', False):
             self.job_rule_watcher = get_watcher(app.config, 'watch_job_rules', monitor_what_str='job rules')
         else:
             self.job_rule_watcher = get_watcher(app.config, '__invalid__')
-        if start_thread:
+
+    def change_state(self, active):
+        if active:
             self.start()
+        elif self.active:
+            self.shutdown()
 
     def start(self):
         [self.tool_config_watcher.watch_file(config) for config in self.tool_config_paths]
@@ -50,12 +59,14 @@ class ConfigWatchers(object):
                 callback=partial(reload_job_rules, self.app),
                 recursive=True,
                 ignore_extensions=('.pyc', '.pyo', '.pyd'))
+        self.active = True
 
     def shutdown(self):
         self.tool_config_watcher.shutdown()
         self.data_manager_config_watcher.shutdown()
         self.tool_data_watcher.shutdown()
         self.tool_watcher.shutdown()
+        self.active = False
 
     def update_watch_data_table_paths(self):
         if hasattr(self.tool_data_watcher, 'monitored_dirs'):
