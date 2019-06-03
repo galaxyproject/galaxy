@@ -80,9 +80,9 @@
                 %if "[[" in tool.description and "]]" in tool.description:
                     ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="workflow_globals.app.add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
                 %elif tool.name:
-                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${markupsafe.escape( tool.name ) | h}' )" style="text-decoration: none; display: block;"><span style="text-decoration: underline">${tool.name | h}</span> ${tool.description}</a>
+                    <a id="link-${tool.id}" href="javascript:void(0)" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${markupsafe.escape( tool.name ) | h}' )" style="text-decoration: none; display: block;"><span style="text-decoration: underline">${tool.name | h}</span> ${tool.description}</a>
                 %else:
-                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${markupsafe.escape( tool.name ) | h}' )">${tool.description}</a>
+                    <a id="link-${tool.id}" href="javascript:void(0)" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${markupsafe.escape( tool.name ) | h}' )">${tool.description}</a>
                 %endif
             </div>
         %else:
@@ -126,7 +126,7 @@
         <div class="toolSectionBg">
             %for module in module_section["modules"]:
                 <div class="toolTitle">
-                    <a href="#" id="tool-menu-${module_section['name']}-${module['name']}" onclick="workflow_globals.app.add_node_for_module( '${module['name']}', '${module['title']}' )">
+                    <a href="javascript:void(0)" id="tool-menu-${module_section['name']}-${module['name']}" onclick="workflow_globals.app.add_node_for_module( '${module['name']}', '${module['title']}' )">
                         ${module['description']}
                     </a>
                 </div>
@@ -232,13 +232,13 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div class="panel-header-buttons">
-                <a id="workflow-run-button" class="panel-header-button" href="#" title="Run" style="display: inline-block;" aria-label="Run">
+                <a id="workflow-run-button" class="panel-header-button" href="javascript:void(0)" title="Run" style="display: inline-block;" aria-label="Run">
                     <span class="fa fa-play"></span>
                 </a>
-                <a id="workflow-save-button" class="panel-header-button" href="#" title="Save" style="display: inline-block;" aria-label="Save">
+                <a id="workflow-save-button" class="panel-header-button" href="javascript:void(0)" title="Save" style="display: inline-block;" aria-label="Save">
                     <span class="fa fa-floppy-o"></span>
                 </a>
-                <a id="workflow-options-button" class="panel-header-button" href="#" title="Workflow options" style="display: inline-block;" aria-label="Workflow options">
+                <a id="workflow-options-button" class="panel-header-button" href="javascript:void(0)" title="Workflow options" style="display: inline-block;" aria-label="Workflow options">
                     <span class="fa fa-cog"></span>
                 </a>
             </div>
@@ -287,7 +287,7 @@
             <div id="workflow-version-area" class="form-row">
                 <label>Version:</label>
             </div>
-            <select id="workflow-version-switch" href="#">Select version</select>
+            <select id="workflow-version-switch">Select version</select>
             ## Workflow tags.
             <%namespace file="/tagging_common.mako" import="render_individual_tagging_element" />
             <div class="form-row">
