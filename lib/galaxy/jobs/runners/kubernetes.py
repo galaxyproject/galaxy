@@ -468,7 +468,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         marks the job for resubmission (resubmit logic is part of destinations).
         """
 
-        pods = Pod.objects(self._pykube_api).filter(selector="app=%s" % job_state.job_id)
+        pods = Pod.objects(self._pykube_api).filter(selector="app=%s" % job_state.job_id,
+                                                    namespace=self.runner_params['k8s_namespace'])
         pod = Pod(self._pykube_api, pods.response['items'][0])
 
         if pod.obj['status']['phase'] == "Failed" and \
@@ -481,8 +482,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """Attempts to delete a dispatched job to the k8s cluster"""
         job = job_wrapper.get_job()
         try:
-            jobs = Job.objects(self._pykube_api).filter(selector="app=" +
-                                                                 self.__produce_unique_k8s_job_name(job.get_id_tag()))
+            jobs = Job.objects(self._pykube_api).filter(
+                selector="app=" + self.__produce_unique_k8s_job_name(job.get_id_tag()),
+                namespace=self.runner_params['k8s_namespace'])
             if len(jobs.response['items']) >= 0:
                 job_to_delete = Job(self._pykube_api, jobs.response['items'][0])
                 job_to_delete.scale(replicas=0)
