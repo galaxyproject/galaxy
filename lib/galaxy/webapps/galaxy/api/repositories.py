@@ -6,7 +6,7 @@ from six.moves.urllib.parse import (
     quote as urlquote,
     unquote as urlunquote
 )
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from galaxy import (
     util,
     web
@@ -22,6 +22,7 @@ from tool_shed.util import (
 import tool_shed.util.shed_util_common as suc
 from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
+from tool_shed.galaxy_install.tools.tool_panel_manager import ToolPanelManager
 
 log = logging.getLogger(__name__)
 
@@ -104,9 +105,7 @@ class RepositoriesController(BaseAPIController):
             raise Exception('repositories missing.')
         if not tool_configuration:
             raise Exception('tool_configuration missing.')
-        # configure tool path from configuration
-        tool_path = suc.get_tool_path_by_shed_tool_conf_filename(self.app, tool_configuration)
-        # identify tool section panel label
+        # collect tool panel settings
         tool_panel_section_id = None
         new_tool_panel_section_label = None
         tool_section_lower = tool_section.lower().strip()
@@ -135,6 +134,7 @@ class RepositoriesController(BaseAPIController):
                 includes_tool_dependencies = util.string_as_bool(repo_info_dict.get('includes_tool_dependencies', False))
         encoded_repo_info_dicts = util.listify(repo_info_dict.get('repo_info_dicts', []))
         repo_info_dicts = [encoding_util.tool_shed_decode(encoded_repo_info_dict) for encoded_repo_info_dict in encoded_repo_info_dicts]
+        tool_path = suc.get_tool_path_by_shed_tool_conf_filename(self.app, tool_configuration)
         installation_dict = dict(install_repository_dependencies=install_repository_dependencies,
                                  new_tool_panel_section_label=new_tool_panel_section_label,
                                  no_changes_checked=False,
@@ -144,26 +144,43 @@ class RepositoriesController(BaseAPIController):
                                  tool_shed_url=tool_shed_url)
         new_repositories, tool_panel_keys, repo_info_dicts, filtered_repos = irm.handle_tool_shed_repositories(installation_dict)
         if new_repositories:
-            installation_dict = dict(created_or_updated_tool_shed_repositories=new_repositories,
-                                     filtered_repo_info_dicts=filtered_repos,
-                                     has_repository_dependencies=has_repository_dependencies,
-                                     includes_tool_dependencies=includes_tool_dependencies,
-                                     includes_tools=includes_tools,
-                                     includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
-                                     install_repository_dependencies=install_repository_dependencies,
-                                     install_tool_dependencies=install_tool_dependencies,
-                                     message='',
-                                     new_tool_panel_section_label=new_tool_panel_section_label,
-                                     tool_panel_section_mapping=tool_panel_section_mapping,
-                                     install_resolver_dependencies=install_resolver_dependencies,
-                                     shed_tool_conf=tool_configuration,
-                                     status='ok',
-                                     tool_panel_section_id=tool_panel_section_id,
-                                     tool_panel_section_keys=tool_panel_keys,
-                                     tool_path=tool_path,
-                                     tool_shed_url=tool_shed_url)
-            encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = irm.initiate_repository_installation(installation_dict)
+            # Handle tool sections
+            tpm = ToolPanelManager(self.app)
+            if includes_tools_for_display_in_tool_panel and (new_tool_panel_section_label or tool_panel_section_id):
+                tpm.handle_tool_panel_section(self.app.toolbox,
+                                              tool_panel_section_id=tool_panel_section_id,
+                                              new_tool_panel_section_label=new_tool_panel_section_label)
+        else:
+            raise Exception('Repositories not found.')
+        # Build dictionaries to install the repositories
+        encoded_repository_ids = [self.app.security.encode_id(r.id) for r in new_repositories]
+        decoded_repository_ids = [r.id for r in new_repositories]
+        if encoded_repository_ids:
+            # Obtain repositories from database
+            tool_shed_repositories = []
+            self.install_model = self.app.install_model
+            for tsr_id in decoded_repository_ids:
+                tsr = self.install_model.context.query(self.install_model.ToolShedRepository).get(tsr_id)
+                tool_shed_repositories.append(tsr)
+            clause_list = []
+            for tsr_id in decoded_repository_ids:
+                clause_list.append(self.install_model.ToolShedRepository.table.c.id == tsr_id)
+            query = self.install_model.context.query(self.install_model.ToolShedRepository).filter(or_(*clause_list))
+            # Install repositories
+            decoded_kwd = dict(
+                install_resolver_dependencies=install_resolver_dependencies,
+                install_tool_dependencies=install_tool_dependencies,
+                repo_info_dicts=filtered_repos,
+                shed_tool_conf=tool_configuration,
+                tool_path=tool_path,
+                tool_panel_section_keys=tool_panel_keys)
+            tool_shed_repositories = irm.install_repositories(
+                tsr_ids=encoded_repository_ids,
+                decoded_kwd=decoded_kwd,
+                reinstalling=False)
             return { 'message': 'Success.' }
+        else:
+            raise Exception('Repository ids missing.')
 
     def _get_repo_info_dict(self, trans, repositories, tool_shed_url):
         repo_ids = []
