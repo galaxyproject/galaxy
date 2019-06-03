@@ -835,7 +835,6 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     /** Set up any view plugins */
     setUpBehaviors: function() {
         this._moreOptionsPopover();
-
         // input to search histories
         this.$("#search-histories").searchInput({
             name: "search-histories",
@@ -850,10 +849,14 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                 });
             },
             onsearch: searchFor => {
+                const multipanel = this;
                 this.historySearch = searchFor;
                 this.filters = [
-                    () => {
-                        return this.model.matchesAll(this.historySearch);
+                    function() {
+                        // This is intentionally a function where 'this' gets
+                        // bound, applying the filter to the model of the
+                        // caller.
+                        return this.model.matchesAll(multipanel.historySearch);
                     }
                 ];
                 this.renderColumns(0);
