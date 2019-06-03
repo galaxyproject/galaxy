@@ -76,11 +76,12 @@ export class Services {
                     const data = response.data;
                     const result = {};
                     data.forEach(x => {
-                        const installed = !x.deleted && !x.uninstalled;
-                        if (installed) {
-                            result[x.changeset_revision] =
-                                result[x.installed_changeset_revision] = x.status;
+                        const d = {
+                            status: x.status,
+                            installed: !x.deleted && !x.uninstalled
                         }
+                        result[x.changeset_revision] =
+                            result[x.installed_changeset_revision] = d;
                     })
                     resolve(result);
                 })

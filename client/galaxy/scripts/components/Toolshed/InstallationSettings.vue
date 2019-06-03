@@ -84,7 +84,8 @@ export default {
                 tool_configuration: this.toolConfig,
                 install_resolver_dependencies: this.installResolverDependencies,
                 install_tool_dependencies: this.installToolDependencies,
-                install_repository_dependencies: this.installRepositoryDependencies
+                install_repository_dependencies: this.installRepositoryDependencies,
+                tool_panel_section: {}
             }).then(response => {
                 window.console.log(response);
                 this.$emit("ok");

@@ -90,13 +90,13 @@ class RepositoriesController(BaseAPIController):
         :param tool_shed_url: The URL for the toolshed whence this repository is being installed
         """
         irm = InstallRepositoryManager(self.app)
-        install_resolver_dependencies = util.asbool(payload.get('install_resolver_dependencies', False))
-        install_tool_dependencies = util.asbool(payload.get('install_tool_dependencies', False))
-        install_repository_dependencies = util.asbool(payload.get('install_repository_dependencies', False))
+        install_resolver_dependencies = util.asbool(payload.get('install_resolver_dependencies'))
+        install_tool_dependencies = util.asbool(payload.get('install_tool_dependencies'))
+        install_repository_dependencies = util.asbool(payload.get('install_repository_dependencies'))
         repositories = payload.get('repositories', [])
         tool_configuration = payload.get('tool_configuration')
         tool_section = payload.get('tool_section')
-        tool_panel_section_mapping = json.loads(payload.get('tool_panel_section', '{}'))
+        tool_panel_section_mapping = payload.get('tool_panel_section', {})
         tool_shed_url = payload.get('tool_shed_url')
         if not tool_shed_url:
             raise Exception('tool_shed_url missing.')
@@ -162,8 +162,7 @@ class RepositoriesController(BaseAPIController):
                                      tool_panel_section_keys=tool_panel_keys,
                                      tool_path=tool_path,
                                      tool_shed_url=tool_shed_url)
-            encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = \
-                irm.initiate_repository_installation(installation_dict)
+            encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = irm.initiate_repository_installation(installation_dict)
             return { 'message': 'Success.' }
 
     def _get_repo_info_dict(self, trans, repositories, tool_shed_url):
@@ -209,7 +208,7 @@ class RepositoriesController(BaseAPIController):
     @web.require_admin
     def search(self, trans, tool_shed_url, **params):
         """
-        GET /api/tool_shed/search
+        GET /api/repositories/search
         Search for a specific repository in the toolshed.
         :param q: the query string to search for
         :param q: str
@@ -223,7 +222,7 @@ class RepositoriesController(BaseAPIController):
     @web.require_admin
     def categories(self, trans, tool_shed_url):
         """
-        GET /api/tool_shed/categories
+        GET /api/repositories/categories
         List all available categories
         :param tool_shed_url: the URL of the toolshed to search
         :param tool_shed_url: str
@@ -235,7 +234,7 @@ class RepositoriesController(BaseAPIController):
     @web.require_admin
     def details(self, trans, tool_shed_url, repository_id):
         """
-        GET /api/tool_shed/details
+        GET /api/repositories/details
         :param id: encoded repository id
         :param id: str
         Return details for a given repository id

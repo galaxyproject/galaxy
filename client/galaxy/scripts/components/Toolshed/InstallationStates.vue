@@ -99,6 +99,9 @@ export default {
                 },
                 installed: {
                     label: ""
+                },
+                status: {
+                    label: ""
                 }
             },
             showSettings: false,
@@ -127,7 +130,9 @@ export default {
                 .getInstalledRepositories(this.repo)
                 .then((revisions) => {
                     this.repoTable.forEach(x => {
-                        x.installed = revisions[x.changeset_revision];
+                        const revision = revisions[x.changeset_revision];
+                        x.installed = revision.installed;
+                        x.status = revision.status;
                     });
                     this.loading = false;
                 })
