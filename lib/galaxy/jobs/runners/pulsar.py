@@ -818,7 +818,7 @@ class PulsarKubernetesCoexecutionJobRunner(PulsarMQJobRunner):
         rewrite_parameters="true",
         dependency_resolution="none",
         jobs_directory="/pulsar_staging",
-        pulsar_container_image="galaxy/pulsar-pod-staging:0.10.0",
+        pulsar_container_image="galaxy/pulsar-pod-staging:0.12.0",
         remote_container_handling=True,
         k8s_enabled=True,
         url=PARAMETER_SPECIFICATION_IGNORED,

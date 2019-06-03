@@ -448,6 +448,8 @@ execution:
       runner: pulsar_k8s
       docker_enabled: true  # probably shouldn't be needed but is still
       docker_default_container_id: 'conda/miniconda2'
+      # Specify a non-default Pulsar staging container.
+      #pulsar_container_image: 'galaxy/pulsar-pod-staging:0.12.0'
 
     # Example CLI runners.
     ssh_torque:
