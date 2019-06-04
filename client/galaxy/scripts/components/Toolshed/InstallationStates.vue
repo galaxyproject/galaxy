@@ -37,6 +37,14 @@
                         <span v-if="data.value" :class="repoChecked"/>
                         <span v-else :class="repoUnchecked"/>
                     </template>
+                    <template slot="status" slot-scope="data">
+                        <b-button v-if="data.value == 'Installed'" :class="statusOk" disabled>
+                            {{ data.value }}
+                        </b-button>
+                        <b-button v-else :class="statusInfo" disabled>
+                            {{ data.value }}
+                        </b-button>
+                    </template>
                     <template slot="installed" slot-scope="row">
                         <b-button v-if="!row.item.installed"
                             class="btn-sm"
@@ -77,6 +85,8 @@ export default {
     data() {
         const galaxy = getGalaxyInstance();
         return {
+            statusOk: "btn-sm btn-success font-weight-bold",
+            statusInfo: "btn-sm btn-info",
             repoChecked: "fa fa-check text-success",
             repoUnchecked: "fa fa-times text-danger",
             repoChangeset: null,
