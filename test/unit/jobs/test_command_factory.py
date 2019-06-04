@@ -178,7 +178,7 @@ class MockJobWrapper(object):
     def get_command_line(self):
         return self.command_line
 
-    def container_montior_command(self, *args, **kwds):
+    def container_monitor_command(self, *args, **kwds):
         return None
 
     @property

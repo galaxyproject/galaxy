@@ -1991,7 +1991,7 @@ class JobWrapper(HasResourceParameters):
             self.app.realtime_manager.configure_entry_points(job, container_runtime)
             return True
 
-    def container_montior_command(self, container, **kwds):
+    def container_monitor_command(self, container, **kwds):
         if not container or not self.tool.produces_entry_points:
             return None
 
