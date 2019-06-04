@@ -85,8 +85,8 @@ export default {
     data() {
         const galaxy = getGalaxyInstance();
         return {
-            statusOk: "btn-sm btn-success font-weight-bold",
-            statusInfo: "btn-sm btn-info",
+            statusOk: "btn-sm btn-success font-weight-bold rounded-0",
+            statusInfo: "btn-sm btn-info rounded-0",
             repoChecked: "fa fa-check text-success",
             repoUnchecked: "fa fa-times text-danger",
             repoChangeset: null,
