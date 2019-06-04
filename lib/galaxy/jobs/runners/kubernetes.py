@@ -54,6 +54,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_job_api_version=dict(map=str, default="batch/v1"),
             k8s_supplemental_group_id=dict(map=str),
             k8s_pull_policy=dict(map=str, default="Default"),
+            k8s_run_as_user_id=dict(map=int, default=os.getuid()),
+            k8s_run_as_group_id=dict(map=int, default=app.config.gid),
             k8s_fs_group_id=dict(map=int),
             k8s_default_requests_cpu=dict(map=str, default=None),
             k8s_default_requests_memory=dict(map=str, default=None),
@@ -238,16 +240,19 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         }
         # TODO include other relevant elements that people might want to use from
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
-
-        if self._supplemental_group and self._supplemental_group > 0:
-            k8s_spec_template["spec"]["securityContext"] = dict(supplementalGroups=[self._supplemental_group])
-        if self._fs_group and self._fs_group > 0:
-            if "securityContext" in k8s_spec_template["spec"]:
-                k8s_spec_template["spec"]["securityContext"]["fsGroup"] = self._fs_group
-            else:
-                k8s_spec_template["spec"]["securityContext"] = dict(fsGroup=self._fs_group)
-
+        k8s_spec_template["spec"]["securityContext"] = self.__get_k8s_security_context()
         return k8s_spec_template
+
+    def __get_k8s_security_context(self):
+        security_context = {
+            "runAsUser": int(self.runner_params["k8s_run_as_user_id"]),
+            "runAsGroup": int(self.runner_params["k8s_run_as_group_id"])
+        }
+        if self._supplemental_group and self._supplemental_group > 0:
+            security_context["supplementalGroups"] = [self._supplemental_group]
+        if self._fs_group and self._fs_group > 0:
+            security_context["fsGroup"] = self._fs_group
+        return security_context
 
     def __get_k8s_restart_policy(self, job_wrapper):
         """The default Kubernetes restart policy for Jobs"""
