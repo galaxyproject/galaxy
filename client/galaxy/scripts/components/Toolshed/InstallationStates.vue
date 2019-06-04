@@ -42,7 +42,7 @@
                             {{ data.value }}
                         </b-button>
                         <b-button v-else :class="statusInfo" disabled>
-                            {{ data.value }}
+                            {{ data.value ? data.value : "Unavailable" }}
                         </b-button>
                     </template>
                     <template slot="installed" slot-scope="row">
