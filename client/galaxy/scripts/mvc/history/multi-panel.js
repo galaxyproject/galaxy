@@ -756,7 +756,6 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         "click .order .set-order": "_chooseOrder",
         "click #toggle-deleted": "_clickToggleDeletedDatasets",
         "click #toggle-hidden": "_clickToggleHiddenDatasets"
-        //'dragstart .list-item .title-bar'                       : function( e ){ console.debug( 'ok' ); }
     },
 
     close: function(ev) {
@@ -768,6 +767,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         this.toggleDeletedHistories($(ev.currentTarget).is(":checked"));
         this.toggleOptionsPopover();
     },
+
     /** Include deleted histories in the collection */
     toggleDeletedHistories: function(show) {
         if (show) {
@@ -835,20 +835,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     /** Set up any view plugins */
     setUpBehaviors: function() {
         this._moreOptionsPopover();
-        // input to search histories
-        this.$("#search-histories").searchInput({
-            name: "search-histories",
-            placeholder: _l("search histories"),
-
-            onfirstsearch: searchFor => {
-                this.$("#search-histories").searchInput("toggle-loading");
-                this.renderInfo(_l("loading all histories for search"));
-                this.collection.fetchAll().done(() => {
-                    this.$("#search-histories").searchInput("toggle-loading");
-                    this.renderInfo("");
-                });
-            },
-            onsearch: searchFor => {
+        const searchHistories = searchFor => {
                 const multipanel = this;
                 this.historySearch = searchFor;
                 this.filters = [
@@ -860,7 +847,23 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                     }
                 ];
                 this.renderColumns(0);
+        };
+        // input to search histories
+        this.$("#search-histories").searchInput({
+            name: "search-histories",
+            placeholder: _l("search histories"),
+
+            onfirstsearch: searchFor => {
+                this.$("#search-histories").searchInput("toggle-loading");
+                this.renderInfo(_l("loading all histories for search"));
+                this.collection.fetchAll().done(() => {
+                    this.$("#search-histories").searchInput("toggle-loading");
+                    this.renderInfo("");
+                    searchHistories(searchFor);
+                });
             },
+
+            onsearch: searchHistories,
             onclear: searchFor => {
                 this.historySearch = null;
                 //TODO: remove specifically not just reset
