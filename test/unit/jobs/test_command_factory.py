@@ -178,6 +178,9 @@ class MockJobWrapper(object):
     def get_command_line(self):
         return self.command_line
 
+    def container_montior_command(self, *args, **kwds):
+        return None
+
     @property
     def requires_setting_metadata(self):
         return self.metadata_line is not None
