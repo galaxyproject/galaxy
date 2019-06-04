@@ -97,16 +97,17 @@ export default {
                 includes_tool_dependencies: {
                     label: "Dependencies"
                 },
-                installed: {
-                    label: ""
-                },
                 status: {
+                    label: "Status"
+                },
+                installed: {
                     label: ""
                 }
             },
             showSettings: false,
             error: null,
-            loading: true
+            loading: true,
+            timeout: 1000
         };
     },
     created() {
@@ -125,15 +126,33 @@ export default {
                     this.loading = false;
                 });
         },
+        listenInstalledRepositories() {
+            this.listener = setTimeout(() => {
+                this.loadInstalledRepositories();
+            }, this.timeout);
+        },
         loadInstalledRepositories() {
             this.services
                 .getInstalledRepositories(this.repo)
                 .then((revisions) => {
+                    let changed = false;
                     this.repoTable.forEach(x => {
                         const revision = revisions[x.changeset_revision];
-                        x.installed = revision.installed;
-                        x.status = revision.status;
+                        if (revision) {
+                            if (revision.installed !== x.installed) {
+                                x.installed = revision.installed;
+                                changed = true;
+                            }
+                            if (revision.status !== x.status) {
+                                x.status = revision.status;
+                                changed = true;
+                            }
+                        }
                     });
+                    if (changed) {
+                        this.repoTable = [...this.repoTable];
+                    }
+                    this.listenInstalledRepositories();
                     this.loading = false;
                 })
                 .catch(error => {
@@ -159,13 +178,6 @@ export default {
                 name: this.repo.name,
                 owner: this.repo.repo_owner_username,
                 changeset_revision: details.changeset_revision
-            }).then(response => {
-                this.repoTable.forEach(x => {
-                    if (x.changeset_revision == details.changeset_revision) {
-                        x.installed = false;
-                    }
-                });
-                this.repoTable = [...this.repoTable];
             }).catch(error => {
                 alert(error);
             });
