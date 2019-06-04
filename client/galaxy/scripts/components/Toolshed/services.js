@@ -46,18 +46,7 @@ export class Services {
                 .get(url)
                 .then(response => {
                     const data = response.data;
-                    const table = Object.keys(data).map(key => {
-                        const d = data[key];
-                        return {
-                            numeric_revision: d.numeric_revision,
-                            changeset_revision: d.changeset_revision,
-                            includes_tools: d.includes_tools,
-                            includes_workflows: d.includes_workflows,
-                            includes_datatypes: d.includes_datatypes,
-                            includes_tool_dependencies: d.includes_tool_dependencies,
-                            includes_tools_for_display_in_tool_panel: d.includes_tools_for_display_in_tool_panel
-                        };
-                    });
+                    const table = Object.keys(data).map(key => data[key]);
                     table.sort((a,b) => b.numeric_revision - a.numeric_revision);
                     resolve(table);
                 })
