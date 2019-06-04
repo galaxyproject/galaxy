@@ -8,6 +8,7 @@ from six.moves.urllib.parse import (
 )
 
 from galaxy import (
+    exceptions,
     util,
     web
 )
@@ -167,14 +168,17 @@ class ToolShedController(BaseAPIController):
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
         url = util.build_url(tool_shed_url, pathspec=['api', 'categories'])
         categories = []
-        for category in json.loads(util.url_get(url)):
-            api_url = web.url_for(controller='api/tool_shed',
-                                  action='category',
-                                  tool_shed_url=urlquote(tool_shed_url),
-                                  category_id=category['id'],
-                                  qualified=True)
-            category['url'] = api_url
-            categories.append(category)
+        try:
+            for category in json.loads(util.url_get(url)):
+                api_url = web.url_for(controller='api/tool_shed',
+                                      action='category',
+                                      tool_shed_url=urlquote(tool_shed_url),
+                                      category_id=category['id'],
+                                      qualified=True)
+                category['url'] = api_url
+                categories.append(category)
+        except Exception:
+            raise exceptions.ObjectNotFound("Tool Shed %s is not responding." % tool_shed_url)
         return categories
 
     @expose_api
