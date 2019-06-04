@@ -20,6 +20,7 @@ from galaxy.util.bytesize import ByteSize
 try:
     from pykube.config import KubeConfig
     from pykube.http import HTTPClient
+    from pykube.exceptions import KubernetesError
     from pykube.objects import (
         Job,
         Pod
@@ -61,6 +62,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_default_requests_memory=dict(map=str, default=None),
             k8s_default_limits_cpu=dict(map=str, default=None),
             k8s_default_limits_memory=dict(map=str, default=None),
+            k8s_cleanup_job=dict(map=str, default="always"),
             k8s_pod_retries=dict(map=int, valid=lambda x: int >= 0, default=3),
             k8s_pod_retrials=dict(map=int, valid=lambda x: int >= 0, default=3))
 
@@ -423,7 +425,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             active = 0
             failed = 0
 
-            max_pod_retries = 1
             if 'max_pod_retries' in job_destination.params:
                 max_pod_retries = int(job_destination.params['max_pod_retries'])
             elif 'k8s_pod_retries' in self.runner_params:
@@ -434,6 +435,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             elif 'k8s_pod_retrials' in self.runner_params:
                 # For backward compatibility
                 max_pod_retries = int(self.runner_params['max_pod_retrials'])
+            else:
+                max_pod_retries = 1
 
             if 'succeeded' in job.obj['status']:
                 succeeded = job.obj['status']['succeeded']
@@ -491,8 +494,19 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 job_state.fail_message = "More pods failed than allowed. See stdout for pods details."
         job_state.running = False
         self.mark_as_failed(job_state)
-        job.scale(replicas=0)
+        self.__cleanup_k8s_job(job)
         return None
+
+    def __cleanup_k8s_job(self, job):
+        k8s_cleanup_job = self.runner_params['k8s_cleanup_job']
+        job_failed = (job.obj['status']['failed'] > 0
+                      if 'failed' in job.obj['status'] else False)
+        if k8s_cleanup_job == "never":
+            job.scale(replicas=0)
+        elif k8s_cleanup_job == "onsuccess" and job_failed:
+            job.scale(replicas=0)
+        else:
+            job.delete()
 
     def __job_failed_due_to_low_memory(self, job_state):
         """
@@ -520,7 +534,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 namespace=self.runner_params['k8s_namespace'])
             if len(jobs.response['items']) >= 0:
                 job_to_delete = Job(self._pykube_api, jobs.response['items'][0])
-                job_to_delete.scale(replicas=0)
+                self.__cleanup_k8s_job(job_to_delete)
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
             log.debug("(%s/%s) Terminated at user's request" % (job.id, job.job_runner_external_id))
@@ -552,3 +566,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)
+
+    def finish_job(self, job_state):
+        super(KubernetesJobRunner, self).finish_job(job_state)
+        jobs = Job.objects(self._pykube_api).filter(selector="app=" + job_state.job_id,
+                                                    namespace=self.runner_params['k8s_namespace'])
+        # If more than one job matches selector, leave all jobs intact as it's a configuration error
+        if len(jobs.response['items']) == 1:
+            job = Job(self._pykube_api, jobs.response['items'][0])
+            try:
+                self.__cleanup_k8s_job(job)
+            except KubernetesError:
+                log.exception("Error while cleaning up k8s job")
