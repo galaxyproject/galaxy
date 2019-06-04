@@ -772,7 +772,7 @@ var templates = {
     tool_search: _.template(
         `<input id="tool-search-query" class="search-query parent-width" name="query"
                 placeholder="search tools" autocomplete="off" type="text" />
-         <span id="search-clear-btn" class="search-clear fa fa-times-circle" title="clear search (esc)"/>
+         <span id="search-clear-btn" class="search-clear fa fa-times-circle" title="clear search (esc)" aria-label="clear search" role="button"/>
          <span id="search-spinner" class="search-loading fa fa-spinner fa-spin"/>`
     ),
 

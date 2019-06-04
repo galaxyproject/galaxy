@@ -764,7 +764,7 @@ export default Backbone.View.extend({
 
     prebuildNode: function(type, title_text, content_id) {
         var self = this;
-        var $f = $("<div class='toolForm toolFormInCanvas'/>");
+        var $f = $(`<div class='toolForm toolFormInCanvas' tabindex = '0' aria-label='Node ${title_text}'/>`);
         var $title = $(`<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</div></div>`);
         add_node_icon($title.find(".nodeTitle"), type);
         $f.append($title);
@@ -779,10 +779,14 @@ export default Backbone.View.extend({
         // Fix width to computed width
         // Now add floats
         var buttons = $("<div class='buttons' style='float: right;'></div>");
-        buttons.append($(`<div class="sr-only"><a href="#right">Node Details</a></div>`));
         if (type !== "subworkflow") {
             buttons.append(
-                $("<div/>")
+                $("<a/>")
+                    .attr({
+                        "aria-label": "clone node",
+                        "role": "button",
+                        "href": "javascript:void(0)"
+                    })
                     .addClass("fa-icon-button fa fa-files-o node-clone")
                     .click(e => {
                         node.clone();
@@ -790,7 +794,12 @@ export default Backbone.View.extend({
             );
         }
         buttons.append(
-            $("<div/>")
+            $("<a/>")
+                .attr({
+                    "aria-label": "destroy node",
+                    "role": "button",
+                    "href": "javascript:void(0)"
+                })
                 .addClass("fa-icon-button fa fa-times node-destroy")
                 .click(e => {
                     node.destroy();
