@@ -108,13 +108,15 @@ class RepositoriesController(BaseAPIController):
         # collect tool panel settings
         tool_panel_section_id = None
         new_tool_panel_section_label = None
-        tool_section_lower = tool_section.lower().strip()
-        for section_id, section_name in self.app.toolbox.get_sections():
-            if tool_section_lower == section_name.lower().strip():
-                tool_panel_section_id = section_id
-                break
-        if tool_panel_section_id is None:
-            new_tool_panel_section_label = tool_section
+        sections = self.app.toolbox.get_sections()
+        if tool_section:
+            tool_section_lower = tool_section.lower().strip()
+            for section_id, section_name in sections:
+                if tool_section_lower == section_name.lower().strip():
+                    tool_panel_section_id = section_id
+                    break
+            if tool_panel_section_id is None:
+                new_tool_panel_section_label = tool_section
         # encode repository dictionaries
         repo_info_dict = self._get_repo_info_dict(trans, repositories, tool_shed_url)
         includes_tools = False
