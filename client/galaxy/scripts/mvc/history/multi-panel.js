@@ -473,7 +473,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     /** create a column and its panel and set up any listeners to them */
     createColumn: function createColumn(history, options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         // options passed can be re-used, so extend them before adding the model to prevent pollution for the next
         options = _.extend({}, options, {
             model: history,
@@ -836,17 +836,17 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     setUpBehaviors: function() {
         this._moreOptionsPopover();
         const searchHistories = searchFor => {
-                const multipanel = this;
-                this.historySearch = searchFor;
-                this.filters = [
-                    function() {
-                        // This is intentionally a function where 'this' gets
-                        // bound, applying the filter to the model of the
-                        // caller.
-                        return this.model.matchesAll(multipanel.historySearch);
-                    }
-                ];
-                this.renderColumns(0);
+            const multipanel = this;
+            this.historySearch = searchFor;
+            this.filters = [
+                function() {
+                    // This is intentionally a function where 'this' gets
+                    // bound, applying the filter to the model of the
+                    // caller.
+                    return this.model.matchesAll(multipanel.historySearch);
+                }
+            ];
+            this.renderColumns(0);
         };
         // input to search histories
         this.$("#search-histories").searchInput({
