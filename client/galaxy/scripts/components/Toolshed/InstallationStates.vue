@@ -148,15 +148,11 @@ export default {
                     let changed = false;
                     this.repoTable.forEach(x => {
                         const revision = revisions[x.changeset_revision];
-                        if (revision) {
-                            if (revision.installed !== x.installed) {
-                                x.installed = revision.installed;
-                                changed = true;
-                            }
-                            if (revision.status !== x.status) {
-                                x.status = revision.status;
-                                changed = true;
-                            }
+                        if (revision && (revision.status !== x.status)) {
+                            x.status = revision.status;
+                            x.installed = revision.installed;
+                            changed = true;
+                            return false;
                         }
                     });
                     if (changed) {
