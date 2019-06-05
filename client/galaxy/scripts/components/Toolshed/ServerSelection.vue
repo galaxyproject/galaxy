@@ -6,7 +6,14 @@
                 {{ toolshedUrl }}
             </b-link>
             <div class="dropdown-menu" aria-labelledby="dropdownToolshedUrl">
-                <a v-for="url in toolshedUrls" class="dropdown-item" href="#" @click.prevent="onToolshed(url)">{{ url }}</a>
+                <a
+                    v-for="url in toolshedUrls"
+                    :key="url"
+                    class="dropdown-item"
+                    href="#"
+                    @click.prevent="onToolshed(url)"
+                    >{{ url }}</a
+                >
             </div>
         </span>
         <span v-else>

@@ -7,10 +7,7 @@
                 </b-link>
             </template>
             <template slot="row-details" slot-scope="row">
-                <repositorydetails
-                    :repo="row.item"
-                    :toolshedUrl="toolshedUrl"
-                />
+                <repositorydetails :repo="row.item" :toolshedUrl="toolshedUrl" />
             </template>
         </b-table>
         <div v-if="noResultsFound">
@@ -23,7 +20,6 @@
     </div>
 </template>
 <script>
-import { getGalaxyInstance } from "app";
 import RepositoryDetails from "./RepositoryDetails.vue";
 import { Services } from "./services.js";
 const READY = 0;

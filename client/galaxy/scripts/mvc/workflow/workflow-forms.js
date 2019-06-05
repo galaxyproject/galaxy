@@ -278,7 +278,7 @@ function _makeSection(output_id, label, options) {
                 options: extensions,
                 help: "This action will change the datatype of the output to the indicated datatype.",
                 onchange: function(new_value) {
-                    if (new_value === '__empty__') {
+                    if (new_value === "__empty__") {
                         new_value = null;
                     }
                     workflow.updateDatatype(node, output_id, new_value);

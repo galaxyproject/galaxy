@@ -47,7 +47,7 @@ export class Services {
                 .then(response => {
                     const data = response.data;
                     const table = Object.keys(data).map(key => data[key]);
-                    table.sort((a,b) => b.numeric_revision - a.numeric_revision);
+                    table.sort((a, b) => b.numeric_revision - a.numeric_revision);
                     resolve(table);
                 })
                 .catch(e => {
@@ -68,10 +68,9 @@ export class Services {
                         const d = {
                             status: x.status,
                             installed: !x.deleted && !x.uninstalled
-                        }
-                        result[x.changeset_revision] =
-                            result[x.installed_changeset_revision] = d;
-                    })
+                        };
+                        result[x.changeset_revision] = result[x.installed_changeset_revision] = d;
+                    });
                     resolve(result);
                 })
                 .catch(e => {
