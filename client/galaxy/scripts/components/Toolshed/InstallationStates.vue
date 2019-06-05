@@ -168,7 +168,6 @@ export default {
         },
         onOk: function() {
             this.showSettings = false;
-            alert('stateok');
         },
         onHide: function() {
             this.showSettings = false;

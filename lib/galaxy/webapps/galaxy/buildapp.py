@@ -909,58 +909,6 @@ def populate_api_routes(webapp, app):
                                            name_prefix="history_dataset_",
                                            path_prefix='/api/histories/{history_id}/contents/{history_content_id}')
 
-    # ========================
-    # ===== REPOSITORIES =====
-    # ========================
-
-    webapp.mapper.connect('repository_install',
-                          '/api/repositories/install',
-                          controller='repositories',
-                          action='install',
-                          conditions=dict(method=["POST"]))
-
-    webapp.mapper.connect('repository_uninstall',
-                          '/api/repositories/uninstall',
-                          controller='repositories',
-                          action='uninstall',
-                          conditions=dict(method=["GET", "DELETE"]))
-
-    '''webapp.mapper.connect('tool_shed_repository',
-                          '/api/tool_shed_repositories/{id}',
-                          controller='tool_shed_repositories',
-                          action='uninstall_repository',
-                          conditions=dict(method=["DELETE"]))'''
-
-    webapp.mapper.connect('repositories_search',
-                          '/api/repositories/search',
-                          controller='repositories',
-                          action='search',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('repositories_details',
-                          '/api/repositories/details',
-                          controller='repositories',
-                          action='details',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('repositories_categories',
-                          '/api/repositories/categories',
-                          controller='repositories',
-                          action='categories',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('repositories',
-                          '/api/repositories',
-                          controller='repositories',
-                          action='index',
-                          conditions=dict(method=["GET"]))
-
-    webapp.mapper.connect('repositories',
-                          '/api/repositories/{id}',
-                          controller='repositories',
-                          action='show',
-                          conditions=dict(method=["GET"]))
-
     # ====================
     # ===== TOOLSHED =====
     # ====================
@@ -1012,6 +960,12 @@ def populate_api_routes(webapp, app):
                           controller='toolshed',
                           action='search',
                           conditions=dict(method=["GET", "POST"]))
+
+    webapp.mapper.connect('tool_shed_request',
+                          '/api/tool_shed/request',
+                          controller='toolshed',
+                          action='request',
+                          conditions=dict(method=["GET"]))
 
     webapp.mapper.connect('tool_shed_status',
                           '/api/tool_shed/status',

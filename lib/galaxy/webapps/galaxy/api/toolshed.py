@@ -310,3 +310,19 @@ class ToolShedController(BaseAPIController):
             return {}
         response = json.loads(util.url_get(tool_shed_url, params=dict(q=q), pathspec=['api', 'repositories']))
         return response
+
+    @expose_api
+    @web.require_admin
+    def request(self, trans, **params):
+        """
+        GET /api/tool_shed/request
+        """
+        tool_shed_url = params.pop("tool_shed_url")
+        controller = params.pop("controller")
+        pathspec = ['api', controller]
+        if "id" in params:
+            pathspec.append(params.pop("id"))
+        if "action" in params:
+            pathspec.append(params.pop("action"))
+        response = json.loads(util.url_get(tool_shed_url, params=dict(params), pathspec=pathspec))
+        return response

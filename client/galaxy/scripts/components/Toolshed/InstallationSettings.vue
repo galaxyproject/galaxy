@@ -79,18 +79,18 @@ export default {
         onOk: function() {
             this.services.installRepository({
                 tool_shed_url: this.toolshedUrl,
-                repositories: [[this.repo.id, this.repoChangeset]],
-                tool_section: this.toolSection,
-                tool_configuration: this.toolConfig,
+                name: this.repo.name,
+                owner: this.repo.repo_owner_username,
+                changeset_revision: this.repoChangeset,
+                //new_tool_panel_section_label or tool_panel_section_id, tool_section: this.toolSection,
+                //shed_tool_conf, tool_configuration: this.toolConfig,
                 install_resolver_dependencies: this.installResolverDependencies,
                 install_tool_dependencies: this.installToolDependencies,
-                install_repository_dependencies: this.installRepositoryDependencies,
-                tool_panel_section: {}
+                install_repository_dependencies: this.installRepositoryDependencies
             }).then(response => {
                 window.console.log(response);
                 this.$emit("ok");
             }).catch(error => {
-                alert(error);
             });
         },
         onHide: function() {
