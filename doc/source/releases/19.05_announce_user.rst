@@ -35,6 +35,10 @@ Additionally the selector implements a highly requested feature, the ability to 
 .. figure:: images/19.05-input-collection.gif
    :alt: Selecting datasets from within a collection.
 
+**History Export/Import Reworked**
+
+These features used to be clumsy in the past but do not despair since in this release they got a revamp and their reliability skyrocketed! Moving historic object across Galaxies should now be easier than ever. Rocketfuel included.
+
 New Visualizations
 ===========================================================
 

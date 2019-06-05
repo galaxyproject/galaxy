@@ -29,7 +29,7 @@ Highlights
 
 **Improvements to Workflow Expressivity**
   In 19.01, non-data connections were added to the workflow editor in the form of
-  explicit, typed non-data inputs to workflows. This idea has been generalized in 19.05
+  explicit, typed, non-data inputs to workflows. This idea has been generalized in 19.05
   and tool can now produce non-data outputs and a new class of tools called "Expression"
   tools has been added to make this especially easy. The Format 2 workflow format is now
   importable by default and admin-only extensions even allow embedding tool definitions

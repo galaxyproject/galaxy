@@ -271,7 +271,7 @@ Enhancements
 * Make ``galaxy.model.dataset_collections`` more usable outside manager context.
   `Pull Request 7595`_
 * Webpack bundle overhaul and initial dynamic loading.
-  `Pull Request 7605`_  
+  `Pull Request 7605`_
 * Don't un-hide mapped-over outputs when job fails
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 7630`_
@@ -387,6 +387,8 @@ Enhancements
   `Pull Request 7640`_
 * Tweak ``popup-menu.js`` error handling.
   `Pull Request 7643`_
+* Update Conda version that new Galaxies will install
+  `Pull Request 8048`_
 
 Fixes
 -------------------------------
@@ -712,6 +714,8 @@ Fixes
   `Pull Request 8000`_, `Pull Request 8004`_
 * Disable create user button while request is being processed
   `Pull Request 8029`_
+* Fix multipanel history search
+  `Pull Request 8085`_
 
 .. include:: 19.05_prs.rst
 

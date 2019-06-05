@@ -366,3 +366,5 @@
 .. _Pull Request 8004: https://github.com/galaxyproject/galaxy/pull/8004
 .. _Pull Request 8021: https://github.com/galaxyproject/galaxy/pull/8021
 .. _Pull Request 8029: https://github.com/galaxyproject/galaxy/pull/8029
+.. _Pull Request 8048: https://github.com/galaxyproject/galaxy/pull/8048
+.. _Pull Request 8085: https://github.com/galaxyproject/galaxy/pull/8085
