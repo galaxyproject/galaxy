@@ -41,6 +41,42 @@ TOOL_XML_1 = """
 </tool>
 """
 
+TOOL_WITH_TOKEN = r"""
+<tool id="tool_with_token" name="Token" version="1">
+    <macros>
+        <token name="@ESCAPE_IDENTIFIER@">
+<![CDATA[
+#set identifier = re.sub('[^\s\w\-]', '_', str($file.element_identifier))
+        ]]></token>
+        <token name="@NESTED_TOKEN@">
+<![CDATA[
+    before
+    @ESCAPE_IDENTIFIER@
+    after
+        ]]></token>
+    </macros>
+    <command>
+@NESTED_TOKEN@
+    </command>
+</tool>
+"""
+
+TOOL_WITH_RECURSIVE_TOKEN = r"""
+<tool id="tool_with_recursive_token" name="Token" version="1">
+    <macros>
+        <token name="@NESTED_TOKEN@">
+<![CDATA[
+    before
+    @NESTED_TOKEN@
+    after
+        ]]></token>
+    </macros>
+    <command>
+@NESTED_TOKEN@
+    </command>
+</tool>
+"""
+
 TOOL_YAML_1 = """
 name: "Bowtie Mapper"
 class: GalaxyTool
@@ -252,6 +288,16 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
 
     def test_refresh_option(self):
         assert self._tool_source.parse_refresh() is False
+
+    def test_nested_token(self):
+        tool_source = self._get_tool_source(source_contents=TOOL_WITH_TOKEN)
+        command = tool_source.parse_command()
+        assert command
+        assert '@' not in command
+
+    def test_recursive_token(self):
+        with self.assertRaises(Exception):
+            self._get_tool_source(source_contents=TOOL_WITH_RECURSIVE_TOKEN)
 
 
 class YamlLoaderTestCase(BaseLoaderTestCase):
