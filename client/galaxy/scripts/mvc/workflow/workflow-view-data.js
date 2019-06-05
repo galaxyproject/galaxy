@@ -5,7 +5,7 @@ import Backbone from "backbone";
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
 
-var DataInputView = Backbone.View.extend({
+const DataInputView = Backbone.View.extend({
     className: "form-row dataRow input-data-row",
 
     initialize: function(options) {
@@ -35,7 +35,7 @@ var DataInputView = Backbone.View.extend({
     }
 });
 
-var DataOutputView = Backbone.View.extend({
+const DataOutputView = Backbone.View.extend({
     className: "form-row dataRow",
 
     initialize: function(options) {
@@ -43,18 +43,18 @@ var DataOutputView = Backbone.View.extend({
         this.terminalElement = options.terminalElement;
         this.nodeView = options.nodeView;
 
-        var output = this.output;
-        var label = output.label || output.name;
-        var node = this.nodeView.node;
+        const output = this.output;
+        let label = output.label || output.name;
+        const node = this.nodeView.node;
 
-        var isInput = output.extensions.indexOf("input") >= 0 || output.extensions.indexOf("input_collection") >= 0;
+        const isInput = output.extensions.indexOf("input") >= 0 || output.extensions.indexOf("input_collection") >= 0;
         if (!isInput) {
             label = `${label} (${output.force_datatype || output.extensions.join(", ")})`;
         }
         this.$el.html(label);
         this.calloutView = null;
         if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
-            var calloutView = new OutputCalloutView({
+            const calloutView = new OutputCalloutView({
                 label: label,
                 output: output,
                 node: node
@@ -86,7 +86,7 @@ var DataOutputView = Backbone.View.extend({
     }
 });
 
-var ParameterOutputView = Backbone.View.extend({
+const ParameterOutputView = Backbone.View.extend({
     className: "form-row dataRow",
 
     initialize: function(options) {
@@ -94,28 +94,20 @@ var ParameterOutputView = Backbone.View.extend({
         this.terminalElement = options.terminalElement;
         this.nodeView = options.nodeView;
 
-        var output = this.output;
-        var label = output.label || output.name;
-        var node = this.nodeView.node;
+        const output = this.output;
+        const label = output.label || output.name;
+        const node = this.nodeView.node;
 
         this.$el.html(label);
         this.calloutView = null;
         if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
-            var calloutView = new OutputCalloutView({
+            const calloutView = new OutputCalloutView({
                 label: label,
                 output: output,
                 node: node
             });
             this.calloutView = calloutView;
             this.$el.append(calloutView.el);
-            this.$el.hover(
-                () => {
-                    calloutView.hoverImage();
-                },
-                () => {
-                    calloutView.resetImage();
-                }
-            );
         }
         this.$el.css({
             position: "absolute",
@@ -141,21 +133,21 @@ var ParameterOutputView = Backbone.View.extend({
     }
 });
 
-var OutputCalloutView = Backbone.View.extend({
+const OutputCalloutView = Backbone.View.extend({
     tagName: "div",
 
     initialize: function(options) {
         this.label = options.label;
         this.node = options.node;
         this.output = options.output;
-        var view = this;
-        var node = this.node;
+        const view = this;
+        const node = this.node;
         this.$el
             .attr("class", `callout-terminal ${this.label}`)
             .css({ display: "none" })
             .append(
                 $("<icon class='mark-terminal fa fa-asterisk'/>").click(() => {
-                    var outputName = view.output.name;
+                    const outputName = view.output.name;
                     if (node.isWorkflowOutput(outputName)) {
                         node.removeWorkflowOutput(outputName);
                         view.$("icon").removeClass("mark-terminal-active");
