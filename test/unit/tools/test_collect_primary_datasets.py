@@ -7,7 +7,7 @@ from galaxy import (
     util
 )
 from galaxy.tool_util.parser import output_collection_def
-from galaxy.tools.provided_metadata import LegacyToolProvidedMetadata, NullToolProvidedMetadata
+from galaxy.tool_util.provided_metadata import LegacyToolProvidedMetadata, NullToolProvidedMetadata
 from .. import tools_support
 
 DEFAULT_TOOL_OUTPUT = "out1"

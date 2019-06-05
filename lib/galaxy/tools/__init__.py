@@ -44,6 +44,7 @@ from galaxy.tool_util.parser import (
     ToolOutputCollectionPart
 )
 from galaxy.tool_util.parser.xml import XmlPageSource
+from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.tools import expressions
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -101,7 +102,6 @@ from .execute import (
     execute as execute_job,
     MappingParameters,
 )
-from .provided_metadata import parse_tool_provided_metadata
 
 log = logging.getLogger(__name__)
 
