@@ -29,6 +29,7 @@ from galaxy.managers.jobs import JobSearch
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import send_control_task
+from galaxy.tool_util import output_collect
 from galaxy.tool_util.deps import (
     CachedDependencyManager,
 )
@@ -58,7 +59,6 @@ from galaxy.tools.parameters import (
     populate_state,
     visit_input_values
 )
-from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (
     BaseURLToolParameter,
     DataCollectionToolParameter,
