@@ -16,8 +16,8 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
+import { mapCacheActions } from "vuex-cache";
+import { mapGetters } from "vuex";
 
 export default {
     props: {
@@ -37,44 +37,42 @@ export default {
         }
     },
     data() {
-        return {
-            metricsByPlugins: {}
-        };
+        return {};
     },
     created: function() {
-        let url;
         if (this.jobId) {
-            url = `${getAppRoot()}api/jobs/${this.jobId}/metrics`;
+            this.fetchJobMetricsForJobId(this.jobId);
         } else {
-            url = `${getAppRoot()}api/datasets/${this.datasetId}/metrics?hda_ldda=${this.datasetType}`;
+            this.fetchJobMetricsForDatasetId({ datasetId: this.datasetId, datasetType: this.datasetType });
         }
-        this.ajaxCall(url);
     },
     computed: {
+        ...mapGetters(["getJobMetricsByDatasetId", "getJobMetricsByJobId"]),
+        jobMetrics: function() {
+            if (this.jobId) {
+                return this.getJobMetricsByJobId(this.jobId);
+            } else {
+                return this.getJobMetricsByDatasetId(this.datasetId, this.datasetType);
+            }
+        },
+        metricsByPlugins: function() {
+            const metricsByPlugins = {};
+            const metrics = this.jobMetrics;
+            metrics.forEach(metric => {
+                if (!(metric.plugin in metricsByPlugins)) {
+                    metricsByPlugins[metric.plugin] = {};
+                }
+                const metricsForPlugin = metricsByPlugins[metric.plugin];
+                metricsForPlugin[metric.title] = metric.value;
+            });
+            return metricsByPlugins;
+        },
         orderedPlugins: function() {
             return Object.keys(this.metricsByPlugins).sort();
         }
     },
     methods: {
-        ajaxCall: function(url) {
-            axios
-                .get(url)
-                .then(response => {
-                    const metricsByPlugins = {};
-                    const metrics = response.data;
-                    metrics.forEach(metric => {
-                        if (!(metric.plugin in metricsByPlugins)) {
-                            metricsByPlugins[metric.plugin] = {};
-                        }
-                        const metricsForPlugin = metricsByPlugins[metric.plugin];
-                        metricsForPlugin[metric.title] = metric.value;
-                    });
-                    this.metricsByPlugins = metricsByPlugins;
-                })
-                .catch(e => {
-                    console.error(e);
-                });
-        }
+        ...mapCacheActions(["fetchJobMetricsForDatasetId", "fetchJobMetricsForJobId"])
     }
 };
 </script>

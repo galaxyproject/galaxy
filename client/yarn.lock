@@ -13074,6 +13074,11 @@ vue@^2.6.10, vue@^2.6.9:
   resolved "https://registry.yarnpkg.com/vue/-/vue-2.6.10.tgz#a72b1a42a4d82a721ea438d1b6bf55e66195c637"
   integrity sha512-ImThpeNU9HbdZL3utgMCq0oiMzAkt1mcgy3/E6zWC/G6AaQoeuFdsl9nDhTDU3X1R6FK7nsIUuRACVcjI+A2GQ==
 
+vuex-cache@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/vuex-cache/-/vuex-cache-3.1.0.tgz#aad576cfb39b325cc7a43ea9a42414e356374c4b"
+  integrity sha512-XDzQ/jddmErZVquyHhbOHc6DPhVSt5bU8433Fzsai3XydU3cxyYTUd3PH2Ww5sesB9yu5f0wKk6MFIqgjSa3Yw==
+
 vuex@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/vuex/-/vuex-3.1.0.tgz#634b81515cf0cfe976bd1ffe9601755e51f843b9"

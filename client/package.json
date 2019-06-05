@@ -47,7 +47,8 @@
     "vue": "^2.6.10",
     "vue-router": "^3.0.2",
     "vue-rx": "^6.1.0",
-    "vuex": "^3.1.0"
+    "vuex": "^3.1.0",
+    "vuex-cache": "^3.1.0"
   },
   "scripts": {
     "watch": "gulp && yarn run save-build-hash && yarn run webpack-watch",
