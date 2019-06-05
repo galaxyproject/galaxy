@@ -53,6 +53,7 @@ export default {
             queryInput: null,
             queryDelay: 1000,
             queryTimer: null,
+            queryLength: 3,
             query: null,
             scrolled: false,
             loading: false,
@@ -65,7 +66,7 @@ export default {
     },
     computed: {
         queryEmpty() {
-            return !this.query;
+            return !this.query || this.query.length < this.queryLength;
         }
     },
     methods: {
