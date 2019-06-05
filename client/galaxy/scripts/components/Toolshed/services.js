@@ -51,7 +51,7 @@ export class Services {
                         if (x.tools && x.tools.length > 0) {
                             x.version = x.tools[0].version;
                         } else {
-                            x.version = null;
+                            x.version = "n/a";
                         }
                     });
                     table.sort((a, b) => b.numeric_revision - a.numeric_revision);
