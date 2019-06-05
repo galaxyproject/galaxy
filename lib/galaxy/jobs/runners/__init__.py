@@ -19,7 +19,6 @@ from six.moves.queue import (
 import galaxy.jobs
 from galaxy import model
 from galaxy.jobs.command_factory import build_command
-from galaxy.jobs.output_checker import DETECTED_JOB_STATE
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
     job_script,
@@ -29,6 +28,7 @@ from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo
 )
+from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.util import (
     DATABASE_MAX_STRING_SIZE,
     ExecutionTimer,

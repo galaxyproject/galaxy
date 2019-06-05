@@ -33,6 +33,7 @@ from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.output_checker import check_output, DETECTED_JOB_STATE
 from galaxy.util import safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -40,7 +41,6 @@ from galaxy.util.xml_macros import load
 from galaxy.web.stack.handlers import ConfiguresHandlers
 from .datasets import (DatasetPath, NullDatasetPathRewriter,
     OutputsToWorkingDirectoryPathRewriter, TaskPathRewriter)
-from .output_checker import check_output, DETECTED_JOB_STATE
 
 log = logging.getLogger(__name__)
 
