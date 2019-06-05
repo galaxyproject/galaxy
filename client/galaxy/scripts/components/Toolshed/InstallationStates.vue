@@ -6,7 +6,7 @@
                 {{ error }}
             </b-alert>
             <div v-else class="border rounded">
-                <b-table borderless :items="repoTable" :fields="repoFields" class="text_align_center m-0">
+                <b-table borderless :items="repoTable" :fields="repoFields" class="text-center m-0">
                     <template slot="numeric_revision" slot-scope="data">
                         <span class="font-weight-bold">{{ data.value }}</span>
                     </template>
@@ -172,14 +172,9 @@ export default {
                     changeset_revision: details.changeset_revision
                 })
                 .catch(error => {
-                    alert(error);
+                    this.error = error;
                 });
         }
     }
 };
 </script>
-<style>
-.text_align_center {
-    text-align: center;
-}
-</style>

@@ -48,7 +48,8 @@ export default {
                 .getCategories(this.toolshedUrl)
                 .then(categories => {
                     this.categories = categories;
-                    this.$emit("onTotal", this.categories.reduce((value, entry) => value + entry.repositories, 0));
+                    const reducer = (value, entry) => value + entry.repositories;
+                    this.$emit("onTotal", this.categories.reduce(reducer, 0));
                     this.$emit("onLoading", false);
                 })
                 .catch(errorMessage => {
