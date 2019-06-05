@@ -325,7 +325,7 @@ class ToolShedController(BaseAPIController):
         tool_shed_registry = trans.app.tool_shed_registry
         if tool_shed_registry is None:
             raise MessageException("Toolshed registry not available.")
-        if tool_shed_url in trans.app.tool_shed_registry.tool_sheds.values():
+        if tool_shed_url in tool_shed_registry.tool_sheds.values():
             pathspec = ["api", controller]
             if "id" in params:
                 pathspec.append(params.pop("id"))
