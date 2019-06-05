@@ -54,8 +54,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_job_api_version=dict(map=str, default="batch/v1"),
             k8s_supplemental_group_id=dict(map=str),
             k8s_pull_policy=dict(map=str, default="Default"),
-            k8s_run_as_user_id=dict(map=int, default=os.getuid()),
-            k8s_run_as_group_id=dict(map=int, default=app.config.gid),
+            k8s_run_as_user_id=dict(map=str, valid=lambda s: s == "$uid" or s.isdigit()),
+            k8s_run_as_group_id=dict(map=str, valid=lambda s: s == "$gid" or s.isdigit()),
             k8s_fs_group_id=dict(map=int),
             k8s_default_requests_cpu=dict(map=str, default=None),
             k8s_default_requests_memory=dict(map=str, default=None),
@@ -78,6 +78,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         self._galaxy_instance_id = self.__get_galaxy_instance_id()
 
+        self._run_as_user_id = self.__get_run_as_user_id()
+        self._run_as_group_id = self.__get_run_as_group_id()
         self._supplemental_group = self.__get_supplemental_group()
         self._fs_group = self.__get_fs_group()
         self._default_pull_policy = self.__get_pull_policy()
@@ -171,6 +173,24 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return self.runner_params['k8s_pull_policy']
         return None
 
+    def __get_run_as_user_id(self):
+        if "k8s_run_as_user_id" in self.runner_params:
+            run_as_user = self.runner_params["k8s_run_as_user_id"]
+            if run_as_user == "$uid":
+                return os.getuid()
+            else:
+                return int(self.runner_params["k8s_run_as_user_id"])
+        return None
+
+    def __get_run_as_group_id(self):
+        if "k8s_run_as_group_id" in self.runner_params:
+            run_as_group = self.runner_params["k8s_run_as_group_id"]
+            if run_as_group == "$gid":
+                return self.app.config.gid
+            else:
+                return int(self.runner_params["k8s_run_as_group_id"])
+        return None
+
     def __get_supplemental_group(self):
         if "k8s_supplemental_group_id" in self.runner_params:
             try:
@@ -244,10 +264,11 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return k8s_spec_template
 
     def __get_k8s_security_context(self):
-        security_context = {
-            "runAsUser": int(self.runner_params["k8s_run_as_user_id"]),
-            "runAsGroup": int(self.runner_params["k8s_run_as_group_id"])
-        }
+        security_context = {}
+        if self._run_as_user_id:
+            security_context["runAsUser"] = self._run_as_user_id
+        if self._run_as_group_id:
+            security_context["runAsGroup"] = self._run_as_group_id
         if self._supplemental_group and self._supplemental_group > 0:
             security_context["supplementalGroups"] = [self._supplemental_group]
         if self._fs_group and self._fs_group > 0:
