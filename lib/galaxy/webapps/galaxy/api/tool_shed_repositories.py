@@ -420,8 +420,6 @@ class ToolShedRepositoriesController(BaseAPIController):
         :param tool_shed_url: The URL for the toolshed whence this repository is being installed
         :param changeset: The changeset to update to after cloning the repository
         """
-        print ("OLDSCHOOL")
-        print (kwd)
         irm = InstallRepositoryManager(self.app)
         tool_shed_url = kwd.get('tool_shed_url', None)
         repositories = json.loads(kwd.get('repositories', '[]'))
