@@ -108,14 +108,6 @@ var ParameterOutputView = Backbone.View.extend({
             });
             this.calloutView = calloutView;
             this.$el.append(calloutView.el);
-            this.$el.hover(
-                () => {
-                    calloutView.hoverImage();
-                },
-                () => {
-                    calloutView.resetImage();
-                }
-            );
         }
         this.$el.css({
             position: "absolute",
