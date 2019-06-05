@@ -2,7 +2,7 @@
 
 cd `dirname $0`/..
 
-./scripts/common_startup.sh
+GALAXY_SKIP_CLIENT_BUILD=1 ./scripts/common_startup.sh
 GALAXY_VIRTUAL_ENV="${GALAXY_VIRTUAL_ENV:-.venv}"
 if [ -d "$GALAXY_VIRTUAL_ENV" ];
 then
