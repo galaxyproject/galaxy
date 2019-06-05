@@ -10,25 +10,20 @@
                     <template slot="numeric_revision" slot-scope="data">
                         <span class="font-weight-bold">{{ data.value }}</span>
                     </template>
-                    <template slot="includes_tools" slot-scope="data">
-                        <span v-if="data.value" :class="repoChecked" />
-                        <span v-else :class="repoUnchecked" />
-                    </template>
-                    <template slot="includes_workflows" slot-scope="data">
-                        <span v-if="data.value" :class="repoChecked" />
-                        <span v-else :class="repoUnchecked" />
-                    </template>
-                    <template slot="includes_datatypes" slot-scope="data">
-                        <span v-if="data.value" :class="repoChecked" />
-                        <span v-else :class="repoUnchecked" />
-                    </template>
-                    <template slot="includes_tool_dependencies" slot-scope="data">
-                        <span v-if="data.value" :class="repoChecked" />
-                        <span v-else :class="repoUnchecked" />
-                    </template>
                     <template slot="includes_tools_for_display_in_tool_panel" slot-scope="data">
-                        <span v-if="data.value" :class="repoChecked" />
+                        <span v-if="!data.value" :class="repoChecked" />
                         <span v-else :class="repoUnchecked" />
+                    </template>
+                    <template slot="has_repository_dependencies" slot-scope="data">
+                        <span v-if="!data.value" :class="repoChecked" />
+                        <span v-else :class="repoUnchecked" />
+                    </template>
+                    <template slot="missing_test_components" slot-scope="data">
+                        <span v-if="!data.value" :class="repoChecked" />
+                        <span v-else :class="repoUnchecked" />
+                    </template>
+                    <template slot="version" slot-scope="data">
+                        <span class="font-weight-bold">{{ data.value }}</span>
                     </template>
                     <template slot="status" slot-scope="data">
                         <b-button v-if="data.value == 'Installed'" :class="statusOk" disabled>
@@ -38,7 +33,7 @@
                             {{ data.value ? data.value : "Unavailable" }}
                         </b-button>
                     </template>
-                    <template slot="installed" slot-scope="row">
+                    <template slot="actions" slot-scope="row">
                         <b-button
                             v-if="!row.item.installed"
                             class="btn-sm"
@@ -85,22 +80,22 @@ export default {
                 numeric_revision: {
                     label: "Revision"
                 },
-                includes_tools: {
-                    label: "Tools"
+                includes_tools_for_display_in_tool_panel: {
+                    label: "Visible"
                 },
-                includes_workflows: {
-                    label: "Workflows"
-                },
-                includes_datatypes: {
-                    label: "Datatypes"
-                },
-                includes_tool_dependencies: {
+                has_repository_dependencies: {
                     label: "Dependencies"
+                },
+                missing_test_components: {
+                    label: "Tests"
+                },
+                version: {
+                    label: "Version"
                 },
                 status: {
                     label: "Status"
                 },
-                installed: {
+                actions: {
                     label: ""
                 }
             },
