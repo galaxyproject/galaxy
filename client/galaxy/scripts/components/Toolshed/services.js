@@ -47,14 +47,11 @@ export class Services {
                 .then(response => {
                     const data = response.data;
                     const table = Object.keys(data).map(key => data[key]);
-                    table.forEach(x => {
-                        if (x.tools && x.tools.length > 0) {
-                            x.version = x.tools[0].version;
-                        } else {
-                            x.version = "n/a";
-                        }
-                    });
                     table.sort((a, b) => b.numeric_revision - a.numeric_revision);
+                    table.forEach(x => {
+                        x.profile = x.tools.reduce((value, current) =>
+                            current.profile > value ? current.profile : value, null);
+                    });
                     resolve(table);
                 })
                 .catch(e => {

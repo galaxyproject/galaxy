@@ -10,20 +10,22 @@
                     <template slot="numeric_revision" slot-scope="data">
                         <span class="font-weight-bold">{{ data.value }}</span>
                     </template>
-                    <template slot="includes_tools_for_display_in_tool_panel" slot-scope="data">
-                        <span v-if="!data.value" :class="repoChecked" />
-                        <span v-else :class="repoUnchecked" />
+                    <template slot="tools" slot-scope="data">
+                        <span v-if="data.value">
+                            <span v-for="tool in data.value" :key="tool.name">
+                                {{ tool.id }}: {{ tool.version }}
+                            </span>
+                        </span>
+                        <span v-else>
+                            n/a
+                        </span>
                     </template>
-                    <template slot="has_repository_dependencies" slot-scope="data">
-                        <span v-if="!data.value" :class="repoChecked" />
-                        <span v-else :class="repoUnchecked" />
+                    <template slot="profile" slot-scope="data">
+                        {{ data.value ? data.value : "-" }}
                     </template>
                     <template slot="missing_test_components" slot-scope="data">
                         <span v-if="!data.value" :class="repoChecked" />
                         <span v-else :class="repoUnchecked" />
-                    </template>
-                    <template slot="version" slot-scope="data">
-                        <span class="font-weight-bold">{{ data.value }}</span>
                     </template>
                     <template slot="status" slot-scope="data">
                         <b-button v-if="data.value == 'Installed'" :class="statusOk" disabled>
@@ -80,17 +82,14 @@ export default {
                 numeric_revision: {
                     label: "Revision"
                 },
-                includes_tools_for_display_in_tool_panel: {
-                    label: "Visible"
+                tools: {
+                    label: "Tools"
                 },
-                has_repository_dependencies: {
-                    label: "Dependencies"
+                profile: {
+                    label: "Requires"
                 },
                 missing_test_components: {
                     label: "Tests"
-                },
-                version: {
-                    label: "Version"
                 },
                 status: {
                     label: "Status"
