@@ -21,7 +21,7 @@
                         </span>
                     </template>
                     <template slot="profile" slot-scope="data">
-                        {{ data.value ? data.value : "-" }}
+                        {{ data.value ? `+${data.value}` : "-" }}
                     </template>
                     <template slot="missing_test_components" slot-scope="data">
                         <span v-if="!data.value" :class="repoChecked" />
