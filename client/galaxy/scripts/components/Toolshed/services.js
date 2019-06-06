@@ -49,8 +49,10 @@ export class Services {
                     const table = Object.keys(data).map(key => data[key]);
                     table.sort((a, b) => b.numeric_revision - a.numeric_revision);
                     table.forEach(x => {
-                        x.profile = x.tools.reduce((value, current) =>
-                            current.profile > value ? current.profile : value, null);
+                        if (Array.isArray(x.tools)) {
+                            x.profile = x.tools.reduce((value, current) =>
+                                current.profile > value ? current.profile : value, null);
+                        }
                     });
                     resolve(table);
                 })
