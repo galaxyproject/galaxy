@@ -225,7 +225,7 @@
     </script>
 
     ${ galaxy_client.load() }
-    ## ${ galaxy_client.config_sentry(app) }
+    ${ galaxy_client.config_sentry(app) }
 
 </%def>
 
