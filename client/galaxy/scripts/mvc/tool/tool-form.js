@@ -352,12 +352,12 @@ const View = Backbone.View.extend({
             list.sort((a, b) => {
                 b.hid - a.hid;
             });
+            blurb += `<ul>`;
             for (const item of list) {
                 const rowString = `${item.hid}: ${_.escape(item.name)}`;
-                blurb += `<p class="messagerow">
-                            <b>${rowString}</b>
-                          </p>`;
+                blurb += `<li><b>${rowString}</b></li>`;
             }
+            blurb += `</ul>`;
         }
         return blurb;
     },
