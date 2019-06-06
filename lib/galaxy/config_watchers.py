@@ -1,9 +1,7 @@
-from functools import partial
 from os.path import dirname
 
 from galaxy.queue_worker import (
     job_rule_modules,
-    reload_job_rules,
     send_control_task,
 )
 from galaxy.tools.toolbox.watcher import (
@@ -52,11 +50,13 @@ class ConfigWatchers(object):
     def start(self):
         [self.tool_config_watcher.watch_file(config) for config in self.tool_config_paths]
         [self.data_manager_config_watcher.watch_file(config) for config in self.data_manager_configs]
+        self.tool_data_watcher.start()
         [self.tool_data_watcher.watch_directory(tool_data_path) for tool_data_path in self.tool_data_paths]
+        self.job_rule_watcher.start()
         for job_rules_directory in self.job_rules_paths:
             self.job_rule_watcher.watch_directory(
                 job_rules_directory,
-                callback=partial(reload_job_rules, self.app),
+                callback=lambda: send_control_task(self.app, 'reload_job_rules'),
                 recursive=True,
                 ignore_extensions=('.pyc', '.pyo', '.pyd'))
         self.active = True
