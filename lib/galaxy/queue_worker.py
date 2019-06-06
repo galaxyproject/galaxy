@@ -229,10 +229,12 @@ def recalculate_user_disk_usage(app, **kwargs):
 
 
 def reload_tool_data_tables(app, **kwargs):
-    params = util.Params(kwargs)
-    log.debug("Executing tool data table reload for %s" % params.get('table_names', 'all tables'))
-    table_names = app.tool_data_tables.reload_tables(table_names=params.get('table_name', None))
-    log.debug("Finished data table reload for %s" % table_names)
+    path = kwargs.get('path')
+    table_name = kwargs.get('table_name')
+    table_names = path or table_name or 'all tables'
+    log.debug("Executing tool data table reload for %s", table_names)
+    table_names = app.tool_data_tables.reload_tables(table_names=table_name, path=path)
+    log.debug("Finished data table reload for %s", table_names)
 
 
 def rebuild_toolbox_search_index(app, **kwargs):
