@@ -20,13 +20,14 @@ def test_watcher():
         tool_watcher = watcher.get_tool_watcher(toolbox, bunch.Bunch(
             watch_tools=True
         ))
+        tool_watcher.start()
         time.sleep(1)
         tool_watcher.watch_file(tool_path, "cool_tool")
         assert not toolbox.was_reloaded("cool_tool")
         open(tool_path, "w").write("b")
         wait_for_reload(lambda: toolbox.was_reloaded("cool_tool"))
         tool_watcher.shutdown()
-        assert not tool_watcher.observer.is_alive()
+        assert tool_watcher.observer is None
 
 
 def test_tool_conf_watcher():

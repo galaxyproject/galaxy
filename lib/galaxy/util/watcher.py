@@ -21,7 +21,6 @@ except ImportError:
     can_watch = False
 
 from galaxy.util.hash_util import md5_hash_file
-from .web_compat import register_postfork_function
 
 log = logging.getLogger(__name__)
 
@@ -66,24 +65,35 @@ def get_watcher(config, config_name, default="False", monitor_what_str=None, wat
         return NullWatcher()
 
 
-class Watcher(object):
+class BaseWatcher(object):
+
+    def __init__(self, observer_class, even_handler_class, **kwargs):
+        self.observer = None
+        self.observer_class = observer_class
+        self.event_handler = even_handler_class(self)
+
+    def start(self):
+        if self.observer is None:
+            self.observer = self.observer_class()
+            self.observer.start()
+
+    def shutdown(self):
+        if self.observer is not None:
+            self.observer.stop()
+            self.observer.join()
+            self.observer = None
+
+
+class Watcher(BaseWatcher):
 
     def __init__(self, observer_class, event_handler_class, **kwargs):
+        super(Watcher, self).__init__(observer_class, event_handler_class, **kwargs)
         self.monitored_dirs = {}
         self.path_hash = {}
         self.file_callbacks = {}
         self.dir_callbacks = {}
         self.ignore_extensions = {}
-        self.observer = observer_class()
         self.event_handler = event_handler_class(self)
-        self.start()
-
-    def start(self):
-        register_postfork_function(self.observer.start)
-
-    def shutdown(self):
-        self.observer.stop()
-        self.observer.join()
 
     def monitor(self, dir, recursive=False):
         self.observer.schedule(self.event_handler, dir, recursive=recursive)
