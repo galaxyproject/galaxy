@@ -690,8 +690,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
 
     def _get_filter_types(self, trans):
         return OrderedDict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
-                      ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
-                      ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
+                            ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
+                            ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
 
     @expose_api
     def api_key(self, trans, id, payload={}, **kwd):

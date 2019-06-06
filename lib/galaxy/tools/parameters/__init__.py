@@ -28,9 +28,9 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
 
     If the callback returns a value, it will be replace the old value.
 
+    >>> from collections import OrderedDict
     >>> from xml.etree.ElementTree import XML
     >>> from galaxy.util.bunch import Bunch
-    >>> from collections import OrderedDict
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
     >>> from galaxy.tools.parameters.grouping import Repeat
     >>> a = TextToolParameter(None, XML('<param name="a"/>'))
@@ -269,9 +269,9 @@ def update_dataset_ids(input_values, translate_values, src):
 def populate_state(request_context, inputs, incoming, state, errors={}, prefix='', context=None, check=True):
     """
     Populates nested state dict from incoming parameter values.
+    >>> from collections import OrderedDict
     >>> from xml.etree.ElementTree import XML
     >>> from galaxy.util.bunch import Bunch
-    >>> from collections import OrderedDict
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
     >>> from galaxy.tools.parameters.grouping import Repeat
     >>> trans = Bunch(workflow_building_mode=False)

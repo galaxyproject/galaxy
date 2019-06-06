@@ -682,7 +682,7 @@ class InputParameterModule(WorkflowModule):
                 option[2] = True
                 input_parameter_type.static_options[i] = tuple(option)
         return OrderedDict([("parameter_type", input_parameter_type),
-                      ("optional", BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", value=optional)))])
+                            ("optional", BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", value=optional)))])
 
     def get_runtime_inputs(self, **kwds):
         parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)

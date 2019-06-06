@@ -185,7 +185,7 @@ class MockAction(object):
             if num_calls > self.error_message_after_excution:
                 return None, "Test Error Message"
 
-        return galaxy.model.Job(), OrderedDict(dict(out1="1"))
+        return galaxy.model.Job(), OrderedDict(out1="1")
 
     def raise_exception(self, after_execution=0):
         self.exception_after_exection = after_execution
