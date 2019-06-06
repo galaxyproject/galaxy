@@ -13,7 +13,7 @@ from six.moves import cPickle
 
 import galaxy.model
 from galaxy.model.metadata import FileParameter, MetadataTempFile
-from galaxy.util import in_directory
+from galaxy.util import in_directory, safe_makedirs
 
 log = getLogger(__name__)
 
@@ -109,7 +109,8 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         tmp_dir = _init_tmp_dir(tmp_dir)
 
         metadata_dir = os.path.join(tmp_dir, "metadata")
-        os.mkdir(metadata_dir)
+        # may already exist (i.e. metadata collection in the job handler)
+        safe_makedirs(metadata_dir)
 
         def job_relative_path(path):
             path_relative = os.path.relpath(path, tmp_dir)
@@ -399,8 +400,5 @@ def _get_filename_override(output_fnames, file_name):
 
 def _init_tmp_dir(tmp_dir):
     assert tmp_dir is not None
-
-    if not os.path.exists(tmp_dir):
-        os.makedirs(tmp_dir)
-
+    safe_makedirs(tmp_dir)
     return tmp_dir
