@@ -78,7 +78,7 @@ class SetMetadataToolAction(ToolAction):
         job_working_dir = app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(job.id))
         datatypes_config = os.path.join(job_working_dir, 'registry.xml')
         app.datatypes_registry.to_xml_file(path=datatypes_config)
-        external_metadata_wrapper = get_metadata_compute_strategy(app, job.id)
+        external_metadata_wrapper = get_metadata_compute_strategy(app.config, job.id)
         output_datatasets_dict = {
             dataset_name: dataset,
         }

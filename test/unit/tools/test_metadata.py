@@ -143,7 +143,7 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
             f.write(contents)
 
     def metadata_command(self, output_datasets):
-        metadata_compute_strategy = get_metadata_compute_strategy(self.app, self.job.id)
+        metadata_compute_strategy = get_metadata_compute_strategy(self.app.config, self.job.id)
         self.metadata_compute_strategy = metadata_compute_strategy
 
         exec_dir = None

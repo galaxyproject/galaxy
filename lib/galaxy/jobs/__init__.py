@@ -875,7 +875,7 @@ class JobWrapper(HasResourceParameters):
         self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
-        self.external_output_metadata = get_metadata_compute_strategy(self.app, job.id)
+        self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id)
         self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
         self.params = None
         if job.params:

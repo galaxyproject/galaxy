@@ -20,8 +20,8 @@ log = getLogger(__name__)
 SET_METADATA_SCRIPT = 'from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()'
 
 
-def get_metadata_compute_strategy(app, job_id):
-    metadata_strategy = app.config.metadata_strategy
+def get_metadata_compute_strategy(config, job_id):
+    metadata_strategy = config.metadata_strategy
     if metadata_strategy == "legacy":
         return JobExternalOutputMetadataWrapper(job_id)
     else:
