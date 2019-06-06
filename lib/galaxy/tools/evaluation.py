@@ -7,7 +7,7 @@ import tempfile
 from six import string_types
 
 from galaxy import model
-from galaxy.jobs.datasets import dataset_path_rewrites
+from galaxy.job_execution.datasets import dataset_path_rewrites
 from galaxy.model.none_like import NoneDataset
 from galaxy.tools import global_tool_errors
 from galaxy.tools.parameters import (

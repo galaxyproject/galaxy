@@ -3,7 +3,7 @@ import subprocess
 import unittest
 
 from galaxy import model
-from galaxy.jobs.datasets import DatasetPath
+from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
 from .. import tools_support

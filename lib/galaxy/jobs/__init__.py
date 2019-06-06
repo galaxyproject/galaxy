@@ -26,6 +26,12 @@ import galaxy
 from galaxy import model, util
 from galaxy.datatypes import sniff
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
+from galaxy.job_execution.datasets import (
+    DatasetPath,
+    NullDatasetPathRewriter,
+    OutputsToWorkingDirectoryPathRewriter,
+    TaskPathRewriter
+)
 from galaxy.job_execution.output_collect import collect_extra_files
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobMappingException, JobRunnerMapper
@@ -39,8 +45,6 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.xml_macros import load
 from galaxy.web.stack.handlers import ConfiguresHandlers
-from .datasets import (DatasetPath, NullDatasetPathRewriter,
-    OutputsToWorkingDirectoryPathRewriter, TaskPathRewriter)
 
 log = logging.getLogger(__name__)
 

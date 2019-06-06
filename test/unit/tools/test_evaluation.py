@@ -2,8 +2,8 @@ import os
 from unittest import TestCase
 from xml.etree.ElementTree import XML
 
+from galaxy.job_execution.datasets import DatasetPath
 from galaxy.jobs import SimpleComputeEnvironment
-from galaxy.jobs.datasets import DatasetPath
 from galaxy.model import (
     Dataset,
     History,
