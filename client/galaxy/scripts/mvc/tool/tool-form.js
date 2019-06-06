@@ -231,6 +231,7 @@ const View = Backbone.View.extend({
                 callback && callback();
                 this.$el.children().hide();
                 this.$el.append(this._templateSuccess(response, job_def));
+                this.$el.parent().scrollTop(0);
                 // Show Webhook if job is running
                 if (response.jobs && response.jobs.length > 0) {
                     this.$el.append($("<div/>", { id: "webhook-view" }));
@@ -351,11 +352,8 @@ const View = Backbone.View.extend({
             list.sort((a, b) => {
                 b.hid - a.hid;
             });
-            const numRows = Math.min(list.length, 4);
-            for (let i = 0; i < numRows; i++) {
-                //use ellipses if it is the final row (last loop iteration) and the list length is larger than the number of rows
-                const rowString =
-                    i === numRows - 1 && list.length > numRows ? "..." : `${list[i].hid}: ${_.escape(list[i].name)}`;
+            for (const item of list) {
+                const rowString = `${item.hid}: ${_.escape(item.name)}`;
                 blurb += `<p class="messagerow">
                             <b>${rowString}</b>
                           </p>`;
