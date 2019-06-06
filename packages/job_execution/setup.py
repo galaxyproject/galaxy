@@ -32,6 +32,7 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
     'galaxy.job_execution',
+    'galaxy.metadata',
 ]
 ENTRY_POINTS = '''
         [console_scripts]
