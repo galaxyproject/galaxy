@@ -14,9 +14,11 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
         this.model = new toolshed_model.CategoryCollection();
         this.listenTo(this.model, "sync", this.render);
         var shed = params.tool_shed.replace(/\//g, "%2f");
-        this.model.url += `?tool_shed_url=${shed}&category_id=${params.category_id}&sort_key=${
-            params.sort_key
-        }&sort_order=${params.sort_order}&page=${params.page}`;
+        this.model.url += `?tool_shed_url=${shed}`;
+        this.model.url += `&category_id=${params.category_id}`;
+        this.model.url += `&sort_key=${params.sort_key}`;
+        this.model.url += `&sort_order=${params.sort_order}`;
+        this.model.url += `&page=${params.page}`;
         this.model.tool_shed = shed;
         this.model.category = params.category_id;
         this.model.fetch();
@@ -24,8 +26,8 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
 
     render: function(options) {
         this.options = _.defaults(this.options || {}, options);
-        var category_contents_template = this.templateCategoryContents;
-        var page_navigation_template = this.templatePageNavigation;
+        var category_contents_template = this.templateCategoryContents();
+        var page_navigation_template = this.templatePageNavigation();
         var sorting = {
             class: { owner: "fa-sort", description: "fa-sort", name: "fa-sort" },
             direction: { owner: "asc", description: "asc", name: "asc" }
@@ -81,7 +83,7 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
                 });
             },
             minLength: 3,
-            select: function(event, ui) {
+            select: (event, ui) => {
                 var tsr_id = ui.item.value;
                 var new_route = `repository/s/${this.model.tool_shed}/r/${tsr_id}`;
                 Backbone.history.navigate(new_route, {
@@ -114,105 +116,105 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
         });
     },
 
-    templatePageNavigation: _.template(
-        [
-            '<div class="navigation">',
-            "<% if (page != 1) { %>",
-            '<a data-page="1" class="pagenav fa fa-fast-backward" />',
-            '<a data-page="<%= previous %>" class="pagenav fa fa-step-backward" />',
-            "<% } else { %>",
-            '<a data-page="1" class="pagenav-inactive fa fa-fast-backward" />',
-            '<a data-page="<%= previous %>" class="pagenav-inactive fa fa-step-backward" />',
-            "<% } %>",
-            "<% if (pages > 5) { %>",
-            "<% if (page != 1) { %>",
-            '<a data-page="1" class="pagenav fa"><a>1</a>',
-            "<% if (page != 2) { %>",
-            '<a class="fa">&hellip;</a>',
-            "<% } %>",
-            "<% } else { %>",
-            '<a data-page="1" class="pagenav-inactive fa"><a>1</a>',
-            "<% } %>",
-            "<% _.each(page_slice, function(i) { %>",
-            "<% if (i == page) { %>",
-            '<a data-page="<%= i %>" class="fa"><strong><%= i %></strong></a>',
-            "<% } else { %>",
-            '<a data-page="<%= i %>" class="pagenav fa"><%= i %></a>',
-            "<% } %>",
-            "<% }); %>",
-            "<% var last_pages = [pages - 2, pages - 1, pages]; %>",
-            "<% if (last_pages.indexOf(parseInt(page)) == -1) { %>",
-            '<a class="fa">&hellip;</a>',
-            '<a data-page="<%= pages %>" class="pagenav fa"><%= pages %></a>',
-            "<% } %>",
-            "<% } else { %>",
-            "<% for (i = 1; i <= pages; i++) { %>",
-            "<% if (i == page) { %>",
-            '<a data-page="<%= i %>" class="fa"><strong><%= i %></strong></a>',
-            "<% } else { %>",
-            '<a data-page="<%= i %>" class="pagenav fa"><%= i %></a>',
-            "<% } %>",
-            "<% } %>",
-            "<% } %>",
-            "<% if (page < pages) { %>",
-            '<a data-page="<%= next %>" class="pagenav fa fa-step-forward" />',
-            '<a data-page="<%= pages %>" class="pagenav fa fa-fast-forward" />',
-            "<% } else { %>",
-            '<a data-page="<%= next %>" class="pagenav-inactive fa fa-step-forward" />',
-            '<a data-page="<%= pages %>" class="pagenav-inactive fa fa-fast-forward" />',
-            "<% } %>",
-            "</div>"
-        ].join("")
-    ),
+    templatePageNavigation: function() {
+        return _.template(
+            `<div class="navigation">
+            <% if (page != 1) { %>
+            <a data-page="1" class="pagenav fa fa-fast-backward" />
+            <a data-page="<%= previous %>" class="pagenav fa fa-step-backward" />
+            <% } else { %>
+            <a data-page="1" class="pagenav-inactive fa fa-fast-backward" />
+            <a data-page="<%= previous %>" class="pagenav-inactive fa fa-step-backward" />
+            <% } %>
+            <% if (pages > 5) { %>
+            <% if (page != 1) { %>
+            <a data-page="1" class="pagenav fa"><a>1</a>
+            <% if (page != 2) { %>
+            <a class="fa">&hellip;</a>
+            <% } %>
+            <% } else { %>
+            <a data-page="1" class="pagenav-inactive fa"><a>1</a>
+            <% } %>
+            <% _.each(page_slice, function(i) { %>
+            <% if (i == page) { %>
+            <a data-page="<%= i %>" class="fa"><strong><%= i %></strong></a>
+            <% } else { %>
+            <a data-page="<%= i %>" class="pagenav fa"><%= i %></a>
+            <% } %>
+            <% }); %>
+            <% var last_pages = [pages - 2, pages - 1, pages]; %>
+            <% if (last_pages.indexOf(parseInt(page)) == -1) { %>
+            <a class="fa">&hellip;</a>
+            <a data-page="<%= pages %>" class="pagenav fa"><%= pages %></a>
+            <% } %>
+            <% } else { %>
+            <% for (i = 1; i <= pages; i++) { %>
+            <% if (i == page) { %>
+            <a data-page="<%= i %>" class="fa"><strong><%= i %></strong></a>
+            <% } else { %>
+            <a data-page="<%= i %>" class="pagenav fa"><%= i %></a>
+            <% } %>
+            <% } %>
+            <% } %>
+            <% if (page < pages) { %>
+            <a data-page="<%= next %>" class="pagenav fa fa-step-forward" />
+            <a data-page="<%= pages %>" class="pagenav fa fa-fast-forward" />
+            <% } else { %>
+            <a data-page="<%= next %>" class="pagenav-inactive fa fa-step-forward" />
+            <a data-page="<%= pages %>" class="pagenav-inactive fa fa-fast-forward" />
+            <% } %>
+            </div>`
+        );
+    },
 
-    templateCategoryContents: _.template(
-        [
-            '<style type="text/css">',
-            ".ui-autocomplete { background-color: #fff; }",
-            "li.ui-menu-item { list-style-type: none; }",
-            "div.navigation { width: 100%; text-align: center; }",
-            "div.navigation a { margin-left: 0.5em; margin-right: 0.5em; display: inline; text-decoration: underline; }",
-            "a.pagenav-inactive { opacity: 0.5; }",
-            "</style>",
-            '<div class="unified-panel-header" id="panel_header" unselectable="on">',
-            '<div class="unified-panel-header-inner">Repositories in <%= category.get("name") %><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
-            "</div>",
-            '<div class="unified-panel-body" id="list_repositories">',
-            '<div id="standard-search" style="height: 2em; margin: 1em;">',
-            '<span class="ui-widget" >',
-            '<input class="search-box-input" id="search_box" name="search" data-shedurl="<%= tool_shed.replace(/%2f/g, "/") %>" placeholder="Search repositories by name or id" size="60" type="text" />',
-            "</span>",
-            "</div>",
-            "<% if (category.get('repository_count') > 25) { %>",
-            "<%= page_navigation %>",
-            "<% } %>",
-            '<div style="clear: both; margin-top: 1em;">',
-            '<table class="grid table-striped">',
-            '<thead id="grid-table-header">',
-            "<tr>",
-            '<th style="width: 10%;"><a class="fa fa-fw <%= sorting.class.owner %>" data-direction="<%= sorting.direction.owner %>" data-field="owner">Owner</a></th>',
-            '<th style="width: 15%;"><a class="fa fa-fw <%= sorting.class.name %>" data-direction="<%= sorting.direction.name %>" data-field="name">Name</a></th>',
-            '<th><a class="fa fa-fw <%= sorting.class.description %>" data-direction="<%= sorting.direction.description %>" data-field="description">Synopsis</a></th>',
-            '<th style="width: 10%;">Type</th>',
-            "</tr>",
-            "</thead>",
-            '<% _.each(category.get("repositories"), function(repository) { %>',
-            "<tr>",
-            "<td><%= repository.owner %></td>",
-            "<td>",
-            '<div style="float: left; margin-left: 1px;" class="menubutton split">',
-            '<a href="#/repository/s/<%= tool_shed %>/r/<%= repository.id %>"><%= repository.name %></a>',
-            "</div>",
-            "</td>",
-            "<td><%= repository.description %></td>",
-            "<td><%= repository.type %></td>",
-            "</tr>",
-            "<% }); %>",
-            "</table>",
-            "</div>",
-            "</div>"
-        ].join("")
-    )
+    templateCategoryContents: function() {
+        return _.template(
+            `<style type="text/css">
+            .ui-autocomplete { background-color: #fff; }
+            li.ui-menu-item { list-style-type: none; }
+            div.navigation { width: 100%; text-align: center; }
+            div.navigation a { margin-left: 0.5em; margin-right: 0.5em; display: inline; text-decoration: underline; }
+            a.pagenav-inactive { opacity: 0.5; }
+            </style>
+            <div class="unified-panel-header" id="panel_header" unselectable="on">
+            <div class="unified-panel-header-inner">Repositories in <%= category.get("name") %><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>
+            </div>
+            <div class="unified-panel-body" id="list_repositories">
+            <div id="standard-search" style="height: 2em; margin: 1em;">
+            <span class="ui-widget" >
+            <input class="search-box-input" id="search_box" name="search" data-shedurl="<%= tool_shed.replace(/%2f/g, "/") %>" placeholder="Search repositories by name or id" size="60" type="text" />
+            </span>
+            </div>
+            <% if (category.get('repository_count') > 25) { %>
+            <%= page_navigation %>
+            <% } %>
+            <div style="clear: both; margin-top: 1em;">
+            <table class="grid table-striped">
+            <thead id="grid-table-header">
+            <tr>
+            <th style="width: 10%;"><a class="fa fa-fw <%= sorting.class.owner %>" data-direction="<%= sorting.direction.owner %>" data-field="owner">Owner</a></th>
+            <th style="width: 15%;"><a class="fa fa-fw <%= sorting.class.name %>" data-direction="<%= sorting.direction.name %>" data-field="name">Name</a></th>
+            <th><a class="fa fa-fw <%= sorting.class.description %>" data-direction="<%= sorting.direction.description %>" data-field="description">Synopsis</a></th>
+            <th style="width: 10%;">Type</th>
+            </tr>
+            </thead>
+            <% _.each(category.get("repositories"), function(repository) { %>
+            <tr>
+            <td><%= repository.owner %></td>
+            <td>
+            <div style="float: left; margin-left: 1px;" class="menubutton split">
+            <a href="#/repository/s/<%= tool_shed %>/r/<%= repository.id %>"><%= repository.name %></a>
+            </div>
+            </td>
+            <td><%= repository.description %></td>
+            <td><%= repository.type %></td>
+            </tr>
+            <% }); %>
+            </table>
+            </div>
+            </div>`
+        );
+    }
 });
 
 export default {

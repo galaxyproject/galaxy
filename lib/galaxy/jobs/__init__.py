@@ -1401,6 +1401,7 @@ class JobWrapper(HasResourceParameters):
         job_stderr=None,
         check_output_detected_state=None,
         remote_metadata_directory=None,
+        job_metrics_directory=None,
     ):
         """
         Called to indicate that the associated command has been run. Updates
@@ -1640,7 +1641,7 @@ class JobWrapper(HasResourceParameters):
         job.set_final_state(final_job_state)
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statisitcs
-            self._collect_metrics(job)
+            self._collect_metrics(job, job_metrics_directory)
         self.sa_session.flush()
         log.debug('job %d ended (finish() executed in %s)' % (self.job_id, finish_timer))
         if job.state == job.states.ERROR:
@@ -1727,11 +1728,12 @@ class JobWrapper(HasResourceParameters):
         except Exception as e:
             log.debug("Error in collect_associated_files: %s" % (e))
 
-    def _collect_metrics(self, has_metrics):
+    def _collect_metrics(self, has_metrics, job_metrics_directory=None):
         job = has_metrics.get_job()
-        per_plugin_properties = self.app.job_metrics.collect_properties(job.destination_id, self.job_id, self.working_directory)
+        job_metrics_directory = job_metrics_directory or self.working_directory
+        per_plugin_properties = self.app.job_metrics.collect_properties(job.destination_id, self.job_id, job_metrics_directory)
         if per_plugin_properties:
-            log.info("Collecting metrics for %s %s" % (type(has_metrics).__name__, getattr(has_metrics, 'id', None)))
+            log.info("Collecting metrics for %s %s in %s" % (type(has_metrics).__name__, getattr(has_metrics, 'id', None), job_metrics_directory))
         for plugin, properties in per_plugin_properties.items():
             for metric_name, metric_value in properties.items():
                 if metric_value is not None:

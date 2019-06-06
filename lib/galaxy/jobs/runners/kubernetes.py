@@ -59,6 +59,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_default_requests_memory=dict(map=str, default=None),
             k8s_default_limits_cpu=dict(map=str, default=None),
             k8s_default_limits_memory=dict(map=str, default=None),
+            k8s_pod_retries=dict(map=int, valid=lambda x: int >= 0, default=3),
             k8s_pod_retrials=dict(map=int, valid=lambda x: int >= 0, default=3))
 
         if 'runner_param_specs' not in kwargs:
@@ -396,11 +397,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             active = 0
             failed = 0
 
-            max_pod_retrials = 1
-            if 'k8s_pod_retrials' in self.runner_params:
-                max_pod_retrials = int(self.runner_params['k8s_pod_retrials'])
-            if 'max_pod_retrials' in job_destination.params:
-                max_pod_retrials = int(job_destination.params['max_pod_retrials'])
+            max_pod_retries = 1
+            if 'max_pod_retries' in job_destination.params:
+                max_pod_retries = int(job_destination.params['max_pod_retries'])
+            elif 'k8s_pod_retries' in self.runner_params:
+                max_pod_retries = int(self.runner_params['k8s_pod_retries'])
+            elif 'max_pod_retrials' in job_destination.params:
+                # For backward compatibility
+                max_pod_retries = int(job_destination.params['max_pod_retrials'])
+            elif 'k8s_pod_retrials' in self.runner_params:
+                # For backward compatibility
+                max_pod_retries = int(self.runner_params['max_pod_retrials'])
 
             if 'succeeded' in job.obj['status']:
                 succeeded = job.obj['status']['succeeded']
@@ -416,12 +423,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return None
             elif failed > 0 and self.__job_failed_due_to_low_memory(job_state):
                 return self._handle_job_failure(job, job_state, reason="OOM")
-            elif active > 0 and failed <= max_pod_retrials:
+            elif active > 0 and failed <= max_pod_retries:
                 if not job_state.running:
                     job_state.running = True
                     job_state.job_wrapper.change_state(model.Job.states.RUNNING)
                 return job_state
-            elif failed > max_pod_retrials:
+            elif failed > max_pod_retries:
                 return self._handle_job_failure(job, job_state)
             elif job_state.job_wrapper.get_job().state == model.Job.states.DELETED:
                 # Job has been deleted via stop_job, cleanup and remove from watched_jobs by returning `None`
@@ -443,7 +450,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # there is more than one job associated to the expected unique job id used as selector.
             log.error("More than one Kubernetes Job associated to job id '%s'", job_state.job_id)
             with open(job_state.error_file, 'w') as error_file:
-                error_file.write("More than one Kubernetes Job associated to job id '%s'\n" % job_state.job_id)
+                error_file.write("More than one Kubernetes Job associated with job id '%s'\n" % job_state.job_id)
             self.mark_as_failed(job_state)
             return job_state
 

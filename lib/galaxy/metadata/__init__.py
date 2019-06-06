@@ -13,7 +13,7 @@ from six.moves import cPickle
 
 import galaxy.model
 from galaxy.model.metadata import FileParameter, MetadataTempFile
-from galaxy.util import in_directory
+from galaxy.util import in_directory, safe_makedirs
 
 log = getLogger(__name__)
 
@@ -73,7 +73,11 @@ class MetadataCollectionStrategy(object):
             normalized_remote_metadata_directory = remote_metadata_directory and os.path.normpath(remote_metadata_directory)
             normalized_path = os.path.normpath(path)
             if remote_metadata_directory and normalized_path.startswith(normalized_remote_metadata_directory):
-                return normalized_path.replace(normalized_remote_metadata_directory, working_directory, 1)
+                if self.portable:
+                    target_directory = os.path.join(working_directory, "metadata")
+                else:
+                    target_directory = working_directory
+                return normalized_path.replace(normalized_remote_metadata_directory, target_directory, 1)
             return path
 
         dataset.metadata.from_JSON_dict(metadata_output_path, path_rewriter=path_rewriter)
@@ -88,6 +92,7 @@ class MetadataCollectionStrategy(object):
 
 
 class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
+    portable = True
 
     def __init__(self, job_id):
         self.job_id = job_id
@@ -104,7 +109,8 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         tmp_dir = _init_tmp_dir(tmp_dir)
 
         metadata_dir = os.path.join(tmp_dir, "metadata")
-        os.mkdir(metadata_dir)
+        # may already exist (i.e. metadata collection in the job handler)
+        safe_makedirs(metadata_dir)
 
         def job_relative_path(path):
             path_relative = os.path.relpath(path, tmp_dir)
@@ -171,6 +177,7 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
     DatasetInstance object which will use pickle (in the future this could be
     JSONified as well)
     """
+    portable = False
 
     def __init__(self, job_id):
         self.job_id = job_id
@@ -393,8 +400,5 @@ def _get_filename_override(output_fnames, file_name):
 
 def _init_tmp_dir(tmp_dir):
     assert tmp_dir is not None
-
-    if not os.path.exists(tmp_dir):
-        os.makedirs(tmp_dir)
-
+    safe_makedirs(tmp_dir)
     return tmp_dir
