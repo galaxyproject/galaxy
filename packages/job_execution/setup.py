@@ -36,6 +36,7 @@ PACKAGES = [
 ]
 ENTRY_POINTS = '''
         [console_scripts]
+        galaxy-set-metadata=galaxy.metadata.set_metadata:set_metadata
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.

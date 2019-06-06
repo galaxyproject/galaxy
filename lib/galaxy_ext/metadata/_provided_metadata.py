@@ -1,1 +1,0 @@
-../../galaxy/tool_util/provided_metadata.py
