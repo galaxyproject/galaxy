@@ -130,6 +130,10 @@ class ControlTask(object):
 # where they're currently invoked, or elsewhere.  (potentially using a dispatch
 # decorator).
 
+def reconfigure_watcher(app, **kwargs):
+    app.database_heartbeat.update_watcher_designation()
+
+
 def create_panel_section(app, **kwargs):
     """
     Updates in memory toolbox dictionary.
@@ -283,17 +287,20 @@ def admin_job_lock(app, **kwargs):
              % (job_lock, "not" if job_lock else "now"))
 
 
-control_message_to_task = {'create_panel_section': create_panel_section,
-                           'reload_tool': reload_tool,
-                           'reload_toolbox': reload_toolbox,
-                           'reload_data_managers': reload_data_managers,
-                           'reload_display_application': reload_display_application,
-                           'reload_tool_data_tables': reload_tool_data_tables,
-                           'reload_job_rules': reload_job_rules,
-                           'admin_job_lock': admin_job_lock,
-                           'reload_sanitize_whitelist': reload_sanitize_whitelist,
-                           'recalculate_user_disk_usage': recalculate_user_disk_usage,
-                           'rebuild_toolbox_search_index': rebuild_toolbox_search_index}
+control_message_to_task = {
+    'create_panel_section': create_panel_section,
+    'reload_tool': reload_tool,
+    'reload_toolbox': reload_toolbox,
+    'reload_data_managers': reload_data_managers,
+    'reload_display_application': reload_display_application,
+    'reload_tool_data_tables': reload_tool_data_tables,
+    'reload_job_rules': reload_job_rules,
+    'admin_job_lock': admin_job_lock,
+    'reload_sanitize_whitelist': reload_sanitize_whitelist,
+    'recalculate_user_disk_usage': recalculate_user_disk_usage,
+    'rebuild_toolbox_search_index': rebuild_toolbox_search_index,
+    'reconfigure_watcher': reconfigure_watcher,
+}
 
 
 class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
@@ -303,7 +310,7 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
     tasks.
     """
 
-    def __init__(self, app, task_mapping=control_message_to_task):
+    def __init__(self, app, task_mapping=None):
         super(GalaxyQueueWorker, self).__init__()
         log.info("Initializing %s Galaxy Queue Worker on %s", app.config.server_name, util.mask_password_from_url(app.config.amqp_internal_connection))
         self.daemon = True
@@ -313,7 +320,7 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         self.connection.connect()
         self.connection.release()
         self.app = app
-        self.task_mapping = task_mapping
+        self.task_mapping = task_mapping or control_message_to_task
         self.exchange_queue = None
         self.direct_queue = None
         self.control_queues = []

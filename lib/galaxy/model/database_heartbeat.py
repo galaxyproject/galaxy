@@ -5,6 +5,7 @@ import threading
 
 from galaxy.model import WorkerProcess
 from galaxy.model.orm.now import now
+from galaxy.queue_worker import send_control_task
 
 log = logging.getLogger(__name__)
 
@@ -42,6 +43,11 @@ class DatabaseHeartbeat(object):
         self.exit.set()
         if self.thread:
             self.thread.join()
+        worker_process = self.worker_process
+        if worker_process:
+            self.sa_session.delete(worker_process)
+            self.sa_session.flush()
+            send_control_task(self.application_stack.app, 'reconfigure_watcher', noop_self=True)
 
     def get_active_processes(self, last_seen_seconds=None):
         """Return all processes seen in ``last_seen_seconds`` seconds."""
@@ -64,21 +70,29 @@ class DatabaseHeartbeat(object):
         for callback in self._observers:
             callback(self._is_config_watcher)
 
+    @property
+    def worker_process(self):
+        return self.sa_session.query(WorkerProcess).filter_by(
+            server_name=self.server_name,
+            hostname=self.hostname,
+        ).first()
+
+    def update_watcher_designation(self):
+        worker_process = self.worker_process
+        if not worker_process:
+            worker_process = WorkerProcess(server_name=self.server_name, hostname=self.hostname)
+        worker_process.update_time = now()
+        self.sa_session.add(worker_process)
+        self.sa_session.flush()
+        # We only want a single process watching the various config files on the file system.
+        # We just pick the max server name for simplicity
+        is_config_watcher = self.server_name == max(
+            (p.server_name for p in self.get_active_processes(self.heartbeat_interval + 1)))
+        if is_config_watcher != self.is_config_watcher:
+            self.is_config_watcher = is_config_watcher
+
     def send_database_heartbeat(self):
         if self.active:
             while not self.exit.isSet():
-                worker_process = self.sa_session.query(WorkerProcess).filter_by(
-                    server_name=self.server_name,
-                    hostname=self.hostname,
-                ).first()
-                if not worker_process:
-                    worker_process = WorkerProcess(server_name=self.server_name, hostname=self.hostname)
-                worker_process.update_time = now()
-                self.sa_session.add(worker_process)
-                self.sa_session.flush()
-                # We only want a single process watching the various config files on the file system.
-                # We just pick the max server name for simplicity
-                is_config_watcher = self.server_name == max((p.server_name for p in self.get_active_processes(self.heartbeat_interval + 1)))
-                if is_config_watcher != self.is_config_watcher:
-                    self.is_config_watcher = is_config_watcher
+                self.update_watcher_designation()
                 self.exit.wait(self.heartbeat_interval)
