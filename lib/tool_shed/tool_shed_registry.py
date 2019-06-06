@@ -1,9 +1,9 @@
 import logging
 import xml.etree.ElementTree
+from collections import OrderedDict
 
 from six.moves.urllib import request as urlrequest
 
-from galaxy.util.odict import odict
 from tool_shed.util import common_util, xml_util
 
 log = logging.getLogger(__name__)
@@ -18,8 +18,8 @@ DEFAULT_TOOL_SHEDS_CONF_XML = """<?xml version="1.0"?>
 class Registry(object):
 
     def __init__(self, config=None):
-        self.tool_sheds = odict()
-        self.tool_sheds_auth = odict()
+        self.tool_sheds = OrderedDict()
+        self.tool_sheds_auth = OrderedDict()
         if config:
             # Parse tool_sheds_conf.xml
             tree, error_message = xml_util.parse_xml(config)

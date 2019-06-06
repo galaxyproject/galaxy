@@ -2,6 +2,7 @@ import errno
 import json
 import logging
 import os
+from collections import OrderedDict
 
 from six import string_types
 
@@ -10,7 +11,6 @@ from galaxy.queue_worker import (
     send_control_task
 )
 from galaxy.tools.data import TabularToolDataTable
-from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from tool_shed.util import (
     common_util,
@@ -27,8 +27,8 @@ DEFAULT_VALUE_TRANSLATION_TYPE = 'template'
 class DataManagers(object):
     def __init__(self, app, xml_filename=None):
         self.app = app
-        self.data_managers = odict()
-        self.managed_data_tables = odict()
+        self.data_managers = OrderedDict()
+        self.managed_data_tables = OrderedDict()
         self.tool_path = None
         self._reload_count = 0
         self.filename = xml_filename or self.app.config.data_manager_config_file
@@ -131,7 +131,7 @@ class DataManager(object):
         self.version = self.DEFAULT_VERSION
         self.guid = None
         self.tool = None
-        self.data_tables = odict()
+        self.data_tables = OrderedDict()
         self.output_ref_by_data_table = {}
         self.move_by_data_table_column = {}
         self.value_translation_by_data_table_column = {}
@@ -213,7 +213,7 @@ class DataManager(object):
             data_table_name = data_table_elem.get("name")
             assert data_table_name is not None, "A name is required for a data table entry"
             if data_table_name not in self.data_tables:
-                self.data_tables[data_table_name] = odict()
+                self.data_tables[data_table_name] = OrderedDict()
             output_elem = data_table_elem.find('output')
             if output_elem is not None:
                 for column_elem in output_elem.findall('column'):

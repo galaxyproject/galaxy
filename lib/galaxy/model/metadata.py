@@ -11,6 +11,7 @@ import shutil
 import sys
 import tempfile
 import weakref
+from collections import OrderedDict
 from os.path import abspath
 
 from six import string_types
@@ -26,7 +27,6 @@ from galaxy.util import (
 )
 from galaxy.util.json import safe_dumps
 from galaxy.util.object_wrapper import sanitize_lists_to_string
-from galaxy.util.odict import odict
 
 log = logging.getLogger(__name__)
 
@@ -214,7 +214,7 @@ class MetadataCollection(object):
         return None
 
 
-class MetadataSpecCollection(odict):
+class MetadataSpecCollection(OrderedDict):
     """
     A simple extension of dict which allows cleaner access to items
     and allows the values to be iterated over directly as if it were a
@@ -223,7 +223,7 @@ class MetadataSpecCollection(odict):
     """
 
     def __init__(self, dict=None):
-        odict.__init__(self, dict=None)
+        OrderedDict.__init__(self, dict=None)
 
     def append(self, item):
         self[item.name] = item

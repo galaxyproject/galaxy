@@ -2,6 +2,7 @@ import imp
 import logging
 import os
 import time
+from collections import OrderedDict
 from datetime import datetime, timedelta
 from string import punctuation as PUNCTUATION
 
@@ -23,7 +24,6 @@ from galaxy.util import (
     url_get
 )
 from galaxy.util.hash_util import new_secure_hash
-from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
@@ -886,7 +886,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     def review_tool_migration_stages(self, trans, **kwd):
         message = escape(util.restore_text(kwd.get('message', '')))
         status = util.restore_text(kwd.get('status', 'done'))
-        migration_stages_dict = odict()
+        migration_stages_dict = OrderedDict()
         # FIXME: this isn't valid in an installed context
         migration_scripts_dir = os.path.abspath(os.path.join(trans.app.config.root, 'lib', 'tool_shed', 'galaxy_install', 'migrate', 'versions'))
         modules = os.listdir(migration_scripts_dir)

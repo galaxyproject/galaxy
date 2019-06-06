@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import OrderedDict
 from json import dumps, loads
 
 import galaxy.queue_worker
@@ -7,7 +8,6 @@ from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.tools import global_tool_errors
 from galaxy.util.json import safe_dumps
-from galaxy.util.odict import odict
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -201,9 +201,9 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool_version = kwd.get('tool_version', None)
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
 
-        # Encode in this method to handle odict objects in tool representation.
+        # Encode in this method to handle OrderedDict objects in tool representation.
         def json_encodeify(obj):
-            if isinstance(obj, odict):
+            if isinstance(obj, OrderedDict):
                 return dict(obj)
             elif isinstance(obj, map):
                 return list(obj)

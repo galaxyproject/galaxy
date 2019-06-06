@@ -4,6 +4,7 @@ Modules used in building workflows
 import json
 import logging
 import re
+from collections import OrderedDict
 from xml.etree.ElementTree import (
     Element,
     XML
@@ -50,7 +51,6 @@ from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
-from galaxy.util.odict import odict
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from tool_shed.util import common_util
@@ -681,7 +681,7 @@ class InputParameterModule(WorkflowModule):
                 # item 0 is option description, item 1 is value, item 2 is "selected"
                 option[2] = True
                 input_parameter_type.static_options[i] = tuple(option)
-        return odict([("parameter_type", input_parameter_type),
+        return OrderedDict([("parameter_type", input_parameter_type),
                       ("optional", BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", value=optional)))])
 
     def get_runtime_inputs(self, **kwds):
