@@ -1,9 +1,9 @@
-<tool id="interactive_tool_juypter_notebook" tool_type="realtime" name="Interactive Jupyter Notebook" version="0.1">
+<tool id="interactive_tool_jupyter_notebook" tool_type="realtime" name="Interactive Jupyter Notebook" version="0.1">
     <requirements>
         <container type="docker">bgruening/docker-jupyter-notebook:ie2</container>
     </requirements>
     <realtime>
-        <entry_point name="Jypter Interactive Environment">
+        <entry_point name="Jupyter Interactive Tool">
             <port>8888</port>
             <url>ipython/tree</url>
         </entry_point>
