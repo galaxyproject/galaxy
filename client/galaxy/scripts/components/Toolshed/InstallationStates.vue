@@ -12,7 +12,7 @@
                     </template>
                     <template slot="tools" slot-scope="data">
                         <span v-if="data.value">
-                            <span v-for="tool in data.value" :key="tool.name"> {{ tool.id }}: {{ tool.version }} </span>
+                            <span v-for="tool in data.value" :key="tool.guid"> {{ tool.id }}: {{ tool.version }} </span>
                         </span>
                         <span v-else>-</span>
                     </template>

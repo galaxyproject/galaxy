@@ -1,20 +1,20 @@
 <template>
 <div>
     <b-button v-if="installState"
-        class="btn-sm"
+        :class="buttonClass"
         variant="primary"
         @click="onInstall">
         Install
     </b-button>
     <div v-else>
         <b-button v-if="uninstallState"
-            class="btn-sm"
+            :class="buttonClass"
             variant="danger"
             @click="onUninstall">
             Uninstall
         </b-button>
         <b-button v-else
-            class="btn-sm"
+            :class="buttonClass"
             @click="onUninstall">
             <span v-if="!errorState" class="fa fa-spinner fa-spin" />
             <span>{{ status }}</span>
@@ -25,9 +25,14 @@
 <script>
 export default {
     props: ["installed", "status"],
+    data() {
+        return {
+            buttonClass: "btn-sm text-nowrap"
+        }
+    },
     computed: {
         installState() {
-            return ["Uninstalled", ""].includes(this.status);
+            return !this.status || this.status == "Uninstalled";
         },
         uninstallState() {
             return this.status == "Installed";
