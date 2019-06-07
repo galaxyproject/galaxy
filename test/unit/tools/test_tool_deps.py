@@ -12,7 +12,7 @@ from shutil import rmtree
 from stat import S_IXUSR
 from subprocess import PIPE, Popen
 
-from galaxy.tool_util.deps import DependencyManager
+from galaxy.tool_util.deps import build_dependency_manager_from_dict, DependencyManager
 from galaxy.tool_util.deps.requirements import (
     ToolRequirement,
     ToolRequirements
@@ -22,6 +22,9 @@ from galaxy.tool_util.deps.resolvers.galaxy_packages import GalaxyPackageDepende
 from galaxy.tool_util.deps.resolvers.lmod import LmodDependency, LmodDependencyResolver
 from galaxy.tool_util.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
 from galaxy.util.bunch import Bunch
+
+# If true, test created DependencyManager objects by serializing out to json and re-constituting.
+ROUND_TRIP_TEST_DEPENDENCY_MANAGER_SERIALIZATION = True
 
 
 def test_tool_dependencies():
@@ -560,6 +563,13 @@ def test_config_module_defaults():
         module_resolver = dependency_resolvers[0]
         assert module_resolver.module_checker.__class__.__name__ == "AvailModuleChecker"
 
+    with __parse_resolvers('''
+-  type: modules
+   prefetch: false
+''', extension=".yml") as dependency_resolvers:
+        module_resolver = dependency_resolvers[0]
+        assert module_resolver.module_checker.__class__.__name__ == "AvailModuleChecker"
+
 
 def test_config_modulepath():
     # Test reads and splits MODULEPATH if modulepath is not specified.
@@ -623,23 +633,27 @@ def __environ(values, remove=[]):
 
 
 @contextmanager
-def __parse_resolvers(xml_content):
-    with __dependency_manager(xml_content) as dm:
+def __parse_resolvers(file_content, extension=".xml"):
+    with __dependency_manager(file_content, extension=extension) as dm:
         yield dm.dependency_resolvers
 
 
 @contextmanager
-def __dependency_manager(xml_content):
+def __dependency_manager(file_content, extension=".xml"):
     with __test_base_path() as base_path:
-        with tempfile.NamedTemporaryFile('w+') as tmp:
-            tmp.write(xml_content)
+        with tempfile.NamedTemporaryFile('w+', suffix=extension) as tmp:
+            tmp.write(file_content)
             tmp.flush()
             dm = __dependency_manager_for_base_path(default_base_path=base_path, conf_file=tmp.name)
             yield dm
 
 
 def __dependency_manager_for_base_path(default_base_path, conf_file=None):
-    return DependencyManager(default_base_path=default_base_path, conf_file=conf_file, app_config={"conda_auto_init": False})
+    dm = DependencyManager(default_base_path=default_base_path, conf_file=conf_file, app_config={"conda_auto_init": False})
+    if ROUND_TRIP_TEST_DEPENDENCY_MANAGER_SERIALIZATION:
+        as_dict = dm.to_dict()
+        dm = build_dependency_manager_from_dict(as_dict)
+    return dm
 
 
 class _SimpleDependencyManager(object):

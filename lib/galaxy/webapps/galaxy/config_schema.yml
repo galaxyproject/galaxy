@@ -2364,6 +2364,12 @@ mapping:
       job_config:
         !include job_config_schema.yml
 
+      dependency_resolvers:
+        type: seq
+        desc: |
+          Rather than specifying a dependency_resolvers_config_file, the definition of the
+          resolvers to enable can be embedded into Galaxy's config with this option.
+
       default_job_resubmission_condition:
         type: str
         required: false
