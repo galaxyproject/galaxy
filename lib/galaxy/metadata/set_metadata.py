@@ -193,7 +193,7 @@ def validate_and_load_datatypes_config(datatypes_config):
         sys.exit(1)
     import galaxy.datatypes.registry
     datatypes_registry = galaxy.datatypes.registry.Registry()
-    datatypes_registry.load_datatypes(root_dir=galaxy_root, config=datatypes_config)
+    datatypes_registry.load_datatypes(root_dir=galaxy_root, config=datatypes_config, use_build_sites=False, use_converters=False, use_display_applications=False)
     galaxy.model.set_datatypes_registry(datatypes_registry)
     return datatypes_registry
 
