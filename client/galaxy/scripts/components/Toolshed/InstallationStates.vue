@@ -14,9 +14,7 @@
                         <span v-if="data.value">
                             <span v-for="tool in data.value" :key="tool.name"> {{ tool.id }}: {{ tool.version }} </span>
                         </span>
-                        <span v-else>
-                            n/a
-                        </span>
+                        <span v-else>-</span>
                     </template>
                     <template slot="profile" slot-scope="data">
                         {{ data.value ? `+${data.value}` : "-" }}

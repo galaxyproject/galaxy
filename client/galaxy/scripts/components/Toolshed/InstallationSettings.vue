@@ -12,7 +12,7 @@
         <b-form-group
             v-if="requiresPanel"
             label="Target Section:"
-            description="Choose an existing section in your tool panel to contain the installed tools (optional)."
+            description="Choose an existing tool panel section or create a new section to contain the installed tools (optional)."
         >
             <b-form-input list="sectionSelect" v-model="toolSection" />
             <datalist id="sectionSelect">
