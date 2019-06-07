@@ -821,23 +821,22 @@ class PulsarMQJobRunner(PulsarJobRunner):
             # Nothing else to do? - Attempt to fail the job?
 
 
-class PulsarKubernetesCoexecutionJobRunner(PulsarMQJobRunner):
-    """Flavor of Pulsar job runner with sensible defaults for Kubernetes Pod co-execution."""
+KUBERNETES_DESTINATION_DEFAULTS = {
+    "default_file_action": "remote_transfer",
+    "rewrite_parameters": "true",
+    "jobs_directory": "/pulsar_staging",
+    "pulsar_container_image": "galaxy/pulsar-pod-staging:0.13.0",
+    "remote_container_handling": True,
+    "k8s_enabled": True,
+    "url": PARAMETER_SPECIFICATION_IGNORED,
+    "private_token": PARAMETER_SPECIFICATION_IGNORED,
+}
 
-    destination_defaults = dict(
-        default_file_action="remote_transfer",
-        rewrite_parameters="true",
-        dependency_resolution="none",
-        jobs_directory="/pulsar_staging",
-        pulsar_container_image="galaxy/pulsar-pod-staging:0.12.0",
-        remote_container_handling=True,
-        k8s_enabled=True,
-        url=PARAMETER_SPECIFICATION_IGNORED,
-        private_token=PARAMETER_SPECIFICATION_IGNORED,
-    )
+
+class PulsarKubernetesBaseJobRunner(PulsarMQJobRunner):
 
     def _populate_parameter_defaults(self, job_destination):
-        super(PulsarKubernetesCoexecutionJobRunner, self)._populate_parameter_defaults(job_destination)
+        super(PulsarKubernetesBaseJobRunner, self)._populate_parameter_defaults(job_destination)
         params = job_destination.params
         # Set some sensible defaults for Pulsar application that runs in staging container.
         if "pulsar_app_config" not in params:
@@ -848,7 +847,32 @@ class PulsarKubernetesCoexecutionJobRunner(PulsarMQJobRunner):
             pulsar_app_config["staging_directory"] = params.get("jobs_directory")
         if "manager" not in pulsar_app_config and "managers" not in pulsar_app_config:
             # coexecution always uses coexecution manager
-            pulsar_app_config["manager"] = {"type": "coexecution"}
+            pulsar_app_config["manager"] = {"type": self.manager_type}
+
+
+class PulsarKubernetesCoexecutionJobRunner(PulsarKubernetesBaseJobRunner):
+    """Flavor of Pulsar job runner with sensible defaults for Kubernetes Pod co-execution."""
+
+    destination_defaults = dict(KUBERNETES_DESTINATION_DEFAULTS, **dict(
+        dependency_resolution="none",
+    ))
+    manager_type = "coexecution"
+
+
+class PulsarKubernetesDependencyResolvingJobRunner(PulsarKubernetesBaseJobRunner):
+    """Flavor of Pulsar job runner with sensible defaults for resolving dependencies from a Pulsar container in a pod."""
+
+    destination_defaults = dict(KUBERNETES_DESTINATION_DEFAULTS, **dict(
+        dependency_resolution="remote",
+    ))
+    manager_type = "unqueued"
+
+    def _populate_parameter_defaults(self, job_destination):
+        super(PulsarKubernetesDependencyResolvingJobRunner, self)._populate_parameter_defaults(job_destination)
+        pulsar_app_config = job_destination.params["pulsar_app_config"]
+        if "dependency_resolution" not in pulsar_app_config:
+            pulsar_app_config["dependency_resolution"] = self.app.toolbox.dependency_manager.to_dict()
+        log.info(pulsar_app_config)
 
 
 class PulsarRESTJobRunner(PulsarJobRunner):
