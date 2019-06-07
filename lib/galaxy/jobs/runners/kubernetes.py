@@ -20,7 +20,6 @@ from galaxy.util.bytesize import ByteSize
 try:
     from pykube.config import KubeConfig
     from pykube.http import HTTPClient
-    from pykube.exceptions import KubernetesError
     from pykube.objects import (
         Job,
         Pod
@@ -62,7 +61,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_default_requests_memory=dict(map=str, default=None),
             k8s_default_limits_cpu=dict(map=str, default=None),
             k8s_default_limits_memory=dict(map=str, default=None),
-            k8s_cleanup_job=dict(map=str, default="always"),
+            k8s_cleanup_job=dict(map=str, valid=lambda s: s in set(["onsuccess", "always", "never"]), default="always"),
             k8s_pod_retries=dict(map=int, valid=lambda x: int >= 0, default=3),
             k8s_pod_retrials=dict(map=int, valid=lambda x: int >= 0, default=3))
 
@@ -501,12 +500,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         k8s_cleanup_job = self.runner_params['k8s_cleanup_job']
         job_failed = (job.obj['status']['failed'] > 0
                       if 'failed' in job.obj['status'] else False)
-        if k8s_cleanup_job == "never":
-            job.scale(replicas=0)
-        elif k8s_cleanup_job == "onsuccess" and job_failed:
-            job.scale(replicas=0)
-        else:
-            job.delete()
+        # Scale down the job just in case even if cleanup is never
+        job.scale(replicas=0)
+        if (k8s_cleanup_job == "always" or
+                (k8s_cleanup_job == "onsuccess" and not job_failed)):
+            delete_options = {
+                "apiVersion": "v1",
+                "kind": "DeleteOptions",
+                "propagationPolicy": "Background"
+            }
+            r = job.api.delete(json=delete_options, **job.api_kwargs())
+            job.api.raise_for_status(r)
 
     def __job_failed_due_to_low_memory(self, job_state):
         """
@@ -574,7 +578,4 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # If more than one job matches selector, leave all jobs intact as it's a configuration error
         if len(jobs.response['items']) == 1:
             job = Job(self._pykube_api, jobs.response['items'][0])
-            try:
-                self.__cleanup_k8s_job(job)
-            except KubernetesError:
-                log.exception("Error while cleaning up k8s job")
+            self.__cleanup_k8s_job(job)
