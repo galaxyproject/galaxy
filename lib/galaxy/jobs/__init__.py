@@ -921,6 +921,10 @@ class JobWrapper(HasResourceParameters):
     def requires_containerization(self):
         return util.asbool(self.get_destination_configuration("require_container", "False"))
 
+    @property
+    def use_metadata_binary(self):
+        return util.asbool(self.get_destination_configuration('use_metadata_binary', "False"))
+
     def can_split(self):
         # Should the job handler split this job up?
         return self.app.config.use_tasked_jobs and self.tool.parallelism
