@@ -7,7 +7,7 @@ export class Services {
         const paramString = `tool_shed_url=${toolshedUrl}&controller=categories`;
         const url = `${getAppRoot()}api/tool_shed/request?${paramString}`;
         try {
-            let response = await axios.get(url);
+            const response = await axios.get(url);
             return response.data;
         } catch (e) {
             return this._errorMessage(e);
@@ -18,7 +18,7 @@ export class Services {
         const paramString = this._getParamString(params);
         const url = `${getAppRoot()}api/tool_shed/request?${paramString}`;
         try {
-            let response = await axios.get(url);
+            const response = await axios.get(url);
             const data = response.data;
             const incoming = data.hits.map(x => x.repository);
             incoming.forEach(x => {
@@ -40,8 +40,10 @@ export class Services {
             table.sort((a, b) => b.numeric_revision - a.numeric_revision);
             table.forEach(x => {
                 if (Array.isArray(x.tools)) {
-                    x.profile = x.tools.reduce((value, current) =>
-                        current.profile > value ? current.profile : value, null);
+                    x.profile = x.tools.reduce(
+                        (value, current) => (current.profile > value ? current.profile : value),
+                        null
+                    );
                 }
             });
             return table;
@@ -73,7 +75,7 @@ export class Services {
         try {
             const response = await axios.post(url, payload);
             return response.data;
-        } catch(e) {
+        } catch (e) {
             return this._errorMessage(e);
         }
     }
@@ -85,7 +87,7 @@ export class Services {
         try {
             const response = await axios.delete(url);
             return response.data;
-        } catch(e) {
+        } catch (e) {
             return this._errorMessage(e);
         }
     }

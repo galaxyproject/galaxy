@@ -12,9 +12,7 @@
                     </template>
                     <template slot="tools" slot-scope="data">
                         <span v-if="data.value">
-                            <span v-for="tool in data.value" :key="tool.name">
-                                {{ tool.id }}: {{ tool.version }}
-                            </span>
+                            <span v-for="tool in data.value" :key="tool.name"> {{ tool.id }}: {{ tool.version }} </span>
                         </span>
                         <span v-else>
                             n/a
@@ -28,9 +26,7 @@
                         <span v-else :class="repoUnchecked" />
                     </template>
                     <template slot="status" slot-scope="data">
-                        <span class="fa fa-spinner fa-spin"
-                            v-if="!installationStates.includes(data.value)"
-                        />
+                        <span class="fa fa-spinner fa-spin" v-if="!installationStates.includes(data.value)" />
                         <span>
                             {{ data.value ? data.value : "Unavailable" }}
                         </span>
@@ -72,7 +68,7 @@ export default {
     props: ["repo", "toolshedUrl"],
     data() {
         return {
-            installationStates: ['Installed', 'Error', 'Uninstalled', ''],
+            installationStates: ["Installed", "Error", "Uninstalled", ""],
             repoChecked: "fa fa-check text-success",
             repoUnchecked: "fa fa-times text-danger",
             selectedChangeset: null,

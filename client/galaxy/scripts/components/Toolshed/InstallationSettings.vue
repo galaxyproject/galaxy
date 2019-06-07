@@ -21,26 +21,20 @@
                 </option>
             </datalist>
         </b-form-group>
-        <b-link variant="primary" @click="onAdvanced">
-            {{advancedTitle}} advanced settings.
-        </b-link>
+        <b-link variant="primary" @click="onAdvanced"> {{ advancedTitle }} advanced settings. </b-link>
         <b-collapse id="advanced-collapse" v-model="advancedShow" class="mt-2">
             <b-card>
-                <b-form-group
-                    v-if="showConfig"
-                    label="Tool Configuration:"
-                    description="Choose a tool configuration.">
+                <b-form-group v-if="showConfig" label="Tool Configuration:" description="Choose a tool configuration.">
                     <b-form-radio
                         v-for="filename in toolConfigs"
                         v-model="toolConfig"
                         :value="filename"
-                        :key="filename">
+                        :key="filename"
+                    >
                         {{ filename }}
                     </b-form-radio>
                 </b-form-group>
-                <b-form-group
-                    label="Dependencies:"
-                    description="Choose how to handle dependencies.">
+                <b-form-group label="Dependencies:" description="Choose how to handle dependencies.">
                     <b-form-checkbox v-model="installResolverDependencies">
                         Install resolvable dependencies
                     </b-form-checkbox>
@@ -93,7 +87,7 @@ export default {
             let result = [null, null];
             if (name) {
                 const found = this.toolSections.find(s => {
-                    return s.name.toLowerCase().trim() == name.toLowerCase().trim()
+                    return s.name.toLowerCase().trim() == name.toLowerCase().trim();
                 });
                 if (found) {
                     result[0] = found.id;
