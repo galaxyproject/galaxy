@@ -23,24 +23,13 @@
                         <span v-if="!data.value" :class="repoChecked" />
                         <span v-else :class="repoUnchecked" />
                     </template>
-                    <template slot="status" slot-scope="data">
-                        <span class="fa fa-spinner fa-spin" v-if="!installationStates.includes(data.value)" />
-                        <span>
-                            {{ data.value ? data.value : "Unavailable" }}
-                        </span>
-                    </template>
                     <template slot="actions" slot-scope="row">
-                        <b-button
-                            v-if="!row.item.installed"
-                            class="btn-sm"
-                            variant="primary"
-                            @click="setupRepository(row.item)"
-                        >
-                            Install
-                        </b-button>
-                        <b-button v-else class="btn-sm" variant="danger" @click="uninstallRepository(row.item)">
-                            Uninstall
-                        </b-button>
+                        <installationbutton
+                            :installed="row.item.installed"
+                            :status="row.item.status"
+                            @onInstall="setupRepository(row.item)"
+                            @onUninstall="uninstallRepository(row.item)"
+                        />
                     </template>
                 </b-table>
                 <installationsettings
@@ -59,14 +48,15 @@
 <script>
 import { Services } from "./services.js";
 import InstallationSettings from "./InstallationSettings.vue";
+import InstallationButton from "./InstallationButton.vue";
 export default {
     components: {
-        installationsettings: InstallationSettings
+        installationsettings: InstallationSettings,
+        installationbutton: InstallationButton
     },
     props: ["repo", "toolshedUrl"],
     data() {
         return {
-            installationStates: ["Installed", "Error", "Uninstalled", ""],
             repoChecked: "fa fa-check text-success",
             repoUnchecked: "fa fa-times text-danger",
             selectedChangeset: null,
@@ -84,9 +74,6 @@ export default {
                 },
                 missing_test_components: {
                     label: "Tests"
-                },
-                status: {
-                    label: "Status"
                 },
                 actions: {
                     label: ""
