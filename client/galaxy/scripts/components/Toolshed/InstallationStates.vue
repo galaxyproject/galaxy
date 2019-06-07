@@ -28,12 +28,12 @@
                         <span v-else :class="repoUnchecked" />
                     </template>
                     <template slot="status" slot-scope="data">
-                        <b-button v-if="data.value == 'Installed'" :class="statusOk" disabled>
-                            {{ data.value }}
-                        </b-button>
-                        <b-button v-else :class="statusInfo" disabled>
+                        <span class="fa fa-spinner fa-spin"
+                            v-if="!installationStates.includes(data.value)"
+                        />
+                        <span>
                             {{ data.value ? data.value : "Unavailable" }}
-                        </b-button>
+                        </span>
                     </template>
                     <template slot="actions" slot-scope="row">
                         <b-button
@@ -53,8 +53,8 @@
                     v-if="showSettings"
                     :repo="repo"
                     :toolshedUrl="toolshedUrl"
-                    :repoChangeset="repoChangeset"
-                    :repoNumeric="repoNumeric"
+                    :changesetRevision="selectedChangeset"
+                    :requiresPanel="selectedRequiresPanel"
                     @hide="onHide"
                     @ok="onOk"
                 />
@@ -72,11 +72,11 @@ export default {
     props: ["repo", "toolshedUrl"],
     data() {
         return {
-            statusOk: "btn-sm btn-success font-weight-bold rounded-0",
-            statusInfo: "btn-sm btn-info rounded-0",
+            installationStates: ['Installed', 'Error', 'Uninstalled', ''],
             repoChecked: "fa fa-check text-success",
             repoUnchecked: "fa fa-times text-danger",
-            repoChangeset: null,
+            selectedChangeset: null,
+            selectedRequiresPanel: false,
             repoTable: [],
             repoFields: {
                 numeric_revision: {
@@ -158,8 +158,8 @@ export default {
             this.showSettings = false;
         },
         setupRepository: function(details) {
-            this.repoChangeset = details.changeset_revision;
-            this.repoNumeric = details.numeric_revision;
+            this.selectedChangeset = details.changeset_revision;
+            this.selectedRequiresPanel = details.includes_tools_for_display_in_tool_panel;
             this.showSettings = true;
         },
         uninstallRepository: function(details) {

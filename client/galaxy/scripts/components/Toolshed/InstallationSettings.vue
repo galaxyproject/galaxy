@@ -6,44 +6,64 @@
             </h4>
         </template>
         <div class="mb-1">
-            {{ repo.long_description }}
+            {{ repo.long_description || repo.description }}
         </div>
-        <div class="text-muted small mb-3">{{ repo.repo_owner_username }} rev. {{ repoChangeset }}</div>
+        <div class="text-muted small mb-3">{{ repo.repo_owner_username }} rev. {{ changesetRevision }}</div>
         <b-form-group
+            v-if="requiresPanel"
             label="Target Section:"
             description="Choose an existing section in your tool panel to contain the installed tools (optional)."
         >
             <b-form-input list="sectionSelect" v-model="toolSection" />
             <datalist id="sectionSelect">
-                <option v-for="section in toolSections" :key="section">{{ section }}</option>
+                <option v-for="section in toolSections" :key="section.name">
+                    {{ section.name }}
+                </option>
             </datalist>
         </b-form-group>
-        <b-form-group label="Tool Configuration:" description="Choose a tool configuration.">
-            <div class="ui-select">
-                <b-form-select :options="toolConfigs" v-model="toolConfig" />
-            </div>
-        </b-form-group>
-        <b-form-group label="Dependencies:" description="Choose how to handle dependencies.">
-            <b-form-checkbox v-model="installResolverDependencies">
-                Install resolvable dependencies
-            </b-form-checkbox>
-            <b-form-checkbox v-model="installRepositoryDependencies">
-                Install repository dependencies
-            </b-form-checkbox>
-            <b-form-checkbox v-model="installToolDependencies">
-                Install tool dependencies
-            </b-form-checkbox>
-        </b-form-group>
+        <b-link variant="primary" @click="onAdvanced">
+            {{advancedTitle}} advanced settings.
+        </b-link>
+        <b-collapse id="advanced-collapse" v-model="advancedShow" class="mt-2">
+            <b-card>
+                <b-form-group
+                    v-if="showConfig"
+                    label="Tool Configuration:"
+                    description="Choose a tool configuration.">
+                    <b-form-radio
+                        v-for="filename in toolConfigs"
+                        v-model="toolConfig"
+                        :value="filename"
+                        :key="filename">
+                        {{ filename }}
+                    </b-form-radio>
+                </b-form-group>
+                <b-form-group
+                    label="Dependencies:"
+                    description="Choose how to handle dependencies.">
+                    <b-form-checkbox v-model="installResolverDependencies">
+                        Install resolvable dependencies
+                    </b-form-checkbox>
+                    <b-form-checkbox v-model="installRepositoryDependencies">
+                        Install repository dependencies
+                    </b-form-checkbox>
+                    <b-form-checkbox v-model="installToolDependencies">
+                        Install tool dependencies
+                    </b-form-checkbox>
+                </b-form-group>
+            </b-card>
+        </b-collapse>
     </b-modal>
 </template>
 <script>
 import { getGalaxyInstance } from "app";
 import { Services } from "./services.js";
 export default {
-    props: ["repo", "toolshedUrl", "repoChangeset", "repoNumeric"],
+    props: ["repo", "changesetRevision", "requiresPanel", "toolshedUrl"],
     data() {
         return {
             modalShow: true,
+            advancedShow: false,
             installToolDependencies: true,
             installRepositoryDependencies: true,
             installResolverDependencies: true,
@@ -54,8 +74,14 @@ export default {
         };
     },
     computed: {
+        advancedTitle() {
+            return this.advancedShow ? "Hide" : "Show";
+        },
         modalTitle() {
             return `Installing '${this.repo.name}'`;
+        },
+        showConfig() {
+            return this.toolConfigs.length > 1;
         }
     },
     created() {
@@ -63,22 +89,43 @@ export default {
         this.loadConfig();
     },
     methods: {
+        findSection: function(name) {
+            let result = [null, null];
+            if (name) {
+                const found = this.toolSections.find(s => {
+                    return s.name.toLowerCase().trim() == name.toLowerCase().trim()
+                });
+                if (found) {
+                    result[0] = found.id;
+                } else {
+                    result[1] = name;
+                }
+            }
+            return result;
+        },
         loadConfig: function() {
             const galaxy = getGalaxyInstance();
             const sections = galaxy.config.toolbox_in_panel;
-            this.toolSections = sections.filter(x => x.model_class == "ToolSection").map(x => x.name);
-            this.toolConfigs = galaxy.config.tool_configs || [];
-            this.toolConfig = this.toolConfigs[0];
+            this.toolSections = sections.filter(x => x.model_class == "ToolSection");
+            this.toolConfigs = galaxy.config.tool_dynamic_configs || [];
+            if (this.toolConfigs.length > 0) {
+                this.toolConfig = this.toolConfigs[0];
+            }
+        },
+        onAdvanced: function() {
+            this.advancedShow = !this.advancedShow;
         },
         onOk: function() {
+            const [sectionId, sectionLabel] = this.findSection(this.toolSection);
             this.services
                 .installRepository({
                     tool_shed_url: this.toolshedUrl,
                     name: this.repo.name,
                     owner: this.repo.repo_owner_username,
-                    changeset_revision: this.repoChangeset,
-                    //new_tool_panel_section_label or tool_panel_section_id, tool_section: this.toolSection,
-                    //shed_tool_conf, tool_configuration: this.toolConfig,
+                    changeset_revision: this.changesetRevision,
+                    new_tool_panel_section_label: sectionLabel,
+                    tool_panel_section_id: sectionId,
+                    shed_tool_conf: this.toolConfig,
                     install_resolver_dependencies: this.installResolverDependencies,
                     install_tool_dependencies: this.installToolDependencies,
                     install_repository_dependencies: this.installRepositoryDependencies
