@@ -99,6 +99,8 @@ class JobFilesAPIController(BaseAPIController):
         else:
             input_file = payload.get("file",
                                      payload.get("__file", None)).file
+        target_dir = os.path.dirname(path)
+        util.safe_makedirs(target_dir)
         try:
             shutil.move(input_file.name, path)
         finally:
