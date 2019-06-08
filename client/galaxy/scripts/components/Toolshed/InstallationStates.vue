@@ -1,6 +1,9 @@
 <template>
     <div>
-        <span v-if="loading"> <span class="fa fa-spinner fa-spin" /> Loading repository details... </span>
+        <span v-if="loading">
+            <span class="fa fa-spinner fa-spin" />
+            Loading repository details...
+        </span>
         <div v-else>
             <b-alert v-if="error" variant="danger" show>
                 {{ error }}
@@ -11,10 +14,7 @@
                         <span class="font-weight-bold">{{ data.value }}</span>
                     </template>
                     <template slot="tools" slot-scope="data">
-                        <span v-if="data.value">
-                            <span v-for="tool in data.value" :key="tool.guid"> {{ tool.id }}: {{ tool.version }} </span>
-                        </span>
-                        <span v-else>-</span>
+                        <repositorytools :tools="data.value" />
                     </template>
                     <template slot="profile" slot-scope="data">
                         {{ data.value ? `+${data.value}` : "-" }}
@@ -49,10 +49,12 @@
 import { Services } from "./services.js";
 import InstallationSettings from "./InstallationSettings.vue";
 import InstallationButton from "./InstallationButton.vue";
+import RepositoryTools from "./RepositoryTools.vue";
 export default {
     components: {
         installationsettings: InstallationSettings,
-        installationbutton: InstallationButton
+        installationbutton: InstallationButton,
+        repositorytools: RepositoryTools
     },
     props: ["repo", "toolshedUrl"],
     data() {
@@ -67,7 +69,7 @@ export default {
                     label: "Revision"
                 },
                 tools: {
-                    label: "Tools"
+                    label: "Tools and Versions"
                 },
                 profile: {
                     label: "Requires"
