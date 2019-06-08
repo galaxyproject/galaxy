@@ -1,15 +1,16 @@
 <template>
     <div>
-        <div v-if="loading"><span class="fa fa-spinner fa-spin mb-4" /> <span>Loading categories...</span></div>
-        <div v-else>
-            <b-table striped :items="categories" :fields="fields">
-                <template slot="name" slot-scope="data">
-                    <b-link href="#" class="font-weight-bold" @click="onCategory(data.value)">
-                        {{ data.value }}
-                    </b-link>
-                </template>
-            </b-table>
+        <div v-if="loading">
+            <span class="fa fa-spinner fa-spin mb-4 mr-1" />
+            <span>Loading categories...</span>
         </div>
+        <b-table v-else striped :items="categories" :fields="fields">
+            <template slot="name" slot-scope="data">
+                <b-link href="#" class="font-weight-bold" @click="onCategory(data.value)">
+                    {{ data.value }}
+                </b-link>
+            </template>
+        </b-table>
     </div>
 </template>
 <script>
@@ -21,6 +22,7 @@ export default {
             categories: [],
             fields: {
                 name: {
+                    label: "Category",
                     sortable: true
                 },
                 description: {
