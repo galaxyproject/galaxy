@@ -3,8 +3,9 @@
         <tbody>
             <tr v-if="canExpand && expanded" class="bg-transparent">
                 <td :class="clsFirstColumn">
-                    <a href="#" @click="onExpand" class="fa fa-angle-double-up">
-                        Show less
+                    <a href="#" @click.stop.prevent="onExpand">
+                        <span class="fa fa-angle-double-up"/>
+                        <span>Show less</span>
                     </a>
                 </td>
                 <td :class="clsSecondColumn" />
@@ -13,14 +14,15 @@
                 <td :class="clsFirstColumn">
                     {{ tool.id }}
                 </td>
-                <td class="p-0 w-25">
+                <td :class="clsSecondColumn">
                     {{ tool.version }}
                 </td>
             </tr>
             <tr v-if="canExpand && !expanded" class="bg-transparent">
                 <td :class="clsFirstColumn">
-                    <a href="#" @click="onExpand" class="fa fa-angle-double-down">
-                        Show more
+                    <a href="#" @click.stop.prevent="onExpand">
+                        <span class="fa fa-angle-double-down"/>
+                        <span>Show more</span>
                     </a>
                 </td>
                 <td :class="clsSecondColumn" />
@@ -36,8 +38,8 @@ export default {
         return {
             clsExpanded: "bg-transparent border-bottom",
             clsCollapsed: "bg-transparent",
-            clsFirstColumn: "p-0 text-left",
-            clsSecondColumn: "p-0 w-25",
+            clsFirstColumn: "p-0 w-50 text-left",
+            clsSecondColumn: "p-0 w-50 text-center",
             expanded: false,
             preview: 2
         };
