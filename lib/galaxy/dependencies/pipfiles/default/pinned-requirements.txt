@@ -38,7 +38,7 @@ cffi==1.12.3
 chardet==3.0.4
 cheetah3==3.2.2
 cliff==2.14.1
-cloudauthz==0.2.0
+cloudauthz==0.3.0
 cloudbridge==2.0.0
 cmd2==0.8.9
 contextlib2==0.5.5 ; python_version < '3.5'
