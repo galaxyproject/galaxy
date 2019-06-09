@@ -2171,6 +2171,16 @@ mapping:
         desc: |
           Sets the path to OIDC backends configuration file.
 
+      cloudauthz_backends_config_file:
+        type: str
+        default: config/cloudauthz_backends_config.xml
+        required: false
+        desc: |
+          Sets the path to a file containing setters necessary
+          for configuration and/or initialization of
+          cloud authorization (cloudauthz) backends (e.g.,
+          Google Cloud Platform).
+
       auth_config_file:
         type: str
         default: config/auth_conf.xml

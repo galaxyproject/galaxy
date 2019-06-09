@@ -2923,6 +2923,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``cloudauthz_backends_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to a file containing setters necessary for
+    configuration and/or initialization of cloud authorization
+    (cloudauthz) backends (e.g., Google Cloud Platform).
+:Default: ``config/cloudauthz_backends_config.xml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~
 ``auth_config_file``
 ~~~~~~~~~~~~~~~~~~~~
