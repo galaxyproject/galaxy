@@ -29,11 +29,13 @@ logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
-def send_local_control_task(app, task, kwargs={}):
+def send_local_control_task(app, task, kwargs=None):
     """
     This sends a message to the process-local control worker, which is useful
     for one-time asynchronous tasks like recalculating user disk usage.
     """
+    if kwargs is None:
+        kwargs = {}
     log.info("Queuing async task %s for %s." % (task, app.config.server_name))
     payload = {'task': task,
                'kwargs': kwargs}
@@ -42,7 +44,7 @@ def send_local_control_task(app, task, kwargs={}):
     control_task.send_task(payload, routing_key, local=True, get_response=False)
 
 
-def send_control_task(app, task, noop_self=False, get_response=False, routing_key='control.*', kwargs={}):
+def send_control_task(app, task, noop_self=False, get_response=False, routing_key='control.*', kwargs=None):
     """
     This sends a control task out to all processes, useful for things like
     reloading a data table, which needs to happen individually in all
@@ -51,6 +53,8 @@ def send_control_task(app, task, noop_self=False, get_response=False, routing_ke
     Set get_response to True to wait for and return the task results
     as a list.
     """
+    if kwargs is None:
+        kwargs = {}
     log.info("Sending %s control task." % task)
     payload = {'task': task,
                'kwargs': kwargs}
