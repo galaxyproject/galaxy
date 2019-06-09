@@ -93,6 +93,7 @@ class Watcher(BaseWatcher):
         self.file_callbacks = {}
         self.dir_callbacks = {}
         self.ignore_extensions = {}
+        self.require_extensions = {}
         self.event_handler = event_handler_class(self)
 
     def monitor(self, dir, recursive=False):
@@ -108,13 +109,15 @@ class Watcher(BaseWatcher):
             self.monitor(dir_path)
             log.debug("Watching for changes to file: %s", file_path)
 
-    def watch_directory(self, dir_path, callback=None, recursive=False, ignore_extensions=None):
+    def watch_directory(self, dir_path, callback=None, recursive=False, ignore_extensions=None, require_extensions=None):
         dir_path = os.path.abspath(dir_path)
         if dir_path not in self.monitored_dirs:
             if callback is not None:
                 self.dir_callbacks[dir_path] = callback
             if ignore_extensions:
                 self.ignore_extensions[dir_path] = ignore_extensions
+            if require_extensions:
+                self.require_extensions[dir_path] = require_extensions
             self.monitored_dirs[dir_path] = dir_path
             self.monitor(dir_path, recursive=recursive)
             log.debug("Watching for changes in directory%s: %s", ' (recursively)' if recursive else '', dir_path)
@@ -129,6 +132,9 @@ class EventHandler(FileSystemEventHandler):
         self._handle(event)
 
     def _extension_check(self, key, path):
+        required_extensions = self.watcher.require_extensions.get(key)
+        if required_extensions:
+            return any(filter(path.endswith, required_extensions))
         return not any(filter(path.endswith, self.watcher.ignore_extensions.get(key, [])))
 
     def _handle(self, event):

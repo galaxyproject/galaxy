@@ -6,7 +6,6 @@ from galaxy.queue_worker import (
 )
 from galaxy.tools.toolbox.watcher import (
     get_tool_conf_watcher,
-    get_tool_data_dir_watcher,
     get_tool_watcher,
 )
 from galaxy.util.watcher import (
@@ -34,12 +33,21 @@ class ConfigWatchers(object):
         self.data_manager_config_watcher = get_tool_conf_watcher(
             reload_callback=lambda: send_control_task(self.app, 'reload_data_managers'),
         )
-        self.tool_data_watcher = get_tool_data_dir_watcher(self.app.tool_data_tables, config=self.app.config)
+        self.tool_data_watcher = get_watcher(self.app.config, 'watch_tool_data_dir', monitor_what_str='data tables')
         self.tool_watcher = get_tool_watcher(self, app.config)
         if getattr(self.app, 'is_job_handler', False):
             self.job_rule_watcher = get_watcher(app.config, 'watch_job_rules', monitor_what_str='job rules')
         else:
             self.job_rule_watcher = get_watcher(app.config, '__invalid__')
+
+    @property
+    def watchers(self):
+        return (self.tool_watcher,
+                self.tool_config_watcher,
+                self.data_manager_config_watcher,
+                self.tool_data_watcher,
+                self.tool_watcher,
+                self.job_rule_watcher)
 
     def change_state(self, active):
         if active:
@@ -48,11 +56,17 @@ class ConfigWatchers(object):
             self.shutdown()
 
     def start(self):
+        for watcher in self.watchers:
+            watcher.start()
         [self.tool_config_watcher.watch_file(config) for config in self.tool_config_paths]
         [self.data_manager_config_watcher.watch_file(config) for config in self.data_manager_configs]
-        self.tool_data_watcher.start()
-        [self.tool_data_watcher.watch_directory(tool_data_path) for tool_data_path in self.tool_data_paths]
-        self.job_rule_watcher.start()
+        for tool_data_path in self.tool_data_paths:
+            self.tool_data_watcher.watch_directory(
+                tool_data_path,
+                callback=lambda path: send_control_task(self.app, 'reload_tool_data_tables', kwargs={'path': path}),
+                require_extensions=('.loc',),
+                recursive=True,
+            )
         for job_rules_directory in self.job_rules_paths:
             self.job_rule_watcher.watch_directory(
                 job_rules_directory,
@@ -62,10 +76,8 @@ class ConfigWatchers(object):
         self.active = True
 
     def shutdown(self):
-        self.tool_config_watcher.shutdown()
-        self.data_manager_config_watcher.shutdown()
-        self.tool_data_watcher.shutdown()
-        self.tool_watcher.shutdown()
+        for watcher in self.watchers:
+            watcher.shutdown()
         self.active = False
 
     def update_watch_data_table_paths(self):

@@ -1,7 +1,6 @@
 import logging
 import os.path
 import threading
-import time
 
 try:
     from watchdog.events import FileSystemEventHandler
@@ -27,16 +26,6 @@ def get_tool_conf_watcher(reload_callback, tool_cache=None):
     return ToolConfWatcher(reload_callback=reload_callback, tool_cache=tool_cache)
 
 
-def get_tool_data_dir_watcher(tool_data_tables, config):
-    config_name = "watch_tool_data_dir"
-    config_value = getattr(config, config_name, None)
-    observer_class = get_observer_class(config_name, config_value, default="False", monitor_what_str="tool-data directory")
-    if observer_class is not None:
-        return ToolDataWatcher(observer_class, even_handler_class=LocFileEventHandler, tool_data_tables=tool_data_tables)
-    else:
-        return NullWatcher()
-
-
 def get_tool_watcher(toolbox, config):
     config_name = "watch_tools"
     config_value = getattr(config, config_name, None)
@@ -45,34 +34,6 @@ def get_tool_watcher(toolbox, config):
         return ToolWatcher(observer_class=observer_class, even_handler_class=ToolFileEventHandler, toolbox=toolbox)
     else:
         return NullWatcher()
-
-
-class LocFileEventHandler(FileSystemEventHandler):
-
-    def __init__(self, loc_watcher):
-        self.loc_watcher = loc_watcher
-
-    def on_any_event(self, event):
-        self._handle(event)
-
-    def _handle(self, event):
-        # modified events will only have src path, move events will
-        # have dest_path and src_path but we only care about dest. So
-        # look at dest if it exists else use src.
-        path = getattr(event, 'dest_path', None) or event.src_path
-        path = os.path.abspath(path)
-        if path.endswith(".loc"):
-            cur_hash = md5_hash_file(path)
-            if cur_hash:
-                if self.loc_watcher.path_hash.get(path) == cur_hash:
-                    return
-                else:
-                    time.sleep(0.5)
-                    if cur_hash != md5_hash_file(path):
-                        # We're still modifying the file, it'll be picked up later
-                        return
-                    self.loc_watcher.path_hash[path] = cur_hash
-                    self.loc_watcher.tool_data_tables.reload_tables(path=path)
 
 
 class ToolFileEventHandler(FileSystemEventHandler):
@@ -234,24 +195,6 @@ class ToolWatcher(BaseWatcher):
         if tool_dir not in self.monitored_dirs:
             self.monitored_dirs[tool_dir] = tool_dir
             self.monitor(tool_dir)
-
-
-class ToolDataWatcher(BaseWatcher):
-
-    def __init__(self, observer_class, even_handler_class, tool_data_tables):
-        super(ToolDataWatcher, self).__init__(observer_class, even_handler_class)
-        self.tool_data_tables = tool_data_tables
-        self.monitored_dirs = {}
-        self.path_hash = {}
-
-    def monitor(self, dir):
-        self.observer.schedule(self.event_handler, dir, recursive=True)
-
-    def watch_directory(self, tool_data_dir):
-        tool_data_dir = os.path.abspath(tool_data_dir)
-        if tool_data_dir not in self.monitored_dirs:
-            self.monitored_dirs[tool_data_dir] = tool_data_dir
-            self.monitor(tool_data_dir)
 
 
 class NullWatcher(object):
