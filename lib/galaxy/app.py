@@ -250,6 +250,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         log.debug('Shutting down')
         exception = None
         try:
+            self.control_worker.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown control worker cleanly")
+        try:
             self.watchers.shutdown()
         except Exception as e:
             exception = exception or e
@@ -285,12 +290,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         except Exception as e:
             exception = exception or e
             log.exception("Failed to shutdown update repository manager cleanly")
-
-        try:
-            self.control_worker.shutdown()
-        except Exception as e:
-            exception = exception or e
-            log.exception("Failed to shutdown control worker cleanly")
 
         try:
             self.model.engine.dispose()
