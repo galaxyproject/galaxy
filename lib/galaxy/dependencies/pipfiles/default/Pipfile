@@ -32,7 +32,7 @@ numpy = "*"
 bx-python = "*"
 MarkupSafe = "*"
 PyYAML = "*"
-SQLAlchemy = "*"
+SQLAlchemy = "<1.3"
 SQLAlchemy-Utils = "*"
 Mercurial = {version = "<=3.7.3", markers = "python_version < '3'"}
 nodeenv = "*"
@@ -75,7 +75,7 @@ pyparsing = "*"
 "Fabric3" = "*"
 paramiko = "*"
 python-genomespaceclient = "<2.0"
-social_auth_core = {version = "==3.1.0", extras = ['openidconnect']}
+social_auth_core = {version = "==3.1.0+gx0", extras = ['openidconnect']}
 cloudauthz = "<=0.2.0"
 gxformat2 = "*"
 
