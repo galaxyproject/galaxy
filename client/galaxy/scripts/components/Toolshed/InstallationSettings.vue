@@ -84,7 +84,7 @@ export default {
     },
     methods: {
         findSection: function(name) {
-            const result = [null, null];
+            const result = ['', ''];
             if (name) {
                 const found = this.toolSections.find(s => {
                     return s.name.toLowerCase().trim() == name.toLowerCase().trim();
