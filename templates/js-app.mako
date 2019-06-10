@@ -74,8 +74,10 @@
     </script>
     %endif
 
-    ## ${ galaxy_client.config_sentry(app)}
-    ## ${ galaxy_client.config_google_analytics(app)}
+    ${ galaxy_client.config_sentry(app) }
+    %if app.config.ga_code:
+        ${ galaxy_client.config_google_analytics(app.config.ga_code) }
+    %endif
 
 </%def>
 
