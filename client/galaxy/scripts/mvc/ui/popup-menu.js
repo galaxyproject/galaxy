@@ -2,6 +2,9 @@
 /**
  * view for a popup menu
  */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 var PopupMenu = Backbone.View.extend({
     //TODO: maybe better as singleton off the Galaxy obj
     /** Cache the desired button element and options, set up the button click handler
@@ -127,33 +130,45 @@ var PopupMenu = Backbone.View.extend({
         // function to close popup and unbind itself
         function closePopup(event) {
             $(document).off("click.close_popup");
-            if (window && window.parent !== window) {
-                try {
+            try {
+                if (window && window.parent !== window) {
                     $(window.parent.document).off("click.close_popup");
-                } catch (err) {}
-            } else {
-                try {
+                } else {
                     $("iframe#galaxy_main")
                         .contents()
                         .off("click.close_popup");
-                } catch (err) {}
+                }
+            } catch (err) {
+                if (err instanceof DOMException) {
+                    console.debug(
+                        "Error clearing parent popups, likely cross-origin frame access from the toolshed and not problematic."
+                    );
+                } else {
+                    console.debug(err);
+                }
             }
             menu.remove();
         }
 
         $("html").one("click.close_popup", closePopup);
-        if (window && window.parent !== window) {
-            try {
+        try {
+            if (window && window.parent !== window) {
                 $(window.parent.document)
                     .find("html")
                     .one("click.close_popup", closePopup);
-            } catch (err) {}
-        } else {
-            try {
+            } else {
                 $("iframe#galaxy_main")
                     .contents()
                     .one("click.close_popup", closePopup);
-            } catch (err) {}
+            }
+        } catch (err) {
+            if (err instanceof DOMException) {
+                console.debug(
+                    "Error clearing parent popups, likely cross-origin frame access from the toolshed and not problematic."
+                );
+            } else {
+                console.debug(err);
+            }
         }
     },
 
@@ -220,7 +235,7 @@ PopupMenu.make_popupmenu = (button_element, initial_options) => {
             newOption.header = true;
 
             // keys with function values indicate: a menu option
-        } else if (jQuery.type(optionVal) === "function") {
+        } else if ($.type(optionVal) === "function") {
             newOption.func = optionVal;
         }
         //TODO:?? any other special optionVals?

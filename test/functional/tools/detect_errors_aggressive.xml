@@ -11,6 +11,7 @@
 
     </command>
     <inputs>
+        <param name="dataset" type="data" optional="true"/>
         <param name="error_bool" type="boolean" label="error bool" />
         <param name="exception_bool" type="boolean" label="exception bool" checked="false" />
         <param name="exit_code" type="integer" value="0" label="exit code"/>

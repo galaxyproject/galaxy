@@ -50,10 +50,8 @@ class ConfigSerializer(base.ModelSerializer):
             'support_url'                       : _defaults_to(self.app.config.support_url),
             'helpsite_url'                      : _defaults_to(self.app.config.helpsite_url),
             'lims_doc_url'                      : _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),
-            'biostar_url'                       : _defaults_to(''),
-            'biostar_url_redirect'              : lambda *a, **c: self.url_for(controller='biostar', action='biostar_redirect', qualified=True),
             'default_locale'                    : _defaults_to(self.app.config.default_locale),
-
+            'enable_openid'                     : _defaults_to(False),
             'enable_beta_ts_api_install'        : _defaults_to(False),
             'enable_communication_server'       : _defaults_to(False),
             'communication_server_port'         : _defaults_to(None),
@@ -62,8 +60,8 @@ class ConfigSerializer(base.ModelSerializer):
             'allow_user_impersonation'          : _defaults_to(False),
             'allow_user_creation'               : _defaults_to(False),
             'use_remote_user'                   : _defaults_to(None),
-            'enable_openid'                     : _defaults_to(False),
             'enable_oidc'                       : _defaults_to(False),
+            'oidc'                              : _defaults_to(self.app.config.oidc),
             'enable_quotas'                     : _defaults_to(False),
             'remote_user_logout_href'           : _defaults_to(''),
             'datatypes_disable_auto'            : _defaults_to(False),
@@ -86,6 +84,11 @@ class ConfigSerializer(base.ModelSerializer):
             'message_box_visible'               : _defaults_to(False),
             'message_box_class'                 : _defaults_to('info'),
             'server_startttime'                 : lambda i, k, **c: server_starttime,
+            'mailing_join_addr'                 : _defaults_to('galaxy-announce-join@bx.psu.edu'),
+            'smtp_server'                       : _defaults_to(None),
+            'registration_warning_message'      : _defaults_to(None),
+            'welcome_url'                       : _defaults_to(None),
+            'show_welcome_with_login'           : _defaults_to(True),
         }
 
 

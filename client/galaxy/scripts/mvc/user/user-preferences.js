@@ -12,7 +12,7 @@ import QueryStringParsing from "utils/query-string-parsing";
 /** Contains descriptive dictionaries describing user forms */
 var Model = Backbone.Model.extend({
     initialize: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         options = options || {};
         options.user_id = options.user_id || Galaxy.user.id;
         this.set({
@@ -98,20 +98,20 @@ var Model = Backbone.Model.extend({
                 submit_title: "Save filters",
                 redirect: "user"
             },
-            openids: {
-                title: _l("Manage OpenIDs"),
-                description: _l("Associate OpenIDs with your account."),
-                icon: "fa-openid",
-                onclick: function() {
-                    Galaxy.page.router.push(`${getAppRoot()}openids/list`);
-                }
-            },
             custom_builds: {
                 title: _l("Manage custom builds"),
                 description: _l("Add or remove custom builds using history datasets."),
                 icon: "fa-cubes",
                 onclick: function() {
                     Galaxy.page.router.push(`${getAppRoot()}custom_builds`);
+                }
+            },
+            genomespace: {
+                title: _l("Request GenomeSpace token"),
+                description: _l("Requests token through OpenID."),
+                icon: "fa-openid",
+                onclick: function() {
+                    window.location.href = `${getAppRoot()}openid/openid_auth?openid_provider=genomespace`;
                 }
             },
             logout: {
@@ -151,7 +151,7 @@ var View = Backbone.View.extend({
 
     render: function() {
         var self = this;
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var config = Galaxy.config;
         $.getJSON(`${getAppRoot()}api/users/${Galaxy.user.id}`, data => {
             self.$preferences = $("<div/>")
@@ -174,11 +174,11 @@ var View = Backbone.View.extend({
             self._addLink("permissions");
             self._addLink("make_data_private");
             self._addLink("api_key");
+            if (config.enable_openid) {
+                self._addLink("genomespace");
+            }
             if (config.has_user_tool_filters) {
                 self._addLink("toolbox_filters");
-            }
-            if (config.enable_openid && !config.use_remote_user) {
-                self._addLink("openids");
             }
             if (Galaxy.session_csrf_token) {
                 self._addLink("logout");
@@ -215,7 +215,7 @@ var View = Backbone.View.extend({
     },
 
     _templateFooter: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         return `<p class="mt-2">You are using <strong>${
             options.nice_total_disk_usage
         }</strong> of disk space in this Galaxy instance. ${

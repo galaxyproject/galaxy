@@ -111,6 +111,7 @@ Enhancements
 * Add Phylip datatype
   (thanks to `@khillion <https://github.com/khillion>`__).
   `Pull Request 5301`_
+
 .. enhancement
 
 * Option to group Galaxy Tours for viewing clarity

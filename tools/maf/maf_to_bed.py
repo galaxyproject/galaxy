@@ -66,7 +66,7 @@ def __main__():
             for c in l:
                 spec, chrom = maf.src_split(c.src)
                 if not spec or not chrom:
-                        spec = chrom = c.src
+                    spec = chrom = c.src
                 if spec not in out_files.keys():
                     out_files[spec] = open(os.path.join(database_tmp_dir, 'primary_%s_%s_visible_bed_%s' % (output_id, spec, spec)), 'wb+')
 

@@ -3,7 +3,7 @@ import sys
 import time
 
 import galaxy.model
-from galaxy.web import security
+from galaxy.security import idencoding
 from galaxy.web.stack import application_stack_instance
 from . import config
 
@@ -36,7 +36,7 @@ class UniverseApplication(object):
         else:
             self.targets_mysql = 'mysql' in self.config.database_connection
         # Security helper
-        self.security = security.SecurityHelper(id_secret=self.config.id_secret)
+        self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
         # used for cachebusting -- refactor this into a *SINGLE* UniverseApplication base.
         self.server_starttime = int(time.time())
 

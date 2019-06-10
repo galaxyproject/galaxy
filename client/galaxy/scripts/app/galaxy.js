@@ -53,7 +53,7 @@ GalaxyApp.prototype._init = function(options, bootstrapped) {
     // Patch if this galaxy instance is replacing an existing one
     // _patchGalaxy depends on options.patchExisting
     // TODO: rethink this behavior
-    let existingGalaxy = getGalaxyInstance();
+    const existingGalaxy = getGalaxyInstance();
     if (existingGalaxy) {
         self._patchGalaxy(existingGalaxy);
     }
@@ -149,10 +149,14 @@ GalaxyApp.prototype._initLogger = function _initLogger(loggerOptions) {
         // load any logging namespaces from localStorage if we can
         try {
             loggerOptions.consoleNamespaceWhitelist = localStorage.getItem(NAMESPACE_KEY).split(",");
-        } catch (storageErr) {}
+        } catch (storageErr) {
+            console.debug(storageErr);
+        }
         try {
             loggerOptions.consoleFlattenMessages = localStorage.getItem(FLATTEN_LOG_MESSAGES_KEY) == "true";
-        } catch (storageErr) {}
+        } catch (storageErr) {
+            console.debug(storageErr);
+        }
         console.log(loggerOptions.consoleFlattenMessages);
     }
 
@@ -208,7 +212,7 @@ GalaxyApp.prototype._initUserLocale = function _initUserLocale(options) {
             ? "__root"
             : (navigator.language || navigator.userLanguage || "__root").toLowerCase();
 
-    let locale = user_locale || global_locale || nav_locale;
+    const locale = user_locale || global_locale || nav_locale;
 
     sessionStorage.setItem("currentLocale", locale);
 };
@@ -233,7 +237,9 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners() {
         var data = options.data;
         try {
             data = JSON.parse(data);
-        } catch (err) {}
+        } catch (err) {
+            // data isn't JSON, skip.
+        }
 
         self.lastAjax = {
             url: location.href.slice(0, -1) + options.url,

@@ -8,9 +8,10 @@ from __future__ import print_function
 import logging
 import sys
 
-from sqlalchemy import Boolean, Column, MetaData, Table
+from sqlalchemy import Boolean, Column, MetaData
 
 from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrate.versions.util import add_column, drop_column
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -24,31 +25,22 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
-    # Load existing tables
-    Request_table = Table("request", metadata, autoload=True)
-    Sample_table = Table("sample", metadata, autoload=True)
+    metadata.bind = migrate_engine
     metadata.reflect()
-    # Add 1 column to the request table
-    if Request_table is not None:
-        try:
-            col = Column('submitted', Boolean, default=False)
-            col.create(Request_table)
-            assert col is Request_table.c.submitted
-        except Exception:
-            log.exception("Adding column 'submitted' to request table failed.")
 
-    # Add 1 column to the sample table
-    if Sample_table is not None:
-        try:
-            col = Column("bar_code", TrimmedString(255), index=True)
-            col.create(Sample_table, index_name='ix_sample_bar_code')
-            assert col is Sample_table.c.bar_code
-        except Exception:
-            log.exception("Adding column 'bar_code' to sample table failed.")
+    col = Column('submitted', Boolean, default=False)
+    add_column(col, 'request', metadata)
+
+    col = Column("bar_code", TrimmedString(255), index=True)
+    add_column(col, 'sample', metadata, index_name='ix_sample_bar_code')
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    pass
+    metadata.reflect()
+
+    drop_column('bar_code', 'sample', metadata)
+    # SQLAlchemy Migrate has a bug when dropping a boolean column in SQLite
+    if migrate_engine.name != 'sqlite':
+        drop_column('submitted', 'request', metadata)

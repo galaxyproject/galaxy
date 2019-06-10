@@ -1,11 +1,9 @@
 .. figure:: https://galaxyproject.org/images/galaxy-logos/galaxy_project_logo.jpg
    :alt: Galaxy Logo
 
-The latest information about Galaxy is available via `https://galaxyproject.org/ <https://galaxyproject.org/>`__
+The latest information about Galaxy can be found on the `Galaxy Community Hub <https://galaxyproject.org/>`__.
 
-.. image:: https://img.shields.io/badge/questions-galaxy%20biostar-blue.svg
-    :target: https://biostar.usegalaxy.org
-    :alt: Ask a question
+Community support is available at `Galaxy Help <https://help.galaxyproject.org/>`__.
 
 .. image:: https://img.shields.io/badge/chat-irc.freenode.net%23galaxyproject-blue.svg
     :target: https://webchat.freenode.net/?channels=galaxyproject

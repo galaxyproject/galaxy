@@ -4,7 +4,7 @@ API operations related to tagging items.
 import logging
 
 from galaxy import exceptions
-from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import expose_api
 from galaxy.web.base.controller import (
     BaseAPIController,
     UsesTagsMixin

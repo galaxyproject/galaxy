@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import string
 import time
@@ -19,6 +20,8 @@ from .test_tool_loader import (
 )
 from .test_toolbox_filters import mock_trans
 from ..tools_support import UsesApp, UsesTools
+
+log = logging.getLogger(__name__)
 
 
 CONFIG_TEST_TOOL_VERSION_TEMPLATE = string.Template(
@@ -51,11 +54,9 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
 
     @property
     def toolbox(self):
-        if self.__toolbox is None:
-            self.__toolbox = SimplifiedToolBox(self)
-            # wire app with this new toolbox
-            self.app.toolbox = self.__toolbox
-        return self.__toolbox
+        if self._toolbox is None:
+            self.app.toolbox = self._toolbox = SimplifiedToolBox(self)
+        return self._toolbox
 
     def setUp(self):
         self.reindexed = False
@@ -66,12 +67,21 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         self.app.reindex_tool_search = self.__reindex
         itp_config = os.path.join(self.test_directory, "integrated_tool_panel.xml")
         self.app.config.integrated_tool_panel_config = itp_config
-        self.app.watchers = ConfigWatchers(self.app)
-        self.__toolbox = None
+        self.app.watchers = ConfigWatchers(self.app, start_thread=False)
+        self._toolbox = None
         self.config_files = []
 
+    def tearDown(self):
+        self.app.watchers.shutdown()
+
     def _repo_install(self, changeset, config_filename=None):
-        metadata = {}
+        metadata = {
+            'tools': [{
+                'add_to_tool_panel': False,  # to have repository.includes_tools_for_display_in_tool_panel=False in InstalledRepositoryManager.activate_repository()
+                'guid': "github.com/galaxyproject/example/test_tool/0.%s" % changeset,
+                'tool_config': 'tool.xml'
+            }],
+        }
         if config_filename:
             metadata['shed_config_filename'] = config_filename
         repository = tool_shed_install.ToolShedRepository(metadata=metadata)
@@ -98,7 +108,6 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         version2 = tool_shed_install.ToolVersion()
         version2.tool_id = "github.com/galaxyproject/example/test_tool/0.2"
         version2.repository = repository2
-
         self.app.install_model.context.add(version2)
         self.app.install_model.context.flush()
 
@@ -112,21 +121,17 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
     def _setup_two_versions_in_config(self, section=False):
         if section:
             template = """<toolbox tool_path="%s">
-<section id="tid" name="TID" version="">
-    %s
-</section>
-<section id="tid" name="TID" version="">
-    %s
-</section>
+    <section id="tid" name="TID" version="">
+        %s
+    </section>
+    <section id="tid" name="TID" version="">
+        %s
+    </section>
 </toolbox>"""
         else:
             template = """<toolbox tool_path="%s">
-<section id="tid" name="TID" version="">
     %s
-</section>
-<section id="tid" name="TID" version="">
     %s
-</section>
 </toolbox>"""
         self._add_config(template % (self.test_directory, CONFIG_TEST_TOOL_VERSION_1, CONFIG_TEST_TOOL_VERSION_2))
 
@@ -192,13 +197,14 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         assert tool is not None
         assert len(tool._macro_paths) == 1
         macro_path = tool._macro_paths[0]
-        time.sleep(1.5)
         with open(macro_path, 'w') as macro_out:
             macro_out.write(SIMPLE_MACRO.substitute(tool_version="3.0"))
-        time.sleep(1.5)
-        tool = self.app.toolbox.get_tool("tool_with_macro")
 
-        assert tool.version == "3.0"
+        def check_tool_macro():
+            tool = self.toolbox.get_tool("tool_with_macro")
+            assert tool.version == "3.0"
+
+        self._try_until_no_errors(check_tool_macro)
 
     def test_tool_reload_for_broken_tool(self):
         self._init_tool(filename="simple_tool.xml", version="1.0")
@@ -214,7 +220,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
             out.write('certainly not a valid tool')
 
         def check_tool_errors():
-            tool = self.app.toolbox.get_tool("test_tool")
+            tool = self.toolbox.get_tool("test_tool")
             assert tool is not None
             assert tool.version == "1.0"
             assert tool.tool_errors == 'Current on-disk tool is not valid'
@@ -225,7 +231,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         self._init_tool(filename="simple_tool.xml", version="2.0")
 
         def check_no_tool_errors():
-            tool = self.app.toolbox.get_tool("test_tool")
+            tool = self.toolbox.get_tool("test_tool")
             assert tool is not None
             assert tool.version == "2.0"
             assert tool.tool_errors is None
@@ -235,7 +241,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
     def _try_until_no_errors(self, f):
         e = None
-        for i in range(300):
+        for i in range(30):
             try:
                 f()
                 return
@@ -553,6 +559,8 @@ class SimplifiedToolBox(ToolBox):
             tool_root_dir,
             app,
         )
+        # Need to start thread now for new reload callback to take effect
+        self.app.watchers.start()
 
     def handle_panel_update(self, section_dict):
         self.create_section(section_dict)
@@ -560,4 +568,6 @@ class SimplifiedToolBox(ToolBox):
 
 def reload_callback(test_case):
     test_case.app.tool_cache.cleanup()
-    test_case.__toolbox = test_case.app.toolbox = SimplifiedToolBox(test_case)
+    log.debug("Reload callback called, toolbox contains %s", test_case._toolbox._tool_versions_by_id)
+    test_case._toolbox = test_case.app.toolbox = SimplifiedToolBox(test_case)
+    log.debug("After callback toolbox contains %s", test_case._toolbox._tool_versions_by_id)

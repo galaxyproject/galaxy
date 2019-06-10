@@ -19,6 +19,7 @@ import threading
 import time
 from datetime import timedelta
 
+import yaml
 from six import string_types
 from six.moves import configparser
 
@@ -47,19 +48,19 @@ PATH_DEFAULTS = dict(
     tool_destinations_config_file=['config/tool_destinations.yml', 'config/tool_destinations.yml.sample'],
     job_metrics_config_file=['config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample'],
     error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
+    oidc_config_file=['config/oidc_config.yml', 'config/oidc_config.yml.sample'],
+    oidc_backends_config_file=['config/oidc_backends_config.yml', 'config/oidc_backends_config.yml.sample'],
     dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
     job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
     workflow_resource_params_file=['config/workflow_resource_params_conf.xml', 'workflow_resource_params_conf.xml'],
     migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
     object_store_config_file=['config/object_store_conf.xml', 'object_store_conf.xml'],
-    openid_config_file=['config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample'],
     shed_data_manager_config_file=['shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml'],
     shed_tool_data_table_config=['shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml'],
     tool_sheds_config_file=['config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample'],
     workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
     modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
     local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
-    user_preferences_extra_config_file=['config/user_preferences_extra_conf.yml'],
     containers_config_file=['config/containers_conf.yml'],
 )
 
@@ -172,6 +173,7 @@ class Configuration(object):
 
         self.version_major = VERSION_MAJOR
         # Database related configuration
+        self.check_migrate_databases = kwargs.get('check_migrate_databases', True)
         self.database = resolve_path(kwargs.get("database_file", "database/universe.sqlite"), self.root)
         self.database_connection = kwargs.get("database_connection", False)
         self.database_engine_options = get_database_engine_options(kwargs)
@@ -192,6 +194,13 @@ class Configuration(object):
         self.install_database_connection = kwargs.get("install_database_connection", None)
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
 
+        # Wait for database to become available instead of failing
+        self.database_wait = string_as_bool(kwargs.get("database_wait", "False"))
+        # Attempts before failing
+        self.database_wait_attempts = int(kwargs.get("database_wait_attempts", 60))
+        # Sleep period between attepmts (seconds)
+        self.database_wait_sleep = float(kwargs.get("database_wait_sleep", 1))
+
         # Where dataset files are stored
         self.file_path = resolve_path(kwargs.get("file_path", "database/files"), self.root)
         # new_file_path and legacy_home_dir can be overridden per destination in job_conf.
@@ -201,9 +210,7 @@ class Configuration(object):
             tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir", None)
         self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "database/openid_consumer_cache"), self.root)
-        self.cookie_path = kwargs.get("cookie_path", "/")
-        # Galaxy OpenID settings
-        self.enable_openid = string_as_bool(kwargs.get('enable_openid', False))
+        self.cookie_path = kwargs.get("cookie_path", None)
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', False))
         self.enable_unique_workflow_defaults = string_as_bool(kwargs.get('enable_unique_workflow_defaults', False))
         self.tool_path = resolve_path(kwargs.get("tool_path", "tools"), self.root)
@@ -212,8 +219,9 @@ class Configuration(object):
         self.len_file_path = resolve_path(kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')), self.root)
         # Galaxy OIDC settings.
         self.enable_oidc = kwargs.get("enable_oidc", False)
-        self.oidc_config = kwargs.get('oidc_config_file', None)
-        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", None)
+        self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
+        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
+        self.oidc = []
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
         self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'), self.root)
@@ -278,6 +286,7 @@ class Configuration(object):
         self.id_secret = kwargs.get("id_secret", "USING THE DEFAULT IS NOT SECURE!")
         self.retry_metadata_internally = string_as_bool(kwargs.get("retry_metadata_internally", "True"))
         self.max_metadata_value_size = int(kwargs.get("max_metadata_value_size", 5242880))
+        self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
         self.single_user = kwargs.get("single_user", None)
         self.use_remote_user = string_as_bool(kwargs.get("use_remote_user", "False")) or self.single_user
         self.normalize_remote_user_email = string_as_bool(kwargs.get("normalize_remote_user_email", "False"))
@@ -299,7 +308,6 @@ class Configuration(object):
         self.allow_user_impersonation = string_as_bool(kwargs.get("allow_user_impersonation", "False"))
         self.show_user_prepopulate_form = string_as_bool(kwargs.get("show_user_prepopulate_form", "False"))
         self.new_user_dataset_access_role_default_private = string_as_bool(kwargs.get("new_user_dataset_access_role_default_private", "False"))
-        self.collect_outputs_from = [x.strip() for x in kwargs.get('collect_outputs_from', 'new_file_path,job_working_directory').lower().split(',')]
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
         self.template_cache = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates"), self.root)
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
@@ -315,6 +323,7 @@ class Configuration(object):
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             preserve_python_environment = "legacy_only"
         self.preserve_python_environment = preserve_python_environment
+        self.nodejs_path = kwargs.get("nodejs_path", None)
         # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
         # should probably drop the backward compatiblity to save the path check.
         self.container_image_cache_path = self.resolve_path(kwargs.get("container_image_cache_path", "database/container_images"))
@@ -382,8 +391,8 @@ class Configuration(object):
         # workflows built using these modules may not function in the
         # future.
         self.enable_beta_workflow_modules = string_as_bool(kwargs.get('enable_beta_workflow_modules', 'False'))
-        # Enable use of gxformat2 workflows.
-        self.enable_beta_workflow_format = string_as_bool(kwargs.get('enable_beta_workflow_format', 'False'))
+        # Default format for the export of workflows.
+        self.default_workflow_export_format = kwargs.get('default_workflow_export_format', 'ga')
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))
@@ -542,6 +551,8 @@ class Configuration(object):
         self.object_store = kwargs.get('object_store', 'disk')
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
         self.object_store_cache_path = resolve_path(kwargs.get("object_store_cache_path", "database/object_store_cache"), self.root)
+        self.object_store_store_by = kwargs.get("object_store_store_by", "id")
+
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get('aws_access_key', None) is not None:
             self.os_access_key = kwargs.get('aws_access_key', None)
@@ -635,12 +646,15 @@ class Configuration(object):
             self.amqp_internal_connection = "sqlalchemy+" + self.database_connection
         else:
             self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path("database/control.sqlite", self.root)
-        self.biostar_url = kwargs.get('biostar_url', None)
-        self.biostar_key_name = kwargs.get('biostar_key_name', None)
-        self.biostar_key = kwargs.get('biostar_key', None)
-        self.biostar_enable_bug_reports = string_as_bool(kwargs.get('biostar_enable_bug_reports', True))
-        self.biostar_never_authenticate = string_as_bool(kwargs.get('biostar_never_authenticate', False))
         self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
+        self.user_preferences_extra_config_file = kwargs.get('user_preferences_extra_conf_path', 'config/user_preferences_extra_conf.yml')
+        try:
+            with open(self.user_preferences_extra_config_file, 'r') as stream:
+                self.user_preferences_extra = yaml.safe_load(stream)
+        except Exception:
+            log.warning('Config file (%s) could not be found or is malformed.' % self.user_preferences_extra_config_file)
+            self.user_preferences_extra = {'preferences': {}}
+
         self.default_locale = kwargs.get('default_locale', None)
         self.master_api_key = kwargs.get('master_api_key', None)
         if self.master_api_key == "changethis":  # default in sample config file
@@ -1045,6 +1059,8 @@ class ConfiguresGalaxyMixin(object):
 
         self.citations_manager = CitationsManager(self)
 
+        from galaxy.managers.tools import DynamicToolManager
+        self.dynamic_tools_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
         tool_configs = self.config.tool_configs
@@ -1122,8 +1138,8 @@ class ConfiguresGalaxyMixin(object):
         self.object_store = build_object_store_from_config(self.config, **kwds)
 
     def _configure_security(self):
-        from galaxy.web import security
-        self.security = security.SecurityHelper(id_secret=self.config.id_secret)
+        from galaxy.security import idencoding
+        self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
 
     def _configure_tool_shed_registry(self):
         import tool_shed.tool_shed_registry
@@ -1144,6 +1160,9 @@ class ConfiguresGalaxyMixin(object):
         # database file under the hood.
         combined_install_database = not(install_db_url and install_db_url != db_url)
         install_db_url = install_db_url or db_url
+
+        if self.config.database_wait:
+            self._wait_for_database(db_url)
 
         if getattr(self.config, "max_metadata_value_size", None):
             from galaxy.model import custom_types
@@ -1187,3 +1206,15 @@ class ConfiguresGalaxyMixin(object):
     def _configure_signal_handlers(self, handlers):
         for sig, handler in handlers.items():
             signal.signal(sig, handler)
+
+    def _wait_for_database(self, url):
+        from sqlalchemy_utils import database_exists
+        attempts = self.config.database_wait_attempts
+        pause = self.config.database_wait_sleep
+        for i in range(1, attempts):
+            try:
+                database_exists(url)
+                break
+            except Exception:
+                log.info("Waiting for database: attempt %d of %d" % (i, attempts))
+                time.sleep(pause)

@@ -1,28 +1,20 @@
-var path = require("path");
-var fs = require("fs");
-var del = require("del");
-var _ = require("underscore");
+const path = require("path");
+const fs = require("fs");
+const del = require("del");
+const { src, dest, series, parallel } = require("gulp");
 
-var gulp = require("gulp");
-var uglify = require("gulp-uglify");
-var babel = require("gulp-babel");
-
-var paths = {
+const paths = {
     node_modules: "./node_modules",
-    scripts: [
-        "galaxy/scripts/**/*.js",
-        "!galaxy/scripts/qunit/**/*",
-        "!galaxy/scripts/apps/**/*",
-        "!galaxy/scripts/libs/**/*"
+    plugin_dirs: [
+        "../config/plugins/{visualizations,interactive_environments}/*/static/**/*",
+        "../config/plugins/{visualizations,interactive_environments}/*/*/static/**/*"
     ],
-    plugin_dirs: ["../config/plugins/**/static/**/*", "!../config/plugins/**/node_modules{,/**}"],
     lib_locs: {
         // This is a stepping stone towards having all this staged
         // automatically.  Eventually, this dictionary and staging step will
         // not be necessary.
         backbone: ["backbone.js", "backbone.js"],
         "bootstrap-tour": ["build/js/bootstrap-tour.js", "bootstrap-tour.js"],
-        d3: ["d3.js", "d3.js"],
         "bibtex-parse-js": ["bibtexParse.js", "bibtexParse.js"],
         jquery: ["dist/jquery.js", "jquery/jquery.js"],
         "jquery.complexify": ["jquery.complexify.js", "jquery/jquery.complexify.js"],
@@ -36,8 +28,8 @@ var paths = {
     libs: ["galaxy/scripts/libs/**/*.js"]
 };
 
-gulp.task("stage-libs", function(callback) {
-    _.each(_.keys(paths.lib_locs), function(lib) {
+function stageLibs(callback) {
+    Object.keys(paths.lib_locs).forEach(lib => {
         var p1 = path.resolve(path.join(paths.node_modules, lib, paths.lib_locs[lib][0]));
         var p2 = path.resolve(path.join("galaxy", "scripts", "libs", paths.lib_locs[lib][1]));
         if (fs.existsSync(p1)) {
@@ -50,44 +42,25 @@ gulp.task("stage-libs", function(callback) {
             );
         }
     });
-});
+    return callback();
+}
 
-gulp.task("fonts", function() {
-    return gulp
-        .src(path.resolve(path.join(paths.node_modules, "font-awesome/fonts/**/*")))
-        .pipe(gulp.dest("../static/images/fonts"));
-});
+function fonts() {
+    return src(path.resolve(path.join(paths.node_modules, "font-awesome/fonts/**/*"))).pipe(
+        dest("../static/images/fonts")
+    );
+}
 
-// TODO: Remove script and lib tasks (for 19.05) once we are sure there are no
-// external accessors (via require or explicit inclusion in templates)
-gulp.task("scripts", function() {
-    return gulp
-        .src(paths.scripts)
-        .pipe(
-            babel({
-                plugins: ["transform-es2015-modules-amd"]
-            })
-        )
-        .pipe(uglify())
-        .pipe(gulp.dest("../static/scripts/"));
-});
+function stagePlugins() {
+    return src(paths.plugin_dirs).pipe(dest("../static/plugins/"));
+}
 
-gulp.task("libs", function() {
-    return gulp
-        .src(paths.libs)
-        .pipe(uglify())
-        .pipe(gulp.dest("../static/scripts/libs/"));
-});
+function cleanPlugins() {
+    return del(["../static/plugins/{visualizations,interactive_environments}/*"], { force: true });
+}
 
-gulp.task("plugins", function() {
-    return gulp.src(paths.plugin_dirs).pipe(gulp.dest("../static/plugins/"));
-});
-
-gulp.task("clean", function() {
-    //Wipe out all scripts that aren't handled by webpack
-    return del(["../static/scripts/**/*.js", "!../static/scripts/bundled/**.*.js"], { force: true });
-});
-
-gulp.task("staging", ["stage-libs", "fonts"]);
-
-gulp.task("default", ["libs", "scripts"]);
+module.exports.fonts = fonts;
+module.exports.stageLibs = stageLibs;
+module.exports.cleanPlugins = cleanPlugins;
+module.exports.plugins = series(cleanPlugins, stagePlugins);
+module.exports.default = parallel(stageLibs, fonts, module.exports.plugins);

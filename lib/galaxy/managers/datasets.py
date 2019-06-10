@@ -12,6 +12,7 @@ from galaxy import (
     exceptions,
     model
 )
+from galaxy.datatypes import sniff
 from galaxy.managers import (
     base,
     deletable,
@@ -19,6 +20,7 @@ from galaxy.managers import (
     secured,
     users
 )
+from galaxy.util.checkers import check_binary
 
 log = logging.getLogger(__name__)
 
@@ -289,6 +291,12 @@ class DatasetAssociationManager(base.ModelManager,
         """
         Stops an dataset_assoc's creating job if all the job's other outputs are deleted.
         """
+
+        # Optimize this to skip other checks if this dataset is terminal - we can infer the
+        # job is already complete.
+        if dataset_assoc.state in model.Dataset.terminal_states:
+            return False
+
         if dataset_assoc.parent_id is None and len(dataset_assoc.creating_job_associations) > 0:
             # Mark associated job for deletion
             job = dataset_assoc.creating_job_associations[0].job
@@ -335,6 +343,42 @@ class DatasetAssociationManager(base.ModelManager,
             rval["modify_item_roles"] = modify_item_role_list
         return rval
 
+    def __ok_to_edit_metadata(self, trans, dataset_id):
+        # prevent modifying metadata when dataset is queued or running as input/output
+        # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
+        for job_to_dataset_association in trans.sa_session.query(
+                self.app.model.JobToInputDatasetAssociation).filter_by(dataset_id=dataset_id).all() \
+                + trans.sa_session.query(self.app.model.JobToOutputDatasetAssociation).filter_by(dataset_id=dataset_id).all():
+            if job_to_dataset_association.job.state not in [job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED]:
+                return False
+        return True
+
+    def detect_datatype(self, trans, dataset_assoc):
+        """Sniff and assign the datatype to a given dataset association (ldda or hda)"""
+        data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
+        if data.datatype.allow_datatype_change:
+            if not self.__ok_to_edit_metadata(trans, data.id):
+                raise exceptions.ItemAccessibilityException('This dataset is currently being used as input or output. You cannot change datatype until the jobs have completed or you have canceled them.')
+            else:
+                path = data.dataset.file_name
+                is_binary = check_binary(path)
+                datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order, is_binary=is_binary)
+                trans.app.datatypes_registry.change_datatype(data, datatype)
+                trans.sa_session.flush()
+                self.set_metadata(trans, dataset_assoc)
+        else:
+            raise exceptions.InsufficientPermissionsException('Changing datatype "%s" is not allowed.' % (data.extension))
+
+    def set_metadata(self, trans, dataset_assoc):
+        """Trigger a job that detects and sets metadata on a given dataset association (ldda or hda)"""
+        data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
+        if not self.__ok_to_edit_metadata(trans, data.id):
+            raise exceptions.ItemAccessibilityException('This dataset is currently being used as input or output. You cannot edit metadata until the jobs have completed or you have canceled them.')
+        else:
+            trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+                trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data},
+                overwrite=False)  # overwrite is False as per existing behavior
+
     def update_permissions(self, trans, dataset_assoc, **kwd):
         action = kwd.get('action', 'set_permissions')
         if action not in ['remove_restrictions', 'make_private', 'set_permissions']:
@@ -355,7 +399,7 @@ class DatasetAssociationManager(base.ModelManager,
         if action == 'remove_restrictions':
             trans.app.security_agent.make_dataset_public(dataset)
             if not trans.app.security_agent.dataset_is_public(dataset):
-                raise exceptions.InternalServerError('An error occured while making dataset public.')
+                raise exceptions.InternalServerError('An error occurred while making dataset public.')
         elif action == 'make_private':
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = trans.app.security_agent.get_private_user_role(trans.user)
@@ -364,7 +408,7 @@ class DatasetAssociationManager(base.ModelManager,
                 trans.sa_session.flush()
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
-                raise exceptions.InternalServerError('An error occured and the dataset is NOT private.')
+                raise exceptions.InternalServerError('An error occurred and the dataset is NOT private.')
         elif action == 'set_permissions':
 
             def to_role_id(encoded_role_id):
@@ -470,14 +514,13 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         Cycle through meta files and return them as a list of dictionaries.
         """
         meta_files = []
-        for meta_type in dataset_assoc.metadata.spec.keys():
-            if isinstance(dataset_assoc.metadata.spec[meta_type].param, galaxy.datatypes.metadata.FileParameter):
-                meta_files.append(
-                    dict(file_type=meta_type,
-                         download_url=self.url_for('history_contents_metadata_file',
-                                                   history_id=self.app.security.encode_id(dataset_assoc.history_id),
-                                                   history_content_id=self.app.security.encode_id(dataset_assoc.id),
-                                                   metadata_file=meta_type)))
+        for meta_type in dataset_assoc.metadata_file_types:
+            meta_files.append(
+                dict(file_type=meta_type,
+                     download_url=self.url_for('history_contents_metadata_file',
+                                               history_id=self.app.security.encode_id(dataset_assoc.history_id),
+                                               history_content_id=self.app.security.encode_id(dataset_assoc.id),
+                                               metadata_file=meta_type)))
         return meta_files
 
     def serialize_metadata(self, dataset_assoc, key, excluded=None, **context):

@@ -1,7 +1,8 @@
 import _ from "underscore";
+import $ from "jquery";
 import Backbone from "backbone";
 import _l from "utils/localization";
-import mod_toastr from "libs/toastr";
+import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import { getGalaxyInstance } from "app";
 
@@ -30,7 +31,7 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     render: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var toolbar_template = this.templateToolBar();
         var is_admin = false;
         var is_anonym = true;
@@ -51,7 +52,7 @@ var LibraryToolbarView = Backbone.View.extend({
      * Renders the element that shows pages into its div within the toolbar.
      */
     renderPaginator: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         var paginator_template = this.templatePaginator();
         this.$el.find(".library-paginator").html(
@@ -72,7 +73,7 @@ var LibraryToolbarView = Backbone.View.extend({
     createLibraryFromModal: function(event) {
         event.preventDefault();
         event.stopPropagation();
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var self = this;
         this.modal = Galaxy.modal;
         this.modal.show({
@@ -94,7 +95,7 @@ var LibraryToolbarView = Backbone.View.extend({
      * Create the new library using the API asynchronously.
      */
     createNewLibrary: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var libraryDetails = this.serializeNewLibrary();
         if (this.validateNewLibrary(libraryDetails)) {
             var library = new mod_library_model.Library();
@@ -105,18 +106,18 @@ var LibraryToolbarView = Backbone.View.extend({
                     self.modal.hide();
                     self.clearLibraryModal();
                     Galaxy.libraries.libraryListView.render();
-                    mod_toastr.success("Library created.");
+                    Toast.success("Library created.");
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        mod_toastr.error(response.responseJSON.err_msg);
+                        Toast.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occured.");
+                        Toast.error("An error occurred.");
                     }
                 }
             });
         } else {
-            mod_toastr.error("Library's name is missing.");
+            Toast.error("Library's name is missing.");
         }
         return false;
     },
@@ -126,7 +127,7 @@ var LibraryToolbarView = Backbone.View.extend({
      */
     showPageSizePrompt: function(e) {
         e.preventDefault();
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var library_page_size = prompt(
             "How many libraries per page do you want to see?",
             Galaxy.libraries.preferences.get("library_page_size")
@@ -170,7 +171,7 @@ var LibraryToolbarView = Backbone.View.extend({
      * Include or exclude deleted libraries in the view.
      */
     includeDeletedChecked: function(event) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (event.target.checked) {
             Galaxy.libraries.preferences.set({ with_deleted: true });
             Galaxy.libraries.libraryListView.fetchDeleted();
@@ -184,7 +185,7 @@ var LibraryToolbarView = Backbone.View.extend({
      * Include or exclude restricted libraries in the view.
      */
     excludeRestrictedChecked: function(event) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (event.target.checked) {
             Galaxy.libraries.preferences.set({ without_restricted: true });
         } else {
@@ -198,7 +199,7 @@ var LibraryToolbarView = Backbone.View.extend({
      * to query the collection of libraries.
      */
     searchLibraries: function(event) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var search_term = $(".library-search-input").val();
         this.options.search_term = search_term;
         Galaxy.libraries.libraryListView.searchLibraries(search_term);
@@ -206,32 +207,37 @@ var LibraryToolbarView = Backbone.View.extend({
 
     templateToolBar: function() {
         return _.template(
-            [
-                '<div class="library_style_container">',
-                '<div class="d-flex align-items-center mb-2">',
-                '<a class="mr-1" href="#" data-toggle="tooltip" data-placement="top" title="Go to first page">DATA LIBRARIES</a>',
-                '<div class="d-flex align-items-center library-paginator mr-1" />', // paginator will append here
-                '<form class="form-inline mr-1">',
-                '<input type="text" class="form-control library-search-input mr-1" placeholder="Great Library" size="15">',
-                "<% if(admin_user === true) { %>", // only admins
-                '<div class="form-check mr-1">',
-                '<input class="form-check-input" id="include_deleted_chk" type="checkbox">',
-                '<label class="form-check-label" for="include_deleted_chk">include deleted</label>',
-                "</div>",
-                '<div class="form-check mr-1">',
-                '<input class="form-check-input" id="exclude_restricted_chk" type="checkbox">',
-                '<label class="form-check-label" for="exclude_restricted_chk">exclude restricted</label>',
-                "</div>",
-                '<button data-toggle="tooltip" data-placement="top" title="Create new library" id="create_new_library_btn" class="btn btn-secondary" type="button"><span class="fa fa-plus"></span> New Library</button>',
-                "<% } %>", // end admins
-                "</form>",
-                '<a class="library-help-button" data-toggle="tooltip" data-placement="top" title="See this screen annotated" href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">',
-                '<button class="btn btn-secondary" type="button"><span class="fa fa-question-circle"></span> Help</button>',
-                "</a>",
-                "</div>", // end flex
-                '<div id="libraries_element" />', // table with libraries will append here
-                "</div>" // end library_style_container
-            ].join("")
+            `<div class="library_style_container">
+                <div class="d-flex align-items-center mb-2">
+                    <a class="btn btn-secondary mr-1" data-toggle="tooltip" data-placement="top" title="Go to first page" href="#">
+                        <span class="fa fa-home"/>
+                    </a>
+                    <a class="library-help-button btn btn-secondary mr-1" data-toggle="tooltip" title="See this screen annotated" href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">
+                        <span class="fa fa-question"/>
+                    </a>
+                    <% if(admin_user === true) { %>
+                        <button data-toggle="tooltip" data-placement="top" title="Create new library" id="create_new_library_btn" class="mr-1 btn btn-secondary" type="button">
+                            <span class="fa fa-plus"/>
+                        </button>
+                    <% } %>
+                    <div class="d-flex align-items-center library-paginator mr-1" />
+                        <form class="form-inline mr-1">
+                            <input type="text" class="form-control library-search-input mr-1" placeholder="Great Library" size="15">
+                            <% if(admin_user === true) { %>
+                                <div class="form-check mr-1">
+                                    <input class="form-check-input" id="include_deleted_chk" type="checkbox"/>
+                                    <label class="form-check-label" for="include_deleted_chk">include deleted</label>
+                                </div>
+                                <div class="form-check mr-1">
+                                    <input class="form-check-input" id="exclude_restricted_chk" type="checkbox"/>
+                                    <label class="form-check-label" for="exclude_restricted_chk">exclude restricted</label>
+                                </div>
+                            <% } %>
+                        </form>
+                    </div>
+                    <div id="libraries_element" />
+                </div>
+            </div>`
         );
     },
 

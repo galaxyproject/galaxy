@@ -66,7 +66,7 @@ class Configuration(object):
         # Where dataset files are stored
         self.file_path = resolve_path(kwargs.get("file_path", "database/community_files"), self.root)
         self.new_file_path = resolve_path(kwargs.get("new_file_path", "database/tmp"), self.root)
-        self.cookie_path = kwargs.get("cookie_path", "/")
+        self.cookie_path = kwargs.get("cookie_path", None)
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', False))
         self.id_secret = kwargs.get("id_secret", "changethisinproductiontoo")
         # Tool stuff
@@ -94,7 +94,6 @@ class Configuration(object):
         self.require_login = string_as_bool(kwargs.get("require_login", "False"))
         self.allow_user_creation = string_as_bool(kwargs.get("allow_user_creation", "True"))
         self.allow_user_deletion = string_as_bool(kwargs.get("allow_user_deletion", "False"))
-        self.enable_openid = string_as_bool(kwargs.get('enable_openid', False))
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
         self.template_cache = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates/community"), self.root)
         self.admin_users = kwargs.get("admin_users", "")
@@ -117,7 +116,6 @@ class Configuration(object):
         self.support_url = kwargs.get('support_url', 'https://galaxyproject.org/support')
         self.wiki_url = kwargs.get('wiki_url', 'https://galaxyproject.org/')
         self.blog_url = kwargs.get('blog_url', None)
-        self.biostar_url = kwargs.get('biostar_url', None)
         self.screencasts_url = kwargs.get('screencasts_url', None)
         self.log_events = False
         self.cloud_controller_instance = False

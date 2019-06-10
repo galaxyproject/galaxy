@@ -13,8 +13,6 @@
             'remote_user_logout_href'   : app.config.remote_user_logout_href,
             'enable_cloud_launch'       : app.config.get_bool('enable_cloud_launch', False),
             'lims_doc_url'              : app.config.get("lims_doc_url", "https://usegalaxy.org/u/rkchak/p/sts"),
-            'biostar_url'               : app.config.biostar_url,
-            'biostar_url_redirect'      : h.url_for( controller='biostar', action='biostar_redirect', qualified=True ),
             'default_locale'            : app.config.get("default_locale",  "auto"),
             'support_url'               : app.config.get("support_url", "https://galaxyproject.org/support"),
             'search_url'                : app.config.get("search_url", "http://galaxyproject.org/search/"),
@@ -37,25 +35,11 @@
 
     ## load the frame manager
     <script type="text/javascript">
-
-        // if we're in an iframe, create styles that hide masthead/messagebox, and reset top for panels
-        // note: don't use a link to avoid roundtrip request
-        // note: we can't select here because the page (incl. messgaebox, center, etc.) isn't fully rendered
-        // TODO: remove these when we no longer navigate with iframes
-        var in_iframe = window !== window.top;
-        if( in_iframe ){
-            var styleElement = document.createElement( 'style' );
-            document.head.appendChild( styleElement );
-            [
-                '#masthead, #messagebox { display: none; }',
-                '#center, #right, #left { top: 0 !important; }',
-             ].forEach( function( rule ){
-                styleElement.sheet.insertRule( rule, 0 );
-            });
-        }
-        // TODO: ?? move above to base_panels.mako?
-        $( function() {
-            window.bundleEntries.masthead(${h.dumps(masthead_config)});
+        config.addInitialization(function(galaxy, config) {
+            console.log("galaxy.masthead.mako", "initialize masthead");
+            let options = ${h.dumps(masthead_config)};
+            let container = document.getElementById("masthead");
+            window.bundleEntries.initMasthead(options, container);
         });
     </script>
 </%def>

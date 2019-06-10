@@ -1,5 +1,5 @@
 <%!
-    import bleach
+    from galaxy.util.sanitize_html import sanitize_html
 
     def inherit(context):
         if context.get('use_panels'):
@@ -28,14 +28,16 @@
 %>
 </%def>
 
-<%def name="javascripts()">
-    ${parent.javascripts()}
+<%def name="javascript_app()">
+    <!-- message.mako javascript_app() -->
+    ${parent.javascript_app()}
     ${handle_refresh_frames()}
     <script type="text/javascript">
-        if ( parent.handle_minwidth_hint )
-        {
-            parent.handle_minwidth_hint( -1 );
-        }
+        config.addInitialization(function() {
+            if (parent.handle_minwidth_hint) {
+                parent.handle_minwidth_hint(-1);
+            }
+        });
     </script>
 </%def>
 
@@ -61,5 +63,5 @@
         if status not in ("danger", "info", "success", "warning"):
             status = "info"
     %>
-    <div class="mt-2 alert alert-${status}">${_(bleach.clean(msg))}</div>
+    <div class="message mt-2 alert alert-${status}">${_(sanitize_html(msg))}</div>
 </%def>

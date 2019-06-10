@@ -11,7 +11,7 @@ Returns:
 """
 import logging
 
-from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
+from galaxy.web import expose_api_raw_anonymous_and_sessionless
 from galaxy.webapps.galaxy.api.authenticate import AuthenticationController
 
 log = logging.getLogger(__name__)

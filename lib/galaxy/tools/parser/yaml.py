@@ -1,10 +1,11 @@
+import packaging.version
+
 from galaxy.tools.deps import requirements
 from galaxy.util.odict import odict
 from .interface import InputSource
 from .interface import PageSource
 from .interface import PagesSource
 from .interface import ToolSource
-from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
 from .output_objects import (
     ToolOutput,
@@ -53,6 +54,9 @@ class YamlToolSource(ToolSource):
 
     def parse_command(self):
         return self.root_dict.get("command")
+
+    def parse_expression(self):
+        return self.root_dict.get("expression")
 
     def parse_environment_variables(self):
         return []
@@ -107,23 +111,7 @@ class YamlToolSource(ToolSource):
         return outputs, output_collections
 
     def _parse_output(self, tool, name, output_dict):
-        # TODO: handle filters, actions, change_format
-        output = ToolOutput(name)
-        output.format = output_dict.get("format", "data")
-        output.change_format = []
-        output.format_source = output_dict.get("format_source", None)
-        output.default_identifier_source = output_dict.get("default_identifier_source", None)
-        output.metadata_source = output_dict.get("metadata_source", "")
-        output.parent = output_dict.get("parent", None)
-        output.label = output_dict.get("label", None)
-        output.count = output_dict.get("count", 1)
-        output.filters = []
-        output.tool = tool
-        output.from_work_dir = output_dict.get("from_work_dir", None)
-        output.hidden = output_dict.get("hidden", "")
-        # TODO: implement tool output action group fixes
-        output.actions = ToolOutputActionGroup(output, None)
-        output.dataset_collector_descriptions = dataset_collector_descriptions_from_output_dict(output_dict)
+        output = ToolOutput.from_dict(name, output_dict, tool=tool)
         return output
 
     def _parse_output_collection(self, tool, name, output_dict):
@@ -175,6 +163,12 @@ class YamlToolSource(ToolSource):
 
     def parse_profile(self):
         return self.root_dict.get("profile", "16.04")
+
+    def parse_python_template_version(self):
+        python_template_version = self.root_dict.get("python_template_version", None)
+        if python_template_version is not None:
+            python_template_version = packaging.version.parse(python_template_version)
+        return python_template_version
 
 
 def _parse_test(i, test_dict):

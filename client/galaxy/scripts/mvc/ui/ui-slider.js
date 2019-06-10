@@ -1,3 +1,6 @@
+import $ from "jquery";
+import Backbone from "backbone";
+
 import Utils from "utils/utils";
 
 var View = Backbone.View.extend({
@@ -44,6 +47,7 @@ var View = Backbone.View.extend({
                         v == 13 ||
                         v == 37 ||
                         v == 39 ||
+                        v == 69 ||
                         (v >= 48 && v <= 57) ||
                         (v >= 96 && v <= 105) ||
                         ((v == 190 || v == 110) &&
@@ -104,9 +108,9 @@ var View = Backbone.View.extend({
     /** Set and return the current value */
     value: function(new_val) {
         if (new_val !== undefined) {
-            let options = this.model.attributes;
-            let original_val = new_val;
-            let is_value = new_val !== null && new_val !== "" && !this._isParameter(new_val);
+            const options = this.model.attributes;
+            const original_val = new_val;
+            const is_value = new_val !== null && new_val !== "" && !this._isParameter(new_val);
             if (is_value) {
                 if (isNaN(new_val)) {
                     new_val = 0;
@@ -124,8 +128,8 @@ var View = Backbone.View.extend({
             this.model.set("value", new_val);
             this.model.trigger("change");
             options.onchange(new_val);
-            let has_changed = is_value && parseInt(original_val) !== parseInt(new_val);
-            let message = has_changed ? "This value was invalid or out-of-range. It has been auto-corrected." : null;
+            const has_changed = is_value && parseInt(original_val) !== parseInt(new_val);
+            const message = has_changed ? "This value was invalid or out-of-range. It has been auto-corrected." : null;
             this.model.trigger("error", message);
         }
         return this.model.get("value");

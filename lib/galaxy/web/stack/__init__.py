@@ -19,9 +19,9 @@ from six import string_types
 
 from galaxy.util import unicodify
 from galaxy.util.facts import get_facts
-from galaxy.util.handlers import HANDLER_ASSIGNMENT_METHODS
 from galaxy.util.path import has_ext
 from galaxy.util.properties import nice_config_parser
+from .handlers import HANDLER_ASSIGNMENT_METHODS
 from .message import ApplicationStackMessage, ApplicationStackMessageDispatcher
 from .transport import ApplicationStackTransport, UWSGIFarmMessageTransport
 
@@ -324,7 +324,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
             parser = nice_config_parser(config_file)
             if not parser.has_section(config_section) and parser.has_section('app:main'):
                 kwds['config_section'] = 'app:main'
-        kwds['config_file'] = config_file
+        kwds['config_file'] = unicodify(config_file)
         return kwds
 
     @classmethod

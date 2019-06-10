@@ -1,7 +1,6 @@
 from unittest import TestCase
 
 from galaxy.jobs.output_checker import check_output, DETECTED_JOB_STATE
-from galaxy.model import Job
 from galaxy.tools.parser.error_level import StdioErrorLevel
 from galaxy.tools.parser.interface import ToolStdioRegex
 from galaxy.util.bunch import Bunch
@@ -14,8 +13,6 @@ class OutputCheckerTestCase(TestCase):
             stdio_regexes=[],
             stdio_exit_codes=[],
         )
-        self.job = Job()
-        self.job.id = "test_id"
         self.stdout = ''
         self.stderr = ''
         self.tool_exit_code = None
@@ -87,10 +84,10 @@ class OutputCheckerTestCase(TestCase):
         self.tool.stdio_regexes.append(regex)
 
     def __assertSuccessful(self):
-        assert self.__check_output() == DETECTED_JOB_STATE.OK
+        assert self.__check_output()[0] == DETECTED_JOB_STATE.OK
 
     def __assertNotSuccessful(self):
-        assert self.__check_output() != DETECTED_JOB_STATE.OK
+        assert self.__check_output()[0] != DETECTED_JOB_STATE.OK
 
     def __check_output(self):
-        return check_output(self.tool, self.stdout, self.stderr, self.tool_exit_code, self.job)
+        return check_output(self.tool.stdio_regexes, self.tool.stdio_exit_codes, self.stdout, self.stderr, self.tool_exit_code, "job_id")

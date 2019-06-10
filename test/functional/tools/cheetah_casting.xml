@@ -1,9 +1,11 @@
 <tool id="cheetah_casting" name="cheetah_casting" version="1.0.0">
     <command>
         #set $int_val_inc = int($inttest) + 1
+        #set $int_flot_val_inc = int($floattest) + 1
         #set $float_val_inc = float($floattest) + 1
-        echo $int_val_inc   >> $out_file1;
-        echo $float_val_inc >> $out_file1;
+        echo $int_val_inc   >> '$out_file1';
+        echo $int_flot_val_inc >> '$out_file1';
+        echo $float_val_inc >> '$out_file1';
     </command>
     <inputs>
         <param name="inttest" value="1" type="integer" />
@@ -19,6 +21,7 @@
             <output name="out_file1">
                 <assert_contents>
                     <has_line line="2" />
+                    <has_line line="3" />
                     <has_line line="3.5" />
                 </assert_contents>
             </output>

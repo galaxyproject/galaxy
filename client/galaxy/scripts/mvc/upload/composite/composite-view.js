@@ -1,11 +1,16 @@
-import _l from "utils/localization";
 /** Renders contents of the composite uploader */
-import Utils from "utils/utils";
+import _l from "utils/localization";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
+// import Utils from "utils/utils";
 import UploadModel from "mvc/upload/upload-model";
 import UploadRow from "mvc/upload/composite/composite-row";
 import UploadExtension from "mvc/upload/upload-extension";
 import Select from "mvc/ui/ui-select";
 import Ui from "mvc/ui/ui-misc";
+
 export default Backbone.View.extend({
     collection: new UploadModel.Collection(),
     initialize: function(app) {
@@ -18,6 +23,13 @@ export default Backbone.View.extend({
         this.setElement(this._template());
 
         // create button section
+        this.btnReset = new Ui.Button({
+            id: "btn-reset",
+            title: _l("Reset"),
+            onclick: function() {
+                self._eventReset();
+            }
+        });
         this.btnStart = new Ui.Button({
             title: _l("Start"),
             onclick: function() {
@@ -32,7 +44,7 @@ export default Backbone.View.extend({
         });
 
         // append buttons to dom
-        _.each([this.btnStart, this.btnClose], button => {
+        _.each([this.btnReset, this.btnStart, this.btnClose], button => {
             self.$(".upload-buttons").prepend(button.$el);
         });
 
@@ -50,7 +62,8 @@ export default Backbone.View.extend({
                     _.each(details.composite_files, item => {
                         self.collection.add({
                             id: self.collection.size(),
-                            file_desc: item.description || item.name
+                            file_desc: item.description || item.name,
+                            optional: item.optional
                         });
                     });
                 }
@@ -100,7 +113,11 @@ export default Backbone.View.extend({
             this.select_genome.enable();
             this.select_extension.enable();
         }
-        if (this.collection.where({ status: "ready" }).length == this.collection.length && this.collection.length > 0) {
+        if (
+            this.collection.where({ status: "ready" }).length + this.collection.where({ optional: true }).length ==
+                this.collection.length &&
+            this.collection.length > 0
+        ) {
             this.btnStart.enable();
             this.btnStart.$el.addClass("btn-primary");
         } else {
@@ -146,6 +163,16 @@ export default Backbone.View.extend({
         });
     },
 
+    /** Remove all */
+    _eventReset: function() {
+        if (this.collection.where({ status: "running" }).length == 0) {
+            this.collection.reset();
+            this.select_extension.value(this.options.default_extension);
+            this.select_genome.value(this.options.default_genome);
+            this.render();
+        }
+    },
+
     /** Refresh progress state */
     _eventProgress: function(percentage) {
         this.collection.each(it => {
@@ -155,6 +182,7 @@ export default Backbone.View.extend({
 
     /** Refresh success state */
     _eventSuccess: function(message) {
+        const Galaxy = getGalaxyInstance();
         this.collection.each(it => {
             it.set("status", "success");
         });
@@ -170,36 +198,34 @@ export default Backbone.View.extend({
 
     /** Load html template */
     _template: function() {
-        return (
-            '<div class="upload-view-composite">' +
-            '<div class="upload-top">' +
-            '<h6 class="upload-top-info"/>' +
-            "</div>" +
-            '<div class="upload-box">' +
-            '<table class="upload-table ui-table-striped" style="display: none;">' +
-            "<thead>" +
-            "<tr>" +
-            "<th/>" +
-            "<th/>" +
-            "<th>Description</th>" +
-            "<th>Name</th>" +
-            "<th>Size</th>" +
-            "<th>Settings</th>" +
-            "<th>Status</th>" +
-            "</tr>" +
-            "</thead>" +
-            "<tbody/>" +
-            "</table>" +
-            "</div>" +
-            '<div class="upload-footer">' +
-            '<span class="upload-footer-title">Composite Type:</span>' +
-            '<span class="upload-footer-extension"/>' +
-            '<span class="upload-footer-extension-info upload-icon-button fa fa-search"/> ' +
-            '<span class="upload-footer-title">Genome/Build:</span>' +
-            '<span class="upload-footer-genome"/>' +
-            "</div>" +
-            '<div class="upload-buttons"/>' +
-            "</div>"
-        );
+        return `<div class="upload-view-composite">
+                <div class="upload-top">
+                    <div class="upload-top-info">&nbsp;</div>
+                </div>
+                <div class="upload-box">
+                    <table class="upload-table ui-table-striped" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th/>
+                                <th/>
+                                <th>Description</th>
+                                <th>Name</th>
+                                <th>Size</th>
+                                <th>Settings</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody/>
+                    </table>
+                </div>
+                <div class="upload-footer">
+                    <span class="upload-footer-title">Composite Type:</span>
+                    <span class="upload-footer-extension"/>
+                    <span class="upload-footer-extension-info upload-icon-button fa fa-search"/>
+                    <span class="upload-footer-title">Genome/Build:</span>
+                    <span class="upload-footer-genome"/>
+                </div>
+                <div class="upload-buttons"/>
+            </div>`;
     }
 });

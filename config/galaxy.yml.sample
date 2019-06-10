@@ -98,19 +98,12 @@ uwsgi:
 
 galaxy:
 
-  # When running multiple Galaxy instances under separate URL prefixes
-  # on a single hostname, you will want to set this to the same path as
-  # the prefix set in the uWSGI "mount" configuration option above. This
-  # value becomes the "path" attribute set in the cookie so the cookies
-  # from one instance will not clobber those from another.
-  #cookie_path: ''
-
   # By default, Galaxy uses a SQLite database at
   # 'database/universe.sqlite'.  You may use a SQLAlchemy connection
   # string to specify an external database instead.  This string takes
   # many options which are explained in detail in the config file
   # documentation.
-  #database_connection: 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
+  #database_connection: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
   # If the server logs errors about not having enough database pool
   # connections, you will want to increase these values, or consider
@@ -151,7 +144,7 @@ galaxy:
   # than 5 milliseconds.
   #slow_query_log_threshold: 0
 
-  # Enable's a per request sql debugging option. If this is set to true,
+  # Enables a per request sql debugging option. If this is set to true,
   # append ?sql_debug=1 to web request URLs to enable detailed logging
   # on the backend of SQL queries generated during that request. This is
   # useful for debugging slow endpoints during development.
@@ -163,12 +156,23 @@ galaxy:
   # instances with pretested installs.  The following option can be used
   # to separate the tool shed install database (all other options listed
   # above but prefixed with install_ are also available).
-  #install_database_connection: 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
+  #install_database_connection: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
 
   # Setting the following option to true will cause Galaxy to
   # automatically migrate the database forward after updates. This is
   # not recommended for production use.
   #database_auto_migrate: false
+
+  # Wait for database to become available instead of failing
+  # immediately.
+  #database_wait: false
+
+  # Number of attempts before failing if database_wait is enabled.
+  #database_wait_attempts: 60
+
+  # Time to sleep between attempts if database_wait is enabled (in
+  # seconds).
+  #database_wait_sleep: 1
 
   # Where dataset files are stored. It must accessible at the same path
   # on any cluster nodes that will run Galaxy jobs, unless using Pulsar.
@@ -183,7 +187,7 @@ galaxy:
   # can be locally developed or installed from Galaxy tool sheds.
   # (config/tool_conf.xml.sample will be used if left unset and
   # config/tool_conf.xml does not exist).
-  #tool_config_file: 'config/tool_conf.xml,config/shed_tool_conf.xml'
+  #tool_config_file: config/tool_conf.xml,config/shed_tool_conf.xml
 
   # Enable / disable checking if any tools defined in the above non-shed
   # tool_config_files (i.e., tool_conf.xml) have been migrated from the
@@ -245,7 +249,7 @@ galaxy:
 
   # conda channels to enable by default (https://conda.io/docs/user-
   # guide/tasks/manage-channels.html)
-  #conda_ensure_channels: 'iuc,conda-forge,bioconda,defaults'
+  #conda_ensure_channels: iuc,conda-forge,bioconda,defaults
 
   # Use locally-built conda packages.
   #conda_use_local: false
@@ -329,7 +333,7 @@ galaxy:
   # be used for job destinations with Docker enabled.
   #enable_beta_mulled_containers: false
 
-  # Container resolvers configuration (beta). Setup a file describing
+  # Container resolvers configuration (beta). Set up a file describing
   # container resolvers to use when discovering containers for Galaxy.
   # If this is set to None, the default containers loaded is determined
   # by enable_beta_mulled_containers.
@@ -350,7 +354,7 @@ galaxy:
 
   # Conda channels to use when building Docker or Singularity containers
   # using involucro.
-  #mulled_channels: 'conda-forge,bioconda'
+  #mulled_channels: conda-forge,bioconda
 
   # Enable automatic polling of relative tool sheds to see if any
   # updates are available for installed repositories.  Ideally only one
@@ -529,17 +533,14 @@ galaxy:
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
 
-  # Tools with a number of outputs not known until runtime can write
-  # these outputs to a directory for collection by Galaxy when the job
-  # is done. Previously, this directory was new_file_path, but using one
-  # global directory can cause performance problems, so using
-  # job_working_directory ('.' or cwd when a job is run) is encouraged.
-  # By default, both are checked to avoid breaking existing tools.
-  #collect_outputs_from: 'new_file_path,job_working_directory'
-
   # Configuration file for the object store If this is set and exists,
   # it overrides any other objectstore settings.
   #object_store_config_file: config/object_store_conf.xml
+
+  # What Dataset attribute is used to reference files in an ObjectStore
+  # implementation, default is 'id' but can also be set to 'uuid' for
+  # more de-centralized usage.
+  #object_store_store_by: id
 
   # Galaxy sends mail for various things: subscribing users to the
   # mailing list if they request it, password resets, reporting dataset
@@ -585,7 +586,7 @@ galaxy:
 
   # URL of the support resource for the galaxy instance.  Used in
   # activation emails.
-  #instance_resource_url: 'https://galaxyproject.org/'
+  #instance_resource_url: https://galaxyproject.org/
 
   # E-mail domains blacklist is used for filtering out users that are
   # using disposable email address during the registration.  If their
@@ -607,13 +608,12 @@ galaxy:
 
   # Activation grace period (in hours).  Activation is not forced (login
   # is not disabled) until grace period has passed.  Users under grace
-  # period can't run jobs. Enter 0 to disable grace period. Users with
-  # OpenID logins have grace period forever.
+  # period can't run jobs. Enter 0 to disable grace period.
   #activation_grace_period: 3
 
   # Shown in warning box to users that were not activated yet. In use
   # only if activation_grace_period is set.
-  #inactivity_box_content: 'Your account has not been activated yet.  Feel free to browse around and see what''s available, but you won''t be able to upload data or run jobs until you have verified your email address.'
+  #inactivity_box_content: Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
 
   # Password expiration period (in days). Users are required to change
   # their password every x days. Users will be redirected to the change
@@ -632,7 +632,7 @@ galaxy:
 
   # Galaxy can display data at various external browsers.  These options
   # specify which browsers should be available.  URLs and builds
-  # available at these browsers are defined in the specifield files.  If
+  # available at these browsers are defined in the specified files.  If
   # use_remote_user = True, display application servers will be denied
   # access to Galaxy and so displaying datasets in these sites will
   # fail. display_servers contains a list of hostnames which should be
@@ -644,7 +644,7 @@ galaxy:
   # Main, Test and Archaea browsers, but the default if left commented
   # is to not allow any display sites to bypass security (you must
   # uncomment the line below to allow them).
-  #display_servers: 'hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu'
+  #display_servers: hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu
 
   # To disable the old-style display applications that are hardcoded
   # into datatype classes, set enable_old_display_applications = False.
@@ -678,6 +678,10 @@ galaxy:
   # format string as specified by ISO 8601 international   standard).
   #pretty_datetime_format: $locale (UTC)
 
+  # Location of the configuration file containing extra user
+  # preferences.
+  #user_preferences_extra_conf_path: config/user_preferences_extra_conf.yml
+
   # Default localization for Galaxy UI. Allowed values are listed at the
   # end of client/galaxy/scripts/nls/locale.js. With the default value
   # (auto), the locale will be automatically adjusted to the user's
@@ -689,12 +693,11 @@ galaxy:
   # URL (with schema http/https) of the Galaxy instance as accessible
   # within your local network - if specified used as a default by pulsar
   # file staging and Jupyter Docker container for communicating back
-  # with Galaxy via the API.  If you are attempting to setup GIEs on Mac
-  # OS X with Docker for Mac - this should likely be the IP address of
-  # your machine on the virtualbox network (vboxnet0) setup for the
-  # Docker host VM. This can found by running ifconfig and using the IP
-  # address of the network vboxnet0.
-  #galaxy_infrastructure_url: 'http://localhost:8080'
+  # with Galaxy via the API.  If you are attempting to set up GIEs on
+  # Mac OS X with Docker Desktop for Mac and your Galaxy instance runs
+  # on port 8080 this should be 'http://host.docker.internal:8080'.  For
+  # more details see https://docs.docker.com/docker-for-mac/networking/
+  #galaxy_infrastructure_url: http://localhost:8080
 
   # If the above URL cannot be determined ahead of time in dynamic
   # environments but the port which should be used to access Galaxy can
@@ -716,41 +719,26 @@ galaxy:
   #helpsite_url: ''
 
   # The URL linked by the "Wiki" link in the "Help" menu.
-  #wiki_url: 'https://galaxyproject.org/'
+  #wiki_url: https://galaxyproject.org/
 
   # The URL linked by the "Support" link in the "Help" menu.
-  #support_url: 'https://galaxyproject.org/support/'
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_url: ''
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_key_name: ''
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_key: ''
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_enable_bug_reports: true
-
-  # Enable integration with a custom Biostar instance.
-  #biostar_never_authenticate: false
+  #support_url: https://galaxyproject.org/support/
 
   # The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
-  #citation_url: 'https://galaxyproject.org/citing-galaxy'
+  #citation_url: https://galaxyproject.org/citing-galaxy
 
   # The URL linked by the "Search" link in the "Help" menu.
-  #search_url: 'https://galaxyproject.org/search/'
+  #search_url: https://galaxyproject.org/search/
 
   # The URL linked by the "Mailing Lists" link in the "Help" menu.
-  #mailing_lists_url: 'https://galaxyproject.org/mailing-lists'
+  #mailing_lists_url: https://galaxyproject.org/mailing-lists
 
   # The URL linked by the "Videos" link in the "Help" menu.
-  #screencasts_url: 'https://vimeo.com/galaxyproject'
+  #screencasts_url: https://vimeo.com/galaxyproject
 
   # Points to the GenomeSpace UI service which will be used by the
   # GenomeSpace importer and exporter tools
-  #genomespace_ui_url: 'https://gsui.genomespace.org/jsui/'
+  #genomespace_ui_url: https://gsui.genomespace.org/jsui/
 
   # The URL linked by the "Terms and Conditions" link in the "Help"
   # menu, as well as on the user registration and login forms and in the
@@ -888,11 +876,11 @@ galaxy:
   # for IPC, set that here.
   #dynamic_proxy_session_map: database/session_map.sqlite
 
-  # Set the port and IP for the the dynamic proxy to bind to, this must
+  # Set the port and IP for the dynamic proxy to bind to, this must
   # match the external configuration if dynamic_proxy_manage is False.
   #dynamic_proxy_bind_port: 8800
 
-  # Set the port and IP for the the dynamic proxy to bind to, this must
+  # Set the port and IP for the dynamic proxy to bind to, this must
   # match the external configuration if dynamic_proxy_manage is False.
   #dynamic_proxy_bind_ip: 0.0.0.0
 
@@ -922,7 +910,7 @@ galaxy:
 
   # The golang proxy needs to know how to talk to your docker daemon.
   # Currently TLS is not supported, that will come in an update.
-  #dynamic_proxy_golang_docker_address: 'unix:///var/run/docker.sock'
+  #dynamic_proxy_golang_docker_address: unix:///var/run/docker.sock
 
   # The golang proxy uses a RESTful HTTP API for communication with
   # Galaxy instead of a JSON or SQLite file for IPC. If you do not
@@ -1029,8 +1017,8 @@ galaxy:
   #use_printdebug: true
 
   # Enable live debugging in your browser.  This should NEVER be enabled
-  # on a public site.  Enabled in the sample config for development.
-  #use_interactive: true
+  # on a public site.
+  #use_interactive: false
 
   # When stopping Galaxy cleanly, how much time to give various
   # monitoring/polling threads to finish before giving up on joining
@@ -1056,7 +1044,7 @@ galaxy:
 
   # Heartbeat log filename. Can accept the template variables
   # {server_name} and {pid}
-  #heartbeat_log: 'heartbeat_{server_name}.log'
+  #heartbeat_log: heartbeat_{server_name}.log
 
   # Log to Sentry Sentry is an open source logging and error aggregation
   # platform.  Setting sentry_dsn will enable the Sentry middleware and
@@ -1365,8 +1353,9 @@ galaxy:
   # of Galaxy's stable API.
   #enable_beta_workflow_modules: false
 
-  # Enable import and export of workflows as Galaxy Format 2 workflows.
-  #enable_beta_workflow_format: false
+  # Default format for the export of workflows. Possible values are 'ga'
+  # or 'format2'.
+  #default_workflow_export_format: ga
 
   # Following options only apply to workflows scheduled using the legacy
   # workflow run API (running workflows via a POST to /api/workflows).
@@ -1423,18 +1412,6 @@ galaxy:
   # particular history
   #history_local_serial_workflow_scheduling: false
 
-  # Enable authentication via OpenID.  Allows users to log in to their
-  # Galaxy account by authenticating with an OpenID provider.
-  #enable_openid: false
-
-  # If OpenID is enabled, this configuration file specifies providers to
-  # use. Falls back to the .sample variant in config if default does not
-  # exist.
-  #openid_config_file: config/openid_conf.xml
-
-  # If OpenID is enabled, consumer cache directory to use.
-  #openid_consumer_cache_path: database/openid_consumer_cache
-
   # Enables and disables OpenID Connect (OIDC) support.
   #enable_oidc: false
 
@@ -1459,6 +1436,12 @@ galaxy:
   # to set this on public servers.
   #master_api_key: changethis
 
+  # Enable access to post-authentication options via OpenID.
+  #enable_openid: false
+
+  # If OpenID is enabled, consumer cache directory to use.
+  #openid_consumer_cache_path: database/openid_consumer_cache
+
   # Enable tool tags (associating tools with tags).  This has its own
   # option since its implementation has a few performance implications
   # on startup for large servers.
@@ -1475,7 +1458,7 @@ galaxy:
 
   # The URL to the myExperiment instance being used (omit scheme but
   # include port)
-  #myexperiment_url: 'www.myexperiment.org:80'
+  #myexperiment_url: www.myexperiment.org:80
 
   # Enable Galaxy's "Upload via FTP" interface.  You'll need to install
   # and configure an FTP server (we've used ProFTPd since it can use
@@ -1497,7 +1480,7 @@ galaxy:
 
   # Python string template used to determine an FTP upload directory for
   # a particular user.
-  #ftp_upload_dir_template: '${ftp_upload_dir}/${ftp_upload_dir_identifier}'
+  #ftp_upload_dir_template: ${ftp_upload_dir}/${ftp_upload_dir_identifier
 
   # This should be set to False to prevent Galaxy from deleting uploaded
   # FTP files as it imports them.
@@ -1731,22 +1714,22 @@ galaxy:
   # Define toolbox filters (https://galaxyproject.org/user-defined-
   # toolbox-filters/) that users may use to restrict the tools to
   # display.
-  #user_tool_filters: 'examples:restrict_upload_to_admins, examples:restrict_encode'
+  #user_tool_filters: examples:restrict_upload_to_admins, examples:restrict_encode
 
   # Define toolbox filters (https://galaxyproject.org/user-defined-
   # toolbox-filters/) that users may use to restrict the tool sections
   # to display.
-  #user_tool_section_filters: 'examples:restrict_text'
+  #user_tool_section_filters: examples:restrict_text
 
   # Define toolbox filters (https://galaxyproject.org/user-defined-
   # toolbox-filters/) that users may use to restrict the tool labels to
   # display.
-  #user_tool_label_filters: 'examples:restrict_upload_to_admins, examples:restrict_encode'
+  #user_tool_label_filters: examples:restrict_upload_to_admins, examples:restrict_encode
 
   # The base module(s) that are searched for modules for toolbox
   # filtering (https://galaxyproject.org/user-defined-toolbox-filters/)
   # functions.
-  #toolbox_filter_base_modules: 'galaxy.tools.toolbox.filters,galaxy.tools.filters'
+  #toolbox_filter_base_modules: galaxy.tools.toolbox.filters,galaxy.tools.filters
 
   # Galaxy uses AMQP internally for communicating between processes.
   # For example, when reloading the toolbox or locking job execution,
@@ -1758,13 +1741,13 @@ galaxy:
   # not specified either, Galaxy will automatically create and use a
   # separate sqlite database located in your <galaxy>/database folder
   # (indicated in the commented out line below).
-  #amqp_internal_connection: 'sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE'
+  #amqp_internal_connection: sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
 
   # Galaxy real time communication server settings
   #enable_communication_server: false
 
   # Galaxy real time communication server settings
-  #communication_server_host: 'http://localhost'
+  #communication_server_host: http://localhost
 
   # Galaxy real time communication server settings
   #communication_server_port: 7070

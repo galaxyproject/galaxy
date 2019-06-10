@@ -1,7 +1,8 @@
-<tool id="Count1" name="Count" version="1.0.2">
+<tool id="Count1" name="Count" version="1.0.3">
   <description>occurrences of each record</description>
     <requirements>
         <requirement type="package" version="8.30">coreutils</requirement>
+        <requirement type="package" version="3.7">python</requirement>
     </requirements>
   <command>python '$__tool_directory__/uniq.py' -i '$input' -o '$out_file1' -c '$column' -d $delim -s $sorting</command>
   <inputs>

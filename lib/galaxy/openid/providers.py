@@ -119,7 +119,7 @@ class OpenIDProviders(object):
         providers = odict()
         for elem in oid_elem.findall('provider'):
             try:
-                provider = OpenIDProvider.from_file(os.path.join('openid', elem.get('file')))
+                provider = OpenIDProvider.from_file(os.path.join('lib/galaxy/openid', elem.get('file')))
                 providers[provider.id] = provider
                 log.debug('Loaded OpenID provider: %s (%s)' % (provider.name, provider.id))
             except Exception as e:

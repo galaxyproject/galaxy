@@ -1,4 +1,6 @@
 /** This class creates/wraps a drill down element. */
+import $ from "jquery";
+import _ from "underscore";
 import Utils from "utils/utils";
 import Options from "mvc/ui/ui-options";
 var View = Options.BaseIcons.extend({

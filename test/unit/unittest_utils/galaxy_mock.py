@@ -10,14 +10,14 @@ from galaxy import (
     objectstore,
     quota
 )
+from galaxy.auth import AuthManager
 from galaxy.datatypes import registry
 from galaxy.jobs.manager import NoopManager
-from galaxy.managers import tags
-from galaxy.model import mapping
+from galaxy.model import mapping, tags
+from galaxy.security import idencoding
 from galaxy.tools.deps.containers import NullContainerFinder
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.web import security
 from galaxy.web.stack import ApplicationStack
 
 
@@ -61,10 +61,10 @@ class MockApp(object):
         self.security = self.config.security
         self.name = kwargs.get('name', 'galaxy')
         self.object_store = objectstore.build_object_store_from_config(self.config)
-        self.model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=self.object_store)
+        self.model = mapping.init("/tmp", self.config.database_connection, create_tables=True, object_store=self.object_store)
         self.security_agent = self.model.security_agent
         self.visualizations_registry = MockVisualizationsRegistry()
-        self.tag_handler = tags.GalaxyTagManager(self.model.context)
+        self.tag_handler = tags.GalaxyTagHandler(self.model.context)
         self.quota_agent = quota.QuotaAgent(self.model)
         self.init_datatypes()
         self.job_config = Bunch(
@@ -75,9 +75,15 @@ class MockApp(object):
         self.dataset_collections_service = None
         self.container_finder = NullContainerFinder()
         self._toolbox_lock = MockLock()
+        self.tool_shed_registry = Bunch(tool_sheds={})
         self.genome_builds = GenomeBuilds(self)
         self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
+        self.auth_manager = AuthManager(self)
+
+        def url_for(*args, **kwds):
+            return "/mock/url"
+        self.url_for = url_for
 
     def init_datatypes(self):
         datatypes_registry = registry.Registry()
@@ -104,12 +110,14 @@ class MockAppConfig(Bunch):
     def __init__(self, root=None, **kwargs):
         Bunch.__init__(self, **kwargs)
         root = root or '/tmp'
-        self.security = security.SecurityHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
+        self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
+        self.database_connection = kwargs.get('database_connection', "sqlite:///:memory:")
         self.use_remote_user = kwargs.get('use_remote_user', False)
         self.file_path = '/tmp'
         self.jobs_directory = '/tmp'
         self.new_file_path = '/tmp'
         self.tool_data_path = '/tmp'
+        self.metadata_strategy = 'legacy'
 
         self.object_store_config_file = ''
         self.object_store = 'disk'
@@ -121,6 +129,10 @@ class MockAppConfig(Bunch):
         self.expose_dataset_path = True
         self.allow_user_dataset_purge = True
         self.enable_old_display_applications = True
+        self.redact_username_in_logs = False
+        self.auth_config_file = "config/auth_conf.xml.sample"
+        self.error_email_to = "admin@email.to"
+        self.password_expiration_period = 0
 
         self.umask = 0o77
 
@@ -144,7 +156,7 @@ class MockWebapp(object):
 
     def __init__(self, **kwargs):
         self.name = kwargs.get('name', 'galaxy')
-        self.security = security.SecurityHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
+        self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
 
 
 class MockTrans(object):
@@ -155,14 +167,26 @@ class MockTrans(object):
         self.webapp = MockWebapp(**kwargs)
         self.sa_session = self.app.model.session
         self.workflow_building_mode = False
+        self.error_message = None
+        self.anonymous = False
+        self.debug = True
 
         self.galaxy_session = None
         self.__user = user
         self.security = self.app.security
         self.history = history
 
-        self.request = Bunch(headers={})
-        self.response = Bunch(headers={})
+        self.request = Bunch(headers={}, body=None)
+        self.response = Bunch(headers={}, set_content_type=lambda i : None)
+
+    def check_csrf_token(self, payload):
+        pass
+
+    def handle_user_login(self, user):
+        pass
+
+    def log_event(self, message):
+        pass
 
     def get_user(self):
         if self.galaxy_session:

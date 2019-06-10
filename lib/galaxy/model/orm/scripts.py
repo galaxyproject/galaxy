@@ -99,8 +99,9 @@ def get_config(argv, use_argparse=True, cwd=None):
     'sqlite:///pg/testdb1'
     >>> write_ini('galaxy.ini', 'database_file', 'moo.sqlite')
     >>> config = get_config(['manage_db.py'], cwd=config_dir)
-    >>> config['db_url']
-    'sqlite:///moo.sqlite?isolation_level=IMMEDIATE'
+    >>> uri_with_env = os.getenv("GALAXY_TEST_DBURI", "sqlite:///moo.sqlite?isolation_level=IMMEDIATE")
+    >>> config['db_url'] == uri_with_env
+    True
     >>> config['repo']
     'lib/galaxy/model/migrate'
     >>> rmtree(config_dir)

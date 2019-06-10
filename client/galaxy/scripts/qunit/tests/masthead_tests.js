@@ -2,6 +2,8 @@
 import $ from "jquery";
 import testApp from "qunit/test-app";
 import Masthead from "layout/masthead";
+import { getAppRoot } from "onload";
+import { getGalaxyInstance } from "app";
 
 QUnit.module("Masthead test", {
     beforeEach: function() {
@@ -11,8 +13,6 @@ QUnit.module("Masthead test", {
             use_remote_user: "use_remote_user",
             remote_user_logout_href: "remote_user_logout_href",
             lims_doc_url: "lims_doc_url",
-            biostar_url: "biostar_url",
-            biostar_url_redirect: "biostar_url_redirect",
             support_url: "support_url",
             search_url: "search_url",
             mailing_lists: "mailing_lists",
@@ -54,8 +54,7 @@ QUnit.test("tabs", function(assert) {
     assert.ok($toggle.css("visibility") == "hidden", "Tab hidden");
     tab.set("visible", true);
     assert.ok($toggle.css("visibility") == "visible", "Tab visible, again");
-    // TODO: cleanup global usage so window.Galaxy isn't needed here.
-    assert.ok($toggle.attr("href") == window.Galaxy.root, "Correct initial url");
+    assert.ok($toggle.attr("href") == getAppRoot(), "Correct initial url");
     tab.set("url", "_url");
     assert.ok($toggle.attr("href") == "/_url", "Correct test url");
     tab.set("url", "http://_url");
@@ -121,6 +120,6 @@ QUnit.test("tabs", function(assert) {
     assert.ok(!$toggle.hasClass("toggle"), "Untoggled before click");
     $toggle.trigger("click");
     assert.ok($toggle.hasClass("toggle"), "Toggled after click");
-    // TODO: cleanup global usage so window.Galaxy isn't needed here.
-    assert.ok(window.Galaxy.frame.active, "Scratchbook is active");
+    let galaxy = getGalaxyInstance();
+    assert.ok(galaxy.frame.active, "Scratchbook is active");
 });

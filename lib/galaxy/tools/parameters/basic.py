@@ -95,6 +95,7 @@ class ToolParameter(Dictifiable):
         self.name = self.__class__.parse_name(input_source)
         self.type = input_source.get("type")
         self.hidden = input_source.get_bool("hidden", False)
+        self.load_contents = int(input_source.get("load_contents", 0))
         self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
         self.optional = input_source.parse_optional()
         self.is_dynamic = False
@@ -604,7 +605,7 @@ class FTPFileToolParameter(ToolParameter):
         return True
 
     def to_param_dict_string(self, value, other_values={}):
-        if value is '':
+        if value == '':
             return 'None'
         lst = ['%s%s' % (self.user_ftp_dir, dataset) for dataset in value]
         if self.multiple:
@@ -690,12 +691,15 @@ class ColorToolParameter(ToolParameter):
     >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff"/>'))
     >>> print(p.name)
     _name
-    >>> print(p.to_param_dict_string("#fdeada"))
-    #fdeada
+    >>> print(p.to_param_dict_string("#ffffff"))
+    #ffffff
     >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', u'#ffffff')]
+    >>> p = ColorToolParameter(None, XML('<param name="_name" type="color"/>'))
+    >>> print(p.get_initial_value(trans, {}))
+    #000000
     >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff" rgb="True"/>'))
-    >>> print(p.to_param_dict_string("#fdeada"))
-    (253, 234, 218)
+    >>> print(p.to_param_dict_string("#ffffff"))
+    (255, 255, 255)
     >>> print(p.to_param_dict_string(None))
     Traceback (most recent call last):
         ...
@@ -703,12 +707,14 @@ class ColorToolParameter(ToolParameter):
     """
 
     def __init__(self, tool, input_source):
+        input_source = ensure_input_source(input_source)
         super(ColorToolParameter, self).__init__(tool, input_source)
-        self.value = input_source.get('value', '#fdeada')
+        self.value = input_source.get('value', '#000000')
         self.rgb = input_source.get('rgb', False)
 
     def get_initial_value(self, trans, other_values):
-        return self.value.lower()
+        if self.value is not None:
+            return self.value.lower()
 
     def to_param_dict_string(self, value, other_values={}):
         if self.rgb:
@@ -1613,6 +1619,8 @@ class BaseDataToolParameter(ToolParameter):
                 src = 'dce'
             elif isinstance(value, app.model.HistoryDatasetCollectionAssociation):
                 src = 'hdca'
+            elif isinstance(value, app.model.LibraryDatasetDatasetAssociation):
+                src = 'ldda'
             elif isinstance(value, app.model.HistoryDatasetAssociation) or hasattr(value, 'id'):
                 # hasattr 'id' fires a query on persistent objects after a flush so better
                 # to do the isinstance check. Not sure we need the hasattr check anymore - it'd be
@@ -1638,6 +1646,8 @@ class BaseDataToolParameter(ToolParameter):
                     return app.model.context.query(app.model.DatasetCollectionElement).get(id)
                 elif value['src'] == 'hdca':
                     return app.model.context.query(app.model.HistoryDatasetCollectionAssociation).get(id)
+                elif value['src'] == 'ldda':
+                    return app.model.context.query(app.model.LibraryDatasetDatasetAssociation).get(id)
                 else:
                     return app.model.context.query(app.model.HistoryDatasetAssociation).get(id)
 
@@ -1733,11 +1743,15 @@ class DataToolParameter(BaseDataToolParameter):
             for single_value in value:
                 if isinstance(single_value, dict) and 'src' in single_value and 'id' in single_value:
                     if single_value['src'] == 'hda':
-                        rval.append(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(trans.security.decode_id(single_value['id'])))
+                        decoded_id = trans.security.decode_id(single_value['id'])
+                        rval.append(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(decoded_id))
                     elif single_value['src'] == 'hdca':
                         found_hdca = True
                         decoded_id = trans.security.decode_id(single_value['id'])
                         rval.append(trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(decoded_id))
+                    elif single_value['src'] == 'ldda':
+                        decoded_id = trans.security.decode_id(single_value['id'])
+                        rval.append(trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(decoded_id))
                     else:
                         raise ValueError("Unknown input source %s passed to job submission API." % single_value['src'])
                 elif isinstance(single_value, trans.app.model.HistoryDatasetCollectionAssociation):
@@ -1745,6 +1759,8 @@ class DataToolParameter(BaseDataToolParameter):
                 elif isinstance(single_value, trans.app.model.DatasetCollectionElement):
                     rval.append(single_value)
                 elif isinstance(single_value, trans.app.model.HistoryDatasetAssociation):
+                    rval.append(single_value)
+                elif isinstance(single_value, trans.app.model.LibraryDatasetDatasetAssociation):
                     rval.append(single_value)
                 else:
                     if len(str(single_value)) == 16:
@@ -1761,7 +1777,8 @@ class DataToolParameter(BaseDataToolParameter):
             rval = value
         elif isinstance(value, dict) and 'src' in value and 'id' in value:
             if value['src'] == 'hda':
-                rval = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(trans.security.decode_id(value['id']))
+                decoded_id = trans.security.decode_id(value['id'])
+                rval = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(decoded_id)
             elif value['src'] == 'hdca':
                 decoded_id = trans.security.decode_id(value['id'])
                 rval = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(decoded_id)

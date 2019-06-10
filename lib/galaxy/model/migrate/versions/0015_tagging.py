@@ -15,8 +15,8 @@ import logging
 from migrate import UniqueConstraint
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
 
-# Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrate.versions.util import create_table, drop_table
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -52,43 +52,21 @@ HistoryDatasetAssociationTagAssociation_table = Table("history_dataset_associati
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        Tag_table.create()
-    except Exception:
-        log.exception("Creating tag table failed.")
-    try:
-        HistoryTagAssociation_table.create()
-    except Exception:
-        log.exception("Creating history_tag_association table failed.")
-    try:
-        DatasetTagAssociation_table.create()
-    except Exception:
-        log.exception("Creating dataset_tag_association table failed.")
-    try:
-        HistoryDatasetAssociationTagAssociation_table.create()
-    except Exception:
-        log.exception("Creating history_dataset_association_tag_association table failed.")
+
+    create_table(Tag_table)
+    create_table(HistoryTagAssociation_table)
+    create_table(DatasetTagAssociation_table)
+    create_table(HistoryDatasetAssociationTagAssociation_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        Tag_table.drop()
-    except Exception:
-        log.exception("Dropping tag table failed.")
-    try:
-        HistoryTagAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping history_tag_association table failed.")
-    try:
-        DatasetTagAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping dataset_tag_association table failed.")
-    try:
-        HistoryDatasetAssociationTagAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping history_dataset_association_tag_association table failed.")
+
+    drop_table(HistoryDatasetAssociationTagAssociation_table)
+    drop_table(DatasetTagAssociation_table)
+    drop_table(HistoryTagAssociation_table)
+    drop_table(Tag_table)

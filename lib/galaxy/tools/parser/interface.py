@@ -88,6 +88,11 @@ class ToolSource(object):
         """ Return string contianing command to run.
         """
 
+    def parse_expression(self):
+        """ Return string contianing command to run.
+        """
+        return None
+
     @abstractmethod
     def parse_environment_variables(self):
         """ Return environment variable templates to expose.
@@ -211,6 +216,12 @@ class ToolSource(object):
     @abstractmethod
     def parse_profile(self):
         """ Return tool profile version as Galaxy major e.g. 16.01 or 16.04.
+        """
+
+    @abstractmethod
+    def parse_python_template_version(self):
+        """
+        Return minimum python version that the tool template has been developed against.
         """
 
     def macro_paths(self):
@@ -338,12 +349,23 @@ class ToolStdioRegex(object):
     attribute that contains "warning" or "fatal".
     """
 
-    def __init__(self):
-        self.match = ""
-        self.stdout_match = False
-        self.stderr_match = False
-        self.error_level = StdioErrorLevel.FATAL
-        self.desc = ""
+    def __init__(self, as_dict=None):
+        as_dict = as_dict or {}
+        self.match = as_dict.get("match", "")
+        self.stdout_match = as_dict.get("stdout_match", False)
+        self.stderr_match = as_dict.get("stderr_match", False)
+        self.error_level = as_dict.get("error_level", StdioErrorLevel.FATAL)
+        self.desc = as_dict.get("desc", "")
+
+    def to_dict(self):
+        return {
+            "class": "ToolStdioRegex",
+            "match": self.match,
+            "stdout_match": self.stdout_match,
+            "stderr_match": self.stderr_match,
+            "error_level": self.error_level,
+            "desc": self.desc,
+        }
 
 
 class ToolStdioExitCode(object):
@@ -352,11 +374,21 @@ class ToolStdioExitCode(object):
     The exit_code element has a range of exit codes and the error level.
     """
 
-    def __init__(self):
-        self.range_start = float("-inf")
-        self.range_end = float("inf")
-        self.error_level = StdioErrorLevel.FATAL
-        self.desc = ""
+    def __init__(self, as_dict=None):
+        as_dict = as_dict or {}
+        self.range_start = as_dict.get("range_start", float("-inf"))
+        self.range_end = as_dict.get("range_end", float("inf"))
+        self.error_level = as_dict.get("error_level", StdioErrorLevel.FATAL)
+        self.desc = as_dict.get("desc", "")
+
+    def to_dict(self):
+        return {
+            "class": "ToolStdioExitCode",
+            "range_start": self.range_start,
+            "range_end": self.range_end,
+            "error_level": self.error_level,
+            "desc": self.desc,
+        }
 
 
 class TestCollectionDef(object):

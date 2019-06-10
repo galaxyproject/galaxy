@@ -7,8 +7,8 @@ import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.util import plugin_config
-from galaxy.util.handlers import ConfiguresHandlers, HANDLER_ASSIGNMENT_METHODS
 from galaxy.util.monitors import Monitors
+from galaxy.web.stack.handlers import ConfiguresHandlers, HANDLER_ASSIGNMENT_METHODS
 from galaxy.web.stack.message import WorkflowSchedulingMessage
 
 log = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         self.handlers = {}
         self.handler_assignment_methods_configured = False
         self.handler_assignment_methods = None
-        self.handler_max_grab = 1
+        self.handler_max_grab = None
         self.default_handler_id = None
 
         self.__plugin_classes = self.__plugins_dict()

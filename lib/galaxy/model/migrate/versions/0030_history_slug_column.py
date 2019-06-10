@@ -7,14 +7,15 @@ import logging
 
 from sqlalchemy import Column, Index, MetaData, Table, TEXT
 
+from galaxy.model.migrate.versions.util import drop_column
+
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
-
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     History_table = Table("history", metadata, autoload=True)
@@ -36,5 +37,4 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    History_table = Table("history", metadata, autoload=True)
-    History_table.c.slug.drop()
+    drop_column('slug', 'history', metadata)

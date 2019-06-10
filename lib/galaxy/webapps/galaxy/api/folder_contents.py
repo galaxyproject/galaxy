@@ -10,8 +10,8 @@ from galaxy import (
 )
 from galaxy.managers import folders
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous as expose_api_anonymous
+    expose_api,
+    expose_api_anonymous
 )
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 
@@ -109,14 +109,15 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 nice_size = util.nice_size(int(content_item.library_dataset_dataset_association.get_size()))
 
                 library_dataset_dict = content_item.to_dict()
-
+                encoded_ldda_id = trans.security.encode_id(content_item.library_dataset_dataset_association.id)
                 return_item.update(dict(file_ext=library_dataset_dict['file_ext'],
                                         date_uploaded=library_dataset_dict['date_uploaded'],
                                         is_unrestricted=is_unrestricted,
                                         is_private=is_private,
                                         can_manage=can_manage,
                                         state=library_dataset_dict['state'],
-                                        file_size=nice_size))
+                                        file_size=nice_size,
+                                        ldda_id=encoded_ldda_id))
                 if content_item.library_dataset_dataset_association.message:
                     return_item.update(dict(message=content_item.library_dataset_dataset_association.message))
 

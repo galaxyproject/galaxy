@@ -57,8 +57,6 @@ masthead:
     admin: 'Admin'
 
     # user menu
-    register: 'Register'
-    login: 'Login'
     logout: 'Logout'
     custom_builds: 'Custom Builds'
     saved_histories: 'Saved Histories'
@@ -145,6 +143,7 @@ history_panel:
     options_button: '#history-options-button'
     options_button_icon: '#history-options-button span.fa-cog'
     options_menu: '#history-options-button-menu'
+    new_history_button: '#history-new-button'
     multi_view_button: '#history-view-multi-button'
 
     pagination_pages: '.list-pagination .pages'
@@ -205,14 +204,18 @@ histories:
 
 login:
   selectors:
-     form: 'form#login'
+    form: 'form#login'
+    submit:
+      type: xpath
+      selector: "//button[@name='login']"
 
 registration:
   selectors:
-    form: '#registration'
+    toggle: '#register-toggle'
+    form: 'form#registration'
     submit:
       type: xpath
-      selector: "//input[@value='Submit']"
+      selector: "//button[@name='create']"
 
 tool_form:
   selectors:
@@ -235,7 +238,7 @@ workflows:
 
 workflow_run:
 
-  selectors: 
+  selectors:
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .select2-container"
     # TODO: put step labels in the DOM ideally
@@ -321,7 +324,7 @@ admin:
     users_grid: '#users-grid'
     users_grid_create_button: '.manage-table-actions .action-button'
     groups_grid_create_button: '.manage-table-actions .action-button'
-    registration_form: 'form[name="registration"]'
+    registration_form: 'form#registration'
     groups_grid: '#groups-grid'
     roles_grid: '#roles-grid'
     groups_create_view: '#create-group'

@@ -1,6 +1,7 @@
 """
-Kind of fail save job control via the DRMAA API.
-Tested for UNIVA grid engine
+Job control via the DRMAA API / qstat and qacct.
+
+Known to work on the UNIVA grid engine.
 
 known bugs/problems:
 - if a job runs longer than the time limits of the queue two things happen
@@ -8,8 +9,9 @@ known bugs/problems:
   2. at the hard limit (h_rt) SIGKILL is sent to the job
   The second case is covered by the runner -- it's the same mechanism that
   kills a job when the job time limit is reached. The first case is currently
-  not covered. The good thing is that most programs ignore SIGUSR1. For the
-  others it seems that jobs are marked as failed (killed by the DRM) at random.
+  not covered. The good thing is that most programs ignore SIGUSR1.
+  For the second case it seems that jobs are marked as failed (killed by the DRM)
+  at random.
 
   Possible solutions:
   - configure the job destinations such that the queue limits are never reached.
@@ -30,7 +32,6 @@ import time
 
 from galaxy import util
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
-from galaxy.model import Job
 log = logging.getLogger(__name__)
 
 __all__ = ('UnivaJobRunner',)
@@ -62,14 +63,6 @@ class UnivaJobRunner(DRMAAJobRunner):
 
     def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
         extinfo = dict()
-        log.error("AJS %s %s" % (str(type(ajs)), str(dir(ajs))))
-        log.error("JOB_WRAPPER %s %s" % (str(type(ajs.job_wrapper)), str(ajs.job_wrapper)))
-        log.error("JOB STATE %s", ajs.job_wrapper.get_state())
-        if ajs.job_wrapper.get_state() in [Job.states.DELETED, Job.states.DELETED_NEW]:
-            log.error("JOB DELETED %s" % str(ajs.job_id))
-        else:
-            log.error("JOB NOT DELETED %s" % str(ajs.job_id))
-
         # get state with job_info/qstat + wait/qacct
         state = self._get_drmaa_state(ajs.job_id, self.ds, True, extinfo)
         # log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) -> state {state} info {info}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state], info=extinfo))
@@ -94,13 +87,13 @@ class UnivaJobRunner(DRMAAJobRunner):
                 ajs.fail_message = "This job failed because it was cancelled."
                 drmaa_state = self.drmaa.JobState.FAILED
             elif ("signal" in extinfo and extinfo["signal"] == "SIGKILL") and time_wasted > time_granted:
-                log.info('({tag}/{jobid}) Job hit walltime'.format(tag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id))
+                log.error('({tag}/{jobid}) Job hit walltime'.format(tag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id))
                 ajs.fail_message = "This job was terminated because it ran longer than the maximum allowed job run time."
                 ajs.runner_state = ajs.runner_states.WALLTIME_REACHED
                 drmaa_state = self.drmaa.JobState.FAILED
             # test wasted>granted memory only if failed != 0 and exit_status != 0, ie if marked as failed
             elif state == self.drmaa.JobState.FAILED and mem_wasted > mem_granted * slots:
-                log.info('({idtag}/{jobid}) Job hit memory limit ({used}>{limit})'.format(idtag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id, used=mem_wasted, limit=mem_granted))
+                log.error('({idtag}/{jobid}) Job hit memory limit ({used}>{limit})'.format(idtag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id, used=mem_wasted, limit=mem_granted))
                 ajs.fail_message = "This job was terminated because it used more than the maximum allowed memory."
                 ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                 drmaa_state = self.drmaa_job_states.FAILED
@@ -258,7 +251,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # "NONE". If qdel was called multiple times, every invocation is recorded in a comma
         # separated list.
         if "deleted_by" in qacct and qacct["deleted_by"] != "NONE":
-            log.error("DRMAAUniva: job {job_id} was aborted by {culprit}".format(job_id=job_id, culprit=qacct["deleted_by"]))
+            log.info("DRMAAUniva: job {job_id} was aborted by {culprit}".format(job_id=job_id, culprit=qacct["deleted_by"]))
             extinfo["deleted"] = True
             return self.drmaa.JobState.FAILED
 
@@ -540,56 +533,6 @@ class UnivaJobRunner(DRMAAJobRunner):
         else:
             log.error("DRMAAUniva: job {job_id} unknown state from qstat: {state}".format(job_id=job_id, state=state))
             return self.drmaa.JobState.UNDETERMINED
-
-
-# def _check_memory_limit(efile_path):
-#     """
-#     A very poor implementation of tail, but it doesn't need to be fancy
-#     since we are only searching the last 2K
-#     checks for an error message that indicates an memory constraint violation
-#     returns True if such an indicator is found and False otherwise
-#     """
-#     # list of error output from different programming languages in case
-#     # of memory allocation errors for bash, Python, C++, JAVA, Perl
-#     memerrors = set(["xrealloc: cannot allocate",
-#                      "MemoryError",
-#                      "std::bad_alloc",
-#                      "java.lang.OutOfMemoryError: Java heap space",
-#                      "Out of memory!"])
-#
-#     try:
-#         log.debug('Checking %s for exceeded memory messages from programs', efile_path)
-#         with open(efile_path) as f:
-#             if os.path.getsize(efile_path) > MEMORY_LIMIT_SCAN_SIZE:
-#                 f.seek(-MEMORY_LIMIT_SCAN_SIZE, os.SEEK_END)
-#                 f.readline()
-#             for line in f.readlines():
-#                 stripped_line = line.strip()
-#                 for err in memerrors:
-#                     if err in stripped_line:
-#                         return True
-#     except:
-#         log.exception('Error reading end of %s:', efile_path)
-#
-#     return False
-
-
-# def _parse_mem(mstring):
-#     mem = None
-#     m = re.search("([0-9.]+)([KGM]?)", mstring)
-#     if m is not None:
-#         mem = float(m.group(1))
-#         if m.group(2) == 'K':
-#             mem *= 1024
-#         elif m.group(2) == 'M':
-#             mem *= 1024 * 1024
-#         elif m.group(2) == 'G':
-#             mem *= 1024 * 1024 * 1024
-#         elif m.group(2) == '':
-#             pass
-#         else:
-#             log.error("DRMAAUniva: unparsable memory spec {spec}".format(spec=mstring))
-#     return mem
 
 
 def _parse_time(tstring):
