@@ -146,13 +146,9 @@ class ToolConfWatcher(object):
             mod_time = os.path.getmtime(path)
         with self._lock:
             self.paths[path] = mod_time
-        if not self._active:
-            self.start()
 
     def watch_file(self, tool_conf_file):
         self.monitor(tool_conf_file)
-        if not self._active:
-            self.start()
 
 
 class ToolWatcher(BaseWatcher):

@@ -37,6 +37,7 @@ def test_tool_conf_watcher():
 
     callback = CallbackRecorder()
     conf_watcher = watcher.get_tool_conf_watcher(callback.call)
+    conf_watcher.start()
 
     with __test_directory() as t:
         tool_conf_path = path.join(t, "test_conf.xml")
