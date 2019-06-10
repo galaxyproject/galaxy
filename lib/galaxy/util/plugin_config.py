@@ -30,7 +30,9 @@ def plugins_dict(module, plugin_type_identifier):
     return plugin_dict
 
 
-def load_plugins(plugins_dict, plugin_source, extra_kwds={}, plugin_type_keys=['type']):
+def load_plugins(plugins_dict, plugin_source, extra_kwds=None, plugin_type_keys=('type',)):
+    if extra_kwds is None:
+        extra_kwds = {}
     source_type, source = plugin_source
     if source_type == "xml":
         return __load_plugins_from_element(plugins_dict, source, extra_kwds)
