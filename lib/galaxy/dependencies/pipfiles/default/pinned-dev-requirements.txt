@@ -18,7 +18,7 @@ idna==2.8
 imagesize==1.1.0
 importlib-metadata==0.17
 jinja2==2.10.1
-lxml==4.3.3
+lxml==4.3.4
 markdown==2.6.11
 markupsafe==1.1.1
 mirakuru==1.1.0
@@ -53,7 +53,7 @@ sphinx-markdown-tables==0.0.9
 sphinx-rtd-theme==0.4.3
 sphinx==1.8.5
 sphinxcontrib-websupport==1.1.2
-testfixtures==6.8.2
+testfixtures==6.9.0
 twill==0.9.1 ; python_version < '3'
 typing==3.6.6 ; python_version < '3.5'
 urllib3==1.25.3 ; python_version == '2.7'
