@@ -558,7 +558,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         )
 
         for data_table_elem_name, data_table in sorted_data_tables:
-            for filename, file_dict in data_table.filenames.iteritems():
+            for filename, file_dict in data_table.filenames.items():
                 file_missing = ['file missing'] \
                     if not file_dict.get('found') else []
                 data.append({

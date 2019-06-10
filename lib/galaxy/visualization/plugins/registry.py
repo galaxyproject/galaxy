@@ -223,7 +223,7 @@ class VisualizationsRegistry(object):
 
     def get_plugins(self):
         result = []
-        for plugin in self.plugins.itervalues():
+        for plugin in self.plugins.values():
             result.append(plugin.to_dict())
         return sorted(result, key=lambda k: k.get('html'))
 
