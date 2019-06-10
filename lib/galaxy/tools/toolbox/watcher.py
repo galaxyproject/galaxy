@@ -17,6 +17,7 @@ from galaxy.util.hash_util import md5_hash_file
 from galaxy.util.watcher import (
     BaseWatcher,
     get_observer_class,
+    NullWatcher,
 )
 
 log = logging.getLogger(__name__)
@@ -154,21 +155,6 @@ class ToolConfWatcher(object):
             self.start()
 
 
-class NullToolConfWatcher(object):
-
-    def start(self):
-        pass
-
-    def shutdown(self):
-        pass
-
-    def monitor(self, conf_path):
-        pass
-
-    def watch_file(self, tool_file, tool_id):
-        pass
-
-
 class ToolWatcher(BaseWatcher):
 
     def __init__(self, observer_class, even_handler_class, toolbox):
@@ -195,18 +181,3 @@ class ToolWatcher(BaseWatcher):
         if tool_dir not in self.monitored_dirs:
             self.monitored_dirs[tool_dir] = tool_dir
             self.monitor(tool_dir)
-
-
-class NullWatcher(object):
-
-    def start(self):
-        pass
-
-    def shutdown(self):
-        pass
-
-    def watch_file(self, tool_file, tool_id):
-        pass
-
-    def watch_directory(self, tool_dir, callback=None):
-        pass
