@@ -393,6 +393,11 @@ Enhancements
 Fixes
 -------------------------------
 
+* Explicitly specify system user under which Kubernetes jobs should run.
+  `Pull Request 8103`_
+* Ensure Kubernetes job querries filter the same namespace as defined in the
+  job destination.
+  `Pull Request 8092`_
 * Fix client styleguide asset handling.
   `Pull Request 7664`_
 * Handle subworkflows in view workflow mako
