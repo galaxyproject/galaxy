@@ -155,4 +155,3 @@ client/webpack-stats.json
 .idea
 .vscode
 /.project
-/nohup.out

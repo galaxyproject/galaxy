@@ -1,0 +1,29 @@
+<tool id="EA-1" name="ExAudio" version="1.0.2">
+  <description>Extract Audio</description>
+    <requirements>
+        <requirement type="package" version="8.30">coreutils</requirement>
+    </requirements>
+  <command>ffmpeg -y -hide_banner -nostats -loglevel panic -i $input -ar $rate  -f wav $out_file1</command>
+  <inputs>
+    <param name="input" type="data" format="binary" label="from dataset" help="A video file"/>
+    <param name="rate" type="select" label="Bit Rate">
+      <option value="8000">8KHz</option>
+      <option value="16000">16KHz</option>
+      <option value="22050">22.05KHz</option>
+      <option value="44100">44.1KHz (CD Quality)</option>
+      <option value="48000">48KHz</option>
+      <option value="96000">96KHz (Archival Quality)</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="binary" name="out_file1" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Extract the audio from a video file as a wav file.
+
+  </help>
+</tool>
