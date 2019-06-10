@@ -81,6 +81,9 @@ export var View = Backbone.View.extend({
         // link elements
         this.$header = this.$(".modal-header");
         this.$dialog = this.$(".modal-dialog");
+        if (this.options.extra_class) {
+            this.$dialog.addClass(this.options.extra_class);
+        }
         this.$body = this.$(".modal-body");
         this.$footer = this.$(".modal-footer");
         this.$backdrop = this.$(".modal-backdrop");

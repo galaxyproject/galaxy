@@ -19,7 +19,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
         self.screenshot("histories_saved_grid")
-        self.click_popup_option(self.history2_name, 'Switch')
+        self.click_grid_popup_option(self.history2_name, 'Switch')
         self.sleep_for(self.wait_types.UX_RENDER)
 
         @retry_assertion_during_transitions
@@ -32,7 +32,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
     def test_history_view(self):
         self._login()
         self.navigate_to_histories_page()
-        self.click_popup_option(self.history2_name, 'View')
+        self.click_grid_popup_option(self.history2_name, 'View')
         history_name = self.wait_for_selector('.name.editable-text')
         self.assertEqual(history_name.text, self.history2_name)
 
@@ -42,7 +42,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
 
         # Publish the history
-        self.click_popup_option(self.history2_name, 'Share or Publish')
+        self.click_grid_popup_option(self.history2_name, 'Share or Publish')
         self.components.histories.sharing.make_accessible_and_publish.wait_for_and_click()
 
         self.navigate_to_histories_page()
@@ -58,7 +58,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
-        self.click_popup_option('Unnamed history', 'Rename')
+        self.click_grid_popup_option('Unnamed history', 'Rename')
 
         # Rename the history
         history_name_input = self.wait_for_selector('.ui-form-element input.ui-input')
@@ -77,7 +77,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
 
         # Delete the history
-        self.click_popup_option(self.history2_name, 'Delete')
+        self.click_grid_popup_option(self.history2_name, 'Delete')
 
         self.assert_histories_in_grid([self.history2_name], False)
 
@@ -86,7 +86,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Restore the history
-        self.click_popup_option(self.history2_name, 'Undelete')
+        self.click_grid_popup_option(self.history2_name, 'Undelete')
 
         self.assert_grid_histories_are([])
         self.select_filter('deleted', 'False')
@@ -101,7 +101,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.navigate_to_histories_page()
         self.assert_histories_in_grid([self.history4_name])
 
-        self.click_popup_option(self.history4_name, 'Delete Permanently')
+        self.click_grid_popup_option(self.history4_name, 'Delete Permanently')
         alert = self.driver.switch_to.alert
         alert.accept()
 
@@ -164,15 +164,14 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
 
-        input_selector = '#input-free-text-search-filter'
-        search_input = self.wait_for_selector(input_selector)
+        search_input = self.components.grids.free_text_search.wait_for_visible()
         search_input.send_keys(self.history2_name)
         self.send_enter(search_input)
 
         self.assert_grid_histories_are([self.history2_name])
 
         self.unset_filter('free-text-search', self.history2_name)
-        search_input = self.wait_for_selector(input_selector)
+        search_input = self.components.grids.free_text_search.wait_for_visible()
         search_input.send_keys(self.history4_name)
         self.send_enter(search_input)
 
@@ -298,23 +297,6 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         filter_selector = 'a[filter_key="%s"][filter_val="%s"]' % \
             (filter_key, filter_value)
         self.wait_for_and_click_selector(filter_selector)
-
-    def click_popup_option(self, history_name, option_label):
-        history_menu_button = None
-        grid = self.wait_for_selector('#grid-table-body')
-        for row in grid.find_elements_by_tag_name('tr'):
-            name_cell = row.find_elements_by_tag_name('td')[1]
-            if name_cell.text == history_name:
-                history_menu_button = name_cell
-                break
-
-        if history_menu_button is None:
-            raise AssertionError('Failed to find history with name [%s]' % history_name)
-
-        popup_menu_button = history_menu_button.find_element_by_css_selector('.dropdown-toggle')
-        popup_menu_button.click()
-        popup_option = self.driver.find_element_by_link_text(option_label)
-        popup_option.click()
 
     def get_history_tags_cell(self, history_name):
         tags_cell = None

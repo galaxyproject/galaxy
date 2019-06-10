@@ -60,6 +60,7 @@ masthead:
     logout: 'Logout'
     custom_builds: 'Custom Builds'
     histories: 'Histories'
+    pages: 'Pages'
 
     # Shared data
     libraries: 'Data Libraries'
@@ -201,6 +202,21 @@ histories:
     labels:
       unshare: 'Unshare'
 
+pages:
+  selectors:
+    create: '.manage-table-actions .action-button'
+    submit: '#submit'
+  editor:
+    selectors:
+      wym_iframe: 'div.wym_iframe iframe'
+      wym_iframe_content: '.text-content'
+      save: '#save-button'
+      embed_button: '#embed-galaxy-object'
+      dataset_selector: '.saved-datasets'
+      embed_dialog_add_button: '.pages-embed .buttons #button-0'
+
+    labels:
+      embed_dataset: 'Embed Dataset'
 
 login:
   selectors:
@@ -365,9 +381,10 @@ libraries:
       table: '.dataset_table'
       table_rows: '.dataset_table table tbody tr'
 
-published_grids:
+grids:
   selectors:
-    search: '#input-free-text-search-filter'
+    body: '#grid-table-body'
+    free_text_search: '#input-free-text-search-filter'
 
 gies:
   jupyter:
