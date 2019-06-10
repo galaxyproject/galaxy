@@ -17,7 +17,7 @@ Highlights
   user release notes instead. A huge thanks to `@erasche <https://github.com/erasche>`__
   for getting the ball rolling on this initiative.
 
-  Check out the `19.05 user release notes<https://docs.galaxyproject.org/en/release_19.05/releases/19.05_announce_user.html>`__.
+  Check out the `19.05 user release notes <https://docs.galaxyproject.org/en/release_19.05/releases/19.05_announce_user.html>`__.
 
 **Login and Registration Rewrite**
   The march toward replacing templated backend generated HTML with modern, reactive
