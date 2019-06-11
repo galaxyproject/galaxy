@@ -85,3 +85,9 @@ pre.code {
     color: white;
     padding: 1em;
 }
+
+.alert-info, .alert-danger, .alert-warning, .alert-success {
+    a {
+        font-weight: bold;
+    }
+}
