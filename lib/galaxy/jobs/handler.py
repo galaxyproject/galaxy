@@ -434,7 +434,7 @@ class JobHandlerQueue(Monitors):
                 model.Dataset.deleted,
                 model.Dataset.purged,
                 model.Dataset.state,
-            ).join(job_to_input) \
+            ).join(job_to_input.job) \
                 .join(input_association) \
                 .join(model.Dataset) \
                 .filter(model.Job.id.in_(job_ids_to_check)) \
