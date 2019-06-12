@@ -72,7 +72,7 @@ class OutputsDict(OrderedDict):
             return item
 
 
-def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history=None, force_path_paste=False):
+def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history=None, force_path_paste=False, maxseconds=DEFAULT_TOOL_TEST_WAIT):
     # Upload any needed files
     upload_waits = []
 
@@ -80,12 +80,20 @@ def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history=Non
 
     if UPLOAD_ASYNC:
         for test_data in all_test_data:
-            upload_waits.append(galaxy_interactor.stage_data_async(test_data, history, tool_id, force_path_paste=force_path_paste))
+            upload_waits.append(galaxy_interactor.stage_data_async(test_data,
+                                                                   history,
+                                                                   tool_id,
+                                                                   force_path_paste=force_path_paste,
+                                                                   maxseconds=maxseconds))
         for upload_wait in upload_waits:
             upload_wait()
     else:
         for test_data in all_test_data:
-            upload_wait = galaxy_interactor.stage_data_async(test_data, history, tool_id, force_path_paste=force_path_paste)
+            upload_wait = galaxy_interactor.stage_data_async(test_data,
+                                                             history,
+                                                             tool_id,
+                                                             force_path_paste=force_path_paste,
+                                                             maxseconds=maxseconds)
             upload_wait()
 
 
@@ -239,7 +247,9 @@ class GalaxyInteractorApi(object):
     def wait_for(self, func, **kwd):
         sleep_amount = 0.2
         slept = 0
-        walltime_exceeded = kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT)
+        walltime_exceeded = kwd.get("maxseconds")
+        if walltime_exceeded is None:
+            walltime_exceeded = DEFAULT_TOOL_TEST_WAIT
 
         while slept <= walltime_exceeded:
             result = func()
@@ -306,7 +316,7 @@ class GalaxyInteractorApi(object):
             output_id = output_data
         return output_id
 
-    def stage_data_async(self, test_data, history_id, tool_id, force_path_paste=False):
+    def stage_data_async(self, test_data, history_id, tool_id, force_path_paste=False, maxseconds=DEFAULT_TOOL_TEST_WAIT):
         fname = test_data['fname']
         tool_input = {
             "file_type": test_data['ftype'],
@@ -364,7 +374,7 @@ class GalaxyInteractorApi(object):
         assert "jobs" in submit_response, "Invalid response from server [%s], expecting jobs in response." % submit_response
         jobs = submit_response["jobs"]
         assert len(jobs) > 0, "Invalid response from server [%s], expecting a job." % submit_response
-        return lambda: self.wait_for_job(jobs[0]["id"], history_id, DEFAULT_TOOL_TEST_WAIT)
+        return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
 
     def run_tool(self, testdef, history_id, resource_parameters={}):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
@@ -739,7 +749,13 @@ def verify_tool(tool_id,
     if test_history is None:
         test_history = galaxy_interactor.new_history()
 
-    stage_data_in_history(galaxy_interactor, tool_id, testdef.test_data(), history=test_history, force_path_paste=force_path_paste)
+    stage_data_in_history(galaxy_interactor,
+                          tool_id,
+                          testdef.test_data(),
+                          history=test_history,
+                          force_path_paste=force_path_paste,
+                          maxseconds=maxseconds,
+                          )
 
     # Once data is ready, run the tool and check the outputs - record API
     # input, job info, tool run exception, as well as exceptions related to
