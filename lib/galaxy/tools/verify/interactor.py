@@ -48,7 +48,6 @@ DEFAULT_FTYPE = 'auto'
 # This following default dbkey was traditionally hg17 before Galaxy 18.05,
 # restore this behavior by setting GALAXY_TEST_DEFAULT_DBKEY to hg17.
 DEFAULT_DBKEY = os.environ.get("GALAXY_TEST_DEFAULT_DBKEY", "?")
-DEFAULT_MAX_SECS = DEFAULT_TOOL_TEST_WAIT
 
 
 class OutputsDict(OrderedDict):
@@ -1027,7 +1026,7 @@ class ToolTestDescription(object):
     def __init__(self, processed_test_dict):
         test_index = processed_test_dict["test_index"]
         name = processed_test_dict.get('name', 'Test-%d' % (test_index + 1))
-        maxseconds = processed_test_dict.get('maxseconds', DEFAULT_MAX_SECS)
+        maxseconds = processed_test_dict.get('maxseconds', DEFAULT_TOOL_TEST_WAIT)
         if maxseconds is not None:
             maxseconds = int(maxseconds)
 
