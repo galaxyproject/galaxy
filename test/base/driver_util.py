@@ -162,7 +162,7 @@ def setup_galaxy_config(
         library_import_dir = None
     job_config_file = os.environ.get('GALAXY_TEST_JOB_CONFIG_FILE', default_job_config_file)
     tool_path = os.environ.get('GALAXY_TEST_TOOL_PATH', 'tools')
-    tool_dependency_dir = os.environ.get('GALAXY_TOOL_DEPENDENCY_DIR', None)
+    tool_dependency_dir = os.environ.get('GALAXY_TEST_TOOL_DEPENDENCY_DIR', None)
     if tool_dependency_dir is None:
         tool_dependency_dir = tempfile.mkdtemp(dir=tmpdir, prefix="tool_dependencies")
     tool_data_table_config_path = _tool_data_table_config_path(default_tool_data_table_config_path)
