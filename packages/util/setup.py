@@ -80,6 +80,10 @@ setup(
     package_dir=PACKAGE_DIR,
     include_package_data=True,
     install_requires=requirements,
+    extras_require={
+        'template': ['future', 'Cheetah3'],
+        'jstree': ['dictobj'],
+    },
     license="AFL",
     zip_safe=False,
     keywords='galaxy',
