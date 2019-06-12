@@ -156,7 +156,7 @@ jobs:
       - run: tox -e validate_test_tools
   test_galaxy_packages:
     docker:
-      - image: circleci/python:2.7.15
+      - image: circleci/python:3.5
     <<: *set_workdir
     steps:
       - *restore_repo_cache
