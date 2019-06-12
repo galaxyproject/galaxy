@@ -84,7 +84,7 @@ class ToolConfWatcher(object):
             if self.thread is None:
                 self.thread = threading.Thread(target=self.check)
                 self.thread.daemon = True
-            self.thread.start()
+                self.thread.start()
 
     def shutdown(self):
         if self._active:
