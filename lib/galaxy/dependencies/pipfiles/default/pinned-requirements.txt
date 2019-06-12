@@ -29,7 +29,7 @@ bleach==3.1.0
 boltons==19.1.0
 boto3==1.9.114
 boto==2.49.0
-botocore==1.12.164
+botocore==1.12.165
 bx-python==0.8.2
 bz2file==0.98 ; python_version < '3.3'
 cachecontrol==0.11.7
@@ -79,7 +79,7 @@ jsonschema==3.0.1
 keystoneauth1==3.14.0
 kombu==4.6.1
 lockfile==0.12.2
-lxml==4.3.3
+lxml==4.3.4
 mako==1.0.12
 markupsafe==1.1.1
 mercurial==3.7.3 ; python_version < '3'
@@ -109,7 +109,7 @@ oslo.log==3.44.0
 oslo.serialization==2.29.1
 oslo.utils==3.41.0
 packaging==19.0
-paramiko==2.4.2
+paramiko==2.5.0
 parsley==1.3
 paste==3.0.8
 pastedeploy==2.0.1
@@ -168,7 +168,7 @@ six==1.11.0
 social-auth-core[openidconnect]==3.1.0+gx0
 sqlalchemy-migrate==0.12.0
 sqlalchemy-utils==0.34.0
-sqlalchemy==1.2.19
+sqlalchemy==1.3.4
 sqlparse==0.3.0
 stevedore==1.30.1
 subprocess32==3.5.4 ; python_version < '3.0'
