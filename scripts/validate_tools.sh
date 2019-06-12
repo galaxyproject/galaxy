@@ -2,7 +2,7 @@
 
 cd `dirname $0`/..
 
-./scripts/common_startup.sh
+GALAXY_SKIP_CLIENT_BUILD=1 ./scripts/common_startup.sh
 GALAXY_VIRTUAL_ENV="${GALAXY_VIRTUAL_ENV:-.venv}"
 if [ -d "$GALAXY_VIRTUAL_ENV" ];
 then
@@ -10,7 +10,7 @@ then
     . "$GALAXY_VIRTUAL_ENV/bin/activate"
 fi
 
-xsd_path="lib/galaxy/tools/xsd/galaxy.xsd"
+xsd_path="lib/galaxy/tool_util/xsd/galaxy.xsd"
 
 err_tmp=`mktemp`
 count=0

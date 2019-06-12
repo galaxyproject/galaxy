@@ -53,6 +53,7 @@ PACKAGE_DATA = {
     'galaxy': [
         'tool_util/deps/mulled/invfile.lua',
         'tool_util/deps/resolvers/default_conda_mapping.yml',
+        'tool_util/xsd/galaxy.xsd',
     ],
 }
 PACKAGE_DIR = {

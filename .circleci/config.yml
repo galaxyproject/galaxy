@@ -160,7 +160,7 @@ jobs:
     <<: *set_workdir
     steps:
       - *restore_repo_cache
-      - run: sh packages/test.sh
+      - run: bash packages/test.sh
   check_py3_compatibility:
     docker:
       - image: circleci/python:2.7.15
