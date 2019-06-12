@@ -733,15 +733,14 @@ def verify_tool(tool_id,
                 quiet=False,
                 test_history=None,
                 force_path_paste=False,
-                maxseconds=None,
+                maxseconds=DEFAULT_TOOL_TEST_WAIT,
                 tool_test_dicts=None):
     if resource_parameters is None:
         resource_parameters = {}
     tool_test_dicts = tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
     tool_test_dict = tool_test_dicts[test_index]
+    tool_test_dict.setdefault('maxseconds', maxseconds)
     testdef = ToolTestDescription(tool_test_dict)
-    if maxseconds is not None:
-        testdef.maxseconds = int(maxseconds)
     _handle_def_errors(testdef)
 
     if test_history is None:
@@ -752,8 +751,7 @@ def verify_tool(tool_id,
                           testdef.test_data(),
                           history=test_history,
                           force_path_paste=force_path_paste,
-                          maxseconds=maxseconds,
-                          )
+                          maxseconds=maxseconds)
 
     # Once data is ready, run the tool and check the outputs - record API
     # input, job info, tool run exception, as well as exceptions related to
