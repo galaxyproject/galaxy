@@ -69,7 +69,8 @@ class ConditionalDependencies(object):
                     pass
             else:
                 try:
-                    job_conf_dict = yaml.safe_load(job_conf_path)
+                    with open("job_conf_path", "r") as f:
+                        job_conf_dict = yaml.safe_load(f)
                     load_job_config_dict(job_conf_dict)
                 except (OSError, IOError):
                     pass
