@@ -247,9 +247,7 @@ class GalaxyInteractorApi(object):
     def wait_for(self, func, **kwd):
         sleep_amount = 0.2
         slept = 0
-        walltime_exceeded = kwd.get("maxseconds")
-        if walltime_exceeded is None:
-            walltime_exceeded = DEFAULT_TOOL_TEST_WAIT
+        walltime_exceeded = int(kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT))
 
         while slept <= walltime_exceeded:
             result = func()
