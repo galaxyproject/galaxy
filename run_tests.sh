@@ -1,7 +1,6 @@
 #!/bin/sh
 
-pwd_dir=$(pwd)
-cd `dirname $0`
+cd "$(dirname "$0")"
 
 rm -f run_functional_tests.log
 
@@ -318,8 +317,8 @@ then
         -e "GALAXY_TEST_DATABASE_TYPE=$db_type" \
         -e "LC_ALL=C" \
         --rm \
-        -v `pwd`:/galaxy \
-        -v `pwd`/test/docker/base/run_test_wrapper.sh:/usr/local/bin/run_test_wrapper.sh $DOCKER_IMAGE "$@"
+        -v "$(pwd)":/galaxy \
+        -v "$(pwd)"/test/docker/base/run_test_wrapper.sh:/usr/local/bin/run_test_wrapper.sh "$DOCKER_IMAGE" "$@"
     exit $?
 fi
 
@@ -607,7 +606,7 @@ elif [ -n "$toolshed_script" ]; then
 elif [ -n "$api_script" ]; then
     extra_args="$api_script"
 elif [ -n "$section_id" ]; then
-    extra_args=`python tool_list.py $section_id`
+    extra_args=$(python tool_list.py "$section_id")
 elif [ -n "$unit_extra" ]; then
     extra_args="$unit_extra"
 elif [ -n "$integration_extra" ]; then
