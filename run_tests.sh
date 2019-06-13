@@ -411,15 +411,15 @@ do
           shift
           ;;
       --external_url)
-          GALAXY_TEST_EXTERNAL=$2
+          export GALAXY_TEST_EXTERNAL=$2
           shift 2
           ;;
       --external_master_key)
-          GALAXY_CONFIG_MASTER_KEY=$2
+          export GALAXY_CONFIG_MASTER_API_KEY=$2
           shift 2
           ;;
       --external_user_key)
-          GALAXY_TEST_USER_API_KEY=$2
+          export GALAXY_TEST_USER_API_KEY=$2
           shift 2
           ;;
       -f|-framework|--framework)
