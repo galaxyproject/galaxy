@@ -256,6 +256,8 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .popover {
     max-width: 700px;
     .popover-header {
+        color: $brand-white;
+        background-color: $brand-primary;
         i {
             @extend .float-right;
             @extend .pl-4;
