@@ -10,13 +10,14 @@ chardet==3.0.4
 commonmark==0.9.0
 configparser==3.7.4 ; python_version < '3.2'
 contextlib2==0.5.5 ; python_version < '3.5'
+coverage==4.5.3
 docutils==0.14
 funcsigs==1.0.2 ; python_version < '3.3'
 future==0.17.1
 gunicorn==19.9.0
 idna==2.8
 imagesize==1.1.0
-importlib-metadata==0.17
+importlib-metadata==0.18
 jinja2==2.10.1
 lxml==4.3.4
 markdown==2.6.11
@@ -31,16 +32,17 @@ pathlib2==2.3.2 ; python_version < '3'
 pathtools==0.1.2
 pluggy==0.12.0
 port-for==0.4
-psutil==5.6.2
+psutil==5.6.3
 py==1.8.0
 pygithub3==0.5.1 ; python_version < '3'
 pygments==2.4.2
 pyparsing==2.4.0
+pytest-cov==2.7.1
 pytest-html==1.20.0
 pytest-metadata==1.8.0
 pytest-postgresql==1.4.1
 pytest-pythonpath==0.7.3
-pytest==4.6.2
+pytest==4.6.3
 pytz==2019.1
 pyyaml==5.1.1
 recommonmark==0.5.0
