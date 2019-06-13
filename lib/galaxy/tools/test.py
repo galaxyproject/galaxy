@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 @nottest
 def parse_tests(tool, tests_source):
     """
-    Build ToolTestBuilder objects for each "<test>" elements and
+    Build ToolTestDescription objects for each "<test>" elements and
     return default interactor (if any).
     """
     raw_tests_dict = tests_source.parse_tests_to_dict()
