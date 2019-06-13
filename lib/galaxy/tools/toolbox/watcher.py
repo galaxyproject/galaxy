@@ -75,13 +75,14 @@ class ToolConfWatcher(object):
         self._active = False
         self._lock = threading.Lock()
         self.thread = None
-        self.exit = threading.Event()
+
         self.reload_callback = reload_callback
 
     def start(self):
         if not self._active:
             self._active = True
             if self.thread is None:
+                self.exit = threading.Event()
                 self.thread = threading.Thread(target=self.check)
                 self.thread.daemon = True
                 self.thread.start()
@@ -93,6 +94,7 @@ class ToolConfWatcher(object):
                 self.exit.set()
                 self.thread.join()
             self.thread = None
+            self.exit = None
 
     def check(self):
         """Check for changes in self.paths or self.cache and call the event handler."""
