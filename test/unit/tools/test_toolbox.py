@@ -562,9 +562,6 @@ class SimplifiedToolBox(ToolBox):
         # Need to start thread now for new reload callback to take effect
         self.app.watchers.start()
 
-    def handle_panel_update(self, section_dict):
-        self.create_section(section_dict)
-
 
 def reload_callback(test_case):
     test_case.app.tool_cache.cleanup()
