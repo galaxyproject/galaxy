@@ -1,7 +1,6 @@
 #!/bin/sh
 
-pwd_dir=$(pwd)
-cd `dirname $0`
+cd "$(dirname "$0")"
 
 rm -f run_functional_tests.log
 
@@ -318,8 +317,8 @@ then
         -e "GALAXY_TEST_DATABASE_TYPE=$db_type" \
         -e "LC_ALL=C" \
         --rm \
-        -v `pwd`:/galaxy \
-        -v `pwd`/test/docker/base/run_test_wrapper.sh:/usr/local/bin/run_test_wrapper.sh $DOCKER_IMAGE "$@"
+        -v "$(pwd)":/galaxy \
+        -v "$(pwd)"/test/docker/base/run_test_wrapper.sh:/usr/local/bin/run_test_wrapper.sh "$DOCKER_IMAGE" "$@"
     exit $?
 fi
 
@@ -374,7 +373,6 @@ do
               api_script="./test/api"
               shift 1
           fi
-          coverage_file="api_coverage.xml"
           ;;
       -selenium|--selenium)
           GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
@@ -412,15 +410,15 @@ do
           shift
           ;;
       --external_url)
-          GALAXY_TEST_EXTERNAL=$2
+          export GALAXY_TEST_EXTERNAL=$2
           shift 2
           ;;
       --external_master_key)
-          GALAXY_CONFIG_MASTER_KEY=$2
+          export GALAXY_CONFIG_MASTER_API_KEY=$2
           shift 2
           ;;
       --external_user_key)
-          GALAXY_TEST_USER_API_KEY=$2
+          export GALAXY_TEST_USER_API_KEY=$2
           shift 2
           ;;
       -f|-framework|--framework)
@@ -428,7 +426,6 @@ do
           marker="-m tool"
           test_script="pytest"
           report_file="run_framework_tests.html"
-          coverage_file="framework_coverage.xml"
           framework_test=1;
           shift 1
           ;;
@@ -437,7 +434,6 @@ do
           marker="-m tool"
           test_script="pytest"
           report_file="run_framework_tests.html"
-          coverage_file="main_tools_coverage.xml"
           framework_test=1;
           shift 1
           ;;
@@ -445,7 +441,6 @@ do
           marker="-m data_manager"
           test_script="pytest"
           report_file="run_data_managers_tests.html"
-          coverage_file="data_managers_coverage.xml"
           data_managers_test=1;
           shift 1
           ;;
@@ -454,7 +449,6 @@ do
           marker="-m tool"
           test_script="pytest"
           report_file="run_migrated_tests.html"
-          coverage_file="migrated_coverage.xml"
           migrated_test=1;
           shift
           ;;
@@ -463,7 +457,6 @@ do
           marker="-m tool"
           test_script="pytest"
           report_file="run_installed_tests.html"
-          coverage_file="installed_coverage.xml"
           installed_test=1;
           shift
           ;;
@@ -503,7 +496,6 @@ do
           # Must have coverage installed (try `which coverage`) - only valid with --unit
           # for now. Would be great to get this to work with functional tests though.
           coverage_arg="--with-coverage"
-          NOSE_WITH_COVERAGE=true
           shift
           ;;
       --debug)
@@ -523,7 +515,6 @@ do
               unit_extra="$unit_extra lib test/unit"
               shift 1
           fi
-          coverage_file="unit_coverage.xml"
           ;;
       -i|-integration|--integration)
           GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
@@ -535,7 +526,6 @@ do
           else
               integration_extra="./test/integration"
               shift 1
-          coverage_file="integration_coverage.xml"
           fi
           ;;
       --no_cleanup)
@@ -616,7 +606,7 @@ elif [ -n "$toolshed_script" ]; then
 elif [ -n "$api_script" ]; then
     extra_args="$api_script"
 elif [ -n "$section_id" ]; then
-    extra_args=`python tool_list.py $section_id`
+    extra_args=$(python tool_list.py "$section_id")
 elif [ -n "$unit_extra" ]; then
     extra_args="$unit_extra"
 elif [ -n "$integration_extra" ]; then
@@ -645,8 +635,8 @@ else
 fi
 export GALAXY_TEST_TOOL_CONF
 if [ "$test_script" = 'pytest' ]; then
-    if [ "$coverage_arg" = "--with_coverage" ]; then
-        coverage_arg="--cov-report term --cov-report xml:cov-unit.xml --cov=lib"
+    if [ "$coverage_arg" = '--with-coverage' ]; then
+        coverage_arg="--cov-report term --cov=lib"
     fi
     "$test_script" -v --html "$report_file" $coverage_arg  $xunit_args $extra_args "$@"
 else
