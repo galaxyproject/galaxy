@@ -2402,6 +2402,14 @@ class DatasetInstance(object):
         self.parent_id = parent_id
         self.validation_errors = validation_errors
 
+    @property
+    def peek(self):
+        return self._peek
+
+    @peek.setter
+    def peek(self, peek):
+        self._peek = unicodify(peek, strip_null=True)
+
     def update(self):
         self.update_time = galaxy.model.orm.now.now()
 
