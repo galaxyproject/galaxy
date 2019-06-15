@@ -189,7 +189,7 @@
         %if install_tool_dependencies_check_box is not None:
             <div class="form-row">
                 <label>When available, install Tool Shed managed tool dependencies?</label>
-                <% disabled = trans.app.config.tool_dependency_dir is None %>
+                <% disabled = trans.app.tool_dependency_dir is None %>
                 ${render_checkbox(install_tool_dependencies_check_box, disabled=disabled)}
                 <div class="toolParamHelp" style="clear: both;">
                     %if disabled:

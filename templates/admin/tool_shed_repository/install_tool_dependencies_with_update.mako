@@ -31,7 +31,7 @@ ${render_galaxy_repository_actions( repository )}
                 %if install_tool_dependencies_check_box is not None:
                     <div class="form-row">
                         <label>Handle tool dependencies?</label>
-                        <% disabled = trans.app.config.tool_dependency_dir is None %>
+                        <% disabled = trans.app.tool_dependency_dir is None %>
                         ${render_checkbox(install_tool_dependencies_check_box, disabled=disabled)}
                         <div class="toolParamHelp" style="clear: both;">
                             %if disabled:
@@ -63,7 +63,7 @@ ${render_galaxy_repository_actions( repository )}
                                     key_name = key_items[ 0 ]
                                     key_version = key_items[ 1 ]
                                     readme_text = requirements_dict.get( 'readme', None )
-                                    install_dir = os.path.join( trans.app.config.tool_dependency_dir,
+                                    install_dir = os.path.join( trans.app.tool_dependency_dir,
                                                                 key_name,
                                                                 key_version,
                                                                 repository.owner,
