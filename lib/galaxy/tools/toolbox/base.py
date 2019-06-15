@@ -1139,7 +1139,9 @@ class BaseGalaxyToolBox(AbstractToolBox):
         return looks_like_a_tool(path, enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False))
 
     def _init_dependency_manager(self):
-        self.dependency_manager = build_dependency_manager(self.app.config)
+        app_config_dict = self.app.config.config_dict
+        conf_file = app_config_dict.get("dependency_resolvers_config_file")
+        self.dependency_manager = build_dependency_manager(app_config_dict=app_config_dict, conf_file=conf_file, default_tool_dependency_dir="database/dependencies")
 
     def reload_dependency_manager(self):
         self._init_dependency_manager()
