@@ -1021,10 +1021,6 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
     """
     if value is None:
         return value
-    if isinstance(value, text_type):
-        if strip_null:
-            return value.replace('\0', '')
-        return value
     try:
         if isinstance(value, bytearray):
             value = bytes(value)
