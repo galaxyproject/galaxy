@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 
 class AuthnzManager(object):
 
-    def __init__(self, app, oidc_config_file, oidc_backends_config_file):
+    def __init__(self, app, oidc_config_file, oidc_backends_config_file, cloudauthz_backends_config_file):
         """
         :type app: galaxy.app.UniverseApplication
         :param app:
@@ -43,6 +43,7 @@ class AuthnzManager(object):
         self.app = app
         self._parse_oidc_config(oidc_config_file)
         self._parse_oidc_backends_config(oidc_backends_config_file)
+        self._parse_cloudauthz_backends_config(cloudauthz_backends_config_file)
 
     def _parse_oidc_config(self, config_file):
         self.oidc_config = {}
@@ -101,6 +102,38 @@ class AuthnzManager(object):
                     self.app.config.oidc.append(idp)
             if len(self.oidc_backends_config) == 0:
                 raise ParseError("No valid provider configuration parsed.")
+        except ImportError:
+            raise
+        except ParseError as e:
+            raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
+
+    def _parse_cloudauthz_backends_config(self, config_file):
+        self.cloudauthz_backends_config = {}
+        try:
+            tree = ET.parse(config_file)
+            root = tree.getroot()
+            if root.tag != 'Backends':
+                raise ParseError("The root element in cloudauthz_backends_config.xml file "
+                                 "is expected to be `Backends`, found `{}` instead -- unable "
+                                 "to continue.".format(root.tag))
+
+            for child in root:
+                if child.tag != "provider":
+                    log.error("Expect a node with `provider` tag, found a node with `{}` tag instead; "
+                              "skipping the node.".format(child.tag))
+                    continue
+
+                if 'name' not in child.attrib:
+                    log.error("Could not find a node attribute 'name'; skipping the node '{}'.".format(child.tag))
+                    continue
+
+                provider = child.get('name').lower()
+                if provider == "gcp":
+                    try:
+                        config = {"service_account_credentials": child.find("service_account_credentials").text}
+                        self.cloudauthz_backends_config[provider] = config
+                    except Exception as e:
+                        raise e
         except ImportError:
             raise
         except ParseError as e:
