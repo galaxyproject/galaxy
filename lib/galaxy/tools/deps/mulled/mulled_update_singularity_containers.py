@@ -24,16 +24,7 @@ def get_list_from_file(filename):
 
 def docker_to_singularity(container, installation, filepath, no_sudo=False):
     """
-    Convert docker to singularity container
-    >>> from glob import glob
-    >>> import os, shutil
-    >>> os.mkdir('/tmp/singtest')
-    >>> glob('/tmp/singtest/abundancebin:1.0.1--0')
-    []
-    >>> docker_to_singularity('abundancebin:1.0.1--0', 'singularity', '/tmp/singtest', no_sudo=True)
-    >>> glob('/tmp/singtest/abundancebin:1.0.1--0')
-    ['/tmp/singtest/abundancebin:1.0.1--0']
-    >>> shutil.rmtree('/tmp/singtest')
+    Convert docker to singularity container.
     """
 
     try:

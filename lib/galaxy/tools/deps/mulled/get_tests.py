@@ -20,19 +20,17 @@ from jinja2.exceptions import UndefinedError
 from galaxy.tools.deps.mulled.util import split_container_name
 
 
-def get_commands_from_yaml(file):
-    r"""
-    Get tests from a yaml file
-    >>> get_commands_from_yaml(b'{% set name = "eagle" %}\\n\\npackage:\\n  name: \\'{{ name }}\\'\\n\\nrequirements:\\n  run:\\n    - python\\n    - flask\\n\\ntest:\\n  imports:\\n    - eagle\\n  commands:\\n    - eagle --help') == {'imports': ['eagle'], 'commands': ['eagle --help'], 'import_lang': 'python -c'}
-    True
+def get_commands_from_yaml(yaml_content):
+    """
+    Parse tests from Conda's meta.yaml file contents
     """
     package_tests = {}
 
     try:
         # we expect to get an input in bytes, so first decode to string; run the file through the jinja processing; load as yaml
-        meta_yaml = yaml.load(Template(file.decode('utf-8')).render(), Loader=yaml.SafeLoader)
+        meta_yaml = yaml.load(Template(yaml_content.decode('utf-8')).render(), Loader=yaml.SafeLoader)
     except (yaml.scanner.ScannerError, UndefinedError) as e:  # what about things like {{ compiler('cxx') }}
-        logging.info(e)
+        logging.info(e, exc_info=True)
         return None
     try:
         if meta_yaml['test']['commands'] != [None] and meta_yaml['test']['commands'] is not None:
@@ -54,7 +52,7 @@ def get_commands_from_yaml(file):
     try:
         requirements = list(meta_yaml['requirements']['run'])
     except (KeyError, TypeError):
-        logging.info('Error reading requirements')
+        logging.info('Error reading requirements', exc_info=True)
         pass
     else:
         for requirement in requirements:
