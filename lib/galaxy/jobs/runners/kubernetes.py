@@ -438,7 +438,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     job_state.job_wrapper.change_state(model.Job.states.RUNNING)
                 return job_state
             elif job_state.job_wrapper.get_job().state == model.Job.states.DELETED:
-                # Job has been deleted via stop_job, cleanup and remove from watched_jobs by returning `None`
+                # Job has been deleted via stop_job and job has not been deleted,
+                # remove from watched_jobs by returning `None`
                 if job_state.job_wrapper.cleanup_job in ("always", "onsuccess"):
                     job_state.job_wrapper.cleanup()
                 return None
@@ -446,6 +447,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return self._handle_job_failure(job, job_state)
 
         elif len(jobs.response['items']) == 0:
+            if job_state.job_wrapper.get_job().state == model.Job.states.DELETED:
+                # Job has been deleted via stop_job and job has been deleted,
+                # cleanup and remove from watched_jobs by returning `None`
+                if job_state.job_wrapper.cleanup_job in ("always", "onsuccess"):
+                    job_state.job_wrapper.cleanup()
+                return None
             # there is no job responding to this job_id, it is either lost or something happened.
             log.error("No Jobs are available under expected selector app=%s", job_state.job_id)
             with open(job_state.error_file, 'w') as error_file:
