@@ -67,7 +67,7 @@ def cli_job_config(remote_connection, shell_plugin='ParamikoShell', job_plugin='
     job_conf_str = job_conf_template.substitute(shell_plugin=shell_plugin,
                                                 job_plugin=job_plugin,
                                                 **remote_connection._asdict())
-    with tempfile.NamedTemporaryFile(suffix="_slurm_integration_job_conf", mode="w", delete=False) as job_conf:
+    with tempfile.NamedTemporaryFile(suffix="_slurm_integration_job_conf.xml", mode="w", delete=False) as job_conf:
         job_conf.write(job_conf_str)
     return job_conf.name
 
