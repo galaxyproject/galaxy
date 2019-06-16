@@ -213,6 +213,8 @@ class AuthnzManager(object):
                 raise exceptions.AuthenticationFailed(
                     err_msg="An error occurred getting your ID token. {}. If the problem persists, please "
                             "contact Galaxy admin.".format(msg))
+        elif cloudauthz.provider == "gcp":
+            config["server_credentials"] = self.cloudauthz_backends_config.get("gcp").get("service_account_credentials")
         return config
 
     @staticmethod
