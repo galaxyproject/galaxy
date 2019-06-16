@@ -29,17 +29,17 @@ bleach==3.1.0
 boltons==19.1.0
 boto3==1.9.114
 boto==2.49.0
-botocore==1.12.167
+botocore==1.12.169
 bx-python==0.8.2
 bz2file==0.98 ; python_version < '3.3'
 cachecontrol==0.11.7
 cachetools==3.1.1
-certifi==2019.3.9
+certifi==2019.6.16
 cffi==1.12.3
 chardet==3.0.4
 cheetah3==3.2.3
-cliff==2.14.1
-cloudauthz==0.2.0
+cliff==2.15.0
+cloudauthz==0.4.0
 cloudbridge==2.0.0
 cmd2==0.8.9
 contextlib2==0.5.5 ; python_version < '3.5'
@@ -77,7 +77,7 @@ jsonpatch==1.23
 jsonpointer==2.0
 jsonschema==3.0.1
 keystoneauth1==3.14.0
-kombu==4.6.1
+kombu==4.6.3
 lockfile==0.12.2
 lxml==4.3.4
 mako==1.0.12
@@ -102,7 +102,7 @@ openstacksdk==0.17.0
 os-client-config==1.32.0
 os-service-types==1.7.0
 osc-lib==1.12.1
-oslo.config==6.9.0
+oslo.config==6.10.0
 oslo.context==2.22.1
 oslo.i18n==3.23.1
 oslo.log==3.44.0
@@ -115,7 +115,7 @@ paste==3.0.8
 pastedeploy==2.0.1
 pastescript==3.1.0
 pathlib2==2.3.2 ; python_version < '3'
-pbr==5.2.1
+pbr==5.3.0
 prettytable==0.7.2
 prov==1.5.1
 psutil==5.6.3
