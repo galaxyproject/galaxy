@@ -6,8 +6,8 @@ from six import string_types, text_type
 from six.moves import shlex_quote
 
 from galaxy import exceptions
+from galaxy.model.none_like import NoneDataset
 from galaxy.util import odict
-from galaxy.util.none_like import NoneDataset
 from galaxy.util.object_wrapper import wrap_with_safe_string
 
 log = logging.getLogger(__name__)

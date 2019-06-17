@@ -111,7 +111,7 @@ def job_config(jobs_directory):
                                                 tool_directory=TOOL_DIR,
                                                 k8s_config_path=os.environ.get('GALAXY_TEST_KUBE_CONFIG_PATH', '~/.kube/config'),
                                                 )
-    with tempfile.NamedTemporaryFile(suffix="_kubernetes_integration_job_conf", mode="w", delete=False) as job_conf:
+    with tempfile.NamedTemporaryFile(suffix="_kubernetes_integration_job_conf.xml", mode="w", delete=False) as job_conf:
         job_conf.write(job_conf_str)
     return Config(job_conf.name)
 

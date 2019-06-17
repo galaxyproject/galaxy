@@ -41,7 +41,7 @@ UNKNOWN_FIND_BY_MESSAGE = "ModuleDependencyResolver does not know how to find mo
 
 
 class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
-    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'modulepath']
+    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'modulepath', 'modulecmd', 'prefetch', 'default_indicator', 'find_by']
     resolver_type = "modules"
 
     def __init__(self, dependency_manager, **kwds):
@@ -50,6 +50,7 @@ class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
         self._setup_mapping(dependency_manager, **kwds)
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         find_by = kwds.get('find_by', 'avail')
+        self.find_by = find_by
         prefetch = _string_as_bool(kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
         self.modulecmd = kwds.get('modulecmd', DEFAULT_MODULECMD_PATH)
         self.modulepath = kwds.get('modulepath', self.__default_modulespath())

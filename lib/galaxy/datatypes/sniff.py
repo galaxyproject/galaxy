@@ -76,6 +76,8 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
         else:
             # Compressed files must be encoded after they are uncompressed in the upload utility,
             # while binary files should not be encoded at all.
+            if isinstance(chunk, text_type):
+                chunk = chunk.encode(target_encoding, target_error)
             os.write(fd, chunk)
     os.close(fd)
     return filename

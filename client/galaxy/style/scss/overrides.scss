@@ -85,3 +85,18 @@ pre.code {
     color: white;
     padding: 1em;
 }
+
+// increase visibility of links within alert boxes
+.alert-info, .alert-danger, .alert-warning, .alert-success {
+    a {
+        font-weight: bold;
+    }
+}
+
+// increase visibility of dropdown menu section headers
+.dropdown-header {
+    font-size: 1rem;
+    color: $brand-dark;
+    padding: .5rem 1.5rem .5rem 1rem;
+    font-weight: bold;
+}

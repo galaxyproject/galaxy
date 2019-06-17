@@ -1456,7 +1456,8 @@ class JobWrapper(HasResourceParameters):
             if not os.path.exists(version_filename):
                 version_filename = self.get_version_string_path_legacy()
             if os.path.exists(version_filename):
-                self.version_string = open(version_filename).read()
+                with open(version_filename, 'rb') as fh:
+                    self.version_string = galaxy.util.shrink_and_unicodify(fh.read())
                 os.unlink(version_filename)
 
         outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))

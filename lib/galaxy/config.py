@@ -50,7 +50,7 @@ PATH_DEFAULTS = dict(
     error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
     oidc_config_file=['config/oidc_config.yml', 'config/oidc_config.yml.sample'],
     oidc_backends_config_file=['config/oidc_backends_config.yml', 'config/oidc_backends_config.yml.sample'],
-    dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
+    dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml', None],
     job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
     workflow_resource_params_file=['config/workflow_resource_params_conf.xml', 'workflow_resource_params_conf.xml'],
     migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
@@ -142,6 +142,9 @@ def find_path(kwargs, var, root):
         path = kwargs.get(var)
     else:
         for default in defaults:
+            if default is None:
+                # if None is the final default - just return that.
+                return None
             if os.path.exists(resolve_path(default, root)):
                 path = default
                 break
@@ -506,6 +509,7 @@ class Configuration(object):
         self.use_cached_dependency_manager = use_cached_dependency_manager
         self.tool_dependency_cache_dir = tool_dependency_cache_dir
         self.precache_dependencies = precache_dependencies
+        self.dependency_resolvers = kwargs.get("dependency_resolvers")
         # Deployers may either specify a complete list of mapping files or get the default for free and just
         # specify a local mapping file to adapt and extend the default one.
         if "conda_mapping_files" in kwargs:
@@ -938,7 +942,10 @@ def parse_dependency_options(kwargs, root, dependency_resolvers_config_file):
         precache_dependencies = string_as_bool(kwargs.get("precache_dependencies", 'True'))
     else:
         tool_dependency_dir = None
-        use_tool_dependencies = os.path.exists(dependency_resolvers_config_file)
+        if dependency_resolvers_config_file is None:
+            use_tool_dependencies = bool(kwargs.get("dependency_resolvers", None))
+        else:
+            use_tool_dependencies = os.path.exists(dependency_resolvers_config_file)
         tool_dependency_cache_dir = None
         precache_dependencies = False
         use_cached_dependency_manager = False
