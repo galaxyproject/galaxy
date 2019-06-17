@@ -82,7 +82,7 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
 
         Objectstore _randomly_ distributes tools outputs on
         `primary/files1` and `primary/files2`, and will use
-        `secondary/files3` and both `primary` backends fail.
+        `secondary/files3` if both `primary` backends fail.
 
         This test runs a tools that creates ten dummy datasets,
         and asserts if ObjectStore correctly creates ten files
