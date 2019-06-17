@@ -344,8 +344,8 @@ class CloudManager(sharable.SharableModelManager):
                 try:
                     object_label = hda.name.replace(" ", "_")
                     args = {
-                        # We encode ID here because it the tool wrapper assumes
-                        # it receives an encoded ID and attempts decoding it.
+                        # We encode ID here because the tool wrapper expects
+                        # an encoded ID and attempts decoding it.
                         "authz_id": trans.security.encode_id(cloudauthz.id),
                         "bucket": bucket_name,
                         "object_label": object_label,
