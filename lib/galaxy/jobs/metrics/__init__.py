@@ -108,15 +108,15 @@ class JobInstrumenter(object):
         return "\n".join([c for c in commands if c])
 
     def collect_properties(self, job_id, job_directory):
-        per_plugin_properites = {}
+        per_plugin_properties = {}
         for plugin in self.plugins:
             try:
                 properties = plugin.job_properties(job_id, job_directory)
                 if properties:
-                    per_plugin_properites[plugin.plugin_type] = properties
+                    per_plugin_properties[plugin.plugin_type] = properties
             except Exception:
                 log.exception("Failed to collect job properties for plugin %s", plugin)
-        return per_plugin_properites
+        return per_plugin_properties
 
     def __plugins_from_source(self, plugins_source):
         return plugin_config.load_plugins(self.plugin_classes, plugins_source, self.extra_kwargs)
