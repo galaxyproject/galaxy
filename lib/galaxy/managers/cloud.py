@@ -147,6 +147,10 @@ class CloudManager(sharable.SharableModelManager):
                       'os_project_domain_name': prj_domain_name,
                       'os_user_domain_name': user_domain_name}
             connection = CloudProviderFactory().create_provider(ProviderList.OPENSTACK, config)
+        elif provider == "gcp":
+            config = {"gcp_credentials_obj": credentials.get("credentials"),
+                      "gcp_service_creds_dict": {"project_id": credentials.get("project_id")}}
+            connection = CloudProviderFactory().create_provider(ProviderList.GCP, config)
         else:
             raise RequestParameterInvalidException("Unrecognized provider '{}'; the following are the supported "
                                                    "providers: {}.".format(provider, SUPPORTED_PROVIDERS.keys()))
