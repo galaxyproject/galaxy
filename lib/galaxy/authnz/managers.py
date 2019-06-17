@@ -217,6 +217,14 @@ class AuthnzManager(object):
             config["server_credentials"] = self.cloudauthz_backends_config.get("gcp").get("service_account_credentials")
         return config
 
+    def _extend_cloudauthz_credentials(self, cloudauthz, credentials):
+        if cloudauthz.provider == "gcp":
+            credentials = {
+                "credentials": credentials,
+                "project_id": cloudauthz.config.get("project_id", None)
+            }
+        return credentials
+
     @staticmethod
     def can_user_assume_authn(trans, authn_id):
         qres = trans.sa_session.query(model.UserAuthnzToken).get(authn_id)
@@ -338,7 +346,8 @@ class AuthnzManager(object):
             ca = CloudAuthz()
             log.info("Requesting credentials using CloudAuthz with config id `{}` on be half of user `{}`.".format(
                 cloudauthz.id, user_id))
-            return ca.authorize(cloudauthz.provider, config)
+            credentials = ca.authorize(cloudauthz.provider, config)
+            return self._extend_cloudauthz_credentials(cloudauthz, credentials)
         except CloudAuthzBaseException as e:
             log.info(e)
             raise exceptions.AuthenticationFailed(e)
