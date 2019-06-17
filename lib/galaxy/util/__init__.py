@@ -402,6 +402,17 @@ def shrink_stream_by_size(value, size, join_by=b"..", left_larger=True, beginnin
     return unicodify(rval)
 
 
+def shrink_and_unicodify(stream):
+    stream = unicodify(stream, strip_null=True) or u''
+    if (len(stream) > DATABASE_MAX_STRING_SIZE):
+        stream = shrink_string_by_size(stream,
+                                       DATABASE_MAX_STRING_SIZE,
+                                       join_by="\n..\n",
+                                       left_larger=True,
+                                       beginning_on_size_error=True)
+    return stream
+
+
 def shrink_string_by_size(value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False):
     if len(value) > size:
         len_join_by = len(join_by)
@@ -993,7 +1004,7 @@ def roundify(amount, sfs=2):
         return amount[0:sfs] + '0' * (len(amount) - sfs)
 
 
-def unicodify(value, encoding=DEFAULT_ENCODING, error='replace'):
+def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=False):
     u"""
     Returns a Unicode string or None.
 
@@ -1008,7 +1019,7 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace'):
     >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1')) == u'l\ufffdt\ufffdn str\ufffd\ufffdg'
     >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1'), error='ignore') == u'ltn strg'
     """
-    if value is None or isinstance(value, text_type):
+    if value is None:
         return value
     try:
         if isinstance(value, bytearray):
@@ -1025,6 +1036,8 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace'):
         msg = "Value '%s' could not be coerced to Unicode" % value
         log.exception(msg)
         raise Exception(msg)
+    if strip_null:
+        return value.replace('\0', '')
     return value
 
 
