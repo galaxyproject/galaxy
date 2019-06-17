@@ -113,7 +113,7 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
         path1_files = _get_datasets_files_in_path(self.files1_path)
         path2_files = _get_datasets_files_in_path(self.files2_path)
         path3_files = _get_datasets_files_in_path(self.files3_path)
-        for filename in set().union(path1_files, path2_files, path3_files):
+        for filename in path1_files + path2_files + path3_files:
             with open(filename) as f:
                 content = f.read().strip('\n').strip('\t')
                 if content != TEST_INPUT_FILES_CONTENT:
