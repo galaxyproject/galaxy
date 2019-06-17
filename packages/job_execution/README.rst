@@ -1,5 +1,5 @@
 
-.. image:: https://badge.fury.io/py/galaxy-util.svg
+.. image:: https://badge.fury.io/py/galaxy-job-execution.svg
    :target: https://pypi.python.org/pypi/galaxy-util/
 
 
