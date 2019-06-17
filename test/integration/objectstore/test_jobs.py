@@ -115,7 +115,7 @@ class ObjectStoreJobsIntegrationTestCase(integration_util.IntegrationTestCase):
         path3_files = _get_datasets_files_in_path(self.files3_path)
         for filename in path1_files + path2_files + path3_files:
             with open(filename) as f:
-                content = f.read().strip('\n')
+                content = f.read().strip()
                 if content != TEST_INPUT_FILES_CONTENT:
                     contents.append(content)
 
