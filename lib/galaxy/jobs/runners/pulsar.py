@@ -699,7 +699,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def __build_metadata_configuration(self, client, job_wrapper, remote_metadata, remote_job_config):
         metadata_kwds = {}
-        if remote_metadata:
+        if remote_metadata and not job_wrapper.use_metadata_binary:
             remote_system_properties = remote_job_config.get("system_properties", {})
             remote_galaxy_home = remote_system_properties.get("galaxy_home", None)
             if not remote_galaxy_home:

@@ -4,6 +4,7 @@ import logging
 import operator
 import os
 import re
+from tempfile import NamedTemporaryFile
 
 import galaxy.model
 from galaxy.model.dataset_collections import builder
@@ -463,3 +464,63 @@ def _compose(f, g):
 
 DEFAULT_DATASET_COLLECTOR = DatasetCollector(DEFAULT_DATASET_COLLECTOR_DESCRIPTION)
 DEFAULT_TOOL_PROVIDED_DATASET_COLLECTOR = ToolMetadataDatasetCollector(ToolProvidedMetadataDatasetCollection())
+
+
+def read_exit_code_from(exit_code_file, id_tag):
+    """Read exit code reported for a Galaxy job."""
+    try:
+        # This should be an 8-bit exit code, but read ahead anyway:
+        exit_code_str = open(exit_code_file, "r").read(32)
+    except Exception:
+        # By default, the exit code is 0, which typically indicates success.
+        exit_code_str = "0"
+
+    try:
+        # Decode the exit code. If it's bogus, then just use 0.
+        exit_code = int(exit_code_str)
+    except ValueError:
+        galaxy_id_tag = id_tag
+        log.warning("(%s) Exit code '%s' invalid. Using 0." % (galaxy_id_tag, exit_code_str))
+        exit_code = 0
+
+    return exit_code
+
+
+def default_exit_code_file(files_dir, id_tag):
+    return os.path.join(files_dir, 'galaxy_%s.ec' % id_tag)
+
+
+def collect_extra_files(object_store, dataset, job_working_directory):
+    store_by = getattr(object_store, "store_by", "id")
+    file_name = "dataset_%s_files" % getattr(dataset.dataset, store_by)
+    temp_file_path = os.path.join(job_working_directory, file_name)
+    extra_dir = None
+    try:
+        # This skips creation of directories - object store
+        # automatically creates them.  However, empty directories will
+        # not be created in the object store at all, which might be a
+        # problem.
+        for root, dirs, files in os.walk(temp_file_path):
+            extra_dir = root.replace(job_working_directory, '', 1).lstrip(os.path.sep)
+            for f in files:
+                object_store.update_from_file(
+                    dataset.dataset,
+                    extra_dir=extra_dir,
+                    alt_name=f,
+                    file_name=os.path.join(root, f),
+                    create=True,
+                    preserve_symlinks=True
+                )
+    except Exception as e:
+        log.debug("Error in collect_associated_files: %s" % (e))
+
+    # Handle composite datatypes of auto_primary_file type
+    if dataset.datatype.composite_type == 'auto_primary_file' and not dataset.has_data():
+        try:
+            with NamedTemporaryFile(mode='w') as temp_fh:
+                temp_fh.write(dataset.datatype.generate_primary_file(dataset))
+                temp_fh.flush()
+                object_store.update_from_file(dataset.dataset, file_name=temp_fh.name, create=True)
+                dataset.set_size()
+        except Exception as e:
+            log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, e)

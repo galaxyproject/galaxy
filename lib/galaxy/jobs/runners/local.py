@@ -11,6 +11,7 @@ import threading
 from time import sleep
 
 from galaxy import model
+from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.util import (
     asbool,
 )
@@ -65,7 +66,7 @@ class LocalJobRunner(BaseJobRunner):
 
         job_id = job_wrapper.get_id_tag()
         job_file = JobState.default_job_file(job_wrapper.working_directory, job_id)
-        exit_code_path = JobState.default_exit_code_file(job_wrapper.working_directory, job_id)
+        exit_code_path = default_exit_code_file(job_wrapper.working_directory, job_id)
         job_script_props = {
             'slots_statement': slots_statement,
             'command': command_line,
@@ -137,7 +138,7 @@ class LocalJobRunner(BaseJobRunner):
 
         job_destination = job_wrapper.job_destination
         job_state = JobState(job_wrapper, job_destination)
-        job_state.exit_code_file = JobState.default_exit_code_file(job_wrapper.working_directory, job_id)
+        job_state.exit_code_file = default_exit_code_file(job_wrapper.working_directory, job_id)
         job_state.stop_job = False
         self._finish_or_resubmit_job(job_state, stdout, stderr, job_id=job_id)
 

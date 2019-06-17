@@ -16,7 +16,6 @@ import time
 import traceback
 from abc import ABCMeta, abstractmethod
 from json import loads
-from tempfile import NamedTemporaryFile
 from xml.etree import ElementTree
 
 import six
@@ -27,20 +26,25 @@ import galaxy
 from galaxy import model, util
 from galaxy.datatypes import sniff
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
+from galaxy.job_execution.datasets import (
+    DatasetPath,
+    NullDatasetPathRewriter,
+    OutputsToWorkingDirectoryPathRewriter,
+    TaskPathRewriter
+)
+from galaxy.job_execution.output_collect import collect_extra_files
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobMappingException, JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.tool_util.deps import requirements
+from galaxy.tool_util.output_checker import check_output, DETECTED_JOB_STATE
 from galaxy.util import safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.xml_macros import load
 from galaxy.web.stack.handlers import ConfiguresHandlers
-from .datasets import (DatasetPath, NullDatasetPathRewriter,
-    OutputsToWorkingDirectoryPathRewriter, TaskPathRewriter)
-from .output_checker import check_output, DETECTED_JOB_STATE
 
 log = logging.getLogger(__name__)
 
@@ -871,7 +875,7 @@ class JobWrapper(HasResourceParameters):
         self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
-        self.external_output_metadata = get_metadata_compute_strategy(self.app, job.id)
+        self.external_output_metadata = get_metadata_compute_strategy(self.app.config, job.id)
         self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
         self.params = None
         if job.params:
@@ -916,6 +920,10 @@ class JobWrapper(HasResourceParameters):
     @property
     def requires_containerization(self):
         return util.asbool(self.get_destination_configuration("require_container", "False"))
+
+    @property
+    def use_metadata_binary(self):
+        return util.asbool(self.get_destination_configuration('use_metadata_binary', "False"))
 
     def can_split(self):
         # Should the job handler split this job up?
@@ -1390,6 +1398,87 @@ class JobWrapper(HasResourceParameters):
         job.object_store_id = object_store_populator.object_store_id
         self._setup_working_directory(job=job)
 
+    def _finish_dataset(self, output_name, dataset, job, context, final_job_state, remote_metadata_directory):
+        implicit_collection_jobs = job.implicit_collection_jobs_association
+        purged = dataset.dataset.purged
+        if not purged and dataset.dataset.external_filename is None:
+            trynum = 0
+            while trynum < self.app.config.retry_job_output_collection:
+                try:
+                    # Attempt to short circuit NFS attribute caching
+                    os.stat(dataset.dataset.file_name)
+                    os.chown(dataset.dataset.file_name, os.getuid(), -1)
+                    trynum = self.app.config.retry_job_output_collection
+                except (OSError, ObjectNotFound) as e:
+                    trynum += 1
+                    log.warning('Error accessing dataset with ID %i, will retry: %s', dataset.dataset.id, e)
+                    time.sleep(2)
+        if getattr(dataset, "hidden_beneath_collection_instance", None):
+            dataset.visible = False
+        dataset.blurb = 'done'
+        dataset.peek = 'no peek'
+        dataset.info = (dataset.info or '')
+        if context['stdout'].strip():
+            # Ensure white space between entries
+            dataset.info = dataset.info.rstrip() + "\n" + context['stdout'].strip()
+        if context['stderr'].strip():
+            # Ensure white space between entries
+            dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
+        dataset.tool_version = self.version_string
+        dataset.set_size()
+        if 'uuid' in context:
+            dataset.dataset.uuid = context['uuid']
+        self.__update_output(job, dataset)
+        if not purged:
+            collect_extra_files(self.object_store, dataset, self.working_directory)
+        if job.states.ERROR == final_job_state:
+            dataset.blurb = "error"
+            if not implicit_collection_jobs:
+                # Only unhide dataset outputs that are not part of a implicit collection
+                dataset.mark_unhidden()
+        elif not purged:
+            # If the tool was expected to set the extension, attempt to retrieve it
+            if dataset.ext == 'auto':
+                dataset.extension = context.get('ext', 'data')
+                dataset.init_meta(copy_from=dataset)
+            # if a dataset was copied, it won't appear in our dictionary:
+            # either use the metadata from originating output dataset, or call set_meta on the copies
+            # it would be quicker to just copy the metadata from the originating output dataset,
+            # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
+            retry_internally = util.asbool(self.get_destination_configuration("retry_metadata_internally", True))
+            metadata_set_successfully = self.external_output_metadata.external_metadata_set_successfully(dataset, output_name, self.sa_session, working_directory=self.working_directory)
+            if retry_internally and not metadata_set_successfully:
+                # If Galaxy was expected to sniff type and didn't - do so.
+                if dataset.ext == "_sniff_":
+                    extension = sniff.handle_uploaded_dataset_file(dataset.dataset.file_name, self.app.datatypes_registry)
+                    dataset.extension = extension
+
+                # call datatype.set_meta directly for the initial set_meta call during dataset creation
+                dataset.datatype.set_meta(dataset, overwrite=False)
+            elif (job.states.ERROR != final_job_state and not metadata_set_successfully):
+                dataset._state = model.Dataset.states.FAILED_METADATA
+            else:
+                self.external_output_metadata.load_metadata(dataset, output_name, self.sa_session, working_directory=self.working_directory, remote_metadata_directory=remote_metadata_directory)
+            line_count = context.get('line_count', None)
+            try:
+                # Certain datatype's set_peek methods contain a line_count argument
+                dataset.set_peek(line_count=line_count)
+            except TypeError:
+                # ... and others don't
+                dataset.set_peek()
+        else:
+            # Handle purged datasets.
+            dataset.blurb = "empty"
+            if dataset.ext == 'auto':
+                dataset.extension = context.get('ext', 'txt')
+
+        for context_key in TOOL_PROVIDED_JOB_METADATA_KEYS:
+            if context_key in context:
+                context_value = context[context_key]
+                setattr(dataset, context_key, context_value)
+
+        self.sa_session.add(dataset)
+
     def finish(
         self,
         tool_stdout,
@@ -1477,101 +1566,15 @@ class JobWrapper(HasResourceParameters):
                         return self.fail("Job %s's output dataset(s) could not be read" % job.id)
 
         job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
-        implicit_collection_jobs = job.implicit_collection_jobs_association
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context(job_context, dataset_assoc)
             # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
             # lets not allow this to occur
             # need to update all associated output hdas, i.e. history was shared with job running
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations:
-                purged = dataset.dataset.purged
-                if not purged and dataset.dataset.external_filename is None:
-                    trynum = 0
-                    while trynum < self.app.config.retry_job_output_collection:
-                        try:
-                            # Attempt to short circuit NFS attribute caching
-                            os.stat(dataset.dataset.file_name)
-                            os.chown(dataset.dataset.file_name, os.getuid(), -1)
-                            trynum = self.app.config.retry_job_output_collection
-                        except (OSError, ObjectNotFound) as e:
-                            trynum += 1
-                            log.warning('Error accessing dataset with ID %i, will retry: %s', dataset.dataset.id, e)
-                            time.sleep(2)
-                if getattr(dataset, "hidden_beneath_collection_instance", None):
-                    dataset.visible = False
-                dataset.blurb = 'done'
-                dataset.peek = 'no peek'
-                dataset.info = (dataset.info or '')
-                if context['stdout'].strip():
-                    # Ensure white space between entries
-                    dataset.info = dataset.info.rstrip() + "\n" + context['stdout'].strip()
-                if context['stderr'].strip():
-                    # Ensure white space between entries
-                    dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
-                dataset.tool_version = self.version_string
-                dataset.set_size()
-                if 'uuid' in context:
-                    dataset.dataset.uuid = context['uuid']
-                self.__update_output(job, dataset)
-                if not purged:
-                    self._collect_extra_files(dataset.dataset, self.working_directory)
-                # Handle composite datatypes of auto_primary_file type
-                if dataset.datatype.composite_type == 'auto_primary_file' and not dataset.has_data():
-                    try:
-                        with NamedTemporaryFile(mode='w') as temp_fh:
-                            temp_fh.write(dataset.datatype.generate_primary_file(dataset))
-                            temp_fh.flush()
-                            self.object_store.update_from_file(dataset.dataset, file_name=temp_fh.name, create=True)
-                            dataset.set_size()
-                    except Exception as e:
-                        log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, e)
-                if job.states.ERROR == final_job_state:
-                    dataset.blurb = "error"
-                    if not implicit_collection_jobs:
-                        # Only unhide dataset outputs that are not part of a implicit collection
-                        dataset.mark_unhidden()
-                elif not purged:
-                    # If the tool was expected to set the extension, attempt to retrieve it
-                    if dataset.ext == 'auto':
-                        dataset.extension = context.get('ext', 'data')
-                        dataset.init_meta(copy_from=dataset)
-                    # if a dataset was copied, it won't appear in our dictionary:
-                    # either use the metadata from originating output dataset, or call set_meta on the copies
-                    # it would be quicker to just copy the metadata from the originating output dataset,
-                    # but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    retry_internally = util.asbool(self.get_destination_configuration("retry_metadata_internally", True))
-                    metadata_set_successfully = self.external_output_metadata.external_metadata_set_successfully(dataset, dataset_assoc.name, self.sa_session, working_directory=self.working_directory)
-                    if retry_internally and not metadata_set_successfully:
-                        # If Galaxy was expected to sniff type and didn't - do so.
-                        if dataset.ext == "_sniff_":
-                            extension = sniff.handle_uploaded_dataset_file(dataset.dataset.file_name, self.app.datatypes_registry)
-                            dataset.extension = extension
-
-                        # call datatype.set_meta directly for the initial set_meta call during dataset creation
-                        dataset.datatype.set_meta(dataset, overwrite=False)
-                    elif (job.states.ERROR != final_job_state and not metadata_set_successfully):
-                        dataset._state = model.Dataset.states.FAILED_METADATA
-                    else:
-                        self.external_output_metadata.load_metadata(dataset, dataset_assoc.name, self.sa_session, working_directory=self.working_directory, remote_metadata_directory=remote_metadata_directory)
-                    line_count = context.get('line_count', None)
-                    try:
-                        # Certain datatype's set_peek methods contain a line_count argument
-                        dataset.set_peek(line_count=line_count)
-                    except TypeError:
-                        # ... and others don't
-                        dataset.set_peek()
-                else:
-                    # Handle purged datasets.
-                    dataset.blurb = "empty"
-                    if dataset.ext == 'auto':
-                        dataset.extension = context.get('ext', 'txt')
-
-                for context_key in TOOL_PROVIDED_JOB_METADATA_KEYS:
-                    if context_key in context:
-                        context_value = context[context_key]
-                        setattr(dataset, context_key, context_value)
-
-                self.sa_session.add(dataset)
+                self._finish_dataset(
+                    dataset_assoc.name, dataset, job, context, final_job_state, remote_metadata_directory
+                )
             if job.states.ERROR == final_job_state:
                 log.debug("(%s) setting dataset %s state to ERROR", job.id, dataset_assoc.dataset.dataset.id)
                 # TODO: This is where the state is being set to error. Change it!
@@ -1701,31 +1704,6 @@ class JobWrapper(HasResourceParameters):
                 self.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
         except Exception:
             log.exception("Unable to cleanup job %d", self.job_id)
-
-    def _collect_extra_files(self, dataset, job_working_directory):
-        object_store = self.app.object_store
-        store_by = getattr(object_store, "store_by", "id")
-        file_name = "dataset_%s_files" % getattr(dataset, store_by)
-        temp_file_path = os.path.join(job_working_directory, file_name)
-        extra_dir = None
-        try:
-            # This skips creation of directories - object store
-            # automatically creates them.  However, empty directories will
-            # not be created in the object store at all, which might be a
-            # problem.
-            for root, dirs, files in os.walk(temp_file_path):
-                extra_dir = root.replace(job_working_directory, '', 1).lstrip(os.path.sep)
-                for f in files:
-                    self.object_store.update_from_file(
-                        dataset,
-                        extra_dir=extra_dir,
-                        alt_name=f,
-                        file_name=os.path.join(root, f),
-                        create=True,
-                        preserve_symlinks=True
-                    )
-        except Exception as e:
-            log.debug("Error in collect_associated_files: %s" % (e))
 
     def _collect_metrics(self, has_metrics, job_metrics_directory=None):
         job = has_metrics.get_job()
