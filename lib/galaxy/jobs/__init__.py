@@ -1098,6 +1098,10 @@ class JobWrapper(HasResourceParameters):
                 job, base_dir='job_work', dir_only=True, obj_dir=True)
         return self.__working_directory
 
+    def working_directory_exists(self):
+        job = self.get_job()
+        return self.app.object_store.exists(job, base_dir='job_work', dir_only=True, obj_dir=True)
+
     @property
     def tool_working_directory(self):
         return os.path.join(self.working_directory, "working")
@@ -1159,9 +1163,10 @@ class JobWrapper(HasResourceParameters):
         return tool_evaluator
 
     def _fix_output_permissions(self):
-        for path in [dp.real_path for dp in self.get_mutable_output_fnames()]:
-            if os.path.exists(path):
-                util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
+        if self.working_directory_exists():
+            for path in [dp.real_path for dp in self.get_mutable_output_fnames()]:
+                if os.path.exists(path):
+                    util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
 
     def fail(self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None):
         """
@@ -1196,7 +1201,7 @@ class JobWrapper(HasResourceParameters):
                 etype, evalue, tb = sys.exc_info()
 
             outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
-            if outputs_to_working_directory and not self.__link_file_check():
+            if outputs_to_working_directory and not self.__link_file_check() and self.working_directory_exists():
                 for dataset_path in self.get_output_fnames():
                     try:
                         shutil.move(dataset_path.false_path, dataset_path.real_path)
@@ -1792,7 +1797,7 @@ class JobWrapper(HasResourceParameters):
         return paths
 
     def get_output_basenames(self):
-        return list(map(os.path.basename, map(str, self.get_output_fnames())))
+        return [os.path.basename(str(fname)) for fname in self.get_output_fnames()]
 
     def get_output_fnames(self):
         if self.output_paths is None:
