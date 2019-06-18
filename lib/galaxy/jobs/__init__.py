@@ -1173,6 +1173,9 @@ class JobWrapper(HasResourceParameters):
                       "destination for completion of fail method", self.get_id_tag(), str(exc.failure_message))
             self.job_runner_mapper.cached_job_destination = JobDestination(id='__fail__')
 
+        # Might be AssertionError or other exception
+        message = str(message)
+
         # if the job was deleted, don't fail it
         if not job.state == job.states.DELETED:
             # Check if the failure is due to an exception
