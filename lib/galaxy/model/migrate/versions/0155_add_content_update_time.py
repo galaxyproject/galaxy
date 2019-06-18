@@ -4,7 +4,6 @@ contents are changed.
 """
 from __future__ import print_function
 
-import datetime
 import logging
 
 from sqlalchemy import DDL, MetaData
@@ -96,7 +95,7 @@ def build_trigger(op):
             END;
     """
     rs = 'OLD' if op == 'DELETE' else 'NEW'
-    sql = create_trigger_template.format(operation=op,rowset=rs)
+    sql = create_trigger_template.format(operation=op, rowset=rs)
     return DDL(sql).execute_if(callable_=not_pg)
 
 
@@ -104,4 +103,3 @@ def build_drop_trigger(op):
     trigger_template = """DROP TRIGGER IF EXISTS BEFORE_{operation}_DATASET;"""
     sql = trigger_template.format(operation=op)
     return DDL(sql).execute_if(callable_=not_pg)
-
