@@ -207,6 +207,10 @@ class JobRunnerMapper(object):
         return job_destination
 
     def __determine_job_destination(self, params, raw_job_destination=None):
+        if self.job_wrapper.tool is None:
+            raise JobMappingException(
+                "Can't map job to destination, tool '%s' is unavailable" % self.job_wrapper.get_job().tool_id
+            )
         if raw_job_destination is None:
             raw_job_destination = self.job_wrapper.tool.get_job_destination(params)
         if raw_job_destination.runner == DYNAMIC_RUNNER_NAME:
