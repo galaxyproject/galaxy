@@ -94,8 +94,8 @@ export default Backbone.View.extend({
         const terminalView = new terminalViewClass({
             node: this.node,
             output: output
-        })
-        return terminalView
+        });
+        return terminalView;
     },
 
     outputViewforOutput: function(output, terminalView) {
@@ -105,7 +105,7 @@ export default Backbone.View.extend({
             terminalElement: terminalView.el,
             nodeView: this
         });
-        return outputView
+        return outputView;
     },
 
     addDataOutput: function(output) {

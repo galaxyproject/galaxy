@@ -19,10 +19,10 @@
                     <b-form-group label="Public name">
                         <b-form-input name="username" type="text" v-model="username" />
                         <b-form-text
-                            >Your public name is an identifier that will be used to generate addresses for
-                            information you share publicly. Public names must be at least three characters in
-                            length and contain only lower-case letters, numbers, dots, underscores, and dashes
-                            ('.', '_', '-').</b-form-text
+                            >Your public name is an identifier that will be used to generate addresses for information
+                            you share publicly. Public names must be at least three characters in length and contain
+                            only lower-case letters, numbers, dots, underscores, and dashes ('.', '_',
+                            '-').</b-form-text
                         >
                     </b-form-group>
                     <b-form-group v-if="mailing_join_addr && smtp_server" label="Subscribe to mailing list">

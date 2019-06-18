@@ -2,7 +2,7 @@
     <div class="container">
         <div class="row justify-content-md-center">
             <template v-if="showLogin">
-                <login/>
+                <login />
             </template>
             <template v-else>
                 <register

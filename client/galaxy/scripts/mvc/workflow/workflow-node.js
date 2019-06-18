@@ -66,13 +66,13 @@ var Node = Backbone.Model.extend({
         output_terminal.force_datatype = datatype;
         output.force_datatype = datatype;
         if (datatype) {
-            this.post_job_actions['ChangeDatatypeAction' + outputName] = {
-                action_arguments: {newtype: datatype},
+            this.post_job_actions["ChangeDatatypeAction" + outputName] = {
+                action_arguments: { newtype: datatype },
                 action_type: "ChangeDatatypeAction",
-                output_name: outputName,
+                output_name: outputName
             };
         } else {
-            delete this.post_job_actions['ChangeDatatypeAction' + outputName];
+            delete this.post_job_actions["ChangeDatatypeAction" + outputName];
         }
         this.markChanged();
         output_terminal.destroyInvalidConnections();
