@@ -23,7 +23,7 @@
             </div>
         </div>
         <div class="container">
-            <p class="lead">
+            <p>
                 <a target="_blank" class="reference" href="http://galaxyproject.org/">
                 Galaxy</a> is an open platform for supporting data intensive
                 research. Galaxy is developed by <a target="_blank" class="reference" href="https://galaxyproject.org/galaxy-team/">The Galaxy Team</a>
