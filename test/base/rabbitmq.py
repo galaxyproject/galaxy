@@ -22,22 +22,36 @@ class RabbitMQK8s(object):
         # utility. If no argument provided, the config will be loaded from
         # default location.
         config.load_kube_config()
-        self.api_instance = client.CoreV1Api()
+        self.core_api = client.CoreV1Api()
+        self.apps_api = client.AppsV1beta1Api()
         self.namespace = "default"
 
-    def __call_api(self, method, namespace, manifest, retries=MAX_RETRIES):
+    def __create_object(self, create_method, delete_method, namespace, manifest, retries=MAX_RETRIES):
         try:
-            return method(namespace, manifest)
+            return create_method(namespace, manifest)
         except ApiException as e:
             if (e.reason == "Conflict" or e.status == 409) and retries > 1:
                 # Do not try recalling API if it fails deleting the service.
                 try:
-                    self.delete_service(manifest["metadata"]["name"])
+                    self.__delete_object(delete_method, manifest["metadata"]["name"])
                 except ApiException:
                     raise ApiException
                 else:
-                    return self.__call_api(method, namespace, manifest, retries=retries-1)
-            print("Exception when calling the method {0}; error: {1}\n".format(method, e))
+                    return self.__call_api(create_method, namespace, manifest, retries=retries-1)
+            print("Exception when calling the method {0}; error: {1}\n".format(create_method, e))
+
+    def __delete_object(self, method, name):
+        try:
+            api_response = method(
+                name=name,
+                namespace=self.namespace,
+                grace_period_seconds=0,
+                async_req=False
+            )
+            return api_response
+        except ApiException as e:
+            print("Exception when calling CoreV1Api->delete_namespaced_service: %s\n" % e)
+            raise
 
     def create_rabbitmq(self):
         manifest = {
@@ -70,7 +84,11 @@ class RabbitMQK8s(object):
                 }
             }
         }
-        api_response = self.__call_api(self.api_instance.create_namespaced_service, self.namespace, manifest)
+        api_response = self.__create_object(
+            self.core_api.create_namespaced_service,
+            self.core_api.delete_namespaced_service,
+            self.namespace,
+            manifest)
         return api_response
 
     def create_rabbitmq_management(self):
@@ -96,15 +114,22 @@ class RabbitMQK8s(object):
                 "type": "NodePort"
             }
         }
-        api_response = self.__call_api(self.api_instance.create_namespaced_service, self.namespace, manifest)
+        api_response = self.__create_object(
+            self.core_api.create_namespaced_service,
+            self.core_api.delete_namespaced_service,
+            self.namespace,
+            manifest)
         return api_response
 
     def create_rabbitmq_stateful_set(self):
         manifest = {
             # TODO
         }
-        api_instance = client.AppsV1beta1Api()
-        api_response = self.__call_api(api_instance.create_namespaced_stateful_set, self.namespace, manifest)
+        api_response = self.__create_object(
+            self.apps_api.create_namespaced_stateful_set,
+            self.apps_api.delete_namespaced_stateful_set,
+            self.namespace,
+            manifest)
         return api_response
 
     def create_deployment(self):
@@ -125,14 +150,4 @@ class RabbitMQK8s(object):
         pass
 
     def delete_service(self, name):
-        try:
-            api_response = self.api_instance.delete_namespaced_service(
-                name=name,
-                namespace=self.namespace,
-                grace_period_seconds=0,
-                async_req=False
-            )
-            return api_response
-        except ApiException as e:
-            print("Exception when calling CoreV1Api->delete_namespaced_service: %s\n" % e)
-            raise
+        return self.__delete_object(self.core_api.delete_namespaced_service, name)
