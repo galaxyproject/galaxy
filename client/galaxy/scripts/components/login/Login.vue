@@ -1,44 +1,37 @@
 <template>
-    <div class="container">
-        <div class="row justify-content-md-center">
-            <div class="col col-lg-6">
-                <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
-                <b-form id="login" @submit.prevent="submitGalaxyLogin()">
-                    <b-card no-body header="Welcome to Galaxy, please log in">
-                        <b-card-body>
-                            <b-form-group label="Username or Email Address">
-                                <b-form-input name="login" type="text" v-model="login" />
-                            </b-form-group>
-                            <b-form-group label="Password">
-                                <b-form-input name="password" type="password" v-model="password" />
-                                <b-form-text
-                                    >Forgot password? Click here to <a @click="reset" href="#">reset</a> your
-                                    password.</b-form-text
-                                >
-                            </b-form-group>
-                            <b-button name="login" type="submit">Login</b-button>
-                        </b-card-body>
-                        <b-card-footer>
-                            Don't have an account?
-                            <span v-if="allowUserCreation">
-                                <a id="register-toggle" href="#" @click.prevent="toggleLogin">Register here.</a>
-                            </span>
-                            <span v-else>
-                                Registration for this Galaxy instance is disabled. Please contact an administrator for
-                                assistance.
-                            </span>
-                        </b-card-footer>
-                    </b-card>
-                </b-form>
-                <b-button v-for="idp in oidc_idps" :key="idp" class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                    <i v-bind:class="oidc_idps_icons[idp]" /> Sign in with
-                    {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
-                </b-button>
-            </div>
-            <div v-if="show_welcome_with_login" class="col">
-                <b-embed type="iframe" :src="welcome_url" aspect="1by1" />
-            </div>
-        </div>
+    <div class="col col-lg-6">
+        <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
+        <b-form id="login" @submit.prevent="submitGalaxyLogin()">
+            <b-card no-body header="Welcome to Galaxy, please log in">
+                <b-card-body>
+                    <b-form-group label="Username or Email Address">
+                        <b-form-input name="login" type="text" v-model="login" />
+                    </b-form-group>
+                    <b-form-group label="Password">
+                        <b-form-input name="password" type="password" v-model="password" />
+                        <b-form-text>
+                            Forgot password? Click here to <a @click="reset" href="#">reset</a> your
+                            password.
+                        </b-form-text>
+                    </b-form-group>
+                    <b-button name="login" type="submit">Login</b-button>
+                </b-card-body>
+                <b-card-footer>
+                    Don't have an account?
+                    <span v-if="allowUserCreation">
+                        <a id="register-toggle" href="#" @click.prevent="toggleLogin">Register here.</a>
+                    </span>
+                    <span v-else>
+                        Registration for this Galaxy instance is disabled. Please contact an administrator for
+                        assistance.
+                    </span>
+                </b-card-footer>
+            </b-card>
+        </b-form>
+        <b-button v-for="idp in oidc_idps" :key="idp" class="d-block mt-3" @click="submitOIDCLogin(idp)">
+            <i v-bind:class="oidc_idps_icons[idp]" /> Sign in with
+            {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
+        </b-button>
     </div>
 </template>
 <script>
@@ -51,16 +44,6 @@ import { getAppRoot } from "onload";
 Vue.use(BootstrapVue);
 
 export default {
-    props: {
-        show_welcome_with_login: {
-            type: Boolean,
-            required: false
-        },
-        welcome_url: {
-            type: String,
-            required: false
-        }
-    },
     data() {
         const galaxy = getGalaxyInstance();
         const oidc_idps = galaxy.config.oidc;

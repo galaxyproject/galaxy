@@ -86,7 +86,8 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                              redirect=redirect,
                              # an installation may have it's own welcome_url - show it here if they've set that
                              welcome_url=web.url_for(controller='root', action='welcome'),
-                             show_welcome_with_login=trans.app.config.show_welcome_with_login)
+                             show_welcome_with_login=trans.app.config.show_welcome_with_login,
+                             terms_url=trans.app.config.terms_url)
 
     # ---- Tool related -----------------------------------------------------
 

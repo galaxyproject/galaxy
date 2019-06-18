@@ -1,15 +1,25 @@
 <template>
-    <div>
-        <template v-if="showLogin">
-            <login :show_welcome_with_login="show_welcome_with_login" :welcome_url="welcome_url" />
-        </template>
-        <template v-else>
-            <register
-                :registration_warning_message="registration_warning_message"
-                :mailing_join_addr="mailing_join_addr"
-                :smtp_server="smtp_server"
-            />
-        </template>
+    <div class="container">
+        <div class="row justify-content-md-center">
+            <template v-if="showLogin">
+                <login/>
+            </template>
+            <template v-else>
+                <register
+                    :registration_warning_message="registration_warning_message"
+                    :mailing_join_addr="mailing_join_addr"
+                    :smtp_server="smtp_server"
+                />
+            </template>
+            <div v-if="show_welcome_with_login" class="col">
+                <b-embed type="iframe" :src="welcome_url" aspect="1by1" />
+            </div>
+        </div>
+        <div v-if="terms_url" class="row fixed-bottom mb-2 justify-content-md-center">
+            <div class="row text-right">
+                <a :href="terms_url">Terms and Conditions for use of this service</a>
+            </div>
+        </div>
     </div>
 </template>
 <script>
@@ -58,6 +68,10 @@ export default {
             required: false
         },
         smtp_server: {
+            type: String,
+            required: false
+        },
+        terms_url: {
             type: String,
             required: false
         }

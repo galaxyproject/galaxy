@@ -1,45 +1,41 @@
 <template>
-    <div class="container">
-        <div class="row justify-content-md-center">
-            <div class="col" :class="{ 'col-lg-6': !isAdmin }">
-                <b-alert :show="registration_warning_message" variant="danger">
-                    {{ registration_warning_message }}
-                </b-alert>
-                <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
-                <b-form id="registration" @submit.prevent="submit()">
-                    <b-card no-body header="Create a Galaxy account">
-                        <b-card-body>
-                            <b-form-group label="Email Address">
-                                <b-form-input name="email" type="text" v-model="email" />
-                            </b-form-group>
-                            <b-form-group label="Password">
-                                <b-form-input name="password" type="password" v-model="password" />
-                            </b-form-group>
-                            <b-form-group label="Confirm password">
-                                <b-form-input name="confirm" type="password" v-model="confirm" />
-                            </b-form-group>
-                            <b-form-group label="Public name">
-                                <b-form-input name="username" type="text" v-model="username" />
-                                <b-form-text
-                                    >Your public name is an identifier that will be used to generate addresses for
-                                    information you share publicly. Public names must be at least three characters in
-                                    length and contain only lower-case letters, numbers, dots, underscores, and dashes
-                                    ('.', '_', '-').</b-form-text
-                                >
-                            </b-form-group>
-                            <b-form-group v-if="mailing_join_addr && smtp_server" label="Subscribe to mailing list">
-                                <input name="subscribe" type="checkbox" v-model="subscribe" />
-                            </b-form-group>
-                            <b-button name="create" type="submit" :disabled="disableCreate">Create</b-button>
-                        </b-card-body>
-                        <b-card-footer v-if="!isAdmin">
-                            Already have an account?
-                            <a id="login-toggle" href="#" @click.prevent="toggleLogin">Log in here.</a>
-                        </b-card-footer>
-                    </b-card>
-                </b-form>
-            </div>
-        </div>
+    <div class="col" :class="{ 'col-lg-6': !isAdmin }">
+        <b-alert :show="registration_warning_message" variant="danger">
+            {{ registration_warning_message }}
+        </b-alert>
+        <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
+        <b-form id="registration" @submit.prevent="submit()">
+            <b-card no-body header="Create a Galaxy account">
+                <b-card-body>
+                    <b-form-group label="Email Address">
+                        <b-form-input name="email" type="text" v-model="email" />
+                    </b-form-group>
+                    <b-form-group label="Password">
+                        <b-form-input name="password" type="password" v-model="password" />
+                    </b-form-group>
+                    <b-form-group label="Confirm password">
+                        <b-form-input name="confirm" type="password" v-model="confirm" />
+                    </b-form-group>
+                    <b-form-group label="Public name">
+                        <b-form-input name="username" type="text" v-model="username" />
+                        <b-form-text
+                            >Your public name is an identifier that will be used to generate addresses for
+                            information you share publicly. Public names must be at least three characters in
+                            length and contain only lower-case letters, numbers, dots, underscores, and dashes
+                            ('.', '_', '-').</b-form-text
+                        >
+                    </b-form-group>
+                    <b-form-group v-if="mailing_join_addr && smtp_server" label="Subscribe to mailing list">
+                        <input name="subscribe" type="checkbox" v-model="subscribe" />
+                    </b-form-group>
+                    <b-button name="create" type="submit" :disabled="disableCreate">Create</b-button>
+                </b-card-body>
+                <b-card-footer v-if="!isAdmin">
+                    Already have an account?
+                    <a id="login-toggle" href="#" @click.prevent="toggleLogin">Log in here.</a>
+                </b-card-footer>
+            </b-card>
+        </b-form>
     </div>
 </template>
 <script>
