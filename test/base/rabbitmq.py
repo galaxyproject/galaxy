@@ -1,7 +1,7 @@
 """
 
 """
-
+import time
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
@@ -15,6 +15,15 @@ APP_TAG = "rabbitmq"
 # deletes for MAX_RETRIES -1 times and creates for MAX_RETRIES times.
 MAX_RETRIES = 3
 
+# Some kubernetes objects (e.g., Statefulset) are slow-to-delete.
+# Hence, sleep for few seconds after an object delete request is
+# sent to the cluster. The sleep time is tentative based on experiments
+# on a local machine.
+# An alternative (or maybe a complementary) method to sleeping is to
+# query kubernetes for the object being deleted, and check if it exists
+# after the delete request is submitted to the cluster.
+DELETE_SLEEP_TIME = 5
+
 
 class RabbitMQK8s(object):
     def __init__(self):
@@ -26,31 +35,51 @@ class RabbitMQK8s(object):
         self.apps_api = client.AppsV1beta1Api()
         self.namespace = "default"
 
-    def __create_object(self, create_method, delete_method, namespace, manifest, retries=MAX_RETRIES):
+    def __create_object(self, create_method, delete_method, list_method, manifest, retries=MAX_RETRIES):
         try:
-            return create_method(namespace, manifest)
+            return create_method(self.namespace, manifest)
         except ApiException as e:
+            if "object is being deleted" in e.body:
+                # This case can happen if kubernetes has not completed object deletion
+                # yet; it can mostly happen with Statefulset as it is a slow-to-delete
+                # object.
+                time.sleep(DELETE_SLEEP_TIME)
             if (e.reason == "Conflict" or e.status == 409) and retries > 1:
                 # Do not try recalling API if it fails deleting the service.
                 try:
-                    self.__delete_object(delete_method, manifest["metadata"]["name"])
+                    self.__delete_object(delete_method, list_method, manifest["metadata"]["name"])
                 except ApiException:
                     raise ApiException
                 else:
-                    return self.__call_api(create_method, namespace, manifest, retries=retries-1)
+                    return self.__create_object(create_method, delete_method, list_method, manifest, retries=retries-1)
             print("Exception when calling the method {0}; error: {1}\n".format(create_method, e))
 
-    def __delete_object(self, method, name):
+    def __delete_object(self, delete_method, list_method, name):
         try:
-            api_response = method(
+            api_response = delete_method(
                 name=name,
                 namespace=self.namespace,
                 grace_period_seconds=0,
                 async_req=False
             )
+            for item in list_method(self.namespace).items:
+                if item.metadata.name == name:
+                    time.sleep(DELETE_SLEEP_TIME)
+            for item in list_method(self.namespace).items:
+                if item.metadata.name == name:
+                    raise ApiException(reason="Object `{}` is still not deleted having waited for {} seconds "
+                                              "after delete request was sent.".format(name, DELETE_SLEEP_TIME))
             return api_response
         except ApiException as e:
-            print("Exception when calling CoreV1Api->delete_namespaced_service: %s\n" % e)
+            # Note, there is a corner case with an exception with 404 status;
+            # this case can happen (usually with Statefulset objects) when
+            # an object was requested to be deleted, and was not deleted by
+            # the time when its availability was check, hence another delete
+            # request was sent, but by then the object got deleted (i.e.,
+            # between the time its availability was checked and a new delete
+            # request was made). Hence, be cautious when dealing with 404
+            # errors. A possible solution can be to increase DELETE_SLEEP_TIME.
+            print("Exception when calling the method {0}; error: {1}\n".format(delete_method, e))
             raise
 
     def create_rabbitmq(self):
@@ -87,7 +116,7 @@ class RabbitMQK8s(object):
         api_response = self.__create_object(
             self.core_api.create_namespaced_service,
             self.core_api.delete_namespaced_service,
-            self.namespace,
+            self.core_api.list_namespaced_service,
             manifest)
         return api_response
 
@@ -117,7 +146,7 @@ class RabbitMQK8s(object):
         api_response = self.__create_object(
             self.core_api.create_namespaced_service,
             self.core_api.delete_namespaced_service,
-            self.namespace,
+            self.core_api.list_namespaced_service,
             manifest)
         return api_response
 
@@ -128,7 +157,7 @@ class RabbitMQK8s(object):
         api_response = self.__create_object(
             self.apps_api.create_namespaced_stateful_set,
             self.apps_api.delete_namespaced_stateful_set,
-            self.namespace,
+            self.apps_api.list_namespaced_stateful_set,
             manifest)
         return api_response
 
