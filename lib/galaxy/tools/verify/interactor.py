@@ -341,7 +341,7 @@ class GalaxyInteractorApi(object):
                 tool_input.update({
                     "files_%d|type" % i: "upload_dataset",
                 })
-            name = os.path.basename(test_data['name'])
+            name = test_data['name']
         else:
             name = os.path.basename(fname)
             tool_input.update({
