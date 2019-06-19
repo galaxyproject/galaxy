@@ -120,24 +120,16 @@ def persist_uploads(params, trans):
                                                    local_filename=local_filename)
             elif type(f) == dict and 'local_filename' not in f:
                 raise Exception('Uploaded file was encoded in a way not understood by Galaxy.')
-
-            upload_dataset['url_paste'] = _get_value_or_none(upload_dataset, 'url_paste')
-            if upload_dataset['url_paste']:
+            if 'url_paste' in upload_dataset and upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
                 upload_dataset['url_paste'] = datatypes.sniff.stream_to_file(
-                    StringIO(validate_url(upload_dataset['url_paste'], trans.app.config.fetch_url_whitelist_ips)),
+                    StringIO(validate_url(upload_dataset['url_paste'].strip(), trans.app.config.fetch_url_whitelist_ips)),
                     prefix="strio_url_paste_"
                 )
-
+            else:
+                upload_dataset['url_paste'] = None
             new_files.append(upload_dataset)
         params['files'] = new_files
     return params
-
-
-def _get_value_or_none(d, key):
-    val = None
-    if key in d and d[key]:
-        val = d[key].strip()
-    return val or None
 
 
 def handle_library_params(trans, params, folder_id, replace_dataset=None):
