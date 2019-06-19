@@ -83,8 +83,12 @@ class MetadataCollectionStrategy(object):
         dataset.metadata.from_JSON_dict(metadata_output_path, path_rewriter=path_rewriter)
 
     def _metadata_results_from_file(self, dataset, filename_results_code):
-        with open(filename_results_code, "r") as f:
-            rval, rstring = json.load(f)
+        try:
+            with open(filename_results_code, "r") as f:
+                rval, rstring = json.load(f)
+        except (OSError, IOError):
+            rval = False
+            rstring = "Metadata results could not be read from '%s'" % filename_results_code
 
         if not rval:
             log.debug('setting metadata externally failed for %s %s: %s' % (dataset.__class__.__name__, dataset.id, rstring))
