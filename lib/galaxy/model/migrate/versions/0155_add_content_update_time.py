@@ -80,7 +80,9 @@ def drop_update_trigger(migrate_engine):
 def build_trigger(op):
     create_trigger_template = """
         CREATE TRIGGER AFTER_{operation}_DATASET
-            AFTER {operation} ON dataset
+            AFTER {operation}
+            ON dataset
+            FOR EACH ROW
             BEGIN
                 UPDATE history
                 SET update_time = current_timestamp
