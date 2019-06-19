@@ -131,6 +131,11 @@ class BaseJobRunner(object):
                 method(arg)
             except Exception:
                 log.exception("(%s) Unhandled exception calling %s" % (job_id, name))
+                if not isinstance(arg, JobState):
+                    job_state = JobState(job_wrapper=arg, job_destination={})
+                else:
+                    job_state = arg
+                self.work_queue.put((self.fail_job, job_state))
 
     # Causes a runner's `queue_job` method to be called from a worker thread
     def put(self, job_wrapper):
