@@ -1098,6 +1098,10 @@ class JobWrapper(HasResourceParameters):
                 job, base_dir='job_work', dir_only=True, obj_dir=True)
         return self.__working_directory
 
+    def working_directory_exists(self):
+        job = self.get_job()
+        return self.app.object_store.exists(job, base_dir='job_work', dir_only=True, obj_dir=True)
+
     @property
     def tool_working_directory(self):
         return os.path.join(self.working_directory, "working")
@@ -1183,6 +1187,7 @@ class JobWrapper(HasResourceParameters):
 
         # Might be AssertionError or other exception
         message = str(message)
+        working_directory_exists = self.working_directory_exists()
 
         # if the job was deleted, don't fail it
         if not job.state == job.states.DELETED:
@@ -1196,7 +1201,7 @@ class JobWrapper(HasResourceParameters):
                 etype, evalue, tb = sys.exc_info()
 
             outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
-            if outputs_to_working_directory and not self.__link_file_check():
+            if outputs_to_working_directory and not self.__link_file_check() and working_directory_exists:
                 for dataset_path in self.get_output_fnames():
                     try:
                         shutil.move(dataset_path.false_path, dataset_path.real_path)
@@ -1239,7 +1244,8 @@ class JobWrapper(HasResourceParameters):
                 # the partial files to the object store regardless of whether job.state == DELETED
                 self.__update_output(job, dataset, clean_only=True)
 
-        self._fix_output_permissions()
+        if working_directory_exists:
+            self._fix_output_permissions()
         self._report_error()
         # Perform email action even on failure.
         for pja in [pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"]:
@@ -1792,7 +1798,7 @@ class JobWrapper(HasResourceParameters):
         return paths
 
     def get_output_basenames(self):
-        return list(map(os.path.basename, map(str, self.get_output_fnames())))
+        return [os.path.basename(str(fname)) for fname in self.get_output_fnames()]
 
     def get_output_fnames(self):
         if self.output_paths is None:
