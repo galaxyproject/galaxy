@@ -34,7 +34,7 @@ def install_update_trigger(migrate_engine):
 
     if migrate_engine.name in ['postgres', 'postgresql']:
         pg_create_trigger = DDL("""
-            CREATE FUNCTION update_history_content_update_time()
+            CREATE FUNCTION update_history_update_time()
                 RETURNS trigger
                 LANGUAGE 'plpgsql'
             AS $BODY$
@@ -47,11 +47,11 @@ def install_update_trigger(migrate_engine):
                 RETURN NEW;
             END;
             $BODY$;
-            CREATE TRIGGER update_history_update_time
+            CREATE TRIGGER trigger_dataset_aidur
                 AFTER INSERT OR DELETE OR UPDATE
                 ON dataset
                 FOR EACH ROW
-                EXECUTE PROCEDURE update_history_content_update_time();
+                EXECUTE PROCEDURE update_history_update_time();
         """)
         pg_create_trigger.execute(bind=migrate_engine)
     else:
@@ -67,8 +67,8 @@ def drop_update_trigger(migrate_engine):
 
     if migrate_engine.name in ['postgres', 'postgresql']:
         pg_drop_trigger = DDL("""
-            DROP TRIGGER IF EXISTS update_history_update_time ON dataset;
-            DROP FUNCTION IF EXISTS update_history_content_update_time();
+            DROP TRIGGER IF EXISTS trigger_dataset_aidur ON dataset;
+            DROP FUNCTION IF EXISTS update_history_update_time();
         """)
         pg_drop_trigger.execute(bind=migrate_engine)
     else:
@@ -79,7 +79,7 @@ def drop_update_trigger(migrate_engine):
 
 def build_trigger(op):
     create_trigger_template = """
-        CREATE TRIGGER AFTER_{operation}_DATASET
+        CREATE TRIGGER trigger_dataset_a{op_initial}r
             AFTER {operation}
             ON dataset
             FOR EACH ROW
@@ -94,11 +94,11 @@ def build_trigger(op):
             END;
     """
     rs = 'OLD' if op == 'DELETE' else 'NEW'
-    sql = create_trigger_template.format(operation=op, rowset=rs)
+    sql = create_trigger_template.format(operation=op, rowset=rs, op_initial=op.lower()[0])
     return DDL(sql)
 
 
 def build_drop_trigger(op):
-    trigger_template = 'DROP TRIGGER IF EXISTS AFTER_{operation}_DATASET;'
-    sql = trigger_template.format(operation=op)
+    drop_template = 'DROP TRIGGER IF EXISTS trigger_dataset_a{op_initial}r;'
+    sql = drop_template.format(op_initial=op.lower()[0])
     return DDL(sql)
