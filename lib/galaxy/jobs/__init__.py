@@ -1163,10 +1163,9 @@ class JobWrapper(HasResourceParameters):
         return tool_evaluator
 
     def _fix_output_permissions(self):
-        if self.working_directory_exists():
-            for path in [dp.real_path for dp in self.get_mutable_output_fnames()]:
-                if os.path.exists(path):
-                    util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
+        for path in [dp.real_path for dp in self.get_mutable_output_fnames()]:
+            if os.path.exists(path):
+                util.umask_fix_perms(path, self.app.config.umask, 0o666, self.app.config.gid)
 
     def fail(self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None):
         """
@@ -1188,6 +1187,7 @@ class JobWrapper(HasResourceParameters):
 
         # Might be AssertionError or other exception
         message = str(message)
+        working_directory_exists = self.working_directory_exists()
 
         # if the job was deleted, don't fail it
         if not job.state == job.states.DELETED:
@@ -1201,7 +1201,7 @@ class JobWrapper(HasResourceParameters):
                 etype, evalue, tb = sys.exc_info()
 
             outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
-            if outputs_to_working_directory and not self.__link_file_check() and self.working_directory_exists():
+            if outputs_to_working_directory and not self.__link_file_check() and working_directory_exists:
                 for dataset_path in self.get_output_fnames():
                     try:
                         shutil.move(dataset_path.false_path, dataset_path.real_path)
@@ -1244,7 +1244,8 @@ class JobWrapper(HasResourceParameters):
                 # the partial files to the object store regardless of whether job.state == DELETED
                 self.__update_output(job, dataset, clean_only=True)
 
-        self._fix_output_permissions()
+        if working_directory_exists:
+            self._fix_output_permissions()
         self._report_error()
         # Perform email action even on failure.
         for pja in [pjaa.post_job_action for pjaa in job.post_job_actions if pjaa.post_job_action.action_type == "EmailAction"]:
