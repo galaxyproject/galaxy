@@ -68,7 +68,7 @@ def drop_update_trigger(migrate_engine):
     if migrate_engine.name in ['postgres', 'postgresql']:
         pg_drop_trigger = DDL("""
             DROP TRIGGER IF EXISTS update_history_update_time ON dataset;
-            DROP FUNCTION IF EXISTS update_history_content_update_time;
+            DROP FUNCTION IF EXISTS update_history_content_update_time();
         """)
         pg_drop_trigger.execute(bind=migrate_engine)
     else:
