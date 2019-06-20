@@ -26,7 +26,6 @@
             'logo_src'                  : h.url_for( app.config.get( 'logo_src', '/static/images/galaxyIcon_noText.png' ) ),
             'is_admin_user'             : trans.user_is_admin,
             'active_view'               : active_view,
-            'ftp_upload_dir'            : app.config.get("ftp_upload_dir",  None),
             'ftp_upload_site'           : app.config.get("ftp_upload_site",  None),
             'datatypes_disable_auto'    : app.config.get_bool("datatypes_disable_auto",  False),
             'user_json'                 : get_user_dict()
