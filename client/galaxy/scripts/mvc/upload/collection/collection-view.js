@@ -248,7 +248,7 @@ export default Backbone.View.extend({
         this.counter.announce--;
         this.counter.success++;
         this._updateScreen();
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         Galaxy.currHistoryPanel.refreshContents();
     },
 
@@ -276,7 +276,7 @@ export default Backbone.View.extend({
     },
 
     _eventBuild: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var allHids = [];
         _.forEach(this.collection.models, upload => {
             allHids.push.apply(allHids, upload.get("hids"));

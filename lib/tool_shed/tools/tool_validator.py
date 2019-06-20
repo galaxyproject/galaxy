@@ -3,13 +3,13 @@ import logging
 import os
 import tempfile
 
+from galaxy.tool_util.fetcher import ToolLocationFetcher
 from galaxy.tools import (
     create_tool_from_source,
     get_tool_source,
     parameters,
     Tool
 )
-from galaxy.tools.fetcher import ToolLocationFetcher
 from galaxy.tools.parameters import dynamic_options
 from tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from tool_shed.util import (

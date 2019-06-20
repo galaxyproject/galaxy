@@ -2111,6 +2111,46 @@ test_data: {}
         assert int(str_43) == 43
         assert abs(float(str_4point14) - 4.14) < .0001
 
+    @skip_without_tool("param_value_from_file")
+    def test_expression_tool_map_over(self):
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  text_input1: collection
+steps:
+- label: param_out
+  tool_id: param_value_from_file
+  in:
+     input1: text_input1
+- label: consume_expression_parameter
+  tool_id: validation_default
+  in:
+    input1: param_out#text_param
+  outputs:
+    out_file1:
+      rename: "replaced_param_collection"
+test_data:
+  text_input1:
+    type: list
+    elements:
+      - identifier: A
+        content: A
+      - identifier: B
+        content: B
+""", history_id=history_id)
+        history_contents = self._get('histories/{history_id}/contents'.format(history_id=history_id)).json()
+        collection = [c for c in history_contents if c['history_content_type'] == 'dataset_collection' and c['name'] == 'replaced_param_collection'][0]
+        collection_details = self._get(collection['url']).json()
+        assert collection_details['element_count'] == 2
+        elements = collection_details['elements']
+        assert elements[0]['element_identifier'] == 'A'
+        assert elements[1]['element_identifier'] == 'B'
+        element_a_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=elements[0]['object'])
+        element_b_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=elements[1]['object'])
+        assert element_a_content.strip() == 'A'
+        assert element_b_content.strip() == 'B'
+
     @skip_without_tool('cat1')
     def test_workflow_rerun_with_use_cached_job(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
@@ -2891,6 +2931,35 @@ input1:
 
             assert details1["history_content_type"] == "dataset_collection"
             assert details1["tags"][0] == "name:foo", details1
+
+    @skip_without_tool("cat")
+    def test_assign_column_pja(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
+    outputs:
+      out_file1:
+        change_datatype: bed
+        set_columns:
+          chromCol: 1
+          endCol: 2
+          startCol: 3
+""", test_data="""
+input1:
+  value: 1.bed
+  type: File
+""", history_id=history_id)
+            details_dataset_new_col = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=True)
+            assert details_dataset_new_col["history_content_type"] == "dataset", details_dataset_new_col
+            assert details_dataset_new_col['metadata_endCol'] == 2
+            assert details_dataset_new_col['metadata_startCol'] == 3
 
     @skip_without_tool("collection_creates_pair")
     @skip_without_tool("cat")

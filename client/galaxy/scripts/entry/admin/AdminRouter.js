@@ -7,6 +7,7 @@ import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
+import Jobs from "components/admin/Jobs.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
 import Register from "components/login/Register.vue";
@@ -15,7 +16,7 @@ import DisplayApplications from "components/admin/DisplayApplications.vue";
 import Vue from "vue";
 
 export const getAdminRouter = (Galaxy, options) => {
-    let galaxyRoot = getAppRoot();
+    const galaxyRoot = getAppRoot();
 
     return Router.extend({
         routes: {
@@ -33,12 +34,13 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin(/)form(/)(:form_id)": "show_form",
             "(/)admin/data_tables": "show_data_tables",
             "(/)admin/data_types": "show_data_types",
+            "(/)admin/jobs": "show_jobs",
             "(/)admin/data_manager*path": "show_data_manager",
             "*notFound": "not_found"
         },
 
         authenticate: function() {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             return Galaxy.user && Galaxy.user.id && Galaxy.user.get("is_admin");
         },
 
@@ -57,8 +59,8 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         show_users_create: function() {
-            let instance = Vue.extend(Register);
-            let vm = document.createElement("div");
+            const instance = Vue.extend(Register);
+            const vm = document.createElement("div");
             this.page.display(vm);
             new instance({
                 propsData: {
@@ -91,7 +93,7 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         _show_grid_view: function(urlSuffix) {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             this.page.display(
                 new GridView({
                     url_base: `${galaxyRoot}${urlSuffix}`,
@@ -101,8 +103,8 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         _display_vue_helper: function(component, props) {
-            let instance = Vue.extend(component);
-            let vm = document.createElement("div");
+            const instance = Vue.extend(component);
+            const vm = document.createElement("div");
             this.page.display(vm);
             new instance(props).$mount(vm);
         },
@@ -115,6 +117,10 @@ export const getAdminRouter = (Galaxy, options) => {
             this._display_vue_helper(DataTypes);
         },
 
+        show_jobs: function() {
+            this._display_vue_helper(Jobs);
+        },
+
         show_error_stack: function() {
             this._display_vue_helper(ErrorStack);
         },
@@ -124,9 +130,9 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         show_data_manager: function(path) {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             console.log("show_data_manager");
-            let vueMount = document.createElement("div");
+            const vueMount = document.createElement("div");
             this.page.display(vueMount);
             // always set the route back to the base, i.e.
             // `${galaxyRoot}admin/data_manager`
@@ -140,8 +146,8 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         show_form: function(form_id) {
-            var id = `?id=${QueryStringParsing.get("id")}`;
-            var form_defs = {
+            const id = `?id=${QueryStringParsing.get("id")}`;
+            const form_defs = {
                 reset_user_password: {
                     title: _l("Reset passwords"),
                     url: `admin/reset_user_password${id}`,

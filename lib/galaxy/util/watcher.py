@@ -21,7 +21,7 @@ except ImportError:
     can_watch = False
 
 from galaxy.util.hash_util import md5_hash_file
-from galaxy.web.stack import register_postfork_function
+from .web_compat import register_postfork_function
 
 log = logging.getLogger(__name__)
 

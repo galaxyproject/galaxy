@@ -12,6 +12,7 @@ from time import sleep
 
 import packaging.version
 import pulsar.core
+import six
 import yaml
 from pulsar.client import (
     build_client_manager,
@@ -35,7 +36,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
-from galaxy.tools.deps import dependencies
+from galaxy.tool_util.deps import dependencies
 from galaxy.util import (
     galaxy_directory,
     specs,
@@ -449,7 +450,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         user = job_wrapper.get_job().user
         if user:
             for key, value in params.items():
-                if value:
+                if value and isinstance(value, six.string_types):
                     params[key] = model.User.expand_user_properties(user, value)
 
         env = getattr(job_wrapper.job_destination, "env", [])
@@ -516,11 +517,18 @@ class PulsarJobRunner(AsynchronousJobRunner):
             self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
         # Finish the job
         try:
+            job_metrics_directory = os.path.join(job_wrapper.working_directory, "metadata")
+            # Following check is a hack for jobs started during 19.01 or earlier release
+            # and finishing with a 19.05 code base. Eliminate the hack in 19.09 or later
+            # along with hacks for legacy metadata compute strategy.
+            if not os.path.exists(job_metrics_directory) or not any(["__instrument" in f for f in os.listdir(job_metrics_directory)]):
+                job_metrics_directory = job_wrapper.working_directory
             job_wrapper.finish(
                 stdout,
                 stderr,
                 exit_code,
                 remote_metadata_directory=remote_metadata_directory,
+                job_metrics_directory=job_metrics_directory,
             )
         except Exception:
             log.exception("Job wrapper finish method failed")
@@ -615,9 +623,14 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def __client_outputs(self, client, job_wrapper):
         work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
         output_files = self.get_output_files(job_wrapper)
+        if self.app.config.metadata_strategy == "legacy":
+            # Drop this branch in 19.09.
+            metadata_directory = job_wrapper.working_directory
+        else:
+            metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
         client_outputs = ClientOutputs(
             working_directory=job_wrapper.tool_working_directory,
-            metadata_directory=job_wrapper.working_directory,
+            metadata_directory=metadata_directory,
             work_dir_outputs=work_dir_outputs,
             output_files=output_files,
             version_file=job_wrapper.get_version_string_path(),
@@ -686,7 +699,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def __build_metadata_configuration(self, client, job_wrapper, remote_metadata, remote_job_config):
         metadata_kwds = {}
-        if remote_metadata:
+        if remote_metadata and not job_wrapper.use_metadata_binary:
             remote_system_properties = remote_job_config.get("system_properties", {})
             remote_galaxy_home = remote_system_properties.get("galaxy_home", None)
             if not remote_galaxy_home:

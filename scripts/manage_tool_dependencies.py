@@ -9,7 +9,7 @@ from galaxy.config import (
     find_root,
     parse_dependency_options,
 )
-from galaxy.tools.deps import CachedDependencyManager, DependencyManager, NullDependencyManager
+from galaxy.tool_util.deps import CachedDependencyManager, DependencyManager, NullDependencyManager
 from galaxy.util.script import main_factory
 
 DESCRIPTION = "Script to manage tool dependencies (with focus on a Conda environments)."
@@ -21,7 +21,7 @@ def _init_if_needed(args, kwargs):
 
 
 def _build_dependency_manager_no_config(kwargs):
-    """Simplified variant of build_dependency_manager from galaxy.tools.deps.
+    """Simplified variant of build_dependency_manager from galaxy.tool_util.deps.
 
     The canonical factory method requires a full Galaxy configuration object
     which we do not have available in this script (an optimization).

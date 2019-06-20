@@ -20,7 +20,14 @@
                 <div class="fa fa-caret-left mr-1" />
                 Back
             </b-btn>
-            <b-btn size="sm" class="float-right ml-1" variant="primary" @click="finalize" :disabled="!hasValue">
+            <b-btn
+                v-if="multiple"
+                size="sm"
+                class="float-right ml-1"
+                variant="primary"
+                @click="finalize"
+                :disabled="!hasValue"
+            >
                 Ok
             </b-btn>
             <b-btn size="sm" class="float-right" @click="modalShow = false"> Cancel </b-btn>
@@ -99,7 +106,7 @@ export default {
         },
         /** Add highlighting for record variations, i.e. datasets vs. libraries/collections **/
         formatRows() {
-            for (let item of this.items) {
+            for (const item of this.items) {
                 let _rowVariant = "active";
                 if (item.isDataset) {
                     _rowVariant = this.model.exists(item.id) ? "success" : "default";
@@ -117,11 +124,13 @@ export default {
                 } else {
                     this.finalize();
                 }
+            } else {
+                this.load(record.url);
             }
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
         finalize: function() {
-            let results = this.model.finalize();
+            const results = this.model.finalize();
             this.modalShow = false;
             this.callback(results);
         },
@@ -136,7 +145,7 @@ export default {
                 .then(items => {
                     if (this.library && this.urlTracker.atRoot()) {
                         items.unshift({
-                            name: "Data Libraries",
+                            label: "Data Libraries",
                             url: `${this.root}api/libraries`
                         });
                     }

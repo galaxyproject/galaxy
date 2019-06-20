@@ -5,8 +5,8 @@ import * as d3 from "d3";
 function getDomains(groups, keys) {
     function _apply(operator, key) {
         let value;
-        for (let group_index in groups) {
-            let value_sub = d3[operator](groups[group_index].values, function(d) {
+        for (const group_index in groups) {
+            const value_sub = d3[operator](groups[group_index].values, function(d) {
                 return d[key];
             });
             value = value === undefined ? value_sub : Math[operator](value, value_sub);
@@ -34,11 +34,11 @@ function makeSeries(groups, keys) {
             var point = [];
             if (keys) {
                 for (var key_index in keys) {
-                    let column_index = keys[key_index];
+                    const column_index = keys[key_index];
                     point.push(group.values[value_index][column_index]);
                 }
             } else {
-                for (let column_index in group.values[value_index]) {
+                for (const column_index in group.values[value_index]) {
                     point.push(group.values[value_index][column_index]);
                 }
             }
@@ -109,12 +109,12 @@ function makeUniqueCategories(groups, with_index) {
         }
     }
     // convert group values into category indeces
-    for (let i in groups) {
-        let group = groups[i];
-        for (let j in group.values) {
-            let value_dict = group.values[j];
-            for (let key in categories) {
-                let value = String(value_dict[key]);
+    for (const i in groups) {
+        const group = groups[i];
+        for (const j in group.values) {
+            const value_dict = group.values[j];
+            for (const key in categories) {
+                const value = String(value_dict[key]);
                 value_dict[key] = categories[key][value];
             }
         }

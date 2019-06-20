@@ -214,7 +214,7 @@ export var visitInputs = (inputs, callback, prefix, context) => {
         }
     });
     for (var key in inputs) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var node = inputs[key];
         node.name = node.name || key;
         var name = prefix ? `${prefix}|${node.name}` : node.name;

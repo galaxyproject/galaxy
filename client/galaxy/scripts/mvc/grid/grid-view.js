@@ -34,7 +34,7 @@ export default Backbone.View.extend({
         store.watch(
             state => state.gridSearch.searchTags,
             newTags => {
-                let tagArray = Array.from(newTags);
+                const tagArray = Array.from(newTags);
                 self.grid.add_filter("tags", tagArray, false);
                 self.openAdvancedSearch();
                 self.render_filter_button("tags", tagArray);
@@ -84,7 +84,7 @@ export default Backbone.View.extend({
     handle_refresh: function(refresh_frames) {
         if (refresh_frames) {
             if ($.inArray("history", refresh_frames) > -1) {
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 if (Galaxy && Galaxy.currHistoryPanel) {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 }

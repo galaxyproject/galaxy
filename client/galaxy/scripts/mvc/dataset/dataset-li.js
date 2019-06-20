@@ -45,15 +45,15 @@ export var DatasetListItemView = _super.extend(
 
         // mount new vue component for tags
         render: function() {
-            let result = _super.prototype.render.apply(this, arguments);
+            const result = _super.prototype.render.apply(this, arguments);
             this._mountVueNametags();
             return result;
         },
 
         _mountVueNametags: function() {
-            let container = this.$(".nametags")[0];
-            let { id, model_class, tags } = this.model.attributes;
-            let storeKey = `${model_class}-${id}`;
+            const container = this.$(".nametags")[0];
+            const { id, model_class, tags } = this.model.attributes;
+            const storeKey = `${model_class}-${id}`;
             mountNametags({ storeKey, tags }, container);
         },
 
@@ -181,7 +181,7 @@ export var DatasetListItemView = _super.extend(
                 // add frame manager option onclick event
                 var self = this;
                 displayBtnData.onclick = ev => {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     if (Galaxy.frame && Galaxy.frame.active) {
                         // Add dataset to frames.
                         Galaxy.frame.addDataset(self.model.get("id"));
@@ -279,7 +279,7 @@ export var DatasetListItemView = _super.extend(
                 target: this.linkTarget,
                 faIcon: "fa-info-circle",
                 onclick: function(ev) {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     if (Galaxy.frame && Galaxy.frame.active) {
                         Galaxy.frame.add({
                             title: _l("Dataset details"),
@@ -323,22 +323,18 @@ export var DatasetListItemView = _super.extend(
             )}">
                         <span class="fa fa-floppy-o"></span>
                     </a>
-                    <ul class="dropdown-menu" role="menu">
-                        <li>
-                            <a href="${urls.download}">
-                                ${_l("Download dataset")}
-                            </a>
-                        </li>
+                    <div class="dropdown-menu" role="menu">
+                        <a class="dropdown-item" href="${urls.download}">
+                            ${_l("Download dataset")}
+                        </a>
                         ${_.map(
                             this.model.get("meta_files"),
                             meta_file =>
-                                `<li>
-                                    <a href="${urls.meta_download + meta_file.file_type}">
-                                        ${_l("Download")} ${meta_file.file_type}
-                                    </a>
-                                </li>`
+                                `<a class="dropdown-item" href="${urls.meta_download + meta_file.file_type}">
+                                    ${_l("Download")} ${meta_file.file_type}
+                                </a>`
                         )}
-                    </ul>
+                    </div>
                 </div>`);
         },
 

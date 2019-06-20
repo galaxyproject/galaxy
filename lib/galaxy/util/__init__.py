@@ -24,6 +24,8 @@ import time
 import unicodedata
 import xml.dom.minidom
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
 from xml.etree import ElementInclude, ElementTree
@@ -40,7 +42,10 @@ from boltons.iterutils import (
     remap,
 )
 from six import binary_type, iteritems, PY2, string_types, text_type
-from six.moves import email_mime_multipart, email_mime_text, xrange, zip
+from six.moves import (
+    xrange,
+    zip
+)
 from six.moves.urllib import (
     parse as urlparse,
     request as urlrequest
@@ -395,6 +400,17 @@ def shrink_stream_by_size(value, size, join_by=b"..", left_larger=True, beginnin
                 break
             rval += data
     return unicodify(rval)
+
+
+def shrink_and_unicodify(stream):
+    stream = unicodify(stream, strip_null=True) or u''
+    if (len(stream) > DATABASE_MAX_STRING_SIZE):
+        stream = shrink_string_by_size(stream,
+                                       DATABASE_MAX_STRING_SIZE,
+                                       join_by="\n..\n",
+                                       left_larger=True,
+                                       beginning_on_size_error=True)
+    return stream
 
 
 def shrink_string_by_size(value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False):
@@ -988,7 +1004,7 @@ def roundify(amount, sfs=2):
         return amount[0:sfs] + '0' * (len(amount) - sfs)
 
 
-def unicodify(value, encoding=DEFAULT_ENCODING, error='replace'):
+def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=False):
     u"""
     Returns a Unicode string or None.
 
@@ -1003,7 +1019,7 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace'):
     >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1')) == u'l\ufffdt\ufffdn str\ufffd\ufffdg'
     >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1'), error='ignore') == u'ltn strg'
     """
-    if value is None or isinstance(value, text_type):
+    if value is None:
         return value
     try:
         if isinstance(value, bytearray):
@@ -1020,6 +1036,8 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace'):
         msg = "Value '%s' could not be coerced to Unicode" % value
         log.exception(msg)
         raise Exception(msg)
+    if strip_null:
+        return value.replace('\0', '')
     return value
 
 
@@ -1431,9 +1449,9 @@ def send_mail(frm, to, subject, body, config, html=None):
 
     to = listify(to)
     if html:
-        msg = email_mime_multipart.MIMEMultipart('alternative')
+        msg = MIMEMultipart('alternative')
     else:
-        msg = email_mime_text.MIMEText(body.encode('ascii', 'replace'))
+        msg = MIMEText(body, 'plain', 'utf-8')
 
     msg['To'] = ', '.join(to)
     msg['From'] = frm
@@ -1445,8 +1463,8 @@ def send_mail(frm, to, subject, body, config, html=None):
         return
 
     if html:
-        mp_text = email_mime_text.MIMEText(body.encode('ascii', 'replace'), 'plain')
-        mp_html = email_mime_text.MIMEText(html.encode('ascii', 'replace'), 'html')
+        mp_text = MIMEText(body, 'plain', 'utf-8')
+        mp_html = MIMEText(html, 'html', 'utf-8')
         msg.attach(mp_text)
         msg.attach(mp_html)
 

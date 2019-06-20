@@ -1,9 +1,9 @@
 """
 Modules used in building workflows
 """
+import json
 import logging
 import re
-from json import loads
 from xml.etree.ElementTree import (
     Element,
     XML
@@ -18,6 +18,7 @@ from galaxy.exceptions import ToolMissingException
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
 from galaxy.model.dataset_collections import matching
+from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
 from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
@@ -31,6 +32,7 @@ from galaxy.tools.parameters import (
     visit_input_values
 )
 from galaxy.tools.parameters.basic import (
+    BaseDataToolParameter,
     BooleanToolParameter,
     ConnectedValue,
     DataCollectionToolParameter,
@@ -45,7 +47,7 @@ from galaxy.tools.parameters.basic import (
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
 from galaxy.tools.parameters.wrapped import make_dict_copy
-from galaxy.tools.parser.output_objects import ToolExpressionOutput
+from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
@@ -424,6 +426,8 @@ class SubWorkflowModule(WorkflowModule):
                 )
                 if step.type == 'data_collection_input':
                     input['collection_type'] = step.tool_inputs.get('collection_type') if step.tool_inputs else None
+                if step_type == 'parameter_input':
+                    input['type'] = step.tool_inputs['parameter_type']
                 inputs.append(input)
         return inputs
 
@@ -993,7 +997,9 @@ class ToolModule(WorkflowModule):
                         params = make_dict_copy(self.state.inputs)
                         params['on_string'] = 'input dataset(s)'
                         params['tool'] = self.tool
-                        extra_kwds['label'] = fill_template(tool_output.label, context=params)
+                        extra_kwds['label'] = fill_template(tool_output.label,
+                                                            context=params,
+                                                            python_template_version=self.tool.python_template_version)
                     except Exception:
                         pass
                 data_outputs.append(
@@ -1157,7 +1163,7 @@ class ToolModule(WorkflowModule):
         if self.tool:
             state = super(ToolModule, self).decode_runtime_state(runtime_state)
             if RUNTIME_STEP_META_STATE_KEY in runtime_state:
-                self.__restore_step_meta_runtime_state(loads(runtime_state[RUNTIME_STEP_META_STATE_KEY]))
+                self.__restore_step_meta_runtime_state(json.loads(runtime_state[RUNTIME_STEP_META_STATE_KEY]))
             return state
         else:
             raise ToolMissingException("Tool %s missing. Cannot recover runtime state." % self.tool_id,
@@ -1202,11 +1208,13 @@ class ToolModule(WorkflowModule):
                 input_dict = all_inputs_by_name[prefixed_name]
 
                 replacement = NO_REPLACEMENT
+                dataset_instance = None
                 if iteration_elements and prefixed_name in iteration_elements:
-                    if isinstance(input, DataToolParameter) and hasattr(iteration_elements[prefixed_name], 'dataset_instance'):
+                    dataset_instance = getattr(iteration_elements[prefixed_name], 'dataset_instance', None)
+                    if isinstance(input, DataToolParameter) and dataset_instance:
                         # Pull out dataset instance (=HDA) from element and set a temporary element_identifier attribute
                         # See https://github.com/galaxyproject/galaxy/pull/1693 for context.
-                        replacement = iteration_elements[prefixed_name].dataset_instance
+                        replacement = dataset_instance
                         if hasattr(iteration_elements[prefixed_name], u'element_identifier') and iteration_elements[prefixed_name].element_identifier:
                             replacement.element_identifier = iteration_elements[prefixed_name].element_identifier
                     else:
@@ -1216,6 +1224,12 @@ class ToolModule(WorkflowModule):
                     replacement = progress.replacement_for_input(step, input_dict)
 
                 if replacement is not NO_REPLACEMENT:
+                    if not isinstance(input, BaseDataToolParameter):
+                        # Probably a parameter that can be replaced
+                        dataset = dataset_instance or replacement
+                        if getattr(dataset, 'extension', None) == 'expression.json':
+                            with open(dataset.file_name, 'r') as f:
+                                replacement = json.load(f)
                     found_replacement_keys.add(prefixed_name)
 
                 return replacement
@@ -1230,7 +1244,7 @@ class ToolModule(WorkflowModule):
 
             unmatched_input_connections = expected_replacement_keys - found_replacement_keys
             if unmatched_input_connections:
-                log.warn("Failed to use input connections for inputs [%s]" % unmatched_input_connections)
+                log.warning("Failed to use input connections for inputs [%s]" % unmatched_input_connections)
 
             param_combinations.append(execution_state.inputs)
 
@@ -1360,7 +1374,7 @@ class ToolModule(WorkflowModule):
         replacement_parameters = set()
         for pja in step.post_job_actions:
             for argument in pja.action_arguments.values():
-                for match in re.findall(r'\$\{(.+?)\}', argument):
+                for match in re.findall(r'\$\{(.+?)\}', unicodify(argument)):
                     replacement_parameters.add(match)
 
         return list(replacement_parameters)

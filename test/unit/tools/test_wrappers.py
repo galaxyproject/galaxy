@@ -3,7 +3,7 @@ import tempfile
 from xml.etree.ElementTree import XML
 
 from galaxy.datatypes.metadata import MetadataSpecCollection
-from galaxy.jobs.datasets import DatasetPath
+from galaxy.job_execution.datasets import DatasetPath
 from galaxy.tools.parameters.basic import (
     DrillDownSelectToolParameter,
     IntegerToolParameter,
@@ -88,6 +88,12 @@ def test_input_value_wrapper(tool):
     parameter = IntegerToolParameter(tool, XML('<param name="blah" type="integer" value="10" min="0" />'))
     wrapper = InputValueWrapper(parameter, "5")
     assert str(wrapper) == "5"
+    assert int(wrapper) == 5
+    assert wrapper == "5"
+    assert wrapper == 5
+    assert wrapper == 5.0
+    assert wrapper > 2
+    assert wrapper < 10
 
 
 def test_dataset_wrapper():

@@ -165,7 +165,7 @@ var Terminal = Backbone.Model.extend({
         let output_val = val;
         if (this.multiple) {
             // emulate list input
-            let description = new CollectionTypeDescription("list");
+            const description = new CollectionTypeDescription("list");
             if (val.collectionType === description.collectionType) {
                 // No mapping over necessary
                 return;
@@ -195,9 +195,9 @@ var Terminal = Backbone.Model.extend({
     },
 
     resetCollectionTypeSource: function() {
-        let node = this.node;
+        const node = this.node;
         _.each(node.output_terminals, function(output_terminal) {
-            let type_source = output_terminal.attributes.collection_type_source;
+            const type_source = output_terminal.attributes.collection_type_source;
             if (type_source && output_terminal.attributes.collection_type) {
                 output_terminal.attributes.collection_type = null;
                 output_terminal.update(output_terminal.attributes);
@@ -212,6 +212,7 @@ var OutputTerminal = Terminal.extend({
     initialize: function(attr) {
         Terminal.prototype.initialize.call(this, attr);
         this.datatypes = attr.datatypes;
+        this.force_datatype = attr.force_datatype;
     },
 
     resetMappingIfNeeded: function() {
@@ -354,19 +355,8 @@ var BaseInputTerminal = Terminal.extend({
                 return new ConnectionAcceptable(true, null);
             }
             var cat_outputs = [];
-            cat_outputs = cat_outputs.concat(other.datatypes);
-            if (other.node.post_job_actions) {
-                for (var pja_i in other.node.post_job_actions) {
-                    var pja = other.node.post_job_actions[pja_i];
-                    if (
-                        pja.action_type == "ChangeDatatypeAction" &&
-                        (pja.output_name === "" || pja.output_name == other.name) &&
-                        pja.action_arguments
-                    ) {
-                        cat_outputs.push(pja.action_arguments.newtype);
-                    }
-                }
-            }
+            const other_datatypes = other.force_datatype ? [other.force_datatype] : other.datatypes;
+            cat_outputs = cat_outputs.concat(other_datatypes);
             // FIXME: No idea what to do about case when datatype is 'input'
             for (var other_datatype_i in cat_outputs) {
                 var other_datatype = cat_outputs[other_datatype_i];
@@ -434,6 +424,10 @@ var InputTerminal = BaseInputTerminal.extend({
                 }
             }
             if (thisMapOver.isCollection && thisMapOver.canMatch(otherCollectionType)) {
+                return this._producesAcceptableDatatype(other);
+            } else if (this.multiple && new CollectionTypeDescription("list").canMatch(otherCollectionType)) {
+                // This handles the special case of a list input being connected to a multiple="true" data input.
+                // Nested lists would be correctly mapped over by the above condition.
                 return this._producesAcceptableDatatype(other);
             } else {
                 //  Need to check if this would break constraints...
@@ -506,7 +500,7 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
         if (!other) {
             return;
         } else {
-            let node = this.node;
+            const node = this.node;
             _.each(node.output_terminals, function(output_terminal) {
                 if (output_terminal.attributes.collection_type_source && !connector.dragging) {
                     if (other.isMappedOver()) {
@@ -611,6 +605,7 @@ var OutputCollectionTerminal = Terminal.extend({
     initialize: function(attr) {
         Terminal.prototype.initialize.call(this, attr);
         this.datatypes = attr.datatypes;
+        this.force_datatype = attr.force_datatype;
         if (attr.collection_type) {
             this.collectionType = new CollectionTypeDescription(attr.collection_type);
         } else {
@@ -634,7 +629,7 @@ var OutputCollectionTerminal = Terminal.extend({
             newCollectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
         }
 
-        let oldCollectionType = this.collectionType;
+        const oldCollectionType = this.collectionType;
         this.collectionType = newCollectionType;
         // we need to iterate over a copy, as we slice this.connectors in the process of destroying connections
         var connectors = this.connectors.slice(0);

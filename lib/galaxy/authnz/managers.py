@@ -133,7 +133,7 @@ class AuthnzManager(object):
     def _unify_provider_name(self, provider):
         if provider.lower() in self.oidc_backends_config:
             return provider.lower()
-        for k, v in BACKENDS_NAME.iteritems():
+        for k, v in BACKENDS_NAME.items():
             if v == provider:
                 return k.lower()
         return None
@@ -193,7 +193,7 @@ class AuthnzManager(object):
         if qres.user_id != trans.user.id:
             msg = "The request authentication with ID `{}` is not accessible to user with ID " \
                   "`{}`.".format(trans.security.encode_id(authn_id), trans.security.encode_id(trans.user.id))
-            log.warn(msg)
+            log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
 
     @staticmethod
@@ -220,7 +220,7 @@ class AuthnzManager(object):
         if user_id != qres.user_id:
             msg = "The request authorization configuration (with ID:`{}`) is not accessible for user with " \
                   "ID:`{}`.".format(qres.id, user_id)
-            log.warn(msg)
+            log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
         return qres
 

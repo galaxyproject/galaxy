@@ -72,7 +72,7 @@ var View = Backbone.View.extend({
     _showRuleEditor: function(elements) {
         const elementsType = "collection_contents";
         const importType = "collections";
-        let value = this._value;
+        const value = this._value;
         const options = {
             saveRulesFn: rules => this._handleRulesSave(rules),
             initialRules: value
@@ -142,7 +142,7 @@ var View = Backbone.View.extend({
         } else if (value.mapping.length === 0) {
             message = "No collection identifiers defined, specify at least one collection identifier.";
         } else {
-            for (let rule of value.rules) {
+            for (const rule of value.rules) {
                 if (rule.error) {
                     message = "One or more rules in error.";
                     break;

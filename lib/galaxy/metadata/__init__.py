@@ -13,15 +13,15 @@ from six.moves import cPickle
 
 import galaxy.model
 from galaxy.model.metadata import FileParameter, MetadataTempFile
-from galaxy.util import in_directory
+from galaxy.util import in_directory, safe_makedirs
 
 log = getLogger(__name__)
 
 SET_METADATA_SCRIPT = 'from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()'
 
 
-def get_metadata_compute_strategy(app, job_id):
-    metadata_strategy = app.config.metadata_strategy
+def get_metadata_compute_strategy(config, job_id):
+    metadata_strategy = config.metadata_strategy
     if metadata_strategy == "legacy":
         return JobExternalOutputMetadataWrapper(job_id)
     else:
@@ -46,7 +46,7 @@ class MetadataCollectionStrategy(object):
     @abc.abstractmethod
     def setup_external_metadata(self, datasets_dict, sa_session, exec_dir=None,
                                 tmp_dir=None, dataset_files_path=None,
-                                output_fnames=None, config_root=None,
+                                output_fnames=None, config_root=None, use_bin=False,
                                 config_file=None, datatypes_config=None,
                                 job_metadata=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
@@ -73,7 +73,11 @@ class MetadataCollectionStrategy(object):
             normalized_remote_metadata_directory = remote_metadata_directory and os.path.normpath(remote_metadata_directory)
             normalized_path = os.path.normpath(path)
             if remote_metadata_directory and normalized_path.startswith(normalized_remote_metadata_directory):
-                return normalized_path.replace(normalized_remote_metadata_directory, working_directory, 1)
+                if self.portable:
+                    target_directory = os.path.join(working_directory, "metadata")
+                else:
+                    target_directory = working_directory
+                return normalized_path.replace(normalized_remote_metadata_directory, target_directory, 1)
             return path
 
         dataset.metadata.from_JSON_dict(metadata_output_path, path_rewriter=path_rewriter)
@@ -88,13 +92,14 @@ class MetadataCollectionStrategy(object):
 
 
 class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
+    portable = True
 
     def __init__(self, job_id):
         self.job_id = job_id
 
     def setup_external_metadata(self, datasets_dict, sa_session, exec_dir=None,
                                 tmp_dir=None, dataset_files_path=None,
-                                output_fnames=None, config_root=None,
+                                output_fnames=None, config_root=None, use_bin=False,
                                 config_file=None, datatypes_config=None,
                                 job_metadata=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
@@ -104,7 +109,8 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         tmp_dir = _init_tmp_dir(tmp_dir)
 
         metadata_dir = os.path.join(tmp_dir, "metadata")
-        os.mkdir(metadata_dir)
+        # may already exist (i.e. metadata collection in the job handler)
+        safe_makedirs(metadata_dir)
 
         def job_relative_path(path):
             path_relative = os.path.relpath(path, tmp_dir)
@@ -141,9 +147,12 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         if include_command:
             # return command required to build
             script_path = os.path.join(metadata_dir, "set.py")
-            with open(script_path, "w") as f:
-                f.write(SET_METADATA_SCRIPT)
-            return 'pwd; python "metadata/set.py"'
+            if use_bin:
+                return "galaxy-set-metadata"
+            else:
+                with open(script_path, "w") as f:
+                    f.write(SET_METADATA_SCRIPT)
+                return 'python "metadata/set.py"'
         else:
             # return args to galaxy_ext.metadata.set_metadata required to build
             return ''
@@ -171,6 +180,7 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
     DatasetInstance object which will use pickle (in the future this could be
     JSONified as well)
     """
+    portable = False
 
     def __init__(self, job_id):
         self.job_id = job_id
@@ -207,7 +217,7 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
 
     def setup_external_metadata(self, datasets_dict, sa_session, exec_dir=None,
                                 tmp_dir=None, dataset_files_path=None,
-                                output_fnames=None, config_root=None,
+                                output_fnames=None, config_root=None, use_bin=False,
                                 config_file=None, datatypes_config=None,
                                 job_metadata=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
@@ -289,6 +299,7 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                                     job_metadata,
                                     " ".join(map(__metadata_files_list_to_cmd_line, metadata_files_list)),
                                     max_metadata_value_size)
+        assert not use_bin
         if include_command:
             # return command required to build
             fd, fp = tempfile.mkstemp(suffix='.py', dir=tmp_dir, prefix="set_metadata_")
@@ -393,8 +404,5 @@ def _get_filename_override(output_fnames, file_name):
 
 def _init_tmp_dir(tmp_dir):
     assert tmp_dir is not None
-
-    if not os.path.exists(tmp_dir):
-        os.makedirs(tmp_dir)
-
+    safe_makedirs(tmp_dir)
     return tmp_dir

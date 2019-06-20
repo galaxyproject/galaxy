@@ -140,7 +140,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         tool_commands
     )
     write_script(local_container_script, script_contents, config)
-    commands = local_container_script
+    commands = "%s %s" % (shell, local_container_script)
     if 'working_directory' in remote_command_params:
         commands = "%s %s" % (shell, join(remote_command_params['working_directory'], script_name))
     commands += " > ../tool_stdout 2> ../tool_stderr"
@@ -204,6 +204,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         datatypes_config=datatypes_config,
         compute_tmp_dir=compute_tmp_dir,
         resolve_metadata_dependencies=resolve_metadata_dependencies,
+        use_bin=job_wrapper.use_metadata_binary,
         kwds={'overwrite': False}
     ) or ''
     metadata_command = metadata_command.strip()

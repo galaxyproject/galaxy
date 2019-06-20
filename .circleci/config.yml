@@ -25,7 +25,7 @@ variables:
 jobs:
   get_code:
     docker:
-      - image: circleci/python:2.7.15
+      - image: circleci/python:3.5
     <<: *set_workdir
     steps:
       # Replace standard code checkout with shallow clone to speed things up.
@@ -83,7 +83,7 @@ jobs:
             - ~/repo
   py27_lint:
     docker:
-      - image: circleci/python:2.7.15
+      - image: circleci/python:2.7
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -91,7 +91,7 @@ jobs:
       - run: tox -e py27-lint
   py27_unit:
     docker:
-      - image: circleci/python:2.7.15
+      - image: circleci/python:2.7
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -99,7 +99,7 @@ jobs:
       - run: tox -e py27-unit
   py27_docstring:
     docker:
-      - image: circleci/python:2.7.15
+      - image: circleci/python:2.7
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -107,7 +107,7 @@ jobs:
       - run: tox -e py27-lint_docstring_include_list
   py27_first_startup:
     docker:
-      - image: circleci/python:2.7.15
+      - image: circleci/python:2.7
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -139,14 +139,14 @@ jobs:
     <<: *set_workdir
     steps:
       - *restore_repo_cache
-      - *install_tox
       - run: sudo apt-get update
       # For uwsgi
       - run: sudo apt-get install -y libpython3.5-dev
+      - *install_tox
       - run: tox -e py35-first_startup
   validate_test_tools:
     docker:
-      - image: circleci/python:2.7.15
+      - image: circleci/python:3.5
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -154,9 +154,17 @@ jobs:
       - run: sudo apt-get install -y libxml2-utils
       - *install_tox
       - run: tox -e validate_test_tools
+  test_galaxy_packages:
+    docker:
+      - image: circleci/python:3.5
+    <<: *set_workdir
+    steps:
+      - *restore_repo_cache
+      - *install_tox
+      - run: tox -e test_galaxy_packages
   check_py3_compatibility:
     docker:
-      - image: circleci/python:2.7.15
+      - image: circleci/python:3.5
     <<: *set_workdir
     steps:
       - *restore_repo_cache
@@ -201,6 +209,8 @@ workflows:
       - py35_unit:
           <<: *requires_get_code
       - py35_first_startup:
+          <<: *requires_get_code
+      - test_galaxy_packages:
           <<: *requires_get_code
       - validate_test_tools:
           <<: *requires_get_code

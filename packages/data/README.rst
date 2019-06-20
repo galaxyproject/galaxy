@@ -1,6 +1,6 @@
 
-.. image:: https://badge.fury.io/py/galaxy-datatypes.svg
-   :target: https://pypi.python.org/pypi/galaxy-datatypes/
+.. image:: https://badge.fury.io/py/galaxy-data.svg
+   :target: https://pypi.python.org/pypi/galaxy-data/
 
 
 Overview

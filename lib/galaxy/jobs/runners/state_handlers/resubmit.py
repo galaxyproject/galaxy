@@ -97,7 +97,8 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
         else:
             job_log_prefix = "(%s)" % (job_state.job_wrapper.job_id)
 
-        destination = resubmit['destination']
+        # Is destination needed here, might these be serialized to the database?
+        destination = resubmit.get('environment') or resubmit.get('destination')
         log.info("%s Job will be resubmitted to '%s' because %s at "
                  "the '%s' destination",
                  job_log_prefix,

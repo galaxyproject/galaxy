@@ -115,7 +115,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         if history_id:
             container = self.history_manager.get_accessible(self.decode_id(history_id), trans.user)
         contents = self.history_contents_manager.contents(
-            container=container, filters=filters, limit=limit, offset=offset, order_by=order_by
+            container=container, filters=filters, limit=limit, offset=offset, order_by=order_by, user_id=trans.user.id,
         )
         return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view='summary') for content in contents]
 
@@ -126,10 +126,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         Displays information about and/or content of a dataset.
         """
         # Get dataset.
-        try:
-            dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
-        except Exception as e:
-            return str(e)
+        dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
 
         # Use data type to return particular type of data.
         try:

@@ -645,6 +645,10 @@ class WorkflowContentsManager(UsesAnnotations):
                         output_name=pja.output_name,
                         action_arguments=pja.action_arguments
                     )
+                    if pja.action_type == 'ChangeDatatypeAction':
+                        for output in step_dict['outputs']:
+                            if output['name'] == pja.output_name:
+                                output['force_datatype'] = [pja.action_arguments['newtype']]
                 step_dict['post_job_actions'] = pja_dict
 
             # workflow outputs

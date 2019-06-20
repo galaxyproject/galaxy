@@ -12,7 +12,7 @@ export class Services {
             axios
                 .get(url)
                 .then(response => {
-                    let items = this.getItems(response.data);
+                    const items = this.getItems(response.data);
                     resolve(items);
                 })
                 .catch(e => {
@@ -27,10 +27,10 @@ export class Services {
 
     /** Returns the formatted results **/
     getItems(data) {
-        let items = [];
-        let stack = [data];
+        const items = [];
+        const stack = [data];
         while (stack.length > 0) {
-            let root = stack.pop();
+            const root = stack.pop();
             if (Array.isArray(root)) {
                 root.forEach(element => {
                     stack.push(element);
@@ -40,7 +40,7 @@ export class Services {
             } else if (root.object) {
                 stack.push(root.object);
             } else {
-                let record = this.getRecord(root);
+                const record = this.getRecord(root);
                 if (record) {
                     items.push(record);
                 }
@@ -58,16 +58,16 @@ export class Services {
             record.time = record.time.substring(0, 16).replace("T", " ");
         }
         if (record.model_class == "Library") {
+            record.label = record.name;
             record.url = `${this.root}api/libraries/${record.id}/contents`;
             return record;
         } else if (record.hid) {
-            record.name = `${record.hid}: ${record.name}`;
+            record.label = `${record.hid}: ${record.name}`;
             record.download = `${this.host}/api/histories/${record.history_id}/contents/${record.id}/display`;
             return record;
         } else if (record.type == "file") {
-            if (record.name && record.name[0] === "/") {
-                record.name = record.name.substring(1);
-            }
+            record.src = "ldda";
+            record.label = record.name;
             record.download = `${this.host}${this.root}api/libraries/datasets/download/uncompressed?ld_ids=${
                 record.id
             }`;

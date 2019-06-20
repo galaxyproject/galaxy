@@ -11,7 +11,7 @@ addInitialization((Galaxy, { options }) => {
         active_view: "admin"
     });
 
-    let pageOptions = Object.assign({}, options, {
+    const pageOptions = Object.assign({}, options, {
         Left: AdminPanel,
         Router: getAdminRouter(Galaxy, options)
     });

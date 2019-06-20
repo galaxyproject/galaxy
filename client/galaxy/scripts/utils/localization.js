@@ -6,7 +6,7 @@ define(["i18n!nls/locale"], function(localeStrings) {
     if (localeStrings.hasOwnProperty("__root")) {
         //console.debug( 'amdi18n+webpack localization for ' + locale + ' loaded' );
 
-        let locale = sessionStorage.getItem("currentLocale");
+        const locale = sessionStorage.getItem("currentLocale");
 
         if (locale) {
             localeStrings =

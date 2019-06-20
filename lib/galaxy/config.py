@@ -25,7 +25,7 @@ from six.moves import configparser
 
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
-from galaxy.tools.deps.container_resolvers.mulled import DEFAULT_CHANNELS
+from galaxy.tool_util.deps.container_resolvers.mulled import DEFAULT_CHANNELS
 from galaxy.util import ExecutionTimer
 from galaxy.util import listify
 from galaxy.util import string_as_bool
@@ -50,7 +50,7 @@ PATH_DEFAULTS = dict(
     error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
     oidc_config_file=['config/oidc_config.yml', 'config/oidc_config.yml.sample'],
     oidc_backends_config_file=['config/oidc_backends_config.yml', 'config/oidc_backends_config.yml.sample'],
-    dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
+    dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml', None],
     job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
     workflow_resource_params_file=['config/workflow_resource_params_conf.xml', 'workflow_resource_params_conf.xml'],
     migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
@@ -142,6 +142,9 @@ def find_path(kwargs, var, root):
         path = kwargs.get(var)
     else:
         for default in defaults:
+            if default is None:
+                # if None is the final default - just return that.
+                return None
             if os.path.exists(resolve_path(default, root)):
                 path = default
                 break
@@ -193,6 +196,13 @@ class Configuration(object):
         # Install database related configuration (if different).
         self.install_database_connection = kwargs.get("install_database_connection", None)
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
+
+        # Wait for database to become available instead of failing
+        self.database_wait = string_as_bool(kwargs.get("database_wait", "False"))
+        # Attempts before failing
+        self.database_wait_attempts = int(kwargs.get("database_wait_attempts", 60))
+        # Sleep period between attepmts (seconds)
+        self.database_wait_sleep = float(kwargs.get("database_wait_sleep", 1))
 
         # Where dataset files are stored
         self.file_path = resolve_path(kwargs.get("file_path", "database/files"), self.root)
@@ -499,6 +509,7 @@ class Configuration(object):
         self.use_cached_dependency_manager = use_cached_dependency_manager
         self.tool_dependency_cache_dir = tool_dependency_cache_dir
         self.precache_dependencies = precache_dependencies
+        self.dependency_resolvers = kwargs.get("dependency_resolvers")
         # Deployers may either specify a complete list of mapping files or get the default for free and just
         # specify a local mapping file to adapt and extend the default one.
         if "conda_mapping_files" in kwargs:
@@ -506,7 +517,7 @@ class Configuration(object):
         else:
             self.conda_mapping_files = [
                 self.local_conda_mapping_file,
-                os.path.join(self.root, "lib", "galaxy", "tools", "deps", "resolvers", "default_conda_mapping.yml"),
+                os.path.join(self.root, "lib", "galaxy", "tool_util", "deps", "resolvers", "default_conda_mapping.yml"),
             ]
 
         self.enable_beta_mulled_containers = string_as_bool(kwargs.get('enable_beta_mulled_containers', 'False'))
@@ -927,7 +938,10 @@ def parse_dependency_options(kwargs, root, dependency_resolvers_config_file):
         precache_dependencies = string_as_bool(kwargs.get("precache_dependencies", 'True'))
     else:
         tool_dependency_dir = None
-        use_tool_dependencies = os.path.exists(dependency_resolvers_config_file)
+        if dependency_resolvers_config_file is None:
+            use_tool_dependencies = bool(kwargs.get("dependency_resolvers", None))
+        else:
+            use_tool_dependencies = os.path.exists(dependency_resolvers_config_file)
         tool_dependency_cache_dir = None
         precache_dependencies = False
         use_cached_dependency_manager = False
@@ -1046,8 +1060,8 @@ class ConfiguresGalaxyMixin(object):
     def _configure_toolbox(self):
         from galaxy import tools
         from galaxy.managers.citations import CitationsManager
-        from galaxy.tools.deps import containers
-        from galaxy.tools.deps.dependencies import AppInfo
+        from galaxy.tool_util.deps import containers
+        from galaxy.tool_util.deps.dependencies import AppInfo
         import galaxy.tools.search
 
         self.citations_manager = CitationsManager(self)
@@ -1154,6 +1168,9 @@ class ConfiguresGalaxyMixin(object):
         combined_install_database = not(install_db_url and install_db_url != db_url)
         install_db_url = install_db_url or db_url
 
+        if self.config.database_wait:
+            self._wait_for_database(db_url)
+
         if getattr(self.config, "max_metadata_value_size", None):
             from galaxy.model import custom_types
             custom_types.MAX_METADATA_VALUE_SIZE = self.config.max_metadata_value_size
@@ -1196,3 +1213,15 @@ class ConfiguresGalaxyMixin(object):
     def _configure_signal_handlers(self, handlers):
         for sig, handler in handlers.items():
             signal.signal(sig, handler)
+
+    def _wait_for_database(self, url):
+        from sqlalchemy_utils import database_exists
+        attempts = self.config.database_wait_attempts
+        pause = self.config.database_wait_sleep
+        for i in range(1, attempts):
+            try:
+                database_exists(url)
+                break
+            except Exception:
+                log.info("Waiting for database: attempt %d of %d" % (i, attempts))
+                time.sleep(pause)

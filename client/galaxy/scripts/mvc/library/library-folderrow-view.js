@@ -36,7 +36,7 @@ var FolderRowView = Backbone.View.extend({
         this.options = _.extend(this.options, options);
         var folder_item = this.options.model;
         var template = null;
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         if (folder_item.get("type") === "folder" || folder_item.get("model_class") === "LibraryFolder") {
             this.options.type = "folder";
@@ -105,14 +105,14 @@ var FolderRowView = Backbone.View.extend({
 
     /* Show the page with dataset details. */
     showDatasetDetails: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({ id: this.id });
     },
 
     /* Undelete the dataset on server and render the row again. */
     undeleteDataset: function(event) {
         $(".tooltip").hide();
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var that = this;
         var dataset_id = $(event.target)
             .closest("tr")
@@ -144,7 +144,7 @@ var FolderRowView = Backbone.View.extend({
 
     /* Undelete the folder on server and render the row again. */
     undeleteFolder: function(event) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         $(".tooltip").hide();
         var folder_id = $(event.target)
             .closest("tr")
@@ -182,7 +182,7 @@ var FolderRowView = Backbone.View.extend({
     },
 
     saveModifications: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var folder = Galaxy.libraries.folderListView.collection.get(this.$el.data("id"));
         var is_changed = false;
         var new_name = this.$el.find(".input_folder_name").val();
@@ -241,169 +241,205 @@ var FolderRowView = Backbone.View.extend({
 
     templateRowFolder: function() {
         return _.template(
-            [
-                '<tr class="folder_row light library-row" data-id="<%- content_item.id %>">',
-                '<td class="mid">',
-                '<span title="Folder" class="fa fa-folder-o"/>',
-                "</td>",
-                '<td class="mid"><input style="margin: 0;" type="checkbox"></td>',
-                "<% if(!edit_mode) { %>",
-                "<td>",
-                '<a href="#folders/<%- content_item.id %>"><%- content_item.get("name") %></a>',
-                "</td>",
-                "<td>",
-                '<%- content_item.get("description") %>',
-                "</td>",
-                "<% } else if(edit_mode){ %>",
-                '<td><textarea rows="4" class="form-control input_folder_name" placeholder="name" ><%- content_item.get("name") %></textarea></td>',
-                '<td><textarea rows="4" class="form-control input_folder_description" placeholder="description" ><%- content_item.get("description") %></textarea></td>',
-                "<% } %>",
-                "<td>folder</td>",
-                "<td></td>",
-                "<td>",
-                '<%= _.escape(content_item.get("update_time")) %>',
-                "</td>",
-                "<td></td>",
-                "<td>",
-                "<% if(edit_mode) { %>", // start edit mode
-                '<button data-toggle="tooltip" data-placement="top" title="Save changes" class="primary-button btn-sm save_folder_btn" type="button" style="<% if(button_config.save_folder_btn === false) { print("display:none;") } %>">',
-                '<span class="fa fa-floppy-o"/> Save',
-                "</button>",
-                '<button data-toggle="tooltip" data-placement="top" title="Discard changes" class="primary-button btn-sm cancel_folder_btn" type="button" style="<% if(button_config.cancel_folder_btn === false) { print("display:none;") } %>">',
-                '<span class="fa fa-times"/> Cancel',
-                "</button>",
-                "<% } else if (!edit_mode){%>", // start no edit mode
-                '<button data-toggle="tooltip" data-placement="top" title="Modify \'<%- content_item.get("name") %>\'" class="primary-button btn-sm edit_folder_btn" type="button" style="<% if(button_config.edit_folder_btn === false) { print("display:none;") } %>">',
-                '<span class="fa fa-pencil"/> Edit',
-                "</button>",
-                '<a href="#/folders/<%- content_item.id %>/permissions">',
-                '<button data-toggle="tooltip" data-placement="top" class="primary-button btn-sm permission_folder_btn" title="Permissions of \'<%- content_item.get("name") %>\'" style="<% if(button_config.permission_folder_btn === false) { print("display:none;") } %>">',
-                '<span class="fa fa-group"/> Manage',
-                "</button>",
-                "</a>",
-                "<% } %>", //end no edit mode
-                "</td>",
-                "</tr>"
-            ].join("")
+            `<tr class="folder_row library-row" data-id="<%- content_item.id %>">
+                <td class="mid">
+                    <span title="Folder" class="fa fa-folder-o"></span>
+                </td>
+                <td class="mid"><input style="margin: 0;" type="checkbox"></td>
+                <% if(!edit_mode) { %>
+                    <td>
+                        <a href="#folders/<%- content_item.id %>"><%- content_item.get("name") %></a>
+                    </td>
+                    <% if( content_item.get("description") ) { %>
+                        <% if( content_item.get("description").length> 80 ) { %>
+                            <td data-toggle="tooltip" data-placement="auto"
+                                title='<%= _.escape(content_item.get("description")) %>'>
+                                <%= _.escape(content_item.get("description")).substring(0, 80) + "..." %>
+                            </td>
+                        <% } else { %>
+                            <td><%= _.escape(content_item.get("description"))%></td>
+                        <% } %>
+                    <% } else { %>
+                        <td></td>
+                    <% } %>
+                <% } else if(edit_mode){ %>
+                    <td>
+                        <textarea rows="4" class="form-control input_folder_name" placeholder="name" ><%- content_item.get("name") %></textarea>
+                    </td>
+                    <td>
+                        <textarea rows="4" class="form-control input_folder_description" placeholder="description" ><%- content_item.get("description") %></textarea>
+                    </td>
+                <% } %>
+                <td>folder</td>
+                <td></td>
+                <td>
+                    <%= _.escape(content_item.get("update_time")) %>
+                </td>
+                <td></td>
+                <td class="right-center">
+                    <% if(edit_mode) { %> <!-- start edit mode -->
+                        <button data-toggle="tooltip" data-placement="top" title="Save changes"
+                            class="primary-button btn-sm save_folder_btn" type="button"
+                            style="<% if(button_config.save_folder_btn === false) { print("display:none;") } %>">
+                            <span class="fa fa-floppy-o"></span> Save
+                        </button>
+                        <button data-toggle="tooltip" data-placement="top" title="Discard changes"
+                            class="primary-button btn-sm cancel_folder_btn" type="button"
+                            style="<% if(button_config.cancel_folder_btn === false) { print("display:none;") } %>">
+                            <span class="fa fa-times"></span> Cancel
+                        </button>
+                    <% } else if (!edit_mode){%> <!-- start no edit mode -->
+                        <button data-toggle="tooltip" data-placement="top"
+                            title="Modify '<%- content_item.get("name") %>'"
+                            class="primary-button btn-sm edit_folder_btn" type="button"
+                            style="<% if(button_config.edit_folder_btn === false) { print("display:none;") } %>">
+                            <span class="fa fa-pencil"></span> Edit
+                        </button>
+                        <a href="#/folders/<%- content_item.id %>/permissions">
+                            <button data-toggle="tooltip" data-placement="top"
+                                class="primary-button btn-sm permission_folder_btn"
+                                title="Permissions of '<%- content_item.get("name") %>'"
+                                    style="<% if(button_config.permission_folder_btn === false) { print("display:none;") } %>">
+                                <span class="fa fa-group"></span> Manage
+                            </button>
+                        </a>
+                    <% } %> <!-- end no edit mode -->
+               </td>
+            </tr>`
         );
     },
 
     templateRowFile: function() {
         return _.template(
-            [
-                '<tr class="dataset_row light library-row" data-id="<%- content_item.id %>">',
-                '<td class="mid">',
-                '<span title="Dataset" class="fa fa-file-o"/>',
-                "</td>",
-                '<td class="mid">',
-                '<input style="margin: 0;" type="checkbox">',
-                "</td>",
-                "<td>",
-                '<a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>" class="library-dataset">',
-                '<%- content_item.get("name") %>',
-                "<a>",
-                "</td>",
-                '<td><%- content_item.get("message") %></td>',
-                '<td><%= _.escape(content_item.get("file_ext")) %></td>',
-                '<td><%= _.escape(content_item.get("file_size")) %></td>',
-                '<td><%= _.escape(content_item.get("update_time")) %></td>',
-                "<td>",
-                '<% if ( content_item.get("state") !== "ok" ) { %>',
-                '<%= _.escape(content_item.get("state")) %>',
-                "<% } %>",
-                "</td>",
-                "<td>",
-                '<% if (content_item.get("is_unrestricted")) { %>',
-                '<span data-toggle="tooltip" data-placement="top" title="Unrestricted dataset" style="color:grey;" class="fa fa-globe"/>',
-                "<% } %>",
-                '<% if (content_item.get("is_private")) { %>',
-                '<span data-toggle="tooltip" data-placement="top" title="Private dataset" style="color:grey;" class="fa fa-key"/>',
-                "<% } %>",
-                '<% if ((content_item.get("is_unrestricted") === false) && (content_item.get("is_private") === false)) { %>',
-                '<span data-toggle="tooltip" data-placement="top" title="Restricted dataset" style="color:grey;" class="fa fa-shield"/>',
-                "<% } %>",
-                '<% if (content_item.get("can_manage")) { %>',
-                '<a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>/permissions">',
-                '<button data-toggle="tooltip" data-placement="top" class="primary-button btn-sm permissions-dataset-btn" title="Permissions of \'<%- content_item.get("name") %>\'">',
-                '<span class="fa fa-group"/> Manage',
-                "</button>",
-                "</a>",
-                "<% } %>",
-                "</td>",
-                "</tr>"
-            ].join("")
+            `<tr class="dataset_row library-row" data-id="<%- content_item.id %>">
+                <td class="mid">
+                    <span title="Dataset" class="fa fa-file-o"></span>
+                </td>
+                <td class="mid">
+                    <input style="margin: 0;" type="checkbox">
+                </td>
+                <td>
+                    <a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>"
+                        class="library-dataset">
+                        <%- content_item.get("name") %>
+                    <a>
+                </td>
+                <td><%- content_item.get("message") %></td>
+                <td><%= _.escape(content_item.get("file_ext")) %></td>
+                <td><%= _.escape(content_item.get("file_size")) %></td>
+                <td><%= _.escape(content_item.get("update_time")) %></td>
+                <td>
+                    <% if ( content_item.get("state") !== "ok" ) { %>
+                        <%= _.escape(content_item.get("state")) %>
+                    <% } %>
+                </td>
+                <td class="right-center">
+                    <% if (content_item.get("is_unrestricted")) { %>
+                        <span data-toggle="tooltip" data-placement="top" title="Unrestricted dataset"
+                            class="fa fa-globe"></span>
+                    <% } %>
+                    <% if (content_item.get("is_private")) { %>
+                        <span data-toggle="tooltip" data-placement="top" title="Private dataset"
+                            class="fa fa-key"></span>
+                    <% } %>
+                    <% if ((content_item.get("is_unrestricted") === false) && (content_item.get("is_private") === false)) { %>
+                        <span data-toggle="tooltip" data-placement="top" title="Restricted dataset"
+                            class="fa fa-shield"></span>
+                    <% } %>
+                    <% if (content_item.get("can_manage")) { %>
+                        <a href="#folders/<%- content_item.get("folder_id") %>/datasets/<%- content_item.id %>/permissions">
+                            <button data-toggle="tooltip" data-placement="top"
+                                class="primary-button btn-sm permissions-dataset-btn"
+                                title="Permissions of '<%- content_item.get("name") %>'">
+                                <span class="fa fa-group"></span> Manage
+                            </button>
+                        </a>
+                    <% } %>
+                </td>
+            </tr>`
         );
     },
 
     templateRowDeletedFile: function() {
         return _.template(
-            [
-                '<tr class="active deleted_dataset library-row" data-id="<%- content_item.id %>">',
-                '<td class="mid">',
-                '<span title="Dataset" class="fa fa-file-o"/>',
-                "</td>",
-                "<td></td>",
-                '<td style="color:grey;">',
-                '<%- content_item.get("name") %>',
-                "</td>",
-                "<td>",
-                '<%- content_item.get("message") %>',
-                "</td>",
-                "<td>",
-                '<%= _.escape(content_item.get("file_ext")) %>',
-                "</td>",
-                "<td>",
-                '<%= _.escape(content_item.get("file_size")) %>',
-                "</td>",
-                "<td>",
-                '<%= _.escape(content_item.get("update_time")) %>',
-                "</td>",
-                "<td>",
-                '<% if ( content_item.get("state") !== "ok" ) { %>',
-                '<%= _.escape(content_item.get("state")) %>',
-                "<% } %>",
-                "</td>",
-                "<td>",
-                '<span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban"/>',
-                '<button data-toggle="tooltip" data-placement="top" title="Undelete \'<%- content_item.get("name") %>\'" class="primary-button btn-sm undelete_dataset_btn" type="button" style="margin-left:1em;">',
-                '<span class="fa fa-unlock"/> Undelete',
-                "</button>",
-                "</td>",
-                "</tr>"
-            ].join("")
+            `<tr class="active deleted_dataset library-row" data-id="<%- content_item.id %>">
+                <td class="mid">
+                    <span title="Dataset" class="fa fa-file-o"></span>
+                </td>
+                <td></td>
+                <td style="color:grey;">
+                    <%- content_item.get("name") %>
+                </td>
+                <td>
+                    <%- content_item.get("message") %>
+                </td>
+                <td>
+                    <%= _.escape(content_item.get("file_ext")) %>
+                </td>
+                <td>
+                    <%= _.escape(content_item.get("file_size")) %>
+                </td>
+                <td>
+                    <%= _.escape(content_item.get("update_time")) %>
+                </td>
+                <td>
+                    <% if ( content_item.get("state") !== "ok" ) { %>
+                        <%= _.escape(content_item.get("state")) %>
+                    <% } %>
+                </td>
+                <td class="right-center">
+                    <span data-toggle="tooltip" data-placement="top"
+                        title="Marked deleted" class="fa fa-ban"></span>
+                    <button data-toggle="tooltip" data-placement="top"
+                        title="Undelete '<%- content_item.get("name") %>'"
+                        class="primary-button btn-sm undelete_dataset_btn" type="button" style="margin-left:1em;">
+                        <span class="fa fa-unlock"></span> Undelete
+                    </button>
+                </td>
+            </tr>`
         );
     },
 
     templateRowDeletedFolder: function() {
         return _.template(
-            [
-                '<tr class="active deleted_folder light library-row" data-id="<%- content_item.id %>">',
-                '<td class="mid">',
-                '<span title="Folder" class="fa fa-folder-o"/>',
-                "</td>",
-                "<td></td>",
-                '<td style="color:grey;">',
-                '<%- content_item.get("name") %>',
-                "</td>",
-                "<td>",
-                '<%- content_item.get("description") %>',
-                "</td>",
-                "<td>",
-                "folder",
-                "</td>",
-                "<td></td>",
-                "<td>",
-                '<%= _.escape(content_item.get("update_time")) %>',
-                "</td>",
-                "<td></td>",
-                "<td>",
-                '<span data-toggle="tooltip" data-placement="top" title="Marked deleted" style="color:grey;" class="fa fa-ban"/>',
-                '<button data-toggle="tooltip" data-placement="top" title="Undelete \'<%- content_item.get("name") %>\'" class="primary-button btn-sm undelete_folder_btn" type="button" style="margin-left:1em;">',
-                '<span class="fa fa-unlock"/> Undelete',
-                "</button>",
-                "</td>",
-                "</tr>"
-            ].join("")
+            `<tr class="active deleted_folder library-row" data-id="<%- content_item.id %>">
+                <td class="mid">
+                    <span title="Folder" class="fa fa-folder-o"></span>
+                </td>
+                <td></td>
+                <td style="color:grey;">
+                    <%- content_item.get("name") %>
+                </td>
+                <% if( content_item.get("description") ) { %>
+                    <% if( content_item.get("description").length> 80 ) { %>
+                        <td data-toggle="tooltip" data-placement="bottom"
+                            title='<%= _.escape(content_item.get("description")) %>'>
+                            <%= _.escape(content_item.get("description")).substring(0, 80) + "..." %>
+                        </td>
+                    <% } else { %>
+                        <td><%= _.escape(content_item.get("description"))%></td>
+                    <% } %>
+                <% } else { %>
+                    <td></td>
+                <% } %>
+                <td>
+                    folder
+                </td>
+                <td></td>
+                <td>
+                    <%= _.escape(content_item.get("update_time")) %>
+                </td>
+                <td></td>
+                <td class="right-center">
+                    <span data-toggle="tooltip" data-placement="top"
+                        title="Marked deleted" class="fa fa-ban"></span>
+                    <button data-toggle="tooltip" data-placement="top"
+                        title="Undelete '<%- content_item.get("name") %>'"
+                        class="primary-button btn-sm undelete_folder_btn" type="button" style="margin-left:1em;">
+                        <span class="fa fa-unlock"></span> Undelete
+                    </button>
+                </td>
+            </tr>`
         );
     }
 });

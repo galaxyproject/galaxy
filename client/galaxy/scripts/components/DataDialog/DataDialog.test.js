@@ -98,7 +98,7 @@ describe("services.js/Services", () => {
         let items = services.getItems(rawData);
         expect(items.length).to.equals(1);
         let first = items[0];
-        expect(first.name).to.equals("1: name_1");
+        expect(first.label).to.equals("1: name_1");
         expect(first.download).to.equals("host/api/histories/0/contents/1/display");
     });
 });
@@ -153,11 +153,9 @@ describe("DataDialog.vue", () => {
         emitted = wrapper.emitted();
         expect(wrapper.classes()).contain("data-dialog-modal");
         expect(wrapper.find(".fa-spinner").text()).to.equals("");
-        expect(wrapper.find(".btn-secondary").text()).to.equals("Clear");
-        expect(wrapper.find(".btn-primary").text()).to.equals("Ok");
         expect(wrapper.contains(".fa-spinner")).to.equals(true);
         return Vue.nextTick().then(() => {
-            expect(wrapper.findAll(".fa-copy").length).to.equals(2);
+            expect(wrapper.findAll(".fa-folder").length).to.equals(2);
             expect(wrapper.findAll(".fa-file-o").length).to.equals(2);
         });
     });
@@ -169,11 +167,9 @@ describe("DataDialog.vue", () => {
         emitted = wrapper.emitted();
         expect(wrapper.classes()).contain("data-dialog-modal");
         expect(wrapper.find(".fa-spinner").text()).to.equals("");
-        expect(wrapper.find(".btn-secondary").text()).to.equals("Clear");
-        expect(wrapper.find(".btn-primary").text()).to.equals("Ok");
         expect(wrapper.contains(".fa-spinner")).to.equals(true);
         return Vue.nextTick().then(() => {
-            expect(wrapper.findAll(".fa-copy").length).to.equals(2);
+            expect(wrapper.findAll(".fa-folder").length).to.equals(2);
             expect(wrapper.findAll(".fa-file-o").length).to.equals(2);
         });
     });

@@ -90,8 +90,8 @@ class ToolsController(BaseAPIController):
         if not conf.whoosh_index_dir:
             raise exceptions.ConfigDoesNotAllowException('There is no directory for the search index specified. Please contact the administrator.')
         search_term = q.strip()
-        if len(search_term) < 3:
-            raise exceptions.RequestParameterInvalidException('The search term has to be at least 3 characters long.')
+        if len(search_term) < 1:
+            raise exceptions.RequestParameterInvalidException('The search term has to be at least one character long.')
 
         tool_search = ToolSearch()
 

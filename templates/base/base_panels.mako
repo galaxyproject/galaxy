@@ -70,7 +70,7 @@
     </script>
 
     %if t.webapp.name == 'galaxy' and app.config.ga_code:
-        ${galaxy_client.config_google_analytics(app)}
+        ${galaxy_client.config_google_analytics(app.config.ga_code)}
     %endif
 
 </%def>

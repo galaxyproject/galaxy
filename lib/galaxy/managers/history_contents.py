@@ -267,7 +267,14 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
                     return False
         return True
 
-    def _union_of_contents_query(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
+    def _union_of_contents_query(self,
+                                 container,
+                                 filters=None,
+                                 limit=None,
+                                 offset=None,
+                                 order_by=None,
+                                 user_id=None,
+                                 **kwargs):
         """
         Returns a query for a limited and offset list of both types of contents,
         filtered and in some order.
@@ -285,8 +292,10 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         # note: I'm trying to keep these private functions as generic as possible in order to move them toward base later
 
         # query 1: create a union of common columns for which the component_classes can be filtered/limited
-        contained_query = self._contents_common_query_for_contained(container.id if container else None)
-        subcontainer_query = self._contents_common_query_for_subcontainer(container.id if container else None)
+        contained_query = self._contents_common_query_for_contained(history_id=container.id if container else None,
+                                                                    user_id=user_id)
+        subcontainer_query = self._contents_common_query_for_subcontainer(history_id=container.id if container else None,
+                                                                          user_id=user_id)
 
         filters = filters or []
         # Apply filters that are specific to a model
@@ -322,7 +331,7 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             columns.append(column)
         return columns
 
-    def _contents_common_query_for_contained(self, history_id=None):
+    def _contents_common_query_for_contained(self, history_id, user_id):
         component_class = self.contained_class
         # TODO: and now a join with Dataset - this is getting sad
         columns = self._contents_common_columns(component_class,
@@ -336,9 +345,15 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
         subquery = subquery.join(model.Dataset, model.Dataset.id == component_class.dataset_id)
         if history_id:
             subquery = subquery.filter(component_class.history_id == history_id)
+        else:
+            # Make sure we only return items that are user-accessible by checking that they are in a history
+            # owned by the current user.
+            # TODO: move into filter mixin, and implement accessible logic as SQL query
+            subquery = subquery.filter(component_class.history_id == model.History.table.c.id,
+                                       model.History.table.c.user_id == user_id)
         return subquery
 
-    def _contents_common_query_for_subcontainer(self, history_id):
+    def _contents_common_query_for_subcontainer(self, history_id, user_id):
         component_class = self.subcontainer_class
         columns = self._contents_common_columns(component_class,
             history_content_type=literal('dataset_collection'),
@@ -358,6 +373,9 @@ class HistoryContentsManager(containers.ContainerManagerMixin):
             model.DatasetCollection.id == component_class.collection_id)
         if history_id:
             subquery = subquery.filter(component_class.history_id == history_id)
+        else:
+            subquery = subquery.filter(component_class.history_id == model.History.table.c.id,
+                                       model.History.table.c.user_id == user_id)
         return subquery
 
     def _get_union_type(self, union):

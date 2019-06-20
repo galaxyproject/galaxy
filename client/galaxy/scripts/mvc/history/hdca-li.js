@@ -14,7 +14,7 @@ var HDCAListItemView = _super.extend(
         className: `${_super.prototype.className} history-content`,
 
         render: function() {
-            let result = _super.prototype.render.apply(this, arguments);
+            const result = _super.prototype.render.apply(this, arguments);
             this._mountNametags("initialize");
             return result;
         },
@@ -36,10 +36,10 @@ var HDCAListItemView = _super.extend(
         },
 
         _mountNametags(context) {
-            let container = this.$el.find(".nametags")[0];
+            const container = this.$el.find(".nametags")[0];
             if (container) {
-                let { id, model_class, tags } = this.model.attributes;
-                let storeKey = `${model_class}-${id}`;
+                const { id, model_class, tags } = this.model.attributes;
+                const storeKey = `${model_class}-${id}`;
                 mountNametags({ storeKey, tags }, container);
             }
         },
