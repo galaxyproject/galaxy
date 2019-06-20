@@ -67,7 +67,7 @@ export const getAdminRouter = (Galaxy, options) => {
                     redirect: "/admin/users",
                     registration_warning_message: options.config.registration_warning_message,
                     mailing_join_addr: options.config.mailing_join_addr,
-                    smtp_server: options.config.smtp_server
+                    server_mail_configured: options.config.server_mail_configured
                 }
             }).$mount(vm);
         },
