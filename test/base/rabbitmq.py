@@ -108,6 +108,7 @@ class RabbitMQK8s(object):
                     }
                 ],
                 "clusterIP": "None",
+                # Determines which set of pods are targeted by this service.
                 "selector": {
                     "app": APP_TAG
                 }
@@ -137,6 +138,7 @@ class RabbitMQK8s(object):
                         "port": 15672
                     }
                 ],
+                # Determines which set of pods are targeted by this service.
                 "selector": {
                     "app": APP_TAG
                 },
@@ -151,8 +153,80 @@ class RabbitMQK8s(object):
         return api_response
 
     def create_rabbitmq_stateful_set(self):
+        # TODO: a post script that (1) stops rabbits, (2) restarts
+        # the cluster, (3) joins the rabbits to the cluster.
         manifest = {
-            # TODO
+            "apiVersion": "apps/v1beta1",
+            "kind": "StatefulSet",
+            "metadata": {
+                "name": RABBITMQ_NAME,
+                "labels": {
+                    "app": APP_TAG
+                }
+            },
+            "spec": {
+                "serviceName": RABBITMQ_MT_NAME,
+                "replicas": 5,
+                "template": {
+                    "metadata": {
+                        "name": RABBITMQ_NAME,
+                        "labels": {
+                            "app": APP_TAG
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "rabbitmq",
+                                "image": "rabbitmq:3.6.6-management-alpine",
+                                "env": [
+                                    {
+                                        "name": "RABBITMQ_ERLANG_COOKIE",
+                                        "valueFrom": {
+                                            "secretKeyRef": {
+                                                "name": "rabbitmq-config",
+                                                "key": "erlang-cookie"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "ports": [
+                                    {
+                                        "name": "amqp",
+                                        "containerPort": 5672
+                                    }
+                                ],
+                                "volumeMounts": [
+                                    {
+                                        "name": "rabbitmq",
+                                        "mountPath": "/var/lib/rabbitmq"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                },
+                "volumeClaimTemplates": [
+                    {
+                        "metadata": {
+                            "name": "rabbitmq",
+                            "annotations": {
+                                "volume.alpha.kubernetes.io/storage-class": "anything"
+                            }
+                        },
+                        "spec": {
+                            "accessModes": [
+                                "ReadWriteOnce"
+                            ],
+                            "resources": {
+                                "requests": {
+                                    "storage": "1Gi"
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
         }
         api_response = self.__create_object(
             self.apps_api.create_namespaced_stateful_set,
@@ -168,8 +242,18 @@ class RabbitMQK8s(object):
         # configuration.api_key['authorization'] = 'YOUR_API_KEY'
         # Uncomment below to setup prefix (e.g. Bearer) for API key, if needed
         # configuration.api_key_prefix['authorization'] = 'Bearer'
-        self.create_rabbitmq()
+
+        # Note: the following commands define
+        # two kubernetes services for rabbitmq (rabbitmq
+        # and its management).
+        # - the rabbitmq service is defined "headless", and reachable only from within the cluster
+        # - the management rabbitmq service is defined
+
         self.create_rabbitmq_management()
+
+        # The required headless service for StatefulSets
+        self.create_rabbitmq()
+
         self.create_rabbitmq_stateful_set()
 
     def update_deployment(self, api_instance, deployment):
