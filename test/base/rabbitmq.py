@@ -252,6 +252,23 @@ class RabbitMQK8s(object):
         return api_response
 
     def __create_service(self):
+        allocated_ports = []
+        port = self.__get_unallocated_port(allocated_ports)
+        allocated_ports.append(port)
+        self.ports["http"]["port"] = port
+
+        port = self.__get_unallocated_port(allocated_ports)
+        allocated_ports.append(port)
+        self.ports["http"]["nodePort"] = port
+
+        port = self.__get_unallocated_port(allocated_ports)
+        allocated_ports.append(port)
+        self.ports["amqp"]["port"] = port
+
+        port = self.__get_unallocated_port(allocated_ports)
+        allocated_ports.append(port)
+        self.ports["amqp"]["nodePort"] = port
+
         manifest = {
             "apiVersion": "v1",
             "kind": "Service",
@@ -266,19 +283,31 @@ class RabbitMQK8s(object):
             "spec": {
                 "type": "NodePort",
                 "ports": [
+                    # A quick reference to difference between ports:
+                    # - Port:
+                    #   Sets the port that service exposes, which
+                    #   is accessible from inside the cluster.
+                    #
+                    # - TargetPort:
+                    #   Sets the port that pods selected by this
+                    #   service expose.
+                    #
+                    # - NodePort:
+                    #   Sets the port on the node that the
+                    #   service is available through.
                     {
-                        "port": 15672,
-                        "protocol": "TCP",
-                        "targetPort": 15672,
                         "name": "http",
-                        "nodePort": 31672
+                        "protocol": "TCP",
+                        "port": self.ports["http"]["port"],
+                        "targetPort": self.ports["http"]["port"],
+                        "nodePort": self.ports["http"]["nodePort"]
                     },
                     {
-                        "port": 5672,
-                        "protocol": "TCP",
-                        "targetPort": 5672,
                         "name": "amqp",
-                        "nodePort": 30672
+                        "protocol": "TCP",
+                        "port": self.ports["amqp"]["port"],
+                        "targetPort": self.ports["amqp"]["port"],
+                        "nodePort": self.ports["amqp"]["nodePort"]
                     }
                 ],
                 "selector": {
@@ -474,8 +503,3 @@ class RabbitMQK8s(object):
 
     def delete_cluster(self, name):
         pass
-
-
-if __name__ == '__main__':
-    rabbit = RabbitMQK8s()
-    rabbit.create_cluster()
