@@ -3599,12 +3599,24 @@ demonstrates splitting up strings into multiple values.
     <xs:attribute name="type" type="FilterType" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
+Currently defined values are: 
+
+* ``data_meta``,
+* ``param_value``: keep/remove options for for which the entry in a given column is equal to the value of another input (``ref``),  
+* ``static_value``: keep/remove options for which the entry in a given column is equal to ``value``, 
+* ``regexp`` keep/remove options for which the entry in a given column matches the regular expression given by ``value``, 
+* ``unique_value``: remove options that have duplicate entries in the given column, 
+* ``multiple_splitter``:,
+* ``attribute_value_splitter``:, 
+* ``add_value``: add an option with a given ``name`` and ``value`` to the options, 
+* ``remove_value``: 
+* ``sort_by``: sort options by the entries of a given column.
+
 These values are defined in the module
 [/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py)
-in the ``filter_types`` dictionary. Currently defined values are: ``data_meta``,
-``param_value``, ``static_value``, ``unique_value``, ``multiple_splitter``,
-``attribute_value_splitter``, ``add_value``, ``remove_value``, and
-``sort_by``]]></xs:documentation>
+in the ``filter_types`` dictionary
+
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="column" type="xs:string">
