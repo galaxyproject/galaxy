@@ -26,6 +26,8 @@ def validate_url(url, ip_whitelist):
     if not (url.lstrip().startswith('http://') or url.lstrip().startswith('https://')):
         return url
 
+    # Strip leading whitespace
+    url = url.lstrip()
     # Extract hostname component
     parsed_url = urlparse(url).netloc
     # If credentials are in this URL, we need to strip those.
@@ -122,7 +124,7 @@ def persist_uploads(params, trans):
                 raise Exception('Uploaded file was encoded in a way not understood by Galaxy.')
             if 'url_paste' in upload_dataset and upload_dataset['url_paste'] and upload_dataset['url_paste'].strip() != '':
                 upload_dataset['url_paste'] = datatypes.sniff.stream_to_file(
-                    StringIO(validate_url(upload_dataset['url_paste'].lstrip(), trans.app.config.fetch_url_whitelist_ips)),
+                    StringIO(validate_url(upload_dataset['url_paste'], trans.app.config.fetch_url_whitelist_ips)),
                     prefix="strio_url_paste_"
                 )
             else:
