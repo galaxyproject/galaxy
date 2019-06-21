@@ -20,13 +20,6 @@ QUAY_API_ENDPOINT = 'https://quay.io/api/v1/repository'
 def get_quay_containers(repository='biocontainers'):
     """
     Get all quay containers in the biocontainers repo
-        # >>> lst = get_quay_containers()
-        # >>> 'samtools:1.0--1' in lst
-        # True
-        # >>> 'abricate:0.4--pl5.22.0_0' in lst
-        # True
-        # >>> 'samtools' in lst
-        # False
     """
     containers = []
 
@@ -51,11 +44,6 @@ def get_quay_containers(repository='biocontainers'):
 def get_singularity_containers():
     """
     Get all existing singularity containers from "https://depot.galaxyproject.org/singularity/"
-    >>> lst = get_singularity_containers()
-    >>> 'aragorn:1.2.36--1' in lst
-    True
-    >>> 'znc:latest' in lst
-    False
     """
     class GetContainerNames(HTMLParser):  # small parser which gets list of containers
         def __init__(self):
@@ -79,9 +67,6 @@ def get_singularity_containers():
 def get_conda_envs(filepath):
     """
     Get list of already existing envs
-    # >>> t = get_conda_envs()
-    # >>> 'samtools:latest' in t
-    # True
     """
     return [n.split('__')[-1].replace('@', ':') for n in glob('%s/*' % filepath)]
 
@@ -89,13 +74,6 @@ def get_conda_envs(filepath):
 def get_missing_containers(quay_list, singularity_list, blacklist_file=None):
     r"""
     Return list of quay containers that do not exist as singularity containers. Files stored in a blacklist will be ignored
-    >>> from os import remove
-    >>> with open('/tmp/blacklist.txt', 'w') as f:
-    ...     f.write('l\n\ng\nn\nr')
-    8
-    >>> get_missing_containers(quay_list=['1', '2', '3', 'h', 'g', 'r'], singularity_list=['3', '4', '5'], blacklist_file='/tmp/blacklist.txt')
-    ['1', '2', 'h']
-    >>> remove('/tmp/blacklist.txt')
     """
     blacklist = []
     if blacklist_file:
@@ -105,12 +83,7 @@ def get_missing_containers(quay_list, singularity_list, blacklist_file=None):
 
 def get_missing_envs(quay_list, conda_list, blacklist_file=None):
     r"""
-    >>> from os import remove
-    >>> with open('/tmp/blacklist.txt', 'w') as f:
-    ...     f.write('l\n\ng\nn\nr')
-    8
-    >>> get_missing_envs(quay_list=['1', '2', '3', 'h--1', 'g--2', 'r'], conda_list=['3', '4', '5'], blacklist_file='/tmp/blacklist.txt')
-    ['1', '2', 'h--1']
+    Compares list of conda envs and docker containers and returns missing conda envs
     """
     blacklist = []
     if blacklist_file:
@@ -162,7 +135,4 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
-
-    import doctest
-    doctest.testmod()
+    main()

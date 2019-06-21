@@ -6,18 +6,12 @@ import subprocess
 from glob import glob
 from subprocess import check_output
 
-from galaxy.tools.deps.mulled.get_tests import hashed_test_search, test_search
+from get_tests import hashed_test_search, main_test_search
 
 
 def get_list_from_file(filename):
     r"""
     Returns a list of containers stored in a file (one on each line)
-    >>> from os import remove
-    >>> with open('/tmp/list_file.txt', 'w') as f:
-    ...     f.write('bbmap:36.84--0\nbiobambam:2.0.42--0\nconnor:0.5.1--py35_0\ndiamond:0.8.26--0\nedd:1.1.18--py27_0')
-    >>> get_list_from_file('/tmp/list_file.txt')
-    ['bbmap:36.84--0', 'biobambam:2.0.42--0', 'connor:0.5.1--py35_0', 'diamond:0.8.26--0', 'edd:1.1.18--py27_0']
-    >>> remove('/tmp/list_file.txt')
     """
     return [n for n in open(filename).read().split('\n') if n != '']  # if blank lines are in the file empty strings must be removed
 
@@ -39,21 +33,9 @@ def docker_to_singularity(container, installation, filepath, no_sudo=False):
         return None
 
 
-def test_singularity_container(tests, installation, filepath):
+def singularity_container_test(tests, installation, filepath):
     """
     Run tests, record if they pass or fail
-    >>> import os, shutil
-    >>> os.mkdir('/tmp/singtest')
-    >>> for n in ['pybigwig:0.1.11--py36_0', 'samtools:1.0--1', 'yasm:1.3.0--0']:
-    ...     docker_to_singularity(n, 'singularity', '/tmp/singtest', no_sudo=True)
-    >>> results = test_singularity_container({'pybigwig:0.1.11--py36_0': {'imports': ['pyBigWig'], 'commands': ['python -c "import pyBigWig; assert(pyBigWig.numpy == 1); assert(pyBigWig.remote == 1)"'], 'import_lang': 'python -c'}, 'samtools:1.0--1': {'commands': ['samtools --help'], 'import_lang': 'python -c', 'container': 'samtools:1.0--1'}, 'yasm:1.3.0--0': {}}, 'singularity', '/tmp/singtest')
-    >>> 'samtools:1.0--1' in results['passed']
-    True
-    >>> results['failed'][0]['imports'] == ['pyBigWig']
-    True
-    >>> 'yasm:1.3.0--0' in results['notest']
-    True
-    >>> shutil.rmtree('/tmp/singtest')
     """
     test_results = {'passed': [], 'failed': [], 'notest': []}
 
@@ -134,11 +116,11 @@ def main():
                               args.filepath, args.no_sudo)
 
     if args.testing:
-        test({'anaconda_channel': 'bioconda', 'installation': args.installation, 'filepath': args.filepath, 'github_repo': 'bioconda/bioconda-recipes',
+        container_testing({'anaconda_channel': 'bioconda', 'installation': args.installation, 'filepath': args.filepath, 'github_repo': 'bioconda/bioconda-recipes',
               'deep_search': False, 'github_local_path': None, 'logfile': args.testing, 'containers': containers})
 
 
-def test(args=None):
+def container_testing(args=None):
     if not args:  # i.e. if testing is called directly from CLI and not via main()
         parser = argparse.ArgumentParser(description='Tests.')
         parser.add_argument('-c', '--containers', dest='containers', nargs='+', default=None,
@@ -177,9 +159,9 @@ def test(args=None):
                 tests[container] = hashed_test_search(
                     container, args['github_local_path'], args['deep_search'], args['anaconda_channel'], args['github_repo'])
             else:
-                tests[container] = test_search(
+                tests[container] = main_test_search(
                     container, args['github_local_path'], args['deep_search'], args['anaconda_channel'], args['github_repo'])
-        test_results = test_singularity_container(
+        test_results = singularity_container_test(
             tests, args['installation'], args['filepath'])
 
         f.write('\n\tTEST PASSED:')
@@ -197,6 +179,4 @@ def test(args=None):
 
 
 if __name__ == "__main__":
-    # main()
-    import doctest
-    doctest.testmod()
+    main()

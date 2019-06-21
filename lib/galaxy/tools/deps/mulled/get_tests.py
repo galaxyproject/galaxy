@@ -5,7 +5,7 @@ searches for tests for packages in the bioconda-recipes repo and on Anaconda, lo
 
 A shallow search (default for singularity and conda generation scripts) just checks once on Anaconda for the specified version.
 """
-import doctest
+# import doctest
 import json
 import logging
 import tarfile
@@ -16,8 +16,7 @@ import requests
 import yaml
 from jinja2 import Template
 from jinja2.exceptions import UndefinedError
-
-from galaxy.tools.deps.mulled.util import split_container_name
+from util import split_container_name
 
 
 def get_commands_from_yaml(yaml_content):
@@ -69,8 +68,6 @@ def get_commands_from_yaml(yaml_content):
 def get_run_test(file):
     r"""
     Get tests from a run_test.sh file
-    >>> get_run_test(' #!/bin/bash\npslScore 2> /dev/null || [[ "$?" == 255 ]]')
-    {'commands': [' #!/bin/bash && pslScore 2> /dev/null || [[ "$?" == 255 ]]']}
     """
     package_tests = {}
     package_tests['commands'] = [file.replace('\n', ' && ')]
@@ -80,8 +77,6 @@ def get_run_test(file):
 def get_anaconda_url(container, anaconda_channel='bioconda'):
     """
     Download tarball from anaconda for test
-    >>> get_anaconda_url('samtools:1.7--1')
-    'https://anaconda.org/bioconda/samtools/1.7/download/linux-64/samtools-1.7-1.tar.bz2'
     """
     name = split_container_name(container)  # list consisting of [name, version, (build, if present)]
     return "https://anaconda.org/%s/%s/%s/download/linux-64/%s.tar.bz2" % (anaconda_channel, name[0], name[1], '-'.join(name))
@@ -90,8 +85,6 @@ def get_anaconda_url(container, anaconda_channel='bioconda'):
 def prepend_anaconda_url(url):
     """
     Take a partial url and prepend 'https://anaconda.org'
-    >>> prepend_anaconda_url('/bioconda/samtools/0.1.12/download/linux-64/samtools-0.1.12-2.tar.bz2')
-    'https://anaconda.org/bioconda/samtools/0.1.12/download/linux-64/samtools-0.1.12-2.tar.bz2'
     """
     return 'https://anaconda.org%s' % url
 
@@ -99,8 +92,6 @@ def prepend_anaconda_url(url):
 def get_test_from_anaconda(url):
     """
     Given the URL of an anaconda tarball, return tests
-    >>> get_test_from_anaconda('https://anaconda.org/bioconda/samtools/1.3.1/download/linux-64/samtools-1.3.1-5.tar.bz2') == {'commands': ['samtools --help'], 'import_lang': 'python -c'}
-    True
     """
     r = requests.get(url)
 
@@ -140,8 +131,6 @@ def get_test_from_anaconda(url):
 def find_anaconda_versions(name, anaconda_channel='bioconda'):
     """
     Find a list of available anaconda versions for a given container name
-    >>> u'/bioconda/2pg_cartesian/1.0.1/download/linux-64/2pg_cartesian-1.0.1-0.tar.bz2' in find_anaconda_versions('2pg_cartesian')
-    True
     """
     r = requests.get("https://anaconda.org/%s/%s/files" % (anaconda_channel, name))
     urls = []
@@ -154,8 +143,6 @@ def find_anaconda_versions(name, anaconda_channel='bioconda'):
 def open_recipe_file(file, recipes_path=None, github_repo='bioconda/bioconda-recipes'):
     """
     Open a file at a particular location and return contents as string
-    >>> open_recipe_file('recipes/samtools/1.1/meta.yaml')[:5] == b'about'
-    True
     """
     if recipes_path:
         return open('%s/%s' % (recipes_path, file)).read()
@@ -170,11 +157,6 @@ def open_recipe_file(file, recipes_path=None, github_repo='bioconda/bioconda-rec
 def get_alternative_versions(filepath, filename, recipes_path=None, github_repo='bioconda/bioconda-recipes'):
     """
     Return files that match 'filepath/*/filename' in the bioconda-recipes repository
-    >>> s = get_alternative_versions('recipes/aragorn', 'meta.yaml')
-    >>> len(s)
-    1
-    >>> u'recipes/aragorn/1.2.38/meta.yaml' in s
-    True
     """
     if recipes_path:
         return [n.replace('%s/' % recipes_path, '') for n in glob('%s/%s/*/%s' % (recipes_path, filepath, filename))]
@@ -204,8 +186,6 @@ def try_a_func(func1, func2, param, container):
 def deep_test_search(container, recipes_path=None, anaconda_channel='bioconda', github_repo='bioconda/bioconda-recipes'):
     """
     Look in bioconda-recipes repo as well as anaconda for the tests, checking in multiple possible locations. If no test is found for the specified version, search if other package versions have a test available.
-    >>> deep_test_search('abundancebin:1.0.1--0') == {'commands': ['command -v abundancebin', 'abundancebin &> /dev/null || [[ "$?" == "255" ]]'], 'container': 'abundancebin:1.0.1--0', 'import_lang': 'python -c'}
-    True
     """
     name = split_container_name(container)
     for f in [
@@ -241,15 +221,9 @@ def deep_test_search(container, recipes_path=None, anaconda_channel='bioconda', 
     return {'container': container}
 
 
-def test_search(container, recipes_path=None, deep=False, anaconda_channel='bioconda', github_repo='bioconda/bioconda-recipes'):
+def main_test_search(container, recipes_path=None, deep=False, anaconda_channel='bioconda', github_repo='bioconda/bioconda-recipes'):
     """
     Download tarball from anaconda for test
-    >>> test_search('abundancebin:1.0.1--0') == {'commands': ['command -v abundancebin', 'abundancebin &> /dev/null || [[ "$?" == "255" ]]'], 'import_lang': 'python -c', 'container': 'abundancebin:1.0.1--0'}
-    True
-    >>> test_search('snakemake:3.11.2--py34_1') == {'commands': ['snakemake --help > /dev/null'], 'imports': ['snakemake'], 'import_lang': 'python -c', 'container': 'snakemake:3.11.2--py34_1'}
-    True
-    >>> test_search('perl-yaml:1.15--pl5.22.0_0') == {'imports': ['YAML', 'YAML::Any', 'YAML::Dumper', 'YAML::Dumper::Base', 'YAML::Error', 'YAML::Loader', 'YAML::Loader::Base', 'YAML::Marshall', 'YAML::Node', 'YAML::Tag', 'YAML::Types'], 'import_lang': 'perl -e', 'container': 'perl-yaml:1.15--pl5.22.0_0'}
-    True
     """
     if deep:  # do a deep search
         return deep_test_search(container, recipes_path, anaconda_channel, github_repo)
@@ -263,9 +237,6 @@ def test_search(container, recipes_path=None, deep=False, anaconda_channel='bioc
 def hashed_test_search(container, recipes_path=None, deep=False, anaconda_channel='bioconda', github_repo='bioconda/bioconda-recipes'):
     """
     Get test for hashed containers
-    >>> t = hashed_test_search('mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa:c17ce694dd57ab0ac1a2b86bb214e65fedef760e-0')
-    >>> t == {'commands': ['bamtools --help'], 'imports': [], 'container': 'mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa:c17ce694dd57ab0ac1a2b86bb214e65fedef760e-0', 'import_lang': 'python -c'}
-    True
     """
     package_tests = {'commands': [], 'imports': [], 'container': container, 'import_lang': 'python -c'}
 
@@ -291,12 +262,9 @@ def hashed_test_search(container, recipes_path=None, deep=False, anaconda_channe
                 break
 
     for container in containers:
-        tests = test_search(container, recipes_path, deep, anaconda_channel, github_repo)
+        tests = main_test_search(container, recipes_path, deep, anaconda_channel, github_repo)
         package_tests['commands'] += tests.get('commands', [])  # not a very nice solution but probably the simplest
         for imp in tests.get('imports', []):
             package_tests['imports'].append("%s 'import %s'" % (tests['import_lang'], imp))
 
     return package_tests
-
-
-doctest.testmod()

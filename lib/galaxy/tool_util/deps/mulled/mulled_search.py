@@ -33,15 +33,6 @@ QUAY_API_URL = 'https://quay.io/api/v1/repository'
 class QuaySearch():
     """
     Tool to search within a quay organization for a given software name.
-
-    >>> t = QuaySearch("biocontainers")
-    >>> t.build_index()
-    >>> t.search_repository("adsfasdf", True)
-    []
-    >>> t.search_repository("adsfasdf", False)
-    []
-    >>> {'version': u'2.2.0--0', 'package': u'bioconductor-gosemsim'} in t.search_repository("bioconductor-gosemsim", True)
-    True
     """
 
     def __init__(self, organization):
@@ -75,7 +66,6 @@ class QuaySearch():
         Search Docker containers on quay.io.
         Results are displayed with all available versions,
         including the complete image name.
-
         """
         # with statement closes searcher after usage.
         with self.index.searcher() as searcher:
@@ -120,13 +110,6 @@ class QuaySearch():
 class CondaSearch():
     """
     Tool to search the bioconda channel
-
-
-    >>> t = CondaSearch('bioconda')
-    >>> t.get_json("asdfasdf")
-    []
-    >>> {'version': u'2.2.0', 'build': u'0', 'package': u'bioconductor-gosemsim'} in t.get_json("bioconductor-gosemsim")
-    True
     """
 
     def __init__(self, channel):
@@ -151,15 +134,6 @@ class CondaSearch():
 class GitHubSearch():
     """
     Tool to search the GitHub bioconda-recipes repo
-
-
-    >>> t = GitHubSearch()
-    >>> t.process_json(t.get_json("adsfasdf"), "adsfasdf")
-    []
-    >>> t.process_json(t.get_json("bamtool"), "bamtool")
-    []
-    >>> {'path': u'recipes/bioconductor-gosemsim/build.sh', 'name': u'build.sh'} in t.process_json(t.get_json("bioconductor-gosemsim"), "bioconductor-gosemsim")
-    True
     """
 
     def get_json(self, search_string):
@@ -185,13 +159,6 @@ class GitHubSearch():
     def recipe_present(self, search_string):
         """
         Check if a recipe exists in bioconda-recipes which matches search_string exactly
-        >>> t = GitHubSearch()
-        >>> t.recipe_present("bioconductor-gosemsim")
-        True
-        >>> t.recipe_present("bioconductor-gosemsi")
-        False
-        >>> t.recipe_present("bioconductor_gosemsim")
-        False
         """
         if requests.get("https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/%s" % search_string).status_code == 200:
             return True
@@ -202,12 +169,6 @@ class GitHubSearch():
 def get_package_hash(packages, versions):
     """
     Take packages and versions (if the latter are given) and returns a hash for each. Also checks github to see if the container is already present.
-    >>> get_package_hash(['bamtools', 'samtools'], {}) == {'container_present': True, 'package_hash': 'mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa'}
-    True
-    >>> get_package_hash(['bamtools', 'samtools'], {'bamtools':'2.4.0', 'samtools':'1.3.1'}) == {'container_present': True, 'version_hash': 'c17ce694dd57ab0ac1a2b86bb214e65fedef760e', 'container_present_with_version': True, 'package_hash': 'mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa'}
-    True
-    >>> get_package_hash(['abricate', 'abyss'], {'abricate': '0.4', 'abyss': '2.0.1'}) == {'container_present': False, 'version_hash': 'e21d1262f064e1e01b6b9fad5bea117928f31b38', 'package_hash': 'mulled-v2-cde36934a4704f448af44bf01deeae8d2832ca2e'}
-    True
     """
     hash_results = {}
     targets = []
@@ -241,11 +202,6 @@ def get_package_hash(packages, versions):
 def singularity_search(search_string):
     """
     Check if a singularity package is present and return the link.
-    >>> t = singularity_search('mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa')
-    >>> t == [{'package': 'mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa', 'version': 'c17ce694dd57ab0ac1a2b86bb214e65fedef760e-0'}, {'package': 'mulled-v2-0560a8046fc82aa4338588eca29ff18edab2c5aa', 'version': 'fc33176431a4b9ef3213640937e641d731db04f1-0'}]
-    True
-    >>> singularity_search('mulled-v2-19fa9431f5863b2be81ff13791f1b00160ed0852') == []
-    True
     """
     results = []
 
@@ -404,7 +360,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    # main()
-
-    import doctest
-    doctest.testmod()
+    main()
