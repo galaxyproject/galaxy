@@ -1,6 +1,7 @@
 """
 
 """
+import random
 import time
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -134,6 +135,46 @@ class RabbitMQK8s(object):
             # errors. A possible solution can be to increase DELETE_SLEEP_TIME.
             print("Exception when calling the method {0}; error: {1}\n".format(delete_method, e))
             raise
+
+    def __is_port_allocated(self, port_number, port_declaration=None):
+        if port_declaration:
+            port_declaration = port_declaration.lower()
+            if port_declaration == "nodeport":
+                port_declaration = "node_port"
+            elif port_declaration == "targetport":
+                port_declaration = "target_port"
+        for item in self.core_api.list_namespaced_service(self.namespace).items:
+            for ports in item.spec.ports:
+                if port_declaration:
+                    if ports.to_dict()[port_declaration] == port_number:
+                        return True
+                elif ports.port == port_number or \
+                        ports.target_port == port_number or \
+                        ports.node_port == port_number:
+                        return True
+        return False
+
+    def __get_unallocated_port(self, exclude=[]):
+        """
+        Returns a randomly generated port number within
+        the kubernetes default port range (i.e., 30000-32767,
+        exclusive ends), which is not already allocated.
+
+        :param exclude: a list of port numbers that this
+        method should ensure the randomly generated port
+        number does not equal any of those, in addition
+        to the previously allocated port numbers.
+
+        :return: a unique, random, and unallocated port
+        number.
+        """
+        port = random.randint(30001, 32766)
+        retries = MAX_RETRIES
+        while self.__is_port_allocated(port) and port not in exclude and retries > 1:
+            port = random.randint(30001, 32766)
+        if retries <= 1:
+            raise Exception("Could not determine an unallocated port; tried {} times.".format(MAX_RETRIES))
+        return port
 
     def __create_service_account(self):
         manifest = {
