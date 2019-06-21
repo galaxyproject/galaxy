@@ -44,6 +44,26 @@ class RabbitMQK8s(object):
             "StatefulSet": "rabbitmq"
         }
 
+        # This dictionary contains uniquely assigned
+        # IP address for each port deceleration of the
+        # named port group. The port numbers are
+        # determined when creating the RabbitMQ service.
+        # Port number need to be unique hence to avoid
+        # overlapping/conflicting ports when multiple
+        # RabbitMQ clusters are created (e.g., when
+        # multiple independent tests leverage RabbitMQ
+        # clusters).
+        self.ports = {
+            "http": {
+                "port": -1,
+                "nodePort": -1
+            },
+            "amqp": {
+                "port": -1,
+                "nodePort": -1
+            }
+        }
+
         # To avoid conflicting resources when this class is
         # instantiated multiple times by different tests, a
         # timestamp is appended to all the resources name.
