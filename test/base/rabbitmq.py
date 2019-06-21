@@ -242,8 +242,30 @@ class RabbitMQK8s(object):
                 "name": self.objects_name["ConfigMap"]
             },
             "data": {
+                # Based on: https://github.com/rabbitmq/rabbitmq-peer-discovery-k8s/blob/45be70d977db5da1f4d06fac0d3872df4b325da5/examples/k8s_statefulsets/rabbitmq_statefulsets.yaml#L34-L55
                 "enabled_plugins": "[rabbitmq_management,rabbitmq_peer_discovery_k8s].\n",
-                "rabbitmq.conf": "## Cluster formation. See https://www.rabbitmq.com/cluster-formation.html to learn more.\ncluster_formation.peer_discovery_backend  = rabbit_peer_discovery_k8s\ncluster_formation.k8s.host = kubernetes.default.svc.cluster.local\n## Should RabbitMQ node name be computed from the pod's hostname or IP address?\n## IP addresses are not stable, so using [stable] hostnames is recommended when possible.\n## Set to \"hostname\" to use pod hostnames.\n## When this value is changed, so should the variable used to set the RABBITMQ_NODENAME\n## environment variable.\ncluster_formation.k8s.address_type = ip\n## How often should node cleanup checks run?\ncluster_formation.node_cleanup.interval = 30\n## Set to false if automatic removal of unknown/absent nodes\n## is desired. This can be dangerous, see\n##  * https://www.rabbitmq.com/cluster-formation.html#node-health-checks-and-cleanup\n##  * https://groups.google.com/forum/#!msg/rabbitmq-users/wuOfzEywHXo/k8z_HWIkBgAJ\ncluster_formation.node_cleanup.only_log_warning = true\ncluster_partition_handling = autoheal\n## See https://www.rabbitmq.com/ha.html#master-migration-data-locality\nqueue_master_locator=min-masters\n## See https://www.rabbitmq.com/access-control.html#loopback-users\nloopback_users.guest = false"
+                "rabbitmq.conf":
+                    "## Cluster formation. See https://www.rabbitmq.com/cluster-formation.html to learn more.\n"
+                    "cluster_formation.peer_discovery_backend  = rabbit_peer_discovery_k8s\n"
+                    "cluster_formation.k8s.host = kubernetes.default.svc.cluster.local\n"
+                    "## Should RabbitMQ node name be computed from the pod's hostname or IP address?\n"
+                    "## IP addresses are not stable, so using [stable] hostnames is recommended when possible.\n"
+                    "## Set to \"hostname\" to use pod hostnames.\n"
+                    "## When this value is changed, so should the variable used to set the RABBITMQ_NODENAME\n"
+                    "## environment variable.\n"
+                    "cluster_formation.k8s.address_type = ip\n"
+                    "## How often should node cleanup checks run?\n"
+                    "cluster_formation.node_cleanup.interval = 30\n"
+                    "## Set to false if automatic removal of unknown/absent nodes\n"
+                    "## is desired. This can be dangerous, see\n"
+                    "##  * https://www.rabbitmq.com/cluster-formation.html#node-health-checks-and-cleanup\n"
+                    "##  * https://groups.google.com/forum/#!msg/rabbitmq-users/wuOfzEywHXo/k8z_HWIkBgAJ\n"
+                    "cluster_formation.node_cleanup.only_log_warning = true\n"
+                    "cluster_partition_handling = autoheal\n"
+                    "## See https://www.rabbitmq.com/ha.html#master-migration-data-locality\n"
+                    "queue_master_locator=min-masters\n"
+                    "## See https://www.rabbitmq.com/access-control.html#loopback-users\n"
+                    "loopback_users.guest = false"
             }
         }
 
@@ -392,3 +414,7 @@ class RabbitMQK8s(object):
     def delete_cluster(self, name):
         pass
 
+
+if __name__ == '__main__':
+    rabbit = RabbitMQK8s()
+    rabbit.create_cluster()
