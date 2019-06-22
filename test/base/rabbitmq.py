@@ -203,7 +203,10 @@ class RabbitMQK8s(object):
             "apiVersion": "v1",
             "metadata": {
                 "namespace": self.namespace,
-                "name": self.objects_name["ServiceAccount"]
+                "name": self.objects_name["ServiceAccount"],
+                "labels": {
+                    "app": self.app_tag,
+                }
             }
         }
 
@@ -220,7 +223,10 @@ class RabbitMQK8s(object):
             "apiVersion": "rbac.authorization.k8s.io/v1beta1",
             "metadata": {
                 "namespace": self.namespace,
-                "name": self.objects_name["Role"]
+                "name": self.objects_name["Role"],
+                "labels": {
+                    "app": self.app_tag,
+                }
             },
             "rules": [
                 {
@@ -250,7 +256,10 @@ class RabbitMQK8s(object):
             "apiVersion": "rbac.authorization.k8s.io/v1beta1",
             "metadata": {
                 "namespace": self.namespace,
-                "name": self.objects_name["Role"]
+                "name": self.objects_name["Role"],
+                "labels": {
+                    "app": self.app_tag,
+                }
             },
             "subjects": [
                 {
@@ -350,7 +359,10 @@ class RabbitMQK8s(object):
             "apiVersion": "v1",
             "metadata": {
                 "namespace": self.namespace,
-                "name": self.objects_name["ConfigMap"]
+                "name": self.objects_name["ConfigMap"],
+                "labels": {
+                    "app": self.app_tag,
+                }
             },
             "data": {
                 # Based on: https://github.com/rabbitmq/rabbitmq-peer-discovery-k8s/blob/45be70d977db5da1f4d06fac0d3872df4b325da5/examples/k8s_statefulsets/rabbitmq_statefulsets.yaml#L34-L55
@@ -394,7 +406,10 @@ class RabbitMQK8s(object):
             "replicas": replicas,
             "metadata": {
                 "namespace": self.namespace,
-                "name": self.objects_name["StatefulSet"]
+                "name": self.objects_name["StatefulSet"],
+                "labels": {
+                    "app": self.app_tag,
+                }
             },
             "spec": {
                 "serviceName": self.objects_name["Service"],
