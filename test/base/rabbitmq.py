@@ -1,5 +1,26 @@
 """
+This module implements a class named RabbitMQK8s, which can
+create, update, and delete RabbitMQ clusters running on a
+kubernetes cluster.
 
+There are many different RabbitMQ cluster formation methods for
+different platforms; among them, some are stateless (possibly
+with manual persistence setup) and some are stateful (usually
+with out-of-box persistency). Additionally, there are also
+different configurations on how nodes (aka RabbitMQ rabbits)
+can discover each other on the cluster. See the following
+blog post for a detailed discussion:
+https://www.rabbitmq.com/cluster-formation.html
+
+This class leverage 'Statefulset' object of Kubernetes to
+deploy a stateful RabbitMQ cluster, and uses the RabbitMQ
+Peer Discovery plugin to make rabbits discover each other
+on the cluster (the current-latest peer discovery method
+of a RabbitMQ cluster).
+
+This implementation largely follows the cluster setup model
+used in the RabbitMQ peer discovery example available at:
+https://github.com/rabbitmq/rabbitmq-peer-discovery-k8s/tree/master/examples/k8s_statefulsets
 """
 import random
 import time
