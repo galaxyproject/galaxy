@@ -40,6 +40,9 @@ class YamlToolSource(ToolSource):
     def parse_edam_topics(self):
         return self.root_dict.get("edam_topics", [])
 
+    def parse_xrefs(self):
+        return self.root_dict.get("xrefs", [])
+
     def parse_is_multi_byte(self):
         return self.root_dict.get("is_multi_byte", self.default_is_multi_byte)
 

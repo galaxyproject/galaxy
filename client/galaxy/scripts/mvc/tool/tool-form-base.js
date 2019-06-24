@@ -12,6 +12,7 @@ import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
 import Webhooks from "mvc/webhooks";
 import Citations from "components/Citations.vue";
+import xrefs from "components/xrefs.vue";
 import Vue from "vue";
 import axios from "axios";
 
@@ -268,6 +269,7 @@ export default FormBase.extend({
     _footer: function() {
         var options = this.model.attributes;
         var $el = $("<div/>").append(this._templateHelp(options));
+
         if (options.citations) {
             var citationInstance = Vue.extend(Citations);
             var vm = document.createElement("div");
@@ -275,6 +277,17 @@ export default FormBase.extend({
             new citationInstance({
                 propsData: {
                     id: options.id,
+                    source: "tools"
+                }
+            }).$mount(vm);
+        }
+	if (options.xrefs) {
+            var xrefInstance = Vue.extend(xrefs);
+            vm = document.createElement("div");
+            $el.append(vm);
+            new xrefInstance({
+                propsData: {
+                    id: options.id, 
                     source: "tools"
                 }
             }).$mount(vm);
