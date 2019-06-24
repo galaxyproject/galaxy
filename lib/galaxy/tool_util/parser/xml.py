@@ -95,6 +95,12 @@ class XmlToolSource(ToolSource):
             return []
         return [edam_topic.text for edam_topic in edam_topics.findall("edam_topic")]
 
+    def parse_xrefs(self):
+        xrefs = self.root.find("xrefs")
+        if xrefs is None:
+            return []
+        return [xref.text for xref in xrefs.findall("xref") if xref.get("type") in {'bio.tools'}]
+
     def parse_description(self):
         return xml_text(self.root, "description")
 

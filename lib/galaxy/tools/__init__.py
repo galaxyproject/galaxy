@@ -808,6 +808,7 @@ class Tool(Dictifiable):
         self.containers = containers
 
         self.citations = self._parse_citations(tool_source)
+        self.xrefs = self._parse_xrefs(tool_source)
 
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible(tool_source)
@@ -1078,6 +1079,24 @@ class Tool(Dictifiable):
                 if citation:
                     citations.append(citation)
         return citations
+
+    def _parse_xrefs(self, tool_source):
+        if not hasattr(tool_source, 'root'):
+            return []
+        root = tool_source.root
+        xrefs = []
+        xrefs_elem = root.find("xrefs")
+        if xrefs_elem is None:
+            return xrefs
+
+        for xref_elem in xrefs_elem:
+            if xref_elem.tag != "xref":
+                pass
+            if hasattr(self.app, 'xrefs_manager'):
+                xref = self.app.xrefs_manager.parse_xref(xref_elem)
+                if xref:
+                    xrefs.append(xref)
+        return xrefs
 
     def parse_input_elem(self, page_source, enctypes, context=None):
         """
@@ -1989,6 +2008,7 @@ class Tool(Dictifiable):
             'id'            : self.id,
             'help'          : tool_help,
             'citations'     : bool(self.citations),
+            'xrefs'         : bool(self.xrefs),
             'sharable_url'  : self.sharable_url,
             'message'       : tool_message,
             'warnings'      : tool_warnings,
