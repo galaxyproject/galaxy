@@ -231,7 +231,7 @@ fi
 if [ -n "$VIRTUAL_ENV" ]; then
     if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v$NODE_VERSION" ]; then
         echo "Installing node into $VIRTUAL_ENV with nodeenv."
-        nodeenv -n $NODE_VERSION -p
+        nodeenv --prebuilt -n $NODE_VERSION -p
     fi
 elif [ -n "$CONDA_DEFAULT_ENV" -a -n "$CONDA_EXE" ]; then
     if ! in_conda_env "$(command -v node)"; then
