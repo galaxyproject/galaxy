@@ -172,7 +172,7 @@ galaxy:
 
   # Time to sleep between attempts if database_wait is enabled (in
   # seconds).
-  #database_wait_sleep: 1
+  #database_wait_sleep: 1.0
 
   # Where dataset files are stored. It must accessible at the same path
   # on any cluster nodes that will run Galaxy jobs, unless using Pulsar.
@@ -1533,6 +1533,12 @@ galaxy:
   # Galaxy configuration or loaded from an additional file with the
   # job_config_file option.
   #job_config: null
+
+  # Rather than specifying a dependency_resolvers_config_file, the
+  # definition of the resolvers to enable can be embedded into Galaxy's
+  # config with this option. This has no effect if a
+  # dependency_resolvers_config_file is used.
+  #dependency_resolvers: null
 
   # When jobs fail due to job runner problems, Galaxy can be configured
   # to retry these or reroute the jobs to new destinations. Very fine
