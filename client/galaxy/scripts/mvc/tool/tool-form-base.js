@@ -269,7 +269,6 @@ export default FormBase.extend({
     _footer: function() {
         var options = this.model.attributes;
         var $el = $("<div/>").append(this._templateHelp(options));
-
         if (options.citations) {
             var citationInstance = Vue.extend(Citations);
             var vm = document.createElement("div");
