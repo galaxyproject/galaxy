@@ -1,5 +1,8 @@
 from functools import partial
+import os.path
 from os.path import dirname
+
+from ruamel.yaml import YAML
 
 from galaxy.queue_worker import (
     job_rule_modules,
@@ -15,6 +18,24 @@ from galaxy.tools.toolbox.watcher import (
 from galaxy.util.watcher import (
     get_watcher,
 )
+
+CORE_CONFIG_PATH = 'config/galaxy.yml'
+RELOADABLE_CONFIG_OPTIONS = set([
+    'message_box_content',
+    'welcome_url',
+    'tool_name_boost',
+    'tool_section_boost',
+    'tool_description_boost',
+    'tool_label_boost',
+    'tool_stub_boost',
+    'tool_help_boost',
+    'tool_search_limit',
+    'tool_enable_ngram_search',
+    'tool_ngram_minsize',
+    'tool_ngram_maxsize',
+    'admin_users',
+    'cleanup_job'
+])
 
 
 class ConfigWatchers(object):
@@ -37,6 +58,8 @@ class ConfigWatchers(object):
             self.job_rule_watcher = get_watcher(app.config, 'watch_job_rules', monitor_what_str='job rules')
         else:
             self.job_rule_watcher = get_watcher(app.config, '__invalid__')
+        # Watcher for the core config file: config/galaxy.yml
+        self.config_watcher = get_watcher(app.config, 'watch_config', monitor_what_str='core config file')
         if start_thread:
             self.start()
 
@@ -50,12 +73,14 @@ class ConfigWatchers(object):
                 callback=partial(reload_job_rules, self.app),
                 recursive=True,
                 ignore_extensions=('.pyc', '.pyo', '.pyd'))
+        self.config_watcher.watch_file(CORE_CONFIG_PATH, callback=self.reload_config_options)
 
     def shutdown(self):
         self.tool_config_watcher.shutdown()
         self.data_manager_config_watcher.shutdown()
         self.tool_data_watcher.shutdown()
         self.tool_watcher.shutdown()
+        self.config_watcher.shutdown()
 
     def update_watch_data_table_paths(self):
         if hasattr(self.tool_data_watcher, 'monitored_dirs'):
@@ -98,3 +123,28 @@ class ConfigWatchers(object):
             job_rules_dir = dirname(rules_module.__file__)
             job_rules_paths.append(job_rules_dir)
         return job_rules_paths
+
+
+    # TODO is this a good place for these?
+    def reload_config_options(self, path):
+        new_config = self.load_core_config()
+        # get list of options to reload from config file
+        selected = new_config['watch_config_options']
+
+        for option in selected:
+            # verify that option can be reloaded and its value has been set
+            if option in RELOADABLE_CONFIG_OPTIONS and option in new_config:
+                # reload value; print
+                if getattr(self.app.config, option) != new_config.get(option):
+                    setattr(self.app.config, option, new_config[option])
+                    print('Reloading %s' % option)
+
+    def load_core_config(self):
+        yaml = YAML(typ='safe')
+        yaml.allow_duplicate_keys = True
+        path = os.path.abspath(CORE_CONFIG_PATH)
+        configs = None
+        with open(path, 'r') as f:
+            configs = yaml.load(f)
+        return configs['galaxy'] # assume only galaxy section
+

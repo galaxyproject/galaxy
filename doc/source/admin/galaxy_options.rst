@@ -170,7 +170,7 @@
 :Description:
     Time to sleep between attempts if database_wait is enabled (in
     seconds).
-:Default: ``1``
+:Default: ``1.0``
 :Type: float
 
 
@@ -473,6 +473,36 @@
     are found, rules are automatically reloaded. Takes the same values
     as the 'watch_tools' option.
 :Default: ``false``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~
+``watch_config``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    Set to True to enable monitoring of a subset of options in the
+    core configuration file, galaxy.yml. The subset of options to be
+    watched is specified in watch_config_options. If changes are
+    found, modified options are automatically reloaded. Takes the same
+    values as the 'watch_tools' option.
+:Default: ``false``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``watch_config_options``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Options that should be watched. The watch_config option shoudl be
+    enabled. This is a comma separated list. Allowed options include
+    message_box_content,  welcome_url,  tool_name_boost,
+    tool_section_boost,  tool_description_boost,  tool_label_boost,
+    tool_stub_boost,  tool_help_boost,  tool_search_limit,
+    tool_enable_ngram_search,  tool_ngram_minsize,
+    tool_ngram_maxsize,  admin_users,  cleanup_job
+:Default: ``None``
 :Type: str
 
 
@@ -3195,6 +3225,19 @@
     job_config_file option.
 :Default: ``None``
 :Type: map
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``dependency_resolvers``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying a dependency_resolvers_config_file, the
+    definition of the resolvers to enable can be embedded into
+    Galaxy's config with this option. This has no effect if a
+    dependency_resolvers_config_file is used.
+:Default: ``None``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

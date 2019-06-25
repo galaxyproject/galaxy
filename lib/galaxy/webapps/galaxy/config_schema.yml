@@ -365,6 +365,38 @@ mapping:
           found, rules are automatically reloaded. Takes the same values as the
           'watch_tools' option.
 
+      watch_config:
+        type: str
+        default: 'false'
+        required: false
+        desc: |
+          Set to True to enable monitoring of a subset of options in the core
+          configuration file, galaxy.yml. The subset of options to be watched
+          is specified in watch_config_options. If changes are found, modified
+          options are automatically reloaded. Takes the same values as the
+          'watch_tools' option.
+
+      watch_config_options:
+        type: str
+        required: false
+        desc: |
+          Options that should be watched. The watch_config option shoudl be enabled.
+          This is a comma separated list. Allowed options include
+           message_box_content,
+           welcome_url,
+           tool_name_boost,
+           tool_section_boost,
+           tool_description_boost,
+           tool_label_boost,
+           tool_stub_boost,
+           tool_help_boost,
+           tool_search_limit,
+           tool_enable_ngram_search,
+           tool_ngram_minsize,
+           tool_ngram_maxsize,
+           admin_users,
+           cleanup_job
+
       legacy_eager_objectstore_initialization:
         type: bool
         default: false

@@ -486,6 +486,8 @@ class Configuration(object):
         self.watch_tools = kwargs.get('watch_tools', 'false')
         self.watch_tool_data_dir = kwargs.get('watch_tool_data_dir', 'false')
         self.watch_job_rules = kwargs.get('watch_job_rules', 'false')
+        self.watch_config = kwargs.get('watch_config', 'false')
+        self.watch_config_options = kwargs.get('watch_config_options', None)
         # On can mildly speed up Galaxy startup time by disabling index of help,
         # not needed on production systems but useful if running many functional tests.
         self.index_tool_help = string_as_bool(kwargs.get("index_tool_help", True))
