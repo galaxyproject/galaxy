@@ -48,7 +48,7 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="edam_topics" type="EdamTopics" minOccurs="0"/>
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="xrefs" type="xrefs" minOccurs="0" />
-	<xs:element name="requirements" type="Requirements" minOccurs="0"/>
+        <xs:element name="requirements" type="Requirements" minOccurs="0"/>
         <xs:element name="description" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="tool-descriptions">
             <xs:documentation xml:lang="en"><![CDATA[The value is displayed in
@@ -5614,10 +5614,8 @@ A tool can refer multiple reference IDs.
   </xs:complexType>
   <xs:complexType name="xref">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Each xrefs element can contain one or
-more ``xref`` tag elements - each of which specifies reference information 
-according to a catalog or an other.
-  </xs:documentation>
+      <xs:documentation xml:lang="en">The ``xref`` element specifies reference 
+information according to a catalog.</xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
