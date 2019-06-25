@@ -15,6 +15,7 @@ try:
     import pysam
 except ImportError:
     pysam = None
+from six import text_type
 
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
@@ -138,7 +139,7 @@ def verify(
         except AssertionError as err:
             errmsg = '%s different than expected, difference (using %s):\n' % (item_label, compare)
             errmsg += "( %s v. %s )\n" % (local_name, temp_name)
-            errmsg += str(err)
+            errmsg += text_type(err)
             raise AssertionError(errmsg)
         finally:
             if 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
