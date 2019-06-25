@@ -43,6 +43,7 @@ from .version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
 
+
 PATH_DEFAULTS = dict(
     auth_config_file=['config/auth_conf.xml', 'config/auth_conf.xml.sample'],
     data_manager_config_file=['config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample'],
@@ -1031,13 +1032,11 @@ class ConfiguresGalaxyMixin(object):
     def _configure_toolbox(self):
         from galaxy import tools
         from galaxy.managers.citations import CitationsManager
-        from galaxy.managers.xrefs import xrefsManager
         from galaxy.tool_util.deps import containers
         from galaxy.tool_util.deps.dependencies import AppInfo
         import galaxy.tools.search
 
         self.citations_manager = CitationsManager(self)
-        self.xrefs_manager = xrefsManager(self)
 
         from galaxy.managers.tools import DynamicToolManager
         self.dynamic_tools_manager = DynamicToolManager(self)

@@ -1077,14 +1077,14 @@ class Tool(Dictifiable):
         xrefs_elem = root.find("xrefs")
         if xrefs_elem is None:
             return xrefs
-
         for xref_elem in xrefs_elem:
             if xref_elem.tag != "xref":
                 pass
-            if hasattr(self.app, 'xrefs_manager'):
-                xref = self.app.xrefs_manager.parse_xref(xref_elem)
-                if xref:
-                    xrefs.append(xref)
+            xref = dict(
+                reftype=xref_elem.text.strip(),
+                content=xref_elem.attrib.get('type', None)
+            )
+            xrefs.append(xref)
         return xrefs
 
     def parse_input_elem(self, page_source, enctypes, context=None):
