@@ -1012,7 +1012,7 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
     >>> assert unicodify('simple string') == u'simple string'
     >>> assert unicodify(3) == u'3'
     >>> assert unicodify(bytearray([115, 116, 114, 196, 169, 195, 177, 103])) == u'strĩñg'
-    >>> assert unicodify(Exception('message')) == u'message'
+    >>> assert unicodify(Exception(u'strĩñg')) == u'strĩñg'
     >>> assert unicodify('cómplǐcḁtëd strĩñg') == u'cómplǐcḁtëd strĩñg'
     >>> s = u'cómplǐcḁtëd strĩñg'; assert unicodify(s) == s
     >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1'), 'latin-1') == s
@@ -1025,9 +1025,9 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=Fals
         if isinstance(value, bytearray):
             value = bytes(value)
         elif not isinstance(value, string_types) and not isinstance(value, binary_type):
-            # In Python 2, value is not an instance of basestring
+            # In Python 2, value is not an instance of basestring (i.e. str or unicode)
             # In Python 3, value is not an instance of bytes or str
-            value = str(value)
+            value = text_type(value)
         # Now in Python 2, value is an instance of basestring, but may be not unicode
         # Now in Python 3, value is an instance of bytes or str
         if not isinstance(value, text_type):
