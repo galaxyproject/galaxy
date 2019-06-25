@@ -138,6 +138,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             }
 
         metadata_params_path = os.path.join(metadata_dir, "params.json")
+        datatypes_config = os.path.relpath(datatypes_config, tmp_dir)
         metadata_params = {
             "job_metadata": job_relative_path(job_metadata),
             "datatypes_config": datatypes_config,
