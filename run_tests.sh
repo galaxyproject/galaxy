@@ -71,10 +71,10 @@ TestCase class (this scripts optimizes it so all tests can share a Galaxy
 instance).
 
 Run a full class of API tests:
-    ./run_tests.sh -api test/api/test_tools.py::ToolsTestCase
+    ./run_tests.sh -api test/api/test_tools.py -- -k ToolsTestCase
 
 Run a specific API test:
-    ./run_tests.sh -api test/api/test_tools.py::ToolsTestCase::test_map_over_with_output_format_actions
+    ./run_tests.sh -api test/api/test_tools.py -- -k test_map_over_with_output_format_actions
 
 Run all selenium tests (Under Linux using Docker):
     # Start selenium chrome Docker container
