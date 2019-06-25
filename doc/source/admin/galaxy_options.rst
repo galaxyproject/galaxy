@@ -170,7 +170,7 @@
 :Description:
     Time to sleep between attempts if database_wait is enabled (in
     seconds).
-:Default: ``1``
+:Default: ``1.0``
 :Type: float
 
 
@@ -3195,6 +3195,19 @@
     job_config_file option.
 :Default: ``None``
 :Type: map
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``dependency_resolvers``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying a dependency_resolvers_config_file, the
+    definition of the resolvers to enable can be embedded into
+    Galaxy's config with this option. This has no effect if a
+    dependency_resolvers_config_file is used.
+:Default: ``None``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
