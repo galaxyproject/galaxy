@@ -1,5 +1,8 @@
 <tool name="Parse parameter value" id="param_value_from_file" version="0.1.0" tool_type="expression">
     <description>from dataset</description>
+    <requirements>
+        <requirement type="package" version="10.13.0">nodejs</requirement>
+    </requirements>
     <expression type="ecma5.1">{
 var output;
 if ($job.remove_newlines || $job.param_type != 'text') {
