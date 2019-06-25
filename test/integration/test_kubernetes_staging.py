@@ -31,7 +31,7 @@ runners:
     load: galaxy.jobs.runners.local:LocalJobRunner
     workers: 1
   pulsar_k8s:
-    load: galaxy.jobs.runners.pulsar:PulsarKubernetesCoexecutionJobRunner
+    load: galaxy.jobs.runners.pulsar:PulsarKubernetesJobRunner
     galaxy_url: ${infrastructure_url}
     amqp_url: ${amqp_url}
 
@@ -62,7 +62,7 @@ runners:
     load: galaxy.jobs.runners.local:LocalJobRunner
     workers: 1
   pulsar_k8s:
-    load: galaxy.jobs.runners.pulsar:PulsarKubernetesDependencyResolvingJobRunner
+    load: galaxy.jobs.runners.pulsar:PulsarKubernetesJobRunner
     galaxy_url: ${infrastructure_url}
     amqp_url: ${amqp_url}
 
@@ -74,16 +74,6 @@ execution:
       runner: pulsar_k8s
       pulsar_app_config:
         message_queue_url: '${container_amqp_url}'
-        dependency_resolution:
-          cache: false
-          use: true
-          default_base_path: /pulsar_dependencies
-          cache_dir: /pulsar_dependencies/_cache
-          resolvers:
-          - type: conda
-            auto_init: true
-            auto_install: true
-            prefix: '/pulsar_dependencies/conda'
       env:
         - name: SOME_ENV_VAR
           value: '42'

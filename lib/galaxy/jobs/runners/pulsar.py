@@ -833,10 +833,11 @@ KUBERNETES_DESTINATION_DEFAULTS = {
 }
 
 
-class PulsarKubernetesBaseJobRunner(PulsarMQJobRunner):
+class PulsarKubernetesJobRunner(PulsarMQJobRunner):
+    destination_defaults = KUBERNETES_DESTINATION_DEFAULTS
 
     def _populate_parameter_defaults(self, job_destination):
-        super(PulsarKubernetesBaseJobRunner, self)._populate_parameter_defaults(job_destination)
+        super(PulsarKubernetesJobRunner, self)._populate_parameter_defaults(job_destination)
         params = job_destination.params
         # Set some sensible defaults for Pulsar application that runs in staging container.
         if "pulsar_app_config" not in params:
@@ -845,34 +846,6 @@ class PulsarKubernetesBaseJobRunner(PulsarMQJobRunner):
         if "staging_directory" not in pulsar_app_config:
             # coexecution always uses a fixed path for staging directory
             pulsar_app_config["staging_directory"] = params.get("jobs_directory")
-        if "manager" not in pulsar_app_config and "managers" not in pulsar_app_config:
-            # coexecution always uses coexecution manager
-            pulsar_app_config["manager"] = {"type": self.manager_type}
-
-
-class PulsarKubernetesCoexecutionJobRunner(PulsarKubernetesBaseJobRunner):
-    """Flavor of Pulsar job runner with sensible defaults for Kubernetes Pod co-execution."""
-
-    destination_defaults = dict(KUBERNETES_DESTINATION_DEFAULTS, **dict(
-        dependency_resolution="none",
-    ))
-    manager_type = "coexecution"
-
-
-class PulsarKubernetesDependencyResolvingJobRunner(PulsarKubernetesBaseJobRunner):
-    """Flavor of Pulsar job runner with sensible defaults for resolving dependencies from a Pulsar container in a pod."""
-
-    destination_defaults = dict(KUBERNETES_DESTINATION_DEFAULTS, **dict(
-        dependency_resolution="remote",
-    ))
-    manager_type = "unqueued"
-
-    def _populate_parameter_defaults(self, job_destination):
-        super(PulsarKubernetesDependencyResolvingJobRunner, self)._populate_parameter_defaults(job_destination)
-        pulsar_app_config = job_destination.params["pulsar_app_config"]
-        if "dependency_resolution" not in pulsar_app_config:
-            pulsar_app_config["dependency_resolution"] = self.app.toolbox.dependency_manager.to_dict()
-        log.info(pulsar_app_config)
 
 
 class PulsarRESTJobRunner(PulsarJobRunner):
