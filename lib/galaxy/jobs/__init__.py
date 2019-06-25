@@ -1931,7 +1931,8 @@ class JobWrapper(HasResourceParameters):
         if config_file is None:
             config_file = self.app.config.config_file
         if datatypes_config is None:
-            datatypes_config = os.path.join(self.working_directory, 'registry.xml')
+            datatypes_config = os.path.join(self.working_directory, 'metadata', 'registry.xml')
+            safe_makedirs(os.path.join(self.working_directory, 'metadata'))
             self.app.datatypes_registry.to_xml_file(path=datatypes_config)
 
         output_datasets = {}
