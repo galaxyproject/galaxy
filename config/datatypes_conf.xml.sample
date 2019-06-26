@@ -378,8 +378,8 @@
       <display file="igv/vcf.xml"/>
       <converter file="vcf_bgzip_to_tabix_converter.xml" target_datatype="tabix"/>
     </datatype>
-    <datatype extension="ec" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
-    <datatype extension="idx" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
+    <datatype extension="kallisto.ec" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
+    <datatype extension="kallisto.idx" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" />
     <!-- Phylogenetic tree datatypes -->
     <datatype extension="phyloxml" type="galaxy.datatypes.xml:Phyloxml" display_in_upload="true"/>
     <datatype extension="newick" type="galaxy.datatypes.data:Newick" display_in_upload="true"/>
