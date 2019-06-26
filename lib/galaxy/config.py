@@ -126,6 +126,25 @@ LOGGING_CONFIG_DEFAULT = {
 }
 """Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
+RELOADABLE_CONFIG_OPTIONS = set([
+    # These are core config options (specified in galaxy.yml) that can be safely reloaded without a restart.
+    # To enable dynamic reloading, set watch_config and watch_config_options in galaxy.yml.
+    'message_box_content',
+    'welcome_url',
+    'tool_name_boost',
+    'tool_section_boost',
+    'tool_description_boost',
+    'tool_label_boost',
+    'tool_stub_boost',
+    'tool_help_boost',
+    'tool_search_limit',
+    'tool_enable_ngram_search',
+    'tool_ngram_minsize',
+    'tool_ngram_maxsize',
+    'admin_users',
+    'cleanup_job'
+])
+
 
 def resolve_path(path, root):
     """If 'path' is relative make absolute by prepending 'root'"""
@@ -921,6 +940,30 @@ class Configuration(object):
             return string
 
         return [parse(v) for v in allowed_origin_hostnames if v]
+
+
+def get_core_config_file():
+    return os.environ['GALAXY_CONFIG_FILE'] or 'config/galaxy.yml'
+
+
+def reload_config_options(current_config):
+
+    def _load_galaxy_core_config():
+        # Assume yaml format
+        config_file = get_core_config_file()
+        with open(os.path.abspath(config_file), 'r') as f:
+            configs = yaml.safe_load(f)
+            return configs['galaxy']
+
+    # load modified config file
+    new_config = _load_galaxy_core_config()
+    # check each option marked for dynamic reloading
+    for option in new_config['watch_config_options']:
+        # reload if option can be reloaded and its value is set in the modified config
+        if option in RELOADABLE_CONFIG_OPTIONS and option in new_config:
+            if getattr(current_config, option) != new_config.get(option):
+                setattr(current_config, option, new_config[option])
+                log.info('Reloading %s' % option)
 
 
 def parse_dependency_options(kwargs, root, dependency_resolvers_config_file):
