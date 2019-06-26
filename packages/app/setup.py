@@ -13,7 +13,8 @@ SOURCE_DIR = "galaxy"
 
 _version_re = re.compile(r'__version__\s+=\s+(.*)')
 
-with open('%s/project_galaxy_data.py' % SOURCE_DIR, 'rb') as f:
+project_short_name = os.path.basename(os.path.dirname(os.path.realpath(__file__)))
+with open('%s/project_galaxy_%s.py' % (SOURCE_DIR, project_short_name), 'rb') as f:
     init_contents = f.read().decode('utf-8')
 
     def get_var(var_name):
@@ -31,28 +32,19 @@ with open('%s/project_galaxy_data.py' % SOURCE_DIR, 'rb') as f:
 TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
-    'galaxy.datatypes',
-    'galaxy.datatypes.dataproviders',
-    'galaxy.datatypes.display_applications',
-    'galaxy.datatypes.util',
-    'galaxy.datatypes.test',
-    'galaxy.model',
-    'galaxy.model.dataset_collections',
-    'galaxy.model.migrate',
-    'galaxy.model.orm',
-    'galaxy.model.store',
-    'galaxy.model.tool_shed_install',
-    'galaxy.quota',
-    'galaxy.security',
+    'galaxy.actions',
+    'galaxy.dependencies',
+    'galaxy.eggs',
+    'galaxy.forms',
+    'galaxy.tours',
+    'galaxy.webhooks',
 ]
 ENTRY_POINTS = '''
         [console_scripts]
-        gx-build-objects=galaxy.model.store.build_objects:main
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
     'galaxy': [
-        'datatypes/test/*',
     ],
 }
 PACKAGE_DIR = {
