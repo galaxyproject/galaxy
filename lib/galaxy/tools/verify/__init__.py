@@ -105,10 +105,8 @@ def verify(
             log.debug('keep_outputs_dir: %s, ofn: %s', keep_outputs_dir, ofn)
             try:
                 shutil.copy(temp_name, ofn)
-            except Exception as exc:
-                error_log_msg = 'Could not save output file %s to %s: ' % (temp_name, ofn)
-                error_log_msg += unicodify(exc)
-                log.error(error_log_msg, exc_info=True)
+            except Exception:
+                log.exception('Could not save output file %s to %s', temp_name, ofn)
             else:
                 log.debug('## GALAXY_TEST_SAVE=%s. saved %s', keep_outputs_dir, ofn)
         compare = attributes.get('compare', 'diff')

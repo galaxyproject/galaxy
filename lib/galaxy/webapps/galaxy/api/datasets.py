@@ -153,9 +153,8 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
                 else:
                     rval = dataset.to_dict()
 
-        except Exception as e:
-            rval = "Error in dataset API at listing contents: " + util.unicodify(e)
-            log.error(rval + ": %s" % util.unicodify(e), exc_info=True)
+        except Exception:
+            log.exception('Error in dataset API at listing contents')
             trans.response.status = 500
         return rval
 
