@@ -808,7 +808,7 @@ class Tool(Dictifiable):
         self.containers = containers
 
         self.citations = self._parse_citations(tool_source)
-        self.xrefs = self._parse_xrefs(tool_source)
+        self.xrefs = tool_source.parse_xrefs()
 
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible(tool_source)
