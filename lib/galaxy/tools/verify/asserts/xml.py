@@ -3,6 +3,8 @@ from __future__ import absolute_import
 import re
 import xml.etree
 
+from galaxy.util import unicodify
+
 
 # Helper functions used to work with XML output.
 def to_xml(output):
@@ -27,7 +29,7 @@ def assert_is_valid_xml(output):
         to_xml(output)
     except Exception as e:
         # TODO: Narrow caught exception to just parsing failure
-        raise AssertionError("Expected valid XML, but could not parse output. %s" % str(e))
+        raise AssertionError("Expected valid XML, but could not parse output. %s" % unicodify(e))
 
 
 def assert_has_element_with_path(output, path):

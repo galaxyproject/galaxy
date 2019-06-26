@@ -59,7 +59,7 @@ def verify(
             verify_assertions(output_content, attributes["assert_list"])
         except AssertionError as err:
             errmsg = '%s different than expected\n' % (item_label)
-            errmsg += str(err)
+            errmsg += unicodify(err)
             raise AssertionError(errmsg)
 
     # Verify checksum attributes...
@@ -79,7 +79,7 @@ def verify(
             _verify_checksum(output_content, expected_checksum_type, expected_checksum)
         except AssertionError as err:
             errmsg = '%s different than expected\n' % (item_label)
-            errmsg += str(err)
+            errmsg += unicodify(err)
             raise AssertionError(errmsg)
 
     if attributes is None:
@@ -107,7 +107,7 @@ def verify(
                 shutil.copy(temp_name, ofn)
             except Exception as exc:
                 error_log_msg = 'Could not save output file %s to %s: ' % (temp_name, ofn)
-                error_log_msg += str(exc)
+                error_log_msg += unicodify(exc)
                 log.error(error_log_msg, exc_info=True)
             else:
                 log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (keep_outputs_dir, ofn))
@@ -118,7 +118,7 @@ def verify(
                     local_fh, temp_name = _bam_to_sam(local_name, temp_name)
                     local_name = local_fh.name
                 except Exception as e:
-                    log.warning("%s. Will compare BAM files" % e)
+                    log.warning("%s. Will compare BAM files" % unicodify(e))
             if compare == 'diff':
                 files_diff(local_name, temp_name, attributes=attributes)
             elif compare == 're_match':
@@ -164,12 +164,12 @@ def _bam_to_sam(local_name, temp_name):
     try:
         pysam.view('-h', '-o%s' % temp_local.name, local_name)
     except Exception as e:
-        msg = "Converting local (test-data) BAM to SAM failed: %s" % e
+        msg = "Converting local (test-data) BAM to SAM failed: %s" % unicodify(e)
         raise Exception(msg)
     try:
         pysam.view('-h', '-o%s' % temp_temp, temp_name)
     except Exception as e:
-        msg = "Converting history BAM to SAM failed: %s" % e
+        msg = "Converting history BAM to SAM failed: %s" % unicodify(e)
         raise Exception(msg)
     os.remove(temp_name)
     return temp_local, temp_temp
