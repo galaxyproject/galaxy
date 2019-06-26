@@ -26,14 +26,19 @@ from six.moves import configparser
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.tools.deps.container_resolvers.mulled import DEFAULT_CHANNELS
-from galaxy.util import ExecutionTimer
-from galaxy.util import listify
-from galaxy.util import string_as_bool
-from galaxy.util import unicodify
+from galaxy.util import (
+    ExecutionTimer,
+    listify,
+    string_as_bool,
+    unicodify
+)
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.util.logging import LOGLV_TRACE
 from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.web.stack import get_stack_facts, register_postfork_function
+from galaxy.web.stack import (
+    get_stack_facts,
+    register_postfork_function
+)
 from .version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
