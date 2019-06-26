@@ -312,7 +312,7 @@ class RepositoriesController(BaseAPIController):
             # Open for reading with transparent compression.
             tar_archive = tarfile.open(capsule_file_path, 'r:*')
         except tarfile.ReadError as e:
-            log.debug('Error opening capsule file %s: %s', str(capsule_file_name), util.unicodify(e))
+            log.debug('Error opening capsule file %s: %s', capsule_file_name, util.unicodify(e))
             return {}
         irm = capsule_manager.ImportRepositoryManager(self.app,
                                                       trans.request.host,
