@@ -322,13 +322,15 @@ class JobLike(object):
 
         return "%s[%s,tool_id=%s]" % (self.__class__.__name__, extra, self.tool_id)
 
-    def get_stdout(self):
-        stdout = self.tool_stdout
+    @property
+    def stdout(self):
+        stdout = self.tool_stdout or ''
         if self.job_stdout:
             stdout += "\n" + self.job_stdout
         return stdout
 
-    def set_stdout(self, stdout):
+    @stdout.setter
+    def stdout(self, stdout):
         raise NotImplementedError("Attempt to set stdout, must set tool_stdout or job_stdout")
 
     @property
