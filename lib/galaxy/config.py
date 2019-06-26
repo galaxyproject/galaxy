@@ -943,7 +943,7 @@ class Configuration(object):
 
 
 def get_core_config_file():
-    return os.environ['GALAXY_CONFIG_FILE'] or 'config/galaxy.yml'
+    return os.environ.get('GALAXY_CONFIG_FILE') or 'config/galaxy.yml'
 
 
 def reload_config_options(current_config):
