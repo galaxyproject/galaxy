@@ -37,6 +37,7 @@ class LocalJobCancellationTestCase(integration_util.IntegrationTestCase):
         with self.dataset_populator.test_history() as history_id:
             job_dict = self.setup_cat_data_and_sleep(history_id)
             self.galaxy_interactor.wait_for(lambda: self._get("jobs/%s" % job_dict['id']).json()['state'] != 'running',
+                                            what="Wait for job to start running",
                                             maxseconds=60)
             app = self._app
             sa_session = app.model.context.current
@@ -48,6 +49,7 @@ class LocalJobCancellationTestCase(integration_util.IntegrationTestCase):
             sa_session.add(job)
             sa_session.flush()
             self.galaxy_interactor.wait_for(lambda: self._get("jobs/%s" % job_dict['id']).json()['state'] != 'error',
+                                            what="Wait for job to end in error",
                                             maxseconds=60)
 
     def test_kill_process(self):
