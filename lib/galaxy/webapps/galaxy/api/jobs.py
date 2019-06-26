@@ -17,7 +17,7 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous,
 )
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     UsesVisualizationMixin
 )

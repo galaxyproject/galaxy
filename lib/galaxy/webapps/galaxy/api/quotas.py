@@ -15,12 +15,12 @@ from galaxy import (
 )
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError
-from galaxy.web.base.controller import (
+from galaxy.web.params import QuotaParamParser
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     url_for,
     UsesQuotaMixin
 )
-from galaxy.web.params import QuotaParamParser
 
 log = logging.getLogger(__name__)
 
