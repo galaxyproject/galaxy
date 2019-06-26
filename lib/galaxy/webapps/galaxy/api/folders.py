@@ -9,7 +9,7 @@ from galaxy import (
 )
 from galaxy.managers import folders, roles
 from galaxy.web import expose_api
-from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
+from galaxy.webapps.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 
 log = logging.getLogger(__name__)
 

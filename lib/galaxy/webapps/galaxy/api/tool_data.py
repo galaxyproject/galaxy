@@ -9,7 +9,7 @@ from galaxy.web import (
     expose_api,
     expose_api_raw
 )
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 
 
 class ToolData(BaseAPIController):

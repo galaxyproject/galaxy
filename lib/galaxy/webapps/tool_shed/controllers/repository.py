@@ -21,8 +21,8 @@ from galaxy import (
     web
 )
 from galaxy.tools.repositories import ValidationContext
-from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField, SelectField
+from galaxy.webapps.base.controller import BaseUIController
 from galaxy.webapps.reports.framework import grids
 from galaxy.webapps.tool_shed.util import ratings_util
 from tool_shed.capsule import capsule_manager

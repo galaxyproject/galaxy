@@ -1,6 +1,6 @@
 from galaxy import web
-from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.framework.helpers import is_true
+from galaxy.webapps.base.controller import BaseAPIController
 
 
 def get_id(base, format):
