@@ -1092,8 +1092,8 @@ class Tool(Dictifiable):
             if xref_elem.tag != "xref":
                 pass
             xref = dict(
-                reftype=xref_elem.text.strip(),
-                content=xref_elem.attrib.get('type', None)
+                reftype=xref_elem.attrib.get('type', None),
+                content=xref_elem.text.strip()
             )
             xrefs.append(xref)
         return xrefs
