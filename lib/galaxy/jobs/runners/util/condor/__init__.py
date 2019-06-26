@@ -98,7 +98,7 @@ def condor_stop(external_id):
     except CalledProcessError:
         failure_message = "condor_rm failed"
     except Exception as e:
-        "error encountered calling condor_rm: %s" % unicodify(e)
+        failure_message = "error encountered calling condor_rm: %s" % unicodify(e)
     return failure_message
 
 

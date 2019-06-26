@@ -231,7 +231,7 @@ class BaseJobRunner(object):
                 stderr_file=stderr_file,
             )
         except Exception as e:
-            log.exception("(%s) Failure preparing job" % job_id)
+             log.exception("(%s) Failure preparing job", job_id)
             job_wrapper.fail(unicodify(e), exception=True)
             return False
 
@@ -754,7 +754,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                 if which_try == self.app.config.retry_job_output_collection:
                     stdout = ''
                     stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
-                    log.error('(%s/%s) %s: %s' % (galaxy_id_tag, external_job_id, stderr, unicodify(e)))
+                    log.error('(%s/%s) %s: %s', galaxy_id_tag, external_job_id, stderr, unicodify(e))
                     collect_output_success = False
                 else:
                     time.sleep(1)

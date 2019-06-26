@@ -125,7 +125,7 @@ class WebApplication(base.WebApplication):
                 try:
                     module = import_module(module_name)
                 except ControllerUnavailable as exc:
-                    log.debug("%s could not be loaded: %s" % (module_name, unicodify(exc)))
+                    log.debug("%s could not be loaded: %s", module_name, unicodify(exc))
                     continue
                 # Look for a controller inside the modules
                 for key in dir(module):
@@ -150,7 +150,7 @@ class WebApplication(base.WebApplication):
                 try:
                     module = import_module(module_name)
                 except ControllerUnavailable as exc:
-                    log.debug("%s could not be loaded: %s" % (module_name, unicodify(exc)))
+                    log.debug("%s could not be loaded: %s", module_name, unicodify(exc))
                     continue
                 for key in dir(module):
                     T = getattr(module, key)

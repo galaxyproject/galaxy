@@ -2371,8 +2371,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     try:
                         hg_util.remove_file(repo_dir, selected_file, force=True)
                     except Exception as e:
-                        log.debug("Error removing the following file using the mercurial API:\n %s" % selected_file)
-                        log.debug("The error was: %s" % util.unicodify(e))
+                        log.debug("Error removing the following file using the mercurial API:\n %s", selected_file)
+                        log.debug("The error was: %s", util.unicodify(e))
                         log.debug("Attempting to remove the file using a different approach.")
                         relative_selected_file = selected_file.split('repo_%d' % repository.id)[1].lstrip('/')
                         repo.dirstate.remove(relative_selected_file)

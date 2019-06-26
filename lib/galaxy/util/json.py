@@ -131,7 +131,7 @@ def validate_jsonrpc_response(response, id=None):
     try:
         response = json.loads(response)
     except Exception as e:
-        log.error('Response was not valid JSON: %s' % unicodify(e))
+        log.error('Response was not valid JSON: %s', unicodify(e))
         log.debug('Response was: %s' % response)
         return False, response
     try:

@@ -1021,9 +1021,9 @@ class JobWrapper(HasResourceParameters):
                 for dataset_path in self.get_output_fnames():
                     try:
                         shutil.move(dataset_path.false_path, dataset_path.real_path)
-                        log.debug("fail(): Moved %s to %s" % (dataset_path.false_path, dataset_path.real_path))
+                         log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
                     except (IOError, OSError) as e:
-                        log.error("fail(): Missing output file in working directory: %s" % unicodify(e))
+                        log.error("fail(): Missing output file in working directory: %s", unicodify(e)
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
@@ -1557,7 +1557,7 @@ class JobWrapper(HasResourceParameters):
                         preserve_symlinks=True
                     )
         except Exception as e:
-            log.debug("Error in collect_associated_files: %s" % unicodify(e))
+            log.debug("Error in collect_associated_files: %s", unicodify(e))
 
     def _collect_metrics(self, has_metrics, job_metrics_directory=None):
         job = has_metrics.get_job()

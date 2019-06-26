@@ -37,7 +37,7 @@ class HgWebConfigManager(object):
             # Persist our in-memory configuration.
             self.write_config()
         except Exception as e:
-            log.debug("Exception in HgWebConfigManager.add_entry(): %s" % unicodify(e))
+            log.debug("Exception in HgWebConfigManager.add_entry(): %s", unicodify(e))
         finally:
             lock.release()
 
@@ -54,7 +54,7 @@ class HgWebConfigManager(object):
             # Persist our in-memory configuration.
             self.write_config()
         except Exception as e:
-            log.debug("Exception in HgWebConfigManager.change_entry(): %s" % unicodify(e))
+            log.debug("Exception in HgWebConfigManager.change_entry(): %s", unicodify(e))
         finally:
             lock.release()
 

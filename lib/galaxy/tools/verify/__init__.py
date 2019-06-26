@@ -118,7 +118,7 @@ def verify(
                     local_fh, temp_name = _bam_to_sam(local_name, temp_name)
                     local_name = local_fh.name
                 except Exception as e:
-                    log.warning("%s. Will compare BAM files" % unicodify(e))
+                    log.warning("%s. Will compare BAM files", unicodify(e))
             if compare == 'diff':
                 files_diff(local_name, temp_name, attributes=attributes)
             elif compare == 're_match':

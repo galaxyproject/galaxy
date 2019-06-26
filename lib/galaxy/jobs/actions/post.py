@@ -58,7 +58,7 @@ class EmailAction(DefaultJobAction):
         try:
             send_mail(frm, to, subject, body, app.config)
         except Exception as e:
-            log.error("EmailAction PJA Failed, exception: %s" % unicodify(e))
+            log.error("EmailAction PJA Failed, exception: %s", unicodify(e))
 
     @classmethod
     def get_short_str(cls, pja):

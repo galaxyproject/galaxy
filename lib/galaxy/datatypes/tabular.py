@@ -175,7 +175,7 @@ class TabularData(data.Text):
             out.append('</tr>')
         except Exception as exc:
             log.exception('make_html_peek_header failed on HDA %s', dataset.id)
-            raise Exception("Can't create peek header %s" % util.unicodify(exc))
+            raise Exception("Can't create peek header: %s" % util.unicodify(exc))
         return "".join(out)
 
     def make_html_peek_rows(self, dataset, skipchars=None, **kwargs):
@@ -206,7 +206,7 @@ class TabularData(data.Text):
                         out.append('</tr>')
         except Exception as exc:
             log.exception('make_html_peek_rows failed on HDA %s', dataset.id)
-            raise Exception("Can't create peek rows %s" % util.unicodify(exc))
+            raise Exception("Can't create peek rows: %s" % util.unicodify(exc))
         return "".join(out)
 
     def display_peek(self, dataset):
