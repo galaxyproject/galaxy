@@ -181,7 +181,7 @@ def do_merge(job_wrapper, task_wrappers):
     except Exception as e:
         stdout = 'Error merging files'
         log.exception(stdout)
-        stderr = str(e)
+        stderr = util.unicodify(e)
 
     for tw in task_wrappers:
         # Prevent repetitive output, e.g. "Sequence File Aligned"x20

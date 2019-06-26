@@ -222,7 +222,7 @@ class Registry(object):
                                             datatype_class = getattr(imported_module, datatype_class_name)
                                     except Exception as e:
                                         full_path = os.path.join(proprietary_path, proprietary_datatype_module)
-                                        self.log.debug("Exception importing proprietary code file %s: %s" % (str(full_path), str(e)))
+                                        self.log.debug("Exception importing proprietary code file %s: %s" % (str(full_path), galaxy.util.unicodify(e)))
                                 # Either the above exception was thrown because the proprietary_datatype_module is not derived from a class
                                 # in the repository, or we are loading Galaxy's datatypes. In either case we'll look in the registry.
                                 if datatype_class is None:

@@ -1203,7 +1203,7 @@ def read_dbnames(filename):
         man_builds = [(build, name) for name, build in man_builds]
         db_names = DBNames(db_names + man_builds)
     except Exception as e:
-        log.error("ERROR: Unable to read builds file: %s", e)
+        log.error("ERROR: Unable to read builds file: %s", unicodify(e))
     if len(db_names) < 1:
         db_names = DBNames([(db_names.default_value, db_names.default_name)])
     return db_names
@@ -1300,7 +1300,7 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
                                                                                                                     path,
                                                                                                                     oct(perms),
                                                                                                                     oct(stat.S_IMODE(st.st_mode)),
-                                                                                                                    e))
+                                                                                                                    unicodify(e)))
     # fix group
     if gid is not None and st.st_gid != gid:
         try:
@@ -1315,7 +1315,7 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
             log.warning('Unable to honor primary group (%s) for %s, group remains %s, error was: %s' % (desired_group,
                                                                                                         path,
                                                                                                         current_group,
-                                                                                                        e))
+                                                                                                        unicodify(e)))
 
 
 def docstring_trim(docstring):
@@ -1479,26 +1479,26 @@ def send_mail(frm, to, subject, body, config, html=None):
             s.starttls()
             log.debug('Initiated SSL/TLS connection to SMTP server: %s' % config.smtp_server)
         except RuntimeError as e:
-            log.warning('SSL/TLS support is not available to your Python interpreter: %s' % e)
+            log.warning('SSL/TLS support is not available to your Python interpreter: %s' % unicodify(e))
         except smtplib.SMTPHeloError as e:
-            log.error("The server didn't reply properly to the HELO greeting: %s" % e)
+            log.error("The server didn't reply properly to the HELO greeting: %s" % unicodify(e))
             s.close()
             raise
         except smtplib.SMTPException as e:
-            log.warning('The server does not support the STARTTLS extension: %s' % e)
+            log.warning('The server does not support the STARTTLS extension: %s' % unicodify(e))
     if config.smtp_username and config.smtp_password:
         try:
             s.login(config.smtp_username, config.smtp_password)
         except smtplib.SMTPHeloError as e:
-            log.error("The server didn't reply properly to the HELO greeting: %s" % e)
+            log.error("The server didn't reply properly to the HELO greeting: %s" % unicodify(e))
             s.close()
             raise
         except smtplib.SMTPAuthenticationError as e:
-            log.error("The server didn't accept the username/password combination: %s" % e)
+            log.error("The server didn't accept the username/password combination: %s" % unicodify(e))
             s.close()
             raise
         except smtplib.SMTPException as e:
-            log.error("No suitable authentication method was found: %s" % e)
+            log.error("No suitable authentication method was found: %s" % unicodify(e))
             s.close()
             raise
     s.sendmail(frm, to, msg.as_string())

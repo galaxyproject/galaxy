@@ -154,8 +154,8 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
                     rval = dataset.to_dict()
 
         except Exception as e:
-            rval = "Error in dataset API at listing contents: " + str(e)
-            log.error(rval + ": %s" % str(e), exc_info=True)
+            rval = "Error in dataset API at listing contents: " + util.unicodify(e)
+            log.error(rval + ": %s" % util.unicodify(e), exc_info=True)
             trans.response.status = 500
         return rval
 
@@ -424,7 +424,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             log.exception("Error getting display data for dataset (%s) from history (%s)",
                           history_content_id, history_id)
             trans.response.status = 500
-            rval = "Could not get display data for dataset: %s" % e
+            rval = "Could not get display data for dataset: %s" % util.unicodify(e)
         return rval
 
     @web.legacy_expose_api_raw_anonymous
@@ -445,7 +445,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             log.exception("Error getting metadata_file (%s) for dataset (%s) from history (%s)",
                           metadata_file, history_content_id, history_id)
             trans.response.status = 500
-            rval = "Could not get metadata for dataset: %s" % e
+            rval = "Could not get metadata for dataset: %s" % util.unicodify(e)
         return rval
 
     @web.expose_api_anonymous

@@ -150,7 +150,7 @@ class ToolDataTableManager(object):
                                                      tool_data_path=tool_data_path,
                                                      from_shed_config=True)
         except Exception as e:
-            error_message = 'Error attempting to parse file %s: %s' % (str(os.path.split(config_filename)[1]), str(e))
+            error_message = 'Error attempting to parse file %s: %s' % (str(os.path.split(config_filename)[1]), util.unicodify(e))
             log.debug(error_message)
             table_elems = []
         if persist:

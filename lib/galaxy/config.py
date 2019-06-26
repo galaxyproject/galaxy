@@ -838,7 +838,7 @@ class Configuration(object):
             try:
                 os.makedirs(path)
             except Exception as e:
-                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, e))
+                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
 
     def check(self):
         paths_to_check = [self.root, self.tool_path, self.tool_data_path, self.template_path]
@@ -848,7 +848,7 @@ class Configuration(object):
                 try:
                     os.makedirs(path)
                 except Exception as e:
-                    raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, e))
+                    raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
         # Create the directories that it makes sense to create
         for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,

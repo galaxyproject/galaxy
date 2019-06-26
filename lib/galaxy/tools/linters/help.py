@@ -1,5 +1,8 @@
 """This module contains a linting function for a tool's help."""
-from galaxy.util import rst_to_html
+from galaxy.util import (
+    rst_to_html,
+    unicodify,
+)
 
 
 def lint_help(tool_xml, lint_ctx):
@@ -41,5 +44,5 @@ def rst_invalid(text):
     try:
         rst_to_html(text, error=True)
     except Exception as e:
-        invalid_rst = str(e)
+        invalid_rst = unicodify(e)
     return invalid_rst

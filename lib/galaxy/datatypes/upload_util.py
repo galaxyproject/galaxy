@@ -1,6 +1,7 @@
 import os
 
 from galaxy.datatypes import sniff
+from galaxy.util import unicodify
 from galaxy.util.checkers import (
     check_binary,
     is_single_file_zip,
@@ -54,7 +55,7 @@ def handle_upload(
                 convert_spaces_to_tabs=convert_spaces_to_tabs,
             )
         except sniff.InappropriateDatasetContentError as exc:
-            raise UploadProblemException(str(exc))
+            raise UploadProblemException(unicodify(exc))
     elif requested_ext == 'auto':
         ext = sniff.guess_ext(path, registry.sniff_order, is_binary=is_binary)
     else:

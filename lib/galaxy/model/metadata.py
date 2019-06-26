@@ -17,8 +17,13 @@ from six import string_types
 from sqlalchemy.orm import object_session
 
 import galaxy.model
-from galaxy.util import (form_builder, listify, string_as_bool,
-                         stringify_dictionary_keys)
+from galaxy.util import (
+    form_builder,
+    listify,
+    string_as_bool,
+    stringify_dictionary_keys,
+    unicodify,
+)
 from galaxy.util.json import safe_dumps
 from galaxy.util.object_wrapper import sanitize_lists_to_string
 from galaxy.util.odict import odict
@@ -627,7 +632,7 @@ class MetadataTempFile(object):
                     log.debug('Cleaning up abandoned MetadataTempFile file: %s' % value.file_name)
                     os.unlink(value.file_name)
         except Exception as e:
-            log.debug('Failed to cleanup MetadataTempFile temp files from %s: %s' % (filename, e))
+            log.debug('Failed to cleanup MetadataTempFile temp files from %s: %s' % (filename, unicodify(e)))
 
 
 __all__ = (

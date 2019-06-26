@@ -17,7 +17,8 @@ from galaxy.util import (
     ExecutionTimer,
     listify,
     parse_xml,
-    string_as_bool
+    string_as_bool,
+    unicodify,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
@@ -633,7 +634,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if labels is not None:
                 tool.labels = labels
         except (IOError, OSError) as exc:
-            log.error("Error reading tool configuration file from path '%s': %s", path, exc)
+            log.error("Error reading tool configuration file from path '%s': %s", path, unicodify(exc))
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 
@@ -1066,7 +1067,7 @@ def _filter_for_panel(item, item_type, filters, context):
                 if not filter_method(context, filter_item):
                     return False
             except Exception as e:
-                raise MessageException("Toolbox filter exception from '%s': %s." % (filter_method.__name__, e))
+                raise MessageException("Toolbox filter exception from '%s': %s." % (filter_method.__name__, unicodify(e)))
         return True
     if item_type == panel_item_types.TOOL:
         if _apply_filter(item, filters['tool']):

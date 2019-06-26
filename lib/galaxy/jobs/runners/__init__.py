@@ -34,7 +34,8 @@ from galaxy.util import (
     ExecutionTimer,
     in_directory,
     ParamsWithSpecs,
-    shrink_stream_by_size
+    shrink_stream_by_size,
+    unicodify,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.monitors import Monitors
@@ -231,7 +232,7 @@ class BaseJobRunner(object):
             )
         except Exception as e:
             log.exception("(%s) Failure preparing job" % job_id)
-            job_wrapper.fail(str(e), exception=True)
+            job_wrapper.fail(unicodify(e), exception=True)
             return False
 
         if not job_wrapper.runner_command_line:
@@ -589,7 +590,7 @@ class JobState(object):
                     prefix = "(%s)" % self.job_wrapper.get_id_tag()
                 else:
                     prefix = "(%s/%s)" % (self.job_wrapper.get_id_tag(), self.job_id)
-                log.debug("%s Unable to cleanup %s: %s" % (prefix, file, str(e)))
+                log.debug("%s Unable to cleanup %s: %s" % (prefix, file, unicodify(e)))
 
 
 class AsynchronousJobState(JobState):
@@ -753,7 +754,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                 if which_try == self.app.config.retry_job_output_collection:
                     stdout = ''
                     stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
-                    log.error('(%s/%s) %s: %s' % (galaxy_id_tag, external_job_id, stderr, str(e)))
+                    log.error('(%s/%s) %s: %s' % (galaxy_id_tag, external_job_id, stderr, unicodify(e)))
                     collect_output_success = False
                 else:
                     time.sleep(1)

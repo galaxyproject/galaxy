@@ -35,7 +35,7 @@ def parse_cols_arg(cols):
 
 def default_printer(stream, exc, obj):
     print("%d: %s" % (obj.linenum, obj.current_line), file=stream)
-    print("\tError: %s" % (str(exc)), file=stream)
+    print("\tError: %s" % ((exc)), file=stream)
 
 
 def skipped(reader, filedesc=""):

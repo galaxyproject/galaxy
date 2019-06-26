@@ -16,7 +16,10 @@ from galaxy.containers import (
     ContainerPort,
     ContainerVolume
 )
-from galaxy.util import pretty_print_time_interval
+from galaxy.util import (
+    pretty_print_time_interval,
+    unicodify,
+)
 
 
 CPUS_LABEL = '_galaxy_cpus'
@@ -135,7 +138,7 @@ class DockerContainer(Container):
             port_mappings = self.inspect['NetworkSettings']['Ports']
         except KeyError as exc:
             log.warning("Failed to get ports for container %s from `docker inspect` output at "
-                        "['NetworkSettings']['Ports']: %s: %s", self.id, exc.__class__.__name__, str(exc))
+                        "['NetworkSettings']['Ports']: %s: %s", self.id, exc.__class__.__name__, unicodify(exc))
             return None
         for port_name in port_mappings:
             for binding in port_mappings[port_name]:
@@ -219,7 +222,7 @@ class DockerService(Container):
             port_mappings = self.inspect['Endpoint']['Ports']
         except (IndexError, KeyError) as exc:
             log.warning("Failed to get ports for container %s from `docker service inspect` output at "
-                        "['Endpoint']['Ports']: %s: %s", self.id, exc.__class__.__name__, str(exc))
+                        "['Endpoint']['Ports']: %s: %s", self.id, exc.__class__.__name__, unicodify(exc))
             return None
         for binding in port_mappings:
             rval.append(ContainerPort(
@@ -283,7 +286,7 @@ class DockerService(Container):
                     except ValueError:
                         self._env[env_str] = None
             except KeyError as exc:
-                log.debug('Cannot retrieve container environment: KeyError: %s', str(exc))
+                log.debug('Cannot retrieve container environment: KeyError: %s', unicodify(exc))
         return self._env
 
     @property
