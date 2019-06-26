@@ -217,7 +217,7 @@ class Stockholm_1_0(Text):
             if stockholm_lines_accumulated:
                 _write_part_stockholm_file(stockholm_lines_accumulated)
         except Exception as e:
-            log.error('Unable to split files: %s' % unicodify(e))
+            log.error('Unable to split files: %s', unicodify(e))
             raise
     split = classmethod(split)
 

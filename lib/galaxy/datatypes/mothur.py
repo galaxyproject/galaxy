@@ -982,7 +982,7 @@ class SffFlow(Tabular):
             out += self.make_html_peek_rows(dataset, skipchars=skipchars)
             out += '</table>'
         except Exception as exc:
-            out = "Can't create peek %s" % unicodify(exc)
+            out = "Can't create peek: %s" % unicodify(exc)
         return out
 
 
