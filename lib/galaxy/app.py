@@ -17,6 +17,7 @@ from galaxy.managers.folders import FolderManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.tools import DynamicToolManager
+from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.tool_util.deps.views import DependencyResolversView
@@ -38,8 +39,7 @@ from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.web import url_for
 from galaxy.web.proxy import ProxyManager
-from galaxy.web.stack import application_stack_instance
-from galaxy.web.stack.database_heartbeat import DatabaseHeartbeat
+from galaxy.web_stack import application_stack_instance
 from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
 from galaxy.webhooks import WebhooksRegistry
 from tool_shed.galaxy_install import (

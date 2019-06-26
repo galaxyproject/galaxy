@@ -39,7 +39,7 @@ from galaxy.web.framework import (
     helpers,
     url_for
 )
-from galaxy.web.stack import get_app_kwds
+from galaxy.web_stack import get_app_kwds
 
 log = logging.getLogger(__name__)
 
