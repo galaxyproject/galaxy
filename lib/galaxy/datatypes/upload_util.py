@@ -1,7 +1,6 @@
 import os
 
 from galaxy.datatypes import sniff
-from galaxy.util import unicodify
 from galaxy.util.checkers import (
     check_binary,
     is_single_file_zip,

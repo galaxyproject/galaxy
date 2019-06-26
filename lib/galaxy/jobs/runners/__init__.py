@@ -231,7 +231,7 @@ class BaseJobRunner(object):
                 stderr_file=stderr_file,
             )
         except Exception as e:
-             log.exception("(%s) Failure preparing job", job_id)
+            log.exception("(%s) Failure preparing job", job_id)
             job_wrapper.fail(unicodify(e), exception=True)
             return False
 

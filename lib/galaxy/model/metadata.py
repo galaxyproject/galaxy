@@ -629,7 +629,7 @@ class MetadataTempFile(object):
                 if cls.is_JSONified_value(value):
                     value = cls.from_JSON(value)
                 if isinstance(value, cls) and os.path.exists(value.file_name):
-                     log.debug('Cleaning up abandoned MetadataTempFile file: %s', value.file_name)
+                    log.debug('Cleaning up abandoned MetadataTempFile file: %s', value.file_name)
                     os.unlink(value.file_name)
         except Exception as e:
             log.debug('Failed to cleanup MetadataTempFile temp files from %s: %s', filename, unicodify(e))

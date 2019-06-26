@@ -659,7 +659,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                             log.exception("Requested dataset %s does not exist on the host.", fpath)
                             raise exceptions.ObjectNotFound("Requested dataset not found.")
                         except Exception as e:
-                             log.exception("Unable to add %s to temporary library download archive %s", fname, outfname)
+                            log.exception("Unable to add %s to temporary library download archive %s", fname, outfname)
                             raise exceptions.InternalServerError("Unable to add dataset to temporary library download archive . " + util.unicodify(e))
                 else:
                     try:

@@ -110,7 +110,7 @@ def verify(
                 error_log_msg += unicodify(exc)
                 log.error(error_log_msg, exc_info=True)
             else:
-                 log.debug('## GALAXY_TEST_SAVE=%s. saved %s', keep_outputs_dir, ofn)
+                log.debug('## GALAXY_TEST_SAVE=%s. saved %s', keep_outputs_dir, ofn)
         compare = attributes.get('compare', 'diff')
         try:
             if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam', 'cram']:

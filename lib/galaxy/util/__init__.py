@@ -1477,7 +1477,7 @@ def send_mail(frm, to, subject, body, config, html=None):
     if not smtp_ssl:
         try:
             s.starttls()
-             log.debug('Initiated SSL/TLS connection to SMTP server: %s', config.smtp_server)
+            log.debug('Initiated SSL/TLS connection to SMTP server: %s', config.smtp_server)
         except RuntimeError as e:
             log.warning('SSL/TLS support is not available to your Python interpreter: %s', unicodify(e))
         except smtplib.SMTPHeloError as e:
