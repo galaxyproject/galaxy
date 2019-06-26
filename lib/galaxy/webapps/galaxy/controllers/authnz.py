@@ -9,7 +9,7 @@ import logging
 from galaxy import exceptions
 from galaxy import web
 from galaxy.web import url_for
-from galaxy.web.base.controller import JSAppLauncher
+from galaxy.webapps.base.controller import JSAppLauncher
 
 log = logging.getLogger(__name__)
 

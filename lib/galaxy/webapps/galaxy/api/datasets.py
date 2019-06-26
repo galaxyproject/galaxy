@@ -22,11 +22,11 @@ from galaxy.visualization.data_providers.genome import (
     FeatureLocationIndexDataProvider,
     SamDataProvider
 )
-from galaxy.web.base.controller import (
+from galaxy.web.framework.helpers import is_true
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     UsesVisualizationMixin
 )
-from galaxy.web.framework.helpers import is_true
 
 log = logging.getLogger(__name__)
 
