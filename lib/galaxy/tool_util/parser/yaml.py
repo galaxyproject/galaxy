@@ -42,13 +42,10 @@ class YamlToolSource(ToolSource):
 
     def parse_xrefs(self):
         xrefs = []
-        rval = dict(
-            xrefs=xrefs
-        )
         for i, xref_dict in enumerate(self.root_dict.get("xrefs", [])):
             if xref_dict["type"] == "bio.tools":
                 xrefs.append(xref_dict["value"])
-        return rval
+        return xrefs
 
     def parse_is_multi_byte(self):
         return self.root_dict.get("is_multi_byte", self.default_is_multi_byte)
