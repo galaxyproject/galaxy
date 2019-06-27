@@ -44,7 +44,7 @@ from galaxy.util import safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.xml_macros import load
-from galaxy.web.stack.handlers import ConfiguresHandlers
+from galaxy.web_stack.handlers import ConfiguresHandlers
 
 log = logging.getLogger(__name__)
 

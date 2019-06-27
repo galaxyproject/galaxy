@@ -33,7 +33,7 @@ from galaxy.util import unicodify
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.util.logging import LOGLV_TRACE
 from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.web.stack import get_stack_facts, register_postfork_function
+from galaxy.web_stack import get_stack_facts, register_postfork_function
 from .version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
@@ -106,7 +106,7 @@ LOGGING_CONFIG_DEFAULT = {
     },
     'filters': {
         'stack': {
-            '()': 'galaxy.web.stack.application_stack_log_filter',
+            '()': 'galaxy.web_stack.application_stack_log_filter',
         },
     },
     'handlers': {
@@ -120,7 +120,7 @@ LOGGING_CONFIG_DEFAULT = {
     },
     'formatters': {
         'stack': {
-            '()': 'galaxy.web.stack.application_stack_log_formatter',
+            '()': 'galaxy.web_stack.application_stack_log_formatter',
         },
     },
 }
