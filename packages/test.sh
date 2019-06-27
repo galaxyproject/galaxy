@@ -27,10 +27,12 @@ PACKAGE_DIRS=(
     web_stack
     web_framework
     app
+    web_apps
 )
 # containers has no tests, tool_util not yet working 100%,
 # data has many problems quota, tool shed install database, etc..
-RUN_TESTS=(1 1 1 0 1 0 1 0 1 0 0 0)
+RUN_TESTS=(1 1 1 0 1 0 1 0 1 0 0 0 0)
+
 
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     package_dir=${PACKAGE_DIRS[$i]}
