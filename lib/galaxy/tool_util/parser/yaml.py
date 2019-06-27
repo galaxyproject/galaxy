@@ -46,7 +46,7 @@ class YamlToolSource(ToolSource):
             xrefs=xrefs
         )
         for i, xref_dict in enumerate(self.root_dict.get("xrefs", [])):
-            if xref_dict["type"] == "bio.tools"
+            if xref_dict["type"] == "bio.tools":
                 xrefs.append(xref_dict["value"])
         return rval
 
