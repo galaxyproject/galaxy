@@ -42,7 +42,7 @@ class YamlToolSource(ToolSource):
 
     def parse_xrefs(self):
         xrefs = []
-        for i, xref_dict in enumerate(self.root_dict.get("xrefs", [])):
+        for xref_dict in self.root_dict.get("xrefs", []):
             if xref_dict["type"] == "bio.tools":
                 xrefs.append(xref_dict["value"])
         return xrefs
