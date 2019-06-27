@@ -87,6 +87,9 @@ class: GalaxyTool
 id: bowtie
 version: 1.0.2
 description: "The Bowtie Mapper"
+xrefs:
+  - type: bio.tools
+    value: bwa
 command: "bowtie_wrapper.pl --map-the-stuff"
 interpreter: "perl"
 runtime_version:

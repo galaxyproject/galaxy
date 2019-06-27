@@ -41,7 +41,14 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("edam_topics", [])
 
     def parse_xrefs(self):
-        return self.root_dict.get("xrefs", [])
+        xrefs = []
+        rval = dict(
+            xrefs=xrefs
+        )
+        for i, xref_dict in enumerate(self.root_dict.get("xrefs", [])):
+            if xref_dict["type"] == "bio.tools"
+                xrefs.append(xref_dict["value"])
+        return rval
 
     def parse_is_multi_byte(self):
         return self.root_dict.get("is_multi_byte", self.default_is_multi_byte)
@@ -172,7 +179,6 @@ class YamlToolSource(ToolSource):
         if python_template_version is not None:
             python_template_version = packaging.version.parse(python_template_version)
         return python_template_version
-
 
 def _parse_test(i, test_dict):
     inputs = test_dict["inputs"]
