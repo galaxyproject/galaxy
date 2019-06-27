@@ -177,6 +177,7 @@ class YamlToolSource(ToolSource):
             python_template_version = packaging.version.parse(python_template_version)
         return python_template_version
 
+
 def _parse_test(i, test_dict):
     inputs = test_dict["inputs"]
     if is_dict(inputs):
