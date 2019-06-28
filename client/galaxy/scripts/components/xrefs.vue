@@ -20,7 +20,7 @@ export default {
             type: String,
             required: true
         },
-        type: {
+        reftype: {
             type: String,
             required: true
         },
@@ -44,21 +44,21 @@ export default {
         axios
             .get(`${getAppRoot()}api/${this.source}/${this.id}/xrefs`)
             .then(response => {
-                this.type = "";
+                this.reftype = "";
                 this.content = "<table>";
                 for (var raw_xref of response.data) {
                     try {
-                        this.type = raw_xref.reftype;
+                        this.reftype = raw_xref.reftype;
                         this.content += "<tr>";
                         this.content += "<th> - ";
-                        this.content += this.type;
+                        this.content += this.reftype;
                         this.content += "</th>";
                         this.content += "<td> : ";
-                        if (this.type == "bio.tools") {
-                            this.content += "<a href=\"https://bio.tools/" + raw_xref.content + "\" target=\"_blank\">" + raw_xref.content + "</a>";
+                        if (this.reftype == "bio.tools") {
+                            this.content += "<a href=\"https://bio.tools/" + raw_xref.value + "\" target=\"_blank\">" + raw_xref.value + "</a>";
                         }
                         else {
-                            this.content += raw_xref.content;
+                            this.content += raw_xref.value;
                         }
                         this.content += "</td>";
                         this.content += "</tr>";

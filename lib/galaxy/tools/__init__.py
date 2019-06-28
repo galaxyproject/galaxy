@@ -1069,24 +1069,6 @@ class Tool(Dictifiable):
                     citations.append(citation)
         return citations
 
-    def _parse_xrefs(self, tool_source):
-        if not hasattr(tool_source, 'root'):
-            return []
-        root = tool_source.root
-        xrefs = []
-        xrefs_elem = root.find("xrefs")
-        if xrefs_elem is None:
-            return xrefs
-        for xref_elem in xrefs_elem:
-            if xref_elem.tag != "xref":
-                pass
-            xref = dict(
-                reftype=xref_elem.attrib.get('type', None),
-                content=xref_elem.text.strip()
-            )
-            xrefs.append(xref)
-        return xrefs
-
     def parse_input_elem(self, page_source, enctypes, context=None):
         """
         Parse a parent element whose children are inputs -- these could be

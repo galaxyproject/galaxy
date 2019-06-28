@@ -319,7 +319,7 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
 
     def test_xrefs(self):
         xrefs = self._tool_source.parse_xrefs()
-        assert xrefs[0] == "bwa"
+        assert xrefs == [{'value': 'bwa', 'reftype': 'bio.tools'}]
 
     def test_exit_code(self):
         tool_source = self._get_tool_source(source_contents="""<tool id="bwa" name="bwa">
@@ -480,7 +480,7 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
 
     def test_xrefs(self):
         xrefs = self._tool_source.parse_xrefs()
-        assert xrefs[0] == "bwa"
+        assert xrefs == [{'value': 'bwa', 'reftype': 'bio.tools'}]
 
     def test_sanitize(self):
         assert self._tool_source.parse_sanitize() is True

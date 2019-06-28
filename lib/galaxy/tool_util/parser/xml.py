@@ -99,7 +99,7 @@ class XmlToolSource(ToolSource):
         xrefs = self.root.find("xrefs")
         if xrefs is None:
             return []
-        return [xref.text for xref in xrefs.findall("xref") if xref.get("type") in {'bio.tools'}]
+        return [dict(value=xref.text.strip(), reftype=xref.attrib['type']) for xref in xrefs.findall("xref") if xref.get("type")]
 
     def parse_description(self):
         return xml_text(self.root, "description")
