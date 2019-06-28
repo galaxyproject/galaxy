@@ -42,8 +42,6 @@ class YamlToolSource(ToolSource):
 
     def parse_xrefs(self):
         xrefs = self.root_dict.get("xrefs", [])
-        if xrefs is None:
-            return []
         return [dict(value=xref["value"], reftype=xref["type"]) for xref in xrefs if xref["type"]]
 
     def parse_is_multi_byte(self):
