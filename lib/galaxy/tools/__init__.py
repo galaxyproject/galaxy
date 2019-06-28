@@ -1877,6 +1877,7 @@ class Tool(Dictifiable):
 
         tool_dict["edam_operations"] = self.edam_operations
         tool_dict["edam_topics"] = self.edam_topics
+        tool_dict["xrefs"] = self.xrefs
 
         # Fill in ToolShedRepository info
         if hasattr(self, 'tool_shed') and self.tool_shed:
@@ -1990,7 +1991,6 @@ class Tool(Dictifiable):
             'id'            : self.id,
             'help'          : tool_help,
             'citations'     : bool(self.citations),
-            'xrefs'         : bool(self.xrefs),
             'sharable_url'  : self.sharable_url,
             'message'       : tool_message,
             'warnings'      : tool_warnings,
