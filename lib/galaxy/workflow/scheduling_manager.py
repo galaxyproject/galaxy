@@ -8,8 +8,8 @@ from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.util import plugin_config
 from galaxy.util.monitors import Monitors
-from galaxy.web.stack.handlers import ConfiguresHandlers, HANDLER_ASSIGNMENT_METHODS
-from galaxy.web.stack.message import WorkflowSchedulingMessage
+from galaxy.web_stack.handlers import ConfiguresHandlers, HANDLER_ASSIGNMENT_METHODS
+from galaxy.web_stack.message import WorkflowSchedulingMessage
 
 log = logging.getLogger(__name__)
 
