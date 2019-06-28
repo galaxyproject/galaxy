@@ -298,9 +298,32 @@ class DataManager(object):
             data_manager_dict.update(output_dict)
 
         data_tables_dict = data_manager_dict.get('data_tables', {})
+        # Log the data table so we can investigate it :)
+        log.debug(data_tables_dict)
+
         for data_table_name in self.data_tables.keys():
-            data_table_values = data_tables_dict.pop(data_table_name, None)
-            if not data_table_values:
+            data_table_values = None
+            data_table_remove_values = None
+            # Add/Remove option for data tables
+            if isinstance(data_tables_dict.get(data_table_name), dict):
+
+                data_table_data = data_tables_dict.get(data_table_name, None)
+                # Validate results
+                if not data_table_data:
+                    log.warning('Data table seems invalid: "%s".' % data_table_name)
+                    continue
+
+                data_table_values = data_table_data.pop('add', None)
+                data_table_remove_values = data_table_data.pop('remove', None)
+
+                # Remove it as well here
+                data_tables_dict.pop(data_table_name, None)
+            else:
+                data_table_values = data_tables_dict.pop(data_table_name, None)
+
+            log.debug(data_table_remove_values)
+
+            if not data_table_values and not data_table_remove_values:
                 log.warning('No values for data table "%s" were returned by the data manager "%s".' % (data_table_name, self.id))
                 continue  # next data table
             data_table = self.data_managers.app.tool_data_tables.get(data_table_name, None)
@@ -319,13 +342,21 @@ class DataManager(object):
 
             if not isinstance(data_table_values, list):
                 data_table_values = [data_table_values]
+            if not isinstance(data_table_remove_values, list):
+                data_table_remove_values = [data_table_remove_values]
             for data_table_row in data_table_values:
                 data_table_value = dict(**data_table_row)  # keep original values here
                 for name, value in data_table_row.items():  # FIXME: need to loop through here based upon order listed in data_manager config
                     if name in output_ref_values:
                         self.process_move(data_table_name, name, output_ref_values[name].extra_files_path, **data_table_value)
                         data_table_value[name] = self.process_value_translation(data_table_name, name, **data_table_value)
+
                 data_table.add_entry(data_table_value, persist=True, entry_source=self)
+            # Removes data table entries
+            for data_table_row in data_table_remove_values:
+                data_table_value = dict(**data_table_row)  # keep original values here
+                data_table.remove_entry(list(data_table_value.values()))
+
             send_control_task(self.data_managers.app,
                               'reload_tool_data_tables',
                               noop_self=True,
