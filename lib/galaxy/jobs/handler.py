@@ -28,6 +28,7 @@ from galaxy.jobs import (
     TaskWrapper
 )
 from galaxy.jobs.mapper import JobNotReadyException
+from galaxy.util import unicodify
 from galaxy.util.monitors import Monitors
 from galaxy.web.stack.handlers import HANDLER_ASSIGNMENT_METHODS
 from galaxy.web.stack.message import JobHandlerMessage
@@ -269,7 +270,7 @@ class JobHandlerQueue(Monitors):
                 # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
                 # and should have attribute `code`. Other engines should just report the message and move on.
                 if int(getattr(e.orig, 'pgcode', -1)) != 40001:
-                    log.debug('Grabbing job failed (serialization failures are ok): %s', str(e))
+                    log.debug('Grabbing job failed (serialization failures are ok): %s', unicodify(e))
                 trans.rollback()
 
     def __handle_waiting_jobs(self):

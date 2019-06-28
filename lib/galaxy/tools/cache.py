@@ -8,6 +8,7 @@ from threading import (
 from sqlalchemy import inspect
 from sqlalchemy.orm.exc import DetachedInstanceError
 
+from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
 
 log = logging.getLogger(__name__)
@@ -56,7 +57,7 @@ class ToolCache(object):
                     if tool_id in self._new_tool_ids:
                         self._new_tool_ids.remove(tool_id)
         except Exception as e:
-            log.debug("Exception while checking tools to remove from cache: %s" % e)
+            log.debug("Exception while checking tools to remove from cache: %s", unicodify(e))
             # If by chance the file is being removed while calculating the hash or modtime
             # we don't want the thread to die.
             pass

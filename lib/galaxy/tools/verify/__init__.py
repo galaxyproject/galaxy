@@ -59,7 +59,7 @@ def verify(
             verify_assertions(output_content, attributes["assert_list"])
         except AssertionError as err:
             errmsg = '%s different than expected\n' % (item_label)
-            errmsg += str(err)
+            errmsg += unicodify(err)
             raise AssertionError(errmsg)
 
     # Verify checksum attributes...
@@ -79,7 +79,7 @@ def verify(
             _verify_checksum(output_content, expected_checksum_type, expected_checksum)
         except AssertionError as err:
             errmsg = '%s different than expected\n' % (item_label)
-            errmsg += str(err)
+            errmsg += unicodify(err)
             raise AssertionError(errmsg)
 
     if attributes is None:
@@ -105,12 +105,10 @@ def verify(
             log.debug('keep_outputs_dir: %s, ofn: %s', keep_outputs_dir, ofn)
             try:
                 shutil.copy(temp_name, ofn)
-            except Exception as exc:
-                error_log_msg = 'Could not save output file %s to %s: ' % (temp_name, ofn)
-                error_log_msg += str(exc)
-                log.error(error_log_msg, exc_info=True)
+            except Exception:
+                log.exception('Could not save output file %s to %s', temp_name, ofn)
             else:
-                log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (keep_outputs_dir, ofn))
+                log.debug('## GALAXY_TEST_SAVE=%s. saved %s', keep_outputs_dir, ofn)
         compare = attributes.get('compare', 'diff')
         try:
             if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam', 'cram']:
@@ -118,7 +116,7 @@ def verify(
                     local_fh, temp_name = _bam_to_sam(local_name, temp_name)
                     local_name = local_fh.name
                 except Exception as e:
-                    log.warning("%s. Will compare BAM files" % e)
+                    log.warning("%s. Will compare BAM files", unicodify(e))
             if compare == 'diff':
                 files_diff(local_name, temp_name, attributes=attributes)
             elif compare == 're_match':
@@ -138,7 +136,7 @@ def verify(
         except AssertionError as err:
             errmsg = '%s different than expected, difference (using %s):\n' % (item_label, compare)
             errmsg += "( %s v. %s )\n" % (local_name, temp_name)
-            errmsg += str(err)
+            errmsg += unicodify(err)
             raise AssertionError(errmsg)
         finally:
             if 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
@@ -164,12 +162,12 @@ def _bam_to_sam(local_name, temp_name):
     try:
         pysam.view('-h', '-o%s' % temp_local.name, local_name)
     except Exception as e:
-        msg = "Converting local (test-data) BAM to SAM failed: %s" % e
+        msg = "Converting local (test-data) BAM to SAM failed: %s" % unicodify(e)
         raise Exception(msg)
     try:
         pysam.view('-h', '-o%s' % temp_temp, temp_name)
     except Exception as e:
-        msg = "Converting history BAM to SAM failed: %s" % e
+        msg = "Converting history BAM to SAM failed: %s" % unicodify(e)
         raise Exception(msg)
     os.remove(temp_name)
     return temp_local, temp_temp

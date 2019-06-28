@@ -1002,7 +1002,7 @@ class JobWrapper(HasResourceParameters):
             self.job_destination
         except JobMappingException as exc:
             log.debug("(%s) fail(): Job destination raised JobMappingException('%s'), caching fake '__fail__' "
-                      "destination for completion of fail method", self.get_id_tag(), str(exc.failure_message))
+                      "destination for completion of fail method", self.get_id_tag(), unicodify(exc.failure_message))
             self.job_runner_mapper.cached_job_destination = JobDestination(id='__fail__')
 
         # if the job was deleted, don't fail it
@@ -1021,9 +1021,9 @@ class JobWrapper(HasResourceParameters):
                 for dataset_path in self.get_output_fnames():
                     try:
                         shutil.move(dataset_path.false_path, dataset_path.real_path)
-                        log.debug("fail(): Moved %s to %s" % (dataset_path.false_path, dataset_path.real_path))
+                        log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
                     except (IOError, OSError) as e:
-                        log.error("fail(): Missing output file in working directory: %s" % e)
+                        log.error("fail(): Missing output file in working directory: %s", unicodify(e))
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
@@ -1327,7 +1327,7 @@ class JobWrapper(HasResourceParameters):
                             trynum = self.app.config.retry_job_output_collection
                         except (OSError, ObjectNotFound) as e:
                             trynum += 1
-                            log.warning('Error accessing dataset with ID %i, will retry: %s', dataset.dataset.id, e)
+                            log.warning('Error accessing dataset with ID %i, will retry: %s', dataset.dataset.id, unicodify(e))
                             time.sleep(2)
                 if getattr(dataset, "hidden_beneath_collection_instance", None):
                     dataset.visible = False
@@ -1356,7 +1356,7 @@ class JobWrapper(HasResourceParameters):
                             self.object_store.update_from_file(dataset.dataset, file_name=temp_fh.name, create=True)
                             dataset.set_size()
                     except Exception as e:
-                        log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, e)
+                        log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, unicodify(e))
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
                     if not implicit_collection_jobs:
@@ -1557,7 +1557,7 @@ class JobWrapper(HasResourceParameters):
                         preserve_symlinks=True
                     )
         except Exception as e:
-            log.debug("Error in collect_associated_files: %s" % (e))
+            log.debug("Error in collect_associated_files: %s", unicodify(e))
 
     def _collect_metrics(self, has_metrics, job_metrics_directory=None):
         job = has_metrics.get_job()

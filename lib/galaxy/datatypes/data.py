@@ -210,7 +210,7 @@ class Data(object):
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek %s" % str(exc)
+            out = "Can't create peek: %s" % unicodify(exc)
         return out
 
     def _archive_main_file(self, archive, display_name, data_filename):
@@ -910,7 +910,7 @@ class Text(Data):
                     part_file.write(a_line)
                     lines_remaining -= 1
         except Exception as e:
-            log.error('Unable to split files: %s' % str(e))
+            log.error('Unable to split files: %s', unicodify(e))
             raise
         finally:
             f.close()

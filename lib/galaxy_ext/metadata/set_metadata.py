@@ -23,7 +23,10 @@ from sqlalchemy.orm import clear_mappers
 
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
 from galaxy.model.custom_types import total_size
-from galaxy.util import stringify_dictionary_keys
+from galaxy.util import (
+    stringify_dictionary_keys,
+    unicodify,
+)
 from ._provided_metadata import parse_tool_provided_metadata
 
 # ensure supported version
@@ -127,7 +130,7 @@ def set_metadata_portable():
             dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
             json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
         except Exception as e:
-            json.dump((False, str(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
+            json.dump((False, unicodify(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
 
     write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
@@ -183,7 +186,7 @@ def set_metadata_legacy():
             dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
             json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
         except Exception as e:
-            json.dump((False, str(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
+            json.dump((False, unicodify(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
 
     write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
