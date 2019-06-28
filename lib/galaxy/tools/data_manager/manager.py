@@ -298,9 +298,6 @@ class DataManager(object):
             data_manager_dict.update(output_dict)
 
         data_tables_dict = data_manager_dict.get('data_tables', {})
-        # Log the data table so we can investigate it :)
-        log.debug(data_tables_dict)
-
         for data_table_name in self.data_tables.keys():
             data_table_values = None
             data_table_remove_values = None
@@ -320,8 +317,6 @@ class DataManager(object):
                 data_tables_dict.pop(data_table_name, None)
             else:
                 data_table_values = data_tables_dict.pop(data_table_name, None)
-
-            log.debug(data_table_remove_values)
 
             if not data_table_values and not data_table_remove_values:
                 log.warning('No values for data table "%s" were returned by the data manager "%s".' % (data_table_name, self.id))
