@@ -645,7 +645,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 try:
                     quotas.append(get_quota(trans, quota_id))
                 except MessageException as e:
-                    return self.message_exception(trans, str(e))
+                    return self.message_exception(trans, util.unicodify(e))
             operation = kwargs.pop('operation').lower()
             try:
                 if operation == 'delete':

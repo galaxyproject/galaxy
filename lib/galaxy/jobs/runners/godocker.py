@@ -10,6 +10,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
+from galaxy.util import unicodify
 
 
 log = logging.getLogger(__name__)
@@ -297,11 +298,11 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 log_file.write(out_log)
                 log_file.close()
                 f.close()
-                log.debug("CREATE OUTPUT FILE: " + str(job_state.output_file))
-                log.debug("CREATE ERROR FILE: " + str(job_state.error_file))
-                log.debug("CREATE EXIT CODE FILE: " + str(job_state.exit_code_file))
+                log.debug("CREATE OUTPUT FILE: " + job_state.output_file)
+                log.debug("CREATE ERROR FILE: " + job_state.error_file)
+                log.debug("CREATE EXIT CODE FILE: " + job_state.exit_code_file)
             except IOError as e:
-                log.error('Could not access task log file %s' % str(e))
+                log.error('Could not access task log file: %s', unicodify(e))
                 log.debug("IO Error occurred when accessing the files.")
                 return False
         return True

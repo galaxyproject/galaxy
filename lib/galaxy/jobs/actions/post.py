@@ -7,7 +7,10 @@ import socket
 
 from markupsafe import escape
 
-from galaxy.util import send_mail
+from galaxy.util import (
+    send_mail,
+    unicodify,
+)
 from galaxy.util.logging import get_logger
 
 log = get_logger(__name__)
@@ -55,7 +58,7 @@ class EmailAction(DefaultJobAction):
         try:
             send_mail(frm, to, subject, body, app.config)
         except Exception as e:
-            log.error("EmailAction PJA Failed, exception: %s" % e)
+            log.error("EmailAction PJA Failed, exception: %s", unicodify(e))
 
     @classmethod
     def get_short_str(cls, pja):

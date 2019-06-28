@@ -15,7 +15,11 @@ from six.moves import shlex_quote
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
 from galaxy.datatypes.sniff import build_sniff_from_prefix, iter_headers
-from galaxy.util import nice_size, string_as_bool
+from galaxy.util import (
+    nice_size,
+    string_as_bool,
+    unicodify,
+)
 
 log = logging.getLogger(__name__)
 
@@ -684,12 +688,12 @@ class SnpSiftDbNSFP(Text):
                                 headers = lines[0].split('\t')
                                 dataset.metadata.annotation = headers[4:]
                         except Exception as e:
-                            log.warning("set_meta fname: %s  %s" % (fname, str(e)))
+                            log.warning("set_meta fname: %s  %s", fname, unicodify(e))
                     if fname.endswith('.tbi'):
                         dataset.metadata.index = fname
             self.regenerate_primary_file(dataset)
         except Exception as e:
-            log.warning("set_meta fname: %s  %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown', str(e)))
+            log.warning("set_meta fname: %s  %s", dataset.file_name if dataset and dataset.file_name else 'Unkwown', unicodify(e))
 
         def set_peek(self, dataset, is_multi_byte=False):
             if not dataset.dataset.purged:

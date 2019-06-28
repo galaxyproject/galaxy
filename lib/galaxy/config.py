@@ -26,14 +26,19 @@ from six.moves import configparser
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.tool_util.deps.container_resolvers.mulled import DEFAULT_CHANNELS
-from galaxy.util import ExecutionTimer
-from galaxy.util import listify
-from galaxy.util import string_as_bool
-from galaxy.util import unicodify
+from galaxy.util import (
+    ExecutionTimer,
+    listify,
+    string_as_bool,
+    unicodify,
+)
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.util.logging import LOGLV_TRACE
 from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.web_stack import get_stack_facts, register_postfork_function
+from galaxy.web_stack import (
+    get_stack_facts,
+    register_postfork_function
+)
 from .version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
@@ -842,7 +847,7 @@ class Configuration(object):
             try:
                 os.makedirs(path)
             except Exception as e:
-                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, e))
+                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
 
     def check(self):
         paths_to_check = [self.root, self.tool_path, self.tool_data_path, self.template_path]
@@ -852,7 +857,7 @@ class Configuration(object):
                 try:
                     os.makedirs(path)
                 except Exception as e:
-                    raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, e))
+                    raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
         # Create the directories that it makes sense to create
         for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,

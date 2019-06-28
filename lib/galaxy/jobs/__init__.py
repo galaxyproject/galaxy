@@ -1182,7 +1182,7 @@ class JobWrapper(HasResourceParameters):
             self.job_destination
         except JobMappingException as exc:
             log.debug("(%s) fail(): Job destination raised JobMappingException('%s'), caching fake '__fail__' "
-                      "destination for completion of fail method", self.get_id_tag(), str(exc.failure_message))
+                      "destination for completion of fail method", self.get_id_tag(), unicodify(exc.failure_message))
             self.job_runner_mapper.cached_job_destination = JobDestination(id='__fail__')
 
         # Might be AssertionError or other exception
@@ -1205,9 +1205,9 @@ class JobWrapper(HasResourceParameters):
                 for dataset_path in self.get_output_fnames():
                     try:
                         shutil.move(dataset_path.false_path, dataset_path.real_path)
-                        log.debug("fail(): Moved %s to %s" % (dataset_path.false_path, dataset_path.real_path))
+                        log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
                     except (IOError, OSError) as e:
-                        log.error("fail(): Missing output file in working directory: %s" % e)
+                        log.error("fail(): Missing output file in working directory: %s", unicodify(e))
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
@@ -1420,7 +1420,7 @@ class JobWrapper(HasResourceParameters):
                     trynum = self.app.config.retry_job_output_collection
                 except (OSError, ObjectNotFound) as e:
                     trynum += 1
-                    log.warning('Error accessing dataset with ID %i, will retry: %s', dataset.dataset.id, e)
+                    log.warning('Error accessing dataset with ID %i, will retry: %s', dataset.dataset.id, unicodify(e))
                     time.sleep(2)
         if getattr(dataset, "hidden_beneath_collection_instance", None):
             dataset.visible = False
