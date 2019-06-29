@@ -324,6 +324,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             for data_assoc in job.output_datasets:
                 if not self.dataset_manager.is_accessible(data_assoc.dataset.dataset, trans.user):
                     raise exceptions.ItemAccessibilityException("You are not allowed to rerun this job.")
+        trans.sa_session.refresh(job)
         return job
 
     @expose_api
