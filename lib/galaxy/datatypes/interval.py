@@ -772,9 +772,8 @@ class Gff(Tabular, _RemoteCallMixin):
                         break
                 if seqid is not None:
                     return (seqid, str(start), str(stop))  # Necessary to return strings?
-            except Exception as e:
-                # unexpected error
-                log.exception(str(e))
+            except Exception:
+                log.exception('Unexpected error')
         return (None, None, None)  # could not determine viewport
 
     def ucsc_links(self, dataset, type, app, base_url):
@@ -1141,9 +1140,8 @@ class Wiggle(Tabular, _RemoteCallMixin):
                         break
                 if chrom is not None:
                     return (chrom, str(start), str(end))  # Necessary to return strings?
-            except Exception as e:
-                # unexpected error
-                log.exception(str(e))
+            except Exception:
+                log.exception('Unexpected error')
         return (None, None, None)  # could not determine viewport
 
     def gbrowse_links(self, dataset, type, app, base_url):
@@ -1323,9 +1321,8 @@ class CustomTrack(Tabular):
                     if not max_line_count:
                         # exceeded viewport or total line count to check
                         break
-            except Exception as e:
-                # unexpected error
-                log.exception(str(e))
+            except Exception:
+                log.exception('Unexpected error')
         return (None, None, None)  # could not determine viewport
 
     def ucsc_links(self, dataset, type, app, base_url):

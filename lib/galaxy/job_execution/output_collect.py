@@ -27,7 +27,8 @@ from galaxy.tool_util.parser.output_collection_def import (
     ToolProvidedMetadataDatasetCollection,
 )
 from galaxy.util import (
-    odict
+    odict,
+    unicodify
 )
 
 DATASET_ID_TOKEN = "DATASET_ID"
@@ -512,7 +513,7 @@ def collect_extra_files(object_store, dataset, job_working_directory):
                     preserve_symlinks=True
                 )
     except Exception as e:
-        log.debug("Error in collect_associated_files: %s" % (e))
+        log.debug("Error in collect_associated_files: %s", unicodify(e))
 
     # Handle composite datatypes of auto_primary_file type
     if dataset.datatype.composite_type == 'auto_primary_file' and not dataset.has_data():
@@ -523,4 +524,4 @@ def collect_extra_files(object_store, dataset, job_working_directory):
                 object_store.update_from_file(dataset.dataset, file_name=temp_fh.name, create=True)
                 dataset.set_size()
         except Exception as e:
-            log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, e)
+            log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, unicodify(e))
