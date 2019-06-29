@@ -29,7 +29,6 @@ from galaxy.job_execution import output_collect
 from galaxy.managers.jobs import JobSearch
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.queue_worker import send_control_task
 from galaxy.tool_util.deps import (
     CachedDependencyManager,
 )
@@ -241,16 +240,6 @@ class ToolBox(BaseGalaxyToolBox):
             tool_root_dir=tool_root_dir,
             app=app,
         )
-
-    def handle_panel_update(self, section_dict):
-        """
-        Sends a panel update to all threads/processes.
-        """
-        send_control_task(self.app, 'create_panel_section', kwargs=section_dict)
-        # The following local call to self.create_section should be unnecessary
-        # but occasionally the local ToolPanelElements instance appears to not
-        # get updated.
-        self.create_section(section_dict)
 
     def has_reloaded(self, other_toolbox):
         return self._reload_count != other_toolbox._reload_count
