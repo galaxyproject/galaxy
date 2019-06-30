@@ -16,7 +16,7 @@
 # 
 # Config hackers are encouraged to check there before asking for help.
 # 
-uwsgi:
+uwsgi: &UWSGI
 
   # The address and port on which to listen.  By default, only listen to
   # localhost (galaxy will not be accessible over the network).  Use
@@ -96,7 +96,7 @@ uwsgi:
   # Ensure application threads will run if `threads` is unset.
   enable-threads: true
 
-galaxy:
+galaxy: &GALAXY
 
   # By default, Galaxy uses a SQLite database at
   # 'database/universe.sqlite'.  You may use a SQLAlchemy connection
@@ -1772,3 +1772,8 @@ galaxy:
   # reason to disable it.
   #use_pbkdf2: true
 
+galaxy_config:
+  "uwsgi":
+    <<: *UWSGI
+  "galaxy":
+    <<: *GALAXY
