@@ -76,7 +76,7 @@ pyparsing = "*"
 paramiko = "*"
 python-genomespaceclient = "<2.0"
 social_auth_core = {version = "==3.1.0", extras = ['openidconnect']}
-cloudauthz = "<=0.2.0"
+cloudauthz = "==0.6.0"
 gxformat2 = "*"
 
 [requires]

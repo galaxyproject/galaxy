@@ -1421,11 +1421,6 @@ galaxy:
   # Sets the path to OIDC backends configuration file.
   #oidc_backends_config_file: config/oidc_backends_config.xml
 
-  # Sets the path to a file containing setters necessary for
-  # configuration and/or initialization of cloud authorization
-  # (cloudauthz) backends (e.g., Google Cloud Platform).
-  #cloudauthz_backends_config_file: config/cloudauthz_backends_config.xml
-
   # XML config file that allows the use of different authentication
   # providers (e.g. LDAP) instead or in addition to local authentication
   # (.sample is used if default does not exist).
