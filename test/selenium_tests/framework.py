@@ -92,10 +92,12 @@ def managed_history(f):
             f(self, *args, **kwds)
         finally:
             if "GALAXY_TEST_NO_CLEANUP" not in os.environ:
-                current_history_id = self.current_history_id()
-                self.dataset_populator.cancel_history_jobs(current_history_id)
-                self.api_delete("histories/%s" % current_history_id)
-
+                try:
+                    current_history_id = self.current_history_id()
+                    self.dataset_populator.cancel_history_jobs(current_history_id)
+                    self.api_delete("histories/%s" % current_history_id)
+                except Exception:
+                    print("Faild to cleanup managed history, selenium connection corrupted somehow?")
     return func_wrapper
 
 

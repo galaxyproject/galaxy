@@ -42,13 +42,12 @@ log = getLogger(__name__)
 VERBOSE_ERRORS = util.asbool(os.environ.get("GALAXY_TEST_VERBOSE_ERRORS", False))
 UPLOAD_ASYNC = util.asbool(os.environ.get("GALAXY_TEST_UPLOAD_ASYNC", True))
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
-DEFAULT_TOOL_TEST_WAIT = os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400)
+DEFAULT_TOOL_TEST_WAIT = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400))
 
 DEFAULT_FTYPE = 'auto'
 # This following default dbkey was traditionally hg17 before Galaxy 18.05,
 # restore this behavior by setting GALAXY_TEST_DEFAULT_DBKEY to hg17.
 DEFAULT_DBKEY = os.environ.get("GALAXY_TEST_DEFAULT_DBKEY", "?")
-DEFAULT_MAX_SECS = DEFAULT_TOOL_TEST_WAIT
 
 
 class OutputsDict(OrderedDict):
@@ -73,7 +72,7 @@ class OutputsDict(OrderedDict):
             return item
 
 
-def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history=None, force_path_paste=False):
+def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history=None, force_path_paste=False, maxseconds=DEFAULT_TOOL_TEST_WAIT):
     # Upload any needed files
     upload_waits = []
 
@@ -81,12 +80,20 @@ def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history=Non
 
     if UPLOAD_ASYNC:
         for test_data in all_test_data:
-            upload_waits.append(galaxy_interactor.stage_data_async(test_data, history, tool_id, force_path_paste=force_path_paste))
+            upload_waits.append(galaxy_interactor.stage_data_async(test_data,
+                                                                   history,
+                                                                   tool_id,
+                                                                   force_path_paste=force_path_paste,
+                                                                   maxseconds=maxseconds))
         for upload_wait in upload_waits:
             upload_wait()
     else:
         for test_data in all_test_data:
-            upload_wait = galaxy_interactor.stage_data_async(test_data, history, tool_id, force_path_paste=force_path_paste)
+            upload_wait = galaxy_interactor.stage_data_async(test_data,
+                                                             history,
+                                                             tool_id,
+                                                             force_path_paste=force_path_paste,
+                                                             maxseconds=maxseconds)
             upload_wait()
 
 
@@ -240,7 +247,7 @@ class GalaxyInteractorApi(object):
     def wait_for(self, func, **kwd):
         sleep_amount = 0.2
         slept = 0
-        walltime_exceeded = kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT)
+        walltime_exceeded = int(kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT))
 
         while slept <= walltime_exceeded:
             result = func()
@@ -307,7 +314,7 @@ class GalaxyInteractorApi(object):
             output_id = output_data
         return output_id
 
-    def stage_data_async(self, test_data, history_id, tool_id, force_path_paste=False):
+    def stage_data_async(self, test_data, history_id, tool_id, force_path_paste=False, maxseconds=DEFAULT_TOOL_TEST_WAIT):
         fname = test_data['fname']
         tool_input = {
             "file_type": test_data['ftype'],
@@ -336,7 +343,7 @@ class GalaxyInteractorApi(object):
                 })
             name = test_data['name']
         else:
-            name = fname
+            name = os.path.basename(fname)
             tool_input.update({
                 "files_0|NAME": name,
                 "files_0|type": "upload_dataset",
@@ -365,7 +372,7 @@ class GalaxyInteractorApi(object):
         assert "jobs" in submit_response, "Invalid response from server [%s], expecting jobs in response." % submit_response
         jobs = submit_response["jobs"]
         assert len(jobs) > 0, "Invalid response from server [%s], expecting a job." % submit_response
-        return lambda: self.wait_for_job(jobs[0]["id"], history_id, DEFAULT_TOOL_TEST_WAIT)
+        return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
 
     def run_tool(self, testdef, history_id, resource_parameters={}):
         # We need to handle the case where we've uploaded a valid compressed file since the upload
@@ -684,7 +691,7 @@ def _verify_composite_datatype_file_content(file_name, hda_id, base_name=None, a
         )
     except AssertionError as err:
         errmsg = 'Composite file (%s) of %s different than expected, difference:\n' % (base_name, item_label)
-        errmsg += str(err)
+        errmsg += util.unicodify(err)
         raise AssertionError(errmsg)
 
 
@@ -726,21 +733,25 @@ def verify_tool(tool_id,
                 quiet=False,
                 test_history=None,
                 force_path_paste=False,
-                maxseconds=None,
+                maxseconds=DEFAULT_TOOL_TEST_WAIT,
                 tool_test_dicts=None):
     if resource_parameters is None:
         resource_parameters = {}
     tool_test_dicts = tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
     tool_test_dict = tool_test_dicts[test_index]
+    tool_test_dict.setdefault('maxseconds', maxseconds)
     testdef = ToolTestDescription(tool_test_dict)
-    if maxseconds is not None:
-        testdef.maxseconds = int(maxseconds)
     _handle_def_errors(testdef)
 
     if test_history is None:
         test_history = galaxy_interactor.new_history()
 
-    stage_data_in_history(galaxy_interactor, tool_id, testdef.test_data(), history=test_history, force_path_paste=force_path_paste)
+    stage_data_in_history(galaxy_interactor,
+                          tool_id,
+                          testdef.test_data(),
+                          history=test_history,
+                          force_path_paste=force_path_paste,
+                          maxseconds=maxseconds)
 
     # Once data is ready, run the tool and check the outputs - record API
     # input, job info, tool run exception, as well as exceptions related to
@@ -795,10 +806,10 @@ def verify_tool(tool_id,
                 job_data["job"] = job_stdio
             status = "success"
             if job_output_exceptions:
-                job_data["output_problems"] = [str(_) for _ in job_output_exceptions]
+                job_data["output_problems"] = [util.unicodify(_) for _ in job_output_exceptions]
                 status = "failure"
             if tool_execution_exception:
-                job_data["execution_problem"] = str(tool_execution_exception)
+                job_data["execution_problem"] = util.unicodify(tool_execution_exception)
                 status = "error"
             job_data["status"] = status
             register_job_data(job_data)
@@ -926,7 +937,7 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
                 verify_assertions(data, assertions)
             except AssertionError as err:
                 errmsg = '%s different than expected\n' % description
-                errmsg += str(err)
+                errmsg += util.unicodify(err)
                 register_exception(AssertionError(errmsg))
 
     for output_collection_def in testdef.output_collections:
@@ -1011,7 +1022,7 @@ def _format_stream(output, stream, format):
 class JobOutputsError(AssertionError):
 
     def __init__(self, output_exceptions, job_stdio):
-        big_message = "\n".join(map(str, output_exceptions))
+        big_message = "\n".join(map(util.unicodify, output_exceptions))
         super(JobOutputsError, self).__init__(big_message)
         self.job_stdio = job_stdio
         self.output_exceptions = output_exceptions
@@ -1027,7 +1038,7 @@ class ToolTestDescription(object):
     def __init__(self, processed_test_dict):
         test_index = processed_test_dict["test_index"]
         name = processed_test_dict.get('name', 'Test-%d' % (test_index + 1))
-        maxseconds = processed_test_dict.get('maxseconds', DEFAULT_MAX_SECS)
+        maxseconds = processed_test_dict.get('maxseconds', DEFAULT_TOOL_TEST_WAIT)
         if maxseconds is not None:
             maxseconds = int(maxseconds)
 

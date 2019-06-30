@@ -222,7 +222,7 @@ model.HistoryDatasetAssociation.table = Table(
     Column("name", TrimmedString(255)),
     Column("info", TrimmedString(255)),
     Column("blurb", TrimmedString(255)),
-    Column("peek", TEXT),
+    Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
     Column("metadata", MetadataType(), key="_metadata"),
@@ -506,7 +506,7 @@ model.LibraryDatasetDatasetAssociation.table = Table(
     Column("name", TrimmedString(255), index=True),
     Column("info", TrimmedString(255)),
     Column("blurb", TrimmedString(255)),
-    Column("peek", TEXT),
+    Column("peek", TEXT, key="_peek"),
     Column("tool_version", TEXT),
     Column("extension", TrimmedString(64)),
     Column("metadata", MetadataType(), key="_metadata"),
@@ -2728,7 +2728,7 @@ def db_next_hid(self, n=1):
     trans = session.begin()
     try:
         if "postgres" not in session.bind.dialect.name:
-            next_hid = select([table.c.hid_counter], table.c.id == model.cached_id(self), for_update=True).scalar()
+            next_hid = select([table.c.hid_counter], table.c.id == model.cached_id(self)).with_for_update().scalar()
             table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
         else:
             stmt = table.update().where(table.c.id == model.cached_id(self)).values(hid_counter=(table.c.hid_counter + n)).returning(table.c.hid_counter)

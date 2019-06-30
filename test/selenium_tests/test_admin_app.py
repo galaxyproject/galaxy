@@ -32,7 +32,7 @@ class AdminAppTestCase(SeleniumTestCase):
 
         admin_component.index.local_data.wait_for_and_click()
         title_element = admin_component.dm_title.wait_for_visible()
-        assert title_element.text == "Data Manager"
+        assert title_element.text == "Local Data"
         self.screenshot("admin_local_data")
 
     @selenium_test
@@ -69,7 +69,7 @@ class AdminAppTestCase(SeleniumTestCase):
         self.admin_open()
         admin_component.index.local_data.wait_for_and_click()
         title_element = admin_component.dm_title.wait_for_visible()
-        assert title_element.text == "Data Manager"
+        assert title_element.text == "Local Data"
         admin_component.dm_data_managers_card.wait_for_visible()
         admin_component.dm_jobs_button(data_manager="test-data-manager").wait_for_visible()
         self.screenshot("admin_data_manager")

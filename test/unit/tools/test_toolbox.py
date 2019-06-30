@@ -374,6 +374,15 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         # Assert tools merged in tool panel.
         assert len(self.toolbox._tool_panel) == 1
 
+    def test_get_section_by_label(self):
+        self._add_config(
+            """<toolbox><section id="tid" name="Completely unrelated"><label id="lab1" text="Label 1" /><label id="lab2" text="Label 2" /></section></toolbox>""")
+        assert len(self.toolbox._tool_panel) == 1
+        section = self.toolbox._tool_panel['tid']
+        tool_panel_section_key, section_by_label = self.toolbox.get_section(section_id='nope', new_label='Completely unrelated', create_if_needed=True)
+        assert section_by_label is section
+        assert tool_panel_section_key == 'tid'
+
     def test_get_tool_id(self):
         self._init_tool()
         self._setup_two_versions_in_config()
@@ -561,9 +570,6 @@ class SimplifiedToolBox(ToolBox):
         )
         # Need to start thread now for new reload callback to take effect
         self.app.watchers.start()
-
-    def handle_panel_update(self, section_dict):
-        self.create_section(section_dict)
 
 
 def reload_callback(test_case):

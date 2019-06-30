@@ -3,14 +3,14 @@ import time
 
 import pytest
 
+from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
     send_control_task,
     send_local_control_task,
 )
 from galaxy.queues import connection_from_config
-from galaxy.web.stack import application_stack_instance
-from galaxy.web.stack.database_heartbeat import DatabaseHeartbeat
+from galaxy.web_stack import application_stack_instance
 
 
 def bar(app, **kwargs):

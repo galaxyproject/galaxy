@@ -26,14 +26,19 @@ from six.moves import configparser
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.tool_util.deps.container_resolvers.mulled import DEFAULT_CHANNELS
-from galaxy.util import ExecutionTimer
-from galaxy.util import listify
-from galaxy.util import string_as_bool
-from galaxy.util import unicodify
+from galaxy.util import (
+    ExecutionTimer,
+    listify,
+    string_as_bool,
+    unicodify,
+)
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.util.logging import LOGLV_TRACE
 from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.web.stack import get_stack_facts, register_postfork_function
+from galaxy.web_stack import (
+    get_stack_facts,
+    register_postfork_function
+)
 from .version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
@@ -50,7 +55,7 @@ PATH_DEFAULTS = dict(
     error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
     oidc_config_file=['config/oidc_config.yml', 'config/oidc_config.yml.sample'],
     oidc_backends_config_file=['config/oidc_backends_config.yml', 'config/oidc_backends_config.yml.sample'],
-    dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
+    dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml', None],
     job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
     workflow_resource_params_file=['config/workflow_resource_params_conf.xml', 'workflow_resource_params_conf.xml'],
     migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
@@ -106,7 +111,7 @@ LOGGING_CONFIG_DEFAULT = {
     },
     'filters': {
         'stack': {
-            '()': 'galaxy.web.stack.application_stack_log_filter',
+            '()': 'galaxy.web_stack.application_stack_log_filter',
         },
     },
     'handlers': {
@@ -120,7 +125,7 @@ LOGGING_CONFIG_DEFAULT = {
     },
     'formatters': {
         'stack': {
-            '()': 'galaxy.web.stack.application_stack_log_formatter',
+            '()': 'galaxy.web_stack.application_stack_log_formatter',
         },
     },
 }
@@ -142,6 +147,9 @@ def find_path(kwargs, var, root):
         path = kwargs.get(var)
     else:
         for default in defaults:
+            if default is None:
+                # if None is the final default - just return that.
+                return None
             if os.path.exists(resolve_path(default, root)):
                 path = default
                 break
@@ -506,6 +514,7 @@ class Configuration(object):
         self.use_cached_dependency_manager = use_cached_dependency_manager
         self.tool_dependency_cache_dir = tool_dependency_cache_dir
         self.precache_dependencies = precache_dependencies
+        self.dependency_resolvers = kwargs.get("dependency_resolvers")
         # Deployers may either specify a complete list of mapping files or get the default for free and just
         # specify a local mapping file to adapt and extend the default one.
         if "conda_mapping_files" in kwargs:
@@ -838,7 +847,7 @@ class Configuration(object):
             try:
                 os.makedirs(path)
             except Exception as e:
-                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, e))
+                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
 
     def check(self):
         paths_to_check = [self.root, self.tool_path, self.tool_data_path, self.template_path]
@@ -848,7 +857,7 @@ class Configuration(object):
                 try:
                     os.makedirs(path)
                 except Exception as e:
-                    raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, e))
+                    raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
         # Create the directories that it makes sense to create
         for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,
@@ -934,7 +943,10 @@ def parse_dependency_options(kwargs, root, dependency_resolvers_config_file):
         precache_dependencies = string_as_bool(kwargs.get("precache_dependencies", 'True'))
     else:
         tool_dependency_dir = None
-        use_tool_dependencies = os.path.exists(dependency_resolvers_config_file)
+        if dependency_resolvers_config_file is None:
+            use_tool_dependencies = bool(kwargs.get("dependency_resolvers", None))
+        else:
+            use_tool_dependencies = os.path.exists(dependency_resolvers_config_file)
         tool_dependency_cache_dir = None
         precache_dependencies = False
         use_cached_dependency_manager = False

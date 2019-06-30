@@ -25,7 +25,10 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.text import Html
-from galaxy.util import nice_size
+from galaxy.util import (
+    nice_size,
+    unicodify,
+)
 
 gal_Log = logging.getLogger(__name__)
 verbose = False
@@ -835,7 +838,7 @@ class RexpBase(Html):
             out.append('</table>')
             out = "\n".join(out)
         except Exception as exc:
-            out = "Can't create html table %s" % str(exc)
+            out = "Can't create html table %s" % unicodify(exc)
         return out
 
     def display_peek(self, dataset):

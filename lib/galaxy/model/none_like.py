@@ -2,7 +2,6 @@
 Objects with No values
 """
 
-from galaxy.datatypes.registry import Registry
 from galaxy.model.metadata import MetadataCollection
 
 
@@ -27,10 +26,7 @@ class NoneDataset(RecursiveNone):
     def __init__(self, datatypes_registry=None, ext='data', dbkey='?'):
         self.ext = self.extension = ext
         self.dbkey = dbkey
-        if datatypes_registry is None:
-            # Default Value Required for unit tests
-            datatypes_registry = Registry()
-            datatypes_registry.load_datatypes()
+        assert datatypes_registry is not None
         self.datatype = datatypes_registry.get_datatype_by_extension(ext)
         self._metadata = None
         self.metadata = MetadataCollection(self)

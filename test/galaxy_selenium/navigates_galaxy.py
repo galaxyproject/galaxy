@@ -331,6 +331,23 @@ class NavigatesGalaxy(HasDriver):
             raise self.prepend_timeout_message(e, message)
         return history_item_selector_state
 
+    def click_grid_popup_option(self, item_name, option_label):
+        item_button = None
+        grid = self.components.grids.body.wait_for_visible()
+        for row in grid.find_elements_by_tag_name('tr'):
+            name_cell = row.find_elements_by_tag_name('td')[1]
+            if name_cell.text == item_name:
+                item_button = name_cell
+                break
+
+        if item_button is None:
+            raise AssertionError('Failed to find item with name [%s]' % item_name)
+
+        popup_menu_button = item_button.find_element_by_css_selector('.dropdown-toggle')
+        popup_menu_button.click()
+        popup_option = self.driver.find_element_by_link_text(option_label)
+        popup_option.click()
+
     def published_grid_search_for(self, search_term=None):
         return self._inline_search_for(
             '#input-free-text-search-filter',

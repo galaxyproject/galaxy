@@ -18,7 +18,7 @@ from galaxy.security import idencoding
 from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.web.stack import ApplicationStack
+from galaxy.web_stack import ApplicationStack
 
 
 # =============================================================================

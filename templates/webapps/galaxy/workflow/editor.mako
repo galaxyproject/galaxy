@@ -57,6 +57,9 @@
     ${parent.stylesheets()}
 
     <style type="text/css">
+    #center {
+        z-index: 0;
+    }
     canvas { position: absolute; z-index: 10; }
     canvas.dragging { position: absolute; z-index: 1000; }
     </style>

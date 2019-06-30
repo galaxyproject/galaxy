@@ -1,4 +1,5 @@
-
+# When committing this file, make sure to run make config-rebuild to rebuild
+# all sample YAML and RST files, and add those to your commit.
 type: map
 desc: |
   Galaxy is configured by default to be usable in a single-user development
@@ -2363,6 +2364,13 @@ mapping:
 
       job_config:
         !include job_config_schema.yml
+
+      dependency_resolvers:
+        type: seq
+        desc: |
+          Rather than specifying a dependency_resolvers_config_file, the definition of the
+          resolvers to enable can be embedded into Galaxy's config with this option.
+          This has no effect if a dependency_resolvers_config_file is used.
 
       default_job_resubmission_condition:
         type: str

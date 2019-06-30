@@ -104,7 +104,7 @@ def add_file(dataset, registry, output_path):
         try:
             dataset.path = sniff.stream_url_to_file(dataset.path)
         except Exception as e:
-            raise UploadProblemException('Unable to fetch %s\n%s' % (dataset.path, str(e)))
+            raise UploadProblemException('Unable to fetch %s\n%s' % (dataset.path, unicodify(e)))
 
     # See if we have an empty file
     if not os.path.exists(dataset.path):
@@ -186,7 +186,7 @@ def add_composite_file(dataset, registry, output_path, files_path):
             try:
                 temp_name = sniff.stream_to_file(urlopen(path_or_url), prefix='url_paste')
             except Exception as e:
-                raise UploadProblemException('Unable to fetch %s\n%s' % (path_or_url, str(e)))
+                raise UploadProblemException('Unable to fetch %s\n%s' % (path_or_url, unicodify(e)))
 
             return temp_name, is_url
 
@@ -318,7 +318,7 @@ def __main__():
             else:
                 metadata.append(add_file(dataset, registry, output_path))
         except UploadProblemException as e:
-            metadata.append(file_err(str(e), dataset))
+            metadata.append(file_err(unicodify(e), dataset))
     __write_job_metadata(metadata)
 
 

@@ -204,6 +204,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         datatypes_config=datatypes_config,
         compute_tmp_dir=compute_tmp_dir,
         resolve_metadata_dependencies=resolve_metadata_dependencies,
+        use_bin=job_wrapper.use_metadata_binary,
         kwds={'overwrite': False}
     ) or ''
     metadata_command = metadata_command.strip()

@@ -17,6 +17,7 @@ from cloudauthz.exceptions import (
 
 from galaxy import exceptions
 from galaxy import model
+from galaxy.util import unicodify
 from .custos_authnz import CustosAuthnz
 from .psa_authnz import (
     BACKENDS_NAME,
@@ -133,7 +134,7 @@ class AuthnzManager(object):
     def _unify_provider_name(self, provider):
         if provider.lower() in self.oidc_backends_config:
             return provider.lower()
-        for k, v in BACKENDS_NAME.iteritems():
+        for k, v in BACKENDS_NAME.items():
             if v == provider:
                 return k.lower()
         return None
@@ -147,7 +148,7 @@ class AuthnzManager(object):
                 return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name])
             except Exception as e:
                 log.exception('An error occurred when loading {}'.format(identity_provider_class.__name__))
-                return False, str(e), None
+                return False, unicodify(e), None
         else:
             msg = 'The requested identity provider, `{}`, is not a recognized/expected provider.'.format(provider)
             log.debug(msg)

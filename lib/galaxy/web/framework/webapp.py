@@ -39,7 +39,7 @@ from galaxy.web.framework import (
     helpers,
     url_for
 )
-from galaxy.web.stack import get_app_kwds
+from galaxy.web_stack import get_app_kwds
 
 log = logging.getLogger(__name__)
 
@@ -125,7 +125,7 @@ class WebApplication(base.WebApplication):
                 try:
                     module = import_module(module_name)
                 except ControllerUnavailable as exc:
-                    log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
+                    log.debug("%s could not be loaded: %s", module_name, unicodify(exc))
                     continue
                 # Look for a controller inside the modules
                 for key in dir(module):
@@ -150,7 +150,7 @@ class WebApplication(base.WebApplication):
                 try:
                     module = import_module(module_name)
                 except ControllerUnavailable as exc:
-                    log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
+                    log.debug("%s could not be loaded: %s", module_name, unicodify(exc))
                     continue
                 for key in dir(module):
                     T = getattr(module, key)
@@ -637,7 +637,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             try:
                 safe_makedirs(os.path.join(self.app.config.user_library_import_dir, user.email))
             except ConfigurationError as e:
-                self.log_event(str(e))
+                self.log_event(unicodify(e))
 
     def user_checks(self, user):
         """

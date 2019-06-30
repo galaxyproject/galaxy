@@ -2,7 +2,6 @@
 Contains functionality needed in every web interface
 """
 import logging
-import re
 
 from six import string_types
 from sqlalchemy import true
@@ -52,13 +51,6 @@ log = logging.getLogger(__name__)
 
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
-
-
-def _is_valid_slug(slug):
-    """ Returns true if slug is valid. """
-
-    VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
-    return VALID_SLUG_RE.match(slug)
 
 
 class BaseController(object):
@@ -190,12 +182,12 @@ class BaseAPIController(BaseController):
                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
         except exceptions.ItemDeletionException as e:
-            raise HTTPBadRequest(detail="Invalid %s id ( %s ) specified: %s" % (class_name, str(id), str(e)))
+            raise HTTPBadRequest(detail="Invalid %s id ( %s ) specified: %s" % (class_name, str(id), util.unicodify(e)))
         except exceptions.MessageException as e:
             raise HTTPBadRequest(detail=e.err_msg)
         except Exception as e:
             log.exception("Exception in get_object check for %s %s.", class_name, str(id))
-            raise HTTPInternalServerError(comment=str(e))
+            raise HTTPInternalServerError(comment=util.unicodify(e))
 
     def validate_in_users_and_groups(self, trans, payload):
         """
@@ -314,7 +306,9 @@ class JSAppLauncher(BaseUIController):
             'toolbox'                       : trans.app.toolbox.to_dict(trans, in_panel=False),
             'toolbox_in_panel'              : trans.app.toolbox.to_dict(trans),
             'message_box_visible'           : trans.app.config.message_box_visible,
-            'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active
+            'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active,
+            'tool_shed_urls'                : list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],
+            'tool_dynamic_configs'          : list(trans.app.toolbox.dynamic_conf_filenames())
         }
 
         # TODO: move to user
@@ -1118,7 +1112,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         title_err = slug_err = ""
         if not title:
             title_err = "visualization name is required"
-        elif slug and not _is_valid_slug(slug):
+        elif slug and not managers_base.is_valid_slug(slug):
             slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
         elif slug and trans.sa_session.query(trans.model.Visualization).filter_by(user=user, slug=slug, deleted=False).first():
             slug_err = "visualization identifier must be unique"
@@ -1361,7 +1355,7 @@ class SharableMixin(object):
 
     def _is_valid_slug(self, slug):
         """ Returns true if slug is valid. """
-        return _is_valid_slug(slug)
+        return managers_base.is_valid_slug(slug)
 
     @web.expose
     @web.require_login("modify Galaxy items")

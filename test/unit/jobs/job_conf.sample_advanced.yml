@@ -125,6 +125,13 @@ runners:
     # higher value (in seconds) (or `None` to use blocking connections).
     #amqp_consumer_timeout: None
 
+  pulsar_k8s:
+    # Use a two-container Kubernetes to run jobs - one for staging and one
+    # for tool execution.
+    load: galaxy.jobs.runners.pulsar:PulsarKubernetesCoexecutionJobRunner
+    galaxy_url: http://docker.for.mac.localhost:8080
+    amqp_url: amqp://guest:guest@localhost:5672//
+
   pulsar_legacy:
     # Pulsar job runner with default parameters matching those
     # of old LWR job runner. If your Pulsar server is running on a
@@ -436,6 +443,13 @@ execution:
        # Otherwise MQ and Legacy pulsar destinations can be supplied
        # all the same destination parameters as the RESTful client documented
        # above (though url and private_token are ignored when using a MQ).
+
+    pulsar_k8s_environment:
+      runner: pulsar_k8s
+      docker_enabled: true  # probably shouldn't be needed but is still
+      docker_default_container_id: 'conda/miniconda2'
+      # Specify a non-default Pulsar staging container.
+      #pulsar_container_image: 'galaxy/pulsar-pod-staging:0.12.0'
 
     # Example CLI runners.
     ssh_torque:

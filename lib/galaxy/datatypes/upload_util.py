@@ -54,7 +54,7 @@ def handle_upload(
                 convert_spaces_to_tabs=convert_spaces_to_tabs,
             )
         except sniff.InappropriateDatasetContentError as exc:
-            raise UploadProblemException(str(exc))
+            raise UploadProblemException(exc)
     elif requested_ext == 'auto':
         ext = sniff.guess_ext(path, registry.sniff_order, is_binary=is_binary)
     else:

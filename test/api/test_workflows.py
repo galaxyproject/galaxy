@@ -1924,6 +1924,13 @@ input1:
 
     @skip_without_tool("cat")
     def test_pause_outputs_with_deleted_inputs(self):
+        self._deleted_inputs_workflow(purge=False)
+
+    @skip_without_tool("cat")
+    def test_error_outputs_with_purged_inputs(self):
+        self._deleted_inputs_workflow(purge=True)
+
+    def _deleted_inputs_workflow(self, purge):
         # We run a workflow on a collection with a deleted element.
         with self.dataset_populator.test_history() as history_id:
             workflow_id = self._upload_yaml_workflow("""
@@ -1948,7 +1955,8 @@ steps:
             hdca1 = self.dataset_collection_populator.create_list_in_history(history_id,
                                                                              contents=[("sample1-1", "1 2 3")]).json()
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            r = self._delete("histories/%s/contents/%s" % (history_id, hdca1['elements'][DELETED]['object']['id']))
+            deleted_id = hdca1['elements'][DELETED]['object']['id']
+            r = self._delete("histories/%s/contents/%s?purge=%s" % (history_id, deleted_id, purge))
             label_map = {"input1": self._ds_entry(hdca1)}
             workflow_request = dict(
                 history="hist_id=%s" % history_id,
@@ -1962,7 +1970,8 @@ steps:
             self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=False)
             contents = self.__history_contents(history_id)
             assert contents[DELETED]['deleted']
-            assert contents[PAUSED_1]['state'] == 'paused'
+            state = 'error' if purge else 'paused'
+            assert contents[PAUSED_1]['state'] == state
             assert contents[PAUSED_2]['state'] == 'paused'
 
     def test_run_with_implicit_connection(self):

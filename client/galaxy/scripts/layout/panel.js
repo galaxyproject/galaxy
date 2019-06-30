@@ -113,36 +113,36 @@ const SidePanel = Backbone.View.extend({
     },
 
     show: function() {
-        if (!this.hidden) {
-            return;
+        if (this.hidden && !this.motionQueue) {
+            this.motionQueue = 2;
+            const animation = {};
+            const whichSide = this.id;
+            animation[whichSide] = 0;
+            this.$el
+                .css(whichSide, -this.saved_size)
+                .css("width", this.saved_size)
+                .animate(animation, "fast", () => this.motionQueue--);
+            animation[whichSide] = this.saved_size;
+            this.$center().animate(animation, "fast", () => this.motionQueue--);
+            this.hidden = false;
+            this.$toggleButton().removeClass("hidden");
         }
-        const self = this;
-        const animation = {};
-        const whichSide = this.id;
-        animation[whichSide] = 0;
-        self.$el
-            .css(whichSide, -this.saved_size)
-            .show()
-            .animate(animation, "fast", () => {
-                self.resize(self.saved_size);
-            });
-        self.hidden = false;
-        self.$toggleButton().removeClass("hidden");
         return this;
     },
 
     hide: function() {
-        if (this.hidden) {
-            return;
+        if (!this.hidden && !this.motionQueue) {
+            this.motionQueue = 2;
+            const animation = {};
+            const whichSide = this.id;
+            this.saved_size = this.$el.width();
+            animation[whichSide] = -this.saved_size;
+            this.$el.animate(animation, "fast", () => this.motionQueue--);
+            animation[whichSide] = 0;
+            this.$center().animate(animation, "fast", () => this.motionQueue--);
+            this.hidden = true;
+            this.$toggleButton().addClass("hidden");
         }
-        const animation = {};
-        const whichSide = this.id;
-        this.saved_size = this.$el.width();
-        animation[whichSide] = -this.saved_size;
-        this.$el.animate(animation, "fast");
-        this.$center().css(whichSide, 0);
-        this.hidden = true;
-        this.$toggleButton().addClass("hidden");
         return this;
     },
 

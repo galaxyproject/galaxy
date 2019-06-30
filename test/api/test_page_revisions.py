@@ -28,8 +28,8 @@ class PageRevisionsApiTestCase(BasePageApiTestCase):
         revisions_json = revisions_response.json()
         assert len(revisions_json) == 2  # Original revision and new one
 
-    def test_404_if_index_unknown_page(self):
+    def test_malformed_id_if_index_unknown_page(self):
         revisions_url = "pages/%s/revisions" % self._random_key()
         revisions_response = self._get(revisions_url)
-        self._assert_status_code_is(revisions_response, 404)
-        self._assert_error_code_is(revisions_response, error_codes.USER_OBJECT_NOT_FOUND)
+        self._assert_status_code_is(revisions_response, 400)
+        self._assert_error_code_is(revisions_response, error_codes.MALFORMED_ID)

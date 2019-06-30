@@ -3,7 +3,7 @@ import tempfile
 from xml.etree.ElementTree import XML
 
 from galaxy.datatypes.metadata import MetadataSpecCollection
-from galaxy.jobs.datasets import DatasetPath
+from galaxy.job_execution.datasets import DatasetPath
 from galaxy.tools.parameters.basic import (
     DrillDownSelectToolParameter,
     IntegerToolParameter,

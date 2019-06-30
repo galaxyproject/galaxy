@@ -75,7 +75,7 @@ class UploadController(BaseUIController):
                     stream = requests.get(url, stream=True)
                 except Exception as e:
                     valid_url = False
-                    message = 'Error uploading file via http: %s' % str(e)
+                    message = 'Error uploading file via http: %s' % util.unicodify(e)
                     status = 'error'
                     uploaded_file = None
                 if valid_url:

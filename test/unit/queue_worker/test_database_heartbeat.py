@@ -3,8 +3,8 @@ import time
 
 import pytest
 
-from galaxy.web.stack import application_stack_instance
-from galaxy.web.stack.database_heartbeat import DatabaseHeartbeat
+from galaxy.model.database_heartbeat import DatabaseHeartbeat
+from galaxy.web_stack import application_stack_instance
 
 
 @pytest.fixture
