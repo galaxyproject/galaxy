@@ -253,7 +253,7 @@ const RULES = {
                 component.addColumnRegexTarget = rule.target_column;
                 component.addColumnRegexExpression = rule.expression;
                 component.addColumnRegexReplacement = rule.replacement;
-                component.addColumnRegexGroupCount = rule.group_count;
+                component.addColumnRegexGroupCount = parseInt(rule.group_count);
             }
             let addColumnRegexType = "global";
             if (component.addColumnRegexGroupCount) {
