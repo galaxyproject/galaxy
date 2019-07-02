@@ -155,3 +155,4 @@ client/webpack-stats.json
 .idea
 .vscode
 /.project
+/.pydevproject
