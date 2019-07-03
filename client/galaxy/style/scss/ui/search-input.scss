@@ -1,4 +1,5 @@
 .search-input {
+    @extend .mb-2;
     .search-clear,
     .search-loading {
         @extend .mr-2;
@@ -7,7 +8,7 @@
         float: right;
         margin-top: -25px;
         font-size: 1.4em;
-        color: $gray-600;
+        color: $gray-500;
     }
     .search-clear:hover {
         color: $brand-info;
