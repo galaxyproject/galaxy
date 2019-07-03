@@ -30,7 +30,7 @@ class TagHandler(object):
     def __init__(self, sa_session):
         self.sa_session = sa_session
         # Minimum tag length.
-        self.min_tag_len = 2
+        self.min_tag_len = 1
         # Maximum tag length.
         self.max_tag_len = 255
         # Tag separator.
