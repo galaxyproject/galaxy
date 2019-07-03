@@ -2,14 +2,16 @@
     <div class="ui-thumbnails">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <input
-                class="search-query parent-width"
-                name="query"
-                placeholder="search visualizations"
-                autocomplete="off"
-                type="text"
-                v-model="search"
-            />
+            <div class="search-input">
+                <input
+                    class="search-query parent-width"
+                    name="query"
+                    placeholder="search visualizations"
+                    autocomplete="off"
+                    type="text"
+                    v-model="search"
+                />
+            </div>
             <div v-for="plugin in plugins" :key="plugin.name">
                 <table v-if="match(plugin)">
                     <tr class="ui-thumbnails-item" @click="select(plugin)">
