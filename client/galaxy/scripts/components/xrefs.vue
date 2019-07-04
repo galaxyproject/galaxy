@@ -3,7 +3,19 @@
         <h4 slot="header" class="mb-0">
             References
         </h4>
-        <span v-html="content"></span>
+        <table>
+            <tr v-for="(xref, index) in xrefs" v-bind:key="index">
+                <th> - {{xref.reftype}}: </th>
+                <td>
+                    <template v-if="xref.reftype == 'bio.tools'">
+                        <a :href="`https://bio.tools/${xref.value}/`" target="_blank">{{xref.value}}</a>
+                    </template>
+                    <template v-else>
+                        {{ xref.value }}
+                    </template>
+                </td>
+            </tr>
+        </table>
     </b-card>
 </template>
 <script>
@@ -44,29 +56,7 @@ export default {
         axios
             .get(`${getAppRoot()}api/${this.source}/${this.id}/xrefs`)
             .then(response => {
-                this.reftype = "";
-                this.content = "<table>";
-                for (var raw_xref of response.data) {
-                    try {
-                        this.reftype = raw_xref.reftype;
-                        this.content += "<tr>";
-                        this.content += "<th> - ";
-                        this.content += this.reftype;
-                        this.content += "</th>";
-                        this.content += "<td> : ";
-                        if (this.reftype == "bio.tools") {
-                            this.content += "<a href=\"https://bio.tools/" + raw_xref.value + "\" target=\"_blank\">" + raw_xref.value + "</a>";
-                        }
-                        else {
-                            this.content += raw_xref.value;
-                        }
-                        this.content += "</td>";
-                        this.content += "</tr>";
-                    } catch (err) {
-                        console.warn("Error parsing xref: " + err);
-                    }
-                }
-                this.content += "</table>";
+                this.xrefs = response.data;
             })
             .catch(e => {
                 console.error(e);
