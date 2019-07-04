@@ -8,7 +8,7 @@
                 <th> - {{xref.reftype}}: </th>
                 <td>
                     <template v-if="xref.reftype == 'bio.tools'">
-                        <a :href="`https://bio.tools/${xref.value}/`" target="_blank">{{xref.value}}</a>
+                        <a :href="`https://bio.tools/${xref.value}`" target="_blank">{{xref.value}}</a>
                     </template>
                     <template v-else>
                         {{ xref.value }}
