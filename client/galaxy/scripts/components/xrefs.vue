@@ -31,19 +31,6 @@ export default {
         id: {
             type: String,
             required: true
-        },
-        reftype: {
-            type: String,
-            required: true
-        },
-        content: {
-            type: String,
-            required: true
-        },
-        viewRender: {
-            type: Boolean,
-            requried: false,
-            default: true
         }
     },
     data() {
