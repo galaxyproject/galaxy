@@ -1,6 +1,6 @@
 
-.. image:: https://badge.fury.io/py/galaxy-job-metrics.svg
-   :target: https://pypi.python.org/pypi/galaxy-job-metrics/
+.. image:: https://badge.fury.io/py/galaxy-authnz.svg
+   :target: https://pypi.org/project/galaxy-authnz/
 
 
 Overview
