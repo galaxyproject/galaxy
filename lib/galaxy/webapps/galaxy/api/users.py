@@ -252,7 +252,22 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
     @expose_api
     @web.require_admin
     def undelete(self, trans, **kwd):
-        raise exceptions.NotImplemented()
+        """
+        UNDELETE /api/users/{id}
+        undelete the user with the given ``id``
+
+        :param id: the encoded id of the user to be undeleted
+        :type  id: str
+        """
+        if not trans.app.config.allow_user_deletion:
+            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete/undelete users.')
+        if user.purged:
+            raise exceptions.ItemDeletionException('Purged user cannot be undeleted')
+        user = self.get_user(trans, id)
+        if not user.deleted:
+            raise exceptions.ItemDeletionException('User not previously deleted cannot be undeleted')
+        self.user_manager.undelete(user)
+        return self.user_serializer.serialize_to_view(user, view='detailed')
 
     # TODO: move to more basal, common resource than this
     def anon_user_api_value(self, trans):
