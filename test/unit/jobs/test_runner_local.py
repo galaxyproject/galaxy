@@ -5,8 +5,8 @@ from unittest import TestCase
 
 import psutil
 
+from galaxy import job_metrics
 from galaxy import model
-from galaxy.jobs import metrics
 from galaxy.jobs.runners import local
 from galaxy.util import bunch
 from ..tools_support import (
@@ -20,7 +20,7 @@ class TestLocalJobRunner(TestCase, UsesApp, UsesTools):
     def setUp(self):
         self.setup_app()
         self._init_tool()
-        self.app.job_metrics = metrics.JobMetrics()
+        self.app.job_metrics = job_metrics.JobMetrics()
         self.job_wrapper = MockJobWrapper(self.app, self.test_directory, self.tool)
 
     def tearDown(self):
@@ -144,6 +144,7 @@ class MockJobWrapper(object):
         self.shell = "/bin/bash"
         self.cleanup_job = "never"
         self.tmp_dir_creation_statement = ""
+        self.use_metadata_binary = False
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata = bunch.Bunch(

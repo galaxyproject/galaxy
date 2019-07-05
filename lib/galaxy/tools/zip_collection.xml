@@ -11,8 +11,8 @@
   </inputs>
   <outputs>
     <collection name="output" type="paired" label="${on_string} (zipped)">
-      <data name="forward" />
-      <data name="reverse" />
+      <data name="forward" format_source="input_forward" />
+      <data name="reverse" format_source="input_reverse" />
     </collection>
   </outputs>
   <help><![CDATA[

@@ -2,7 +2,6 @@
 Contains functionality needed in every web interface
 """
 import logging
-import re
 
 from six import string_types
 from sqlalchemy import true
@@ -24,7 +23,6 @@ from galaxy.managers import (
     api_keys,
     base as managers_base,
     configuration,
-    tags,
     users,
     workflows
 )
@@ -32,7 +30,8 @@ from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
     HistoryDatasetAssociation,
-    LibraryDatasetDatasetAssociation
+    LibraryDatasetDatasetAssociation,
+    tags,
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.dictifiable import Dictifiable
@@ -52,13 +51,6 @@ log = logging.getLogger(__name__)
 
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
-
-
-def _is_valid_slug(slug):
-    """ Returns true if slug is valid. """
-
-    VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
-    return VALID_SLUG_RE.match(slug)
 
 
 class BaseController(object):
@@ -190,12 +182,12 @@ class BaseAPIController(BaseController):
                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
         except exceptions.ItemDeletionException as e:
-            raise HTTPBadRequest(detail="Invalid %s id ( %s ) specified: %s" % (class_name, str(id), str(e)))
+            raise HTTPBadRequest(detail="Invalid %s id ( %s ) specified: %s" % (class_name, str(id), util.unicodify(e)))
         except exceptions.MessageException as e:
             raise HTTPBadRequest(detail=e.err_msg)
         except Exception as e:
             log.exception("Exception in get_object check for %s %s.", class_name, str(id))
-            raise HTTPInternalServerError(comment=str(e))
+            raise HTTPInternalServerError(comment=util.unicodify(e))
 
     def validate_in_users_and_groups(self, trans, payload):
         """
@@ -238,6 +230,12 @@ class BaseAPIController(BaseController):
             keys = keys.split(',')
         return dict(view=view, keys=keys, default_view=default_view)
 
+    def _parse_order_by(self, manager, order_by_string):
+        ORDER_BY_SEP_CHAR = ','
+        if ORDER_BY_SEP_CHAR in order_by_string:
+            return [manager.parse_order_by(o) for o in order_by_string.split(ORDER_BY_SEP_CHAR)]
+        return manager.parse_order_by(order_by_string)
+
 
 class JSAppLauncher(BaseUIController):
     """
@@ -259,15 +257,28 @@ class JSAppLauncher(BaseUIController):
         self.config_serializer = configuration.ConfigSerializer(app)
         self.admin_config_serializer = configuration.AdminConfigSerializer(app)
 
+    def _check_require_login(self, trans):
+        if self.app.config.require_login and self.user_manager.is_anonymous(trans.user):
+            # TODO: this doesn't properly redirect when login is done
+            # (see webapp __ensure_logged_in_user for the initial redirect - not sure why it doesn't redirect to login?)
+            login_url = web.url_for(controller="root", action="login")
+            trans.response.send_redirect(login_url)
+
     @web.expose
     def client(self, trans, **kwd):
         """
-        Endpoint for clientside routes.  Currently a passthrough to index
-        (minus kwargs) though we can differentiate it more in the future.
+        Endpoint for clientside routes.  This ships the primary SPA client.
+
         Should not be used with url_for -- see
         (https://github.com/galaxyproject/galaxy/issues/1878) for why.
         """
-        return self.index(trans)
+        self._check_require_login(trans)
+        return self._bootstrapped_client(trans, **kwd)
+
+    def _bootstrapped_client(self, trans, app_name='analysis', **kwd):
+        js_options = self._get_js_options(trans)
+        js_options['config'].update(self._get_extended_config(trans))
+        return self.template(trans, app_name, options=js_options, **kwd)
 
     def _get_js_options(self, trans, root=None):
         """
@@ -285,6 +296,32 @@ class JSAppLauncher(BaseUIController):
             'session_csrf_token' : trans.session_csrf_token,
         }
         return js_options
+
+    def _get_extended_config(self, trans):
+        config = {
+            'active_view'                   : 'analysis',
+            'enable_cloud_launch'           : trans.app.config.get_bool('enable_cloud_launch', False),
+            'enable_webhooks'               : True if trans.app.webhooks_registry.webhooks else False,
+            # TODO: next two should be redundant - why can't we build one from the other?
+            'toolbox'                       : trans.app.toolbox.to_dict(trans, in_panel=False),
+            'toolbox_in_panel'              : trans.app.toolbox.to_dict(trans),
+            'message_box_visible'           : trans.app.config.message_box_visible,
+            'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active,
+            'tool_shed_urls'                : list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],
+            'tool_dynamic_configs'          : list(trans.app.toolbox.dynamic_conf_filenames())
+        }
+
+        # TODO: move to user
+        stored_workflow_menu_entries = config['stored_workflow_menu_entries'] = []
+        for menu_item in getattr(trans.user, 'stored_workflow_menu_entries', []):
+            stored_workflow_menu_entries.append({
+                'encoded_stored_workflow_id': trans.security.encode_id(menu_item.stored_workflow_id),
+                'stored_workflow': {
+                    'name': util.unicodify(menu_item.stored_workflow.name)
+                }
+            })
+
+        return config
 
     def _get_site_configuration(self, trans):
         """
@@ -1075,7 +1112,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         title_err = slug_err = ""
         if not title:
             title_err = "visualization name is required"
-        elif slug and not _is_valid_slug(slug):
+        elif slug and not managers_base.is_valid_slug(slug):
             slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
         elif slug and trans.sa_session.query(trans.model.Visualization).filter_by(user=user, slug=slug, deleted=False).first():
             slug_err = "visualization identifier must be unique"
@@ -1318,7 +1355,7 @@ class SharableMixin(object):
 
     def _is_valid_slug(self, slug):
         """ Returns true if slug is valid. """
-        return _is_valid_slug(slug)
+        return managers_base.is_valid_slug(slug)
 
     @web.expose
     @web.require_login("modify Galaxy items")
@@ -1373,7 +1410,7 @@ class SharableMixin(object):
         item.slug = new_slug
         return item.slug == cur_slug
 
-    @web.expose_api
+    @web.legacy_expose_api
     def sharing(self, trans, id, payload=None, **kwd):
         skipped = False
         class_name = self.manager.model_class.__name__
@@ -1435,10 +1472,10 @@ class SharableMixin(object):
                     try:
                         trans.app.security_agent.make_dataset_public(hda.dataset)
                     except Exception:
-                        log.warning("Unable to make dataset with id: %s public.").format(dataset.id)
+                        log.warning("Unable to make dataset with id: %s public", dataset.id)
                         skipped = True
                 else:
-                    log.warning("User without permissions tried to make dataset with id: %s public.").format(dataset.id)
+                    log.warning("User without permissions tried to make dataset with id: %s public", dataset.id)
                     skipped = True
         return item, skipped
 
@@ -1514,8 +1551,8 @@ class UsesTagsMixin(SharableItemSecurityMixin):
         return self.get_tag_handler(trans)._get_item_tag_assoc(user, tagged_item, tag_name)
 
     def set_tags_from_list(self, trans, item, new_tags_list, user=None):
-        tags_manager = tags.GalaxyTagManager(trans.app.model.context)
-        return tags_manager.set_tags_from_list(user, item, new_tags_list)
+        tag_handler = tags.GalaxyTagHandler(trans.app.model.context)
+        return tag_handler.set_tags_from_list(user, item, new_tags_list)
 
     def get_user_tags_used(self, trans, user=None):
         """

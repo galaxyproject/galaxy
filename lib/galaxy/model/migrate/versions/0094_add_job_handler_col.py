@@ -5,10 +5,10 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, MetaData, Table
+from sqlalchemy import Column, MetaData
 
-# Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrate.versions.util import add_column, drop_column
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -18,28 +18,15 @@ handler_col = Column("handler", TrimmedString(255), index=True)
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Add column to Job table.
-    try:
-        Job_table = Table("job", metadata, autoload=True)
-        handler_col.create(Job_table, index_name="ix_job_handler")
-        assert handler_col is Job_table.c.handler
-
-    except Exception:
-        log.exception("Adding column 'handler' to job table failed.")
+    add_column(handler_col, 'job', metadata, index_name="ix_job_handler")
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Drop column from Job table.
-    try:
-        Job_table = Table("job", metadata, autoload=True)
-        handler_col = Job_table.c.handler
-        handler_col.drop()
-    except Exception:
-        log.exception("Dropping column 'handler' from job table failed.")
+    drop_column('handler', 'job', metadata)

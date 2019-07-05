@@ -12,7 +12,7 @@ from functools import reduce
 from xml.etree import ElementTree as ET
 
 import numpy as np
-from yaml import load
+import yaml
 
 __version__ = '1.1.0'
 
@@ -727,7 +727,7 @@ def parse_yaml(path="/config/tool_destinations.yml",
     # Import file from path
     try:
         if test:
-            config = load(path)
+            config = yaml.safe_load(path)
         else:
             if path == "/config/tool_destinations.yml":
                 # os.path.realpath gets the path of DynamicToolDestination.py
@@ -741,7 +741,7 @@ def parse_yaml(path="/config/tool_destinations.yml",
                 opt_file = path
 
             with open(opt_file, 'r') as stream:
-                config = load(stream)
+                config = yaml.safe_load(stream)
 
         # Test imported file
         try:
@@ -798,7 +798,7 @@ def validate_destination(app, destination, err_message, err_message_contents,
     valid_destination = False
     suggestion = None
 
-    if destination is 'fail' and err_message is dest_err_tool_rule_dest:  # It's a tool rule that is set to fail. It's valid
+    if destination == 'fail' and err_message is dest_err_tool_rule_dest:  # It's a tool rule that is set to fail. It's valid
         valid_destination = True
     elif app is None:
         if destination in destination_list:
@@ -1391,7 +1391,7 @@ def map_tool_to_destination(
                                 for line in inp_db:
                                     if line[0] == ">":
                                         records += 1
-                    elif filesize_rule_present:
+                    if filesize_rule_present:
                         query_file = str(inp_data[da].file_name)
                         file_size += os.path.getsize(query_file)
             except AttributeError:

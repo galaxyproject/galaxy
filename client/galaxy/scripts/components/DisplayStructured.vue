@@ -32,8 +32,8 @@ export default {
         };
     },
     created: function() {
-        let historyId = this.id,
-            url = "";
+        const historyId = this.id;
+        let url = "";
         if (historyId !== undefined && historyId !== "" && historyId !== null) {
             url = getAppRoot() + "history/display_structured?id=" + historyId;
         } else {
@@ -56,13 +56,13 @@ export default {
                 });
         },
         _updateHistoryData: function(response) {
-            let historyItems = response.data;
+            const historyItems = response.data;
             this.historyTemplate = historyItems.template;
             this.historyJSON = historyItems.history_json;
         },
         makeHistoryView: function(historyDict) {
             window.hdas = historyDict.map(hda => {
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 return new HDAListItemEdit.HDAListItemEdit({
                     model: new HDAModel.HistoryDatasetAssociation(hda),
                     el: $("#hda-" + hda.id),
@@ -74,7 +74,7 @@ export default {
             // toggle the body section of each item in the structure
             $(function() {
                 $(".workflow, .tool").each((index, element) => {
-                    let body = $(element).children(".body");
+                    const body = $(element).children(".body");
                     $(element)
                         .children(".header")
                         .click(e => {

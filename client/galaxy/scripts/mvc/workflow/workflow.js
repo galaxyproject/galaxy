@@ -4,12 +4,12 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import * as mod_toastr from "libs/toastr";
-import TAGS from "mvc/tag";
+import { Toast } from "ui/toast";
 import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";
 import _l from "utils/localization";
 import LoadingIndicator from "ui/loading-indicator";
+import { mountModelTags } from "components/Tags";
 
 /** View of the individual workflows */
 const WorkflowItemView = Backbone.View.extend({
@@ -24,7 +24,7 @@ const WorkflowItemView = Backbone.View.extend({
             "removeWorkflow",
             "copyWorkflow"
         ); // every function that uses 'this' as the current object should be in here
-        mod_toastr.options.timeOut = 1500;
+        Toast.options.timeOut = 1500;
     },
 
     events: {
@@ -57,7 +57,7 @@ const WorkflowItemView = Backbone.View.extend({
         if (window.confirm(`Are you sure you want to delete workflow '${wfName}'?`)) {
             this.model.destroy({
                 success: function() {
-                    mod_toastr.success(`Successfully deleted workflow '${wfName}'`);
+                    Toast.success(`Successfully deleted workflow '${wfName}'`);
                 }
             });
             this.remove();
@@ -72,7 +72,7 @@ const WorkflowItemView = Backbone.View.extend({
                 { name: newName },
                 {
                     success: function() {
-                        mod_toastr.success(`Successfully renamed workflow '${oldName}' to '${newName}'`);
+                        Toast.success(`Successfully renamed workflow '${oldName}' to '${newName}'`);
                     }
                 }
             );
@@ -81,7 +81,7 @@ const WorkflowItemView = Backbone.View.extend({
     },
 
     copyWorkflow: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         const oldName = this.model.get("name");
         $.getJSON(`${this.model.urlRoot}/${this.model.id}/download`, wfJson => {
             let newName = `Copy of ${oldName}`;
@@ -94,23 +94,23 @@ const WorkflowItemView = Backbone.View.extend({
                 at: 0,
                 wait: true,
                 success: function() {
-                    mod_toastr.success(`Successfully copied workflow '${oldName}' to '${newName}'`);
+                    Toast.success(`Successfully copied workflow '${oldName}' to '${newName}'`);
                 },
                 error: function(model, resp, options) {
                     // signature seems to have changed over the course of backbone dev
                     // see https://github.com/jashkenas/backbone/issues/2606#issuecomment-19289483
-                    mod_toastr.error(options.errorThrown);
+                    Toast.error(options.errorThrown);
                 }
             });
         }).error((jqXHR, textStatus, errorThrown) => {
-            mod_toastr.error(jqXHR.responseJSON.err_msg);
+            Toast.error(jqXHR.responseJSON.err_msg);
         });
     },
 
     _rowTemplate: function() {
-        let Galaxy = getGalaxyInstance();
-        let show = this.model.get("show_in_tool_panel");
-        let wfId = this.model.id;
+        const Galaxy = getGalaxyInstance();
+        const show = this.model.get("show_in_tool_panel");
+        const wfId = this.model.id;
         const checkboxHtml = `<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" ${
             show ? `checked="${show}"` : ""
         } value="${wfId}">`;
@@ -127,8 +127,7 @@ const WorkflowItemView = Backbone.View.extend({
                 </div>
             </td>
             <td>
-                <div class="${wfId} tags-display">
-                </div>
+                <div class="${wfId} tags-display"></div>
             </td>
             <td>
                 ${this.model.get("owner") === Galaxy.user.attributes.username ? "You" : this.model.get("owner")}
@@ -139,19 +138,19 @@ const WorkflowItemView = Backbone.View.extend({
     },
 
     renderTagEditor: function() {
-        const TagEditor = new TAGS.TagsEditor({
+        const el = $(this.el).find(".tags-display")[0];
+        const propsData = {
             model: this.model,
-            el: $.find(`.${this.model.id}.tags-display`),
-            workflow_mode: true
-        });
-        TagEditor.toggle(true);
-        TagEditor.render();
+            disabled: false,
+            context: "workflow"
+        };
+        return mountModelTags(propsData, el);
     },
 
     /** Template for user actions for workflows */
     _templateActions: function() {
-        let Galaxy = getGalaxyInstance();
-        if (this.model.get("owner") === Galaxy.user.attributes.username) {
+        const Galaxy = getGalaxyInstance();
+        if (this.model.get("owner") == Galaxy.user.attributes.username) {
             return `<div class="dropdown-menu">
                         <a class="dropdown-item" href="${getAppRoot()}workflow/editor?id=${this.model.id}">Edit</a>
                         <a class="dropdown-item" href="${getAppRoot()}workflows/run?id=${this.model.id}">Run</a>
@@ -159,24 +158,24 @@ const WorkflowItemView = Backbone.View.extend({
                         <a class="dropdown-item" href="${getAppRoot()}api/workflows/${
                 this.model.id
             }/download?format=json-download">Download</a>
-                        <a class="dropdown-item" id="copy-workflow" style="cursor: pointer;">Copy</a>
-                        <a class="dropdown-item" id="rename-workflow" style="cursor: pointer;">Rename</a>
+                        <a class="dropdown-item" id="copy-workflow">Copy</a>
+                        <a class="dropdown-item" id="rename-workflow">Rename</a>
                         <a class="dropdown-item" href="${getAppRoot()}workflow/display_by_id?id=${
                 this.model.id
             }">View</a>
-                        <a class="dropdown-item" id="delete-workflow" style="cursor: pointer;">Delete</a>
+                        <a class="dropdown-item" id="delete-workflow">Delete</a>
                     </div>`;
         } else {
-            return `<ul class="dropdown-menu">
-                        <li><a href="${getAppRoot()}workflow/display_by_username_and_slug?username=${this.model.get(
+            return `<div class="dropdown-menu">
+                        <a class="dropdown-item" href="${getAppRoot()}workflow/display_by_username_and_slug?username=${this.model.get(
                 "owner"
-            )}&slug=${this.model.get("slug")}">View</a></li>
-                        <li><a href="${getAppRoot()}workflows/run?id=${this.model.id}">Run</a></li>
-                        <li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li>
-                        <li><a class="link-confirm-shared-${
+            )}&slug=${this.model.get("slug")}">View</a>
+                        <a class="dropdown-item" href="${getAppRoot()}workflows/run?id=${this.model.id}">Run</a>
+                        <a class="dropdown-item" id="copy-workflow">Copy</a>
+                        <a class="dropdown-item link-confirm-shared-${
                             this.model.id
                         }" href="${getAppRoot()}workflow/sharing?unshare_me=True&id=${this.model.id}">Remove</a></li>
-                    </ul>`;
+                    </div>`;
         }
     }
 });
@@ -195,13 +194,14 @@ const WorkflowListView = Backbone.View.extend({
     },
 
     events: {
-        dragleave: "unhighlightDropZone",
-        drop: "drop",
-        dragover: function(ev) {
-            $(".hidden_description_layer").addClass("dragover");
-            $(".menubutton").addClass("background-none");
-            ev.preventDefault();
-        }
+        dragover: "highlightDropZone",
+        dragleave: "unhighlightDropZone"
+    },
+
+    highlightDropZone: function(ev) {
+        $(".hidden_description_layer").addClass("dragover");
+        $(".menubutton").addClass("background-none");
+        ev.preventDefault();
     },
 
     unhighlightDropZone: function() {
@@ -226,7 +226,7 @@ const WorkflowListView = Backbone.View.extend({
             try {
                 wf_json = JSON.parse(reader.result);
             } catch (e) {
-                mod_toastr.error(`Could not read file '${f.name}'. Verify it is a valid Galaxy workflow`);
+                Toast.error(`Could not read file '${f.name}'. Verify it is a valid Galaxy workflow`);
                 wf_json = null;
             }
             if (wf_json) {
@@ -234,10 +234,10 @@ const WorkflowListView = Backbone.View.extend({
                     at: 0,
                     wait: true,
                     success: function() {
-                        mod_toastr.success(`Successfully imported workflow '${wf_json.name}'`);
+                        Toast.success(`Successfully imported workflow '${wf_json.name}'`);
                     },
                     error: function(model, resp, options) {
-                        mod_toastr.error(options.errorThrown);
+                        Toast.error(options.errorThrown);
                     }
                 });
             }
@@ -250,9 +250,9 @@ const WorkflowListView = Backbone.View.extend({
         const msg_text = QueryStringParsing.get("message");
         const msg_status = QueryStringParsing.get("status");
         if (msg_status === "error") {
-            mod_toastr.error(_.escape(msg_text || "Unknown Error, please report this to an administrator."));
+            Toast.error(_.escape(msg_text || "Unknown Error, please report this to an administrator."));
         } else if (msg_text) {
-            mod_toastr.info(_.escape(msg_text));
+            Toast.info(_.escape(msg_text));
         }
     }),
 
@@ -272,6 +272,9 @@ const WorkflowListView = Backbone.View.extend({
         this.searchWorkflow(this.$(".search-wf"), this.$(".workflow-search tr"), minQueryLength);
         this.adjustActiondropdown();
         this._showArgErrors();
+        this.$(".hidden_description_layer")
+            .get(0)
+            .addEventListener("drop", _.bind(this.drop, this));
         return this;
     },
 

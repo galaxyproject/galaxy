@@ -6,6 +6,8 @@ from datetime import date
 
 from six.moves import configparser
 
+from galaxy.util import unicodify
+
 log = logging.getLogger(__name__)
 
 new_hgweb_config_template = """
@@ -35,7 +37,7 @@ class HgWebConfigManager(object):
             # Persist our in-memory configuration.
             self.write_config()
         except Exception as e:
-            log.debug("Exception in HgWebConfigManager.add_entry(): %s" % str(e))
+            log.debug("Exception in HgWebConfigManager.add_entry(): %s", unicodify(e))
         finally:
             lock.release()
 
@@ -52,7 +54,7 @@ class HgWebConfigManager(object):
             # Persist our in-memory configuration.
             self.write_config()
         except Exception as e:
-            log.debug("Exception in HgWebConfigManager.change_entry(): %s" % str(e))
+            log.debug("Exception in HgWebConfigManager.change_entry(): %s", unicodify(e))
         finally:
             lock.release()
 

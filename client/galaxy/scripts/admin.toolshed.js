@@ -9,19 +9,6 @@ import mod_repo_status_view from "mvc/toolshed/repo-status-view";
 import mod_workflows_view from "mvc/toolshed/workflows-view";
 
 var AdminToolshedRouter = Backbone.Router.extend({
-    initialize: function() {
-        this.routesHit = 0;
-        // keep count of number of routes handled by the application
-        Backbone.history.on(
-            "route",
-            function() {
-                this.routesHit++;
-            },
-            this
-        );
-        this.bind("route", this.trackPageview);
-    },
-
     routes: {
         "": "toolsheds",
         sheds: "toolsheds",
@@ -30,22 +17,8 @@ var AdminToolshedRouter = Backbone.Router.extend({
         "status/r/:repositories": "status",
         status: "status",
         "categories/s/:tool_shed": "categories",
-        "category/s/:tool_shed/c/:cateory_id": "repositories",
+        "category/s/:tool_shed/c/:category_id/k/:sort_key/p/:page/t/:sort_order": "repositories",
         "repository/s/:tool_shed/r/:repository_id": "repository"
-    },
-
-    /**
-     * If more than one route has been hit the user did not land on current
-     * page directly so we can go back safely. Otherwise go to the home page.
-     * Use replaceState if available so the navigation doesn't create an
-     * extra history entry
-     */
-    back: function() {
-        if (this.routesHit > 1) {
-            window.history.back();
-        } else {
-            this.navigate("#", { trigger: true, replace: true });
-        }
     }
 });
 
@@ -55,7 +28,7 @@ var GalaxyAdminToolshedApp = Backbone.View.extend({
     },
 
     initialize: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         Galaxy.admintoolshedapp = this;
         this.admin_toolshed_router = new AdminToolshedRouter();
@@ -71,12 +44,18 @@ var GalaxyAdminToolshedApp = Backbone.View.extend({
                 tool_shed: tool_shed.replace(/\//g, "%2f")
             });
         });
-        this.admin_toolshed_router.on("route:repositories", (tool_shed, category_id) => {
-            Galaxy.admintoolshedapp.adminShedCategoryView = new mod_repositories_view.Category({
-                tool_shed: tool_shed.replace(/\//g, "%2f"),
-                category_id: category_id
-            });
-        });
+        this.admin_toolshed_router.on(
+            "route:repositories",
+            (tool_shed, category_id, sort_key = "name", page = 1, sort_order = "asc") => {
+                Galaxy.admintoolshedapp.adminShedCategoryView = new mod_repositories_view.Category({
+                    tool_shed: tool_shed.replace(/\//g, "%2f"),
+                    category_id: category_id,
+                    page: page,
+                    sort_order: sort_order,
+                    sort_key: sort_key
+                });
+            }
+        );
         this.admin_toolshed_router.on("route:repository", (tool_shed, repository_id) => {
             Galaxy.admintoolshedapp.adminRepositoryView = new mod_repository_view.RepoDetails({
                 tool_shed: tool_shed.replace(/\//g, "%2f"),

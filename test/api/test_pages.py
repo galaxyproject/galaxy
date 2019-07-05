@@ -1,6 +1,7 @@
 from requests import delete
 
 from base import api  # noqa: I100,I202
+from base.populators import DatasetPopulator
 from galaxy.exceptions import error_codes  # noqa: I201
 
 
@@ -53,7 +54,7 @@ class PageApiTestCase(BasePageApiTestCase):
         self._assert_error_code_is(page_response_2, error_codes.USER_SLUG_DUPLICATE)
 
     def test_page_requires_name(self):
-        page_request = self._test_page_payload()
+        page_request = self._test_page_payload(slug="requires-name")
         del page_request['title']
         page_response = self._post("pages", page_request)
         self._assert_status_code_is(page_response, 400)
@@ -70,16 +71,33 @@ class PageApiTestCase(BasePageApiTestCase):
         delete_response = delete(self._api_url("pages/%s" % response_json['id'], use_key=True))
         self._assert_status_code_is(delete_response, 200)
 
-    def test_404_on_delete_unknown_page(self):
+    def test_400_on_delete_invalid_page_id(self):
         delete_response = delete(self._api_url("pages/%s" % self._random_key(), use_key=True))
-        self._assert_status_code_is(delete_response, 404)
-        self._assert_error_code_is(delete_response, error_codes.USER_OBJECT_NOT_FOUND)
+        self._assert_status_code_is(delete_response, 400)
+        self._assert_error_code_is(delete_response, error_codes.MALFORMED_ID)
 
     def test_403_on_delete_unowned_page(self):
         page_response = self._create_valid_page_as("others_page@bx.psu.edu", "otherspage")
         delete_response = delete(self._api_url("pages/%s" % page_response["id"], use_key=True))
         self._assert_status_code_is(delete_response, 403)
         self._assert_error_code_is(delete_response, error_codes.USER_DOES_NOT_OWN_ITEM)
+
+    def test_400_on_invalid_id_encoding(self):
+        page_request = self._test_page_payload(slug="invalid-id-encding")
+        page_request["content"] = '''<p>Page!<div class="embedded-item" id="History-invaidencodedid"></div></p>'''
+        page_response = self._post("pages", page_request)
+        self._assert_status_code_is(page_response, 400)
+        self._assert_error_code_is(page_response, error_codes.MALFORMED_ID)
+
+    def test_400_on_invalid_embedded_content(self):
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        valid_id = dataset_populator.new_history()
+        page_request = self._test_page_payload(slug="invalid-id-encding")
+        page_request["content"] = '''<p>Page!<div class="embedded-item" id="CoolObject-%s"></div></p>''' % valid_id
+        page_response = self._post("pages", page_request)
+        self._assert_status_code_is(page_response, 400)
+        self._assert_error_code_is(page_response, error_codes.USER_REQUEST_INVALID_PARAMETER)
+        assert "embedded HTML content" in page_response.content
 
     def test_show(self):
         response_json = self._create_valid_page_with_slug("pagetoshow")
@@ -95,7 +113,7 @@ class PageApiTestCase(BasePageApiTestCase):
         response_json = self._create_valid_page_as("others_page_show@bx.psu.edu", "otherspageshow")
         show_response = self._get("pages/%s" % response_json['id'])
         self._assert_status_code_is(show_response, 403)
-        self._assert_error_code_is(show_response, error_codes.USER_DOES_NOT_OWN_ITEM)
+        self._assert_error_code_is(show_response, error_codes.USER_CANNOT_ACCESS_ITEM)
 
     def _users_index_has_page_with_id(self, id):
         index_response = self._get("pages")

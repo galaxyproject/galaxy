@@ -6,8 +6,8 @@ from galaxy import (
     model,
     util
 )
-from galaxy.tools.parameters.output_collect import LegacyToolProvidedMetadata, NullToolProvidedMetadata
-from galaxy.tools.parser import output_collection_def
+from galaxy.tool_util.parser import output_collection_def
+from galaxy.tool_util.provided_metadata import LegacyToolProvidedMetadata, NullToolProvidedMetadata
 from .. import tools_support
 
 DEFAULT_TOOL_OUTPUT = "out1"
@@ -329,9 +329,9 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         if not os.path.exists(meta_file):
             tool_provided_metadata = NullToolProvidedMetadata()
         else:
-            tool_provided_metadata = LegacyToolProvidedMetadata(None, meta_file)
+            tool_provided_metadata = LegacyToolProvidedMetadata(meta_file)
 
-        return self.tool.collect_primary_datasets(self.outputs, tool_provided_metadata, job_working_directory, "txt", input_dbkey="btau")
+        return self.tool.discover_outputs(self.outputs, {}, tool_provided_metadata, job_working_directory, job=self.job, input_ext="txt", input_dbkey="btau")
 
     def _replace_output_collectors(self, xml_str):
         # Rewrite tool as if it had been created with output containing
@@ -383,6 +383,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         self.app.model.context.add(job)
         self.job = job
         self.history = self._new_history(hdas=[self.hda])
+        self.job.history = self.history
         self.outputs = {DEFAULT_TOOL_OUTPUT: self.hda}
 
     def _new_history(self, hdas=[], flush=True):
@@ -406,6 +407,9 @@ class MockObjectStore(object):
     def size(self, dataset):
         path = self.created_datasets[dataset]
         return os.stat(path).st_size
+
+    def exists(self, *args, **kwargs):
+        return True
 
     def get_filename(self, dataset):
         return self.created_datasets[dataset]

@@ -20,21 +20,27 @@ import threading
 import time
 from datetime import timedelta
 
+import yaml
 from six import string_types
 from six.moves import configparser
 
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
-from galaxy.tools.deps.container_resolvers.mulled import DEFAULT_CHANNELS
-from galaxy.util import ExecutionTimer
-from galaxy.util import listify
-from galaxy.util import string_as_bool
-from galaxy.util import unicodify
+from galaxy.tool_util.deps.container_resolvers.mulled import DEFAULT_CHANNELS
+from galaxy.util import (
+    ExecutionTimer,
+    listify,
+    string_as_bool,
+    unicodify,
+)
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.util.logging import LOGLV_TRACE
 from galaxy.util.properties import running_from_source
 from galaxy.web.formatting import expand_pretty_datetime_format
-from galaxy.web.stack import get_stack_facts, register_postfork_function
+from galaxy.web_stack import (
+    get_stack_facts,
+    register_postfork_function
+)
 from ..version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
@@ -49,7 +55,9 @@ PATH_DEFAULTS = dict(
     tool_destinations_config_file=['config/tool_destinations.yml', 'config/tool_destinations.yml.sample'],
     job_metrics_config_file=['config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample'],
     error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
-    dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
+    oidc_config_file=['config/oidc_config.yml', 'config/oidc_config.yml.sample'],
+    oidc_backends_config_file=['config/oidc_backends_config.yml', 'config/oidc_backends_config.yml.sample'],
+    dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml', None],
     job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
     workflow_resource_params_file=['config/workflow_resource_params_conf.xml', 'workflow_resource_params_conf.xml'],
     migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
@@ -60,7 +68,6 @@ PATH_DEFAULTS = dict(
     workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
     modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
     local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
-    user_preferences_extra_config_file=['config/user_preferences_extra_conf.yml'],
     containers_config_file=['config/containers_conf.yml'],
 )
 
@@ -106,7 +113,7 @@ LOGGING_CONFIG_DEFAULT = {
     },
     'filters': {
         'stack': {
-            '()': 'galaxy.web.stack.application_stack_log_filter',
+            '()': 'galaxy.web_stack.application_stack_log_filter',
         },
     },
     'handlers': {
@@ -120,7 +127,7 @@ LOGGING_CONFIG_DEFAULT = {
     },
     'formatters': {
         'stack': {
-            '()': 'galaxy.web.stack.application_stack_log_formatter',
+            '()': 'galaxy.web_stack.application_stack_log_formatter',
         },
     },
 }
@@ -142,6 +149,9 @@ def find_path(kwargs, var, root):
         path = kwargs.get(var)
     else:
         for default in defaults:
+            if default is None:
+                # if None is the final default - just return that.
+                return None
             if os.path.exists(resolve_path(default, root)):
                 path = default
                 break
@@ -263,6 +273,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
         self.version_major = VERSION_MAJOR
         # Database related configuration
+        self.check_migrate_databases = kwargs.get('check_migrate_databases', True)
         self.database_connection = kwargs.get("database_connection",
                                               "sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path("universe.sqlite", self.data_dir))
         self.database_engine_options = get_database_engine_options(kwargs)
@@ -283,6 +294,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.install_database_connection = kwargs.get("install_database_connection", None)
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
 
+        # Wait for database to become available instead of failing
+        self.database_wait = string_as_bool(kwargs.get("database_wait", "False"))
+        # Attempts before failing
+        self.database_wait_attempts = int(kwargs.get("database_wait_attempts", 60))
+        # Sleep period between attepmts (seconds)
+        self.database_wait_sleep = float(kwargs.get("database_wait_sleep", 1))
+
         # Where dataset files are stored
         self.file_path = resolve_path(kwargs.get("file_path", "files"), self.data_dir)
         # new_file_path and legacy_home_dir can be overridden per destination in job_conf.
@@ -292,7 +310,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir", None)
         self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "openid_consumer_cache"), self.data_dir)
-        self.cookie_path = kwargs.get("cookie_path", "/")
+        self.cookie_path = kwargs.get("cookie_path", None)
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', False))
         self.enable_unique_workflow_defaults = string_as_bool(kwargs.get('enable_unique_workflow_defaults', False))
         self.tool_path = resolve_path(kwargs.get("tool_path", "tools"), self.root)
@@ -303,8 +321,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.len_file_path = resolve_path(kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')), self.root)
         # Galaxy OIDC settings.
         self.enable_oidc = kwargs.get("enable_oidc", False)
-        self.oidc_config = kwargs.get('oidc_config_file', None)
-        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", None)
+        self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
+        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
+        self.oidc = []
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed. It is created on demand.
         self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.mutable_config_dir)
@@ -333,7 +352,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
         # been migrated from the Galaxy code distribution to the Tool Shed.
-        self.check_migrate_tools = string_as_bool(kwargs.get('check_migrate_tools', True))
+        self.check_migrate_tools = string_as_bool(kwargs.get('check_migrate_tools', False))
         self.shed_tool_data_path = kwargs.get("shed_tool_data_path", None)
         self.x_frame_options = kwargs.get("x_frame_options", "SAMEORIGIN")
         if self.shed_tool_data_path:
@@ -369,6 +388,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.id_secret = kwargs.get("id_secret", "USING THE DEFAULT IS NOT SECURE!")
         self.retry_metadata_internally = string_as_bool(kwargs.get("retry_metadata_internally", "True"))
         self.max_metadata_value_size = int(kwargs.get("max_metadata_value_size", 5242880))
+        self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
         self.single_user = kwargs.get("single_user", None)
         self.use_remote_user = string_as_bool(kwargs.get("use_remote_user", "False")) or self.single_user
         self.normalize_remote_user_email = string_as_bool(kwargs.get("normalize_remote_user_email", "False"))
@@ -406,6 +426,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             preserve_python_environment = "legacy_only"
         self.preserve_python_environment = preserve_python_environment
+        self.nodejs_path = kwargs.get("nodejs_path", None)
         # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
         # should probably drop the backward compatiblity to save the path check.
         self.container_image_cache_path = resolve_path(kwargs.get("container_image_cache_path", "container_images"), self.data_dir)
@@ -454,12 +475,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.communication_server_host = kwargs.get('communication_server_host', 'http://localhost')
         self.communication_server_port = int(kwargs.get('communication_server_port', '7070'))
         self.persistent_communication_rooms = listify(kwargs.get("persistent_communication_rooms", []), do_strip=True)
+        self.enable_openid = string_as_bool(kwargs.get('enable_openid', 'False'))
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', 'False'))
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool(kwargs.get('use_tasked_jobs', False))
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
-        self.tool_submission_burst_threads = int(kwargs.get('tool_submission_burst_threads', '1'))
-        self.tool_submission_burst_at = int(kwargs.get('tool_submission_burst_at', '10'))
 
         # Enable new interface for API installations from TS.
         # Admin menu will list both if enabled.
@@ -474,8 +494,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # workflows built using these modules may not function in the
         # future.
         self.enable_beta_workflow_modules = string_as_bool(kwargs.get('enable_beta_workflow_modules', 'False'))
-        # Enable use of gxformat2 workflows.
-        self.enable_beta_workflow_format = string_as_bool(kwargs.get('enable_beta_workflow_format', 'False'))
+        # Default format for the export of workflows.
+        self.default_workflow_export_format = kwargs.get('default_workflow_export_format', 'ga')
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))
@@ -589,6 +609,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.use_cached_dependency_manager = use_cached_dependency_manager
         self.tool_dependency_cache_dir = tool_dependency_cache_dir
         self.precache_dependencies = precache_dependencies
+        self.dependency_resolvers = kwargs.get("dependency_resolvers")
         # Deployers may either specify a complete list of mapping files or get the default for free and just
         # specify a local mapping file to adapt and extend the default one.
         if "conda_mapping_files" in kwargs:
@@ -596,7 +617,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         else:
             self.conda_mapping_files = [
                 self.local_conda_mapping_file,
-                os.path.join(self.root, "lib", "galaxy", "tools", "deps", "resolvers", "default_conda_mapping.yml"),
+                os.path.join(self.root, "lib", "galaxy", "tool_util", "deps", "resolvers", "default_conda_mapping.yml"),
             ]
 
         self.enable_beta_mulled_containers = string_as_bool(kwargs.get('enable_beta_mulled_containers', 'False'))
@@ -727,12 +748,15 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self.amqp_internal_connection = "sqlalchemy+" + self.database_connection
         else:
             self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path("control.sqlite", self.data_dir)
-        self.biostar_url = kwargs.get('biostar_url', None)
-        self.biostar_key_name = kwargs.get('biostar_key_name', None)
-        self.biostar_key = kwargs.get('biostar_key', None)
-        self.biostar_enable_bug_reports = string_as_bool(kwargs.get('biostar_enable_bug_reports', True))
-        self.biostar_never_authenticate = string_as_bool(kwargs.get('biostar_never_authenticate', False))
         self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
+        self.user_preferences_extra_config_file = kwargs.get('user_preferences_extra_conf_path', 'config/user_preferences_extra_conf.yml')
+        try:
+            with open(self.user_preferences_extra_config_file, 'r') as stream:
+                self.user_preferences_extra = yaml.safe_load(stream)
+        except Exception:
+            log.warning('Config file (%s) could not be found or is malformed.' % self.user_preferences_extra_config_file)
+            self.user_preferences_extra = {'preferences': {}}
+
         self.default_locale = kwargs.get('default_locale', None)
         self.master_api_key = kwargs.get('master_api_key', None)
         if self.master_api_key == "changethis":  # default in sample config file
@@ -950,7 +974,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             try:
                 os.makedirs(path)
             except Exception as e:
-                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, e))
+                raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
 
     def check(self):
         paths_to_check = [self.tool_data_path, self.data_dir, self.mutable_config_dir]
@@ -960,7 +984,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 try:
                     os.makedirs(path)
                 except Exception as e:
-                    raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, e))
+                    raise ConfigurationError("Unable to create missing directory: %s\n%s" % (path, unicodify(e)))
         # Create the directories that it makes sense to create
         for path in (self.new_file_path, self.template_cache, self.ftp_upload_dir,
                      self.library_import_dir, self.user_library_import_dir,
@@ -1050,7 +1074,10 @@ def parse_dependency_options(kwargs, root, dependency_resolvers_config_file):
         precache_dependencies = string_as_bool(kwargs.get("precache_dependencies", 'True'))
     else:
         tool_dependency_dir = None
-        use_tool_dependencies = os.path.exists(dependency_resolvers_config_file)
+        if dependency_resolvers_config_file is None:
+            use_tool_dependencies = bool(kwargs.get("dependency_resolvers", None))
+        else:
+            use_tool_dependencies = os.path.exists(dependency_resolvers_config_file)
         tool_dependency_cache_dir = None
         precache_dependencies = False
         use_cached_dependency_manager = False
@@ -1166,12 +1193,14 @@ class ConfiguresGalaxyMixin(object):
     def _configure_toolbox(self):
         from galaxy import tools
         from galaxy.managers.citations import CitationsManager
-        from galaxy.tools.deps import containers
-        from galaxy.tools.deps.dependencies import AppInfo
+        from galaxy.tool_util.deps import containers
+        from galaxy.tool_util.deps.dependencies import AppInfo
         import galaxy.tools.search
 
         self.citations_manager = CitationsManager(self)
 
+        from galaxy.managers.tools import DynamicToolManager
+        self.dynamic_tools_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
         tool_configs = self.config.tool_configs
@@ -1254,8 +1283,8 @@ class ConfiguresGalaxyMixin(object):
         self.object_store = build_object_store_from_config(self.config, **kwds)
 
     def _configure_security(self):
-        from galaxy.web import security
-        self.security = security.SecurityHelper(id_secret=self.config.id_secret)
+        from galaxy.security import idencoding
+        self.security = idencoding.IdEncodingHelper(id_secret=self.config.id_secret)
 
     def _configure_tool_shed_registry(self):
         import tool_shed.tool_shed_registry
@@ -1276,6 +1305,9 @@ class ConfiguresGalaxyMixin(object):
         # database file under the hood.
         combined_install_database = not(install_db_url and install_db_url != db_url)
         install_db_url = install_db_url or db_url
+
+        if self.config.database_wait:
+            self._wait_for_database(db_url)
 
         if getattr(self.config, "max_metadata_value_size", None):
             from galaxy.model import custom_types
@@ -1319,3 +1351,15 @@ class ConfiguresGalaxyMixin(object):
     def _configure_signal_handlers(self, handlers):
         for sig, handler in handlers.items():
             signal.signal(sig, handler)
+
+    def _wait_for_database(self, url):
+        from sqlalchemy_utils import database_exists
+        attempts = self.config.database_wait_attempts
+        pause = self.config.database_wait_sleep
+        for i in range(1, attempts):
+            try:
+                database_exists(url)
+                break
+            except Exception:
+                log.info("Waiting for database: attempt %d of %d" % (i, attempts))
+                time.sleep(pause)

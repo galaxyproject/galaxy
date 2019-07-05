@@ -147,6 +147,9 @@
         in the collection. In that case only matching list identifiers will be
         relabeled.
 
+        Valid identifiers must contain only characters (a-z, A-Z), numbers (0-9), 
+        dash and underscore (-, _). Punctuation or whitespace are not allowed. 
+
         This tool will create new history datasets from your collection
         but your quota usage will not increase.
     ]]></help>

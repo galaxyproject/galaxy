@@ -124,7 +124,7 @@ export default Backbone.View.extend({
         });
         this.buttons = [this.left_button, this.right_button, this.execute_button, this.export_button, this.save_button];
         this.setElement("<div/>");
-        for (let b of this.buttons) {
+        for (const b of this.buttons) {
             this.$el.append(b.$el);
         }
         this.listenTo(this.model, "change", () => this.render());

@@ -34,13 +34,13 @@
                     <assert_contents>
                         <has_text_matching expression="^This is a line of text.\n$" />
                     </assert_contents>
-                    <metadata name="tags" value="alias:f,alias:r1,orientation:forward,zoo" />
+                    <metadata name="tags" value="alias:f,alias:r1,name:forward,orientation:forward,zoo" />
                 </element>
                 <element name="reverse">
                     <assert_contents>
                         <has_text_matching expression="^This is a different line of text.\n$" />
                     </assert_contents>
-                    <metadata name="tags" value="alias:r,alias:r2,orientation:reverse" />
+                    <metadata name="tags" value="alias:r,alias:r2,name:reverse,orientation:reverse" />
                 </element>
             </output_collection>
         </test>
@@ -63,13 +63,13 @@
                         <assert_contents>
                             <has_text_matching expression="^This is a line of text.\n$" />
                         </assert_contents>
-                        <metadata name="tags" value="alias:f,alias:r1,orientation:forward" />
+                        <metadata name="tags" value="alias:f,alias:r1,name:forward,orientation:forward" />
                     </element>
                     <element name="reverse">
                         <assert_contents>
                             <has_text_matching expression="^This is a different line of text.\n$" />
                         </assert_contents>
-                        <metadata name="tags" value="alias:r,alias:r2,orientation:reverse" />
+                        <metadata name="tags" value="alias:r,alias:r2,name:reverse,orientation:reverse" />
                     </element>
                 </element>
             </output_collection>

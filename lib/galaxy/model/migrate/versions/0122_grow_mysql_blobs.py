@@ -33,8 +33,8 @@ BLOB_COLUMNS = [
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     if migrate_engine.name != "mysql":
@@ -49,7 +49,4 @@ def upgrade(migrate_engine):
 
 
 def downgrade(migrate_engine):
-    metadata.bind = migrate_engine
-    metadata.reflect()
-    # Ignoring..., changed the datatype so no guarantee these columns weren't
-    # MEDIUMBLOBs before.
+    pass

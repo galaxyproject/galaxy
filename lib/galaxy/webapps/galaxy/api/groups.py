@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 class GroupAPIController(BaseAPIController):
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def index(self, trans, **kwd):
         """
@@ -29,7 +29,7 @@ class GroupAPIController(BaseAPIController):
                 rval.append(item)
         return rval
 
-    @web.expose_api
+    @web.legacy_expose_api
     def create(self, trans, payload, **kwd):
         """
         POST /api/groups
@@ -71,7 +71,7 @@ class GroupAPIController(BaseAPIController):
         item['url'] = url_for('group', id=encoded_id)
         return [item]
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def show(self, trans, id, **kwd):
         """
@@ -97,7 +97,7 @@ class GroupAPIController(BaseAPIController):
         item['roles_url'] = url_for('group_roles', group_id=group_id)
         return item
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def update(self, trans, id, payload, **kwd):
         """

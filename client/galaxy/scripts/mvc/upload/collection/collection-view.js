@@ -248,7 +248,7 @@ export default Backbone.View.extend({
         this.counter.announce--;
         this.counter.success++;
         this._updateScreen();
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         Galaxy.currHistoryPanel.refreshContents();
     },
 
@@ -276,7 +276,7 @@ export default Backbone.View.extend({
     },
 
     _eventBuild: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var allHids = [];
         _.forEach(this.collection.models, upload => {
             allHids.push.apply(allHids, upload.get("hids"));
@@ -464,8 +464,7 @@ export default Backbone.View.extend({
 
     /** Template */
     _template: function() {
-        return (
-            `<div class="upload-view-default">
+        return `<div class="upload-view-default">
                 <div class="upload-top">
                     <div class="upload-top-info"/>
                 </div>
@@ -495,7 +494,6 @@ export default Backbone.View.extend({
                     <span class="upload-footer-genome"/>
                 </div>
                 <div class="upload-buttons"/>
-            </div>`
-        );
+            </div>`;
     }
 });

@@ -1,7 +1,7 @@
 <tool id="inheritance_simple" name="inheritance_simple" version="1.0.0">
     <description>(demonstrates subtypes are usable for parent format)</description>
     <command>
-        cat $input1 > $out_file1
+        cat '$input1' > '$out_file1'
     </command>
     <inputs>
         <param name="input1" type="data" label="Copy FASTQ" format="fastq" />
@@ -10,6 +10,15 @@
         <data name="out_file1" format_source="input1" metadata_source="input1"/>
     </outputs>
     <tests>
+        <test>
+            <param name="input1" value="1.fastqsanger.gz"/>
+            <!-- should be converted to fastqsanger, so output should be fastqsanger -->
+            <output name="out_file1" ftype="fastqsanger">
+                <assert_contents>
+                    <has_line line="@1831_573_1004/1"/>
+                </assert_contents>
+            </output>
+        </test>
         <test>
             <param name="input1" value="1.fastqsanger" ftype="fastqsanger" />
             <output name="out_file1" file="1.fastqsanger" ftype="fastqsanger" />

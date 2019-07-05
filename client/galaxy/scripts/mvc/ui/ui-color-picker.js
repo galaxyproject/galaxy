@@ -117,7 +117,7 @@ export default Backbone.View.extend({
 
     /** Content template */
     _templateContent: function() {
-        return '<div class="ui-color-picker-content">' + '<div class="line"/>' + "</div>";
+        return '<div class="ui-color-picker-content"><div class="line"/></div>';
     },
 
     /** Box template */

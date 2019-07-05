@@ -15,8 +15,8 @@ import logging
 import os
 import re
 import sys
-from cgi import escape
 
+from markupsafe import escape
 from six.moves.urllib.parse import quote_plus
 
 from galaxy.datatypes import metadata
@@ -25,8 +25,10 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.text import Html
-from galaxy.util import nice_size
-from galaxy.web import url_for
+from galaxy.util import (
+    nice_size,
+    unicodify,
+)
 
 gal_Log = logging.getLogger(__name__)
 verbose = False
@@ -94,11 +96,11 @@ class GenomeGraphs(Tabular):
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites('ucsc'):
                     site_url = site_url.replace('/hgTracks?', '/hgGenome?')  # for genome graphs
-                    internal_url = "%s" % url_for(controller='dataset',
-                                                  dataset_id=dataset.id,
-                                                  action='display_at',
-                                                  filename='ucsc_' + site_name)
-                    display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for(controller='root'), dataset.id, type)
+                    internal_url = "%s" % app.url_for(controller='dataset',
+                                                      dataset_id=dataset.id,
+                                                      action='display_at',
+                                                      filename='ucsc_' + site_name)
+                    display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, app.url_for(controller='root'), dataset.id, type)
                     display_url = quote_plus(display_url)
                     # was display_url = quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
                     # redirect_url = quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop) )
@@ -836,7 +838,7 @@ class RexpBase(Html):
             out.append('</table>')
             out = "\n".join(out)
         except Exception as exc:
-            out = "Can't create html table %s" % str(exc)
+            out = "Can't create html table %s" % unicodify(exc)
         return out
 
     def display_peek(self, dataset):

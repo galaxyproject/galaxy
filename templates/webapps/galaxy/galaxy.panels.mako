@@ -42,6 +42,8 @@
             | ${self.galaxy_config['title']}
             %endif
         </title>
+        ## relative href for site root
+        <link rel="index" href="${ h.url_for( '/' ) }"/>
 
         ${self.stylesheets()}
         ${self.javascripts()}
@@ -174,7 +176,6 @@
 <%def name="javascripts()">
     <!-- galaxy.panels.mako javascripts -->
     ${h.js(
-        'libs/d3',
         'bundled/libs.chunk',
         'bundled/base.chunk'
     )}
@@ -224,7 +225,7 @@
     </script>
 
     ${ galaxy_client.load() }
-    ## ${ galaxy_client.config_sentry(app) }
+    ${ galaxy_client.config_sentry(app) }
 
 </%def>
 

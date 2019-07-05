@@ -448,7 +448,7 @@
                     <hot-table
                         id="hot-table"
                         ref="hotTable"
-                        :data="hotData['data']"
+                        :data="hotData.data"
                         :colHeaders="colHeadersDisplay"
                         :readOnly="true"
                         stretchH="all"
@@ -576,51 +576,12 @@ import JobStatesModel from "mvc/history/job-states-model";
 import RuleDefs from "mvc/rules/rule-definitions";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Select2 from "components/Select2";
 
 Vue.use(BootstrapVue);
 
 const RULES = RuleDefs.RULES;
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
-
-// Local components...
-
-// Based on https://vuejs.org/v2/examples/select2.html but adapted to handle list values
-// with "multiple: true" set.
-const Select2 = {
-    props: ["options", "value", "placeholder"],
-    template: `<select>
-    <slot></slot>
-  </select>`,
-    mounted: function() {
-        var vm = this;
-        $(this.$el)
-            // init select2
-            .select2({ data: this.options, placeholder: this.placeholder, allowClear: this.placeholder })
-            .val(this.value)
-            .trigger("change")
-            // emit event on change.
-            .on("change", function(event) {
-                vm.$emit("input", event.val);
-            });
-    },
-    watch: {
-        value: function(value) {
-            // update value
-            $(this.$el).val(value);
-        },
-        options: function(options) {
-            // update options
-            $(this.$el)
-                .empty()
-                .select2({ data: options });
-        }
-    },
-    destroyed: function() {
-        $(this.$el)
-            .off()
-            .select2("destroy");
-    }
-};
 
 const ColumnSelector = {
     template: `
@@ -709,7 +670,7 @@ const ColumnSelector = {
                 return colHeaders;
             }
             const remaining = {};
-            for (let key in colHeaders) {
+            for (const key in colHeaders) {
                 if (this.target.indexOf(parseInt(key)) === -1) {
                     remaining[key] = colHeaders[key];
                 }
@@ -724,7 +685,7 @@ const ColumnSelector = {
         handleInput(value) {
             if (this.multiple) {
                 // https://stackoverflow.com/questions/262427/why-does-parseint-yield-nan-with-arraymap
-                let val = value.map(idx => parseInt(idx));
+                const val = value.map(idx => parseInt(idx));
                 this.$emit("update:target", val);
             } else {
                 let val = parseInt(value);
@@ -990,7 +951,7 @@ export default {
                 if (this.initialElements !== null) {
                     const collectionType = this.initialElements.collection_type;
                     const collectionTypeRanks = collectionType.split(":");
-                    for (let index in collectionTypeRanks) {
+                    for (const index in collectionTypeRanks) {
                         rules.push({
                             type: "add_column_metadata",
                             value: "identifier" + index
@@ -1029,7 +990,6 @@ export default {
         }
         return {
             rules: rules,
-            colHeadersPerRule: [],
             mapping: mapping,
             state: "build", // 'build', 'error', 'wait',
             ruleView: "normal", // 'normal' or 'source'
@@ -1227,7 +1187,7 @@ export default {
         },
         mappedTargets() {
             const targets = [];
-            for (let mapping of this.mapping) {
+            for (const mapping of this.mapping) {
                 targets.push(mapping.type);
             }
             return targets;
@@ -1235,7 +1195,7 @@ export default {
         unmappedTargets() {
             const targets = [];
             const mappedTargets = this.mappedTargets;
-            for (let target in MAPPING_TARGETS) {
+            for (const target in MAPPING_TARGETS) {
                 const targetModes = MAPPING_TARGETS[target].modes;
 
                 if (targetModes && targetModes.indexOf(this.elementsType) < 0) {
@@ -1257,17 +1217,16 @@ export default {
             return targets;
         },
         colHeaders() {
-            const data = this.hotData["data"];
-            const columns = this.hotData["columns"];
+            const { data, columns } = this.hotData;
             return RuleDefs.colHeadersFor(data, columns);
         },
         colHeadersDisplay() {
             const formattedHeaders = [];
-            for (let colIndex in this.colHeaders) {
+            for (const colIndex in this.colHeaders) {
                 const colHeader = this.colHeaders[colIndex];
                 formattedHeaders[colIndex] = `<b>${_.escape(colHeader)}</b>`;
                 const mappingDisplay = [];
-                for (let mapping of this.mapping) {
+                for (const mapping of this.mapping) {
                     if (mapping.columns.indexOf(parseInt(colIndex)) !== -1) {
                         const mappingDef = MAPPING_TARGETS[mapping.type];
                         mappingDisplay.push(`<i>${_.escape(mappingDef.columnHeader || mappingDef.label)}</i>`);
@@ -1286,7 +1245,7 @@ export default {
         },
         mappingAsDict() {
             const asDict = {};
-            for (let mapping of this.mapping) {
+            for (const mapping of this.mapping) {
                 asDict[mapping.type] = mapping;
             }
             return asDict;
@@ -1302,7 +1261,7 @@ export default {
                     collectionType = "list:list:list:paired";
                 }
                 const collectionTypeRanks = collectionType.split(":");
-                for (let index in collectionTypeRanks) {
+                for (const index in collectionTypeRanks) {
                     const collectionTypeRank = collectionTypeRanks[index];
                     if (collectionTypeRank == "list") {
                         // TODO: drop the numeral at the end if only flat list
@@ -1364,7 +1323,7 @@ export default {
             if (requiresSourceColumn && !mappingAsDict.ftp_path && !mappingAsDict.url) {
                 valid = false;
             }
-            for (var rule of this.rules) {
+            for (const rule of this.rules) {
                 if (rule.error) {
                     valid = false;
                 }
@@ -1374,6 +1333,44 @@ export default {
                 valid = false;
             }
             return valid;
+        },
+        hotData() {
+            let data, sources, columns;
+            if (
+                this.elementsType == "datasets" ||
+                this.elementsType == "library_datasets" ||
+                this.elementsType == "ftp"
+            ) {
+                sources = this.initialElements.slice();
+                data = sources.map(el => []);
+                columns = [];
+            } else if (this.elementsType == "collection_contents") {
+                const collection = this.initialElements;
+                if (collection) {
+                    const obj = this.populateElementsFromCollectionDescription(
+                        collection.elements,
+                        collection.collection_type
+                    );
+                    data = obj.data;
+                    sources = obj.sources;
+                    columns = [];
+                } else {
+                    data = [];
+                    sources = [];
+                    columns = [];
+                }
+            } else {
+                data = this.initialElements.slice();
+                sources = data.map(el => null);
+                columns = [];
+                if (this.initialElements) {
+                    this.initialElements[0].forEach(() => columns.push("new"));
+                }
+            }
+            return RuleDefs.applyRules(data, sources, columns, this.rules);
+        },
+        colHeadersPerRule() {
+            return this.hotData.colHeadersPerRule;
         }
     },
     methods: {
@@ -1411,42 +1408,6 @@ export default {
                 RULES[ruleType].save(this, rule);
                 this.rules.push(rule);
             }
-        },
-        hotData() {
-            let data, sources, columns;
-            if (
-                this.elementsType == "datasets" ||
-                this.elementsType == "library_datasets" ||
-                this.elementsType == "ftp"
-            ) {
-                data = this.initialElements.map(el => []);
-                sources = this.initialElements.slice();
-                columns = [];
-            } else if (this.elementsType == "collection_contents") {
-                const collection = this.initialElements;
-                if (collection) {
-                    const obj = this.populateElementsFromCollectionDescription(
-                        collection.elements,
-                        collection.collection_type
-                    );
-                    data = obj.data;
-                    sources = obj.sources;
-                    columns = [];
-                } else {
-                    data = [];
-                    sources = [];
-                    columns = [];
-                }
-            } else {
-                data = this.initialElements.slice();
-                sources = data.map(el => null);
-                columns = [];
-                if (this.initialElements) {
-                    this.initialElements[0].forEach(() => columns.push("new"));
-                }
-            }
-            this.colHeadersPerRule = [];
-            return RuleDefs.applyRules(data, sources, columns, this.rules, this.colHeadersPerRule);
         },
         viewSource() {
             this.resetSource();
@@ -1526,7 +1487,7 @@ export default {
             this.mapping.splice(index, 1);
         },
         refreshAndWait(response) {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel) {
                 Galaxy.currHistoryPanel.refreshContents();
             }
@@ -1545,7 +1506,7 @@ export default {
                         "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";
                     this.doFullJobCheck(jobId);
                 } else {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     const history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
                     history.refresh();
                     this.oncreate();
@@ -1631,13 +1592,13 @@ export default {
                     this.oncreate();
                 }
             } else {
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 const historyId = Galaxy.currHistoryPanel.model.id;
                 let elements, targets;
                 if (collectionType) {
                     targets = [];
                     const elementsByCollectionName = this.creationElementsForFetch();
-                    for (let collectionName in elementsByCollectionName) {
+                    for (const collectionName in elementsByCollectionName) {
                         const target = {
                             destination: { type: "hdca" },
                             elements: elementsByCollectionName[collectionName],
@@ -1684,7 +1645,7 @@ export default {
             return identifierColumns;
         },
         buildRequestElements(createDatasetDescription, createSubcollectionDescription, subElementProp) {
-            const data = this.hotData["data"];
+            const data = this.hotData.data;
             const identifierColumns = this.identifierColumns();
             if (identifierColumns.length < 1) {
                 console.log("Error but this shouldn't have happened, create button should have been disabled.");
@@ -1695,11 +1656,11 @@ export default {
             const collectionType = this.collectionType;
             const elementsByName = {};
 
-            let dataByCollection = {};
+            const dataByCollection = {};
             const collectionNameMap = this.mappingAsDict.collection_name;
             if (collectionNameMap) {
                 const collectionNameTarget = collectionNameMap.columns[0];
-                for (let dataIndex in data) {
+                for (const dataIndex in data) {
                     const row = data[dataIndex];
                     const name = row[collectionNameTarget];
                     if (!dataByCollection[name]) {
@@ -1712,11 +1673,11 @@ export default {
                 dataByCollection[this.collectionName] = data;
             }
 
-            for (let collectionName in dataByCollection) {
+            for (const collectionName in dataByCollection) {
                 const elements = [];
                 const identifiers = [];
 
-                for (let dataIndex in dataByCollection[collectionName]) {
+                for (const dataIndex in dataByCollection[collectionName]) {
                     const rowData = data[dataIndex];
 
                     // For each row, find place in depth for this element.
@@ -1763,7 +1724,7 @@ export default {
                                 .slice(1)
                                 .join(":");
                             let found = false;
-                            for (let element of elementsAtDepth) {
+                            for (const element of elementsAtDepth) {
                                 if (element["name"] == identifier) {
                                     elementsAtDepth = element[subElementProp];
                                     identifiersAtDepth = identifiersAtDepth[identifier];
@@ -1791,8 +1752,7 @@ export default {
             return elementsByName;
         },
         creationElementsFromDatasets() {
-            const sources = this.hotData["sources"];
-            const data = this.hotData["data"];
+            const { sources, data } = this.hotData;
             const mappingAsDict = this.mappingAsDict;
 
             const elementsByCollectionName = this.buildRequestElements(
@@ -1811,7 +1771,7 @@ export default {
         },
         creationElementsForFetch() {
             // fetch elements for HDCA
-            const data = this.hotData["data"];
+            const data = this.hotData.data;
             const mappingAsDict = this.mappingAsDict;
 
             const elementsByCollectionName = this.buildRequestElements(
@@ -1830,12 +1790,12 @@ export default {
         },
         creationDatasetsForFetch() {
             // fetch elements for HDAs if not collection information specified.
-            const data = this.hotData["data"];
+            const data = this.hotData.data;
             const mappingAsDict = this.mappingAsDict;
 
             const datasets = [];
 
-            for (let dataIndex in data) {
+            for (const dataIndex in data) {
                 const res = this._datasetFor(dataIndex, data, mappingAsDict);
                 datasets.push(res);
             }
@@ -1846,7 +1806,7 @@ export default {
             const parentIdentifiers = parentIdentifiers_ ? parentIdentifiers_ : [];
             let data = [];
             let sources = [];
-            for (let element of elements) {
+            for (const element of elements) {
                 const elementObject = element.object;
                 const identifiers = parentIdentifiers.concat([element.element_identifier]);
                 const collectionTypeLevelSepIndex = collectionType.indexOf(":");
@@ -1858,7 +1818,7 @@ export default {
                     sources.push(source);
                 } else {
                     const restCollectionType = collectionType.slice(collectionTypeLevelSepIndex + 1);
-                    let elementObj = this.populateElementsFromCollectionDescription(
+                    const elementObj = this.populateElementsFromCollectionDescription(
                         elementObject.elements,
                         restCollectionType,
                         identifiers
@@ -1932,14 +1892,14 @@ export default {
             const tags = [];
             if (mappingAsDict.tags) {
                 const tagColumns = mappingAsDict.tags.columns;
-                for (var tagColumn of tagColumns) {
+                for (const tagColumn of tagColumns) {
                     const tag = data[dataIndex][tagColumn];
                     tags.push(tag);
                 }
             }
             if (mappingAsDict.group_tags) {
                 const groupTagColumns = mappingAsDict.group_tags.columns;
-                for (var groupTagColumn of groupTagColumns) {
+                for (const groupTagColumn of groupTagColumns) {
                     const tag = data[dataIndex][groupTagColumn];
                     tags.push("group:" + tag);
                 }
@@ -1959,7 +1919,7 @@ export default {
         if (this.elementsType !== "collection_contents") {
             let columnCount = null;
             if (this.elementsType == "datasets") {
-                for (let element of this.initialElements) {
+                for (const element of this.initialElements) {
                     if (element.history_content_type == "dataset_collection") {
                         this.errorMessage =
                             "This component can only be used with datasets, you have specified one or more collections.";
@@ -1967,7 +1927,7 @@ export default {
                     }
                 }
             } else {
-                for (let row of this.initialElements) {
+                for (const row of this.initialElements) {
                     if (columnCount == null) {
                         columnCount = row.length;
                     } else {

@@ -8,10 +8,12 @@ from six.moves.urllib.parse import (
 )
 
 from galaxy import (
+    exceptions,
     util,
     web
 )
-from galaxy.web import _future_expose_api as expose_api
+from galaxy.exceptions import MessageException
+from galaxy.web import expose_api
 from galaxy.web.base.controller import BaseAPIController
 from tool_shed.util import (
     common_util,
@@ -167,14 +169,17 @@ class ToolShedController(BaseAPIController):
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
         url = util.build_url(tool_shed_url, pathspec=['api', 'categories'])
         categories = []
-        for category in json.loads(util.url_get(url)):
-            api_url = web.url_for(controller='api/tool_shed',
-                                  action='category',
-                                  tool_shed_url=urlquote(tool_shed_url),
-                                  category_id=category['id'],
-                                  qualified=True)
-            category['url'] = api_url
-            categories.append(category)
+        try:
+            for category in json.loads(util.url_get(url)):
+                api_url = web.url_for(controller='api/tool_shed',
+                                      action='category',
+                                      tool_shed_url=urlquote(tool_shed_url),
+                                      category_id=category['id'],
+                                      qualified=True)
+                category['url'] = api_url
+                categories.append(category)
+        except Exception:
+            raise exceptions.ObjectNotFound("Tool Shed %s is not responding." % tool_shed_url)
         return categories
 
     @expose_api
@@ -187,10 +192,16 @@ class ToolShedController(BaseAPIController):
 
         :param tool_shed_url: the url of the toolshed to get repositories from
         :param category_id: the category to get repositories from
+        :param sort_key: the field by which the repositories should be sorted
+        :param sort_order: ascending or descending sort
+        :param page: the page number to return
         """
+        sort_order = kwd.get('sort_order', 'asc')
+        sort_key = kwd.get('sort_key', 'name')
+        page = kwd.get('page', 1)
         tool_shed_url = urlunquote(kwd.get('tool_shed_url', ''))
         category_id = kwd.get('category_id', '')
-        params = dict(installable=True)
+        params = dict(installable=True, sort_order=sort_order, sort_key=sort_key, page=page)
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
         url = util.build_url(tool_shed_url, pathspec=['api', 'categories', category_id, 'repositories'], params=params)
         repositories = []
@@ -241,11 +252,11 @@ class ToolShedController(BaseAPIController):
             if len(tool_shed_url) == 0:
                 # By design, this list should always be from the same toolshed. If
                 # this is ever not the case, this code will need to be updated.
-                tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_ids[0].split('/')[0])
+                tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_ids[0].split('/repos')[0])
             found_repository = json.loads(util.url_get(tool_shed_url, params=dict(tool_ids=','.join(tool_ids)), pathspec=['api', 'repositories']))
-            fr_first_key = next(iter(found_repository.keys()))
-            repository_id = found_repository[fr_first_key]['repository_id']
-            repository_data['current_changeset'] = found_repository['current_changeset']
+            current_changeset = found_repository['current_changeset']
+            repository_id = found_repository[current_changeset]['repository_id']
+            repository_data['current_changeset'] = current_changeset
             repository_data['repository'] = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'repositories', repository_id]))
             del found_repository['current_changeset']
             repository_data['tool_shed_url'] = tool_shed_url
@@ -304,3 +315,26 @@ class ToolShedController(BaseAPIController):
             return {}
         response = json.loads(util.url_get(tool_shed_url, params=dict(q=q), pathspec=['api', 'repositories']))
         return response
+
+    @expose_api
+    @web.require_admin
+    def request(self, trans, **params):
+        """
+        GET /api/tool_shed/request
+        """
+        tool_shed_url = params.pop("tool_shed_url")
+        controller = params.pop("controller")
+        if controller is None:
+            raise MessageException("Please provide a toolshed controller name.")
+        tool_shed_registry = trans.app.tool_shed_registry
+        if tool_shed_registry is None:
+            raise MessageException("Toolshed registry not available.")
+        if tool_shed_url in tool_shed_registry.tool_sheds.values():
+            pathspec = ["api", controller]
+            if "id" in params:
+                pathspec.append(params.pop("id"))
+            if "action" in params:
+                pathspec.append(params.pop("action"))
+            return json.loads(util.url_get(tool_shed_url, params=dict(params), pathspec=pathspec))
+        else:
+            raise MessageException("Invalid toolshed url.")

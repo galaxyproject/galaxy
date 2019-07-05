@@ -58,8 +58,7 @@ def printquery(statement, bind=None):
     import sqlalchemy.orm
     if isinstance(statement, sqlalchemy.orm.Query):
         if bind is None:
-            bind = statement.session.get_bind(
-                statement._mapper_zero_or_none())
+            bind = statement.session.get_bind()
         statement = statement.statement
     elif bind is None:
         bind = statement.bind

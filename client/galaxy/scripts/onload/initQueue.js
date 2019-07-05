@@ -17,18 +17,18 @@
 import { BehaviorSubject } from "rxjs";
 import { filter } from "rxjs/operators";
 
-const queue = (window.top._initQueue = new BehaviorSubject([]));
+const queue = new BehaviorSubject([]);
 
 // don't emit unless there are things to initialize
 export const initializations$ = queue.pipe(filter(list => list.length > 0));
 
 export const addInitialization = (...fns) => {
-    let nextInits = [...queue.getValue(), ...fns];
+    const nextInits = [...queue.getValue(), ...fns];
     queue.next(nextInits);
 };
 
 export const prependInitialization = (...fns) => {
-    let nextInits = [...fns, ...queue.getValue()];
+    const nextInits = [...fns, ...queue.getValue()];
     queue.next(nextInits);
 };
 

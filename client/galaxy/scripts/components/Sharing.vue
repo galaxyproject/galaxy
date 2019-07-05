@@ -25,7 +25,9 @@
                         <span id="item-url-text" style="display: none">
                             {{ item_url_parts[0] }}<span id="item-identifier">{{ item_url_parts[1] }}</span>
                         </span>
-                        <a href="#" id="edit-identifier"><img :src="pencil_url"/></a>
+                        <a href="javascript:void(0)" id="edit-identifier"
+                            ><img :src="pencil_url" alt="Edit Share Url"
+                        /></a>
                     </blockquote>
                     <div v-if="item.published">
                         <p>
@@ -170,13 +172,14 @@ export default {
             return this.item.published ? "accessible via link and published" : "accessible via link";
         },
         item_url() {
-            return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${getAppRoot()}${
+            const port = window.location.port ? `:${window.location.port}` : "";
+            return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}${
                 this.item.username_and_slug
             }`;
         },
         item_url_parts() {
-            let str = this.item_url;
-            let index = str.lastIndexOf("/");
+            const str = this.item_url;
+            const index = str.lastIndexOf("/");
             return [str.substring(0, index + 1), str.substring(index + 1)];
         },
         published_url() {
@@ -196,7 +199,7 @@ export default {
         }
     },
     data() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         return {
             ready: false,
             has_username: Galaxy.user.get("username"),
@@ -232,7 +235,7 @@ export default {
                 .catch(error => (this.err_msg = error.response.data.err_msg));
         },
         setUsername: function() {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             axios
                 .put(`${getAppRoot()}api/users/${Galaxy.user.id}/information/inputs`, {
                     username: this.new_username || ""
@@ -245,7 +248,7 @@ export default {
                 .catch(error => (this.err_msg = error.response.data.err_msg));
         },
         setSharing: function(action, user_id) {
-            let data = {
+            const data = {
                 action: action,
                 user_id: user_id
             };
@@ -263,7 +266,7 @@ export default {
                 .catch(error => (this.err_msg = error.response.data.err_msg));
         },
         createSlugHandler: function() {
-            var on_start = function(text_elt) {
+            const on_start = function(text_elt) {
                 // Replace URL with URL text.
                 $("#item-url").hide();
                 $("#item-url-text").show();
@@ -279,14 +282,14 @@ export default {
                     );
                 });
             };
-            var on_finish = function(text_elt) {
+            const on_finish = function(text_elt) {
                 // Replace URL text with URL.
                 $("#item-url-text").hide();
                 $("#item-url").show();
 
                 // Set URL to new value.
-                var new_url = $("#item-url-text").text();
-                var item_url_obj = $("#item-url");
+                const new_url = $("#item-url-text").text();
+                const item_url_obj = $("#item-url");
                 item_url_obj.attr("href", new_url);
                 item_url_obj.text(new_url);
             };

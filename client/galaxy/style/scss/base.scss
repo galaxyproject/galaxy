@@ -1,7 +1,7 @@
 // Bootstrap variables and core framework
-@import "../../../node_modules/bootstrap/scss/_functions.scss";
+@import "~bootstrap/scss/_functions.scss";
 @import "theme/blue.scss";
-@import "../../../node_modules/bootstrap/scss/bootstrap.scss";
+@import "~bootstrap/scss/bootstrap.scss";
 
 // Bootstrap-related style overrides
 @import "overrides.scss";
@@ -30,13 +30,13 @@ $fa-font-path: "../../../node_modules/font-awesome/fonts/";
 @import "ui.scss";
 @import "library.scss";
 @import "trackster.scss";
-@import "autocomplete_tagging.scss";
 @import "toastr.scss";
 @import "jstree.scss";
 @import "tour.scss";
 @import "flex.scss";
 @import "charts.scss";
 @import "message.scss";
+@import "toolshed.scss";
 
 // Mixins
 @mixin user-select($select) {
@@ -140,7 +140,6 @@ body {
 }
 
 // Panels
-
 #left,
 #center,
 #right {
@@ -148,19 +147,22 @@ body {
     top: 0;
     height: 100%;
     overflow: hidden;
-    background: #fff;
+    background: white;
 }
 #left {
     left: 0px;
     width: $panel-width;
-    z-index: 200;
     border-right: $layout-border;
+}
+#right {
+    right: 0px;
+    width: $panel-width;
+    border-left: $layout-border;
 }
 #center {
     left: $panel-width;
     right: $panel-width;
     overflow: hidden;
-    z-index: 1;
     .center-container {
         position: absolute;
         width: 100%;
@@ -189,21 +191,6 @@ body {
     }
 }
 
-#right {
-    width: $panel-width;
-    right: 0px;
-    z-index: 200;
-    border-left: $layout-border;
-}
-
-#left,
-#right,
-.unified-panel {
-    background: $panel-bg-color;
-    display: flex;
-    flex-direction: column;
-}
-
 #left,
 #right,
 .unified-panel {
@@ -216,7 +203,6 @@ body {
     @extend .unselectable;
     @extend .mx-3;
     height: $panel_header_height;
-    z-index: 1000;
     font-size: 1rem;
     font-weight: bold;
     display: flex;
@@ -233,28 +219,14 @@ body {
     .panel-header-buttons {
         order: 9999;
         float: right;
-    }
-    .panel-header-button {
-        text-decoration: none;
-        display: inline-block;
-        cursor: pointer;
-        width: 1.2rem;
-        text-align: center;
-        padding: 0px;
-        &:not(:last-child) {
-            margin-right: 2px;
-        }
-        &:hover {
-            color: $brand-info;
-        }
-        // Bootstrap style span caret needs positioning
-        .caret {
-            margin-top: 7px;
-        }
-        // Another way to get a caret
-        &.popup {
-            padding-right: 1.75em;
-            background: url(../../images/dropdownarrow.png) no-repeat right 7px;
+        .panel-header-button {
+            text-align: center;
+            &:not(:last-child) {
+                @extend .mr-2;
+            }
+            &:hover {
+                color: $brand-info;
+            }
         }
     }
 }
@@ -269,7 +241,6 @@ body {
     height: $panel_footer_height;
     line-height: $panel_footer_height;
     width: 100%;
-    z-index: 1000; // Above #dd-helper
     border-top: $layout-border;
     background: $panel-footer-bg-color;
     color: $panel-header-text-color;
@@ -299,41 +270,47 @@ body {
 
 // Needs to be outside panel to show when hidden
 .panel-collapse {
-    @extend .unified-panel-footer;
-    font-size: 4/3em;
     @extend .fa-icon;
-    &:before {
-        content: "\f053";
-    }
-    &.hidden:before {
-        content: "\f054";
-    }
-    z-index: 201;
+    $border-color: darken($panel-footer-bg-color, 20%);
+    font-size: 4/3em;
     cursor: pointer;
     display: block;
     position: fixed;
-    left: 0;
-    top: inherit;
-    bottom: 0;
-    padding: 0 5px;
     text-align: center;
     height: $panel_footer_height;
     line-height: $panel_footer_height;
-    width: $panel_footer_height - 5;
-    background: none;
-    border-right: $layout-border;
-    border-top: $layout-border;
+    width: $panel_footer_height;
     background: $panel-footer-bg-color;
+    border: solid $panel-footer-bg-color 1px;
+    z-index: 1;
     &.right {
-        left: inherit;
         right: 0;
-        border-right: none;
-        border-left: $layout_border;
-        &.right:before {
+        border-top-left-radius: $border-radius-base;
+        line-height: inherit;
+        &:before {
             content: "\f054";
         }
-        &.right.hidden:before {
+        &.hidden:before {
             content: "\f053";
+        }
+        &.hidden {
+            border-top-color: $border-color;
+            border-left-color: $border-color;
+        }
+    }
+    &.left {
+        left: 0;
+        border-top-right-radius: $border-radius-base;
+        line-height: inherit;
+        &:before {
+            content: "\f053";
+        }
+        &.hidden:before {
+            content: "\f054";
+        }
+        &.hidden {
+            border-top-color: $border-color;
+            border-right-color: $border-color;
         }
     }
 }
@@ -515,6 +492,7 @@ div.unified-panel-body-background {
         @extend .text-dark;
         font-size: 12px;
         text-decoration: none;
+        display: block;
     }
 }
 
@@ -608,7 +586,7 @@ div.toolFormRow {
         @extend .py-1;
         @extend .px-2;
         cursor: move;
-        background: $panel-bg-color;
+        background: $brand-secondary;
     }
     .toolFormBody {
         @extend .card-body;
@@ -696,6 +674,11 @@ div.form-row-input label {
     padding-top: 10px;
     padding-bottom: 10px;
     margin-top: 5px;
+}
+
+#run-workflow {
+    @extend .float-right;
+    @extend .mt-3;
 }
 
 .workflow-right {
@@ -807,9 +790,9 @@ button {
 .warningmessagelarge,
 .donemessagelarge,
 .infomessagelarge,
-.ui-form-help .error,
-.ui-form-help .warning,
-.ui-form-help .note {
+.form-help .error,
+.form-help .warning,
+.form-help .note {
     @extend .alert;
     min-height: 36px;
     padding-left: 52px;
@@ -851,9 +834,9 @@ button {
 .warningmessagesmall,
 .donemessagesmall,
 .infomessagesmall,
-.ui-form-help .error,
-.ui-form-help .warning,
-.ui-form-help .note {
+.form-help .error,
+.form-help .warning,
+.form-help .note {
     @extend .alert;
     padding: 5px;
     padding-left: 25px;
@@ -867,13 +850,13 @@ button {
 
 .errormessage,
 .errormessagesmall,
-.ui-form-help .error {
+.form-help .error {
     @extend .alert-danger;
 }
 
 .warningmessage,
 .warningmessagesmall,
-.ui-form-help .warning {
+.form-help .warning {
     @extend .alert-warning;
     background-image: url(../../images/warn_small.png);
 }
@@ -886,7 +869,7 @@ button {
 
 .infomessage,
 .infomessagesmall,
-.ui-form-help .note {
+.form-help .note {
     @extend .alert-info;
     background-image: url(../../images/info_small.png);
 }
@@ -1338,34 +1321,11 @@ div.popmenu-wrapper {
     top: 100%;
     z-index: 20000;
 
-    ul.dropdown-menu {
+    .dropdown-menu {
         // Since our menus are contained in a positioned div, need to override some styles
         display: block;
         position: relative;
         float: none;
-    }
-}
-
-// For all dropdowns, define some additional item types
-ul.dropdown-menu {
-    a {
-        text-decoration: none;
-    }
-    li.head > a {
-        // From nav-list nav-header
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-        font-size: 11px;
-        font-weight: bold;
-        line-height: $line-height-base;
-        color: $text-color;
-        text-transform: uppercase;
-    }
-    li.head > a:hover {
-        background: inherit;
-        border-color: transparent;
-    }
-    li > a {
-        @extend .dropdown-item;
     }
 }
 
@@ -1517,84 +1477,58 @@ div.permissionContainer {
 @import "ui/error-modal.scss";
 
 // ==== Tool menu styles
-
 .toolMenuContainer {
     color: $panel-text-color;
     a {
         color: $panel-text-color;
-        // text-decoration: none;
     }
     background: $panel-bg-color;
     min-height: 100%;
     @extend .m-3;
 }
 
-div.toolSectionPad {
-    margin: 0;
-    padding: 0;
-    height: 5px;
-    font-size: 0px;
-}
-
 div.toolSectionWrapper {
-    margin-bottom: 5px;
-}
-
-div.toolSectionDetailsInner {
-    margin-left: 5px;
-    margin-right: 5px;
+    @extend .mb-1;
 }
 
 div.toolSectionTitle {
     font-weight: 500;
-    font-size: 1rem;
+    font-size: $h4-font-size;
 }
 
 div.toolPanelLabel {
-    padding-top: 10px;
-    padding-bottom: 5px;
+    @extend .mt-3;
+    @extend .mb-2;
     font-weight: bold;
-    color: gray;
+    color: $gray-600;
     text-transform: uppercase;
 }
 
 div.toolTitle {
-    padding-top: 5px;
-    padding-bottom: 5px;
-    margin-left: 10px;
-    margin-right: 10px;
+    @extend .m-2;
     display: block;
     .labels {
         float: right;
-        margin-left: 2px;
     }
 }
 
 div a.tool-link {
     text-decoration: none;
     display: block;
-
     span.tool-old-link {
         text-decoration: underline;
     }
-}
-
-div.toolSectionBody div.toolPanelLabel {
-    padding-top: 5px;
-    padding-bottom: 5px;
-    margin-left: 16px;
-    margin-right: 10px;
-    display: list-item;
-    list-style: none outside;
+    &:hover {
+        background: darken($panel-bg-color, 5%);
+    }
 }
 
 div.toolTitleNoSection {
-    padding-bottom: 5px;
+    @extend .pb-1;
     font-weight: bold;
 }
 
 // Dataset Display Styles
-
 #loading_indicator {
     position: fixed;
     right: 10px;
@@ -1780,11 +1714,6 @@ div.toolTitleNoSection {
     padding: 2px;
 }
 
-.communication-iframe {
-    width: 100%;
-    height: 100%;
-}
-
 .close-modal {
     float: right;
     cursor: pointer;
@@ -1860,19 +1789,6 @@ div.toolTitleNoSection {
     opacity: 1;
 }
 
-/* Temporary tag editor display; will be moved to a scoped Vue SFC upon refactoring */
-.tags-display {
-    @extend %vertical-spacing;
-    .select2-container {
-        max-height: 80px;
-        overflow: auto;
-        min-width: 0px;
-        .select2-choices {
-            border-radius: 3px;
-        }
-    }
-}
-
 /* TEMPORARY, REFACTOR THIS -- This is only image-related styles from the
  * workflow editor; everything should be moved out of the mako and into its own
  * file */
@@ -1912,8 +1828,11 @@ div.toolTitleNoSection {
         color: $brand-success;
     }
 }
-.input-terminal-active > icon {
+.input-terminal-active.can-accept > icon {
     color: $brand-success;
+}
+.input-terminal-active.cannot-accept > icon {
+    color: $brand-warning;
 }
 .drag-terminal {
     @extend .fa;
@@ -1969,7 +1888,8 @@ div.toolTitleNoSection {
 }
 
 /* Toolshed, reports custom styles from mako templates */
-body.toolshed {
+body.toolshed,
+body.reports {
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -1981,15 +1901,6 @@ body.toolshed {
     }
     .toolMenu {
         margin-left: 10px;
-    }
-}
-
-body.reports {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    #left {
-        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
     }
 }
 

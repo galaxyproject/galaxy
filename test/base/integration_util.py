@@ -7,7 +7,9 @@ tessting configuration.
 import os
 from unittest import skip, SkipTest, TestCase
 
-from galaxy.tools.deps.commands import which
+import pytest
+
+from galaxy.tool_util.deps.commands import which
 from galaxy.tools.verify.test_data import TestDataResolver
 from .api import UsesApiTestCaseMixin
 from .driver_util import GalaxyTestDriver
@@ -15,8 +17,11 @@ from .driver_util import GalaxyTestDriver
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 
 
-def skip_if_jenkins(cls):
+def _identity(func):
+    return func
 
+
+def skip_if_jenkins(cls):
     if os.environ.get("BUILD_NUMBER", ""):
         return skip
 
@@ -25,7 +30,7 @@ def skip_if_jenkins(cls):
 
 def skip_unless_executable(executable):
     if which(executable):
-        return lambda func: func
+        return _identity
     return skip("PATH doesn't contain executable %s" % executable)
 
 
@@ -33,11 +38,22 @@ def skip_unless_docker():
     return skip_unless_executable("docker")
 
 
-def skip_unless_singularity():
-    return skip_unless_executable("singularity")
+def skip_unless_kubernetes():
+    return skip_unless_executable("kubectl")
 
 
-class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
+def k8s_config_path():
+    return os.environ.get('GALAXY_TEST_KUBE_CONFIG_PATH', '~/.kube/config')
+
+
+def skip_unless_fixed_port():
+    if os.environ.get("GALAXY_TEST_PORT"):
+        return _identity
+
+    return skip("GALAXY_TEST_PORT must be set for this test.")
+
+
+class IntegrationInstance(UsesApiTestCaseMixin):
     """Unit test case with utilities for spinning up Galaxy."""
 
     prefer_template_database = True
@@ -119,3 +135,27 @@ class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
 
     def _run_tool_test(self, *args, **kwargs):
         return self._test_driver.run_tool_test(*args, **kwargs)
+
+
+class IntegrationTestCase(IntegrationInstance, TestCase):
+    """Unit TestCase with utilities for spinning up Galaxy."""
+
+
+def integration_module_instance(clazz):
+
+    def _instance():
+        instance = clazz()
+        instance.setUpClass()
+        instance.setUp()
+        yield instance
+        instance.tearDownClass()
+
+    return pytest.fixture(scope='module')(_instance)
+
+
+def integration_tool_runner(tool_ids):
+
+    def test_tools(instance, tool_id):
+        instance._run_tool_test(tool_id)
+
+    return pytest.mark.parametrize("tool_id", tool_ids)(test_tools)

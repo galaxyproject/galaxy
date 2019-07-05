@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 
 class BaseExtendedMetadataController(BaseAPIController, UsesExtendedMetadataMixin, UsesLibraryMixinItems, UsesStoredWorkflowMixin):
 
-    @web.expose_api
+    @web.legacy_expose_api
     def index(self, trans, **kwd):
         idnum = kwd[self.exmeta_item_id]
         item = self._get_item_from_id(trans, idnum, check_writable=False)
@@ -29,7 +29,7 @@ class BaseExtendedMetadataController(BaseAPIController, UsesExtendedMetadataMixi
             if ex_meta is not None:
                 return ex_meta.data
 
-    @web.expose_api
+    @web.legacy_expose_api
     def create(self, trans, payload, **kwd):
         idnum = kwd[self.exmeta_item_id]
         item = self._get_item_from_id(trans, idnum, check_writable=True)
@@ -41,7 +41,7 @@ class BaseExtendedMetadataController(BaseAPIController, UsesExtendedMetadataMixi
             ex_obj = self.create_extended_metadata(trans, payload)
             self.set_item_extended_metadata_obj(trans, item, ex_obj)
 
-    @web.expose_api
+    @web.legacy_expose_api
     def delete(self, trans, **kwd):
         idnum = kwd[self.tagged_item_id]
         item = self._get_item_from_id(trans, idnum, check_writable=True)
@@ -51,7 +51,7 @@ class BaseExtendedMetadataController(BaseAPIController, UsesExtendedMetadataMixi
                 self.unset_item_extended_metadata_obj(trans, item)
                 self.delete_extended_metadata(trans, ex_obj)
 
-    @web.expose_api
+    @web.legacy_expose_api
     def undelete(self, trans, **kwd):
         raise HTTPNotImplemented()
 

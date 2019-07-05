@@ -1,12 +1,12 @@
-import inspect
 import logging
 import sys
 
 from galaxy.util import unicodify
+from galaxy.util.getargspec import getfullargspec
 
 log = logging.getLogger(__name__)
 
-assertion_module_names = ['text', 'tabular', 'xml']
+assertion_module_names = ['text', 'tabular', 'xml', 'hdf5', 'archive']
 
 # Code for loading modules containing assertion checking functions, to
 # create a new module of assertion functions, create the needed python
@@ -15,7 +15,6 @@ assertion_module_names = ['text', 'tabular', 'xml']
 assertion_modules = []
 for assertion_module_name in assertion_module_names:
     full_assertion_module_name = 'galaxy.tools.verify.asserts.' + assertion_module_name
-    log.debug(full_assertion_module_name)
     try:
         # Dynamically import module
         __import__(full_assertion_module_name)
@@ -44,7 +43,7 @@ def verify_assertion(data, assertion_description):
         errmsg = "Unable to find test function associated with XML tag '%s'. Check your tool file syntax." % tag
         raise AssertionError(errmsg)
 
-    assert_function_args = inspect.getargspec(assert_function).args
+    assert_function_args = getfullargspec(assert_function).args
     args = {}
     for attribute, value in assertion_description["attributes"].items():
         if attribute in assert_function_args:
@@ -68,11 +67,15 @@ def verify_assertion(data, assertion_description):
     # - <has_column_titles><with_name name="sequence"><with_name
     # name="probability"></has_column_titles>.)
     if "output" in assert_function_args:
-        # This was read in as bytes for checksum and such, but all current
-        # assertions expect text data. If binary assertions are added at
-        # some point, just checkout for "output_bytes" for instance and pass
-        # data in unchanged.
+        # If the assert_function will have an attribute called "output"
+        # the data passed from the test to the function will be unicodified.
+        # This is because most of the assert functions are working on pure
+        # text files.
         args["output"] = unicodify(data)
+    if "output_bytes" in assert_function_args:
+        # This will read in data as bytes and will not change it prior passing
+        # it to the assert_function
+        args["output_bytes"] = data
 
     if "verify_assertions_function" in assert_function_args:
         args["verify_assertions_function"] = verify_assertions

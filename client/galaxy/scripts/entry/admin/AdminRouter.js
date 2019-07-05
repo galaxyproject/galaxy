@@ -7,21 +7,26 @@ import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
+import Jobs from "components/admin/Jobs.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
+import Register from "components/login/Register.vue";
 import ErrorStack from "components/admin/ErrorStack.vue";
 import DisplayApplications from "components/admin/DisplayApplications.vue";
+import Toolshed from "components/Toolshed/Index.vue";
 import Vue from "vue";
 
 export const getAdminRouter = (Galaxy, options) => {
-    let galaxyRoot = getAppRoot();
+    const galaxyRoot = getAppRoot();
 
     return Router.extend({
         routes: {
             "(/)admin(/)": "home",
             "(/)admin(/)users": "show_users",
+            "(/)admin(/)users(/)create": "show_users_create",
             "(/)admin(/)roles": "show_roles",
             "(/)admin(/)groups": "show_groups",
+            "(/)admin(/)toolshed": "show_toolshed",
             "(/)admin(/)error_stack": "show_error_stack",
             "(/)admin(/)display_applications": "show_display_applications",
             "(/)admin(/)tool_versions": "show_tool_versions",
@@ -31,12 +36,13 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin(/)form(/)(:form_id)": "show_form",
             "(/)admin/data_tables": "show_data_tables",
             "(/)admin/data_types": "show_data_types",
+            "(/)admin/jobs": "show_jobs",
             "(/)admin/data_manager*path": "show_data_manager",
             "*notFound": "not_found"
         },
 
         authenticate: function() {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             return Galaxy.user && Galaxy.user.id && Galaxy.user.get("is_admin");
         },
 
@@ -54,6 +60,20 @@ export const getAdminRouter = (Galaxy, options) => {
             this._show_grid_view("admin/users_list");
         },
 
+        show_users_create: function() {
+            const instance = Vue.extend(Register);
+            const vm = document.createElement("div");
+            this.page.display(vm);
+            new instance({
+                propsData: {
+                    redirect: "/admin/users",
+                    registration_warning_message: options.config.registration_warning_message,
+                    mailing_join_addr: options.config.mailing_join_addr,
+                    server_mail_configured: options.config.server_mail_configured
+                }
+            }).$mount(vm);
+        },
+
         show_roles: function() {
             this._show_grid_view("admin/roles_list");
         },
@@ -66,6 +86,10 @@ export const getAdminRouter = (Galaxy, options) => {
             this._show_grid_view("admin_toolshed/browse_repositories");
         },
 
+        show_toolshed: function() {
+            this._display_vue_helper(Toolshed);
+        },
+
         show_tool_versions: function() {
             this._show_grid_view("admin/tool_versions_list");
         },
@@ -75,7 +99,7 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         _show_grid_view: function(urlSuffix) {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             this.page.display(
                 new GridView({
                     url_base: `${galaxyRoot}${urlSuffix}`,
@@ -85,8 +109,8 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         _display_vue_helper: function(component, props) {
-            let instance = Vue.extend(component);
-            let vm = document.createElement("div");
+            const instance = Vue.extend(component);
+            const vm = document.createElement("div");
             this.page.display(vm);
             new instance(props).$mount(vm);
         },
@@ -99,6 +123,10 @@ export const getAdminRouter = (Galaxy, options) => {
             this._display_vue_helper(DataTypes);
         },
 
+        show_jobs: function() {
+            this._display_vue_helper(Jobs);
+        },
+
         show_error_stack: function() {
             this._display_vue_helper(ErrorStack);
         },
@@ -108,9 +136,9 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         show_data_manager: function(path) {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             console.log("show_data_manager");
-            let vueMount = document.createElement("div");
+            const vueMount = document.createElement("div");
             this.page.display(vueMount);
             // always set the route back to the base, i.e.
             // `${galaxyRoot}admin/data_manager`
@@ -124,8 +152,8 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         show_form: function(form_id) {
-            var id = `?id=${QueryStringParsing.get("id")}`;
-            var form_defs = {
+            const id = `?id=${QueryStringParsing.get("id")}`;
+            const form_defs = {
                 reset_user_password: {
                     title: _l("Reset passwords"),
                     url: `admin/reset_user_password${id}`,

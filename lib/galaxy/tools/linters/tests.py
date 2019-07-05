@@ -19,7 +19,7 @@ def lint_tsts(tool_xml, lint_ctx):
             has_test = True
         if len(test.findall("assert_stdout")) > 0:
             has_test = True
-        if len(test.findall("assert_stdout")) > 0:
+        if len(test.findall("assert_stderr")) > 0:
             has_test = True
         if len(test.findall("assert_command")) > 0:
             has_test = True

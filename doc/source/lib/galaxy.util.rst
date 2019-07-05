@@ -106,14 +106,6 @@ galaxy\.util\.filelock module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.util\.handlers module
------------------------------
-
-.. automodule:: galaxy.util.handlers
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy\.util\.hash\_util module
 -------------------------------
 

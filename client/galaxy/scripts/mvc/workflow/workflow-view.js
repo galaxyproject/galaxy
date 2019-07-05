@@ -68,30 +68,6 @@ export default Backbone.View.extend({
         var self = (window.workflow_globals.app = this);
         this.options = options;
         this.urls = (options && options.urls) || {};
-        var close_editor = () => {
-            self.workflow.check_changes_in_active_form();
-            if (self.workflow && self.workflow.has_changes) {
-                var do_close = () => {
-                    window.onbeforeunload = undefined;
-                    window.document.location = self.urls.workflow_index;
-                };
-                show_modal(
-                    "Close workflow editor",
-                    "There are unsaved changes to your workflow which will be lost.",
-                    {
-                        Cancel: hide_modal,
-                        "Save Changes": function() {
-                            save_current_workflow(null, do_close);
-                        }
-                    },
-                    {
-                        "Don't Save": do_close
-                    }
-                );
-            } else {
-                window.document.location = self.urls.workflow_index;
-            }
-        };
         var workflow_index = self.urls.workflow_index;
         var save_current_workflow = (eventObj, success_callback) => {
             show_message("Saving workflow", "progress");
@@ -272,8 +248,8 @@ export default Backbone.View.extend({
         this.type_to_type = this.datatypes_mapping.class_to_classes;
 
         this.get_workflow_versions = function() {
-            let _workflow_version_dropdown = {};
-            let workflow_versions = JSON.parse(
+            const _workflow_version_dropdown = {};
+            const workflow_versions = JSON.parse(
                 $.ajax({
                     url: `${getAppRoot()}api/workflows/${self.options.id}/versions`,
                     async: false
@@ -281,8 +257,8 @@ export default Backbone.View.extend({
             );
 
             for (let i = 0; i < workflow_versions.length; i++) {
-                let current_wf = workflow_versions[i];
-                let version_text = `Version ${current_wf["version"]}, ${current_wf["steps"]} steps`;
+                const current_wf = workflow_versions[i];
+                let version_text = `Version ${current_wf.version}, ${current_wf.steps} steps`;
                 let selected = false;
                 if (i == self.workflow.workflow_version) {
                     version_text = `${version_text} (active)`;
@@ -297,7 +273,7 @@ export default Backbone.View.extend({
         };
 
         this.build_version_select = function() {
-            let versions = this.get_workflow_versions();
+            const versions = this.get_workflow_versions();
             $("#workflow-version-switch").empty();
             $.each(versions, function(k, v) {
                 $("#workflow-version-switch").append(
@@ -311,7 +287,9 @@ export default Backbone.View.extend({
                 $("#workflow-version-switch").unbind("change");
                 if (this.value != self.workflow.workflow_version) {
                     if (self.workflow && self.workflow.has_changes) {
-                        let r = confirm("There are unsaved changes to your workflow which will be lost. Continue ?");
+                        const r = window.confirm(
+                            "There are unsaved changes to your workflow which will be lost. Continue ?"
+                        );
                         if (r == false) {
                             // We rebuild the version select list, to reset the selected version
                             self.build_version_select();
@@ -378,12 +356,12 @@ export default Backbone.View.extend({
         // Load workflow definition
         this.load_workflow(self.options.id, self.options.version);
         if (make_popupmenu) {
+            $("#workflow-run-button").click(
+                () => (window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`)
+            );
+            $("#workflow-save-button").click(() => save_current_workflow());
             make_popupmenu($("#workflow-options-button"), {
-                Save: save_current_workflow,
                 "Save As": workflow_save_as,
-                Run: function() {
-                    window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`;
-                },
                 "Edit Attributes": function() {
                     self.workflow.clear_active_node();
                 },
@@ -391,8 +369,7 @@ export default Backbone.View.extend({
                 Download: {
                     url: `${getAppRoot()}api/workflows/${self.options.id}/download?format=json-download`,
                     action: function() {}
-                },
-                Close: close_editor
+                }
             });
         }
 
@@ -528,7 +505,7 @@ export default Backbone.View.extend({
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Copy and insert individual steps"),
                     onclick: function() {
-                        let Galaxy = getGalaxyInstance();
+                        const Galaxy = getGalaxyInstance();
                         if (workflow.step_count < 2) {
                             self.copy_into_workflow(workflow.id, workflow.name);
                         } else {
@@ -641,8 +618,19 @@ export default Backbone.View.extend({
             url: `${getAppRoot()}api/workflows/build_module`,
             data: request_data,
             success: function(data) {
+                const Galaxy = getGalaxyInstance();
                 node.init_field_data(data);
                 node.update_field_data(data);
+                // Post init/update, for new modules we want to default to
+                // nodes being outputs
+                // TODO: Overhaul the handling of all this when we modernize
+                // the editor, replace callout image manipulation with a simple
+                // class toggle, etc.
+                $.each(node.output_terminals, (ot_id, ot) => {
+                    node.addWorkflowOutput(ot.name);
+                    var callout = $(node.element).find(`.callout.${ot.name.replace(/(?=[()])/g, "\\")}`);
+                    callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+                });
                 self.workflow.activate_node(node);
             }
         });
@@ -705,7 +693,7 @@ export default Backbone.View.extend({
                     if (pja.action_arguments) {
                         $.each(pja.action_arguments, (k, action_argument) => {
                             if (typeof action_argument === "string") {
-                                let arg_matches = action_argument.match(parameter_re);
+                                const arg_matches = action_argument.match(parameter_re);
                                 if (arg_matches) {
                                     matches = matches.concat(arg_matches);
                                 }
@@ -743,7 +731,7 @@ export default Backbone.View.extend({
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
         var $container = $(`#${cls}`);
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (content && $container.find(`#${id}`).length === 0) {
             var $el = $(`<div id="${id}" class="${cls}"/>`);
             content.node = node;
@@ -788,6 +776,7 @@ export default Backbone.View.extend({
         // Fix width to computed width
         // Now add floats
         var buttons = $("<div class='buttons' style='float: right;'></div>");
+        buttons.append($(`<div class="sr-only"><a href="#right">Node Details</a></div>`));
         if (type !== "subworkflow") {
             buttons.append(
                 $("<div/>")

@@ -24,6 +24,8 @@ import time
 import unicodedata
 import xml.dom.minidom
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
 from xml.etree import ElementInclude, ElementTree
@@ -40,7 +42,10 @@ from boltons.iterutils import (
     remap,
 )
 from six import binary_type, iteritems, PY2, string_types, text_type
-from six.moves import email_mime_multipart, email_mime_text, xrange, zip
+from six.moves import (
+    xrange,
+    zip
+)
 from six.moves.urllib import (
     parse as urlparse,
     request as urlrequest
@@ -67,6 +72,8 @@ inflector = Inflector(English)
 
 log = get_logger(__name__)
 _lock = threading.RLock()
+
+namedtuple = collections.namedtuple
 
 CHUNK_SIZE = 65536  # 64k
 
@@ -227,6 +234,11 @@ def parse_xml(fname):
     tree = ElementTree.ElementTree()
     try:
         root = tree.parse(fname, parser=ElementTree.XMLParser(target=DoctypeSafeCallbackTarget()))
+        for elem in root.iter('*'):
+            if elem.text is not None:
+                elem.text = elem.text.strip()
+            if elem.tail is not None:
+                elem.tail = elem.tail.strip()
     except ParseError:
         log.exception("Error parsing file %s", fname)
         raise
@@ -236,11 +248,18 @@ def parse_xml(fname):
 
 def parse_xml_string(xml_string):
     tree = ElementTree.fromstring(xml_string)
+    for elem in tree.iter('*'):
+        if elem.text is not None:
+            elem.text = elem.text.strip()
+        if elem.tail is not None:
+            elem.tail = elem.tail.strip()
     return tree
 
 
 def xml_to_string(elem, pretty=False):
-    """Returns a string from an xml tree"""
+    """
+    Returns a string from an xml tree.
+    """
     try:
         if elem is not None:
             if PY2:
@@ -386,6 +405,17 @@ def shrink_stream_by_size(value, size, join_by=b"..", left_larger=True, beginnin
                 break
             rval += data
     return unicodify(rval)
+
+
+def shrink_and_unicodify(stream):
+    stream = unicodify(stream, strip_null=True) or u''
+    if (len(stream) > DATABASE_MAX_STRING_SIZE):
+        stream = shrink_string_by_size(stream,
+                                       DATABASE_MAX_STRING_SIZE,
+                                       join_by="\n..\n",
+                                       left_larger=True,
+                                       beginning_on_size_error=True)
+    return stream
 
 
 def shrink_string_by_size(value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False):
@@ -979,7 +1009,7 @@ def roundify(amount, sfs=2):
         return amount[0:sfs] + '0' * (len(amount) - sfs)
 
 
-def unicodify(value, encoding=DEFAULT_ENCODING, error='replace'):
+def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', strip_null=False):
     u"""
     Returns a Unicode string or None.
 
@@ -987,22 +1017,22 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace'):
     >>> assert unicodify('simple string') == u'simple string'
     >>> assert unicodify(3) == u'3'
     >>> assert unicodify(bytearray([115, 116, 114, 196, 169, 195, 177, 103])) == u'strĩñg'
-    >>> assert unicodify(Exception('message')) == u'message'
+    >>> assert unicodify(Exception(u'strĩñg')) == u'strĩñg'
     >>> assert unicodify('cómplǐcḁtëd strĩñg') == u'cómplǐcḁtëd strĩñg'
     >>> s = u'cómplǐcḁtëd strĩñg'; assert unicodify(s) == s
     >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1'), 'latin-1') == s
     >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1')) == u'l\ufffdt\ufffdn str\ufffd\ufffdg'
     >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1'), error='ignore') == u'ltn strg'
     """
-    if value is None or isinstance(value, text_type):
+    if value is None:
         return value
     try:
         if isinstance(value, bytearray):
             value = bytes(value)
         elif not isinstance(value, string_types) and not isinstance(value, binary_type):
-            # In Python 2, value is not an instance of basestring
+            # In Python 2, value is not an instance of basestring (i.e. str or unicode)
             # In Python 3, value is not an instance of bytes or str
-            value = str(value)
+            value = text_type(value)
         # Now in Python 2, value is an instance of basestring, but may be not unicode
         # Now in Python 3, value is an instance of bytes or str
         if not isinstance(value, text_type):
@@ -1011,6 +1041,8 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace'):
         msg = "Value '%s' could not be coerced to Unicode" % value
         log.exception(msg)
         raise Exception(msg)
+    if strip_null:
+        return value.replace('\0', '')
     return value
 
 
@@ -1051,7 +1083,7 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
 
 def strip_control_characters(s):
     """Strip unicode control characters from a string."""
-    return "".join(c for c in unicodify(s) if unicodedata.category(c)[0] != "C")
+    return "".join(c for c in unicodify(s) if unicodedata.category(c) != "Cc")
 
 
 def strip_control_characters_nested(item):
@@ -1176,7 +1208,7 @@ def read_dbnames(filename):
         man_builds = [(build, name) for name, build in man_builds]
         db_names = DBNames(db_names + man_builds)
     except Exception as e:
-        log.error("ERROR: Unable to read builds file: %s", e)
+        log.error("ERROR: Unable to read builds file: %s", unicodify(e))
     if len(db_names) < 1:
         db_names = DBNames([(db_names.default_value, db_names.default_name)])
     return db_names
@@ -1273,7 +1305,7 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
                                                                                                                     path,
                                                                                                                     oct(perms),
                                                                                                                     oct(stat.S_IMODE(st.st_mode)),
-                                                                                                                    e))
+                                                                                                                    unicodify(e)))
     # fix group
     if gid is not None and st.st_gid != gid:
         try:
@@ -1288,7 +1320,7 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
             log.warning('Unable to honor primary group (%s) for %s, group remains %s, error was: %s' % (desired_group,
                                                                                                         path,
                                                                                                         current_group,
-                                                                                                        e))
+                                                                                                        unicodify(e)))
 
 
 def docstring_trim(docstring):
@@ -1422,9 +1454,9 @@ def send_mail(frm, to, subject, body, config, html=None):
 
     to = listify(to)
     if html:
-        msg = email_mime_multipart.MIMEMultipart('alternative')
+        msg = MIMEMultipart('alternative')
     else:
-        msg = email_mime_text.MIMEText(body.encode('ascii', 'replace'))
+        msg = MIMEText(body, 'plain', 'utf-8')
 
     msg['To'] = ', '.join(to)
     msg['From'] = frm
@@ -1436,8 +1468,8 @@ def send_mail(frm, to, subject, body, config, html=None):
         return
 
     if html:
-        mp_text = email_mime_text.MIMEText(body.encode('ascii', 'replace'), 'plain')
-        mp_html = email_mime_text.MIMEText(html.encode('ascii', 'replace'), 'html')
+        mp_text = MIMEText(body, 'plain', 'utf-8')
+        mp_html = MIMEText(html, 'html', 'utf-8')
         msg.attach(mp_text)
         msg.attach(mp_html)
 
@@ -1450,28 +1482,28 @@ def send_mail(frm, to, subject, body, config, html=None):
     if not smtp_ssl:
         try:
             s.starttls()
-            log.debug('Initiated SSL/TLS connection to SMTP server: %s' % config.smtp_server)
+            log.debug('Initiated SSL/TLS connection to SMTP server: %s', config.smtp_server)
         except RuntimeError as e:
-            log.warning('SSL/TLS support is not available to your Python interpreter: %s' % e)
+            log.warning('SSL/TLS support is not available to your Python interpreter: %s', unicodify(e))
         except smtplib.SMTPHeloError as e:
-            log.error("The server didn't reply properly to the HELO greeting: %s" % e)
+            log.error("The server didn't reply properly to the HELO greeting: %s", unicodify(e))
             s.close()
             raise
         except smtplib.SMTPException as e:
-            log.warning('The server does not support the STARTTLS extension: %s' % e)
+            log.warning('The server does not support the STARTTLS extension: %s', unicodify(e))
     if config.smtp_username and config.smtp_password:
         try:
             s.login(config.smtp_username, config.smtp_password)
         except smtplib.SMTPHeloError as e:
-            log.error("The server didn't reply properly to the HELO greeting: %s" % e)
+            log.error("The server didn't reply properly to the HELO greeting: %s", unicodify(e))
             s.close()
             raise
         except smtplib.SMTPAuthenticationError as e:
-            log.error("The server didn't accept the username/password combination: %s" % e)
+            log.error("The server didn't accept the username/password combination: %s", unicodify(e))
             s.close()
             raise
         except smtplib.SMTPException as e:
-            log.error("No suitable authentication method was found: %s" % e)
+            log.error("No suitable authentication method was found: %s", unicodify(e))
             s.close()
             raise
     s.sendmail(frm, to, msg.as_string())
@@ -1518,7 +1550,10 @@ galaxy_samples_path = os.path.join(__path__[0], os.pardir, 'config', 'sample')
 
 
 def galaxy_directory():
-    return os.path.abspath(galaxy_root_path)
+    root_path = os.path.abspath(galaxy_root_path)
+    if os.path.basename(root_path) == "packages":
+        root_path = os.path.abspath(os.path.join(root_path, ".."))
+    return root_path
 
 
 def galaxy_samples_directory():
@@ -1636,7 +1671,7 @@ def url_get(base_url, password_mgr=None, pathspec=None, params=None):
     response = urlopener.open(full_url)
     content = response.read()
     response.close()
-    return content
+    return unicodify(content)
 
 
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):

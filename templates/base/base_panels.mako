@@ -70,7 +70,7 @@
     </script>
 
     %if t.webapp.name == 'galaxy' and app.config.ga_code:
-        ${galaxy_client.config_google_analytics(app)}
+        ${galaxy_client.config_google_analytics(app.config.ga_code)}
     %endif
 
 </%def>
@@ -195,7 +195,7 @@
                     <div id="left">
                         ${self.left_panel()}
                         <div class="unified-panel-footer">
-                            <div id="left-panel-collapse" class="panel-collapse"></div>
+                            <div id="left-panel-collapse" class="panel-collapse left"></div>
                             <div id="left-panel-drag" class="drag"></div>
                         </div>
                     </div><!--end left-->

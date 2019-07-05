@@ -1,4 +1,5 @@
-
+# When committing this file, make sure to run make config-rebuild to rebuild
+# all sample YAML and RST files, and add those to your commit.
 type: map
 desc: |
   Galaxy is configured by default to be usable in a single-user development
@@ -24,34 +25,6 @@ mapping:
     type: map
     required: true
     mapping:
-
-      filter-with:
-        type: str
-        default: gzip
-        required: false
-        desc: |
-          If not running behind a proxy server, you may want to enable gzip compression
-          to decrease the size of data transferred over the network.  If using a proxy
-          server, please enable gzip compression there instead.
-
-      filter-with:
-        type: str
-        default: proxy-prefix
-        required: false
-        desc: |
-          If running behind a proxy server and Galaxy is served from a subdirectory,
-          enable the proxy-prefix filter and set the prefix in the
-          [filter:proxy-prefix] section above.
-
-      cookie_path:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          If proxy-prefix is enabled and you're running more than one Galaxy instance
-          behind one hostname, you will want to set this to the same path as the prefix
-          in the filter above.  This value becomes the "path" attribute set in the
-          cookie so the cookies from each instance will not clobber each other.
 
       database_connection:
         type: str
@@ -130,10 +103,10 @@ mapping:
         default: false
         required: false
         desc: |
-          Enable's a per request sql debugging option. If this is set to true, append
-          ?sql_debug=1 to web request URLs to enable detailed logging on the backend of SQL
-          queries generated during that request. This is useful for debugging slow endpoints
-          during development.
+          Enables a per request sql debugging option. If this is set to true,
+          append ?sql_debug=1 to web request URLs to enable detailed logging on
+          the backend of SQL queries generated during that request. This is
+          useful for debugging slow endpoints during development.
 
       install_database_connection:
         type: str
@@ -156,19 +129,42 @@ mapping:
           migrate the database forward after updates. This is not recommended for production
           use.
 
+      database_wait:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Wait for database to become available instead of failing immediately.
+
+      database_wait_attempts:
+        type: int
+        default: 60
+        required: false
+        desc: |
+          Number of attempts before failing if database_wait is enabled.
+
+      database_wait_sleep:
+        type: float
+        default: 1.
+        required: false
+        desc: |
+          Time to sleep between attempts if database_wait is enabled (in seconds).
+
       file_path:
         type: str
         default: database/files
         required: false
         desc: |
-          Dataset files are stored in this directory.
+          Where dataset files are stored. It must accessible at the same path on any cluster
+          nodes that will run Galaxy jobs, unless using Pulsar.
 
       new_file_path:
         type: str
         default: database/tmp
         required: false
         desc: |
-          Temporary files are stored in this directory.
+          Where temporary files are stored. It must accessible at the same path on any cluster
+          nodes that will run Galaxy jobs, unless using Pulsar.
 
       tool_config_file:
         type: str
@@ -182,16 +178,14 @@ mapping:
 
       check_migrate_tools:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Enable / disable checking if any tools defined in the above non-shed
           tool_config_files (i.e., tool_conf.xml) have been migrated from the Galaxy
-          code distribution to the Tool Shed.  This setting should generally be set to
-          False only for development Galaxy environments that are often rebuilt from
-          scratch where migrated tools do not need to be available in the Galaxy tool
-          panel.  If the following setting remains commented, the default setting will
-          be True.
+          code distribution to the Tool Shed. This functionality is largely untested
+          in modern Galaxy releases and has serious issues such as #7273 and the possibility
+          of slowing down Galaxy startup, so the default and recommended value is False.
 
       migrated_tools_config:
         type: str
@@ -404,9 +398,9 @@ mapping:
         default: ''
         required: false
         desc: |
-          Container resolvers configuration (beta). Setup a file describing container
-          resolvers to use when discovering containers for Galaxy. If this is set to
-          None, the default containers loaded is determined by
+          Container resolvers configuration (beta). Set up a file describing
+          container resolvers to use when discovering containers for Galaxy. If
+          this is set to None, the default containers loaded is determined by
           enable_beta_mulled_containers.
 
       involucro_path:
@@ -881,7 +875,7 @@ mapping:
         desc: |
           Galaxy can display data at various external browsers.  These options specify
           which browsers should be available.  URLs and builds available at these
-          browsers are defined in the specifield files.
+          browsers are defined in the specified files.
 
           If use_remote_user = True, display application servers will be denied access
           to Galaxy and so displaying datasets in these sites will fail.
@@ -953,6 +947,13 @@ mapping:
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
 
+      user_preferences_extra_conf_path:
+        type: str
+        default: 'config/user_preferences_extra_conf.yml'
+        required: false
+        desc: |
+          Location of the configuration file containing extra user preferences.
+
       default_locale:
         type: str
         default: auto
@@ -970,14 +971,15 @@ mapping:
         default: http://localhost:8080
         required: false
         desc: |
-          URL (with schema http/https) of the Galaxy instance as accessible within your
-          local network - if specified used as a default by pulsar file staging and
-          Jupyter Docker container for communicating back with Galaxy via the API.
+          URL (with schema http/https) of the Galaxy instance as accessible
+          within your local network - if specified used as a default by pulsar
+          file staging and Jupyter Docker container for communicating back with
+          Galaxy via the API.
 
-          If you are attempting to setup GIEs on Mac OS X with Docker for Mac - this
-          should likely be the IP address of your machine on the virtualbox network (vboxnet0)
-          setup for the Docker host VM. This can found by running ifconfig and using the
-          IP address of the network vboxnet0.
+          If you are attempting to set up GIEs on Mac OS X with Docker Desktop
+          for Mac and your Galaxy instance runs on port 8080 this should be
+          'http://host.docker.internal:8080'.  For more details see
+          https://docs.docker.com/docker-for-mac/networking/
 
       galaxy_infrastructure_web_port:
         type: int
@@ -1027,41 +1029,6 @@ mapping:
         required: false
         desc: |
           The URL linked by the "Support" link in the "Help" menu.
-
-      biostar_url:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_key_name:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_key:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_enable_bug_reports:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_never_authenticate:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
 
       citation_url:
         type: str
@@ -1327,7 +1294,7 @@ mapping:
         default: 8800
         required: false
         desc: |
-          Set the port and IP for the the dynamic proxy to bind to, this must match
+          Set the port and IP for the dynamic proxy to bind to, this must match
           the external configuration if dynamic_proxy_manage is False.
 
       dynamic_proxy_bind_ip:
@@ -1335,7 +1302,7 @@ mapping:
         default: 0.0.0.0
         required: false
         desc: |
-          Set the port and IP for the the dynamic proxy to bind to, this must match
+          Set the port and IP for the dynamic proxy to bind to, this must match
           the external configuration if dynamic_proxy_manage is False.
 
       dynamic_proxy_debug:
@@ -2095,25 +2062,6 @@ mapping:
         desc: |
           Enable the new container interface for Interactive Environments
 
-      tool_submission_burst_threads:
-        type: int
-        default: 1
-        required: false
-        desc: |
-          Set the following to a number of threads greater than 1 to spawn
-          a Python task queue for dealing with large tool submissions (either
-          through the tool form or as part of an individual workflow step across
-          large collection). This affects workflow scheduling and web processes,
-          not job handlers. This is a beta option and should not be used in production.
-
-      tool_submission_burst_at:
-        type: int
-        default: 10
-        required: false
-        desc: |
-          If tool_submission_burst_threads is set to a number greater than 1, this
-          is the number of jobs to schedule at which the task queue will be created.
-
       enable_beta_workflow_modules:
         type: bool
         default: false
@@ -2122,12 +2070,13 @@ mapping:
           Enable beta workflow modules that should not yet be considered part of Galaxy's
           stable API.
 
-      enable_beta_workflow_format:
-        type: bool
-        default: false
+      default_workflow_export_format:
+        type: str
+        default: ga
         required: false
         desc: |
-          Enable import and export of workflows as Galaxy Format 2 workflows.
+          Default format for the export of workflows. Possible values are 'ga'
+          or 'format2'.
 
       force_beta_workflow_scheduled_min_steps:
         type: int
@@ -2249,6 +2198,20 @@ mapping:
           having a defined admin user in the database/config.  Only set this if you
           need to bootstrap Galaxy, you probably do not want to set this on public
           servers.
+
+      enable_openid:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable access to post-authentication options via OpenID.
+
+      openid_consumer_cache_path:
+        type: str
+        default: database/openid_consumer_cache
+        required: false
+        desc: |
+          If OpenID is enabled, consumer cache directory to use.
 
       enable_tool_tags:
         type: bool
@@ -2398,6 +2361,16 @@ mapping:
           notifies itself of new jobs via in-memory queues.  Jobs are run locally on
           the system on which Galaxy is started.  Advanced job running capabilities can
           be configured through the job configuration file.
+
+      job_config:
+        !include job_config_schema.yml
+
+      dependency_resolvers:
+        type: seq
+        desc: |
+          Rather than specifying a dependency_resolvers_config_file, the definition of the
+          resolvers to enable can be embedded into Galaxy's config with this option.
+          This has no effect if a dependency_resolvers_config_file is used.
 
       default_job_resubmission_condition:
         type: str

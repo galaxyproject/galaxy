@@ -13,8 +13,6 @@
             'remote_user_logout_href'   : app.config.remote_user_logout_href,
             'enable_cloud_launch'       : app.config.get_bool('enable_cloud_launch', False),
             'lims_doc_url'              : app.config.get("lims_doc_url", "https://usegalaxy.org/u/rkchak/p/sts"),
-            'biostar_url'               : app.config.biostar_url,
-            'biostar_url_redirect'      : h.url_for( controller='biostar', action='biostar_redirect', qualified=True ),
             'default_locale'            : app.config.get("default_locale",  "auto"),
             'support_url'               : app.config.get("support_url", "https://galaxyproject.org/support"),
             'search_url'                : app.config.get("search_url", "http://galaxyproject.org/search/"),
@@ -28,7 +26,6 @@
             'logo_src'                  : h.url_for( app.config.get( 'logo_src', '/static/images/galaxyIcon_noText.png' ) ),
             'is_admin_user'             : trans.user_is_admin,
             'active_view'               : active_view,
-            'ftp_upload_dir'            : app.config.get("ftp_upload_dir",  None),
             'ftp_upload_site'           : app.config.get("ftp_upload_site",  None),
             'datatypes_disable_auto'    : app.config.get_bool("datatypes_disable_auto",  False),
             'user_json'                 : get_user_dict()

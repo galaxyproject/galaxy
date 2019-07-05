@@ -30,12 +30,14 @@ def plugins_dict(module, plugin_type_identifier):
     return plugin_dict
 
 
-def load_plugins(plugins_dict, plugin_source, extra_kwds={}):
+def load_plugins(plugins_dict, plugin_source, extra_kwds=None, plugin_type_keys=('type',)):
+    if extra_kwds is None:
+        extra_kwds = {}
     source_type, source = plugin_source
     if source_type == "xml":
         return __load_plugins_from_element(plugins_dict, source, extra_kwds)
     else:
-        return __load_plugins_from_dicts(plugins_dict, source, extra_kwds)
+        return __load_plugins_from_dicts(plugins_dict, source, extra_kwds, plugin_type_keys=plugin_type_keys)
 
 
 def __load_plugins_from_element(plugins_dict, plugins_element, extra_kwds):
@@ -58,11 +60,16 @@ def __load_plugins_from_element(plugins_dict, plugins_element, extra_kwds):
     return plugins
 
 
-def __load_plugins_from_dicts(plugins_dict, configs, extra_kwds):
+def __load_plugins_from_dicts(plugins_dict, configs, extra_kwds, plugin_type_keys):
     plugins = []
 
     for config in configs:
-        plugin_type = config["type"]
+        plugin_type = None
+        for plugin_type_key in plugin_type_keys:
+            if plugin_type_key in config:
+                plugin_type = config[plugin_type_key]
+                break
+        assert plugin_type is not None, "Could not determine plugin type for [%s]" % config
         plugin_kwds = config
         plugin_kwds.update(extra_kwds)
         plugin = plugins_dict[plugin_type](**plugin_kwds)

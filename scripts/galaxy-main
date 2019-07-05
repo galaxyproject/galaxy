@@ -58,7 +58,7 @@ else:
         log.exception("Failed to add Galaxy to sys.path")
         raise
 from galaxy.util import unicodify
-from galaxy.web.stack import get_app_kwds
+from galaxy.web_stack import get_app_kwds
 
 REQUIRES_DAEMONIZE_MESSAGE = "Attempted to use Galaxy in daemon mode, but daemonize is unavailable."
 
@@ -107,6 +107,7 @@ def load_galaxy_app(
         attach_to_pools=attach_to_pools,
         **kwds
     )
+    app.database_heartbeat.start()
     app.control_worker.bind_and_start()
     app.application_stack.log_startup()
     return app

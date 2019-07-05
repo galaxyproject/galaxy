@@ -2,7 +2,7 @@ import $ from "jquery";
 import _ from "libs/underscore";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
-import mod_toastr from "libs/toastr";
+import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_libraryrow_view from "mvc/library/library-libraryrow-view";
 
@@ -37,9 +37,9 @@ var LibraryListView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(response.responseJSON.err_msg);
+                    Toast.error(response.responseJSON.err_msg);
                 } else {
-                    mod_toastr.error("An error occurred.");
+                    Toast.error("An error occurred.");
                 }
             }
         });
@@ -51,7 +51,7 @@ var LibraryListView = Backbone.View.extend({
      * or render an empty list in case no data is given.
      */
     render: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         this.setElement("#libraries_element");
         var template = this.templateLibraryList();
@@ -147,9 +147,9 @@ var LibraryListView = Backbone.View.extend({
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        mod_toastr.error(response.responseJSON.err_msg);
+                        Toast.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occurred.");
+                        Toast.error("An error occurred.");
                     }
                 }
             });
@@ -182,7 +182,7 @@ var LibraryListView = Backbone.View.extend({
      * @return {[type]} [description]
      */
     sort_clicked: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (Galaxy.libraries.preferences.get("sort_order") === "asc") {
             Galaxy.libraries.preferences.set({ sort_order: "desc" });
         } else {
@@ -196,7 +196,7 @@ var LibraryListView = Backbone.View.extend({
      * Currently supports only sorting by name.
      */
     sortLibraries: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (Galaxy.libraries.preferences.get("sort_by") === "name") {
             if (Galaxy.libraries.preferences.get("sort_order") === "asc") {
                 this.collection.sortLibraries("name", "asc");
@@ -224,46 +224,140 @@ var LibraryListView = Backbone.View.extend({
         }
     },
 
+    /**
+     * Create the new library inline
+     */
+    createLibraryInline: function() {
+        if (this.$el.find("tr.new-row").length) {
+            this.$el.find("tr.new-row textarea")[0].focus();
+        } else {
+            const template = this.templateNewRow();
+            this.$el
+                .find("#library_list_body")
+                .closest("table")
+                .show();
+            this.$el.find("#library_list_body").prepend(template);
+
+            this.$el.find("tr.new-row textarea")[0].focus();
+
+            this.$el.find("tr.new-row .save_library_btn").click(() => {
+                this.createNewLibrary(
+                    this.$el.find("tr.new-row textarea")[0].value,
+                    this.$el.find("tr.new-row textarea")[1].value,
+                    this.$el.find("tr.new-row textarea")[2].value
+                );
+            });
+
+            this.$el.find("tr.new-row .cancel_library_btn").click(() => {
+                this.$el.find("tr.new-row").remove();
+            });
+        }
+    },
+
+    /**
+     * Create the new library using the API asynchronously.
+     */
+    createNewLibrary: function(name, description, synopsis) {
+        const Galaxy = getGalaxyInstance();
+        const libraryDetails = {
+            name,
+            description,
+            synopsis
+        };
+        if (libraryDetails.name !== "") {
+            var library = new mod_library_model.Library();
+            library.save(libraryDetails, {
+                success: library => {
+                    Galaxy.libraries.libraryListView.collection.add(library);
+                    this.$el.find("tr.new-row").remove();
+                    Galaxy.libraries.libraryListView.render();
+
+                    $(`tr[data-id="${library.attributes.id}"`)
+                        .addClass("table-success")
+                        .on("mouseover click", function() {
+                            $(this).removeClass("table-success");
+                        });
+
+                    Toast.success("Library created.");
+                },
+                error: (model, response) => {
+                    if (typeof response.responseJSON !== "undefined") {
+                        Toast.error(response.responseJSON.err_msg);
+                    } else {
+                        Toast.error("An error occurred.");
+                    }
+                }
+            });
+        } else {
+            Toast.error("Library's name is missing.");
+        }
+        return false;
+    },
+
     // MMMMMMMMMMMMMMMMMM
     // === TEMPLATES ====
     // MMMMMMMMMMMMMMMMMM
 
+    templateNewRow: function() {
+        return _.template(
+            `<tr class="new-row">
+                    <td>
+                        <textarea name="input_library_name" rows="4" class="form-control input_library_name" placeholder="name" ></textarea>
+                    </td>
+                    <td>
+                        <textarea rows="4" class="form-control input_library_description" placeholder="description"></textarea>
+                    </td>
+                    <td>
+                        <textarea rows="4" class="form-control input_library_synopsis" placeholder="synopsis"></textarea>
+                    </td>
+                    <td class="right-center">
+                        <button data-toggle="tooltip" data-placement="left" title="Save changes"
+                            class="btn btn-secondary btn-sm save_library_btn" type="button">
+                            <span class="fa fa-floppy-o"></span> Save
+                        </button>
+                        <button data-toggle="tooltip" data-placement="left" title="Discard changes"
+                            class="btn btn-secondary btn-sm cancel_library_btn" type="button">
+                            <span class="fa fa-times"></span> Cancel
+                        </button>
+                    </td>     
+            </tr>`
+        );
+    },
+
     templateLibraryList: function() {
         return _.template(
-            [
-                '<div class="library_container table-responsive">',
-                "<% if(length === 0) { %>",
-                "<% if(search_term.length > 0) { %>",
-                "<div>",
-                "There are no libraries matching your search. Try different keyword.",
-                "</div>",
-                "<% } else{ %>",
-                "<div>",
-                "There are no libraries visible to you here. If you expected some to show up please consult the",
-                ' <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">library security wikipage</a>',
-                ' or visit the <a href="https://biostar.usegalaxy.org/" target="_blank">Galaxy support site</a>.',
-                "</div>",
-                "<% }%>",
-                "<% } else{ %>",
-                '<table class="grid table table-sm">',
-                "<thead>",
-                '<th style="width:30%;">',
-                '<a class="sort-libraries-link" title="Click to reverse order" href="#">',
-                "name",
-                "</a>",
-                '<span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"/>',
-                "</th>",
-                '<th style="width:22%;">description</th>',
-                '<th style="width:22%;">synopsis</th> ',
-                '<th style="width:26%;"></th>',
-                "</thead>",
-                '<tbody id="library_list_body">',
-                // library item views will attach here
-                "</tbody>",
-                "</table>",
-                "<% }%>",
-                "</div>"
-            ].join("")
+            `<div class="library_container table-responsive">
+                <table class="grid table table-sm"
+                    <% if(length === 0) { %> style="display:none;" <% }%> >
+                    <thead>
+                        <th style="width:30%;">
+                            <a class="sort-libraries-link" title="Click to reverse order" href="#">
+                                Name
+                            </a>
+                            <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span>
+                        </th>
+                        <th style="width:22%;">Description</th>
+                        <th style="width:22%;">Synopsis</th> 
+                        <th style="width:26%;"></th>
+                    </thead>
+                    <tbody id="library_list_body">
+                    <!-- library item views will attach here -->
+                   </tbody>
+                </table>
+                    
+                <% if(length === 0) { %>
+                    <% if(search_term.length > 0) { %>
+                        <div>
+                            There are no libraries matching your search. Try different keyword.
+                        </div>
+                    <% } else{ %>
+                        <div>
+                            There are no libraries visible to you here. If you expected some to show up please consult the
+                            <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">library security wikipage</a>.
+                        </div>
+                    <% }%>
+                <% }%>
+            </div>`
         );
     }
 });
