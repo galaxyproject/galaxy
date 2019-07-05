@@ -5,7 +5,7 @@ from ..deps import commands
 from ..deps import docker_util
 from ..deps.container_classes import docker_cache_path
 from ..deps.requirements import parse_requirements_from_xml
-from ...tools import loader_directory
+from .. import loader_directory
 
 log = logging.getLogger(__name__)
 
