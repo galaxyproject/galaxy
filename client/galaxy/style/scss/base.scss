@@ -746,7 +746,6 @@ button {
     padding-right: 14px;
     margin-bottom: 0;
     @include border-radius(14px);
-    max-width: auto;
     background: $brand-white;
 }
 .search-query:focus {
