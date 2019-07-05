@@ -3,10 +3,14 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">
-    #if $maf_source_type.maf_source == "user" #interval_maf_to_merged_fasta.py --dbkey=$dbkey --species=$maf_source_type.species --mafSource=$maf_source_type.maf_file --mafIndex=$maf_source_type.maf_file.metadata.maf_index --interval_file=$input1 --output_file=$out_file1 --mafSourceType=$maf_source_type.maf_source --geneBED --mafIndexFileDir=${GALAXY_DATA_INDEX_DIR}
-    #else                                     #interval_maf_to_merged_fasta.py --dbkey=$dbkey --species=$maf_source_type.species --mafSource=$maf_source_type.maf_identifier --interval_file=$input1 --output_file=$out_file1 --mafSourceType=$maf_source_type.maf_source  --geneBED --mafIndexFileDir=${GALAXY_DATA_INDEX_DIR}
-    #end if# --overwrite_with_gaps=$overwrite_with_gaps
+  <command>
+python '$__tool_directory__/interval_maf_to_merged_fasta.py' --dbkey=$dbkey --species=$maf_source_type.species
+#if $maf_source_type.maf_source == "user"
+    --mafSource='$maf_source_type.maf_file' --mafIndex='$maf_source_type.maf_file.metadata.maf_index'
+#else
+    --mafSource='$maf_source_type.maf_identifier'
+#end if
+--interval_file='$input1' --output_file='$out_file1' --mafSourceType=$maf_source_type.maf_source --geneBED --mafIndexFileDir='${GALAXY_DATA_INDEX_DIR}' --overwrite_with_gaps=$overwrite_with_gaps
   </command>
   <inputs>
     <param name="input1" type="data" format="bed" label="Gene BED File">
@@ -32,7 +36,7 @@
         </param>
       </when>
       <when value="cached">
-        <param name="maf_identifier" type="select" label="MAF Type" >
+        <param name="maf_identifier" type="select" label="MAF Type">
           <options from_file="maf_index.loc">
             <column name="name" index="0"/>
             <column name="value" index="1"/>
@@ -64,7 +68,7 @@
   <tests>
     <test>
       <param name="input1" value="8.bed"/>
-      <param name="maf_source" value="cached"/>in aligning species
+      <param name="maf_source" value="cached"/>
       <param name="maf_identifier" value="8_WAY_MULTIZ_hg17"/>
       <param name="species" value="canFam1,hg17,mm5,panTro1,rn3"/>
       <param name="overwrite_with_gaps" value="True"/>
@@ -88,8 +92,6 @@ The coding sequence of genes are usually composed of several coding exons. Each 
   * sorts MAF blocks by alignment score;
   * stitches blocks together and resolves overlaps based on alignment score;
   * outputs alignments in FASTA format.
-
-@HELP_CITATIONS@
     </help>
     <expand macro="citations" />
 </tool>

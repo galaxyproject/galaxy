@@ -1,5 +1,5 @@
-galaxy.dependencies package
-===========================
+galaxy\.dependencies package
+============================
 
 .. automodule:: galaxy.dependencies
     :members:

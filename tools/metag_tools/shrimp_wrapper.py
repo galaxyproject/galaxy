@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 """
 TODO
 1. decrease memory usage
@@ -42,8 +41,8 @@ SHRiMP output:
 >7:2:1147:982/1 chr3    +   36586562    36586595    2   35  36  2900    3G16G13
 >7:2:1147:982/1 chr3    +   95338194    95338225    4   35  36  2700    9T7C14
 >7:2:587:93/1   chr3    +   14913541    14913577    1   35  36  2960    19--16
-
 """
+from __future__ import print_function
 
 import os
 import os.path
@@ -51,11 +50,11 @@ import re
 import sys
 import tempfile
 
-assert sys.version_info[:2] >= (2.4)
+assert sys.version_info[:2] >= (2, 6)
 
 
-def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
+def stop_err(msg):
+    sys.stderr.write("%s\n" % msg)
     sys.exit()
 
 
@@ -86,7 +85,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
     seq = ''
     title = None
 
-    for i, line in enumerate(file(ref_file)):
+    for i, line in enumerate(open(ref_file)):
         line = line.rstrip()
         if not line or line.startswith('#'):
             continue
@@ -109,7 +108,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
 
     # find hits: one end and/or the other
     hits = {}
-    for i, line in enumerate(file(result_file)):
+    for i, line in enumerate(open(result_file)):
         line = line.rstrip()
         if not line or line.startswith('#'):
             continue
@@ -145,7 +144,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
     score = ''
     for num_score_file in range(len(all_score_file)):
         score_file = all_score_file[num_score_file]
-        for i, line in enumerate(file(score_file)):
+        for i, line in enumerate(open(score_file)):
             line = line.rstrip()
             if not line or line.startswith('#'):
                 continue
@@ -193,7 +192,7 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
 
         if hit_per_read == 1:
             if len(hits[readkey]['1']) == 1:
-                matches = [ hits[readkey]['1'] ]
+                matches = [hits[readkey]['1']]
                 match_count = 1
         else:
             end1_data = hits[readkey]['1']
@@ -375,14 +374,14 @@ def generate_sub_table(result_file, ref_file, score_files, table_outfile, hit_pe
         os.remove(temp_table_name)
 
     if invalid_editstring_char:
-        print 'Skip ', invalid_editstring_char, ' invalid characters in editstrings'
+        print('Skip ', invalid_editstring_char, ' invalid characters in editstrings')
 
     return True
 
 
 def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
-    outfile_seq = open( query_fasta, 'w' )
-    outfile_score = open( query_qual, 'w' )
+    outfile_seq = open(query_fasta, 'w')
+    outfile_score = open(query_qual, 'w')
 
     seq_title_startswith = ''
     qual_title_startswith = ''
@@ -390,12 +389,12 @@ def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
     default_coding_value = 64  # Solexa ascii-code
     fastq_block_lines = 0
 
-    for i, line in enumerate( open( infile_name ) ):
+    for i, line in enumerate(open(infile_name)):
         line = line.rstrip()
-        if not line or line.startswith( '#' ):
+        if not line or line.startswith('#'):
             continue
 
-        fastq_block_lines = ( fastq_block_lines + 1 ) % 4
+        fastq_block_lines = (fastq_block_lines + 1) % 4
         line_startswith = line[0:1]
 
         if fastq_block_lines == 1:
@@ -406,15 +405,15 @@ def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
             if line_startswith != seq_title_startswith:
                 outfile_seq.close()
                 outfile_score.close()
-                stop_err( 'Invalid fastqsolexa format at line %d: %s.' % ( i + 1, line ) )
+                stop_err('Invalid fastqsolexa format at line %d: %s.' % (i + 1, line))
 
             read_title = line[1:]
-            outfile_seq.write( '>%s\n' % line[1:] )
+            outfile_seq.write('>%s\n' % line[1:])
 
         elif fastq_block_lines == 2:
             # second line is nucleotides
-            read_length = len( line )
-            outfile_seq.write( '%s\n' % line )
+            read_length = len(line)
+            outfile_seq.write('%s\n' % line)
 
         elif fastq_block_lines == 3:
             # third line is +title_of_qualityscore ( might be skipped )
@@ -424,18 +423,18 @@ def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
             if line_startswith != qual_title_startswith:
                 outfile_seq.close()
                 outfile_score.close()
-                stop_err( 'Invalid fastqsolexa format at line %d: %s.' % ( i + 1, line ) )
+                stop_err('Invalid fastqsolexa format at line %d: %s.' % (i + 1, line))
 
             quality_title = line[1:]
             if quality_title and read_title != quality_title:
                 outfile_seq.close()
                 outfile_score.close()
-                stop_err( 'Invalid fastqsolexa format at line %d: sequence title "%s" differes from score title "%s".' % ( i + 1, read_title, quality_title ) )
+                stop_err('Invalid fastqsolexa format at line %d: sequence title "%s" differes from score title "%s".' % (i + 1, read_title, quality_title))
 
             if not quality_title:
-                outfile_score.write( '>%s\n' % read_title )
+                outfile_score.write('>%s\n' % read_title)
             else:
-                outfile_score.write( '>%s\n' % line[1:] )
+                outfile_score.write('>%s\n' % line[1:])
 
         else:
             # fourth line is quality scores
@@ -443,10 +442,10 @@ def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
             fastq_integer = True
             # peek: ascii or digits?
             val = line.split()[0]
+            fastq_integer = True
             try:
-                int( val )
-                fastq_integer = True
-            except:
+                int(val)
+            except ValueError:
                 fastq_integer = False
 
             if fastq_integer:
@@ -454,21 +453,21 @@ def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
                 qual = line
             else:
                 # ascii
-                quality_score_length = len( line )
+                quality_score_length = len(line)
                 if quality_score_length == read_length + 1:
                     # first char is qual_score_startswith
-                    qual_score_startswith = ord( line[0:1] )
+                    qual_score_startswith = ord(line[0:1])
                     line = line[1:]
                 elif quality_score_length == read_length:
                     qual_score_startswith = default_coding_value
                 else:
-                    stop_err( 'Invalid fastqsolexa format at line %d: the number of quality scores ( %d ) is not the same as bases ( %d ).' % ( i + 1, quality_score_length, read_length ) )
+                    stop_err('Invalid fastqsolexa format at line %d: the number of quality scores ( %d ) is not the same as bases ( %d ).' % (i + 1, quality_score_length, read_length))
 
-                for j, char in enumerate( line ):
-                    score = ord( char ) - qual_score_startswith    # 64
-                    qual = "%s%s " % ( qual, str( score ) )
+                for j, char in enumerate(line):
+                    score = ord(char) - qual_score_startswith    # 64
+                    qual = "%s%s " % (qual, str(score))
 
-            outfile_score.write( '%s\n' % qual )
+            outfile_score.write('%s\n' % qual)
 
     outfile_seq.close()
     outfile_score.close()
@@ -530,7 +529,7 @@ def __main__():
                 spaced_seed = sys.argv[5]
             else:
                 stop_err('Error in assigning parameter: Spaced seed.')
-        except:
+        except Exception:
             stop_err('Spaced seed must be a combination of 1s and 0s.')
 
         seed_matches_per_window = sys.argv[6]
@@ -592,7 +591,7 @@ def __main__():
     # check SHRiMP output: count number of lines
     num_hits = 0
     if shrimp_outfile:
-        for i, line in enumerate(file(shrimp_outfile)):
+        for i, line in enumerate(open(shrimp_outfile)):
             line = line.rstrip('\r\n')
             if not line or line.startswith('#'):
                 continue
@@ -605,7 +604,7 @@ def __main__():
     if num_hits == 0:   # no hits generated
         err_msg = ''
         if shrimp_log:
-            for i, line in enumerate(file(shrimp_log)):
+            for i, line in enumerate(open(shrimp_log)):
                 if line.startswith('error'):            # deal with memory error:
                     err_msg += line                     # error: realloc failed: Cannot allocate memory
                 if re.search('Reads Matched', line):    # deal with zero hits

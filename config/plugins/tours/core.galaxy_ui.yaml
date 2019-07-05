@@ -2,6 +2,9 @@ id: galaxy_ui
 name: Galaxy UI
 description: A gentle introduction to the Galaxy User Interface
 title_default: "Welcome to Galaxy"
+tags:
+  - "core"
+  - "UI"
 
 # A tour is made of several steps, each of them beginning with a dash '-'
 steps:
@@ -28,21 +31,19 @@ steps:
         - ".upload-button"
 
     - title: "Upload your data"
-      element: "button#btn-local"
+      element: "#btn-local"
       intro: "You can upload data from your computer."
       position: "top"
       postclick:
-        - "button#btn-new"
+        - "#btn-new"
 
     - title: "Upload your data"
-      element: "button#btn-new"
+      element: "#btn-new"
       intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data"
       position: "top"
-      preclick:
-        - ".upload-button"
 
     - title: "Insert URLs"
-      element: "textarea#text-content"
+      element: ".upload-text-content:first"
       intro: "URLs separated by a line break are automatically downloaded by Galaxy."
       position: "top"
       textinsert: |
@@ -51,14 +52,14 @@ steps:
         https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
 
     - title: "Start the upload"
-      element: "button#btn-start"
+      element: "#btn-start"
       intro: "Upload the data into your Galaxy history."
       position: "top"
       postclick:
-        - "button#btn-start"
+        - "#btn-start"
 
     - title: "Close upload/download manager"
-      element: "button#btn-close"
+      element: "#btn-close"
       intro: "Close the upload manager with this button or with a click outside of the manager window."
       position: "top"
       postclick:
@@ -79,8 +80,6 @@ steps:
       element: '#title_filter > a'
       intro: "Tools are grouped into categories to make them easier to find."
       position: "right"
-      preclick:
-        - "#title_filter a"
 
     - title: "Select a tool"
       element: 'a[href$="tool_runner?tool_id=Filter1"]'
@@ -90,19 +89,19 @@ steps:
         - 'a[href$="tool_runner?tool_id=Filter1"]'
 
     - title: "Filter Tool"
-      element: '#center-panel'
+      element: '.center-panel'
       intro: "Your tool is loaded into the main Galaxy page and ready for use."
       position: "right"
       #backdropContainer: 'background'
       #backdrop: true
 
     - title: "Tool parameters"
-      element: '#uid-0'
+      element: '.center-panel .ui-portlet'
       intro: "Here you can choose your tool parameters. Select your input dataset from your history and specify parameters for your analysis."
       position: "right"
 
     - title: "Tool help"
-      element: 'div.ui-form-help'
+      element: 'div.form-help'
       intro: "Every Galaxy tool has a help section with detailed information about the tool and its parameters.
               Have a look and study your tool in depth by reading it."
       position: "top"
@@ -147,8 +146,6 @@ steps:
       element: "#current-history-panel .fa-times:eq(0)"
       intro: "Delete your dataset by clicking the x-button."
       position: "left"
-      #postclick:
-      #  - "#current-history-panel .fa-times:eq(0)"
 
     - title: "Dataset information"
       element: "div.title-bar.clear:eq(0)"
@@ -158,14 +155,12 @@ steps:
         - "div.title-bar.clear:eq(0)"
 
     - title: "Re-run tool"
-      element: ".fa-refresh:eq(1)"
+      element: "#current-history-panel .fa-refresh:first"
       intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
       position: "left"
-      preclick:
-        - ".fa-refresh:eq(1)"
 
 
-    - title: "Panel collaps"
+    - title: "Panel collapse"
       element: "#left > div.unified-panel-footer > div.panel-collapse.left"
       intro: "To extend the view for your main Galaxy page in the middle, you can collapse the tool panel on the left hand side. Clicking the panel arrow on the right hand side, collapses the history."
       position: "top"

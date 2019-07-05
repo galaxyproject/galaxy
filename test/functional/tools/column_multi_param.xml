@@ -9,7 +9,7 @@
     <param name="col" type="data_column" data_ref="input1" label="Column to Use" />
   </inputs>
   <outputs>
-    <data name="output1" type="tabular" from_work_dir="col_output" />
+    <data name="output1" format="tabular" from_work_dir="col_output" />
   </outputs>
   <tests>
     <test>

@@ -11,7 +11,7 @@
     <tests>
         <test>
             <param name="input" value="simple_line.txt" />
-            <output name="out_file1" md5="ac94233685713ce99d1e712b0023c381" />
+            <output name="output" md5="ac94233685713ce99d1e712b0023c381" />
         </test>
     </tests>
 </tool>

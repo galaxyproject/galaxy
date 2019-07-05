@@ -1,11 +1,11 @@
-<tool id="CONVERTER_fastqsolexa_to_qual_0" name="Convert Fastqsolexa to Qual">
-  <command interpreter="python">fastqsolexa_to_qual_converter.py $input1 $output1 ${input1.extension}</command>
-  <inputs>
-    <param format="fastqsolexa" name="input1" type="data" label="Choose Fastqsolexa file"/>
-  </inputs>
-  <outputs>
-    <data format="qualsolexa" name="output1" />
-  </outputs>
-  <help>
-  </help>
+<tool id="CONVERTER_fastqsolexa_to_qual_0" name="Convert Fastqsolexa to Qual" version="1.0.0">
+    <command>python '$__tool_directory__/fastqsolexa_to_qual_converter.py' '$input1' '$output1' ${input1.extension}</command>
+    <inputs>
+        <param format="fastqsolexa" name="input1" type="data" label="Choose Fastqsolexa file"/>
+    </inputs>
+    <outputs>
+        <data format="qualsolexa" name="output1" />
+    </outputs>
+    <help>
+    </help>
 </tool>

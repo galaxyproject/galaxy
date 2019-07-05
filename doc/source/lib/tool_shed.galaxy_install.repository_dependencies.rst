@@ -1,5 +1,5 @@
-tool_shed.galaxy_install.repository_dependencies package
-========================================================
+tool\_shed\.galaxy\_install\.repository\_dependencies package
+=============================================================
 
 .. automodule:: tool_shed.galaxy_install.repository_dependencies
     :members:
@@ -9,8 +9,8 @@ tool_shed.galaxy_install.repository_dependencies package
 Submodules
 ----------
 
-tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager module
--------------------------------------------------------------------------------------
+tool\_shed\.galaxy\_install\.repository\_dependencies\.repository\_dependency\_manager module
+---------------------------------------------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager
     :members:

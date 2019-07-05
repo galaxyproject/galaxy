@@ -1,5 +1,5 @@
-galaxy.jobs.runners package
-===========================
+galaxy\.jobs\.runners package
+=============================
 
 .. automodule:: galaxy.jobs.runners
     :members:
@@ -17,72 +17,96 @@ Subpackages
 Submodules
 ----------
 
-galaxy.jobs.runners.cli module
-------------------------------
+galaxy\.jobs\.runners\.chronos module
+-------------------------------------
+
+.. automodule:: galaxy.jobs.runners.chronos
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.jobs\.runners\.cli module
+---------------------------------
 
 .. automodule:: galaxy.jobs.runners.cli
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.condor module
----------------------------------
+galaxy\.jobs\.runners\.condor module
+------------------------------------
 
 .. automodule:: galaxy.jobs.runners.condor
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.drmaa module
---------------------------------
+galaxy\.jobs\.runners\.drmaa module
+-----------------------------------
 
 .. automodule:: galaxy.jobs.runners.drmaa
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.local module
---------------------------------
+galaxy\.jobs\.runners\.godocker module
+--------------------------------------
+
+.. automodule:: galaxy.jobs.runners.godocker
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.jobs\.runners\.kubernetes module
+----------------------------------------
+
+.. automodule:: galaxy.jobs.runners.kubernetes
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.jobs\.runners\.local module
+-----------------------------------
 
 .. automodule:: galaxy.jobs.runners.local
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.pbs module
-------------------------------
+galaxy\.jobs\.runners\.pbs module
+---------------------------------
 
 .. automodule:: galaxy.jobs.runners.pbs
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.pulsar module
----------------------------------
+galaxy\.jobs\.runners\.pulsar module
+------------------------------------
 
 .. automodule:: galaxy.jobs.runners.pulsar
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.slurm module
---------------------------------
+galaxy\.jobs\.runners\.slurm module
+-----------------------------------
 
 .. automodule:: galaxy.jobs.runners.slurm
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.state_handler_factory module
-------------------------------------------------
+galaxy\.jobs\.runners\.state\_handler\_factory module
+-----------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.state_handler_factory
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.tasks module
---------------------------------
+galaxy\.jobs\.runners\.tasks module
+-----------------------------------
 
 .. automodule:: galaxy.jobs.runners.tasks
     :members:

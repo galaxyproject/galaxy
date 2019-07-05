@@ -10,6 +10,7 @@ python load_data_with_metadata.py <api_key> <api_url> /data/folder "API Imports"
 NOTE:  The upload method used requires the data library filesystem upload allow_library_path_paste
 """
 from __future__ import print_function
+
 import argparse
 import json
 import os
@@ -28,7 +29,7 @@ def load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_fi
     data['create_type'] = 'file'
     data['link_data_only'] = 'link_to_files'
 
-    handle = open( fullpath + ".json" )
+    handle = open(fullpath + ".json")
     smeta = handle.read()
     handle.close()
     ext_meta = json.loads(smeta)
@@ -70,6 +71,7 @@ def main(api_key, api_url, in_folder, data_library, uuid_field=None):
             if os.path.isfile(fullpath) and os.path.exists(fullpath + ".json"):
                 print("Loading", fullpath)
                 load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_field)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

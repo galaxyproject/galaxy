@@ -3,20 +3,18 @@ Migration script to alter the type of the tool_dependency.version column from Tr
 """
 from __future__ import print_function
 
-import datetime
 import logging
 import sys
 
 from sqlalchemy import MetaData, Table
 
-now = datetime.datetime.utcnow
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler( sys.stdout )
+handler = logging.StreamHandler(sys.stdout)
 format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter( format )
-handler.setFormatter( formatter )
-log.addHandler( handler )
+formatter = logging.Formatter(format)
+handler.setFormatter(formatter)
+log.addHandler(handler)
 metadata = MetaData()
 
 
@@ -24,7 +22,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print(__doc__)
     metadata.reflect()
-    Table( "tool_dependency", metadata, autoload=True )
+    Table("tool_dependency", metadata, autoload=True)
     # Change the tool_dependency table's version column from TrimmedString to Text.
     if migrate_engine.name in ['postgres', 'postgresql']:
         cmd = "ALTER TABLE tool_dependency ALTER COLUMN version TYPE Text;"
@@ -42,9 +40,9 @@ def upgrade(migrate_engine):
         cmd = None
     if cmd:
         try:
-            migrate_engine.execute( cmd )
-        except Exception as e:
-            log.debug( "Altering tool_dependency.version column from TrimmedString(40) to Text failed: %s" % str( e ) )
+            migrate_engine.execute(cmd)
+        except Exception:
+            log.exception("Altering tool_dependency.version column from TrimmedString(40) to Text failed.")
 
 
 def downgrade(migrate_engine):

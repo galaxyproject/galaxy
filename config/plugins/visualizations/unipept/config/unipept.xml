@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Unipept Taxonomy Viewer">
+    <description>Interactive Unipept Tree viewer.</description>
+    <data_sources>
+        <data_source>
+           <model_class>HistoryDatasetAssociation</model_class>
+           <test test_attr="ext" result_type="datatype">d3_hierarchy</test>
+           <to_param param_attr="id">dataset_id</to_param>
+        </data_source>
+    </data_sources>
+    <params>
+        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+    </params>
+    <template>unipept.mako</template>
+    <render_target>_blank</render_target>
+</visualization>

@@ -6,19 +6,18 @@ and other (nested) containers.
 """
 # Histories should be DatasetCollections.
 # Libraries should be DatasetCollections.
-
+import logging
 import operator
 
-from galaxy import model
 import galaxy.exceptions
 import galaxy.util
+from galaxy import model
 
-import logging
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 # ====
-class ContainerManagerMixin( object ):
+class ContainerManagerMixin(object):
     """
     A class that tracks/contains two types of items:
         1) some non-container object (such as datasets)
@@ -37,95 +36,78 @@ class ContainerManagerMixin( object ):
     default_order_by = None
 
     # ---- interface
-    def contents( self, container ):
+    def contents(self, container):
         """
         Returns both types of contents: filtered and in some order.
         """
         iters = []
-        iters.append( self.contained( container ) )
-        iters.append( self.subcontainers( container ) )
-        return galaxy.util.merge_sorted_iterables( self.order_contents_on, *iters )
+        iters.append(self.contained(container))
+        iters.append(self.subcontainers(container))
+        return galaxy.util.merge_sorted_iterables(self.order_contents_on, *iters)
 
-    def contained( self, container, **kwargs ):
+    def contained(self, container, **kwargs):
         """
         Returns non-container objects.
         """
-        return self._filter_contents( container, self.contained_class, **kwargs )
+        return self._filter_contents(container, self.contained_class, **kwargs)
 
-    def subcontainers( self, container, **kwargs ):
+    def subcontainers(self, container, **kwargs):
         """
         Returns only the containers within this one.
         """
-        return self._filter_contents( container, self.subcontainer_class, **kwargs )
+        return self._filter_contents(container, self.subcontainer_class, **kwargs)
 
     # ---- private
-    def _filter_contents( self, container, content_class, **kwargs ):
+    def _filter_contents(self, container, content_class, **kwargs):
         # TODO: use list (or by_history etc.)
-        container_filter = self._filter_to_contained( container, content_class )
-        query = self.session().query( content_class ).filter( container_filter )
+        container_filter = self._filter_to_contained(container, content_class)
+        query = self.session().query(content_class).filter(container_filter)
         return query
 
-    def _get_filter_for_contained( self, container, content_class ):
-        raise galaxy.exceptions.NotImplemented( 'Abstract class' )
+    def _get_filter_for_contained(self, container, content_class):
+        raise galaxy.exceptions.NotImplemented('Abstract class')
 
-    def _content_manager( self, content ):
-        raise galaxy.exceptions.NotImplemented( 'Abstract class' )
+    def _content_manager(self, content):
+        raise galaxy.exceptions.NotImplemented('Abstract class')
 
 
-class LibraryFolderAsContainerManagerMixin( ContainerManagerMixin ):
+class LibraryFolderAsContainerManagerMixin(ContainerManagerMixin):
     # can contain two types of subcontainer: LibraryFolder, LibraryDatasetCollectionAssociation
     # has as the top level container: Library
 
     contained_class = model.LibraryDataset
     subcontainer_class = model.LibraryFolder
     # subcontainer_class = model.LibraryDatasetCollectionAssociation
-    order_contents_on = operator.attrgetter( 'create_time' )
+    order_contents_on = operator.attrgetter('create_time')
 
-    def _get_filter_for_contained( self, container, content_class ):
+    def _get_filter_for_contained(self, container, content_class):
         if content_class == self.subcontainer_class:
             return self.subcontainer_class.parent == container
         return self.contained_class.folder == container
 
-    def _content_manager( self, content ):
+    def _content_manager(self, content):
         # type snifffing is inevitable
-        if isinstance( content, model.LibraryDataset ):
+        if isinstance(content, model.LibraryDataset):
             return self.lda_manager
-        elif isinstance( content, model.LibraryFolder ):
+        elif isinstance(content, model.LibraryFolder):
             return self.folder_manager
-        raise TypeError( 'Unknown contents class: ' + str( content ) )
+        raise TypeError('Unknown contents class: ' + str(content))
 
 
-class DatasetCollectionAsContainerManagerMixin( ContainerManagerMixin ):
+class DatasetCollectionAsContainerManagerMixin(ContainerManagerMixin):
 
     # (note: unlike the other collections, dc's wrap both contained and subcontainers in this class)
     contained_class = model.DatasetCollectionElement
     subcontainer_class = model.DatasetCollection
-    order_contents_on = operator.attrgetter( 'element_index' )
+    order_contents_on = operator.attrgetter('element_index')
 
-    def _get_filter_for_contained( self, container, content_class ):
+    def _get_filter_for_contained(self, container, content_class):
         return content_class.collection == container
 
-    def _content_manager( self, content ):
+    def _content_manager(self, content):
         # type snifffing is inevitable
-        if isinstance( content, model.DatasetCollectionElement ):
+        if isinstance(content, model.DatasetCollectionElement):
             return self.collection_manager
-        elif isinstance( content, model.DatasetCollection ):
+        elif isinstance(content, model.DatasetCollection):
             return self.collection_manager
-        raise TypeError( 'Unknown contents class: ' + str( content ) )
-
-
-# ====
-class ContainableModelMixin:
-    """
-    Mixin for that which goes in a container.
-    """
-
-    # ---- interface
-    def parent_container( self, containable ):
-        """
-        Return this item's parent container or None if unrecorded.
-        """
-        raise galaxy.exceptions.NotImplemented( 'Abstract class' )
-
-    def set_parent_container( self, containable, new_parent_container ):
-        raise galaxy.exceptions.NotImplemented( 'Abstract class' )
+        raise TypeError('Unknown contents class: ' + str(content))

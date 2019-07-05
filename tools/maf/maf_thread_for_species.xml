@@ -3,7 +3,7 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">maf_thread_for_species.py $input1 $out_file1 $species</command>
+  <command>python '$__tool_directory__/maf_thread_for_species.py' '$input1' '$out_file1' $species</command>
   <inputs>
     <param format="maf" name="input1" type="data" label="MAF file"/>
     <param name="species" type="select" label="Species to keep" display="checkboxes" multiple="true">
@@ -17,13 +17,12 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="3.maf" format="maf"/>
+      <param name="input1" value="3.maf" ftype="maf"/>
       <param name="species" value="hg17,panTro1"/>
       <output name="out_file1" file="maf_thread_for_species.dat"/>
     </test>
   </tests>
   <help>
-
 **What it does**
 
 This tool allows the user to merge MAF blocks which are adjoining in each specified species from a MAF file. Columns which contain only gaps are removed. Species which are not desired are removed from the output.
@@ -48,12 +47,8 @@ results in::
 
   ##maf version=1
   a score=0.0
-  s hg17.chr7    127471195 389 + 158628139 gtttgccatcttttgctgctctagggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTAAAACTTCCCAAATACTGCCACTGATGTCCTGATGGAGGTATGAAAACATCCACTAAAATTTGTGGTTTATTCATTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG 
-  s panTro1.chr6 129885076 389 + 161576975 gtttgccatcttttgctgctcttgggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTGAAACTTCCCAAATACTGCCACTGATGTCCTGATGGAGGTATGAAAACATCCACTAAAATTTGTGGTTTATTCGTTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG 
-
-@HELP_CITATIONS@
+  s hg17.chr7    127471195 389 + 158628139 gtttgccatcttttgctgctctagggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTAAAACTTCCCAAATACTGCCACTGATGTCCTGATGGAGGTATGAAAACATCCACTAAAATTTGTGGTTTATTCATTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG
+  s panTro1.chr6 129885076 389 + 161576975 gtttgccatcttttgctgctcttgggaatccagcagctgtcaccatgtaaacaagcccaggctagaccaGTTACCCTCATCATCTTAGCTGATAGCCAGCCAGCCACCACAGGCAtgagtcaggccatattgctggacccacagaattatgagctaaataaatagtcttgggttaagccactaagttttaggcatagtgtgttatgtaTCTCACAAACATATAAGACTGTGTGTTTGTTGACTGGAGGAAGAGATGCTATAAAGACCACCTTTTGAAACTTCCCAAATACTGCCACTGATGTCCTGATGGAGGTATGAAAACATCCACTAAAATTTGTGGTTTATTCGTTTTTCATTATTTTGTTTAAGGAGGTCTATAGTGGAAGAGG
     </help>
     <expand macro="citations" />
-
 </tool>
-

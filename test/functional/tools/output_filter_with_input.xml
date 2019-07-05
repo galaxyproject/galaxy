@@ -1,0 +1,29 @@
+<tool id="output_filter_with_input" name="output_filter_with_input" version="1.0.0">
+  <!-- output_filter.xml but with an input -->
+  <command>
+    echo "test" > 1;
+    echo "test" > 2;
+    echo "test" > 3;
+    echo "test" > 4;
+    echo "test" > 5;
+  </command>
+  <inputs>
+    <param name="input_1" type="data" />
+    <param name="produce_out_1" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Do Filter 1" />
+    <param name="filter_text_1" type="text" value="1" />
+  </inputs>
+  <outputs>
+    <data format="txt" from_work_dir="1" name="out_1">
+      <filter>produce_out_1 is True</filter>
+    </data>
+    <data format="txt" from_work_dir="2" name="out_2">
+      <filter>filter_text_1 in ["foo", "bar"]</filter>
+      <!-- Must pass all filters... -->
+      <filter>filter_text_1 == "foo"</filter>
+    </data>
+    <data format="txt" from_work_dir="3" name="out_3">
+    </data>
+  </outputs>
+  <tests>
+  </tests>
+</tool>

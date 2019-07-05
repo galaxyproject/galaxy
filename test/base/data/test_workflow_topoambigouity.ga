@@ -1,0 +1,524 @@
+{
+  "a_galaxy_workflow": "true",
+  "format-version": "0.1",
+  "name": "topoambigouity",
+  "annotation": "",
+  "tags": [],
+  "uuid": "06ee1c43-8fbf-445b-8f5e-6da3a718100a",
+  "steps": {
+    "0": {
+      "id": 0,
+      "type": "data_input",
+      "content_id": null,
+      "tool_id": null,
+      "tool_version": null,
+      "name": "Input dataset",
+      "tool_state": "{\"name\": \"l\"}",
+      "errors": null,
+      "uuid": "362618fd-adfe-4649-9060-aec9d99a07fa",
+      "label": "l",
+      "annotation": "",
+      "inputs": [
+        {
+          "name": "l",
+          "description": ""
+        }
+      ],
+      "workflow_outputs": [],
+      "outputs": [],
+      "input_connections": {},
+      "position": {
+        "left": 193.7604217529297,
+        "top": 156.00001525878906
+      }
+    },
+    "1": {
+      "id": 1,
+      "type": "data_input",
+      "content_id": null,
+      "tool_id": null,
+      "tool_version": null,
+      "name": "Input dataset",
+      "tool_state": "{\"name\": \"m\"}",
+      "errors": null,
+      "uuid": "05f85fd5-1e5c-4809-b3e0-ac370ec0ab6f",
+      "label": "m",
+      "annotation": "",
+      "inputs": [
+        {
+          "name": "m",
+          "description": ""
+        }
+      ],
+      "workflow_outputs": [],
+      "outputs": [],
+      "input_connections": {},
+      "position": {
+        "left": 199.7639012336731,
+        "top": 282.9757237434387
+      }
+    },
+    "2": {
+      "id": 2,
+      "type": "data_input",
+      "content_id": null,
+      "tool_id": null,
+      "tool_version": null,
+      "name": "Input dataset",
+      "tool_state": "{\"name\": \"n\"}",
+      "errors": null,
+      "uuid": "9f29a7a9-f1b3-4021-8ab9-c7033a9f5bff",
+      "label": "n",
+      "annotation": "",
+      "inputs": [
+        {
+          "name": "n",
+          "description": ""
+        }
+      ],
+      "workflow_outputs": [],
+      "outputs": [],
+      "input_connections": {},
+      "position": {
+        "left": 213.73957872390747,
+        "top": 372.92363023757935
+      }
+    },
+    "3": {
+      "id": 3,
+      "type": "data_input",
+      "content_id": null,
+      "tool_id": null,
+      "tool_version": null,
+      "name": "Input dataset",
+      "tool_state": "{\"name\": \"a\"}",
+      "errors": null,
+      "uuid": "86329e53-ba5c-4434-a2ca-97d6b52ccb83",
+      "label": "a",
+      "annotation": "",
+      "inputs": [
+        {
+          "name": "a",
+          "description": ""
+        }
+      ],
+      "workflow_outputs": [],
+      "outputs": [],
+      "input_connections": {},
+      "position": {
+        "left": 387.21183824539185,
+        "top": 414.39933824539185
+      }
+    },
+    "4": {
+      "id": 4,
+      "type": "data_input",
+      "content_id": null,
+      "tool_id": null,
+      "tool_version": null,
+      "name": "Input dataset",
+      "tool_state": "{\"name\": \"b\"}",
+      "errors": null,
+      "uuid": "06ae9e17-5be8-496e-af3c-33b3826b454e",
+      "label": "b",
+      "annotation": "",
+      "inputs": [
+        {
+          "name": "b",
+          "description": ""
+        }
+      ],
+      "workflow_outputs": [],
+      "outputs": [],
+      "input_connections": {},
+      "position": {
+        "left": 389.2083592414856,
+        "top": 484.4514012336731
+      }
+    },
+    "5": {
+      "id": 5,
+      "type": "data_input",
+      "content_id": null,
+      "tool_id": null,
+      "tool_version": null,
+      "name": "Input dataset",
+      "tool_state": "{\"name\": \"c\"}",
+      "errors": null,
+      "uuid": "60b2c203-8783-4c44-967a-638552b6a085",
+      "label": "c",
+      "annotation": "",
+      "inputs": [
+        {
+          "name": "c",
+          "description": ""
+        }
+      ],
+      "workflow_outputs": [],
+      "outputs": [],
+      "input_connections": {},
+      "position": {
+        "left": 402.2465672492981,
+        "top": 568.4618382453918
+      }
+    },
+    "6": {
+      "id": 6,
+      "type": "data_input",
+      "content_id": null,
+      "tool_id": null,
+      "tool_version": null,
+      "name": "Input dataset",
+      "tool_state": "{\"name\": \"d\"}",
+      "errors": null,
+      "uuid": "45219dd4-413d-488b-860b-997a3619ca77",
+      "label": "d",
+      "annotation": "",
+      "inputs": [
+        {
+          "name": "d",
+          "description": ""
+        }
+      ],
+      "workflow_outputs": [],
+      "outputs": [],
+      "input_connections": {},
+      "position": {
+        "left": 398.2881932258606,
+        "top": 641.5000462532043
+      }
+    },
+    "7": {
+      "id": 7,
+      "type": "data_input",
+      "content_id": null,
+      "tool_id": null,
+      "tool_version": null,
+      "name": "Input dataset",
+      "tool_state": "{\"name\": \"e\"}",
+      "errors": null,
+      "uuid": "e3f0c62a-9a7f-4392-ac38-7d4ee00d8acf",
+      "label": "e",
+      "annotation": "",
+      "inputs": [
+        {
+          "name": "e",
+          "description": ""
+        }
+      ],
+      "workflow_outputs": [],
+      "outputs": [],
+      "input_connections": {},
+      "position": {
+        "left": 683.3750462532043,
+        "top": 600.5972752571106
+      }
+    },
+    "8": {
+      "id": 8,
+      "type": "data_input",
+      "content_id": null,
+      "tool_id": null,
+      "tool_version": null,
+      "name": "Input dataset",
+      "tool_state": "{\"name\": \"f\"}",
+      "errors": null,
+      "uuid": "2f733fa4-e747-45be-b56c-7faf49fcf807",
+      "label": "f",
+      "annotation": "",
+      "inputs": [
+        {
+          "name": "f",
+          "description": ""
+        }
+      ],
+      "workflow_outputs": [],
+      "outputs": [],
+      "input_connections": {},
+      "position": {
+        "left": 692.3854222297668,
+        "top": 694.5729222297668
+      }
+    },
+    "9": {
+      "id": 9,
+      "type": "data_input",
+      "content_id": null,
+      "tool_id": null,
+      "tool_version": null,
+      "name": "Input dataset",
+      "tool_state": "{\"name\": \"g\"}",
+      "errors": null,
+      "uuid": "a1ee8a5f-aa59-41d4-abda-984be5a74ca7",
+      "label": "g",
+      "annotation": "",
+      "inputs": [
+        {
+          "name": "g",
+          "description": ""
+        }
+      ],
+      "workflow_outputs": [],
+      "outputs": [],
+      "input_connections": {},
+      "position": {
+        "left": 681.5173802375793,
+        "top": 760.7014012336731
+      }
+    },
+    "10": {
+      "id": 10,
+      "type": "data_input",
+      "content_id": null,
+      "tool_id": null,
+      "tool_version": null,
+      "name": "Input dataset",
+      "tool_state": "{\"name\": \"h\"}",
+      "errors": null,
+      "uuid": "fbdd518a-8473-49c4-ae3a-fbb0bf2e7a13",
+      "label": "h",
+      "annotation": "",
+      "inputs": [
+        {
+          "name": "h",
+          "description": ""
+        }
+      ],
+      "workflow_outputs": [],
+      "outputs": [],
+      "input_connections": {},
+      "position": {
+        "left": 923.6006932258606,
+        "top": 599.7986302375793
+      }
+    },
+    "11": {
+      "id": 11,
+      "type": "data_input",
+      "content_id": null,
+      "tool_id": null,
+      "tool_version": null,
+      "name": "Input dataset",
+      "tool_state": "{\"name\": \"i\"}",
+      "errors": null,
+      "uuid": "a4a5d71d-2b83-437c-9907-ed501ec0d008",
+      "label": "i",
+      "annotation": "",
+      "inputs": [
+        {
+          "name": "i",
+          "description": ""
+        }
+      ],
+      "workflow_outputs": [],
+      "outputs": [],
+      "input_connections": {},
+      "position": {
+        "left": 921.5694432258606,
+        "top": 694.7639012336731
+      }
+    },
+    "12": {
+      "id": 12,
+      "type": "data_input",
+      "content_id": null,
+      "tool_id": null,
+      "tool_version": null,
+      "name": "Input dataset",
+      "tool_state": "{\"name\": \"k\"}",
+      "errors": null,
+      "uuid": "6515b24b-5748-4022-953b-e30652ab273c",
+      "label": "k",
+      "annotation": "",
+      "inputs": [
+        {
+          "name": "k",
+          "description": ""
+        }
+      ],
+      "workflow_outputs": [],
+      "outputs": [],
+      "input_connections": {},
+      "position": {
+        "left": 931.6736912727356,
+        "top": 787.8889012336731
+      }
+    },
+    "13": {
+      "id": 13,
+      "type": "tool",
+      "content_id": "cat1",
+      "tool_id": "cat1",
+      "tool_version": "1.0.0",
+      "name": "Concatenate datasets",
+      "tool_state": "{\"input1\": \"null\", \"queries\": \"[{\\\"__index__\\\": 0, \\\"input2\\\": null}, {\\\"__index__\\\": 1, \\\"input2\\\": null}, {\\\"__index__\\\": 2, \\\"input2\\\": null}]\", \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+      "errors": null,
+      "uuid": "8ee1e6e3-c80c-4fee-aa0b-aec04db0039b",
+      "label": null,
+      "annotation": "",
+      "post_job_actions": {},
+      "inputs": [],
+      "workflow_outputs": [],
+      "outputs": [
+        {
+          "name": "out_file1",
+          "type": "input"
+        }
+      ],
+      "input_connections": {
+        "queries_0|input2": {
+          "id": 4,
+          "output_name": "output"
+        },
+        "queries_1|input2": {
+          "id": 5,
+          "output_name": "output"
+        },
+        "input1": {
+          "id": 3,
+          "output_name": "output"
+        },
+        "queries_2|input2": {
+          "id": 6,
+          "output_name": "output"
+        }
+      },
+      "position": {
+        "left": 660.3368382453918,
+        "top": 404.57295274734497
+      }
+    },
+    "14": {
+      "id": 14,
+      "type": "tool",
+      "content_id": "cat1",
+      "tool_id": "cat1",
+      "tool_version": "1.0.0",
+      "name": "Concatenate datasets",
+      "tool_state": "{\"input1\": \"null\", \"queries\": \"[{\\\"__index__\\\": 0, \\\"input2\\\": null}, {\\\"__index__\\\": 1, \\\"input2\\\": null}, {\\\"__index__\\\": 2, \\\"input2\\\": null}]\", \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+      "errors": null,
+      "uuid": "b85c8255-b550-453d-9702-afa8fb209cf3",
+      "label": null,
+      "annotation": "",
+      "post_job_actions": {},
+      "inputs": [],
+      "workflow_outputs": [],
+      "outputs": [
+        {
+          "name": "out_file1",
+          "type": "input"
+        }
+      ],
+      "input_connections": {
+        "queries_0|input2": {
+          "id": 7,
+          "output_name": "output"
+        },
+        "queries_1|input2": {
+          "id": 8,
+          "output_name": "output"
+        },
+        "input1": {
+          "id": 13,
+          "output_name": "out_file1"
+        },
+        "queries_2|input2": {
+          "id": 9,
+          "output_name": "output"
+        }
+      },
+      "position": {
+        "left": 915.5451512336731,
+        "top": 394.7639012336731
+      }
+    },
+    "15": {
+      "id": 15,
+      "type": "tool",
+      "content_id": "cat1",
+      "tool_id": "cat1",
+      "tool_version": "1.0.0",
+      "name": "Concatenate datasets",
+      "tool_state": "{\"input1\": \"null\", \"queries\": \"[{\\\"__index__\\\": 0, \\\"input2\\\": null}, {\\\"__index__\\\": 1, \\\"input2\\\": null}, {\\\"__index__\\\": 2, \\\"input2\\\": null}]\", \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+      "errors": null,
+      "uuid": "9ba4ef05-7a6e-4a14-a4e6-6afedaf446a1",
+      "label": null,
+      "annotation": "",
+      "post_job_actions": {},
+      "inputs": [],
+      "workflow_outputs": [],
+      "outputs": [
+        {
+          "name": "out_file1",
+          "type": "input"
+        }
+      ],
+      "input_connections": {
+        "queries_0|input2": {
+          "id": 10,
+          "output_name": "output"
+        },
+        "queries_1|input2": {
+          "id": 11,
+          "output_name": "output"
+        },
+        "input1": {
+          "id": 14,
+          "output_name": "out_file1"
+        },
+        "queries_2|input2": {
+          "id": 12,
+          "output_name": "output"
+        }
+      },
+      "position": {
+        "left": 217.61113023757935,
+        "top": 760.8055882453918
+      }
+    },
+    "16": {
+      "id": 16,
+      "type": "tool",
+      "content_id": "cat1",
+      "tool_id": "cat1",
+      "tool_version": "1.0.0",
+      "name": "Concatenate datasets",
+      "tool_state": "{\"input1\": \"null\", \"queries\": \"[{\\\"__index__\\\": 0, \\\"input2\\\": null}, {\\\"__index__\\\": 1, \\\"input2\\\": null}, {\\\"__index__\\\": 2, \\\"input2\\\": null}]\", \"__page__\": 0, \"__rerun_remap_job_id__\": null}",
+      "errors": null,
+      "uuid": "b58020ae-56d2-4507-a453-f183c48c9575",
+      "label": null,
+      "annotation": "",
+      "post_job_actions": {},
+      "inputs": [],
+      "workflow_outputs": [],
+      "outputs": [
+        {
+          "name": "out_file1",
+          "type": "input"
+        }
+      ],
+      "input_connections": {
+        "queries_0|input2": {
+          "id": 1,
+          "output_name": "output"
+        },
+        "queries_1|input2": {
+          "id": 2,
+          "output_name": "output"
+        },
+        "input1": {
+          "id": 0,
+          "output_name": "output"
+        },
+        "queries_2|input2": {
+          "id": 15,
+          "output_name": "out_file1"
+        }
+      },
+      "position": {
+        "left": 462.9583592414856,
+        "top": 194.15626573562622
+      }
+    }
+  }
+}

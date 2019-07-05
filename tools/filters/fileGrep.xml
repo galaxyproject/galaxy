@@ -1,17 +1,19 @@
 <tool id="fileGrep1" name="Match" version="1.0.0">
   <description>a column from one Query against another Query</description>
-  <command>cut -f $col $input1 | grep -f - $match $input2 > $out_file1</command>
+  <command>
+cut -f '$col' '$input1' | grep -f - $match '$input2' > '$out_file1'
+  </command>
   <inputs>
-    <param name="col" size="2" type="text" value="1" label="Match content of column"/>
-    <param format="tabular" name="input1" type="data" label="From Query1"/>
-    <param format="tabular" name="input2" type="data" label="Against Query2"/>
+    <param name="col" type="text" value="1" label="Match content of column"/>
+    <param name="input1" type="data" format="tabular" label="From Query1"/>
+    <param name="input2" type="data" format="tabular" label="Against Query2"/>
     <param name="match" type="select" label="and return rows that">
       <option value="">Match</option>
       <option value="-v">Do not match</option>
     </param>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input2" />
+    <data name="out_file1" format="input" metadata_source="input2" />
   </outputs>
   <help>
 This tool is based on UNIX command grep with option -f. It matches content of one query against another. For example, assume you have two queries - one that contains EST accession numbers and some other information::
@@ -37,6 +39,5 @@ Using this tool you will be able to tell how many ESTs in Query1 are also preset
   chr7 115443239 115443802 AA001842_exon_0_0_chr7_115443240_f 0	
 
 if **Match** option is chosen.
-
-</help>
+  </help>
 </tool>

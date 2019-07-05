@@ -1,0 +1,179 @@
+/*
+SCSS variables are information about icon's compiled state, stored under its original file name
+
+.icon-home {
+  width: $icon-home-width;
+}
+
+The large array-like variables contain all information about a single icon
+$icon-home: x y offset_x offset_y width height total_width total_height image_path;
+
+At the bottom of this section, we provide information about the spritesheet itself
+$spritesheet: width height image $spritesheet-sprites;
+*/
+$delete-icon-name: "delete_icon";
+$delete-icon-x: 0px;
+$delete-icon-y: 0px;
+$delete-icon-offset-x: 0px;
+$delete-icon-offset-y: 0px;
+$delete-icon-width: 16px;
+$delete-icon-height: 16px;
+$delete-icon-total-width: 48px;
+$delete-icon-total-height: 48px;
+$delete-icon-image: "sprite-history-buttons.png";
+$delete-icon: (0px, 0px, 0px, 0px, 16px, 16px, 48px, 48px, "sprite-history-buttons.png", "delete_icon");
+$delete-icon-dark-name: "delete_icon_dark";
+$delete-icon-dark-x: 16px;
+$delete-icon-dark-y: 0px;
+$delete-icon-dark-offset-x: -16px;
+$delete-icon-dark-offset-y: 0px;
+$delete-icon-dark-width: 16px;
+$delete-icon-dark-height: 16px;
+$delete-icon-dark-total-width: 48px;
+$delete-icon-dark-total-height: 48px;
+$delete-icon-dark-image: "sprite-history-buttons.png";
+$delete-icon-dark: (16px, 0px, -16px, 0px, 16px, 16px, 48px, 48px, "sprite-history-buttons.png", "delete_icon_dark");
+$delete-icon-grey-name: "delete_icon_grey";
+$delete-icon-grey-x: 0px;
+$delete-icon-grey-y: 16px;
+$delete-icon-grey-offset-x: 0px;
+$delete-icon-grey-offset-y: -16px;
+$delete-icon-grey-width: 16px;
+$delete-icon-grey-height: 16px;
+$delete-icon-grey-total-width: 48px;
+$delete-icon-grey-total-height: 48px;
+$delete-icon-grey-image: "sprite-history-buttons.png";
+$delete-icon-grey: (0px, 16px, 0px, -16px, 16px, 16px, 48px, 48px, "sprite-history-buttons.png", "delete_icon_grey");
+$eye-icon-name: "eye_icon";
+$eye-icon-x: 16px;
+$eye-icon-y: 16px;
+$eye-icon-offset-x: -16px;
+$eye-icon-offset-y: -16px;
+$eye-icon-width: 16px;
+$eye-icon-height: 16px;
+$eye-icon-total-width: 48px;
+$eye-icon-total-height: 48px;
+$eye-icon-image: "sprite-history-buttons.png";
+$eye-icon: (16px, 16px, -16px, -16px, 16px, 16px, 48px, 48px, "sprite-history-buttons.png", "eye_icon");
+$eye-icon-dark-name: "eye_icon_dark";
+$eye-icon-dark-x: 32px;
+$eye-icon-dark-y: 0px;
+$eye-icon-dark-offset-x: -32px;
+$eye-icon-dark-offset-y: 0px;
+$eye-icon-dark-width: 16px;
+$eye-icon-dark-height: 16px;
+$eye-icon-dark-total-width: 48px;
+$eye-icon-dark-total-height: 48px;
+$eye-icon-dark-image: "sprite-history-buttons.png";
+$eye-icon-dark: (32px, 0px, -32px, 0px, 16px, 16px, 48px, 48px, "sprite-history-buttons.png", "eye_icon_dark");
+$eye-icon-grey-name: "eye_icon_grey";
+$eye-icon-grey-x: 32px;
+$eye-icon-grey-y: 16px;
+$eye-icon-grey-offset-x: -32px;
+$eye-icon-grey-offset-y: -16px;
+$eye-icon-grey-width: 16px;
+$eye-icon-grey-height: 16px;
+$eye-icon-grey-total-width: 48px;
+$eye-icon-grey-total-height: 48px;
+$eye-icon-grey-image: "sprite-history-buttons.png";
+$eye-icon-grey: (32px, 16px, -32px, -16px, 16px, 16px, 48px, 48px, "sprite-history-buttons.png", "eye_icon_grey");
+$pencil-icon-name: "pencil_icon";
+$pencil-icon-x: 0px;
+$pencil-icon-y: 32px;
+$pencil-icon-offset-x: 0px;
+$pencil-icon-offset-y: -32px;
+$pencil-icon-width: 16px;
+$pencil-icon-height: 16px;
+$pencil-icon-total-width: 48px;
+$pencil-icon-total-height: 48px;
+$pencil-icon-image: "sprite-history-buttons.png";
+$pencil-icon: (0px, 32px, 0px, -32px, 16px, 16px, 48px, 48px, "sprite-history-buttons.png", "pencil_icon");
+$pencil-icon-dark-name: "pencil_icon_dark";
+$pencil-icon-dark-x: 16px;
+$pencil-icon-dark-y: 32px;
+$pencil-icon-dark-offset-x: -16px;
+$pencil-icon-dark-offset-y: -32px;
+$pencil-icon-dark-width: 16px;
+$pencil-icon-dark-height: 16px;
+$pencil-icon-dark-total-width: 48px;
+$pencil-icon-dark-total-height: 48px;
+$pencil-icon-dark-image: "sprite-history-buttons.png";
+$pencil-icon-dark: (16px, 32px, -16px, -32px, 16px, 16px, 48px, 48px, "sprite-history-buttons.png", "pencil_icon_dark");
+$pencil-icon-grey-name: "pencil_icon_grey";
+$pencil-icon-grey-x: 32px;
+$pencil-icon-grey-y: 32px;
+$pencil-icon-grey-offset-x: -32px;
+$pencil-icon-grey-offset-y: -32px;
+$pencil-icon-grey-width: 16px;
+$pencil-icon-grey-height: 16px;
+$pencil-icon-grey-total-width: 48px;
+$pencil-icon-grey-total-height: 48px;
+$pencil-icon-grey-image: "sprite-history-buttons.png";
+$pencil-icon-grey: (32px, 32px, -32px, -32px, 16px, 16px, 48px, 48px, "sprite-history-buttons.png", "pencil_icon_grey");
+$spritesheet-width: 48px;
+$spritesheet-height: 48px;
+$spritesheet-image: "sprite-history-buttons.png";
+$spritesheet-sprites: (
+    $delete-icon,
+    $delete-icon-dark,
+    $delete-icon-grey,
+    $eye-icon,
+    $eye-icon-dark,
+    $eye-icon-grey,
+    $pencil-icon,
+    $pencil-icon-dark,
+    $pencil-icon-grey
+);
+$spritesheet: (48px, 48px, "sprite-history-buttons.png", $spritesheet-sprites);
+
+/*
+The provided mixins are intended to be used with the array-like variables
+
+.icon-home {
+  @include sprite-width($icon-home);
+}
+
+.icon-email {
+  @include sprite($icon-email);
+}
+*/
+@mixin sprite-width($sprite) {
+    width: nth($sprite, 5);
+}
+
+@mixin sprite-height($sprite) {
+    height: nth($sprite, 6);
+}
+
+@mixin sprite-position($sprite) {
+    $sprite-offset-x: nth($sprite, 3);
+    $sprite-offset-y: nth($sprite, 4);
+    background-position: $sprite-offset-x $sprite-offset-y;
+}
+
+@mixin sprite-image($sprite) {
+    $sprite-image: nth($sprite, 9);
+    background-image: url(#{$sprite-image});
+}
+
+@mixin sprite($sprite) {
+    @include sprite-image($sprite);
+    @include sprite-position($sprite);
+    @include sprite-width($sprite);
+    @include sprite-height($sprite);
+}
+
+/*
+The `sprites` mixin generates identical output to the CSS template
+  but can be overridden inside of SCSS
+
+@include sprites($spritesheet-sprites);
+*/
+@mixin sprites($sprites) {
+    @each $sprite in $sprites {
+        $sprite-name: nth($sprite, 10);
+        .#{$sprite-name} {
+            @include sprite($sprite);
+        }
+    }
+}

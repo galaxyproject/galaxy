@@ -1,18 +1,22 @@
 """
 Constructive Solid Geometry file formats.
 """
+import abc
+
+from galaxy import util
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.data import nice_size
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy import util
+from galaxy.datatypes.sniff import build_sniff_from_prefix
 
 MAX_HEADER_LINES = 500
 MAX_LINE_LEN = 2000
 COLOR_OPTS = ['COLOR_SCALARS', 'red', 'green', 'blue']
 
 
+@build_sniff_from_prefix
 class Ply(object):
     """
     The PLY format describes an object as a collection of vertices,
@@ -20,6 +24,7 @@ class Ply(object):
     normal direction that can be attached to these elements.  A PLY
     file contains the description of exactly one object.
     """
+    subtype = ''
     # Add metadata elements.
     MetadataElement(name="file_format", default=None, desc="File format",
                     readonly=True, optional=True, visible=True, no_value=None)
@@ -30,16 +35,18 @@ class Ply(object):
     MetadataElement(name="other_elements", default=[], desc="Other elements",
                     readonly=True, optional=True, visible=True, no_value=[])
 
-    def sniff(self, filename, subtype):
+    @abc.abstractmethod
+    def __init__(self, **kwd):
+        raise NotImplementedError
+
+    def sniff_prefix(self, file_prefix):
         """
         The structure of a typical PLY file:
         Header, Vertex List, Face List, (lists of other elements)
         """
-        with open(filename, "r") as fh:
-            if not self._is_ply_header(fh, subtype):
-                return False
-            return True
-        return False
+        if not self._is_ply_header(file_prefix.string_io(), self.subtype):
+            return False
+        return True
 
     def _is_ply_header(self, fh, subtype):
         """
@@ -95,7 +102,7 @@ class Ply(object):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Faces: %s, Vertices: %s" % (str(dataset.metadata.face), str(dataset.metadata.vertex))
         else:
             dataset.peek = 'File does not exist'
@@ -104,36 +111,29 @@ class Ply(object):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Ply file (%s)" % (nice_size(dataset.get_size()))
 
 
 class PlyAscii(Ply, data.Text):
-
     file_ext = "plyascii"
+    subtype = 'ascii'
 
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
 
-    def sniff(self, filename):
-        return super(PlyAscii, self).sniff(filename, subtype='ascii')
-
 
 class PlyBinary(Ply, Binary):
-
     file_ext = "plybinary"
+    subtype = 'binary'
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
 
-    def sniff(self, filename):
-        return super(PlyBinary, self).sniff(filename, subtype='binary')
 
-Binary.register_sniffable_binary_format("plybinary", "plybinary", PlyBinary)
-
-
+@build_sniff_from_prefix
 class Vtk(object):
-    """
+    r"""
     The Visualization Toolkit provides a number of source and writer objects to
     read and write popular data file formats. The Visualization Toolkit also
     provides some of its own file formats.
@@ -150,12 +150,13 @@ class Vtk(object):
     i.e., the numbers that define points coordinates, scalars, cell indices, and
     so forth.
 
-    Binary data must be placed into the file immediately after the newline (\n)
-    character from the previous ASCII keyword and parameter sequence.
+    Binary data must be placed into the file immediately after the newline
+    ('\\n') character from the previous ASCII keyword and parameter sequence.
 
     TODO: only legacy formats are currently supported and support for XML formats
     should be added.
     """
+    subtype = ''
     # Add metadata elements.
     MetadataElement(name="vtk_version", default=None, desc="Vtk version",
                     readonly=True, optional=True, visible=True, no_value=None)
@@ -196,16 +197,18 @@ class Vtk(object):
     MetadataElement(name="field_components", default={}, desc="Field names and components",
                     readonly=True, optional=True, visible=True, no_value={})
 
-    def sniff(self, filename, subtype):
+    @abc.abstractmethod
+    def __init__(self, **kwd):
+        raise NotImplementedError
+
+    def sniff_prefix(self, file_prefix):
         """
         VTK files can be either ASCII or binary, with two different
         styles of file formats: legacy or XML.  We'll assume if the
         file contains a valid VTK header, then it is a valid VTK file.
         """
-        with open(filename, "r") as fh:
-            if self._is_vtk_header(fh, subtype):
-                return True
-            return False
+        if self._is_vtk_header(file_prefix.string_io(), self.subtype):
+            return True
         return False
 
     def _is_vtk_header(self, fh, subtype):
@@ -294,7 +297,7 @@ class Vtk(object):
                                 dataset.metadata.field_names.append(field_name)
                                 try:
                                     num_components = int(items[-1])
-                                except:
+                                except Exception:
                                     num_components = 1
                                 field_component_indexes = [str(i) for i in range(num_components)]
                                 field_components[field_name] = field_component_indexes
@@ -312,7 +315,7 @@ class Vtk(object):
                                         float(items[0])
                                         # Don't process the cell data.
                                         # 0.0123457 0.197531
-                                    except:
+                                    except Exception:
                                         # Line consists of arrayName numComponents numTuples dataType.
                                         # Example: surface_field1 1 12 double
                                         field_name = items[0]
@@ -422,7 +425,7 @@ class Vtk(object):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = self.get_blurb(dataset)
         else:
             dataset.peek = 'File does not exist'
@@ -431,32 +434,28 @@ class Vtk(object):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Vtk file (%s)" % (nice_size(dataset.get_size()))
 
 
 class VtkAscii(Vtk, data.Text):
-
     file_ext = "vtkascii"
+    subtype = 'ASCII'
 
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
 
-    def sniff(self, filename):
-        return super(VtkAscii, self).sniff(filename, subtype='ASCII')
-
 
 class VtkBinary(Vtk, Binary):
-
     file_ext = "vtkbinary"
+    subtype = 'BINARY'
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
 
-    def sniff(self, filename):
-        return super(VtkBinary, self).sniff(filename, subtype='BINARY')
 
-Binary.register_sniffable_binary_format("vtkbinary", "vtkbinary", VtkBinary)
+class STL(data.Data):
+    file_ext = "stl"
 
 
 # Utility functions

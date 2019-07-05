@@ -3,7 +3,7 @@
   <macros>
       <import>macros.xml</import>
   </macros>
-  <command interpreter="python">maf_limit_to_species.py $species $input1 $out_file1 $allow_partial $min_species</command>
+  <command>python '$__tool_directory__/maf_limit_to_species.py' $species '$input1' '$out_file1' $allow_partial $min_species</command>
   <inputs>
     <param name="input1" type="data" format="maf" label="MAF file"/>
     <param name="allow_partial" type="select" label="Exclude blocks which have missing species" >
@@ -33,7 +33,6 @@
     </test>
   </tests>
   <help>
-
 **What It Does**
 
 This tool allows the user to remove any undesired species from a MAF file. Columns which contain only gaps are removed. The options for this tool are:
@@ -41,9 +40,6 @@ This tool allows the user to remove any undesired species from a MAF file. Colum
  * **Exclude blocks which have missing species** - suppose you want to restrict an 8-way alignment to human, mouse, and rat.  The tool will first remove all other species. Next, if this option is set to **YES** the tool WILL NOT return MAF blocks, which do not include human, mouse, or rat. This means that all alignment blocks returned by the tool will have exactly three sequences in this example.
 
  * **Exclude blocks with have only one species** - if this option is set to **YES** all single sequence alignment blocks WILL NOT be returned.
-
-@HELP_CITATIONS@
     </help>
     <expand macro="citations" />
 </tool>
-

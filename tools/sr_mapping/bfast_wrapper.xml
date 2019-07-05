@@ -72,7 +72,7 @@
       <when value="history">
         <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference from history" />
         <repeat name="custom_index" title="Custom indice" min="1" >
-            <param name="mask" type="text" value="" label="Specify the mask" size="20">
+            <param name="mask" type="text" value="" label="Specify the mask">
               <!-- <validator type="no_options" message="No indexes are available for the selected input dataset"/> need is int validator here or regex all 01s-->
             </param>
             <param name="hash_width" type="integer" value="" label="Hash Width" />
@@ -196,13 +196,13 @@ Homer N, Merriman B, Nelson SF.
 BFAST: An alignment tool for large scale genome resequencing.
 PMID: 19907642
 PLoS ONE. 2009 4(11): e7767.  
-http://dx.doi.org/10.1371/journal.pone.0007767  
+https://doi.org/10.1371/journal.pone.0007767  
 
 Homer N, Merriman B, Nelson SF.
 Local alignment of two-base encoded DNA sequence.
 BMC Bioinformatics. 2009 Jun 9;10(1):175.
 PMID: 19508732 
-http://dx.doi.org/10.1186/1471-2105-10-175
+https://doi.org/10.1186/1471-2105-10-175
 
 ------
 

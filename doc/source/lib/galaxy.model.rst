@@ -1,5 +1,5 @@
-galaxy.model package
-====================
+galaxy\.model package
+=====================
 
 .. automodule:: galaxy.model
     :members:
@@ -18,48 +18,56 @@ Subpackages
 Submodules
 ----------
 
-galaxy.model.base module
-------------------------
+galaxy\.model\.base module
+--------------------------
 
 .. automodule:: galaxy.model.base
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.model.custom_types module
---------------------------------
+galaxy\.model\.custom\_types module
+-----------------------------------
 
 .. automodule:: galaxy.model.custom_types
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.model.item_attrs module
-------------------------------
+galaxy\.model\.item\_attrs module
+---------------------------------
 
 .. automodule:: galaxy.model.item_attrs
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.model.mapping module
----------------------------
+galaxy\.model\.mapping module
+-----------------------------
 
 .. automodule:: galaxy.model.mapping
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.model.search module
---------------------------
+galaxy\.model\.metadata module
+------------------------------
+
+.. automodule:: galaxy.model.metadata
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.model\.search module
+----------------------------
 
 .. automodule:: galaxy.model.search
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.model.util module
-------------------------
+galaxy\.model\.util module
+--------------------------
 
 .. automodule:: galaxy.model.util
     :members:

@@ -37,12 +37,6 @@ many methods to help analyze and break the cycles.  This requires
 a good deal more code than topsort itself!
 """
 from galaxy.util.odict import odict as OrderedDict
-from six import PY3
-if PY3:
-    def list_filter(f, lst):
-        return list(filter(f, lst))
-else:
-    list_filter = filter
 
 
 class CycleError(Exception):
@@ -84,10 +78,10 @@ class CycleError(Exception):
         for x in self.get_elements():
             if x in succs:
                 for y in succs[x]:
-                    answer.append( (x, y) )
+                    answer.append((x, y))
             else:
                 # make sure x appears in topsort's output!
-                answer.append( (x, x) )
+                answer.append((x, x))
         return answer
 
     # return remaining elt -> list of predecessors map
@@ -164,8 +158,7 @@ def topsort(pairlist):
     numpreds, successors = _numpreds_and_successors_from_pairlist(pairlist)
 
     # suck up everything without a predecessor
-    answer = list_filter(lambda x, numpreds=numpreds: numpreds[x] == 0,
-                         numpreds.keys())
+    answer = [x for x in numpreds.keys() if numpreds[x] == 0]
 
     # for everything in answer, knock down the pred count on
     # its successors; note that answer grows *in* the loop
@@ -201,7 +194,7 @@ def topsort_levels(pairlist):
         levparents = [x for x in numpreds.keys() if numpreds[x] == 0]
         if not levparents:
             break
-        answer.append( levparents )
+        answer.append(levparents)
         for levparent in levparents:
             del numpreds[levparent]
             if levparent in successors:
@@ -212,6 +205,6 @@ def topsort_levels(pairlist):
     if numpreds:
         # Everything in num_parents has at least one child ->
         # there's a cycle.
-        raise CycleError( answer, numpreds, successors )
+        raise CycleError(answer, numpreds, successors)
 
     return answer

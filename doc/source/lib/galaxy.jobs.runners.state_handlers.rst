@@ -1,5 +1,5 @@
-galaxy.jobs.runners.state_handlers package
-==========================================
+galaxy\.jobs\.runners\.state\_handlers package
+==============================================
 
 .. automodule:: galaxy.jobs.runners.state_handlers
     :members:
@@ -9,8 +9,8 @@ galaxy.jobs.runners.state_handlers package
 Submodules
 ----------
 
-galaxy.jobs.runners.state_handlers.resubmit module
---------------------------------------------------
+galaxy\.jobs\.runners\.state\_handlers\.resubmit module
+-------------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.state_handlers.resubmit
     :members:

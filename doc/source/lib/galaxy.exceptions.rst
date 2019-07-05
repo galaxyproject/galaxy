@@ -1,5 +1,5 @@
-galaxy.exceptions package
-=========================
+galaxy\.exceptions package
+==========================
 
 .. automodule:: galaxy.exceptions
     :members:
@@ -9,8 +9,8 @@ galaxy.exceptions package
 Submodules
 ----------
 
-galaxy.exceptions.error_codes module
-------------------------------------
+galaxy\.exceptions\.error\_codes module
+---------------------------------------
 
 .. automodule:: galaxy.exceptions.error_codes
     :members:

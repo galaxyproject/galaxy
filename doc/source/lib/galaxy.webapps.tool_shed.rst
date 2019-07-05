@@ -1,5 +1,5 @@
-galaxy.webapps.tool_shed package
-================================
+galaxy\.webapps\.tool\_shed package
+===================================
 
 .. automodule:: galaxy.webapps.tool_shed
     :members:
@@ -22,24 +22,24 @@ Subpackages
 Submodules
 ----------
 
-galaxy.webapps.tool_shed.app module
------------------------------------
+galaxy\.webapps\.tool\_shed\.app module
+---------------------------------------
 
 .. automodule:: galaxy.webapps.tool_shed.app
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.tool_shed.buildapp module
-----------------------------------------
+galaxy\.webapps\.tool\_shed\.buildapp module
+--------------------------------------------
 
 .. automodule:: galaxy.webapps.tool_shed.buildapp
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.tool_shed.config module
---------------------------------------
+galaxy\.webapps\.tool\_shed\.config module
+------------------------------------------
 
 .. automodule:: galaxy.webapps.tool_shed.config
     :members:

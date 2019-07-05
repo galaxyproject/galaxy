@@ -10,12 +10,11 @@
 %>
 
 <%def name="stylesheets()">
-    ${h.css('base','jquery.rating')}
+    ${h.css('base')}
 </%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery.rating" )}
 </%def>
 
 ${render_tool_shed_repository_actions( repository=repository, changeset_revision=review.changeset_revision )}
@@ -45,7 +44,7 @@ ${render_tool_shed_repository_actions( repository=repository, changeset_revision
             </div>
             <div class="form-row">
                 <label>Approve this repository revision?</label>
-                ${revision_approved_select_field.get_html()}
+                ${render_select(revision_approved_select_field)}
                 <div class="toolParamHelp" style="clear: both;">
                     Individual components below may be approved without approving the repository revision.
                 </div>
@@ -83,7 +82,7 @@ ${render_tool_shed_repository_actions( repository=repository, changeset_revision
                             
                             # Initialize Private check box.
                             private_check_box_name = '%s%sprivate' % ( component_name, STRSEP )
-                            private_check_box = CheckboxField( name=private_check_box_name, checked=private )
+                            private_check_box = CheckboxField( name=private_check_box_name, value=private )
                             
                             # Initialize star rating.
                             rating_name = '%s%srating' % ( component_name, STRSEP )
@@ -107,7 +106,7 @@ ${render_tool_shed_repository_actions( repository=repository, changeset_revision
                                     <tr>
                                         <td>
                                             <label>Mark private:</label>
-                                            ${private_check_box.get_html()}
+                                            ${render_checkbox(private_check_box)}
                                             <div class="toolParamHelp" style="clear: both;">
                                                 A private review can be accessed only by the owner of the repository and authorized repository reviewers.
                                             </div>
@@ -128,7 +127,7 @@ ${render_tool_shed_repository_actions( repository=repository, changeset_revision
                                     <tr>
                                         <td>
                                             <label>Approved:</label>
-                                            ${approved_select_field.get_html()}
+                                            ${render_select(approved_select_field)}
                                             <div style="clear: both"></div>
                                         </td>
                                     </tr>

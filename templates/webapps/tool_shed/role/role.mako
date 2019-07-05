@@ -54,7 +54,7 @@ $().ready(function() {
 </script>
 
 <%
-    if trans.user_is_admin() and in_admin_controller:
+    if trans.user_is_admin and in_admin_controller:
         render_for_admin = True
     else:
         render_for_admin = False

@@ -3,7 +3,7 @@ Utility helpers related to the model
 """
 
 
-def pgcalc( sa_session, id, dryrun=False ):
+def pgcalc(sa_session, id, dryrun=False):
     """
     Utility method for quickly recalculating user disk usage in postgres.
 

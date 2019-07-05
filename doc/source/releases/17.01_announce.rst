@@ -1,0 +1,75 @@
+
+===========================================================
+January 2017 Galaxy Release (v 17.01)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Conda auto initialization is enabled by default**
+  After updating to 17.01 and upon starting Galaxy the Conda package manager will be installed automatically
+  within the Galaxy's workspace. This will enable your Galaxy to install tool dependencies from Conda channels
+  such as `BioConda <https://bioconda.github.io/>`__. Such channels are already being used for new and updated tools by IUC
+  and we suggest adopting this tool dependency resolution method to all tool developers instead of Tool Shed package
+  recipes - which are now considered deprecated.
+  Please see the details at the admin :doc:`documentation <../admin/conda_faq>`.
+
+**New interface for user preferences**
+  User preferences menu has been reworked for clarity and consistency.
+  Thanks to `@anuprulez <https://github.com/anuprulez>`__ and `@bgruening <https://github.com/bgruening>`__.
+  Implemented in `Pull Request 3118`_.
+
+**Support for compressed FASTQ formats**
+  You can now upload compressed (with gzip or bzip2) FASTQ files without them being unpacked automatically (as it was until now).
+  For this to work you have to select the proper type when uploading (e.g. instead of ``fastqsanger`` you select ``fastqsanger.gz``
+  or ``fastqsanger.bz2`` for compressed files).
+  Existing tools will work as before and future tools will be able to consume archives and save space in your quota.
+  Thanks to `@abretaud <https://github.com/abretaud>`__, `@ashvark <https://github.com/ashvark>`__, `@jvolkening <https://github.com/jvolkening>`__, and `@mvdbeek <https://github.com/mvdbeek>`__.
+  Implemented in `Pull Request 3145`_, `Pull Request 3510`_ and `Pull Request 3514`_.
+
+Get Galaxy
+==========
+
+The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_17.01 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git checkout release_17.01 && git pull --ff-only origin release_17.01
+
+See `our wiki <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Deprecation Notices
+===================
+
+* Galaxy tools no longer have access to Galaxy's core framework Python code during tool execution - see
+  `Pull Request 3364`_ for implementation details.
+
+  Previously, Galaxy's ``lib`` directory would be placed on a tool's PYTHONPATH - but this can cause different sorts of
+  conflicts with resolved dependencies and should never really have been part of the interface exposed to tools since
+  it makes both reproducibility and distribution of jobs difficult.
+
+  Unfortunately, there is a large number of Galaxy tools - both in the core distribution and in the Tool Shed - that depend     on Galaxy internals. The ones we know about have been added to a whitelist as part of `Pull Request 3364`_
+  and we will continue to add there if we find more. If you discover a tool that has problems importing e.g. ``galaxy`` or
+  ``galaxy_utils`` as a result of this release please let us know by `creating an issue
+  <https://github.com/galaxyproject/galaxy/issues/new>`__ with a link to the Tool Shed page of the tool.
+
+  If you have local tools that depend on these modules and you do not wish to use a formal dependency resolution mechanism
+  such as Conda, you can change the option ``preserve_python_environment`` in galaxy.ini from ``legacy`` to ``legacy_and_local``.
+
+* Galaxy's 'repair repository' feature for installed repositories is deprecated and will be removed/replaced in the next release - `details <https://github.com/galaxyproject/galaxy/issues/2929>`__.
+
+Release Notes
+===========================================================
+
+.. include:: 17.01.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

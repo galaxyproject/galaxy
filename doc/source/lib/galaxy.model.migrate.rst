@@ -1,5 +1,5 @@
-galaxy.model.migrate package
-============================
+galaxy\.model\.migrate package
+==============================
 
 .. automodule:: galaxy.model.migrate
     :members:
@@ -9,8 +9,8 @@ galaxy.model.migrate package
 Submodules
 ----------
 
-galaxy.model.migrate.check module
----------------------------------
+galaxy\.model\.migrate\.check module
+------------------------------------
 
 .. automodule:: galaxy.model.migrate.check
     :members:

@@ -2,6 +2,8 @@
 """
 Adapted from bx/scripts/axt_to_concat_fasta.py
 """
+from __future__ import print_function
+
 import sys
 
 import bx.align.axt
@@ -40,8 +42,8 @@ def main():
 # TODO: this should be moved to a bx.align.fasta module
 def print_component_as_fasta(text, src):
     header = ">" + src
-    print header
-    print text
+    print(header)
+    print(text)
 
 
 if __name__ == "__main__":

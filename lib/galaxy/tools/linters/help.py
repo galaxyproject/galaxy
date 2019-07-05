@@ -39,7 +39,7 @@ def rst_invalid(text):
     """
     invalid_rst = False
     try:
-        rst_to_html(text)
+        rst_to_html(text, error=True)
     except Exception as e:
         invalid_rst = str(e)
     return invalid_rst

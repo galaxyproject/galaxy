@@ -1,0 +1,6 @@
+<parameters>
+  <param label="How should this job's outputs be stored?" name="how_store" type="select">
+    <option selected="true" value="fast">Fast, expensive disk</option>
+    <option value="slow">Slower, cheaper disk</option>
+  </param>
+</parameters>

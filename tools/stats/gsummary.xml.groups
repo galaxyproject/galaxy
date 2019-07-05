@@ -1,17 +1,17 @@
 <tool id="Summary Statistics1" name="Summary Statistics">
   <description>of a column in a tab delimited file according to an expression</description>
-  <command interpreter="python">gsummary.py $input $out_file1 "$cond" "$groups"</command>
+  <command>
+python '$__tool_directory__/gsummary.py' '$input' '$out_file1' '$cond' '$groups'
+  </command>
   <inputs>
-    <param name="cond" size="40" type="text" value="c5" label="expression"/>
-    <param name="groups" size="40" type="text" value="none" label="group terms (c1,c4,etc.)"/>
-    <param format="txt" name="input" type="data" label="summary statistics on"/>
-
+    <param name="cond" type="text" value="c5" label="expression"/>
+    <param name="groups" type="text" value="none" label="group terms (c1,c4,etc.)"/>
+    <param name="input" type="data" format="txt" label="summary statistics on"/>
   </inputs>
   <outputs>
-    <data format="txt" name="out_file1" />
+    <data name="out_file1" format="txt" />
   </outputs>
   <help>
-
 .. class:: warningmark
 
 This tool expects input datasets to consist of tab-delimited columns (blank or comment lines beginning with a # character are automatically skipped).
@@ -33,7 +33,6 @@ This tool computes basic summary statistics on a given column, or on an expressi
     + **c1**  *group by the values in column 1*
     + **c1,c4** *group by the values in column 1, then by the values in column 4*
 
-
 -----
 
 **Expression examples**
@@ -52,11 +51,10 @@ This tool computes basic summary statistics on a given column, or on an expressi
 
 .. class:: infomark
 
-**TIP:** Most functions (like *abs*) take only a single expression. *log* can take one or two parameters, like *log(expression,base)* 
+**TIP:** Most functions (like *abs*) take only a single expression. *log* can take one or two parameters, like *log(expression,base)*
 
 Currently, these R functions are supported: *abs, sign, sqrt, floor, ceiling, trunc, round, signif, exp, log, cos, sin, tan, acos, asin, atan, cosh, sinh, tanh, acosh, asinh, atanh, lgamma, gamma, gammaCody, digamma, trigamma, cumsum, cumprod, cummax, cummin*
 
 .. |INFO| image:: ./static/images/icon_info_sml.gif
-
-</help>
+  </help>
 </tool>

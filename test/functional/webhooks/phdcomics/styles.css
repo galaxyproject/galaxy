@@ -1,0 +1,66 @@
+#phdcomics {
+    border: 1px solid #52697d;
+    text-align: center;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+#phdcomics-header {
+    background: #52697d;
+    border-bottom: 1px solid #52697d;
+    padding: 15px 0;
+}
+
+#phdcomics-name {
+    color: #fff;
+    padding-bottom: 10px;
+}
+
+#phdcomics-header button {
+    color: #fff;
+    font-size: 14px;
+    background-color: #768fa5;
+    border: none;
+    border-radius: 7px;
+    box-shadow: 0 5px #5c768c;
+    padding: 5px 10px;
+}
+
+#phdcomics-header button:focus {
+    outline: 0;
+}
+
+#phdcomics-header button:hover {
+    background-color: #67839b;
+}
+
+#phdcomics-header button:active {
+    background-color: #67839b;
+    box-shadow: 0 0 #5c768c;
+    transform: translateY(5px);
+}
+
+#phdcomics-img {
+    background: #fff;
+}
+
+#phdcomics-img img {
+    padding: 10px;
+    max-width: 100%;
+    margin-bottom: -4px;
+}
+
+#phdcomics-loader {
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #52697d;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    animation: spin 1.5s linear infinite;
+    margin: 15px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

@@ -1,5 +1,5 @@
-galaxy.jobs.runners.util.cli package
-====================================
+galaxy\.jobs\.runners\.util\.cli package
+========================================
 
 .. automodule:: galaxy.jobs.runners.util.cli
     :members:
@@ -17,8 +17,8 @@ Subpackages
 Submodules
 ----------
 
-galaxy.jobs.runners.util.cli.factory module
--------------------------------------------
+galaxy\.jobs\.runners\.util\.cli\.factory module
+------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.util.cli.factory
     :members:

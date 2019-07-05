@@ -6,26 +6,25 @@ well keep and use this interface from the datatypes module.
 """
 
 from galaxy.model.metadata import (
-    Statement,
-    MetadataElement,
-    MetadataCollection,
-    MetadataSpecCollection,
-    MetadataParameter,
-    MetadataElementSpec,
-    SelectParameter,
-    DBKeyParameter,
-    RangeParameter,
     ColumnParameter,
     ColumnTypesParameter,
-    ListParameter,
+    DBKeyParameter,
     DictParameter,
-    PythonObjectParameter,
     FileParameter,
+    ListParameter,
+    MetadataCollection,
+    MetadataElement,
+    MetadataElementSpec,
+    MetadataParameter,
+    MetadataSpecCollection,
     MetadataTempFile,
-    JobExternalOutputMetadataWrapper,
+    PythonObjectParameter,
+    RangeParameter,
+    SelectParameter,
+    Statement,
 )
 
-__all__ = [
+__all__ = (
     "Statement",
     "MetadataElement",
     "MetadataCollection",
@@ -42,5 +41,4 @@ __all__ = [
     "PythonObjectParameter",
     "FileParameter",
     "MetadataTempFile",
-    "JobExternalOutputMetadataWrapper",
-]
+)

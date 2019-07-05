@@ -2,7 +2,7 @@
 <display id="igv_bigwig" version="1.0.0" name="display with IGV">
     
     <!-- Load links from file: one line to one link -->
-    <dynamic_links from_file="tool-data/shared/igv/igv_build_sites.txt" skip_startswith="#" id="0" name="1">
+    <dynamic_links site_type="igv" skip_startswith="#" id="0" name="1">
         
         <!-- Define parameters by column from file, allow splitting on builds -->
         <dynamic_param name="site_id" value="0"/>

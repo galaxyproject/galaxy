@@ -14,81 +14,82 @@ class odict(UserDict):
     added. Calling keys(), values(), items(), etc. will return results in this
     order.
     """
-    def __init__( self, dict=None ):
+
+    def __init__(self, dict=None):
         item = dict
         self._keys = []
         if isinstance(item, dict_alias):
-            UserDict.__init__( self, item )
+            UserDict.__init__(self, item)
         else:
-            UserDict.__init__( self, None )
+            UserDict.__init__(self, None)
         if isinstance(item, list):
             for (key, value) in item:
                 self[key] = value
 
-    def __delitem__( self, key ):
-        UserDict.__delitem__( self, key )
-        self._keys.remove( key )
+    def __delitem__(self, key):
+        UserDict.__delitem__(self, key)
+        self._keys.remove(key)
 
-    def __setitem__( self, key, item ):
-        UserDict.__setitem__( self, key, item )
+    def __setitem__(self, key, item):
+        UserDict.__setitem__(self, key, item)
         if key not in self._keys:
-            self._keys.append( key )
+            self._keys.append(key)
 
-    def clear( self ):
-        UserDict.clear( self )
+    def clear(self):
+        UserDict.clear(self)
         self._keys = []
 
     def copy(self):
         new = odict()
-        new.update( self )
+        new.update(self)
         return new
 
-    def items( self ):
-        return zip( self._keys, self.values() )
+    def items(self):
+        return zip(self._keys, self.values())
 
-    def keys( self ):
+    def keys(self):
         return self._keys[:]
 
-    def popitem( self ):
+    def popitem(self):
         try:
             key = self._keys[-1]
         except IndexError:
-            raise KeyError( 'dictionary is empty' )
-        val = self[ key ]
-        del self[ key ]
-        return ( key, val )
+            raise KeyError('dictionary is empty')
+        val = self[key]
+        del self[key]
+        return (key, val)
 
-    def setdefault( self, key, failobj=None ):
+    def setdefault(self, key, failobj=None):
         if key not in self._keys:
-            self._keys.append( key )
-        return UserDict.setdefault( self, key, failobj )
+            self._keys.append(key)
+        return UserDict.setdefault(self, key, failobj)
 
-    def update( self, dict ):
-        for ( key, val ) in dict.items():
-            self.__setitem__( key, val )
+    def update(self, dict):
+        for (key, val) in dict.items():
+            self.__setitem__(key, val)
 
-    def values( self ):
-        return map( self.get, self._keys )
+    def values(self):
+        return map(self.get, self._keys)
 
-    def iterkeys( self ):
-        return iter( self._keys )
+    def iterkeys(self):
+        return iter(self._keys)
 
-    def itervalues( self ):
+    def itervalues(self):
         for key in self._keys:
-            yield self.get( key )
+            yield self.get(key)
 
-    def iteritems( self ):
+    def iteritems(self):
         for key in self._keys:
-            yield key, self.get( key )
+            yield key, self.get(key)
 
-    def __iter__( self ):
+    def __iter__(self):
         for key in self._keys:
             yield key
 
-    def reverse( self ):
+    def reverse(self):
         self._keys.reverse()
 
-    def insert( self, index, key, item ):
+    def insert(self, index, key, item):
         if key not in self._keys:
-            self._keys.insert( index, key )
-            UserDict.__setitem__( self, key, item )
+            self._keys.insert(index, key)
+            UserDict.__setitem__(self, key, item)

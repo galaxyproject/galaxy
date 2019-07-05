@@ -70,6 +70,11 @@
     "message": "The contents of the request are malformed."
     },
    {
+    "name": "USER_TOOL_MISSING_PROBLEM",
+    "code": 400014,
+    "message": "Tool could not be found."
+   },
+   {
     "name": "USER_AUTHENTICATION_FAILED",
     "code": 401001,
     "message": "Authentication failed, invalid credentials supplied."
@@ -105,10 +110,15 @@
     "message": "Action requires admin account."
    },   
    {
+    "name": "USER_ACTIVATION_REQUIRED",
+    "code": 403007,
+    "message": "Action requires account activation."
+   },
+   {
     "name": "USER_OBJECT_NOT_FOUND",
     "code": 404001,
     "message": "No such object found."
-   },   
+   },
    {
     "name": "DEPRECATED_API_CALL",
     "code": 404002,
@@ -133,6 +143,11 @@
     "name": "CONFIG_ERROR",
     "code": 500003,
     "message": "Error in a configuration file."
+   },
+   {
+    "name": "TOOL_EXECUTION_ERROR",
+    "code": 500004,
+    "message": "Tool execution failed due to an internal server error."
    },
    {
     "name": "NOT_IMPLEMENTED",

@@ -1,0 +1,66 @@
+{
+    "a_galaxy_workflow": "true", 
+    "annotation": "", 
+    "format-version": "0.1", 
+    "name": "test_workflow_with_runtime_input", 
+    "steps": {
+        "0": {
+            "annotation": "", 
+            "id": 0, 
+            "input_connections": {}, 
+            "inputs": [
+                {
+                    "description": "", 
+                    "name": "Input Dataset"
+                }
+            ], 
+            "name": "Input dataset", 
+            "outputs": [], 
+            "position": {
+                "left": 248.49653673171997, 
+                "top": 154.98959398269653
+            }, 
+            "tool_errors": null, 
+            "tool_id": null, 
+            "tool_state": "{\"name\": \"Input Dataset\"}", 
+            "tool_version": null, 
+            "type": "data_input", 
+            "user_outputs": []
+        }, 
+        "1": {
+            "annotation": "", 
+            "id": 1, 
+            "input_connections": {
+                "input": {
+                    "id": 0, 
+                    "output_name": "output"
+                }
+            }, 
+            "inputs": [
+                {
+                    "description": "runtime parameter for tool Select random lines", 
+                    "name": "num_lines"
+                }
+            ], 
+            "name": "Select random lines", 
+            "outputs": [
+                {
+                    "name": "out_file1", 
+                    "type": "input"
+                }
+            ], 
+            "position": {
+                "left": 514.0208587646484, 
+                "top": 116.01736450195312
+            }, 
+            "post_job_actions": {}, 
+            "tool_errors": null, 
+            "tool_id": "random_lines1", 
+            "tool_state": "{\"input\": \"null\", \"seed_source\": \"{\\\"__current_case__\\\": 0, \\\"seed_source_selector\\\": \\\"no_seed\\\"}\", \"__rerun_remap_job_id__\": null, \"num_lines\": \"{\\\"__class__\\\": \\\"RuntimeValue\\\"}\", \"__page__\": 0}", 
+            "tool_version": "2.0.2",
+            "type": "tool", 
+            "user_outputs": []
+        }
+    }, 
+    "uuid": "ebb0e189-e1ae-4f08-a0aa-97d8674f9f76"
+}

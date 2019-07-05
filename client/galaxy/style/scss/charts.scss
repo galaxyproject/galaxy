@@ -1,0 +1,109 @@
+.charts-client {
+    .charts-buttons {
+        @extend .float-right;
+        position: absolute;
+        right: 0px;
+        z-index: 1000;
+        width: 170px;
+        top: 4px;
+        .btn {
+            background: white;
+            color: $panel-header-text-color;
+            border: none;
+            .icon {
+                font-size: 1.5em;
+            }
+            .fa-check-square {
+                color: $state-success-text;
+            }
+        }
+    }
+    .charts-center {
+        float: left;
+        width: 70%;
+        overflow: hidden;
+        padding: 10px 5px 10px 10px;
+        .charts-viewer {
+            height: inherit;
+            min-height: 50px;
+            .info {
+                position: absolute;
+                margin: 40px 20px 50px 10px;
+                width: 50%;
+                word-break: break-word;
+            }
+            .text {
+                position: relative;
+                margin-left: 5px;
+                top: -1px;
+                font-size: 1em;
+                display: inline;
+            }
+            .icon {
+                font-size: 1.2em;
+                display: inline-block;
+            }
+            .charts-viewer-container {
+                float: left;
+                display: block;
+                height: 100%;
+            }
+            .charts-viewer-canvas {
+                display: block;
+                width: 100%;
+                min-height: 100px;
+                height: inherit;
+            }
+        }
+    }
+    .charts-right {
+        float: left;
+        width: 30%;
+        height: 100vh;
+        padding-bottom: 32px;
+        padding-top: 32px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        .alert {
+            @extend .m-2;
+        }
+        .charts-editor {
+            display: block;
+            flex: 1;
+            overflow: auto;
+            padding: 5px 10px 30px 5px;
+            .charts-description {
+                margin-bottom: 20px;
+                .charts-description-image-td {
+                    vertical-align: top;
+                }
+                .charts-description-image {
+                    width: 50px;
+                    height: 43px;
+                    margin-right: 10px;
+                }
+                .charts-description-title {
+                    font-weight: bold;
+                }
+                .charts-description-text {
+                    margin-top: 5px;
+                    word-break: break-word;
+                }
+            }
+        }
+    }
+}
+
+.charts-client.charts-fullscreen {
+    .charts-buttons {
+        position: absolute;
+        right: 0px;
+    }
+    .charts-center {
+        width: 100%;
+    }
+    .charts-right {
+        display: none;
+    }
+}

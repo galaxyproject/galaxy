@@ -1,17 +1,55 @@
 from unittest import TestCase
+from xml.etree.ElementTree import XML
 
 from galaxy import model
 from galaxy.tools.parameters import basic
+from galaxy.tools.parameters.meta import process_key
 from galaxy.util import bunch
-from xml.etree.ElementTree import XML
-
-import tools_support
+from ..tools_support import UsesApp
 
 
-class BaseParameterTestCase( TestCase, tools_support.UsesApp ):
+class ProcessKeyTestCase(TestCase):
+
+    def test_process_key(self):
+        nested_dict = {}
+        d = {
+            'repeat_1|inner_repeat_1|data_table_column_value': u'bla4',
+            'repeat_0|inner_repeat_1|data_table_column_value': u'bla2',
+            'repeat_1|inner_repeat_0|data_table_column_value': u'bla3',
+            'repeat_0|inner_repeat_0|data_table_column_value': u'bla1',
+        }
+        for key, value in d.items():
+            process_key(key, value, nested_dict)
+        expected_dict = {
+            'repeat': [
+                {'inner_repeat': [{'data_table_column_value': u'bla1'}, {'data_table_column_value': u'bla2'}]},
+                {'inner_repeat': [{'data_table_column_value': u'bla3'}, {'data_table_column_value': u'bla4'}]},
+            ]
+        }
+        self.assertEqual(nested_dict, expected_dict)
+
+    def test_process_key_2(self):
+        nested_dict = {}
+        d = {
+            'data_tables_0|columns_0|data_table_column_value': 'Amel_HAv3.1',
+            'data_tables': [],
+            'directory_content': [],
+        }
+        for key, value in d.items():
+            process_key(key, value, nested_dict)
+        expected_dict = {
+            'data_tables': [
+                {'columns': [{'data_table_column_value': 'Amel_HAv3.1'}]}
+            ],
+            'directory_content': []
+        }
+        self.assertEqual(nested_dict, expected_dict)
+
+
+class BaseParameterTestCase(TestCase, UsesApp):
 
     def setUp(self):
-        self.setup_app( mock_model=False )
+        self.setup_app()
         self.mock_tool = bunch.Bunch(
             app=self.app,
             tool_type="default",
@@ -20,11 +58,11 @@ class BaseParameterTestCase( TestCase, tools_support.UsesApp ):
 
     def _parameter_for(self, **kwds):
         content = kwds["xml"]
-        param_xml = XML( content )
-        return basic.ToolParameter.build( self.mock_tool, param_xml )
+        param_xml = XML(content)
+        return basic.ToolParameter.build(self.mock_tool, param_xml)
 
 
-class ParameterParsingTestCase( BaseParameterTestCase ):
+class ParameterParsingTestCase(BaseParameterTestCase):
     """ Test the parsing of XML for most parameter types - in many
     ways these are not very good tests since they break the abstraction
     established by the tools. The docs tests in basic.py are better but
@@ -37,13 +75,13 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_parse_help_and_label(self):
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault" label="x" help="y" />
+            <param type="text" name="texti" value="mydefault" label="x" help="y" />
         """)
         assert param.label == "x"
         assert param.help == "y"
 
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault">
+            <param type="text" name="texti" value="mydefault">
                 <label>x2</label>
                 <help>y2</help>
             </param>
@@ -53,7 +91,7 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_parse_sanitizers(self):
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault">
+            <param type="text" name="texti" value="mydefault">
               <sanitizer invalid_char="">
                 <valid initial="string.digits"><add value=","/> </valid>
               </sanitizer>
@@ -66,18 +104,18 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_parse_optional(self):
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault" />
+            <param type="text" name="texti" value="mydefault" />
         """)
         assert param.optional is False
 
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault" optional="true" />
+            <param type="text" name="texti" value="mydefault" optional="true" />
         """)
         assert param.optional is True
 
     def test_parse_validators(self):
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault">
+            <param type="text" name="texti" value="mydefault">
                 <validator type="unspecified_build" message="no genome?" />
             </param>
         """)
@@ -85,9 +123,8 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_text_params(self):
         param = self._parameter_for(xml="""
-            <param type="text" name="texti" size="8" value="mydefault" />
+            <param type="text" name="texti" value="mydefault" />
         """)
-        assert param.size == "8"
         assert param.value == "mydefault"
         assert param.type == "text"
         assert not param.area
@@ -96,7 +133,6 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
         param = self._parameter_for(xml="""
             <param type="text" name="textarea" area="true" />
         """)
-        assert param.size is None
         assert param.value is None
         assert param.type == "text"
         assert param.area
@@ -108,8 +144,8 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
         assert param.name == "intp"
         assert param.value == "9"
         assert param.type == "integer"
-        param.validate( 8 )
-        self.assertRaises(Exception, lambda: param.validate( 10 ))
+        param.validate(8)
+        self.assertRaises(Exception, lambda: param.validate(10))
 
     def test_float_params(self):
         param = self._parameter_for(xml="""
@@ -118,8 +154,8 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
         assert param.name == "floatp"
         assert param.value == "9"
         assert param.type == "float"
-        param.validate( 8.1 )
-        self.assertRaises(Exception, lambda: param.validate( 10.0 ))
+        param.validate(8.1)
+        self.assertRaises(Exception, lambda: param.validate(10.0))
 
     def test_boolean_params(self):
         param = self._parameter_for(xml="""
@@ -138,11 +174,10 @@ class ParameterParsingTestCase( BaseParameterTestCase ):
 
     def test_file_params(self):
         param = self._parameter_for(xml="""
-            <param type="file" name="filep" ajax-upload="true" />
+            <param type="file" name="filep" />
         """)
         assert param.name == "filep"
         assert param.type == "file"
-        assert param.ajax
 
     def test_ftpfile_params(self):
         param = self._parameter_for(xml="""

@@ -2,11 +2,10 @@
 Middleware that profiles the request with cProfile and displays profiling
 information at the bottom of each page.
 """
-
-import threading
 import cgi
 import cProfile
 import pstats
+import threading
 
 from paste import response
 
@@ -48,7 +47,7 @@ class ProfileMiddleware(object):
     data from previous requests.
     """
 
-    def __init__( self, app, global_conf=None, limit=40 ):
+    def __init__(self, app, global_conf=None, limit=40):
         self.app = app
         self.lock = threading.Lock()
         self.limit = limit
@@ -66,7 +65,7 @@ class ProfileMiddleware(object):
             body.extend(self.app(environ, replace_start_response))
         # Run in profiler
         prof = cProfile.Profile()
-        prof.runctx( "run_app()", globals(), locals() )
+        prof.runctx("run_app()", globals(), locals())
         # Build up body with stats
         body = ''.join(body)
         headers = catch_response[1]
@@ -74,74 +73,74 @@ class ProfileMiddleware(object):
         if not content_type.startswith('text/html'):
             # We can't add info to non-HTML output
             return [body]
-        stats = pstats.Stats( prof )
+        stats = pstats.Stats(prof)
         stats.strip_dirs()
-        stats.sort_stats( 'time', 'calls' )
-        output = pstats_as_html( stats, self.limit )
+        stats.sort_stats('time', 'calls')
+        output = pstats_as_html(stats, self.limit)
         body += template % output
         return [body]
 
 
-def pstats_as_html( stats, *sel_list ):
+def pstats_as_html(stats, *sel_list):
     """
     Return an HTML representation of a pstats.Stats object.
     """
     rval = []
     # Number of function calls, primitive calls, total time
-    rval.append( "<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>"
-                 % ( stats.total_calls, stats.prim_calls, stats.total_tt ) )
+    rval.append("<div>%d function calls (%d primitive) in %0.3f CPU seconds</div>"
+                % (stats.total_calls, stats.prim_calls, stats.total_tt))
     # Extract functions that match 'sel_list'
-    funcs, order_message, select_message = get_func_list( stats, sel_list )
+    funcs, order_message, select_message = get_func_list(stats, sel_list)
     # Deal with any ordering or selection messages
     if order_message:
-        rval.append( "<div>%s</div>" % cgi.escape( order_message ) )
+        rval.append("<div>%s</div>" % cgi.escape(order_message))
     if select_message:
-        rval.append( "<div>%s</div>" % cgi.escape( select_message ) )
+        rval.append("<div>%s</div>" % cgi.escape(select_message))
     # Build a table for the functions
     if list:
-        rval.append( "<table>" )
+        rval.append("<table>")
         # Header
-        rval.append( "<tr><th>ncalls</th>"
-                     "<th>tottime</th>"
-                     "<th>percall</th>"
-                     "<th>cumtime</th>"
-                     "<th>percall</th>"
-                     "<th>filename:lineno(function)</th></tr>" )
+        rval.append("<tr><th>ncalls</th>"
+                    "<th>tottime</th>"
+                    "<th>percall</th>"
+                    "<th>cumtime</th>"
+                    "<th>percall</th>"
+                    "<th>filename:lineno(function)</th></tr>")
         for func in funcs:
-            rval.append( "<tr>" )
+            rval.append("<tr>")
             # Calculate each field
-            cc, nc, tt, ct, callers = stats.stats[ func ]
+            cc, nc, tt, ct, callers = stats.stats[func]
             # ncalls
             ncalls = str(nc)
             if nc != cc:
                 ncalls = ncalls + '/' + str(cc)
-            rval.append( "<td>%s</td>" % cgi.escape( ncalls ) )
+            rval.append("<td>%s</td>" % cgi.escape(ncalls))
             # tottime
-            rval.append( "<td>%0.8f</td>" % tt )
+            rval.append("<td>%0.8f</td>" % tt)
             # percall
             if nc == 0:
                 percall = ""
             else:
-                percall = "%0.8f" % ( tt / nc )
-            rval.append( "<td>%s</td>" % cgi.escape( percall ) )
+                percall = "%0.8f" % (tt / nc)
+            rval.append("<td>%s</td>" % cgi.escape(percall))
             # cumtime
-            rval.append( "<td>%0.8f</td>" % ct )
+            rval.append("<td>%0.8f</td>" % ct)
             # ctpercall
             if cc == 0:
                 ctpercall = ""
             else:
-                ctpercall = "%0.8f" % ( ct / cc )
-            rval.append( "<td>%s</td>" % cgi.escape( ctpercall ) )
+                ctpercall = "%0.8f" % (ct / cc)
+            rval.append("<td>%s</td>" % cgi.escape(ctpercall))
             # location
-            rval.append( "<td>%s</td>" % cgi.escape( func_std_string( func ) ) )
+            rval.append("<td>%s</td>" % cgi.escape(func_std_string(func)))
             # row complete
-            rval.append( "</tr>" )
-        rval.append( "</table>")
+            rval.append("</tr>")
+        rval.append("</table>")
         # Concatenate result
-        return "".join( rval )
+        return "".join(rval)
 
 
-def get_func_list( stats, sel_list ):
+def get_func_list(stats, sel_list):
     """
     Use 'sel_list' to select a list of functions to display.
     """
@@ -150,17 +149,17 @@ def get_func_list( stats, sel_list ):
         list = stats.fcn_list[:]
         order_message = "Ordered by: " + stats.sort_type
     else:
-        list = stats.stats.keys()
+        list = list(stats.stats.keys())
         order_message = "Random listing order was used"
     # Do the selection and accumulate messages
     select_message = ""
     for selection in sel_list:
-        list, select_message = stats.eval_print_amount( selection, list, select_message )
+        list, select_message = stats.eval_print_amount(selection, list, select_message)
     # Return the list of functions selected and the message
     return list, order_message, select_message
 
 
-def func_std_string( func_name ):
+def func_std_string(func_name):
     """
     Match what old profile produced
     """

@@ -1,7 +1,11 @@
 <tool id="CONVERTER_len_to_linecount" name="Convert Len file to Linecount" version="1.0.0">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <!-- Used on the metadata edit page. -->
-    <command>wc -l $input | awk '{print $1}' &gt; $output </command>
+    <command>
+<![CDATA[
+        wc -l '$input' | awk '{print $1}' > '$output'
+]]>
+    </command>
     <inputs>
         <param name="input" type="data" format="len" label="Fasta file"/>
     </inputs>

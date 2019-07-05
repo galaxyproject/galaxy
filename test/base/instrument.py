@@ -34,7 +34,7 @@ def fetch_job_data():
         JOB_DATA.new = True
 
 
-class StructuredTestDataPlugin( Plugin ):
+class StructuredTestDataPlugin(Plugin):
     name = 'structureddata'
 
     def options(self, parser, env):

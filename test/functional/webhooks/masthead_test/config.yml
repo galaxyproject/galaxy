@@ -1,0 +1,10 @@
+id: masthead_test
+type:
+  - masthead
+activate: true
+
+icon: fa-star-half-o
+tooltip: Biostars Galaxy
+
+function: >
+  window.open('https://biostar.usegalaxy.org', '_blank');

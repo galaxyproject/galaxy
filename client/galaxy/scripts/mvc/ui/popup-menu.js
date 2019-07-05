@@ -1,110 +1,120 @@
-define([
-    //jquery
-    //backbone
-], function(){
 // =============================================================================
 /**
  * view for a popup menu
  */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 var PopupMenu = Backbone.View.extend({
-//TODO: maybe better as singleton off the Galaxy obj
+    //TODO: maybe better as singleton off the Galaxy obj
     /** Cache the desired button element and options, set up the button click handler
      *  NOTE: attaches this view as HTML/jQ data on the button for later use.
      */
-    initialize: function( $button, options ){
+    initialize: function($button, options) {
         // default settings
         this.$button = $button;
-        if( !this.$button.length ){
-            this.$button = $( '<div/>' );
+        if (!this.$button.length) {
+            this.$button = $("<div/>");
         }
         this.options = options || [];
-        this.$button.data( 'popupmenu', this );
+        this.$button.data("popupmenu", this);
 
         // set up button click -> open menu behavior
         var menu = this;
-        this.$button.click( function( event ){
+        this.$button.click(event => {
             // if there's already a menu open, remove it
-            $( '.popmenu-wrapper' ).remove();
-            menu._renderAndShow( event );
+            $(".popmenu-wrapper").remove();
+            menu._renderAndShow(event);
             return false;
         });
     },
 
     // render the menu, append to the page body at the click position, and set up the 'click-away' handlers, show
-    _renderAndShow: function( clickEvent ){
+    _renderAndShow: function(clickEvent) {
         this.render();
-        this.$el.appendTo( 'body' ).css( this._getShownPosition( clickEvent )).show();
+        this.$el
+            .appendTo("body")
+            .css(this._getShownPosition(clickEvent))
+            .show();
         this._setUpCloseBehavior();
     },
 
     // render the menu
     // this menu doesn't attach itself to the DOM ( see _renderAndShow )
-    render: function(){
+    render: function() {
         // render the menu body absolute and hidden, fill with template
-        this.$el.addClass( 'popmenu-wrapper' ).hide()
-            .css({ position : 'absolute' })
-            .html( this.template( this.$button.attr( 'id' ), this.options ));
+        this.$el
+            .addClass("popmenu-wrapper")
+            .hide()
+            .css({ position: "absolute" })
+            .html(this.template(this.$button.attr("id"), this.options));
 
         // set up behavior on each link/anchor elem
-        if( this.options.length ){
+        if (this.options.length) {
             var menu = this;
             //precondition: there should be one option per li
-            this.$el.find( 'li' ).each( function( i, li ){
+            this.$el.find("li").each(function(i, li) {
                 var option = menu.options[i];
 
                 // if the option has 'func', call that function when the anchor is clicked
-                if( option.func ){
-                    $( this ).children( 'a.popupmenu-option' ).click( function( event ){
-                        option.func.call( menu, event, option );
-                        // We must preventDefault otherwise clicking "cancel"
-                        // on a purge or something still navigates and causes
-                        // the action.
-                        event.preventDefault();
-                        // bubble up so that an option click will call the close behavior
-                    });
+                if (option.func) {
+                    $(this)
+                        .children("a.popupmenu-option")
+                        .click(event => {
+                            option.func.call(menu, event, option);
+                            // We must preventDefault otherwise clicking "cancel"
+                            // on a purge or something still navigates and causes
+                            // the action.
+                            event.preventDefault();
+                            // bubble up so that an option click will call the close behavior
+                        });
                 }
             });
         }
         return this;
     },
 
-    template : function( id, options ){
-        return [
-            '<ul id="', id, '-menu" class="dropdown-menu">', this._templateOptions( options ), '</ul>'
-        ].join( '' );
+    template: function(id, options) {
+        return ['<ul id="', id, '-menu" class="dropdown-menu">', this._templateOptions(options), "</ul>"].join("");
     },
 
-    _templateOptions : function( options ){
-        if( !options.length ){
-            return '<li>(no options)</li>';
+    _templateOptions: function(options) {
+        if (!options.length) {
+            return "<li>(no options)</li>";
         }
-        return _.map( options, function( option ){
-            if( option.divider ){
+        return _.map(options, option => {
+            if (option.divider) {
                 return '<li class="divider"></li>';
-            } else if( option.header ){
-                return [ '<li class="head"><a href="javascript:void(0);">', option.html, '</a></li>' ].join( '' );
+            } else if (option.header) {
+                return ['<li class="head"><a href="javascript:void(0);">', option.html, "</a></li>"].join("");
             }
-            var href   = option.href || 'javascript:void(0);',
-                target = ( option.target  )?( ' target="' + option.target + '"' ):( '' ),
-                check  = ( option.checked )?( '<span class="fa fa-check"></span>' ):( '' );
+            var href = option.href || "javascript:void(0);";
+            var target = option.target ? ` target="${option.target}"` : "";
+
+            var check = option.checked ? '<span class="fa fa-check"></span>' : "";
+
             return [
-                '<li><a class="popupmenu-option" href="', href, '"', target, '>',
-                    check, option.html,
-                '</a></li>'
-            ].join( '' );
-        }).join( '' );
+                '<li><a class="popupmenu-option" href="',
+                href,
+                '"',
+                target,
+                ">",
+                check,
+                option.html,
+                "</a></li>"
+            ].join("");
+        }).join("");
     },
 
     // get the absolute position/offset for the menu
-    _getShownPosition : function( clickEvent ){
-
+    _getShownPosition: function(clickEvent) {
         // display menu horiz. centered on click...
         var menuWidth = this.$el.width();
-        var x = clickEvent.pageX - menuWidth / 2 ;
+        var x = clickEvent.pageX - menuWidth / 2;
 
         // adjust to handle horiz. scroll and window dimensions ( draw entirely on visible screen area )
-        x = Math.min( x, $( document ).scrollLeft() + $( window ).width() - menuWidth - 5 );
-        x = Math.max( x, $( document ).scrollLeft() + 5 );
+        x = Math.min(x, $(document).scrollLeft() + $(window).width() - menuWidth - 5);
+        x = Math.max(x, $(document).scrollLeft() + 5);
         return {
             top: clickEvent.pageY,
             left: x
@@ -113,57 +123,71 @@ var PopupMenu = Backbone.View.extend({
 
     // bind an event handler to all available frames so that when anything is clicked
     // the menu is removed from the DOM and the event handler unbinds itself
-    _setUpCloseBehavior: function(){
+    _setUpCloseBehavior: function() {
         var menu = this;
-//TODO: alternately: focus hack, blocking overlay, jquery.blockui
+        //TODO: alternately: focus hack, blocking overlay, jquery.blockui
 
         // function to close popup and unbind itself
-        function closePopup( event ){
-            $( document ).off( 'click.close_popup' );
-            if( window && window.parent !== window ){
+        function closePopup(event) {
+            $(document).off("click.close_popup");
+            if (window && window.parent !== window) {
                 try {
-                    $( window.parent.document ).off( "click.close_popup" );
-                } catch( err ){}
+                    $(window.parent.document).off("click.close_popup");
+                } catch (err) {
+                    console.debug(err);
+                }
             } else {
                 try {
-                    $( 'iframe#galaxy_main' ).contents().off( "click.close_popup" );
-                } catch( err ){}
+                    $("iframe#galaxy_main")
+                        .contents()
+                        .off("click.close_popup");
+                } catch (err) {
+                    console.debug(err);
+                }
             }
             menu.remove();
         }
 
-        $( 'html' ).one( "click.close_popup", closePopup );
-        if( window && window.parent !== window ){
+        $("html").one("click.close_popup", closePopup);
+        if (window && window.parent !== window) {
             try {
-                $( window.parent.document ).find( 'html' ).one( "click.close_popup", closePopup );
-            } catch( err ){}
+                $(window.parent.document)
+                    .find("html")
+                    .one("click.close_popup", closePopup);
+            } catch (err) {
+                console.debug(err);
+            }
         } else {
             try {
-                $( 'iframe#galaxy_main' ).contents().one( "click.close_popup", closePopup );
-            } catch( err ){}
+                $("iframe#galaxy_main")
+                    .contents()
+                    .one("click.close_popup", closePopup);
+            } catch (err) {
+                console.debug(err);
+            }
         }
     },
 
     // add a menu option/item at the given index
-    addItem: function( item, index ){
+    addItem: function(item, index) {
         // append to end if no index
-        index = ( index >= 0 ) ? index : this.options.length;
-        this.options.splice( index, 0, item );
+        index = index >= 0 ? index : this.options.length;
+        this.options.splice(index, 0, item);
         return this;
     },
 
     // remove a menu option/item at the given index
-    removeItem: function( index ){
-        if( index >=0 ){
-            this.options.splice( index, 1 );
+    removeItem: function(index) {
+        if (index >= 0) {
+            this.options.splice(index, 1);
         }
         return this;
     },
 
     // search for a menu option by its html
-    findIndexByHtml: function( html ){
-        for( var i = 0; i < this.options.length; i++ ){
-            if( _.has( this.options[i], 'html' ) && ( this.options[i].html === html )){
+    findIndexByHtml: function(html) {
+        for (var i = 0; i < this.options.length; i++) {
+            if (_.has(this.options[i], "html") && this.options[i].html === html) {
                 return i;
             }
         }
@@ -171,18 +195,18 @@ var PopupMenu = Backbone.View.extend({
     },
 
     // search for a menu option by its html
-    findItemByHtml: function( html ){
-        return this.options[( this.findIndexByHtml( html ))];
+    findItemByHtml: function(html) {
+        return this.options[this.findIndexByHtml(html)];
     },
 
     // string representation
-    toString: function(){
-        return 'PopupMenu';
+    toString: function() {
+        return "PopupMenu";
     }
 });
 /** shortcut to new for when you don't need to preserve the ref */
-PopupMenu.create = function _create( $button, options ){
-    return new PopupMenu( $button, options );
+PopupMenu.create = function _create($button, options) {
+    return new PopupMenu($button, options);
 };
 
 // -----------------------------------------------------------------------------
@@ -196,24 +220,25 @@ PopupMenu.create = function _create( $button, options ){
  *      key is option text, value is fn to call when option is clicked
  *  @returns {PopupMenu} the PopupMenu created
  */
-PopupMenu.make_popupmenu = function( button_element, initial_options ){
+PopupMenu.make_popupmenu = (button_element, initial_options) => {
     var convertedOptions = [];
-    _.each( initial_options, function( optionVal, optionKey ){
+    _.each(initial_options, (optionVal, optionKey) => {
         var newOption = { html: optionKey };
 
         // keys with null values indicate: header
-        if( optionVal === null ){ // !optionVal? (null only?)
+        if (optionVal === null) {
+            // !optionVal? (null only?)
             newOption.header = true;
 
-        // keys with function values indicate: a menu option
-        } else if( jQuery.type( optionVal ) === 'function' ){
+            // keys with function values indicate: a menu option
+        } else if ($.type(optionVal) === "function") {
             newOption.func = optionVal;
         }
         //TODO:?? any other special optionVals?
         // there was no divider option originally
-        convertedOptions.push( newOption );
+        convertedOptions.push(newOption);
     });
-    return new PopupMenu( $( button_element ), convertedOptions );
+    return new PopupMenu($(button_element), convertedOptions);
 };
 
 /** Find all anchors in $parent (using selector) and covert anchors into a PopupMenu options map.
@@ -222,34 +247,37 @@ PopupMenu.make_popupmenu = function( button_element, initial_options ){
  *  @returns {Object[]} the options array to initialize a PopupMenu
  */
 //TODO: lose parent and selector, pass in array of links, use map to return options
-PopupMenu.convertLinksToOptions = function( $parent, selector ){
-    $parent = $( $parent );
-    selector = selector || 'a';
+PopupMenu.convertLinksToOptions = ($parent, selector) => {
+    $parent = $($parent);
+    selector = selector || "a";
     var options = [];
-    $parent.find( selector ).each( function( elem, i ){
-        var option = {}, $link = $( elem );
+    $parent.find(selector).each((elem, i) => {
+        var option = {};
+        var $link = $(elem);
 
         // convert link text to the option text (html) and the href into the option func
         option.html = $link.text();
-        if( $link.attr( 'href' ) ){
-            var linkHref    = $link.attr( 'href' ),
-                linkTarget  = $link.attr( 'target' ),
-                confirmText = $link.attr( 'confirm' );
+        if ($link.attr("href")) {
+            var linkHref = $link.attr("href");
+            var linkTarget = $link.attr("target");
+            var confirmText = $link.attr("confirm");
 
-            option.func = function(){
+            option.func = () => {
                 // if there's a "confirm" attribute, throw up a confirmation dialog, and
                 //  if the user cancels - do nothing
-                if( ( confirmText ) && ( !confirm( confirmText ) ) ){ return; }
+                if (confirmText && !confirm(confirmText)) {
+                    return;
+                }
 
                 // if there's no confirm attribute, or the user accepted the confirm dialog:
-                switch( linkTarget ){
+                switch (linkTarget) {
                     // relocate the center panel
-                    case '_parent':
+                    case "_parent":
                         window.parent.location = linkHref;
                         break;
 
                     // relocate the entire window
-                    case '_top':
+                    case "_top":
                         window.top.location = linkHref;
                         break;
 
@@ -259,7 +287,7 @@ PopupMenu.convertLinksToOptions = function( $parent, selector ){
                 }
             };
         }
-        options.push( option );
+        options.push(option);
     });
     return options;
 };
@@ -270,13 +298,13 @@ PopupMenu.convertLinksToOptions = function( $parent, selector ){
  *  @param {String} menuElementLinkSelector jq selector string used to find anchors to be made into menu options
  *  @returns {PopupMenu} the PopupMenu (Backbone View) that can render, control the menu
  */
-PopupMenu.fromExistingDom = function( $buttonElement, $menuElement, menuElementLinkSelector ){
-    $buttonElement = $( $buttonElement );
-    $menuElement = $( $menuElement );
-    var options = PopupMenu.convertLinksToOptions( $menuElement, menuElementLinkSelector );
+PopupMenu.fromExistingDom = ($buttonElement, $menuElement, menuElementLinkSelector) => {
+    $buttonElement = $($buttonElement);
+    $menuElement = $($menuElement);
+    var options = PopupMenu.convertLinksToOptions($menuElement, menuElementLinkSelector);
     // we're done with the menu (having converted it to an options map)
     $menuElement.remove();
-    return new PopupMenu( $buttonElement, options );
+    return new PopupMenu($buttonElement, options);
 };
 
 /** Create all popupmenus within a document or a more specific element
@@ -287,29 +315,28 @@ PopupMenu.fromExistingDom = function( $buttonElement, $menuElement, menuElementL
  *      (Defaults to return '#' + $menuElement.attr( 'popupmenu' ); )
  *  @returns {PopupMenu[]} array of popupmenus created
  */
-PopupMenu.make_popup_menus = function( parent, menuSelector, buttonSelectorBuildFn ){
+PopupMenu.make_popup_menus = (parent, menuSelector, buttonSelectorBuildFn) => {
     parent = parent || document;
     // orig. Glx popupmenu menus have a (non-std) attribute 'popupmenu'
     //  which contains the id of the button that activates the menu
-    menuSelector = menuSelector || 'div[popupmenu]';
+    menuSelector = menuSelector || "div[popupmenu]";
     // default to (orig. Glx) matching button to menu by using the popupmenu attr of the menu as the id of the button
-    buttonSelectorBuildFn = buttonSelectorBuildFn || function( $menuElement, parent ){
-        return '#' + $menuElement.attr( 'popupmenu' );
-    };
+    buttonSelectorBuildFn = buttonSelectorBuildFn || (($menuElement, parent) => `#${$menuElement.attr("popupmenu")}`);
 
     // aggregate and return all PopupMenus
     var popupMenusCreated = [];
-    $( parent ).find( menuSelector ).each( function(){
-        var $menuElement    = $( this ),
-            $buttonElement  = $( parent ).find( buttonSelectorBuildFn( $menuElement, parent ) );
-        popupMenusCreated.push( PopupMenu.fromDom( $buttonElement, $menuElement ) );
-        $buttonElement.addClass( 'popup' );
-    });
+    $(parent)
+        .find(menuSelector)
+        .each(function() {
+            var $menuElement = $(this);
+
+            var $buttonElement = $(parent).find(buttonSelectorBuildFn($menuElement, parent));
+
+            popupMenusCreated.push(PopupMenu.fromDom($buttonElement, $menuElement));
+            $buttonElement.addClass("popup");
+        });
     return popupMenusCreated;
 };
 
-
 // =============================================================================
-    return PopupMenu;
-});
-
+export default PopupMenu;

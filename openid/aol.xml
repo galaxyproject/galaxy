@@ -1,4 +1,0 @@
-<?xml version="1.0"?>
-<provider id="aol" name="AOL/AIM">
-    <op_endpoint_url>http://openid.aol.com</op_endpoint_url>
-</provider>

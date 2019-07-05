@@ -6,16 +6,16 @@ import sys
 # read tool_conf.xml to get all the tool xml file names
 onoff = 1
 tool_list = []
-tool_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', None )
+tool_conf_file = os.environ.get('GALAXY_TEST_TOOL_CONF', None)
 
 if tool_conf_file is None:
-    for possible_tool_file in [ 'config/tool_conf.xml', 'tool_conf.xml', 'config/tool_conf.xml.sample' ]:
+    for possible_tool_file in ['config/tool_conf.xml', 'tool_conf.xml', 'config/tool_conf.xml.sample']:
         tool_conf_file = possible_tool_file
-        if os.path.isfile( possible_tool_file ):
+        if os.path.isfile(possible_tool_file):
             break
 
 if tool_conf_file is None or not os.path.isfile(tool_conf_file):
-    sys.stderr.write( "Tool config file not found: {}\n".format(tool_conf_file) )
+    sys.stderr.write("Tool config file not found: {}\n".format(tool_conf_file))
     sys.exit(1)
 
 for line in open(tool_conf_file, "r"):

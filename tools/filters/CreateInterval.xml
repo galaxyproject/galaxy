@@ -1,18 +1,20 @@
 <tool id="createInterval" name="Create single interval" version="1.0.0">
   <description>as a new dataset</description>
-  <command interpreter="perl">CreateInterval.pl $chrom $start $end "$name" $strand $out_file1</command>
+  <command>
+perl '$__tool_directory__/CreateInterval.pl' '$chrom' $start $end '$name' $strand '$out_file1'
+  </command>
   <inputs>
-    <param name="chrom" size="20" type="text" value="chr7" label="Chromosome"/>
-    <param name="start" size="20" type="integer" value="100" label="Start position"/>
-    <param name="end"   size="20" type="integer" value="1000" label="End position"/>
-    <param name="name" size="20" type="text" value="myInterval" label="Name"/>
+    <param name="chrom" type="text" value="chr7" label="Chromosome"/>
+    <param name="start" type="integer" value="100" label="Start position"/>
+    <param name="end" type="integer" value="1000" label="End position"/>
+    <param name="name" type="text" value="myInterval" label="Name"/>
     <param name="strand" type="select" label="Strand" help="If your interval is strandless set strand to plus" >
       <option value="plus">plus</option>
       <option value="minus">minus</option>
     </param>    
   </inputs>
   <outputs>
-    <data format="bed" name="out_file1" />
+    <data name="out_file1" format="bed" />
   </outputs>
   <tests>
     <test>
@@ -25,7 +27,6 @@
     </test>
   </tests>
   <help>
-
 .. class:: warningmark
 
 **TIP**. Once your interval appears in history, you must tell Galaxy which genome it belongs to by clicking pencil icon or the "?" link in the history item.
@@ -51,6 +52,5 @@ Typing the following values in the form::
 will create a single interval::
 
     chrX  151087187  151370486  NM_000808  0  -
-
-</help>
+  </help>
 </tool>

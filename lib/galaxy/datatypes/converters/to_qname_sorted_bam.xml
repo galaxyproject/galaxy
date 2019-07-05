@@ -1,0 +1,23 @@
+<tool id="CONVERTER_bam_to_qname_sorted_bam" name="Convert BAM to queryname-sorted BAM" version="1.0.0" hidden="true" profile="18.01">
+    <requirements>
+        <requirement type="package" version="1.6">samtools</requirement>
+    </requirements>
+    <command><![CDATA[
+         samtools sort
+            -@ \${GALAXY_SLOTS:-1}
+            -o '${output}'
+            -n
+            -O bam
+            -T dataset
+            '${input}'
+    ]]>
+    </command>
+    <inputs>
+        <param format="sam,unsorted.bam" name="input" type="data" label="Choose a BAM native or queryname sortedfile"/>
+    </inputs>
+    <outputs>
+        <data format="qname_sorted.bam" name="output"/>
+    </outputs>
+    <help>
+    </help>
+</tool>

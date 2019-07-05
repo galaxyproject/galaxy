@@ -1,0 +1,25 @@
+/*
+This is a sample of a CSS file for a slideshow
+You need to put your `style.css` at the same level than your *.md slideshow file
+Example:
+MyDirectory:
+  - mySlideshow.md
+  - myCss.css
+  - images/
+*/
+@import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+@import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+@import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+body {
+    font-family: 'Droid Serif';
+}
+
+h1, h2, h3 {
+    font-family: 'Yanone Kaffeesatz';
+    font-weight: normal;
+}
+
+.remark-code, .remark-inline-code {
+    font-family: 'Ubuntu Mono';
+}

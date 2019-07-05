@@ -1,5 +1,5 @@
-tool_shed.dependencies.tool package
-===================================
+tool\_shed\.dependencies\.tool package
+======================================
 
 .. automodule:: tool_shed.dependencies.tool
     :members:
@@ -9,8 +9,8 @@ tool_shed.dependencies.tool package
 Submodules
 ----------
 
-tool_shed.dependencies.tool.tag_attribute_handler module
---------------------------------------------------------
+tool\_shed\.dependencies\.tool\.tag\_attribute\_handler module
+--------------------------------------------------------------
 
 .. automodule:: tool_shed.dependencies.tool.tag_attribute_handler
     :members:

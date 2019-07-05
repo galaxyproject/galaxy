@@ -1,23 +1,24 @@
 <tool id="CONVERTER_fasta_to_bowtie_color_index" name="Convert FASTA to Bowtie color space Index" version="1.0.0">
-  <requirements><requirement type='package'>bowtie</requirement></requirements>
-  <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
-  <!-- Used on the metadata edit page. -->
-  <requirements>
-      <requirement type="package">bowtie</requirement>
-  </requirements>
-  <command>
-  mkdir ${output.files_path}
-  &amp;&amp; bowtie-build --quiet
-  --color
-  -f 
-  $input  ${output.files_path}/${output.metadata.base_name}
-  </command>
-  <inputs>
-    <param name="input" type="data" format="fasta" label="Fasta file"/>
-  </inputs>
-  <outputs>
-    <data name="output" format="bowtie_color_index"/>
-  </outputs>
-  <help>
-  </help>
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <!-- Used on the metadata edit page. -->
+    <requirements>
+        <requirement type="package">bowtie</requirement>
+    </requirements>
+    <command>
+<![CDATA[
+        mkdir '${output.files_path}'
+        && bowtie-build --quiet
+        --color
+        -f
+        '$input' '${output.files_path}/${output.metadata.base_name}'
+]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="fasta" label="Fasta file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="bowtie_color_index"/>
+    </outputs>
+    <help>
+    </help>
 </tool>

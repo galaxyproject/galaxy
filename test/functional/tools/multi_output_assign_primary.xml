@@ -1,4 +1,4 @@
-<tool id="multi_output_assign_primary" name="multi_output_assign_primary" description="multi_output_assign_primary" version="0.1.0">
+<tool id="multi_output_assign_primary" name="multi_output_assign_primary" version="0.1.0">
   <command>
     echo "1" > sample1.report.tsv;
     echo "2" > sample2.report.tsv;

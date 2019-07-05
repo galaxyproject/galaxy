@@ -1,11 +1,17 @@
+from logging import getLogger
+from subprocess import (
+    PIPE,
+    Popen
+)
 from tempfile import TemporaryFile
 from time import sleep
-from subprocess import Popen, PIPE
 
 from ..shell import BaseShellExec
-from ....util import Bunch, kill_pid
+from ....util import (
+    Bunch,
+    kill_pid
+)
 
-from logging import getLogger
 log = getLogger(__name__)
 
 TIMEOUT_ERROR_MESSAGE = u'Execution timed out'
@@ -18,7 +24,7 @@ class LocalShell(BaseShellExec):
     """
 
     >>> shell = LocalShell()
-    >>> def exec_python(script, **kwds): return shell.execute('python -c "%s"' % script, **kwds)
+    >>> def exec_python(script, **kwds): return shell.execute(['python', '-c', script], **kwds)
     >>> exec_result = exec_python("from __future__ import print_function; print('Hello World')")
     >>> exec_result.stderr == u''
     True
@@ -38,10 +44,11 @@ class LocalShell(BaseShellExec):
 
     def execute(self, cmd, persist=False, timeout=DEFAULT_TIMEOUT, timeout_check_interval=DEFAULT_TIMEOUT_CHECK_INTERVAL, **kwds):
         outf = TemporaryFile()
-        p = Popen(cmd, shell=True, stdin=None, stdout=outf, stderr=PIPE)
+        p = Popen(cmd, stdin=None, stdout=outf, stderr=PIPE)
         # poll until timeout
 
         for i in range(int(timeout / timeout_check_interval)):
+            sleep(0.1)  # For fast returning commands
             r = p.poll()
             if r is not None:
                 break

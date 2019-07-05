@@ -9,6 +9,7 @@ ie_password = '${ ie_request.notebook_pw }';
 
 var galaxy_root = '${ ie_request.attr.root }';
 var app_root = '${ ie_request.attr.app_root }';
+var ie_readiness_url = '${ h.url_for("/interactive_environments/ready") }';
 </%def>
 
 
@@ -23,9 +24,10 @@ ${h.js( 'libs/jquery/jquery',
 require.config({
     baseUrl: app_root,
     paths: {
-        "plugin" : app_root + "js/",
-        "interactive_environments": "${h.url_for('/static/scripts/galaxy.interactive_environments')}",
+        "plugin" : app_root + "js",
+        "galaxy.interactive_environments": "${h.url_for('/static/scripts/galaxy.interactive_environments')}",
     },
+    urlArgs: "v=${app.server_starttime}",
 });
 
 window.onbeforeunload = function() {

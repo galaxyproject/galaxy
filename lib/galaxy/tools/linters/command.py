@@ -30,8 +30,6 @@ def lint_command(tool_xml, lint_ctx):
             detect_errors = value
             if detect_errors not in ["default", "exit_code", "aggressive"]:
                 lint_ctx.warn("Unknown detect_errors attribute [%s]" % detect_errors)
-        else:
-            lint_ctx.warn("Unknown attribute [%s] encountered on command tag." % key)
 
     interpreter_info = ""
     if interpreter_type:

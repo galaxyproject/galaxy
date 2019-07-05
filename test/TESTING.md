@@ -2,6 +2,5 @@ Galaxy Testing
 ==============
 
 The Galaxy code base is large and contains many kinds of tests. Please
-consult the [Galaxy
-wiki](http://wiki.galaxyproject.org/Admin/Running%20Tests) for more
-information on testing Galaxy.
+run the command ``sh run_tests.sh --help`` from Galaxy's root for a
+description of each test type and location.

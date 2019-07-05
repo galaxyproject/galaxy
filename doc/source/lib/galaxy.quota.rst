@@ -1,5 +1,5 @@
-galaxy.quota package
-====================
+galaxy\.quota package
+=====================
 
 .. automodule:: galaxy.quota
     :members:

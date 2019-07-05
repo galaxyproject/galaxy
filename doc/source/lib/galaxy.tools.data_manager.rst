@@ -1,5 +1,5 @@
-galaxy.tools.data_manager package
-=================================
+galaxy\.tools\.data\_manager package
+====================================
 
 .. automodule:: galaxy.tools.data_manager
     :members:
@@ -9,8 +9,8 @@ galaxy.tools.data_manager package
 Submodules
 ----------
 
-galaxy.tools.data_manager.manager module
-----------------------------------------
+galaxy\.tools\.data\_manager\.manager module
+--------------------------------------------
 
 .. automodule:: galaxy.tools.data_manager.manager
     :members:

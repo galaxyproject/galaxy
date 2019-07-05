@@ -1,0 +1,17 @@
+<tool id="CONVERTER_bcf_to_bcf_uncompressed" name="Convert BCF to uncompressed BCF" version="0.0.1" hidden="false">
+    <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <requirements>
+        <requirement type="package" version="1.5">bcftools</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+bcftools view -o '$output1' -O u '$input1'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" format="bcf" label="Input BCF dataset" />
+    </inputs>
+    <outputs>
+        <data name="output1" format="bcf_uncompressed" />
+    </outputs>
+    <help>
+    </help>
+</tool>

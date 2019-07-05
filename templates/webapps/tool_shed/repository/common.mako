@@ -1,6 +1,8 @@
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%def name="common_javascripts(repository)">
     <script type="text/javascript">
-        $(function(){
+        config.addInitialization(function() {
+            console.log("common.mako, common_javascripts");
 
             // --- Initialize sample trees
             $("#tree").dynatree({
@@ -72,87 +74,91 @@
 
 <%def name="container_javascripts()">
     <script type="text/javascript">
-        var init_dependencies = function() {
-            var storage_id = "library-expand-state-${trans.security.encode_id(10000)}";
-            var restore_folder_state = function() {
-                var state = $.jStorage.get(storage_id);
-                if (state) {
-                    for (var id in state) {
-                        if (state[id] === true) {
-                            var row = $("#" + id),
-                                index = row.parent().children().index(row);
-                            row.addClass("expanded").show();
-                            row.siblings().filter("tr[parent='" + index + "']").show();
-                        }
-                    }
-                }
-            };
-            var save_folder_state = function() {
-                var state = {};
-                $("tr.folderRow").each( function() {
-                    var folder = $(this);
-                    state[folder.attr("id")] = folder.hasClass("expanded");
-                });
-                $.jStorage.set(storage_id, state);
-            };
-            $(".container-table").each(function() {
-                //var container_id = this.id.split( "-" )[0];
-                //alert( container_id );
-                var child_of_parent_cache = {};
-                // Recursively fill in children and descendants of each row
-                var process_row = function(q, parents) {
-                    // Find my index
-                    var parent = q.parent(),
-                        this_level = child_of_parent_cache[parent] || (child_of_parent_cache[parent] = parent.children());
-                    var index = this_level.index(q);
-                    // Find my immediate children
-                    var children = $(par_child_dict[index]);
-                    // Recursively handle them
-                    var descendants = children;
-                    children.each( function() {
-                        child_descendants = process_row( $(this), parents.add(q) );
-                        descendants = descendants.add(child_descendants);
-                    });
-                    // Set up expand / hide link
-                    var expand_fn = function() {
-                        if ( q.hasClass("expanded") ) {
-                            descendants.hide();
-                            descendants.removeClass("expanded");
-                            q.removeClass("expanded");
-                        } else {
-                            children.show();
-                            q.addClass("expanded");
-                        }
-                        save_folder_state();
-                    };
-                    $("." + q.attr("id") + "-click").click(expand_fn);
-                    // return descendants for use by parent
-                    return descendants;
-                }
-                // Initialize dict[parent_id] = rows_which_have_that_parent_id_as_parent_attr
-                var par_child_dict = {},
-                    no_parent = [];
-                $(this).find("tbody tr").each( function() {
-                    if ( $(this).attr("parent")) {
-                        var parent = $(this).attr("parent");
-                        if (par_child_dict[parent] !== undefined) {
-                            par_child_dict[parent].push(this);
-                        } else {
-                            par_child_dict[parent] = [this];
-                        }
-                    } else {
-                        no_parent.push(this);
-                    }
-                });
-                $(no_parent).each( function() {
-                    descendants = process_row( $(this), $([]) );
-                    descendants.hide();
-               });
-            });
-            restore_folder_state();
-        };
+        config.addInitialization(function() {
+            console.log("common.mako, container_javascripts");
 
-        var init_clipboard = function() {
+            var store = window.bundleEntries.store;
+            var init_dependencies = function() {
+                var storage_id = "library-expand-state-${trans.security.encode_id(10000)}";
+                var restore_folder_state = function() {
+                    var state = store.get(storage_id);
+                    if (state) {
+                        for (var id in state) {
+                            if (state[id] === true) {
+                                var row = $("#" + id),
+                                    index = row.parent().children().index(row);
+                                row.addClass("expanded").show();
+                                row.siblings().filter("tr[parent='" + index + "']").show();
+                            }
+                        }
+                    }
+                };
+                var save_folder_state = function() {
+                    var state = {};
+                    $("tr.folderRow").each( function() {
+                        var folder = $(this);
+                        state[folder.attr("id")] = folder.hasClass("expanded");
+                    });
+                    store.set(storage_id, state);
+                };
+                $(".container-table").each(function() {
+                    //var container_id = this.id.split( "-" )[0];
+                    //alert( container_id );
+                    var child_of_parent_cache = {};
+                    // Recursively fill in children and descendants of each row
+                    var process_row = function(q, parents) {
+                        // Find my index
+                        var parent = q.parent(),
+                            this_level = child_of_parent_cache[parent] || (child_of_parent_cache[parent] = parent.children());
+                        var index = this_level.index(q);
+                        // Find my immediate children
+                        var children = $(par_child_dict[index]);
+                        // Recursively handle them
+                        var descendants = children;
+                        children.each( function() {
+                            child_descendants = process_row( $(this), parents.add(q) );
+                            descendants = descendants.add(child_descendants);
+                        });
+                        // Set up expand / hide link
+                        var expand_fn = function() {
+                            if ( q.hasClass("expanded") ) {
+                                descendants.hide();
+                                descendants.removeClass("expanded");
+                                q.removeClass("expanded");
+                            } else {
+                                children.show();
+                                q.addClass("expanded");
+                            }
+                            save_folder_state();
+                        };
+                        $("." + q.attr("id") + "-click").click(expand_fn);
+                        // return descendants for use by parent
+                        return descendants;
+                    }
+                    // Initialize dict[parent_id] = rows_which_have_that_parent_id_as_parent_attr
+                    var par_child_dict = {},
+                        no_parent = [];
+                    $(this).find("tbody tr").each( function() {
+                        if ( $(this).attr("parent")) {
+                            var parent = $(this).attr("parent");
+                            if (par_child_dict[parent] !== undefined) {
+                                par_child_dict[parent].push(this);
+                            } else {
+                                par_child_dict[parent] = [this];
+                            }
+                        } else {
+                            no_parent.push(this);
+                        }
+                    });
+                    $(no_parent).each( function() {
+                        descendants = process_row( $(this), $([]) );
+                        descendants.hide();
+                    });
+                });
+                restore_folder_state();
+            };
+
+            var init_clipboard = function() {
                 %if hasattr( repository, 'clone_url' ):
                     $('#clone_clipboard').on('click', function( event ) {
                         event.preventDefault();
@@ -165,9 +171,8 @@
                         window.prompt("Copy to clipboard: Ctrl+C, Enter", "${ repository.share_url }");
                     });
                 %endif
-        };
+            };
 
-        $(function() {
             init_dependencies();
             init_clipboard();
         });
@@ -195,7 +200,7 @@
                 </div>
             %endif
         %else:
-            ${repository_type_select_field.get_html()}
+            ${render_select(repository_type_select_field)}
             %if render_help:
                 <div class="toolParamHelp" style="clear: both;">
                     Select the repository type based on the following criteria.
@@ -280,7 +285,7 @@
                 elif folder.label == 'Invalid tool dependencies':
                     folder_label = "%s<i> - click the tool dependency to see why it is invalid</i>" % folder_label
                 elif folder.label == 'Valid tools':
-                    col_span_str = 'colspan="3"'
+                    col_span_str = 'colspan="4"'
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
                     else:
@@ -870,6 +875,7 @@
         %endif
         <${cell_type}>${tool.description | h}</${cell_type}>
         <${cell_type}>${tool.version | h}</${cell_type}>
+        <${cell_type}>${tool.profile | h}</${cell_type}>
         ##<${cell_type}>${tool.requirements | h}</${cell_type}>
     </tr>
     <%
@@ -1026,40 +1032,71 @@
     %>
 </%def>
 
-<%def name="render_tool_dependency_resolver( resolver_dependencies )">
+<%def name="render_dependency_status( dependency, prepare_for_install=False)">
+    <td>${dependency['name'] | h}</td>
+    <td>${dependency['version'] | h}</td>
+    %if not prepare_for_install:
+        %if dependency['dependency_type']:
+            <td>${dependency['dependency_type'].title() | h}</td>
+        %else:
+            <td>${dependency['dependency_type'] | h}</td>
+        %endif
+        <td>${dependency['exact'] | h}</td>
+    %endif
+    %if dependency['dependency_type'] == None:
+        <td>
+           <img src="${h.url_for('/static')}/images/icon_error_sml.gif" title='Dependency not resolved'/>
+           %if prepare_for_install:
+               Not Installed
+           %endif
+        </td>
+    %elif not dependency['exact']:
+        <td>
+            <img src="${h.url_for('/static')}/images/icon_warning_sml.gif" title='Dependency resolved, but version ${dependency['version']} not found'/>
+        </td>
+    %else:
+        <td>
+            <img src="${h.url_for('/static')}/june_2007_style/blue/ok_small.png"/>
+            %if prepare_for_install:
+                Installed through ${dependency['dependency_type'].title() | h}
+            %endif
+        </td>
+    %endif
+</%def>
+
+<%def name="render_tool_dependency_resolver( requirements_status, prepare_for_install=False )">
     <tr class="datasetRow">
         <td style="padding-left: 20 px;">
             <table class="grid" id="module_resolver_environment">
-               %if resolver_dependencies['model_class'] == 'NullDependency':
-                   <tr>
-                        <td><b> Dependency was not resolved by any resolver module.</b></td>
-                   </tr>
-               %else:
-                   <tr>
-                       <td><b>Dependency Resolver </b></td>
-                       <td> ${resolver_dependencies['model_class'] | h}</td>
-                   </tr>
-                   <tr>
-                       <td><b>Exact </b></td>
-                       <td> ${resolver_dependencies['exact'] | h}</td>
-                   </tr>
-                   <tr>
-                       <td><b>Dependency Type</b></td>
-                      <td> ${resolver_dependencies['dependency_type'] | h}</td>
-                   </tr>
-               %endif
+                <head>
+                    <tr>
+                        <th>Dependency</th>
+                        <th>Version</th>
+                        %if not prepare_for_install:
+                            <th>Resolver</th>
+                            <th>Exact version</th>
+                        %endif
+                        <th>Current Installation Status<th>
+                    </tr>
+                </head>
+                <body>
+                    %for dependency in requirements_status:
+                        ${render_dependency_status(dependency, prepare_for_install)}
+                        <tr>
+                    %endfor
+                </body>
             </table>
         </td>
     </tr>
 </%def>
 
-<%def name="render_resolver_dependency_items( resolver_dependencies )">
-    %if resolver_dependencies:
-        <div class="toolForm">
-            <div class="toolFormTitle">Dependency Resolver Details</div>
-            <div class="toolFormBody">
+<%def name="render_resolver_dependencies( requirements_status )">
+    %if requirements_status:
+        <div class="card">
+            <div class="card-header">Dependency Resolver Details</div>
+            <div class="card-body">
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="module_resolvers">
-                    ${render_tool_dependency_resolver( resolver_dependencies)}
+                    ${render_tool_dependency_resolver( requirements_status )}
                 </table>
             </div>
         </div>
@@ -1110,9 +1147,9 @@
     %if readme_files_root_folder:
         ${render_table_wrap_style( "readme_files" )}
         <p/>
-        <div class="toolForm">
-            <div class="toolFormTitle">Repository README files - may contain important installation or license information</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Repository README files - may contain important installation or license information</div>
+            <div class="card-body">
                 <p/>
                 <% row_counter = RowCounter() %>
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="readme_files">
@@ -1122,9 +1159,9 @@
         </div>
     %endif
     %if has_dependencies:
-        <div class="toolForm">
-            <div class="toolFormTitle">Dependencies of this repository</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Dependencies of this repository</div>
+            <div class="card-body">
                 %if invalid_repository_dependencies_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
@@ -1172,9 +1209,9 @@
     %endif
     %if has_contents:
         <p/>
-        <div class="toolForm">
-            <div class="toolFormTitle">Contents of this repository</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Contents of this repository</div>
+            <div class="card-body">
                 %if valid_tools_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
@@ -1223,9 +1260,9 @@
     %if tool_test_results_root_folder and trans.app.config.display_legacy_test_results:
         ${render_table_wrap_style( "test_environment" )}
         <p/>
-        <div class="toolForm">
-            <div class="toolFormTitle">Automated tool test results</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Automated tool test results</div>
+            <div class="card-body">
                 <p/>
                 <% row_counter = RowCounter() %>
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="test_environment">

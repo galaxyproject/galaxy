@@ -6,15 +6,31 @@ This is a community contributed feature and the core Galaxy team does utilize
 it, hence support for it will be minimal. The Galaxy team eagerly welcomes
 community contribution and maintenance however.
 """
-from os import environ, pathsep
-from os.path import exists, isdir, join
-from six import StringIO
-from subprocess import Popen, PIPE
-
-from ..resolvers import DependencyResolver, INDETERMINATE_DEPENDENCY, Dependency
-
 import logging
-log = logging.getLogger( __name__ )
+from os import (
+    environ,
+    pathsep
+)
+from os.path import (
+    exists,
+    isdir,
+    join
+)
+from subprocess import (
+    PIPE,
+    Popen
+)
+
+from six import StringIO
+
+from . import (
+    Dependency,
+    DependencyResolver,
+    MappableDependencyResolver,
+    NullDependency,
+)
+
+log = logging.getLogger(__name__)
 
 DEFAULT_MODULECMD_PATH = "modulecmd"  # Just check path
 DEFAULT_MODULE_PATH = '/usr/share/modules/modulefiles'
@@ -23,11 +39,12 @@ DEFAULT_MODULE_PREFETCH = "true"
 UNKNOWN_FIND_BY_MESSAGE = "ModuleDependencyResolver does not know how to find modules by [%s], find_by should be one of %s"
 
 
-class ModuleDependencyResolver(DependencyResolver):
+class ModuleDependencyResolver(DependencyResolver, MappableDependencyResolver):
     dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'modulepath']
     resolver_type = "modules"
 
     def __init__(self, dependency_manager, **kwds):
+        self._setup_mapping(dependency_manager, **kwds)
         self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
         find_by = kwds.get('find_by', 'avail')
         prefetch = _string_as_bool(kwds.get('prefetch', DEFAULT_MODULE_PREFETCH))
@@ -50,16 +67,19 @@ class ModuleDependencyResolver(DependencyResolver):
             module_path = DEFAULT_MODULE_PATH
         return module_path
 
-    def resolve( self, name, version, type, **kwds ):
+    def resolve(self, requirement, **kwds):
+        requirement = self._expand_mappings(requirement)
+        name, version, type = requirement.name, requirement.version, requirement.type
+
         if type != "package":
-            return INDETERMINATE_DEPENDENCY
+            return NullDependency(version=version, name=name)
 
         if self.__has_module(name, version):
             return ModuleDependency(self, name, version, exact=True)
         elif self.versionless and self.__has_module(name, None):
             return ModuleDependency(self, name, None, exact=False)
 
-        return INDETERMINATE_DEPENDENCY
+        return NullDependency(version=version, name=name)
 
     def __has_module(self, name, version):
         return self.module_checker.has_module(name, version)
@@ -70,6 +90,7 @@ class DirectoryModuleChecker(object):
 
     Searches the paths listed in modulepath to for a file or directory matching the module name.
     If the version=True, searches for files named module/version."""
+
     def __init__(self, module_dependency_resolver, modulepath, prefetch):
         self.module_dependency_resolver = module_dependency_resolver
         self.directories = modulepath.split(pathsep)
@@ -80,12 +101,12 @@ class DirectoryModuleChecker(object):
         has_module = False
         for directory in self.directories:
             module_directory = join(directory, module)
-            has_module_directory = isdir( module_directory )
+            has_module_directory = isdir(module_directory)
             if not version:
                 has_module = has_module_directory or exists(module_directory)  # could be a bare modulefile
             else:
-                modulefile = join(  module_directory, version )
-                has_modulefile = exists( modulefile )
+                modulefile = join(module_directory, version)
+                has_modulefile = exists(modulefile)
                 has_module = has_module_directory and has_modulefile
             if has_module:
                 break
@@ -99,6 +120,7 @@ class AvailModuleChecker(object):
     module names into module and version on '/' and discarding a postfix matching default_indicator
     (by default '(default)'. Matching is done using the module and
     (if version=True) the module version."""
+
     def __init__(self, module_dependency_resolver, modulepath, prefetch, default_indicator=DEFAULT_INDICATOR):
         self.module_dependency_resolver = module_dependency_resolver
         self.modulepath = modulepath
@@ -162,10 +184,18 @@ class ModuleDependency(Dependency):
         self._exact = exact
 
     @property
+    def name(self):
+        return self.module_name
+
+    @property
+    def version(self):
+        return self.module_version
+
+    @property
     def exact(self):
         return self._exact
 
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         module_to_load = self.module_name
         if self.module_version:
             module_to_load = '%s/%s' % (self.module_name, self.module_version)
@@ -175,7 +205,8 @@ class ModuleDependency(Dependency):
         return command
 
 
-def _string_as_bool( value ):
-    return str( value ).lower() == "true"
+def _string_as_bool(value):
+    return str(value).lower() == "true"
 
-__all__ = ['ModuleDependencyResolver']
+
+__all__ = ('ModuleDependencyResolver', )

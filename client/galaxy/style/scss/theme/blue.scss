@@ -1,0 +1,147 @@
+// Brand colors
+$brand-primary: #25537b;
+$brand-secondary: #dee2e6;
+$brand-success: #66cc66;
+$brand-info: #2077b3;
+$brand-warning: #fe7f02;
+$brand-danger: #e31a1e;
+$brand-light: #f8f9fa;
+$brand-dark: #2c3143;
+$brand-white: #fff;
+$brand-toggle: gold;
+
+// Grays from Bootstrap 4 _variables.scss
+$white: $brand-white;
+$gray-100: $brand-light;
+$gray-200: darken($gray-100, 5%); // welcome background
+$gray-300: darken($gray-100, 10%);
+$gray-400: darken($gray-100, 20%); // input borders
+$gray-500: darken($gray-100, 40%);
+$gray-600: darken($gray-100, 60%); // text-muted
+$gray-700: darken($gray-100, 70%);
+$gray-800: darken($gray-100, 80%);
+$gray-900: darken($gray-100, 90%); // text-regular
+$black: $brand-dark;
+
+// These variables don't actually determine the colors in Bootstrap 4, instead
+// they use a map called $theme-colors, so here we override that
+$theme-colors: ();
+$theme-colors: map-merge(
+    (
+        "primary": $brand-primary,
+        "secondary": $brand-secondary,
+        "success": $brand-success,
+        "danger": $brand-danger,
+        "warning": $brand-warning,
+        "info": $brand-info,
+        "light": $brand-light,
+        "dark": $brand-dark
+    ),
+    $theme-colors
+);
+
+// This is the default but we need to use it here.
+$theme-color-interval: 5% !default;
+
+// Alerts and states
+$alert-bg-level: -12 !default;
+$alert-border-level: -6 !default;
+$alert-color-level: 16 !default;
+
+// These are not Bootstrap styles but are used extensively in Galaxy. This
+// duplicated the way that Bootstrap 4 alerts are derived.
+$state-warning-text: theme-color-level("warning", $alert-color-level);
+$state-warning-bg: theme-color-level("warning", $alert-bg-level);
+$state-warning-border: theme-color-level("warning", $alert-border-level);
+
+$state-danger-text: theme-color-level("danger", $alert-color-level);
+$state-danger-bg: theme-color-level("danger", $alert-bg-level);
+$state-danger-border: theme-color-level("danger", $alert-border-level);
+
+$state-info-text: theme-color-level("info", $alert-color-level);
+$state-info-bg: theme-color-level("info", $alert-bg-level);
+$state-info-border: theme-color-level("info", $alert-border-level);
+
+$state-success-text: theme-color-level("success", $alert-color-level);
+$state-success-bg: theme-color-level("success", $alert-bg-level);
+$state-success-border: theme-color-level("success", $alert-border-level);
+
+// Fonts and sizes
+$font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+$font-family-monospace: Monaco, Menlo, Consolas, "Courier New", monospace;
+$font-family-base: $font-family-sans-serif;
+$font-size-base: 0.8rem; // default 1rem
+
+// Header font sizes
+$h1-font-size: $font-size-base * 2; // default 2.5
+$h2-font-size: $font-size-base * 1.75; // default 2
+$h3-font-size: $font-size-base * 1.5; // default 1.75
+$h4-font-size: $font-size-base * 1.25; // default 1.5
+$h5-font-size: $font-size-base; // default 1.25
+$h6-font-size: $font-size-base * 0.85; // default 1
+
+// Increase contrast of dropdown items
+$dropdown-link-hover-color: $brand-light;
+$dropdown-link-hover-bg: $brand-primary;
+$dropdown-link-active-color: $brand-toggle;
+
+// Galaxy Variables (not used by bootstrap)
+$body-bg: $white;
+$text-color: $gray-900;
+
+// Masthead
+$masthead-height: 3rem;
+
+// Side panels
+$panel-bg-color: $gray-100;
+$panel-text-color: $text-color;
+$panel-header-text-color: $text-color;
+$panel-footer-bg-color: $panel-bg-color;
+$panel-message-height: 2.5rem;
+$panel-width: 18rem;
+$panel_header_height: 2.5rem;
+$panel_footer_height: 25px;
+
+// Portlets
+$portlet-bg-color: $gray-200;
+
+// Layout
+$layout_top_padding: 0px;
+$layout-border-color: $gray-900;
+$layout-border: none;
+
+// Borders
+$border-radius-base: 0.1875rem;
+$border-radius-large: 0.3125rem;
+$border-default-color: $gray-400;
+
+// Buttons
+$btn-default-color: $text-color;
+$btn-default-bg: $gray-200;
+$btn-default-border: $border-default-color;
+
+// Forms
+$form-heading-bg: $panel-bg-color;
+$form-border: darken($form-heading-bg, 20%);
+
+// Table
+$table-heading-bg: $panel-bg-color;
+$table-bg-accent: darken($panel-bg-color, 5%);
+$table-border-color: darken($table-heading-bg, 20%);
+
+// Additional state colors
+$state-default-bg: $gray-200;
+$state-default-border: $border-default-color;
+$state-paused-bg: lighten($brand-info, 50%);
+$state-running-bg: lighten($brand-warning, 40%);
+$state-running-border: $border-default-color;
+
+// Workflow editor
+$workflow-editor-bg: $brand-white;
+$workflow-overview-bg: $gray-200;
+
+// Margins
+$spacer: 1rem;
+$margin-v: $spacer * 1.5;
+$margin-h: $spacer;

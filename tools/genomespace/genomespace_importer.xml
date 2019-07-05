@@ -1,26 +1,39 @@
 <?xml version="1.0"?>
-<tool name="GenomeSpace Importer" id="genomespace_importer" tool_type="data_source" force_history_refresh="True" hidden="True" display_interface="False" require_login="True" version="0.0.2">
+<tool name="GenomeSpace Importer" id="genomespace_importer" require_login="True" version="0.0.6">
     <description> - receive data from GenomeSpace</description>
-    <command interpreter="python">genomespace_importer.py
-        --genomespace_site "prod"
-        #assert $__user__, Exception( 'You must be logged in to use this tool.' )
-        #set $username = $__user__.preferences.get( 'genomespace_username', None )
-        #set $token = $__user__.preferences.get( 'genomespace_token', None )
-        #assert None not in ( $username, $token ), Exception( 'You must associate a GenomeSpace OpenID with your account and log in with it.' )
-        --username "${username}"
-        --token "${token}"
-        --json_parameter_file "${output_file1}"
-        --genomespace_toolname="\${GENOMESPACE_TOOLNAME:-Galaxy}"
-    </command>
+    <environment_variables>
+        <environment_variable name="GS_TOKEN">
+            #set $token = $__user__.preferences.get('genomespace_token', None)
+            #assert $token, Exception('Invalid token. You must be logged into GenomeSpace through OpenID.')
+            $token
+        </environment_variable>
+    </environment_variables>
+    <command><![CDATA[
+        python $__tool_directory__/genomespace_importer.py
+        #set $input_file = $URL.split('^')[0] if '^' in $URL else $URL
+
+        #assert $input_file, Exception('You must select a valid input file.')
+        --json_parameter_file '${output_file1}'
+        --galaxy_root $__root_dir__
+        --data_conf $__datatypes_config__
+    ]]></command>
+    <!-- If using this tool through bioblend, the URL parameter should contain the path to the GenomeSpaceFile + the security token
+         separated by a ^ as follows: GenomeSpaceFilePath^Token -->
     <inputs check_values="False">
-        <!-- <param name="file_name" type="text" value="" /> -->
-        <param name="URL" type="hidden" value="" />
+        <param name="URL" type="genomespacefile" label="Choose Input File from GenomeSpace" select_type="FILE" />
     </inputs>
     <outputs>
         <data format="auto" name="output_file1" />
     </outputs>
     <help>
-       some help text here...
+This tool allows you to import data from GenomeSpace. Click the Browse button to select a file to import.
+
+To use this tool, you must have logged in using your GenomeSpace OpenID. 
+You can associate your OpenID credentials under the User Preferences panel.
+Click here_ to refresh your GenomeSpace token.
+  
+.. _here:  ${static_path}/../user/openid_auth?openid_provider=genomespace&amp;auto_associate=True
     </help>
+    <code file="genomespace_importer.py"/>
     <options sanitize="False" refresh="True"/>
 </tool>

@@ -1,0 +1,29 @@
+<tool id="collection_creates_dynamic_nested_fail" name="collection_creates_dynamic_nested_fail" version="0.1.0">
+  <command detect_errors="exit_code"><![CDATA[
+    echo "A" > oe1_ie1.fq ;
+    echo "B" > oe1_ie2.fq ;
+    echo "C" > oe2_ie1.fq ;
+    echo "D" > oe2_ie2.fq ;
+    echo "E" > oe3_ie1.fq ;
+    echo "F" > oe3_ie2.fq ;
+    exit 1
+  ]]></command>
+  <inputs>
+    <param name="foo" type="text" label="Dummy Parameter" />
+  </inputs>
+  <outputs>
+    <collection name="list_output" type="list:list" label="Failed List">
+      <!-- Use named regex group to grab pattern
+           <identifier_0>_<identifier_1>.fq. Here identifier_0 is the list
+           identifier of the outer list and identifier_1 is the list identifier
+           of the inner list (for instance oe1_ie2.fq in above example).
+      -->
+      <discover_datasets pattern="(?P&lt;identifier_0&gt;[^_]+)_(?P&lt;identifier_1&gt;[^_]+)\.fq" ext="fastqsanger" visible="true" />
+    </collection>
+  </outputs>
+  <tests>
+    <test expect_exit_code="1" expect_failure="true">
+      <param name="foo" value="bar" />
+    </test>
+  </tests>
+</tool>

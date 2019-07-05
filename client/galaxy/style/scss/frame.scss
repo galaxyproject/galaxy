@@ -1,0 +1,157 @@
+$frame-zindex: 1000;
+$frame-default-border: $border-default-color;
+
+.galaxy-frame {
+    .corner {
+        -moz-border-radius: $border-radius-large;
+        border-radius: $border-radius-large;
+    }
+
+    .toggle {
+        color: $dropdown-link-active-color;
+    }
+
+    .frame-background {
+        z-index: $frame-zindex;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        height: 100%;
+        width: 100%;
+        opacity: 0.5;
+        background: $brand-dark;
+        overflow: auto;
+    }
+
+    .frame-shadow {
+        z-index: $frame-zindex + 1;
+        position: absolute;
+        display: none;
+        top: 0px;
+        left: 0px;
+        opacity: 0.5;
+        background: $brand-dark;
+        border: 1px solid $frame-default-border;
+    }
+
+    /*
+        panel menu button
+    */
+    .frame-menu {
+        z-index: $frame-zindex + 5;
+        position: absolute;
+        cursor: pointer;
+        color: $dropdown-link-active-color;
+        right: 10px;
+    }
+
+    .frame-scroll-up {
+        top: 50px;
+    }
+
+    .frame-scroll-down {
+        bottom: 20px;
+    }
+
+    /*
+        frame components
+    */
+
+    .frame {
+        z-index: $frame-zindex + 2;
+        overflow: hidden;
+        position: absolute;
+        background: $white;
+        border: 1px solid $frame-default-border;
+        -webkit-box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+
+        .f-content {
+            position: absolute;
+            overflow: hidden;
+            background: $white;
+            border: none;
+            top: 24px;
+            bottom: 3px;
+            left: 3px;
+            right: 3px;
+        }
+
+        .f-cover {
+            position: absolute;
+            display: none;
+            top: 0px;
+            left: 0px;
+            height: 100%;
+            width: 100%;
+            opacity: 0;
+            background: $white;
+        }
+
+        .f-iframe {
+            border: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        .f-header {
+            height: 17px;
+            margin: 2px;
+            cursor: pointer;
+            border: 1px solid $black;
+            background: $brand-dark;
+            color: $white;
+            .f-icon-left {
+                cursor: pointer;
+                font-size: 15px;
+                margin-left: 3px;
+                float: left;
+                &[disabled] {
+                    opacity: 0.25;
+                }
+            }
+        }
+
+        .f-title {
+            position: absolute;
+            top: 2px;
+            left: 32px;
+            right: 32px;
+            font-size: 12px;
+            font-family: $font-family-sans-serif;
+            text-align: center;
+        }
+
+        /*
+            frame icons
+        */
+
+        .f-not-allowed {
+            cursor: not-allowed;
+        }
+
+        .f-close {
+            cursor: pointer;
+            position: absolute;
+            font-size: 15px;
+            right: 5px;
+            top: 2px;
+        }
+
+        .f-resize {
+            cursor: pointer;
+            position: absolute;
+            font-size: 15px;
+            right: 0px;
+            bottom: 0px;
+            background: $white;
+            width: 16px;
+            height: 16px;
+            color: $brand-dark;
+            right: 0px;
+            bottom: 0px;
+            text-align: center;
+            line-height: 16px;
+            border: 0px;
+        }
+    }
+}

@@ -75,7 +75,7 @@ with open("output", "w") as f:
                 <param name="more_text" type="text" value="sdefault" />
             </when> 
         </conditional>
-        <section name="section_example">
+        <section name="section_example" title="Section Example">
             <param name="section_text" type="text" value="section_default" />
         </section>
     </inputs>

@@ -20,7 +20,7 @@ password_auth = True
 # The image argument was moved to "allowed_images.yml.sample"
 
 # Additional arguments that are passed to the `docker run` command.
-#command_inject = --sig-proxy=true -e DEBUG=false
+#command_inject = --sig-proxy=true -e DEBUG=false -e DEFAULT_CONTAINER_RUNTIME=120
 
 # URL to access the Galaxy API with from the spawn Docker containter, if empty
 # this falls back to galaxy.ini's galaxy_infrastructure_url and finally to the
@@ -41,3 +41,20 @@ password_auth = True
 # you can have a shared sshfs share which you can use as temporary directory to
 # share data between the IE and Galaxy.
 #docker_galaxy_temp_dir = None
+
+# If your Docker container exposes more then one port, Galaxy needs to know to
+# which ports it needs to connect. With this option you can specify the port number
+# inside your container to which Galaxy should connect the UI.
+#docker_connect_port = None
+
+# Set the following value to false if Docker volumes between Galaxy server and Docker
+# container cannot or should not be used.
+#use_volumes = True
+
+# To run containers in Docker Swarm mode on (an existing swarm), set the
+# following option to True *and*:
+# - set docker_connect_port above. For erasche/docker-rstudio-notebook the port
+#   should most likely be 80.
+# - If command_inject is uncommented and includes `--sig-proxy`, that option should
+#   be removed.
+#swarm_mode = False

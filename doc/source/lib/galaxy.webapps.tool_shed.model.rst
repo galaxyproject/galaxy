@@ -1,5 +1,5 @@
-galaxy.webapps.tool_shed.model package
-======================================
+galaxy\.webapps\.tool\_shed\.model package
+==========================================
 
 .. automodule:: galaxy.webapps.tool_shed.model
     :members:
@@ -16,8 +16,8 @@ Subpackages
 Submodules
 ----------
 
-galaxy.webapps.tool_shed.model.mapping module
----------------------------------------------
+galaxy\.webapps\.tool\_shed\.model\.mapping module
+--------------------------------------------------
 
 .. automodule:: galaxy.webapps.tool_shed.model.mapping
     :members:

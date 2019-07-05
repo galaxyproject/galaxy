@@ -1,5 +1,5 @@
-galaxy.jobs.runners.util.cli.shell package
-==========================================
+galaxy\.jobs\.runners\.util\.cli\.shell package
+===============================================
 
 .. automodule:: galaxy.jobs.runners.util.cli.shell
     :members:
@@ -9,16 +9,16 @@ galaxy.jobs.runners.util.cli.shell package
 Submodules
 ----------
 
-galaxy.jobs.runners.util.cli.shell.local module
------------------------------------------------
+galaxy\.jobs\.runners\.util\.cli\.shell\.local module
+-----------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.util.cli.shell.local
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy.jobs.runners.util.cli.shell.rsh module
----------------------------------------------
+galaxy\.jobs\.runners\.util\.cli\.shell\.rsh module
+---------------------------------------------------
 
 .. automodule:: galaxy.jobs.runners.util.cli.shell.rsh
     :members:

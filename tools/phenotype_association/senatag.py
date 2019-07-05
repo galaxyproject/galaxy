@@ -21,10 +21,11 @@ d) Mark that SNP and all the snps connected to it as "visited". This should be
 done for each population.
 e) Continue steps b-e until all SNPs, in all populations have been visited.
 """
+from __future__ import print_function
 
 import heapq
 import os
-
+from functools import total_ordering
 from getopt import getopt, GetoptError
 from sys import argv, exit, stderr
 
@@ -35,7 +36,8 @@ __email__ = "ratan@bx.psu.edu"
 debug_flag = False
 
 
-class node:
+@total_ordering
+class node(object):
     def __init__(self, name):
         self.name = name
         self.edges = []
@@ -50,14 +52,20 @@ class node:
                 num += 1
         return num
 
-    def __cmp__(self, other):
-        return other.num_not_visited() - self.num_not_visited()
+    def __eq__(self, other):
+        return self.num_not_visited() == other.num_not_visited()
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __lt__(self, other):
+        return other.num_not_visited() < self.num_not_visited()
 
     def __str__(self):
         return self.name
 
 
-class graph:
+class graph(object):
     def __init__(self):
         self.nodes = {}
 
@@ -82,7 +90,7 @@ class graph:
             ms = [x for x in n.edges]
             for m in ms:
                 if n not in m.edges:
-                    print >> stderr, "check : %s - %s" % (n, m)
+                    print("check : %s - %s" % (n, m), file=stderr)
 
 
 def construct_graph(ldfile, snpfile):
@@ -98,7 +106,7 @@ def construct_graph(ldfile, snpfile):
         g.add_node(n)
 
     file.close()
-    print >> stderr, "Added %d nodes to a graph" % len(g.nodes)
+    print("Added %d nodes to a graph" % len(g.nodes), file=stderr)
 
     # now add all the edges
     file = open(ldfile, "r")
@@ -117,7 +125,7 @@ def construct_graph(ldfile, snpfile):
                 g.add_edges(n1, n2)
 
     file.close()
-    print >> stderr, "Added all edges to the graph"
+    print("Added all edges to the graph", file=stderr)
 
     return g
 
@@ -137,7 +145,7 @@ def check_output(g, tagsnps):
 
     if set(allsnps) != set(mysnps):
         diff = list(set(allsnps) - set(mysnps))
-        print >> stderr, "%s are not covered" % ",".join(diff)
+        print("%s are not covered" % ",".join(diff), file=stderr)
 
 
 def main(ldfile, snpsfile, required, excluded):
@@ -165,7 +173,7 @@ def main(ldfile, snpsfile, required, excluded):
         neighbors[t.name] = list(set(ns))
 
     # find the tag SNPs for this graph
-    data = [x for x in g.nodes.values()]
+    data = list(g.nodes.values())[:]
     heapq.heapify(data)
 
     while data:
@@ -189,9 +197,9 @@ def main(ldfile, snpsfile, required, excluded):
 
     for s in tagsnps:
         if len(neighbors[s.name]) > 0:
-            print "%s\t%s" % (s, ",".join(neighbors[s.name]))
+            print("%s\t%s" % (s, ",".join(neighbors[s.name])))
             continue
-        print s
+        print(s)
 
     if debug_flag is True:
         check_output(g, tagsnps)
@@ -211,22 +219,23 @@ def read_list(filename):
 
 def usage():
     f = stderr
-    print >> f, "usage:"
-    print >> f, "senatag [options] neighborhood.txt inputsnps.txt"
-    print >> f, "where inputsnps.txt is a file of snps from one population"
-    print >> f, "where neighborhood.txt is neighborhood details for the pop."
-    print >> f, "where the options are:"
-    print >> f, "-h,--help : print usage and quit"
-    print >> f, "-d,--debug: print debug information"
-    print >> f, "-e,--excluded : file with names of SNPs that cannot be TagSNPs"
-    print >> f, "-r,--required : file with names of SNPs that should be TagSNPs"
+    print("usage:", file=f)
+    print("senatag [options] neighborhood.txt inputsnps.txt", file=f)
+    print("where inputsnps.txt is a file of snps from one population", file=f)
+    print("where neighborhood.txt is neighborhood details for the pop.", file=f)
+    print("where the options are:", file=f)
+    print("-h,--help : print usage and quit", file=f)
+    print("-d,--debug: print debug information", file=f)
+    print("-e,--excluded : file with names of SNPs that cannot be TagSNPs", file=f)
+    print("-r,--required : file with names of SNPs that should be TagSNPs", file=f)
+
 
 if __name__ == "__main__":
     try:
         opts, args = getopt(argv[1:], "hdr:e:",
                             ["help", "debug", "required=", "excluded="])
     except GetoptError as err:
-        print str(err)
+        print(str(err))
         usage()
         exit(2)
 

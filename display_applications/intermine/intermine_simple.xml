@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<display id="intermine_simple" version="1.0.0" name="view intermine at">
+    <dynamic_links from_data_table="intermine_simple_display" skip_startswith="#" id="value" name="name">
+        <url>${ url % { 'intermine_file_url_qp': $intermine_file.qp } }</url>
+        <param type="data" name="intermine_file" url="galaxy_${DATASET_HASH}.intermine" />
+    </dynamic_links>
+</display>

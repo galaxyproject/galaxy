@@ -1,14 +1,12 @@
-<tool id="CONVERTER_Wiggle_0" name="Index Wiggle for Track Viewer" hidden="true">
-  <!-- Used internally to generate track indexes -->
-  <command interpreter="python">wiggle_to_array_tree_converter.py $input $output</command>
-  <inputs>
-    <page>
-      <param format="wiggle" name="input" type="data" label="Choose wiggle"/>
-    </page>
-   </inputs>
-   <outputs>
-      <data format="array_tree" name="output"/>
-   </outputs>
-  <help>
-  </help>
+<tool id="CONVERTER_Wiggle_0" name="Index Wiggle for Track Viewer" version="1.0.0" hidden="true">
+    <!-- Used internally to generate track indexes -->
+    <command>python '$__tool_directory__/wiggle_to_array_tree_converter.py' '$input' '$output'</command>
+    <inputs>
+        <param format="wiggle" name="input" type="data" label="Choose wiggle"/>
+    </inputs>
+    <outputs>
+        <data format="array_tree" name="output"/>
+    </outputs>
+    <help>
+    </help>
 </tool>
