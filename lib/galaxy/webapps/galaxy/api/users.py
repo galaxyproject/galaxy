@@ -251,7 +251,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
 
     @expose_api
     @web.require_admin
-    def undelete(self, trans, **kwd):
+    def undelete(self, trans, id, **kwd):
         """
         UNDELETE /api/users/{id}
         undelete the user with the given ``id``
@@ -261,9 +261,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         if not trans.app.config.allow_user_deletion:
             raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete/undelete users.')
+        user = self.get_user(trans, id)
         if user.purged:
             raise exceptions.ItemDeletionException('Purged user cannot be undeleted')
-        user = self.get_user(trans, id)
         if not user.deleted:
             raise exceptions.ItemDeletionException('User not previously deleted cannot be undeleted')
         self.user_manager.undelete(user)
