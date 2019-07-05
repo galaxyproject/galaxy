@@ -685,7 +685,7 @@ class InputParameterModule(WorkflowModule):
         return odict([("parameter_type", input_parameter_type),
                       ("optional", BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", value=optional)))])
 
-    def get_runtime_inputs(self, **kwds):
+    def get_runtime_inputs(self, connections=None, **kwds):
         self.parameter_type = parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)
         optional = self.state.inputs.get("optional", self.default_optional)
         if parameter_type not in ["text", "boolean", "integer", "float", "color", "select"]:
@@ -698,6 +698,8 @@ class InputParameterModule(WorkflowModule):
         # TODO: Use a dict-based description from YAML tool source
         element = Element("param", name="input", label=self.label, type=parameter_type, optional=str(optional), **parameter_kwds)
         input = parameter_class(None, element)
+        if parameter_type == 'select' and connections:
+            input.options = connections[0].input_step.module.tool.inputs.data['complement']
         return dict(input=input)
 
     def get_runtime_state(self):
