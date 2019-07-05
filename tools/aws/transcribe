@@ -3,7 +3,7 @@
 # Script to run a aws transcribe job using aws-cli.
 
 # Usage:
-# transcribe <input_file> <output_file> <audio_format> <s3_bucket> <s3_directory> <job_directory>
+# transcribe $input_file $output_file $audio_format $s3_bucket $s3_directory $job_directory
 
 # TODO: shall we use ENV var for <S3_bucket> <s3_directory>, <job_directory>? 
 # The reason for it is to avoid passing parameter to script each time (although since the script is only called by Galaxy not a human, it probably doesn't matter);
@@ -28,7 +28,10 @@ job_directory=$6
 
 # find out the next seqNo to use by adding 1 to the largest seqNo used among the existing job json files
 job_name_prefix="AwsTranscribe"
-last_seqNo=`ls ${job_directory}/${job_name_prefix}-*.* | cut -d "-" -f 2 | cut -d "." -f 1 | sort -rn | head -1`
+# use sed instead with regexp instead of cut to be more accurate and flexible (for ex, in case the job_directory path contains "-" which could mess up the matching pattern)
+#echo "ls ${job_directory}/${job_name_prefix}-*-request.json | sed 's|.*/||' | sed -e 's/${job_name_prefix}-//; s/-request.json//' | sort -rn | head -1"
+#last_seqNo=`ls ${job_directory}/${job_name_prefix}-*-request.json | sed 's|.*/||' | sed -e 's/${job_name_prefix}-//; s/-request.json//' | sort -rn | head -1`
+last_seqNo=`ls ${job_directory}/${job_name_prefix}-*-request.json | sed 's|.*/||' | cut -d "-" -f 2 | cut -d "." -f 1 | sort -rn | head -1`
 if [ -z $last_seqNo ]; then
     echo "No previous job files found."
     seqNo=1
@@ -78,6 +81,7 @@ if [ ${job_status} = "COMPLETED" ]; then
 	transcript_file_uri=s3://${s3_bucket}/${job_name}.json
 	aws s3 cp $transcript_file_uri $output_file >> $log_file 2>&1
     echo "Job ${job_name} completed in success!" >> $log_file 2>&1
+    exit 0
 # otherwise print error message to the log and exit with error code
 elif [ ${job_status} = "FAILED" ]; then
     echo "Job ${job_name} failed!" >> $log_file 2>&1

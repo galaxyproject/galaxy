@@ -5,7 +5,7 @@
         <requirement type="package" version="1.14">aws-cli</requirement>
         <requirement type="package" version="1.5">jq</requirement>
     </requirements>
-  <command>$__tool_directory__/transcribe $input_file $output_file $audio_format $s3_bucket $s3_directory $job_directory</command>
+  <command detect_errors="exit_code">$__tool_directory__/transcribe $input_file $output_file $audio_format $s3_bucket $s3_directory $job_directory</command>
   <inputs>
     <param name="input_file" type="data" format="binary" label="Input File Path" help="Audio file to transcribe"/>
     <param name="audio_format" type="select" label="Audio Format" help="Format of the audio file. For best results use a lossless format such as FLAC or WAV with PCM 16-bit encoding.">
