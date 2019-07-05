@@ -686,7 +686,7 @@ class InputParameterModule(WorkflowModule):
                       ("optional", BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", value=optional)))])
 
     def get_runtime_inputs(self, **kwds):
-        parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)
+        self.parameter_type = parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)
         optional = self.state.inputs.get("optional", self.default_optional)
         if parameter_type not in ["text", "boolean", "integer", "float", "color", "select"]:
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
