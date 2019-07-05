@@ -202,13 +202,13 @@ class XmlToolSource(ToolSource):
         return parallelism_info
 
     def parse_realtime(self):
-        realtimetool_el = self.root.find("realtime")
+        realtimetool_el = self.root.find("entry_points")
         rtt = []
         if realtimetool_el is None:
             return rtt
         for ep_el in realtimetool_el.findall("entry_point"):
             port = ep_el.find("port")
-            assert port is not None, ValueError('A port is required for RealTimeTools')
+            assert port is not None, ValueError('A port is required for InteractiveTools')
             port = port.text.strip()
             url = ep_el.find("url")
             if url is not None:

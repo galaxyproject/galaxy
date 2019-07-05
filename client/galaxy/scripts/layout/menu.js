@@ -305,7 +305,7 @@ const Collection = Backbone.Collection.extend({
                         divider: true,
                     },
                     {
-                        title: _l("Active RealTimeTools"),
+                        title: _l("Active InteractiveTools"),
                         url: "realtime_entry_points/list",
                         target: "__use_router__"
                     }

@@ -1,8 +1,8 @@
-<tool id="realtimetool_two_entry_points" name="realtimetool_two_entry_points" tool_type="realtime" version="0.1">
+<tool id="realtimetool_two_entry_points" name="realtimetool_two_entry_points" tool_type="interactive" version="0.1">
     <requirements>
         <container type="docker">galaxy/test-http-example:0.1</container>
     </requirements>
-    <realtime>
+    <entry_points>
         <entry_point name="Server 1">
             <port>7000</port>
             <url>/</url>
@@ -11,7 +11,7 @@
             <port>7001</port>
             <url>/</url>
         </entry_point>
-    </realtime>
+    </entry_points>
     <command detect_errors="exit_code"><![CDATA[
         cd /;
         python -m SimpleHTTPServer 7000 &
