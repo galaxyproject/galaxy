@@ -73,7 +73,7 @@ QUnit.module("Input terminal model test", {
             };
         }
         return this.input_terminal.canAccept(other).canAccept;
-    },
+    }
 });
 
 QUnit.test("test update", function(assert) {
@@ -136,12 +136,12 @@ QUnit.test("cannot accept incorrect datatype", function(assert) {
 });
 
 QUnit.test("can accept incorrect datatype if converted with PJA", function(assert) {
-    var other = { node: {}, datatypes: ["binary"], force_datatype: 'txt', name: "out1" }; // Was binary but converted to txt
+    var other = { node: {}, datatypes: ["binary"], force_datatype: "txt", name: "out1" }; // Was binary but converted to txt
     assert.ok(this.test_accept(other));
 });
 
 QUnit.test("cannot accept incorrect datatype if converted with PJA to incompatible type", function(assert) {
-    var other = { node: {}, datatypes: ["binary"], force_datatype: 'bam', name: "out1" };
+    var other = { node: {}, datatypes: ["binary"], force_datatype: "bam", name: "out1" };
     assert.ok(!this.test_accept(other));
 });
 

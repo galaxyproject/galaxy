@@ -182,12 +182,12 @@ class BaseAPIController(BaseController):
                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
         except exceptions.ItemDeletionException as e:
-            raise HTTPBadRequest(detail="Invalid %s id ( %s ) specified: %s" % (class_name, str(id), str(e)))
+            raise HTTPBadRequest(detail="Invalid %s id ( %s ) specified: %s" % (class_name, str(id), util.unicodify(e)))
         except exceptions.MessageException as e:
             raise HTTPBadRequest(detail=e.err_msg)
         except Exception as e:
             log.exception("Exception in get_object check for %s %s.", class_name, str(id))
-            raise HTTPInternalServerError(comment=str(e))
+            raise HTTPInternalServerError(comment=util.unicodify(e))
 
     def validate_in_users_and_groups(self, trans, payload):
         """
@@ -306,7 +306,9 @@ class JSAppLauncher(BaseUIController):
             'toolbox'                       : trans.app.toolbox.to_dict(trans, in_panel=False),
             'toolbox_in_panel'              : trans.app.toolbox.to_dict(trans),
             'message_box_visible'           : trans.app.config.message_box_visible,
-            'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active
+            'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active,
+            'tool_shed_urls'                : list(trans.app.tool_shed_registry.tool_sheds.values()) if trans.app.tool_shed_registry else [],
+            'tool_dynamic_configs'          : list(trans.app.toolbox.dynamic_conf_filenames())
         }
 
         # TODO: move to user

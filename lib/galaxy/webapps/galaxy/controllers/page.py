@@ -339,7 +339,7 @@ class PageController(BaseUIController, SharableMixin,
             try:
                 page = self.page_manager.create(trans, payload)
             except exceptions.MessageException as e:
-                return self.message_exception(trans, str(e))
+                return self.message_exception(trans, unicodify(e))
             return {'message': 'Page \'%s\' successfully created.' % page.title, 'status': 'success'}
 
     @web.legacy_expose_api

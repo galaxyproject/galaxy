@@ -1,4 +1,5 @@
-
+# When committing this file, make sure to run make config-rebuild to rebuild
+# all sample YAML and RST files, and add those to your commit.
 type: map
 desc: |
   Galaxy is configured by default to be usable in a single-user development

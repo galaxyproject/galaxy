@@ -33,6 +33,7 @@ PACKAGES = [
     'galaxy',
     'galaxy.datatypes',
     'galaxy.datatypes.dataproviders',
+    'galaxy.datatypes.display_applications',
     'galaxy.datatypes.util',
     'galaxy.datatypes.test',
     'galaxy.model',

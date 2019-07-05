@@ -20,8 +20,8 @@ log = getLogger(__name__)
 SET_METADATA_SCRIPT = 'from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()'
 
 
-def get_metadata_compute_strategy(app, job_id):
-    metadata_strategy = app.config.metadata_strategy
+def get_metadata_compute_strategy(config, job_id):
+    metadata_strategy = config.metadata_strategy
     if metadata_strategy == "legacy":
         return JobExternalOutputMetadataWrapper(job_id)
     else:
@@ -46,7 +46,7 @@ class MetadataCollectionStrategy(object):
     @abc.abstractmethod
     def setup_external_metadata(self, datasets_dict, sa_session, exec_dir=None,
                                 tmp_dir=None, dataset_files_path=None,
-                                output_fnames=None, config_root=None,
+                                output_fnames=None, config_root=None, use_bin=False,
                                 config_file=None, datatypes_config=None,
                                 job_metadata=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
@@ -83,8 +83,12 @@ class MetadataCollectionStrategy(object):
         dataset.metadata.from_JSON_dict(metadata_output_path, path_rewriter=path_rewriter)
 
     def _metadata_results_from_file(self, dataset, filename_results_code):
-        with open(filename_results_code, "r") as f:
-            rval, rstring = json.load(f)
+        try:
+            with open(filename_results_code, "r") as f:
+                rval, rstring = json.load(f)
+        except (OSError, IOError):
+            rval = False
+            rstring = "Metadata results could not be read from '%s'" % filename_results_code
 
         if not rval:
             log.debug('setting metadata externally failed for %s %s: %s' % (dataset.__class__.__name__, dataset.id, rstring))
@@ -99,7 +103,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
 
     def setup_external_metadata(self, datasets_dict, sa_session, exec_dir=None,
                                 tmp_dir=None, dataset_files_path=None,
-                                output_fnames=None, config_root=None,
+                                output_fnames=None, config_root=None, use_bin=False,
                                 config_file=None, datatypes_config=None,
                                 job_metadata=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
@@ -134,6 +138,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             }
 
         metadata_params_path = os.path.join(metadata_dir, "params.json")
+        datatypes_config = os.path.relpath(datatypes_config, tmp_dir)
         metadata_params = {
             "job_metadata": job_relative_path(job_metadata),
             "datatypes_config": datatypes_config,
@@ -147,9 +152,12 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         if include_command:
             # return command required to build
             script_path = os.path.join(metadata_dir, "set.py")
-            with open(script_path, "w") as f:
-                f.write(SET_METADATA_SCRIPT)
-            return 'python "metadata/set.py"'
+            if use_bin:
+                return "galaxy-set-metadata"
+            else:
+                with open(script_path, "w") as f:
+                    f.write(SET_METADATA_SCRIPT)
+                return 'python "metadata/set.py"'
         else:
             # return args to galaxy_ext.metadata.set_metadata required to build
             return ''
@@ -214,7 +222,7 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
 
     def setup_external_metadata(self, datasets_dict, sa_session, exec_dir=None,
                                 tmp_dir=None, dataset_files_path=None,
-                                output_fnames=None, config_root=None,
+                                output_fnames=None, config_root=None, use_bin=False,
                                 config_file=None, datatypes_config=None,
                                 job_metadata=None, compute_tmp_dir=None,
                                 include_command=True, max_metadata_value_size=0,
@@ -296,6 +304,7 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                                     job_metadata,
                                     " ".join(map(__metadata_files_list_to_cmd_line, metadata_files_list)),
                                     max_metadata_value_size)
+        assert not use_bin
         if include_command:
             # return command required to build
             fd, fp = tempfile.mkstemp(suffix='.py', dir=tmp_dir, prefix="set_metadata_")

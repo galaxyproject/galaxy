@@ -13,6 +13,7 @@ import shutil
 import sys
 
 from galaxy.model.store import tar_export_directory
+from galaxy.util import unicodify
 
 
 def create_archive(export_directory, out_file, gzip=False):
@@ -23,7 +24,7 @@ def create_archive(export_directory, out_file, gzip=False):
         print('Created history archive.')
         return 0
     except Exception as e:
-        print('Error creating history archive: %s' % str(e), file=sys.stderr)
+        print('Error creating history archive: %s' % unicodify(e), file=sys.stderr)
         return 1
 
 

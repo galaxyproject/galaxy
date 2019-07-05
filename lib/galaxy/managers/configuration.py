@@ -75,7 +75,6 @@ class ConfigSerializer(base.ModelSerializer):
             # TODO: change this to (more generic) upload_path and incorporate config.nginx_upload_path into building it
             'nginx_upload_path'                 : lambda i, k, **c: getattr(i, k, False),
             'chunk_upload_size'                 : _defaults_to(104857600),
-            'ftp_upload_dir'                    : _defaults_to(None),
             'ftp_upload_site'                   : _defaults_to(None),
             'version_major'                     : _defaults_to(None),
             'require_login'                     : _defaults_to(None),
@@ -85,7 +84,7 @@ class ConfigSerializer(base.ModelSerializer):
             'message_box_class'                 : _defaults_to('info'),
             'server_startttime'                 : lambda i, k, **c: server_starttime,
             'mailing_join_addr'                 : _defaults_to('galaxy-announce-join@bx.psu.edu'),
-            'smtp_server'                       : _defaults_to(None),
+            'server_mail_configured'            : lambda i, k, **c: True if getattr(i, 'smtp_server', False) else False,
             'registration_warning_message'      : _defaults_to(None),
             'welcome_url'                       : _defaults_to(None),
             'show_welcome_with_login'           : _defaults_to(True),

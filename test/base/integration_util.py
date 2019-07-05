@@ -17,8 +17,11 @@ from .driver_util import GalaxyTestDriver
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 
 
-def skip_if_jenkins(cls):
+def _identity(func):
+    return func
 
+
+def skip_if_jenkins(cls):
     if os.environ.get("BUILD_NUMBER", ""):
         return skip
 
@@ -27,7 +30,7 @@ def skip_if_jenkins(cls):
 
 def skip_unless_executable(executable):
     if which(executable):
-        return lambda func: func
+        return _identity
     return skip("PATH doesn't contain executable %s" % executable)
 
 
@@ -37,6 +40,17 @@ def skip_unless_docker():
 
 def skip_unless_kubernetes():
     return skip_unless_executable("kubectl")
+
+
+def k8s_config_path():
+    return os.environ.get('GALAXY_TEST_KUBE_CONFIG_PATH', '~/.kube/config')
+
+
+def skip_unless_fixed_port():
+    if os.environ.get("GALAXY_TEST_PORT"):
+        return _identity
+
+    return skip("GALAXY_TEST_PORT must be set for this test.")
 
 
 class IntegrationInstance(UsesApiTestCaseMixin):

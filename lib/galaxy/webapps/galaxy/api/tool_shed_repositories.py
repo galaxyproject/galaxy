@@ -186,7 +186,7 @@ class ToolShedRepositoriesController(BaseAPIController):
             raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
         except Exception as e:
             message = "Error attempting to retrieve the latest installable revision from tool shed %s for repository %s owned by %s: %s" % \
-                (str(tool_shed_url), str(name), str(owner), str(e))
+                (str(tool_shed_url), str(name), str(owner), util.unicodify(e))
             log.debug(message)
             return dict(status='error', error=message)
         if raw_text:
@@ -762,7 +762,7 @@ class ToolShedRepositoriesController(BaseAPIController):
                     results['successful_count'] += 1
             except Exception as e:
                 message = "Error resetting metadata on repository %s owned by %s: %s" % \
-                    (str(repository.name), str(repository.owner), str(e))
+                    (str(repository.name), str(repository.owner), util.unicodify(e))
                 results['unsuccessful_count'] += 1
             results['repository_status'].append(message)
         stop_time = strftime("%Y-%m-%d %H:%M:%S")

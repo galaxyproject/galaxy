@@ -308,7 +308,7 @@ def create_paramfile(trans, uploaded_datasets):
             stdout, stderr = p.communicate()
             assert p.returncode == 0, stderr
         except Exception as e:
-            log.warning('Changing ownership of uploaded file %s failed: %s' % (path, str(e)))
+            log.warning('Changing ownership of uploaded file %s failed: %s', path, unicodify(e))
 
     tool_params = []
     json_file_path = None

@@ -13,6 +13,7 @@ import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vu
 import Register from "components/login/Register.vue";
 import ErrorStack from "components/admin/ErrorStack.vue";
 import DisplayApplications from "components/admin/DisplayApplications.vue";
+import Toolshed from "components/Toolshed/Index.vue";
 import Vue from "vue";
 
 export const getAdminRouter = (Galaxy, options) => {
@@ -25,6 +26,7 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin(/)users(/)create": "show_users_create",
             "(/)admin(/)roles": "show_roles",
             "(/)admin(/)groups": "show_groups",
+            "(/)admin(/)toolshed": "show_toolshed",
             "(/)admin(/)error_stack": "show_error_stack",
             "(/)admin(/)display_applications": "show_display_applications",
             "(/)admin(/)tool_versions": "show_tool_versions",
@@ -67,7 +69,7 @@ export const getAdminRouter = (Galaxy, options) => {
                     redirect: "/admin/users",
                     registration_warning_message: options.config.registration_warning_message,
                     mailing_join_addr: options.config.mailing_join_addr,
-                    smtp_server: options.config.smtp_server
+                    server_mail_configured: options.config.server_mail_configured
                 }
             }).$mount(vm);
         },
@@ -82,6 +84,10 @@ export const getAdminRouter = (Galaxy, options) => {
 
         show_repositories: function() {
             this._show_grid_view("admin_toolshed/browse_repositories");
+        },
+
+        show_toolshed: function() {
+            this._display_vue_helper(Toolshed);
         },
 
         show_tool_versions: function() {

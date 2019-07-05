@@ -292,7 +292,7 @@ var OutputTerminalView = BaseOutputTerminalView.extend({
         var terminal = new Terminals.OutputTerminal({
             element: this.el,
             datatypes: type,
-            force_datatype: output.force_datatype,
+            force_datatype: output.force_datatype
         });
         return terminal;
     }
@@ -309,7 +309,7 @@ var OutputCollectionTerminalView = BaseOutputTerminalView.extend({
             collection_type: collection_type,
             collection_type_source: collection_type_source,
             datatypes: output.extensions,
-            force_datatype: output.force_datatype,
+            force_datatype: output.force_datatype
         });
         return terminal;
     }

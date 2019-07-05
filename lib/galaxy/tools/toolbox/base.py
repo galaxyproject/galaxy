@@ -17,7 +17,8 @@ from galaxy.util import (
     ExecutionTimer,
     listify,
     parse_xml,
-    string_as_bool
+    string_as_bool,
+    unicodify,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
@@ -97,13 +98,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             # Load self._tool_panel based on the order in self._integrated_tool_panel.
             self._load_tool_panel()
         self._save_integrated_tool_panel()
-
-    def handle_panel_update(self, section_dict):
-        """Extension-point for Galaxy-app specific reload logic.
-
-        This abstract representation of the toolbox shouldn't have details about
-        interacting with the rest of the Galaxy app or message queues, etc....
-        """
 
     def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds):
         raise NotImplementedError()
@@ -254,6 +248,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             # Appending a tool to an existing section in toolbox._tool_panel
             tool_section = self._tool_panel[tool_panel_section_key]
             log.debug("Appending to tool panel section: %s" % str(tool_section.name))
+        elif new_label and self._tool_panel.get_label(new_label):
+            tool_section = self._tool_panel.get_label(new_label)
+            tool_panel_section_key = tool_section.id
         elif create_if_needed:
             # Appending a new section to toolbox._tool_panel
             if new_label is None:
@@ -264,7 +261,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 'id': section_id,
                 'version': '',
             }
-            self.handle_panel_update(section_dict)
+            self.create_section(section_dict)
             tool_section = self._tool_panel[tool_panel_section_key]
             self._save_integrated_tool_panel()
         else:
@@ -633,7 +630,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if labels is not None:
                 tool.labels = labels
         except (IOError, OSError) as exc:
-            log.error("Error reading tool configuration file from path '%s': %s", path, exc)
+            log.error("Error reading tool configuration file from path '%s': %s", path, unicodify(exc))
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 
@@ -1066,7 +1063,7 @@ def _filter_for_panel(item, item_type, filters, context):
                 if not filter_method(context, filter_item):
                     return False
             except Exception as e:
-                raise MessageException("Toolbox filter exception from '%s': %s." % (filter_method.__name__, e))
+                raise MessageException("Toolbox filter exception from '%s': %s." % (filter_method.__name__, unicodify(e)))
         return True
     if item_type == panel_item_types.TOOL:
         if _apply_filter(item, filters['tool']):

@@ -13,7 +13,7 @@ from galaxy.config import configure_logging
 from galaxy.model.tags import CommunityTagHandler
 from galaxy.security import idencoding
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.web.stack import application_stack_instance
+from galaxy.web_stack import application_stack_instance
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
 from . import config
 
