@@ -113,6 +113,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         self.session().add(user)
         self.session().flush()
 
+    def purge(self, user):
+        user.purged = True
+        self.session().add(user)
+        self.session().flush()
+
     def _error_on_duplicate_email(self, email):
         """
         Check for a duplicate email and raise if found.

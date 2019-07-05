@@ -242,11 +242,15 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         if not trans.app.config.allow_user_deletion:
             raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete users.')
+        user = self.get_user(trans, id)
         purge = util.string_as_bool(kwd.get('purge', False))
         if purge:
-            raise exceptions.NotImplemented('Purge option has not been implemented yet')
-        user = self.get_user(trans, id)
-        self.user_manager.delete(user)
+            if not user.deleted:
+                raise exceptions.MessageException('Must delete the user before purging.')
+            else:
+                self.user_manager.purge(user)
+        else:
+            self.user_manager.delete(user)
         return self.user_serializer.serialize_to_view(user, view='detailed')
 
     @expose_api
