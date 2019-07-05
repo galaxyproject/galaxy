@@ -1,6 +1,6 @@
 
 .. image:: https://badge.fury.io/py/galaxy-job-execution.svg
-   :target: https://pypi.python.org/pypi/galaxy-job-execution/
+   :target: https://pypi.org/project/galaxy-job-execution/
 
 
 Overview
