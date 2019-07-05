@@ -31,7 +31,7 @@ class EntryPointLinkColumn(grids.GridColumn):
 class RealTimeToolEntryPointListGrid(grids.Grid):
 
     use_panels = True
-    title = "Available RealTimeTools"
+    title = "Available InteractiveTools"
     model_class = model.RealTimeToolEntryPoint
     default_filter = {"name": "All"}
     default_sort_key = "-update_time"
@@ -93,10 +93,10 @@ class RealTime(BaseUIController):
                         else:
                             succeeded.append(ep)
                     if failed:
-                        message = 'Unable to stop %i RealTimeTools.' % (len(failed))
+                        message = 'Unable to stop %i InteractiveTools.' % (len(failed))
                         status = 'error'
                     if succeeded:
-                        message = 'Stopped %i RealTimeTools.' % (len(succeeded))
+                        message = 'Stopped %i InteractiveTools.' % (len(succeeded))
                         status = 'ok'
         if message and status:
             kwargs['message'] = message

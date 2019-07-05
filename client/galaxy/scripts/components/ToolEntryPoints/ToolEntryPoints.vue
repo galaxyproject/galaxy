@@ -1,18 +1,18 @@
 <template>
     <div class="infomessagelarge">
         <p v-if="entryPoints.length==0" >
-            Waiting for RealTimeTool result view(s) to become available.
+            Waiting for InteractiveTool result view(s) to become available.
         </p>
         <p v-else-if="entryPoints.length==1" >
             <span v-if="entryPoints[0].active" >
-                There is a RealTimeTool result view available, <a :href="entryPoints[0].target">click here to display</a>.
+                There is an InteractiveTool result view available, <a :href="entryPoints[0].target">click here to display</a>.
             </span>
             <span v-else>
-                There is a RealTimeTool result view available, waiting for view to become active...
+                There is an InteractiveTool result view available, waiting for view to become active...
             </span>
         </p>
         <p v-else>
-            There is are multiple RealTimeTool result views available:
+            There are multiple InteractiveTool result views available:
             <ul>
                 <li v-for="entryPoint of entryPoints" v-bind:key="entryPoint.id" >
                     {{ entryPoint.name }}
@@ -26,7 +26,7 @@
             </ul>
         </p>
 
-        You may also access all active RealTimeTools from the User menu.
+        You may also access all active InteractiveTools from the User menu.
     </div>
 </template>
 
