@@ -403,6 +403,11 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             rval.append(citation.to_dict('bibtex'))
         return rval
 
+    @expose_api_anonymous_and_sessionless
+    def xrefs(self, trans, id, **kwds):
+        tool = self._get_tool(id, user=trans.user)
+        return tool.xrefs
+
     @web.legacy_expose_api_raw
     @web.require_admin
     def download(self, trans, id, **kwds):
