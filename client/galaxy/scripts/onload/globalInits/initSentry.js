@@ -10,7 +10,7 @@ export const initSentry = (galaxy, config) => {
     console.log("initSentry");
 
     if (config.sentry) {
-        let { sentry_dsn_public, email } = config.sentry;
+        const { sentry_dsn_public, email } = config.sentry;
         Raven.config(sentry_dsn_public).install();
         if (email) {
             Raven.setUser({ email });

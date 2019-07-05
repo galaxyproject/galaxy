@@ -27,18 +27,15 @@ notebook_access_url = ie_request.url_template('${PROXY_URL}/rstudio/')
 <html>
 <head>
 ${ ie.load_default_js() }
+${ ie.load_default_app() }
 </head>
 <body style="margin: 0px">
 
 <script type="text/javascript">
 ${ ie.default_javascript_variables() }
 var notebook_access_url = '${ notebook_access_url }';
-${ ie.plugin_require_config() }
-requirejs(['galaxy.interactive_environments', 'plugin/rstudio'], function(IES){
-    window.IES = IES;
-    IES.load_when_ready(ie_readiness_url, function(){
-        load_notebook(notebook_access_url);
-    });
+IES.load_when_ready(ie_readiness_url, function(){
+    load_notebook(notebook_access_url);
 });
 </script>
 <div id="main" width="100%" height="100%">

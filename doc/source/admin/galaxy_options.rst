@@ -105,7 +105,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable's a per request sql debugging option. If this is set to
+    Enables a per request sql debugging option. If this is set to
     true, append ?sql_debug=1 to web request URLs to enable detailed
     logging on the backend of SQL queries generated during that
     request. This is useful for debugging slow endpoints during
@@ -140,6 +140,38 @@
     not recommended for production use.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~
+``database_wait``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    Wait for database to become available instead of failing
+    immediately.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``database_wait_attempts``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Number of attempts before failing if database_wait is enabled.
+:Default: ``60``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``database_wait_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time to sleep between attempts if database_wait is enabled (in
+    seconds).
+:Default: ``1.0``
+:Type: float
 
 
 ~~~~~~~~~~~~~
@@ -485,7 +517,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Container resolvers configuration (beta). Setup a file describing
+    Container resolvers configuration (beta). Set up a file describing
     container resolvers to use when discovering containers for Galaxy.
     If this is set to None, the default containers loaded is
     determined by enable_beta_mulled_containers.
@@ -1143,7 +1175,7 @@
 :Description:
     Galaxy can display data at various external browsers.  These
     options specify which browsers should be available.  URLs and
-    builds available at these browsers are defined in the specifield
+    builds available at these browsers are defined in the specified
     files.  If use_remote_user = True, display application servers
     will be denied access to Galaxy and so displaying datasets in
     these sites will fail. display_servers contains a list of
@@ -1269,11 +1301,11 @@
     URL (with schema http/https) of the Galaxy instance as accessible
     within your local network - if specified used as a default by
     pulsar file staging and Jupyter Docker container for communicating
-    back with Galaxy via the API.  If you are attempting to setup GIEs
-    on Mac OS X with Docker for Mac - this should likely be the IP
-    address of your machine on the virtualbox network (vboxnet0) setup
-    for the Docker host VM. This can found by running ifconfig and
-    using the IP address of the network vboxnet0.
+    back with Galaxy via the API.  If you are attempting to set up
+    GIEs on Mac OS X with Docker Desktop for Mac and your Galaxy
+    instance runs on port 8080 this should be
+    'http://host.docker.internal:8080'.  For more details see
+    https://docs.docker.com/docker-for-mac/networking/
 :Default: ``http://localhost:8080``
 :Type: str
 
@@ -1700,9 +1732,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set the port and IP for the the dynamic proxy to bind to, this
-    must match the external configuration if dynamic_proxy_manage is
-    False.
+    Set the port and IP for the dynamic proxy to bind to, this must
+    match the external configuration if dynamic_proxy_manage is False.
 :Default: ``8800``
 :Type: int
 
@@ -1712,9 +1743,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set the port and IP for the the dynamic proxy to bind to, this
-    must match the external configuration if dynamic_proxy_manage is
-    False.
+    Set the port and IP for the dynamic proxy to bind to, this must
+    match the external configuration if dynamic_proxy_manage is False.
 :Default: ``0.0.0.0``
 :Type: str
 
@@ -3142,6 +3172,31 @@
     job configuration file.
 :Default: ``config/job_conf.xml``
 :Type: str
+
+
+~~~~~~~~~~~~~~
+``job_config``
+~~~~~~~~~~~~~~
+
+:Description:
+    Description of job running configuration, can be embedded into
+    Galaxy configuration or loaded from an additional file with the
+    job_config_file option.
+:Default: ``None``
+:Type: map
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~
+``dependency_resolvers``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Rather than specifying a dependency_resolvers_config_file, the
+    definition of the resolvers to enable can be embedded into
+    Galaxy's config with this option. This has no effect if a
+    dependency_resolvers_config_file is used.
+:Default: ``None``
+:Type: seq
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

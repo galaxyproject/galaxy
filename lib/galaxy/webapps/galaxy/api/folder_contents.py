@@ -287,7 +287,8 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 return self._copy_hdca_to_library_folder(trans, self.hda_manager, decoded_hdca_id, encoded_folder_id_16, ldda_message)
         except Exception as exc:
             # TODO handle exceptions better within the mixins
-            if 'not accessible to the current user' in str(exc) or 'You are not allowed to access this dataset' in str(exc):
+            exc_message = util.unicodify(exc)
+            if 'not accessible to the current user' in exc_message or 'You are not allowed to access this dataset' in exc_message:
                 raise exceptions.ItemAccessibilityException('You do not have access to the requested item')
             else:
                 log.exception(exc)

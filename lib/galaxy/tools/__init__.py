@@ -25,19 +25,31 @@ from galaxy import (
     exceptions,
     model
 )
+from galaxy.job_execution import output_collect
 from galaxy.managers.jobs import JobSearch
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.queue_worker import send_control_task
+from galaxy.tool_util.deps import (
+    CachedDependencyManager,
+)
+from galaxy.tool_util.fetcher import ToolLocationFetcher
+from galaxy.tool_util.loader import (
+    imported_macro_paths,
+    raw_tool_xml_tree,
+    template_macro_params
+)
+from galaxy.tool_util.parser import (
+    get_tool_source,
+    get_tool_source_from_representation,
+    ToolOutputCollectionPart
+)
+from galaxy.tool_util.parser.xml import XmlPageSource
+from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.tools import expressions
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.deps import (
-    CachedDependencyManager,
-)
-from galaxy.tools.fetcher import ToolLocationFetcher
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -46,7 +58,6 @@ from galaxy.tools.parameters import (
     populate_state,
     visit_input_values
 )
-from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (
     BaseURLToolParameter,
     DataCollectionToolParameter,
@@ -64,12 +75,6 @@ from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repea
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.tools.parameters.wrapped_json import json_wrap
-from galaxy.tools.parser import (
-    get_tool_source,
-    get_tool_source_from_representation,
-    ToolOutputCollectionPart
-)
-from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.test import parse_tests
 from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
@@ -96,12 +101,6 @@ from .execute import (
     execute as execute_job,
     MappingParameters,
 )
-from .loader import (
-    imported_macro_paths,
-    raw_tool_xml_tree,
-    template_macro_params
-)
-from .provided_metadata import parse_tool_provided_metadata
 
 log = logging.getLogger(__name__)
 
@@ -158,6 +157,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "sam_pileup",
     "find_diag_hits",
     "cufflinks",
+    "gops_intersect_1",
     # Tools improperly migrated to the tool shed (iuc)
     "tabular_to_dbnsfp",
     # Tools improperly migrated using Galaxy (from shed other)
@@ -192,7 +192,7 @@ class ToolErrorLog(object):
             "file": file,
             "time": str(datetime.now()),
             "phase": phase,
-            "error": str(exception)
+            "error": unicodify(exception)
         })
         if len(self.error_stack) > self.max_errors:
             self.error_stack.pop()
@@ -240,16 +240,6 @@ class ToolBox(BaseGalaxyToolBox):
             tool_root_dir=tool_root_dir,
             app=app,
         )
-
-    def handle_panel_update(self, section_dict):
-        """
-        Sends a panel update to all threads/processes.
-        """
-        send_control_task(self.app, 'create_panel_section', kwargs=section_dict)
-        # The following local call to self.create_section should be unnecessary
-        # but occasionally the local ToolPanelElements instance appears to not
-        # get updated.
-        self.create_section(section_dict)
 
     def has_reloaded(self, other_toolbox):
         return self._reload_count != other_toolbox._reload_count
@@ -463,6 +453,7 @@ class Tool(Dictifiable):
         self.guid = guid
         self.old_id = None
         self.version = None
+        self.python_template_version = None
         self._lineage = None
         self.dependencies = []
         # populate toolshed repository info, if available
@@ -641,6 +632,14 @@ class Tool(Dictifiable):
             template = "The tool %s targets version %s of Galaxy, you should upgrade Galaxy to ensure proper functioning of this tool."
             message = template % (self.id, self.profile)
             raise Exception(message)
+
+        self.python_template_version = tool_source.parse_python_template_version()
+        if self.python_template_version is None:
+            # If python_template_version not specified we assume tools with profile versions >= 19.05 are python 3 ready
+            if self.profile >= 19.05:
+                self.python_template_version = '3.5'
+            else:
+                self.python_template_version = '2.7'
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
@@ -1064,7 +1063,7 @@ class Tool(Dictifiable):
             if citation_elem.tag != "citation":
                 pass
             if hasattr(self.app, 'citations_manager'):
-                citation = self.app.citations_manager.parse_citation(citation_elem, self.tool_dir)
+                citation = self.app.citations_manager.parse_citation(citation_elem)
                 if citation:
                     citations.append(citation)
         return citations
@@ -1476,7 +1475,7 @@ class Tool(Dictifiable):
             return False, e
         except Exception as e:
             log.exception('Exception caught while attempting tool execution:')
-            message = 'Error executing tool: %s' % str(e)
+            message = 'Error executing tool: %s' % unicodify(e)
             return False, message
         if isinstance(out_data, odict):
             return job, list(out_data.items())
@@ -1727,6 +1726,8 @@ class Tool(Dictifiable):
         Find any additional datasets generated by a tool and attach (for
         cases where number of outputs is not known in advance).
         """
+        # given the job_execution import is the only one, probably makes sense to refactor this out
+        # into job_wrapper.
         tool = self
         permission_provider = output_collect.PermissionProvider(inp_data, tool.app.security_agent, job)
         metadata_source_provider = output_collect.MetadataSourceProvider(inp_data)
@@ -1923,7 +1924,7 @@ class Tool(Dictifiable):
                 if history is None:
                     raise exceptions.MessageException('History unavailable. Please specify a valid history id')
             except Exception as e:
-                raise exceptions.MessageException('[history_id=%s] Failed to retrieve history. %s.' % (history_id, str(e)))
+                raise exceptions.MessageException('[history_id=%s] Failed to retrieve history. %s.' % (history_id, unicodify(e)))
 
         # build request context
         request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_building_mode)
@@ -1939,7 +1940,7 @@ class Tool(Dictifiable):
                 tool_message = self._compare_tool_version(job)
                 params_to_incoming(kwd, self.inputs, job_params, self.app)
             except Exception as e:
-                raise exceptions.MessageException(str(e))
+                raise exceptions.MessageException(unicodify(e))
 
         # create parameter object
         params = Params(kwd, sanitize=False)
@@ -2139,7 +2140,7 @@ class Tool(Dictifiable):
             if len(self.tool_versions) > 1 and tool_version != self.tool_versions[-1]:
                 message += 'There is a newer version of this tool available.'
         except Exception as e:
-            raise exceptions.MessageException(str(e))
+            raise exceptions.MessageException(unicodify(e))
         return message
 
     def get_default_history_by_trans(self, trans, create=False):
@@ -2382,7 +2383,7 @@ class SetMetadataTool(Tool):
             job, base_dir='job_work', dir_only=True, obj_dir=True
         )
         for name, dataset in inp_data.items():
-            external_metadata = get_metadata_compute_strategy(app, job.id)
+            external_metadata = get_metadata_compute_strategy(app.config, job.id)
             sa_session = app.model.context
             if external_metadata.external_metadata_set_successfully(dataset, name, sa_session, working_directory=working_directory):
                 external_metadata.load_metadata(dataset, name, sa_session, working_directory=working_directory)

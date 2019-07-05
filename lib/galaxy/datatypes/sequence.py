@@ -9,10 +9,10 @@ import re
 import string
 import subprocess
 import sys
-from cgi import escape
 from itertools import islice
 
 import bx.align.maf
+from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import metadata
@@ -451,7 +451,7 @@ class Fasta(Sequence):
                     start_offset = f.tell()
                 part_file.write(line)
         except Exception as e:
-            log.error('Unable to size split FASTA file: %s' % str(e))
+            log.error('Unable to size split FASTA file: %s', util.unicodify(e))
             raise
         finally:
             f.close()
@@ -488,7 +488,7 @@ class Fasta(Sequence):
                         rec_count = 1
                 part_file.write(line)
         except Exception as e:
-            log.error('Unable to count split FASTA file: %s' % str(e))
+            log.error('Unable to count split FASTA file: %s', util.unicodify(e))
             raise
         finally:
             f.close()

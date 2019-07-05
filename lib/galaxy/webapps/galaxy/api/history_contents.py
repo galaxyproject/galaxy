@@ -295,7 +295,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         except Exception as e:
             log.exception("Error in API while creating dataset collection archive")
             trans.response.status = 500
-            return {'error': str(e)}
+            return {'error': util.unicodify(e)}
 
     def __stream_dataset_collection(self, trans, dataset_collection_instance):
         archive_type_string = 'w|gz'
@@ -866,7 +866,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         filter_params = self.parse_filter_params(kwd)
         filters = self.history_contents_filters.parse_filters(filter_params)
         limit, offset = self.parse_limit_offset(kwd)
-        order_by = self._parse_order_by(kwd.get('order', 'hid-asc'))
+        order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=kwd.get('order', 'hid-asc'))
         serialization_params = self._parse_serialization_params(kwd, 'summary')
         # TODO: > 16.04: remove these
         # TODO: remove 'dataset_details' and the following section when the UI doesn't need it
@@ -904,13 +904,6 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         TYPE_ID_SEP = '-'
         split = type_id.split(TYPE_ID_SEP, 1)
         return TYPE_ID_SEP.join([split[0], self.app.security.encode_id(split[1])])
-
-    def _parse_order_by(self, order_by_string):
-        ORDER_BY_SEP_CHAR = ','
-        manager = self.history_contents_manager
-        if ORDER_BY_SEP_CHAR in order_by_string:
-            return [manager.parse_order_by(o) for o in order_by_string.split(ORDER_BY_SEP_CHAR)]
-        return manager.parse_order_by(order_by_string)
 
     @expose_api_raw
     def archive(self, trans, history_id, filename='', format='tgz', dry_run=True, **kwd):

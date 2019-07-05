@@ -1,7 +1,7 @@
 galaxy-objectstore
 galaxy-util
 bdbag
-bx
+bx-python
 h5py
 isa-rwval
 numpy

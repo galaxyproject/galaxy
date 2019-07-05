@@ -57,15 +57,15 @@ export function hslToRgb(h, s, l) {
  * from a string key
  */
 export function keyedColorScheme(strKey) {
-    let hash = hashFnv32a(strKey);
-    let hue = Math.abs((hash >> 4) % 360);
-    let lightnessOffset = 75;
-    let lightness = lightnessOffset + (hash & 0xf);
+    const hash = hashFnv32a(strKey);
+    const hue = Math.abs((hash >> 4) % 360);
+    const lightnessOffset = 75;
+    const lightness = lightnessOffset + (hash & 0xf);
 
-    let primary = `hsl(${hue}, 100%, ${lightness}%)`;
-    let darker = `hsl(${hue}, 100%, ${lightness - 40}%)`;
-    let [r, g, b] = hslToRgb(hue, 1.0, lightness / 100);
-    let contrasting = contrastingColor(r, g, b);
+    const primary = `hsl(${hue}, 100%, ${lightness}%)`;
+    const darker = `hsl(${hue}, 100%, ${lightness - 40}%)`;
+    const [r, g, b] = hslToRgb(hue, 1.0, lightness / 100);
+    const contrasting = contrastingColor(r, g, b);
 
     return { primary, darker, contrasting };
 }

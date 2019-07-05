@@ -13,6 +13,7 @@ from galaxy.datatypes.sniff import (
     iter_headers
 )
 from galaxy.datatypes.tabular import Tabular
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
@@ -981,7 +982,7 @@ class SffFlow(Tabular):
             out += self.make_html_peek_rows(dataset, skipchars=skipchars)
             out += '</table>'
         except Exception as exc:
-            out = "Can't create peek %s" % str(exc)
+            out = "Can't create peek: %s" % unicodify(exc)
         return out
 
 

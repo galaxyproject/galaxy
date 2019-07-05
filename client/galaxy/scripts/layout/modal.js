@@ -28,7 +28,7 @@ $.extend(Modal.prototype, {
         }
         // Buttons
         this.$footer.hide();
-        var $buttons = this.$footer.find(".buttons").html("");
+        const $buttons = this.$footer.find(".buttons").html("");
         if (options.buttons) {
             $.each(options.buttons, (name, value) => {
                 $buttons
@@ -41,7 +41,7 @@ $.extend(Modal.prototype, {
             });
             this.$footer.show();
         }
-        var $extraButtons = this.$footer.find(".extra_buttons").html("");
+        const $extraButtons = this.$footer.find(".extra_buttons").html("");
         if (options.extra_buttons) {
             $.each(options.extra_buttons, (name, value) => {
                 $extraButtons
@@ -55,7 +55,7 @@ $.extend(Modal.prototype, {
             this.$footer.show();
         }
         // Body
-        var body = options.body;
+        let body = options.body;
         if (body == "progress") {
             body = $(
                 "<div class='progress progress-striped active'><div class='progress-bar' style='width: 100%'></div></div>"
@@ -83,7 +83,7 @@ $.extend(Modal.prototype, {
         }
     },
     hide: function() {
-        var modal = this;
+        const modal = this;
         modal.$dialog.fadeOut(() => {
             modal.$overlay.hide();
             modal.$backdrop.removeClass("in");
@@ -94,7 +94,7 @@ $.extend(Modal.prototype, {
     }
 });
 
-var modal;
+let modal;
 
 // TODO: move into init chain
 $(() => {
@@ -131,9 +131,9 @@ export function show_message(title, body, buttons, extra_buttons, init_fn) {
 }
 
 export function show_in_overlay(options) {
-    var width = options.width || "600";
-    var height = options.height || "400";
-    var scroll = options.scroll || "auto";
+    const width = options.width || "600";
+    const height = options.height || "400";
+    const scroll = options.scroll || "auto";
     $("#overlay-background").bind("click.overlay", () => {
         hide_modal();
         $("#overlay-background").unbind("click.overlay");

@@ -65,6 +65,7 @@ for env in $ENVS; do
                 -e "s/^futures==\([^ ;]\{1,\}\).*$/futures==\1 ; python_version == '2.6' or python_version == '2.7'/" \
                 -e "s/^monotonic==\([^ ;]\{1,\}\).*$/monotonic==\1/" \
                 -e "s/^more-itertools==\([^ ;]\{1,\}\).*$/more-itertools==\1/" \
+                -e "s/^paste==\([^ ;]\{1,\}\).*$/paste==\1/" \
                 -e "s/^py2-ipaddress==\([^ ;]\{1,\}\).*$/py2-ipaddress==\1 ; python_version < '3'/" \
                 -e "s/^pyinotify==\([^ ;]\{1,\}\).*$/pyinotify==\1 ; sys_platform != 'win32' and sys_platform != 'darwin' and sys_platform != 'sunos5'/" \
                 -e "s/^python-dateutil==\([^ ;]\{1,\}\).*$/python-dateutil==\1/" \

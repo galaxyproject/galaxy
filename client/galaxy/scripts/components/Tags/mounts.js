@@ -14,17 +14,17 @@ import { BackboneTagService } from "./backboneTagService";
  * by the tagging_common.mako file
  */
 export const mountMakoTags = (options = {}, el) => {
-    let { id, itemClass, tags = [], disabled = false, context = "unspecified" } = options;
+    const { id, itemClass, tags = [], disabled = false, context = "unspecified" } = options;
 
-    let propData = {
+    const propData = {
         storeKey: `${itemClass}-${id}`,
         tagService: new TagService({ id, itemClass, context }),
         tags,
         disabled
     };
 
-    let fn = mountVueComponent(Tags);
-    let vm = fn(propData, el);
+    const fn = mountVueComponent(Tags);
+    const vm = fn(propData, el);
     vm.$on("tag-click", makoClickHandler(options, vm));
     return vm;
 };
@@ -40,15 +40,13 @@ const makoClickHandler = (options, vm) =>
             return;
         }
 
-        let { tagClickFn = "none", clickUrl } = options;
+        const { tagClickFn = "none", clickUrl } = options;
 
         switch (tagClickFn) {
-            // I made this match the existing behavior, but I am not clear on
-            // the reason why this link redirects to a raw json page
             case "community_tag_click":
                 if (undefined !== clickUrl) {
-                    let suffix = tag.value ? `:${tag.value}` : "";
-                    let href = `${clickUrl}?f-tags=${tag.text}${suffix}`;
+                    const suffix = tag.value ? `:${tag.value}` : "";
+                    const href = `${clickUrl}?f-tags=${tag.text}${suffix}`;
                     redirectToUrl(href);
                 }
                 break;
@@ -63,22 +61,22 @@ const makoClickHandler = (options, vm) =>
  * Mount function when a backbone model is provided.
  */
 export const mountModelTags = (options = {}, el) => {
-    let { model, disabled = false, context = "unspecified" } = options;
+    const { model, disabled = false, context = "unspecified" } = options;
 
     if (!model) {
         console.warn("Missing model in mountModelTags");
         return;
     }
 
-    let { id, model_class: itemClass, tags = [] } = model.attributes;
+    const { id, model_class: itemClass, tags = [] } = model.attributes;
 
-    let propData = {
+    const propData = {
         storeKey: `${itemClass}-${id}`,
         tagService: new BackboneTagService({ id, itemClass, context, model }),
         tags,
         disabled
     };
 
-    let fn = mountVueComponent(Tags);
+    const fn = mountVueComponent(Tags);
     return fn(propData, el);
 };

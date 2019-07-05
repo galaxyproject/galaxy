@@ -331,6 +331,23 @@ class NavigatesGalaxy(HasDriver):
             raise self.prepend_timeout_message(e, message)
         return history_item_selector_state
 
+    def click_grid_popup_option(self, item_name, option_label):
+        item_button = None
+        grid = self.components.grids.body.wait_for_visible()
+        for row in grid.find_elements_by_tag_name('tr'):
+            name_cell = row.find_elements_by_tag_name('td')[1]
+            if name_cell.text == item_name:
+                item_button = name_cell
+                break
+
+        if item_button is None:
+            raise AssertionError('Failed to find item with name [%s]' % item_name)
+
+        popup_menu_button = item_button.find_element_by_css_selector('.dropdown-toggle')
+        popup_menu_button.click()
+        popup_option = self.driver.find_element_by_link_text(option_label)
+        popup_option.click()
+
     def published_grid_search_for(self, search_term=None):
         return self._inline_search_for(
             '#input-free-text-search-filter',
@@ -800,6 +817,13 @@ class NavigatesGalaxy(HasDriver):
     def workflow_editor_options_menu_element(self):
         return self.wait_for_selector_visible("#workflow-options-button-menu")
 
+    def workflow_editor_click_run(self):
+        return self.wait_for_and_click_selector("#workflow-run-button")
+
+    def workflow_editor_click_save(self):
+        self.wait_for_and_click_selector("#workflow-save-button")
+        self.sleep_for(self.wait_types.DATABASE_OPERATION)
+
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 
@@ -830,10 +854,10 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_index_create(self, name):
         self.libraries_index_click_create_new()
-        name_text_box = self.wait_for_selector_clickable("input[name='Name']")
+        name_text_box = self.wait_for_selector_visible("textarea[name='input_library_name']")
         name_text_box.send_keys(name)
 
-        self.wait_for_and_click_selector("#button-0")
+        self.wait_for_and_click_selector(".save_library_btn")
 
     def libraries_index_click_search(self):
         self.sleep_for(WAIT_TYPES.UX_RENDER)
@@ -861,10 +885,10 @@ class NavigatesGalaxy(HasDriver):
     def libraries_folder_create(self, name):
         self.components.libraries.folder.add_folder.wait_for_and_click()
 
-        name_text_box = self.wait_for_selector_clickable("input[name='Name']")
+        name_text_box = self.wait_for_selector_visible("textarea[name='input_folder_name']")
         name_text_box.send_keys(name)
 
-        create_button = self.wait_for_selector_clickable("#button-0")
+        create_button = self.wait_for_selector_clickable(".save_folder_btn")
         create_button.click()
 
     def libraries_click_dataset_import(self):
@@ -1079,7 +1103,7 @@ class NavigatesGalaxy(HasDriver):
 
         # Click labelled option
         self.wait_for_visible(self.navigation.history_panel.options_menu)
-        menu_item_sizzle_selector = '#history-options-button-menu > li > a:contains("%s")' % option_label
+        menu_item_sizzle_selector = '#history-options-button-menu > a:contains("%s")' % option_label
         menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
 

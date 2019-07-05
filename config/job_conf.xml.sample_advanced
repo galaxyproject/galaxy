@@ -51,7 +51,7 @@
           <param id="amqp_url">amqp://guest:guest@localhost:5672//</param>
           <!-- URL remote Pulsar apps should transfer files to this Galaxy
                instance to/from. This can be unspecified/empty if
-               galaxy_infrastructure_url is set in galaxy.ini.
+               galaxy_infrastructure_url is set in galaxy.yml.
           -->
           <param id="galaxy_url">http://localhost:8080</param>
           <!-- AMQP does not guarantee that a published message is received by
@@ -66,7 +66,7 @@
           <!-- <param id="persistence_directory">/path/to/dir</param> -->
           <!-- Number of seconds to wait for an acknowledgement before
                republishing a message. -->
-          <!-- <param id="amqp_republish_time">30</param> -->
+          <!-- <param id="amqp_ack_republish_time">30</param> -->
           <!-- Pulsar job manager to communicate with (see Pulsar
                docs for information on job managers). -->
           <!-- <param id="manager">_default_</param> -->
@@ -87,7 +87,7 @@
                higher value (in seconds) (or `None` to use blocking connections). -->
           <!-- <param id="amqp_consumer_timeout">None</param> -->
         </plugin>
-        <plugin id="pulsar_legacy" type="runner" load="galaxy.jobs.runners.pulsar:PulsarLegacyJobRunner" shell="none">
+        <plugin id="pulsar_legacy" type="runner" load="galaxy.jobs.runners.pulsar:PulsarLegacyJobRunner">
           <!-- Pulsar job runner with default parameters matching those
                of old LWR job runner. If your Pulsar server is running on a
                Windows machine for instance this runner should still be used.
@@ -141,7 +141,7 @@
                         server: 192.168.64.1
 
                  The path (nfs:path: in the example) set needs to be a parent directory of the directories used for
-                 variables “file_path” and “new_file_path” on the galaxy.ini files. Clearly, for this particular example
+                 variables “file_path” and “new_file_path” on the galaxy.yml files. Clearly, for this particular example
                  to work, there needs to be a NFS server serving that directory on that ip. Please make sure that you
                  use reasonable storage size for your set up (possibly larger that the 10Gi written).
                  An example of the volume claim should be (this needs to be followed more closely) (pv_claim.yaml):
@@ -303,7 +303,7 @@
 
                  This runner requires a shared file system where the directories of
                  `job_working_directory`, `file_path` and `new_file_path` settings defined on
-                 the `galaxy.ini` file are shared amongst the Mesos agents (i.e. nodes which
+                 the `galaxy.yml` file are shared amongst the Mesos agents (i.e. nodes which
                  actually run the jobs).
             -->
             <param id="chronos">`chronos_host`</param>
@@ -332,9 +332,9 @@
              For documentation on handler assignment methods, see the documentation under:
              https://docs.galaxyproject.org/en/latest/admin/scaling.html#job-handler-assignment-methods
 
-             The <handlers> container tag takes two optional attributes:
+             The <handlers> container tag takes three optional attributes:
 
-               <handlers assign_with="method" default="id_or_tag"/>
+               <handlers assign_with="method" max_grab="count" default="id_or_tag"/>
 
                - `assign_with` - How jobs should be assigned to handlers. The value can be a single method or a
                  comma-separated list that will be tried in order. The default depends on whether any handlers and a job
@@ -347,6 +347,11 @@
                    - `uwsgi-mule-message` - uWSGI Mule Messaging
                    - `db-transaction-isolation` - Database Transaction Isolation
                    - `db-skip-locked` - Database SKIP LOCKED
+
+               - `max_grab` - Limit the number of jobs that a handler will self-assign per jobs-ready-to-run check loop
+                 iteration. This only applies for methods that cause handlers to self-assign multiple jobs at once
+                 (db-skip-locked, db-transaction-isolation) and the value is an integer > 0. Default is to grab as many
+                 jobs ready to run as possible.
 
                - `default` - An ID or tag of the handler(s) that should handle any jobs not assigned to a specific
                  handler (which is probably most of them). If unset, the default is any untagged handlers plus any
@@ -415,7 +420,7 @@
 
                This configuration allows any docker instance to write to any Galaxy
                file - for greater isolation set outputs_to_working_directory in
-               galaxy.ini. This will cause $defaults to allow writing to much
+               galaxy.yml. This will cause $defaults to allow writing to much
                less. It will then expand as follows:
 
                $galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:ro
@@ -566,30 +571,32 @@
                such containers are defined (as in the example below), the first one matching
                the enabled container types for this destination will be used.
           -->
-          <!-- <param id="container_override">
+          <param id="container_override">
               <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:ubuntu-14.04</container>
               <container type="singularity" shell="/bin/sh" resolve_dependencies="false">/path/to/default/container</container>
-          </param> -->
-          <!-- <param id="container">
+          </param>
+          <param id="container">
               <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:ubuntu-14.04</container>
               <container type="singularity" shell="/bin/sh" resolve_dependencies="false">/path/to/default/container</container>
-          </param> -->
+          </param>
         </destination>
         <destination id="pbs" runner="pbs" tags="mycluster"/>
         <destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
             <!-- Define parameters that are native to the job runner plugin. -->
             <param id="Resource_List">walltime=72:00:00</param>
         </destination>
-        <destination id="remote_cluster" runner="drmaa" tags="longjobs"/>
-        <destination id="java_cluster" runner="drmaa">
-          <!-- Allow users that are not mapped to any real users to run jobs
-               as a Galaxy (fallback). Default is False.
-          -->
-          <param id="allow_guests">True</param>
+        <destination id="remote_cluster" runner="drmaa" tags="longjobs">
           <!-- Set to False if cluster nodes don't shared Galaxy library,
                it will perform metadata calculation locally after the job finishes.
           -->
           <param id="embed_metadata_in_job">True</param>
+          <!-- If jobs are configured to run as the real user, this option allows
+               users that are not mapped to any real users to run jobs
+               as a Galaxy (fallback). Default is False.
+          -->
+          <param id="allow_guests">True</param>
+        </destination>
+        <destination id="java_cluster" runner="drmaa">
           <!-- set arbitrary environment variables at runtime. General
                dependencies for tools should be configured via
                tool_dependency_dir and package options and these
@@ -623,7 +630,7 @@
           <param id="tmp_dir">$(mktemp -d /mnt/scratch/fastest/gxyjobXXXXXXXXXXX)</param>
         </destination>
         <destination id="real_user_cluster" runner="drmaa">
-            <!-- Make sure to setup 3 real user parameters in galaxy.ini. -->
+            <!-- Make sure to setup 3 real user parameters in galaxy.yml. -->
         </destination>
         <destination id="dynamic" runner="dynamic">
             <!-- A destination that represents a method in the dynamic runner.
@@ -896,7 +903,7 @@
             <resubmit condition="unknown_error and attempt &lt;= 5" delay="attempt * 30" />
         </destination>
         <!-- Any tag param in this file can be set using an environment variable or using
-             values from galaxy.ini using the from_environ and from_config attributes
+             values from galaxy.yml using the from_environ and from_config attributes
              repectively. The text of the param will still be used if that environment variable
              or config value isn't set.
         -->
@@ -943,12 +950,12 @@
                 <param id="docker_image_default">my-tool</param>
                 <param id="docker_tag_default">latest</param>
             -->
-            <param id="max_pod_retrials">3</param>
+            <param id="max_pod_retries">3</param>
             <!-- Allows pods to retry up to this number of times, before marking the galaxy job failed. k8s is a state
                  setter essentially, so by default it will try to take a job submitted to successful completion. A job
                  submits pods, until the number of successes (1 in this use case) is achieved, assuming that whatever is
                  making the pods fail will be fixed (such as a stale disk or a dead node that it is being restarted).
-                 This option sets a limit of retrials, so that after that number of failed pods, the job is re-scaled to
+                 This option sets a limit of retries, so that after that number of failed pods, the job is re-scaled to
                  zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
                  to failed).
 
@@ -1012,19 +1019,19 @@
              a tag, a handler or destination that matches that tag will be
              chosen at random.
          -->
-        <tool id="foo" handler="trackster_handler">
-            <param id="source">trackster</param>
+        <tool id="bwa" handler="handler0">
+        </tool>
+        <tool id="bowtie" handler="handler1">
         </tool>
         <tool id="bar" destination="dynamic"/>
         <!-- Next example defines resource group to insert into tool interface
              and pass to dynamic destination (as resource_params argument). -->
         <tool id="longbar" destination="dynamic" resources="all" />
+        <!-- Pick a handler randomly from those declaring this tag. -->
         <tool id="baz" handler="special_handlers" destination="bigmem"/>
-
-        <!-- Finally for Kubernetes runner, the following connects a particular tool to be executed with
-             the container of choice in Kubernetes.
-        -->
-        <tool id="my-tool" destination="my-tool-container"/>
+        <tool id="foo" handler="handler0">
+            <param id="source">trackster</param>
+        </tool>
     </tools>
     <limits>
         <!-- Certain limits can be defined. The 'concurrent_jobs' limits all
@@ -1066,11 +1073,11 @@
                 will be terminated by Galaxy.
          -->
         <limit type="walltime">24:00:00</limit>
-	<!-- total_walltime:
-		Total walltime that jobs may not exceed during a set period.
-		If total walltime of finished jobs exceeds this value, any
-		new jobs are paused.  `window` is a number in days,
-		representing the period.
+        <!-- total_walltime:
+                Total walltime that jobs may not exceed during a set period.
+                If total walltime of finished jobs exceeds this value, any
+                new jobs are paused.  `window` is a number in days,
+                representing the period.
          -->
         <limit type="total_walltime" window="30">24:00:00</limit>
         <!-- output_size:

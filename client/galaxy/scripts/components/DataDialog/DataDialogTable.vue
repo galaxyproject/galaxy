@@ -11,8 +11,8 @@
             @row-clicked="clicked"
             @filtered="filtered"
         >
-            <template slot="name" slot-scope="data">
-                <i v-if="data.item.isDataset" class="fa fa-file-o" /> <i v-else class="fa fa-copy" />
+            <template slot="label" slot-scope="data">
+                <i v-if="data.item.isDataset" class="fa fa-file-o" /> <i v-else class="fa fa-folder" />
                 {{ data.value ? data.value : "-" }}
             </template>
             <template slot="details" slot-scope="data">
@@ -20,17 +20,6 @@
             </template>
             <template slot="time" slot-scope="data">
                 {{ data.value ? data.value : "-" }}
-            </template>
-            <template slot="arrow" slot-scope="data">
-                <b-button
-                    variant="link"
-                    size="sm"
-                    class="py-0"
-                    v-if="!data.item.isDataset"
-                    @click.stop="load(data.item.url)"
-                >
-                    View
-                </b-button>
             </template>
         </b-table>
         <div v-if="nItems === 0">
@@ -69,7 +58,7 @@ export default {
         return {
             currentPage: 1,
             fields: {
-                name: {
+                label: {
                     sortable: true
                 },
                 details: {
@@ -77,11 +66,6 @@ export default {
                 },
                 time: {
                     sortable: true
-                },
-                arrow: {
-                    label: "",
-                    sortable: false,
-                    class: "text-right"
                 }
             },
             nItems: 0,
@@ -105,10 +89,6 @@ export default {
         /** Collects selected datasets in value array **/
         clicked: function(record) {
             this.$emit("clicked", record);
-        },
-        /** Performs server request to retrieve data records **/
-        load: function(url) {
-            this.$emit("load", url);
         }
     }
 };

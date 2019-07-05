@@ -101,6 +101,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
 
     webapp.add_client_route('/admin/data_tables', 'admin')
     webapp.add_client_route('/admin/data_types', 'admin')
+    webapp.add_client_route('/admin/jobs', 'admin')
     webapp.add_client_route('/admin/data_manager{path_info:.*}', 'admin')
     webapp.add_client_route('/admin/error_stack', 'admin')
     webapp.add_client_route('/admin/users', 'admin')
@@ -111,6 +112,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/admin/groups', 'admin')
     webapp.add_client_route('/admin/repositories', 'admin')
     webapp.add_client_route('/admin/tool_versions', 'admin')
+    webapp.add_client_route('/admin/toolshed', 'admin')
     webapp.add_client_route('/admin/quotas', 'admin')
     webapp.add_client_route('/admin/form/{form_id}', 'admin')
     webapp.add_client_route('/admin/api_keys', 'admin')
@@ -889,6 +891,11 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('resume', '/api/jobs/{id}/resume', controller='jobs', action='resume', conditions=dict(method=['PUT']))
     webapp.mapper.connect('job_error', '/api/jobs/{id}/error', controller='jobs', action='error', conditions=dict(method=['POST']))
     webapp.mapper.connect('common_problems', '/api/jobs/{id}/common_problems', controller='jobs', action='common_problems', conditions=dict(method=['GET']))
+    # Job metrics and parameters by job id or dataset id (for slightly different accessibility checking)
+    webapp.mapper.connect('metrics', '/api/jobs/{job_id}/metrics', controller='jobs', action='metrics', conditions=dict(method=['GET']))
+    webapp.mapper.connect('dataset_metrics', '/api/datasets/{dataset_id}/metrics', controller='jobs', action='metrics', conditions=dict(method=['GET']))
+    webapp.mapper.connect('parameters_display', '/api/jobs/{job_id}/parameters_display', controller='jobs', action='parameters_display', conditions=dict(method=['GET']))
+    webapp.mapper.connect('dataset_parameters_display', '/api/datasets/{dataset_id}/parameters_display', controller='jobs', action='parameters_display', conditions=dict(method=['GET']))
 
     # Job files controllers. Only for consumption by remote job runners.
     webapp.mapper.resource('file',
@@ -953,6 +960,12 @@ def populate_api_routes(webapp, app):
                           controller='toolshed',
                           action='search',
                           conditions=dict(method=["GET", "POST"]))
+
+    webapp.mapper.connect('tool_shed_request',
+                          '/api/tool_shed/request',
+                          controller='toolshed',
+                          action='request',
+                          conditions=dict(method=["GET"]))
 
     webapp.mapper.connect('tool_shed_status',
                           '/api/tool_shed/status',
@@ -1153,7 +1166,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                                           args=(conf,),
                                           kwargs=dict(templating_formatters=build_template_error_formatters()))
         except MiddlewareWrapUnsupported as exc:
-            log.warning(str(exc))
+            log.warning(util.unicodify(exc))
             import galaxy.web.framework.middleware.error
             app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
     else:

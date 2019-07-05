@@ -17,6 +17,7 @@ from galaxy.exceptions import (
     MalformedId,
     RequestParameterInvalidException
 )
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class FolderManager(object):
         except NoResultFound:
             raise RequestParameterInvalidException('No folder found with the id provided.')
         except Exception as e:
-            raise InternalServerError('Error loading from the database.' + str(e))
+            raise InternalServerError('Error loading from the database.' + unicodify(e))
         folder = self.secure(trans, folder, check_manageable, check_accessible)
         return folder
 

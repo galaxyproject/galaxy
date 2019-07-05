@@ -1,4 +1,4 @@
-"""Integration tests for the CLI shell plugins and runners."""
+"""Integration tests for the Kubernetes runner."""
 # Tested on docker for mac 18.06.1-ce-mac73 using the default kubernetes setup
 import collections
 import json
@@ -109,9 +109,9 @@ def job_config(jobs_directory):
 """)
     job_conf_str = job_conf_template.substitute(jobs_directory=jobs_directory,
                                                 tool_directory=TOOL_DIR,
-                                                k8s_config_path=os.environ.get('GALAXY_TEST_KUBE_CONFIG_PATH', '~/.kube/config'),
+                                                k8s_config_path=integration_util.k8s_config_path(),
                                                 )
-    with tempfile.NamedTemporaryFile(suffix="_kubernetes_integration_job_conf", mode="w", delete=False) as job_conf:
+    with tempfile.NamedTemporaryFile(suffix="_kubernetes_integration_job_conf.xml", mode="w", delete=False) as job_conf:
         job_conf.write(job_conf_str)
     return Config(job_conf.name)
 
@@ -226,8 +226,9 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         details = self.dataset_populator.get_job_details(result['jobs'][0]['id'], full=True).json()
 
         assert details['state'] == 'error', details
-        assert details['stdout'] == 'The bool is not true\n', details
-        assert details['stderr'] == 'Fatal error: Exit code 127 (Failing exit code.)\nThe bool is very not true\n'
+        assert details['stdout'].strip() == 'The bool is not true', details
+        assert details['stderr'].strip() == 'The bool is very not true', details
+        assert details['exit_code'] == 127, details
 
     @skip_without_tool('Count1')
     def test_python_dep(self):

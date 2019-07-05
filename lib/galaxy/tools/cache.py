@@ -5,8 +5,10 @@ from threading import (
     Lock,
 )
 
+from sqlalchemy import inspect
 from sqlalchemy.orm.exc import DetachedInstanceError
 
+from galaxy.util import unicodify
 from galaxy.util.hash_util import md5_hash_file
 
 log = logging.getLogger(__name__)
@@ -55,7 +57,7 @@ class ToolCache(object):
                     if tool_id in self._new_tool_ids:
                         self._new_tool_ids.remove(tool_id)
         except Exception as e:
-            log.debug("Exception while checking tools to remove from cache: %s" % e)
+            log.debug("Exception while checking tools to remove from cache: %s", unicodify(e))
             # If by chance the file is being removed while calculating the hash or modtime
             # we don't want the thread to die.
             pass
@@ -147,7 +149,8 @@ class ToolShedRepositoryCache(object):
         except AttributeError:
             self.rebuild()
             repositories = self.cache.repositories
-        if repositories and not repositories[0]._sa_instance_state._attached:
+        tool_shed_repositories = [repo for repo in repositories if isinstance(repo, self.app.install_model.ToolShedRepository)]
+        if tool_shed_repositories and inspect(tool_shed_repositories[0]).detached:
             self.rebuild()
             repositories = self.cache.repositories
         return repositories

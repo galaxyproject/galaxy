@@ -54,6 +54,10 @@ class Workflow {
             return false;
         }
     }
+    updateDatatype(node, outputName, newDatatype) {
+        node.changeOutputDatatype(outputName, newDatatype);
+        return true;
+    }
     create_node(type, title_text, content_id) {
         var node = this.app.prebuildNode(type, title_text, content_id);
         this.add_node(node);

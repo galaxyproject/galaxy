@@ -15,7 +15,11 @@ from six.moves import shlex_quote
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
 from galaxy.datatypes.sniff import build_sniff_from_prefix, iter_headers
-from galaxy.util import nice_size, string_as_bool
+from galaxy.util import (
+    nice_size,
+    string_as_bool,
+    unicodify,
+)
 
 log = logging.getLogger(__name__)
 
@@ -364,6 +368,53 @@ class ImgtJson(Json):
 
 
 @build_sniff_from_prefix
+class GeoJson(Json):
+    """
+        GeoJSON is a geospatial data interchange format based on JavaScript Object Notation (JSON).
+        https://tools.ietf.org/html/rfc7946
+    """
+    file_ext = "geojson"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        super(GeoJson, self).set_peek(dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb = "GeoJSON"
+
+    def sniff_prefix(self, file_prefix):
+        """
+        Determines whether the file is in json format with imgt elements
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.json' )
+        >>> GeoJson().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'gis.geojson' )
+        >>> GeoJson().sniff( fname )
+        True
+        """
+        is_geojson = False
+        if self._looks_like_json(file_prefix):
+            is_geojson = self._looks_like_geojson(file_prefix)
+        return is_geojson
+
+    def _looks_like_geojson(self, file_prefix, load_size=5000):
+        """
+        One of "Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", and "GeometryCollection" needs to be present.
+        All of "type", "geometry", and "coordinates" needs to be present.
+        """
+        is_geojson = False
+        try:
+            with open(file_prefix.filename, "r") as fh:
+                segment_str = fh.read(load_size)
+                if any(x in segment_str for x in ["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", "GeometryCollection"]):
+                    if all(x in segment_str for x in ["type", "geometry", "coordinates"]):
+                        return True
+        except Exception:
+            pass
+        return is_geojson
+
+
+@build_sniff_from_prefix
 class Obo(Text):
     """
         OBO file format description
@@ -637,12 +688,12 @@ class SnpSiftDbNSFP(Text):
                                 headers = lines[0].split('\t')
                                 dataset.metadata.annotation = headers[4:]
                         except Exception as e:
-                            log.warning("set_meta fname: %s  %s" % (fname, str(e)))
+                            log.warning("set_meta fname: %s  %s", fname, unicodify(e))
                     if fname.endswith('.tbi'):
                         dataset.metadata.index = fname
             self.regenerate_primary_file(dataset)
         except Exception as e:
-            log.warning("set_meta fname: %s  %s" % (dataset.file_name if dataset and dataset.file_name else 'Unkwown', str(e)))
+            log.warning("set_meta fname: %s  %s", dataset.file_name if dataset and dataset.file_name else 'Unkwown', unicodify(e))
 
         def set_peek(self, dataset, is_multi_byte=False):
             if not dataset.dataset.purged:

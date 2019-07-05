@@ -9,7 +9,7 @@ import { serverPath } from "utils/serverPath";
 export function setGalaxyInstance(factory) {
     console.warn("setGalaxyInstance", serverPath());
 
-    let storage = getStorage();
+    const storage = getStorage();
     let newInstance = factory(GalaxyApp);
     if (!(newInstance instanceof GalaxyApp)) {
         newInstance = new GalaxyApp(newInstance);
@@ -24,12 +24,12 @@ export function setGalaxyInstance(factory) {
 }
 
 export function getGalaxyInstance() {
-    let storage = getStorage();
+    const storage = getStorage();
     return storage._galaxyInstance;
 }
 
 export function galaxyIsInitialized() {
-    let instance = getGalaxyInstance();
+    const instance = getGalaxyInstance();
     return instance !== null;
 }
 

@@ -7,7 +7,8 @@ import tempfile
 from six import string_types
 
 from galaxy import model
-from galaxy.jobs.datasets import dataset_path_rewrites
+from galaxy.job_execution.datasets import dataset_path_rewrites
+from galaxy.model.none_like import NoneDataset
 from galaxy.tools import global_tool_errors
 from galaxy.tools.parameters import (
     visit_input_values,
@@ -38,7 +39,6 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.none_like import NoneDataset
 from galaxy.util.object_wrapper import wrap_with_safe_string
 from galaxy.util.template import fill_template
 from galaxy.work.context import WorkRequestContext
@@ -469,7 +469,7 @@ class ToolEvaluator(object):
             return
         try:
             # Substituting parameters into the command
-            command_line = fill_template(command, context=param_dict)
+            command_line = fill_template(command, context=param_dict, python_template_version=self.tool.python_template_version)
             cleaned_command_line = []
             # Remove leading and trailing whitespace from each line for readability.
             for line in command_line.split('\n'):
@@ -575,7 +575,7 @@ class ToolEvaluator(object):
 
     def __write_workdir_file(self, config_filename, content, context, is_template=True):
         if is_template:
-            value = fill_template(content, context=context)
+            value = fill_template(content, context=context, python_template_version=self.tool.python_template_version)
         else:
             value = unicodify(content)
         with io.open(config_filename, "w", encoding='utf-8') as f:

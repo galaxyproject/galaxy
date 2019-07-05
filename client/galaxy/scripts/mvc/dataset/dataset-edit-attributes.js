@@ -12,7 +12,7 @@ import Form from "mvc/form/form-view";
 
 var View = Backbone.View.extend({
     initialize: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.setElement("<div/>");
         this.model = new Backbone.Model({
             dataset_id: Galaxy.params.dataset_id
@@ -214,7 +214,7 @@ var View = Backbone.View.extend({
 
     /** reload Galaxy's history after updating dataset's attributes */
     _reloadHistory: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (Galaxy) {
             Galaxy.currHistoryPanel.loadCurrentHistory();
         }

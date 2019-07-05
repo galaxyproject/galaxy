@@ -10,6 +10,7 @@ import time
 
 from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
+from galaxy.util import unicodify
 from galaxy.util.logging import get_logger
 
 log = get_logger(__name__)
@@ -28,13 +29,9 @@ SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
 SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.',
                                                 ': Exceeded step memory limit at some point.']
 SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024  # 16MB
-SLURM_UNABLE_TO_ADD_TASK_TO_MEMORY_CG_MSG_RE = re.compile(r"""slurmstepd: error: task/cgroup: unable to add task\[pid=\d+\] to memory cg '\(null\)'$""")
-SLURM_UNABLE_TO_CREATE_CGROUP_MSG_RE = re.compile(r"""slurmstepd: error: xcgroup_instantiate: unable to create cgroup '[^']+' : No space left on device$""")
-SLURM_UNABLE_TO_INSTANCIATE_CGROUP_MSG_RE = re.compile(r"""slurmstepd: error: jobacct_gather/cgroup: unable to instanciate (job|user) \d+ memory cgroup$""")
+SLURM_CGROUP_RE = re.compile(r"""slurmstepd: .*cgroup.*$""")
 SLURM_TOP_WARNING_RES = (
-    SLURM_UNABLE_TO_ADD_TASK_TO_MEMORY_CG_MSG_RE,
-    SLURM_UNABLE_TO_CREATE_CGROUP_MSG_RE,
-    SLURM_UNABLE_TO_INSTANCIATE_CGROUP_MSG_RE
+    SLURM_CGROUP_RE,
 )
 
 # These messages are returned to the user
@@ -55,7 +52,7 @@ class SlurmJobRunner(DRMAAJobRunner):
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             stdout, stderr = p.communicate()
             if p.returncode != 0:
-                stderr = stderr.strip()
+                stderr = unicodify(stderr).strip()
                 if stderr == 'SLURM accounting storage is disabled':
                     log.warning('SLURM accounting storage is not properly configured, unable to run sacct')
                     return
@@ -63,7 +60,7 @@ class SlurmJobRunner(DRMAAJobRunner):
             # First line is for 'job_id'
             # Second line is for 'job_id.batch' (only available after the batch job is complete)
             # Following lines are for the steps 'job_id.0', 'job_id.1', ... (but Galaxy does not use steps)
-            first_line = stdout.splitlines()[0]
+            first_line = unicodify(stdout).splitlines()[0]
             # Strip whitespaces and the final '+' (if present), only return the first word
             return first_line.strip().rstrip('+').split()[0]
 
@@ -81,6 +78,7 @@ class SlurmJobRunner(DRMAAJobRunner):
             stdout, stderr = p.communicate()
             if p.returncode != 0:
                 # Will need to be more clever here if this message is not consistent
+                stderr = unicodify(stderr)
                 if stderr == 'slurm_load_jobs error: Invalid job id specified\n':
                     # The job may be old, try to get its state with sacct
                     job_state = _get_slurm_state_with_sacct(job_id, cluster)
@@ -88,7 +86,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                         return job_state
                     return 'NOT_FOUND'
                 raise Exception('`%s` returned %s, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
-            stdout = stdout.strip()
+            stdout = unicodify(stdout).strip()
             # stdout is a single line in format "key1=value1 key2=value2 ..."
             job_info_keys = []
             job_info_values = []

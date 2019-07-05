@@ -35,9 +35,14 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
     def __init__(self, app):
         super(DatasetsController, self).__init__(app)
+        self.history_manager = managers.histories.HistoryManager(app)
         self.hda_manager = managers.hdas.HDAManager(app)
-        self.hda_serializer = managers.hdas.HDASerializer(self.app)
+        self.hda_serializer = managers.hdas.HDASerializer(app)
+        self.hdca_serializer = managers.hdcas.HDCASerializer(app)
+        self.serializer_by_type = {'dataset': self.hda_serializer, 'dataset_collection': self.hdca_serializer}
         self.ldda_manager = managers.lddas.LDDAManager(app)
+        self.history_contents_manager = managers.history_contents.HistoryContentsManager(app)
+        self.history_contents_filters = managers.history_contents.HistoryContentsFilters(app)
 
     def _parse_serialization_params(self, kwd, default_view):
         view = kwd.get('view', None)
@@ -47,13 +52,72 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         return dict(view=view, keys=keys, default_view=default_view)
 
     @web.expose_api
-    def index(self, trans, **kwd):
+    def index(self,
+              trans,
+              limit=500,
+              offset=0,
+              history_id=None,
+              **kwd):
         """
-        GET /api/datasets
-        Lists datasets.
+        GET /api/datasets/
+
+        Search datasets or collections using a query system
+
+        :rtype:     list
+        :returns:   dictionaries containing summary of dataset or dataset_collection information
+
+        The list returned can be filtered by using two optional parameters:
+            q:      string, generally a property name to filter by followed
+                    by an (often optional) hyphen and operator string.
+            qv:     string, the value to filter by
+
+        ..example:
+            To filter the list to only those created after 2015-01-29,
+            the query string would look like:
+                '?q=create_time-gt&qv=2015-01-29'
+
+            Multiple filters can be sent in using multiple q/qv pairs:
+                '?q=create_time-gt&qv=2015-01-29&q=name-contains&qv=experiment-1'
+
+        The list returned can be paginated using two optional parameters:
+            limit:  integer, defaults to no value and no limit (return all)
+                    how many items to return
+            offset: integer, defaults to 0 and starts at the beginning
+                    skip the first ( offset - 1 ) items and begin returning
+                    at the Nth item
+
+        ..example:
+            limit and offset can be combined. Skip the first two and return five:
+                '?limit=5&offset=3'
+
+        The list returned can be ordered using the optional parameter:
+            order:  string containing one of the valid ordering attributes followed
+                    (optionally) by '-asc' or '-dsc' for ascending and descending
+                    order respectively. Orders can be stacked as a comma-
+                    separated list of values.
+
+        ..example:
+            To sort by name descending then create time descending:
+                '?order=name-dsc,create_time'
+
+        The ordering attributes and their default orders are:
+            hid defaults to 'hid-asc'
+            create_time defaults to 'create_time-dsc'
+            update_time defaults to 'update_time-dsc'
+            name    defaults to 'name-asc'
+
+        'order' defaults to 'create_time'
         """
-        trans.response.status = 501
-        return 'not implemented'
+        filter_params = self.parse_filter_params(kwd)
+        filters = self.history_contents_filters.parse_filters(filter_params)
+        order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=kwd.get('order', 'create_time-dsc'))
+        container = None
+        if history_id:
+            container = self.history_manager.get_accessible(self.decode_id(history_id), trans.user)
+        contents = self.history_contents_manager.contents(
+            container=container, filters=filters, limit=limit, offset=offset, order_by=order_by, user_id=trans.user.id,
+        )
+        return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view='summary') for content in contents]
 
     @web.legacy_expose_api_anonymous
     def show(self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd):
@@ -62,10 +126,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         Displays information about and/or content of a dataset.
         """
         # Get dataset.
-        try:
-            dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
-        except Exception as e:
-            return str(e)
+        dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
 
         # Use data type to return particular type of data.
         try:
@@ -92,9 +153,8 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
                 else:
                     rval = dataset.to_dict()
 
-        except Exception as e:
-            rval = "Error in dataset API at listing contents: " + str(e)
-            log.error(rval + ": %s" % str(e), exc_info=True)
+        except Exception:
+            log.exception('Error in dataset API at listing contents')
             trans.response.status = 500
         return rval
 
@@ -363,7 +423,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             log.exception("Error getting display data for dataset (%s) from history (%s)",
                           history_content_id, history_id)
             trans.response.status = 500
-            rval = "Could not get display data for dataset: %s" % e
+            rval = "Could not get display data for dataset: %s" % util.unicodify(e)
         return rval
 
     @web.legacy_expose_api_raw_anonymous
@@ -384,7 +444,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             log.exception("Error getting metadata_file (%s) for dataset (%s) from history (%s)",
                           metadata_file, history_content_id, history_id)
             trans.response.status = 500
-            rval = "Could not get metadata for dataset: %s" % e
+            rval = "Could not get metadata for dataset: %s" % util.unicodify(e)
         return rval
 
     @web.expose_api_anonymous

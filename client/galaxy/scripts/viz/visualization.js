@@ -73,7 +73,7 @@ var select_datasets = (filters, success_fn) => {
     });
 
     // modal
-    let Galaxy = getGalaxyInstance();
+    const Galaxy = getGalaxyInstance();
     Galaxy.modal.show({
         title: _l("Select datasets for new tracks"),
         body: tabs.$el,

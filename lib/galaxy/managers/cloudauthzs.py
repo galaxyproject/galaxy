@@ -44,7 +44,8 @@ class CloudAuthzsSerializer(base.ModelSerializer):
             'authn_id',
             'last_update',
             'last_activity',
-            'create_time'
+            'create_time',
+            'description'
         ])
 
     def add_serializers(self):
@@ -63,7 +64,8 @@ class CloudAuthzsSerializer(base.ModelSerializer):
             'authn_id'     : lambda i, k, **c: self.app.security.encode_id(i.authn_id),
             'last_update'  : lambda i, k, **c: str(i.last_update),
             'last_activity': lambda i, k, **c: str(i.last_activity),
-            'create_time'  : lambda i, k, **c: str(i.create_time)
+            'create_time'  : lambda i, k, **c: str(i.create_time),
+            'description'  : lambda i, k, **c: str(i.description)
         })
 
 
@@ -80,7 +82,7 @@ class CloudAuthzsDeserializer(base.ModelDeserializer):
             'authn_id': self.deserialize_and_validate_authn_id,
             'provider': self.default_deserializer,
             'config': self.default_deserializer,
-            'deleted': self.default_deserializer
+            'description': self.default_deserializer
         })
 
     def deserialize_and_validate_authn_id(self, item, key, val, **context):

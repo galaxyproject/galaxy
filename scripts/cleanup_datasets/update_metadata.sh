@@ -6,4 +6,4 @@
 . ./scripts/get_python.sh
 . ./setup_paths.sh
 
-$GALAXY_PYTHON ./scripts/cleanup_datasets/update_metadata.py ./config/galaxy.ini $@
+"$GALAXY_PYTHON" ./scripts/cleanup_datasets/update_metadata.py ./config/galaxy.ini "$@"
