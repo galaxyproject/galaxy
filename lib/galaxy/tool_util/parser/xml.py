@@ -1082,7 +1082,7 @@ class XmlInputSource(InputSource):
         return static_options
 
     def parse_optional(self, default=None):
-        """ Return boolean indicating wheter parameter is optional. """
+        """ Return boolean indicating whether parameter is optional. """
         elem = self.input_elem
         if self.get('type') == "data_column":
             # Allow specifing force_select for backward compat., but probably

@@ -4,7 +4,7 @@ Modules used in building workflows
 import json
 import logging
 import re
-from collections import OrderedDict
+from collections import defaultdict, OrderedDict
 from xml.etree.ElementTree import (
     Element,
     XML
@@ -51,7 +51,6 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.parameters.grouping import (
     Conditional,
     ConditionalWhen,
-    Repeat,
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
 from galaxy.tools.parameters.wrapped import make_dict_copy
@@ -780,16 +779,16 @@ class InputParameterModule(WorkflowModule):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
         optional = parameter_def["optional"]
-        input_parameter_type = SelectToolParameter(None, XML(
-            '''
-            <param name="parameter_type" label="Parameter type" type="select" value="%s">
-                <option value="text">Text</option>
-                <option value="integer">Integer</option>
-                <option value="float">Float</option>
-                <option value="boolean">Boolean (True or False)</option>
-                <option value="color">Color</option>
-            </param>
-            ''' % parameter_type))
+        select_source = dict(name="parameter_type", label="Parameter type", type="select", value=parameter_type)
+        select_source["options"] = [
+            {"value": "text", "label": "Text"},
+            {"value": "integer", "label": "Integer"},
+            {"value": "float", "label": "Float"},
+            {"value": "boolean", "label": "Boolean (True or False)"},
+            {"value": "color", "label": "Color"},
+        ]
+        input_parameter_type = SelectToolParameter(None, select_source)
+        # encode following loop in description above instead
         for i, option in enumerate(input_parameter_type.static_options):
             option = list(option)
             if option[1] == parameter_type:
@@ -878,35 +877,122 @@ class InputParameterModule(WorkflowModule):
             optional_cond.cases = optional_cases
 
             if param_type == "text":
+                restrict_how_source = dict(name="how", label="Restrict Text Values?", type="select")
+                if parameter_def.get("restrictions") is not None:
+                    restrict_how_value = "staticRestrictions"
+                elif parameter_def.get("restrictOnConnections") is True:
+                    restrict_how_value = "onConnections"
+                elif parameter_def.get("suggestions") is not None:
+                    restrict_how_value = "staticSuggestions"
+                else:
+                    restrict_how_value = "none"
+                log.info("parameter_def [%s], how [%s]" % (parameter_def, restrict_how_value))
+                restrict_how_source["options"] = [
+                    {"value": "none", "label": "Do not specify restrictions (default).", "selected": restrict_how_value == "none"},
+                    {"value": "onConnections", "label": "Attempt restriction based on connections.", "selected": restrict_how_value == "onConnections"},
+                    {"value": "staticRestrictions", "label": "Provide list of restricted values.", "selected": restrict_how_value == "staticRestrictions"},
+                    {"value": "staticSuggestions", "label": "Provide list of suggested values.", "selected": restrict_how_value == "staticSuggestions"},
+                ]
+                restrictions_cond = Conditional()
+                restrictions_how = SelectToolParameter(None, restrict_how_source)
+                restrictions_cond.name = "restrictions"
+                restrictions_cond.test_param = restrictions_how
+
+                when_restrict_none = ConditionalWhen()
+                when_restrict_none.value = "none"
+                when_restrict_none.inputs = OrderedDict()
+
+                when_restrict_connections = ConditionalWhen()
+                when_restrict_connections.value = "onConnections"
+                when_restrict_connections.inputs = OrderedDict()
+
+                when_restrict_static_restrictions = ConditionalWhen()
+                when_restrict_static_restrictions.value = "staticRestrictions"
+                when_restrict_static_restrictions.inputs = OrderedDict()
+
+                when_restrict_static_suggestions = ConditionalWhen()
+                when_restrict_static_suggestions.value = "staticSuggestions"
+                when_restrict_static_suggestions.inputs = OrderedDict()
+
                 # Repeats don't work - so use common separated list for now.
-                restrictions_list = parameter_def.get("restrictions")
+
+                # Use both restrictions and suggestions as each other's default so value preserved.
+                restrictions_list = parameter_def.get("restrictions") or parameter_def.get("suggestions")
                 if restrictions_list is None:
                     restrictions_list = []
                 restriction_values = ",".join(restrictions_list)
-                restrictions = TextToolParameter(None, XML(
-                    '''
-                    <param name="restrictions" label="Restriction Value" value="%s" help="Comma-seperated list of potential values">
-                    </param>
-                        ''' % restriction_values))
+                restrictions_source = dict(name="restrictions", label="Restriction Values", value=restriction_values, help="Comman-separated list of potential all values")
+                restrictions = TextToolParameter(None, restrictions_source)
 
-                when_this_type.inputs["restrictions"] = restrictions
+                suggestions_source = dict(name="suggestions", label="Suggestion Values", value=restriction_values, help="Comman-separated list of some potential values")
+                suggestions = TextToolParameter(None, suggestions_source)
+
+                when_restrict_static_restrictions.inputs["restrictions"] = restrictions
+                when_restrict_static_suggestions.inputs["suggestions"] = suggestions
+
+                restrictions_cond_cases = [when_restrict_none, when_restrict_connections, when_restrict_static_restrictions, when_restrict_static_suggestions]
+                restrictions_cond.cases = restrictions_cond_cases
+                when_this_type.inputs["restrictions"] = restrictions_cond
 
             cases.append(when_this_type)
 
         parameter_type_cond.cases = cases
         return OrderedDict([("parameter_definition", parameter_type_cond)])
 
-    def get_runtime_inputs(self, **kwds):
+    def get_runtime_inputs(self, connections=None, **kwds):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
         optional = parameter_def["optional"]
         if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
-        restrictions = parameter_type == "text" and parameter_def.get("restrictions")
-        if restrictions:
-            parameter_type = "select"
-        parameter_class = parameter_types[parameter_type]
+
+        # Optional parameters for tool input source definition.
         parameter_kwds = {}
+
+        is_text = parameter_type == "text"
+        restricted_inputs = False
+
+        # Really is just an attempt - tool module may not be available (small problem), get_options may really depend on other
+        # values we are not setting, so this isn't great. Be sure to just fallback to text in this case.
+        attemptRestrictOnConnections = is_text and parameter_def.get("restrictOnConnections") and connections
+        try:
+            if attemptRestrictOnConnections:
+                static_options = []
+                # Retrieve possible runtime options for 'select' type inputs
+                for connection in connections:
+                    # Well this isn't a great assumption...
+                    module = connection.input_step.module
+                    tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
+
+                    def callback(input, prefixed_name, context, **kwargs):
+                        if prefixed_name == connection.input_name:
+                            static_options.append(input.get_options(self.trans, {}))
+                    visit_input_values(tool_inputs, module.state.inputs, callback)
+
+                if static_options:
+                    # Intersection based on values.
+                    intxn_vals = set.intersection(*({option[1] for option in options} for options in static_options))
+                    intxn_opts = {option for options in static_options for option in options if option[1] in intxn_vals}
+                    d = defaultdict(set)  # Collapse labels with same values
+                    for label, value, selected in intxn_opts:
+                        d[value].add(label)
+                    options = [{"label": ', '.join(label), "value": value, "selected": False} for value, label in d.items()]
+                    if options:
+                        parameter_kwds["options"] = options
+                        restricted_inputs = True
+        except Exception:
+            log.debug("Failed to generate options for text parameter, falling back to free text.", exc_info=True)
+
+        if is_text and not restricted_inputs and parameter_def.get("restrictions"):
+            restriction_values = parameter_def.get("restrictions")
+            parameter_kwds["options"] = [{"value": r} for r in restriction_values]
+            restricted_inputs = True
+
+        client_parameter_type = parameter_type
+        if restricted_inputs:
+            client_parameter_type = "select"
+
+        parameter_class = parameter_types[client_parameter_type]
 
         if optional:
             default_value = parameter_def.get("default", self.default_default_value)
@@ -915,10 +1001,11 @@ class InputParameterModule(WorkflowModule):
         if "value" not in parameter_kwds and parameter_type in ["integer", "float"]:
             parameter_kwds["value"] = str(0)
 
-        if restrictions:
-            parameter_kwds["options"] = [{"value": r} for r in restrictions]
+        if is_text and parameter_def.get("suggestions") is not None:
+            suggestion_values = parameter_def.get("suggestions")
+            parameter_kwds["options"] = [{"value": r} for r in suggestion_values]
 
-        input_source = dict(name="input", label=self.label, type=parameter_type, optional=optional, **parameter_kwds)
+        input_source = dict(name="input", label=self.label, type=client_parameter_type, optional=optional, **parameter_kwds)
         input = parameter_class(None, input_source)
         return dict(input=input)
 
@@ -961,6 +1048,16 @@ class InputParameterModule(WorkflowModule):
             default_value = state["default"]
             state["optional"] = True
         restrictions = state.get("restrictions")
+        restrictOnConnections = state.get("restrictOnConnections")
+        suggestions = state.get("suggestions")
+        restrictions_how = "none"
+        if restrictions is not None:
+            restrictions_how = "staticRestrictions"
+        if suggestions is not None:
+            restrictions_how = "staticSuggestions"
+        elif restrictOnConnections:
+            restrictions_how = "onConnections"
+
         state = {
             "parameter_definition": {
                 "parameter_type": state["parameter_type"],
@@ -969,8 +1066,12 @@ class InputParameterModule(WorkflowModule):
                 }
             }
         }
-        if restrictions:
-            state["parameter_definition"]["restrictions"] = ",".join(restrictions)
+        state["parameter_definition"]["restrictions"] = {}
+        state["parameter_definition"]["restrictions"]["how"] = restrictions_how
+        if restrictions_how == "staticRestrictions":
+            state["parameter_definition"]["restrictions"]["restrictions"] = ",".join(restrictions)
+        if restrictions_how == "staticSuggestions":
+            state["parameter_definition"]["restrictions"]["suggestions"] = ",".join(suggestions)
         if default_set:
             state["parameter_definition"]["optional"]["specify_default"] = {}
             state["parameter_definition"]["optional"]["specify_default"]["specify_default"] = True
@@ -998,9 +1099,23 @@ class InputParameterModule(WorkflowModule):
                     rval["default"] = optional_state["specify_default"]["default"]
             else:
                 optional = False
-            restriction_values = parameters_def.get("restrictions")
-            if restriction_values:
-                rval.update({"restrictions": [v.strip() for v in restriction_values.split(",")]})
+            restrictions_cond_values = parameters_def.get("restrictions")
+            if restrictions_cond_values:
+                # how better be in here.
+                how = restrictions_cond_values["how"]
+                if how == "none":
+                    pass
+                elif how == "onConnections":
+                    rval["restrictOnConnections"] = True
+                elif how == "staticRestrictions":
+                    restriction_values = restrictions_cond_values["restrictions"]
+                    rval.update({"restrictions": [v.strip() for v in restriction_values.split(",")]})
+                elif how == "staticSuggestions":
+                    suggestion_values = restrictions_cond_values["suggestions"]
+                    rval.update({"suggestions": [v.strip() for v in suggestion_values.split(",")]})
+                else:
+                    log.warn("Unknown restriction conditional type encountered for workflow parameter.")
+
             rval.update({"parameter_type": parameters_def["parameter_type"], "optional": optional})
         else:
             rval.update({"parameter_type": self.default_parameter_type, "optional": self.default_optional})
