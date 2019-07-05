@@ -699,7 +699,7 @@ class InputParameterModule(WorkflowModule):
         element = Element("param", name="input", label=self.label, type=parameter_type, optional=str(optional), **parameter_kwds)
         input = parameter_class(None, element)
         if parameter_type == 'select' and connections:
-            input.options = connections[0].input_step.module.tool.inputs.data['complement']
+            input.options = connections[0].input_step.module.tool.inputs.data[connections[0].input_name]
         return dict(input=input)
 
     def get_runtime_state(self):
