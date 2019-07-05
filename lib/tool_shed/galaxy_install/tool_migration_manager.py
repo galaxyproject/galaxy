@@ -3,7 +3,6 @@ Manage automatic installation of tools configured in the xxx.xml files in ~/scri
 All of the tools were at some point included in the Galaxy distribution, but are now hosted in the main Galaxy tool shed.
 """
 import errno
-import json
 import logging
 import os
 import shutil
@@ -72,7 +71,7 @@ class ToolMigrationManager(object):
         except (IOError, OSError) as exc:
             if exc.errno == errno.ENOENT:
                 with open(migrated_tools_config, 'w') as fh:
-                    fh.write( MIGRATED_TOOLS_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir))
+                    fh.write(MIGRATED_TOOLS_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir))
                 tree, error_message = xml_util.parse_xml(migrated_tools_config)
             else:
                 raise

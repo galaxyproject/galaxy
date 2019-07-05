@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 REPOSITORY_OWNER = 'devteam'
 TOOL_MIGRATION_SCRIPTS_DIR = os.path.abspath(os.path.join(
     os.path.dirname(__file__), os.pardir, 'galaxy_install', 'migrate', 'scripts'))
-TOOL_MIGRATION_VERSIONS_DIR = os.path.abspath( os.path.join(
+TOOL_MIGRATION_VERSIONS_DIR = os.path.abspath(os.path.join(
     os.path.dirname(__file__), os.pardir, 'galaxy_install', 'migrate', 'versions'))
 
 
@@ -30,7 +30,7 @@ def accumulate_tool_dependencies(tool_shed_accessible, tool_dependencies, all_to
 
 def check_for_missing_tools(app, tool_panel_configs, latest_tool_migration_script_number):
     # Get the 000x_tools.xml file associated with the current migrate_tools version number.
-    tools_xml_file_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ),
+    tools_xml_file_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                                        os.pardir, 'galaxy_install',
                                                        'migrate', 'scripts',
                                                        '%04d_tools.xml' % latest_tool_migration_script_number))

@@ -166,7 +166,7 @@ def _handle_galaxy_ini(args, config_dir, data_dir):
 
     galaxy_config_template = []
     with open(GALAXY_CONFIG_TEMPLATE_FILE) as fh:
-        for line in [ l.rstrip('\n') for l in fh.readlines() ]:
+        for line in [l.rstrip('\n') for l in fh.readlines()]:
             for k, v in GALAXY_CONFIG_SUBSTITUTIONS.items():
                 if line == k:
                     line = v

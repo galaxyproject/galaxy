@@ -57,7 +57,7 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
             if tool_shed_accessible:
                 # Automatically update the value of the migrate_tools.version database table column.
                 # FIXME: this doesn't seem right.
-                manage_tools = os.path.abspath(os.path.join(os.path.dirname( __file__ ), 'scripts', 'manage_tools.py'))
+                manage_tools = os.path.abspath(os.path.join(os.path.dirname(__file__), 'scripts', 'manage_tools.py'))
                 cmd = [executable, manage_tools, 'upgrade', 'tools']
                 if galaxy_config_file:
                     cmd[2:2] = ['-c', galaxy_config_file]

@@ -217,18 +217,18 @@ class BaseAppConfiguration(object):
 
     def _parse_config_file_options(self, defaults, listify_defaults, config_kwargs):
         for var, defaults in defaults.items():
-            if config_kwargs.get( var, None ) is not None:
-                path = config_kwargs.get( var )
-                setattr( self, var + '_set', True )
+            if config_kwargs.get(var, None) is not None:
+                path = config_kwargs.get(var)
+                setattr(self, var + '_set', True)
             else:
                 for default in defaults:
-                    if os.path.exists( resolve_path( default, self.root ) ):
+                    if os.path.exists(resolve_path(default, self.root)):
                         path = default
                         break
                 else:
                     path = defaults[-1]
-                setattr( self, var + '_set', False )
-            setattr( self, var, resolve_path( path, self.root ) )
+                setattr(self, var + '_set', False)
+            setattr(self, var, resolve_path(path, self.root))
 
         for var, defaults in listify_defaults.items():
             paths = []
@@ -326,7 +326,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.oidc = []
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed. It is created on demand.
-        self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml' ), self.mutable_config_dir)
+        self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'), self.mutable_config_dir)
         integrated_tool_panel_tracking_directory = kwargs.get('integrated_tool_panel_tracking_directory', None)
         if integrated_tool_panel_tracking_directory:
             self.integrated_tool_panel_tracking_directory = resolve_path(integrated_tool_panel_tracking_directory, self.root)
@@ -603,7 +603,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.tool_test_data_directories = kwargs.get("tool_test_data_directories", default_tool_test_data_directories)
         # Location for tool dependencies.
         use_tool_dependencies, tool_dependency_dir, use_cached_dependency_manager, tool_dependency_cache_dir, precache_dependencies = \
-            parse_dependency_options(kwargs, self.root, self.dependency_resolvers_config_file)
+            parse_dependency_options(kwargs, self.data_dir, self.dependency_resolvers_config_file)
         self.use_tool_dependencies = use_tool_dependencies
         self.tool_dependency_dir = tool_dependency_dir
         self.use_cached_dependency_manager = use_cached_dependency_manager
@@ -1064,7 +1064,7 @@ def parse_dependency_options(kwargs, root, dependency_resolvers_config_file):
         tool_dependency_dir = None
 
     if tool_dependency_dir is not None:
-        tool_dependency_dir = resolve_path(tool_dependency_dir, self.data_dir)
+        tool_dependency_dir = resolve_path(tool_dependency_dir, root)
         # Setting the following flag to true will ultimately cause tool dependencies
         # to be located in the shell environment and used by the job that is executing
         # the tool.

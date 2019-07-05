@@ -968,7 +968,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
 
 
 def default_url_path(path):
-    return os.path.abspath(os.path.join(os.path.dirname( __file__ ), path))
+    return os.path.abspath(os.path.join(os.path.dirname(__file__), path))
 
 
 def build_native_uwsgi_app(paste_factory, config_section):
