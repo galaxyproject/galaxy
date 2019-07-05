@@ -1,12 +1,12 @@
-<tool id="interactive_tool_cellxgene" tool_type="realtime" name="Interactive CellXgene Environment" version="0.1">
+<tool id="interactive_tool_cellxgene" tool_type="interactive" name="Interactive CellXgene Environment" version="0.1">
     <requirements>
         <container type="docker">quay.io/galaxy/cellxgene-galaxy-ie:ie2</container>
     </requirements>
-    <realtime>
+    <entry_points>
         <entry_point name="cellxgene_single_cell_visualisation">
             <port>80</port>
         </entry_point>
-    </realtime>
+    </entry_points>
     <command><![CDATA[
         #import re
         #set $fancy_name = '/tmp/galaxy_cellxgene_' + re.sub('[^\w\-_]', '_', $input.element_identifier) + '.h5ad'

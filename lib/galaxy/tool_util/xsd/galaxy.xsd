@@ -49,7 +49,7 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="xrefs" type="xrefs" minOccurs="0" />
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
-        <xs:element name="realtime" type="RealTime" minOccurs="0" maxOccurs="1" />
+        <xs:element name="entry_points" type="EntryPoints" minOccurs="0" maxOccurs="1" />
         <xs:element name="description" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="tool-descriptions">
             <xs:documentation xml:lang="en"><![CDATA[The value is displayed in
@@ -226,12 +226,12 @@ For more information, see https://planemo.readthedocs.io/en/latest/writing_advan
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="RealTime">
+  <xs:complexType name="EntryPoints">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
 This is a container tag set for the ``entry_point`` tag that contains ``port`` and ``url`` tags
-described in greater detail below. ``entry_point``s describe RealTimeTool entry points
+described in greater detail below. ``entry_point``s describe InteractiveTool entry points
 to a tool.
 
 ]]></xs:documentation>
@@ -246,16 +246,16 @@ to a tool.
       <xs:documentation xml:lang="en"><![CDATA[
 
 This tag set is contained within the ``<entry_point>`` tag set. Access to entry point
-ports and urls are included in this tag set. These are used by RealTimeTools
+ports and urls are included in this tag set. These are used by InteractiveTools
 to provide access to graphical tools in real-time.
 
 ```xml
-<realtime>
+<entry_points>
   <entry_point name="Example name">
     <port>80</port>
     <url>landing/${template_enabled}/index.html</url>
   </entry_point>
-</realtime>
+</entry_points>
 ```
 
 ]]></xs:documentation>
@@ -5417,7 +5417,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="data_source"/>
       <xs:enumeration value="manage_data"/>
-      <xs:enumeration value="realtime"/>
+      <xs:enumeration value="entry_points"/>
       <xs:enumeration value="expression"/>
     </xs:restriction>
   </xs:simpleType>

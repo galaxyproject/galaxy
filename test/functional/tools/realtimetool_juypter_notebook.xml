@@ -1,13 +1,13 @@
-<tool id="interactive_tool_jupyter_notebook" tool_type="realtime" name="Interactive Jupyter Notebook" version="0.1">
+<tool id="interactive_tool_jupyter_notebook" tool_type="interactive" name="Interactive Jupyter Notebook" version="0.1">
     <requirements>
         <container type="docker">bgruening/docker-jupyter-notebook:ie2</container>
     </requirements>
-    <realtime>
+    <entry_points>
         <entry_point name="Jupyter Interactive Tool">
             <port>8888</port>
             <url>ipython/tree</url>
         </entry_point>
-    </realtime>
+    </entry_points>
     <command detect_errors="aggressive"><![CDATA[
         #import re
         export GALAXY_WORKING_DIR=`pwd` &&

@@ -535,7 +535,7 @@ class Tool(Dictifiable):
         # seem to require Galaxy's Python.
         # FIXME: the (instantiated) tool class should emit this behavior, and not
         #        use inspection by string check
-        if self.tool_type not in ["default", "manage_data", "realtime"]:
+        if self.tool_type not in ["default", "manage_data", "interactive"]:
             return True
 
         if self.tool_type == "manage_data" and self.profile < 18.09:
@@ -2431,7 +2431,7 @@ class ImportHistoryTool(Tool):
 
 
 class RealTimeTool(Tool):
-    tool_type = 'realtime'
+    tool_type = 'interactive'
     produces_entry_points = True
 
     def __remove_realtime_by_job(self, job):
@@ -2440,7 +2440,7 @@ class RealTimeTool(Tool):
             log.debug('__remove_realtime_by_job: %s', eps)
             self.app.realtime_manager.remove_entry_points(eps)
         else:
-            log.warning("Could not determine job to stop RealTimeTool: %s", job)
+            log.warning("Could not determine job to stop InteractiveTool: %s", job)
 
     def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
         # run original exec_after_process
