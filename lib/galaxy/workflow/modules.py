@@ -673,7 +673,7 @@ class InputParameterModule(WorkflowModule):
                 <option value="float">Float</option>
                 <option value="boolean">Boolean (True or False)</option>
                 <option value="color">Color</option>
-                <option value="select_list">Select List</option>
+                <option value="select">Select List</option>
             </param>
             '''))
         for i, option in enumerate(input_parameter_type.static_options):
