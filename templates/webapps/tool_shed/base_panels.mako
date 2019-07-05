@@ -103,7 +103,7 @@
                                         <div class="dropdown-divider"></div>
                                     %else:
                                         %if len ( menu_item ) == 1:
-                                            <a class="dropdown-item" href="#">
+                                            <a class="dropdown-item" href="javascript:void(0)">
                                                 ${menu_item[0]}
                                             </a>
                                         %elif len ( menu_item ) == 2:

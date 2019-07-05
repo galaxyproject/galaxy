@@ -144,7 +144,7 @@ var LibraryToolbarView = Backbone.View.extend({
         return _.template(
             `<div class="library_style_container">
                 <div class="d-flex align-items-center mb-2">
-                    <a class="btn btn-secondary mr-1" data-toggle="tooltip" data-placement="top" title="Go to first page" href="#">
+                    <a class="btn btn-secondary mr-1" data-toggle="tooltip" data-placement="top" title="Go to first page" href="javascript:void(0)">
                         <span class="fa fa-home"/>
                     </a>
                     <% if(admin_user === true) { %>
