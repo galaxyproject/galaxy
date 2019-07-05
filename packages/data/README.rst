@@ -1,6 +1,6 @@
 
 .. image:: https://badge.fury.io/py/galaxy-data.svg
-   :target: https://pypi.python.org/pypi/galaxy-data/
+   :target: https://pypi.org/project/galaxy-data/
 
 
 Overview
