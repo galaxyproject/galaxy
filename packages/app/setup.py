@@ -33,8 +33,6 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
     'galaxy.actions',
-    'galaxy.dependencies',
-    'galaxy.eggs',
     'galaxy.forms',
     'galaxy.tours',
     'galaxy.webhooks',
