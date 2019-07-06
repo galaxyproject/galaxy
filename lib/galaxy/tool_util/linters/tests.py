@@ -1,5 +1,5 @@
 """This module contains a linting functions for tool tests."""
-from ..lint_util import is_datasource
+from ._util import is_datasource
 
 
 # Misspelled so as not be picked up by nosetests.
