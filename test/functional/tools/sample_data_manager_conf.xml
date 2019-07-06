@@ -3,13 +3,27 @@
     <data_table name="testbeta">
       <output>
         <column name="value" />
-        <column name="path" output_ref="out_file" >
-		  <move type="directory" relativize_symlinks="True">
-		  	<target base="${GALAXY_DATA_MANAGER_DATA_PATH}">testbeta/${value}</target>
-		  </move>
- 		  <value_translation>${GALAXY_DATA_MANAGER_DATA_PATH}/testbeta/${value}/${path}</value_translation>
-		  <value_translation type="function">abspath</value_translation>
-		</column>
+        <column name="path" output_ref="out_file">
+          <move type="directory" relativize_symlinks="True">
+            <target base="${GALAXY_DATA_MANAGER_DATA_PATH}">testbeta/${value}</target>
+          </move>
+          <value_translation>${GALAXY_DATA_MANAGER_DATA_PATH}/testbeta/${value}/${path}</value_translation>
+          <value_translation type="function">abspath</value_translation>
+        </column>
+      </output>
+    </data_table>
+  </data_manager>
+  <data_manager tool_file="user_data_manager.xml" id="test_user_data_manager" version="1.0">
+    <data_table name="testbeta">
+      <output>
+        <column name="value" />
+        <column name="path" output_ref="out_file">
+          <move type="directory" relativize_symlinks="True">
+            <target base="${GALAXY_DATA_MANAGER_DATA_PATH}">testbeta/${value}</target>
+          </move>
+          <value_translation>${GALAXY_DATA_MANAGER_DATA_PATH}/testbeta/${value}/${path}</value_translation>
+          <value_translation type="function">abspath</value_translation>
+        </column>
       </output>
     </data_table>
   </data_manager>
