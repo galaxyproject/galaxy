@@ -4,6 +4,7 @@ from abc import (
     abstractmethod,
     abstractproperty,
 )
+import errno
 
 import six
 import yaml
@@ -95,8 +96,13 @@ class MappableDependencyResolver(object):
 
     @staticmethod
     def _mapping_file_to_list(mapping_file):
-        with open(mapping_file, "r") as f:
-            raw_mapping = yaml.safe_load(f) or []
+        raw_mapping = []
+        try:
+            with open(mapping_file, "r") as f:
+                raw_mapping = yaml.safe_load(f)
+        except (OSError, IOError) as exc:
+            if exc.errno != errno.ENOENT:
+                raise
         return map(RequirementMapping.from_dict, raw_mapping)
 
     def _expand_mappings(self, requirement):

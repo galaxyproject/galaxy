@@ -45,50 +45,6 @@ from ..version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
 
-
-PATH_DEFAULTS = dict(
-    auth_config_file=['config/auth_conf.xml', 'config/auth_conf.xml.sample'],
-    data_manager_config_file=['config/data_manager_conf.xml', 'data_manager_conf.xml', 'config/data_manager_conf.xml.sample'],
-    datatypes_config_file=['config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample'],
-    build_sites_config_file=['config/build_sites.yml', 'config/build_sites.yml.sample'],
-    job_config_file=['config/job_conf.xml', 'job_conf.xml'],
-    tool_destinations_config_file=['config/tool_destinations.yml', 'config/tool_destinations.yml.sample'],
-    job_metrics_config_file=['config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample'],
-    error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
-    oidc_config_file=['config/oidc_config.yml', 'config/oidc_config.yml.sample'],
-    oidc_backends_config_file=['config/oidc_backends_config.yml', 'config/oidc_backends_config.yml.sample'],
-    dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml', None],
-    job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
-    workflow_resource_params_file=['config/workflow_resource_params_conf.xml', 'workflow_resource_params_conf.xml'],
-    migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
-    object_store_config_file=['config/object_store_conf.xml', 'object_store_conf.xml'],
-    shed_data_manager_config_file=['shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml'],
-    shed_tool_data_table_config=['shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml'],
-    tool_sheds_config_file=['config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample'],
-    workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
-    modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
-    local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
-    containers_config_file=['config/containers_conf.yml'],
-)
-
-PATH_LIST_DEFAULTS = dict(
-    tool_data_table_config_path=['config/tool_data_table_conf.xml', 'tool_data_table_conf.xml', 'config/tool_data_table_conf.xml.sample'],
-    # rationale:
-    # [0]: user has explicitly created config/tool_conf.xml but did not
-    #      move their existing shed_tool_conf.xml, don't use
-    #      config/shed_tool_conf.xml, which is probably the empty
-    #      version copied from the sample, or else their shed tools
-    #      will disappear
-    # [1]: user has created config/tool_conf.xml and, having passed
-    #      [0], probably moved their shed_tool_conf.xml as well
-    # [2]: user has done nothing, use the old files
-    # [3]: fresh install
-    tool_config_file=['config/tool_conf.xml,shed_tool_conf.xml',
-                      'config/tool_conf.xml,config/shed_tool_conf.xml',
-                      'tool_conf.xml,shed_tool_conf.xml',
-                      'config/tool_conf.xml.sample,config/shed_tool_conf.xml']
-)
-
 LOGGING_CONFIG_DEFAULT = {
     'version': 1,
     'root': {
@@ -141,26 +97,6 @@ def resolve_path(path, root):
     return path
 
 
-def find_path(kwargs, var, root):
-    """Find a configuration path that may exist at different defaults."""
-    defaults = PATH_DEFAULTS[var]
-
-    if kwargs.get(var, None) is not None:
-        path = kwargs.get(var)
-    else:
-        for default in defaults:
-            if default is None:
-                # if None is the final default - just return that.
-                return None
-            if os.path.exists(resolve_path(default, root)):
-                path = default
-                break
-        else:
-            path = defaults[-1]
-
-    return resolve_path(path, root)
-
-
 def find_root(kwargs):
     root = kwargs.get('root_dir', '.')
     return root
@@ -195,7 +131,7 @@ class BaseAppConfiguration(object):
         if running_from_source:
             if self.data_dir is None:
                 self.data_dir = os.path.join(self.root, 'database')
-                self.mutable_config_dir = self.config_dir
+            self.mutable_config_dir = self.config_dir
             # TODO: do we still need to support ../shed_tools?
             self.shed_tools_dir = "database/shed_tools"
         else:
@@ -205,6 +141,7 @@ class BaseAppConfiguration(object):
             self.shed_tools_dir = os.path.join(self.data_dir, 'shed_tools')
         log.debug("Configuration directory is %s", self.config_dir)
         log.debug("Data directory is %s", self.data_dir)
+        log.debug("Mutable config directory is %s", self.mutable_config_dir)
 
     def _in_mutable_config_dir(self, path):
         return os.path.join(self.mutable_config_dir, path)
@@ -890,20 +827,28 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         """
         defaults = dict(
             auth_config_file=[self._in_config_dir('auth_conf.xml')],
+            build_sites_config_file=[self._in_config_dir('build_sites.yml')],
+            containers_config_file=[self._in_config_dir('containers_conf.yml')],
             data_manager_config_file=[self._in_config_dir('data_manager_conf.xml')],
             datatypes_config_file=[self._in_config_dir('datatypes_conf.xml'), self._in_sample_dir('datatypes_conf.xml.sample')],
-            external_service_type_config_file=[self._in_config_dir('external_service_types_conf.xml')],
+            dependency_resolvers_config_file=[self._in_config_dir('dependency_resolvers_conf.xml')],
+            error_report_file=[self._in_config_dir('error_report.yml')],
             job_config_file=[self._in_config_dir('job_conf.xml')],
             job_metrics_config_file=[self._in_config_dir('job_metrics_conf.xml')],
-            dependency_resolvers_config_file=[self._in_config_dir('dependency_resolvers_conf.xml')],
             job_resource_params_file=[self._in_config_dir('job_resource_params_conf.xml')],
+            local_conda_mapping_file=[self._in_config_dir('local_conda_mapping.yml')],
+            migrated_tools_config=[self._in_config_dir('migrated_tools_conf.xml')],
+            modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
             object_store_config_file=[self._in_config_dir('object_store_conf.xml')],
-            openid_config_file=[self._in_config_dir('openid_conf.xml')],
+            oidc_backends_config_file=[self._in_config_dir('config/oidc_backends_config.yml')],
+            oidc_config_file=[self._in_config_dir('oidc_config.yml')],
             shed_data_manager_config_file=[self._in_mutable_config_dir('shed_data_manager_conf.xml')],
             shed_tool_data_table_config=[self._in_mutable_config_dir('shed_tool_data_table_conf.xml')],
+            tool_destinations_config_file=[self._in_config_dir('config/tool_destinations.yml')],
+            tool_sheds_config_file=[self._in_config_dir('tool_sheds_conf.xml')],
+            workflow_resource_params_file=[self._in_config_dir('workflow_resource_params_conf.xml')],
             workflow_schedulers_config_file=[self._in_config_dir('config/workflow_schedulers_conf.xml')],
         )
-
         if running_from_source:
             listify_defaults = {
                 'tool_data_table_config_path': ['config/tool_data_table_conf.xml',
