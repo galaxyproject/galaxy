@@ -211,6 +211,9 @@ var FolderToolbarView = Backbone.View.extend({
         }
     },
 
+    /**
+     * This function returns a promise
+     */
     fetchUserHistories: function() {
         this.histories = new mod_library_model.GalaxyHistories();
         return this.histories.fetch();
@@ -238,6 +241,9 @@ var FolderToolbarView = Backbone.View.extend({
         }
     },
 
+    /**
+     * This function returns a promise
+     */
     createNewHistory: function(new_history_name) {
         return $.post(`${getAppRoot()}api/histories`, { name: new_history_name });
     },

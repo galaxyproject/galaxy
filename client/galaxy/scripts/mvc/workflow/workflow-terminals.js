@@ -292,6 +292,8 @@ var BaseInputTerminal = Terminal.extend({
             inputFilled = false;
         } else {
             if (this.multiple) {
+                // Can only attach one collection to multiple input
+                // data parameter.
                 inputFilled = !!this._collectionAttached();
             } else {
                 inputFilled = true;
