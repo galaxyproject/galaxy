@@ -54,8 +54,7 @@ QUnit.module("Input terminal model test", {
     test_connector: function() {
         var outputTerminal = new Terminals.OutputTerminal({ datatypes: ["input"] });
         var inputTerminal = this.input_terminal;
-        var connector = new Connector(outputTerminal, inputTerminal);
-        return connector;
+        return new Connector(outputTerminal, inputTerminal);
     },
     with_test_connector: function(f) {
         this.test_connector();
@@ -557,9 +556,7 @@ QUnit.module("Node view ", {
             disableMapOver: function() {},
             mapOver: Terminals.NULL_COLLECTION_TYPE_DESCRIPTION
         };
-        var c = new Connector(outputTerminal, terminal);
-
-        return c;
+        return new Connector(outputTerminal, terminal);
     },
     connectAttachedMultiInputTerminal: function(inputType, outputType) {
         this.view.addDataInput({ name: "TestName", extensions: [inputType], multiple: true });
@@ -580,9 +577,7 @@ QUnit.module("Node view ", {
             disableMapOver: function() {},
             mapOver: new Terminals.CollectionTypeDescription("list")
         };
-        var c = new Connector(outputTerminal, terminal);
-
-        return c;
+        return new Connector(outputTerminal, terminal);
     },
     connectAttachedMappedOutput: function() {
         this.view.addDataInput({ name: "TestName", extensions: ["txt"], input_type: "dataset_collection" });
@@ -603,9 +598,7 @@ QUnit.module("Node view ", {
             disableMapOver: function() {},
             mapOver: new Terminals.CollectionTypeDescription("list")
         };
-        var c = new Connector(outputTerminal, terminal);
-
-        return c;
+        return new Connector(outputTerminal, terminal);
     }
 });
 
@@ -917,8 +910,7 @@ QUnit.module("terminal mapping logic", {
     },
     newNode: function() {
         var nodeEl = $("<div>")[0];
-        var node = new Node(create_app(), { element: nodeEl });
-        return node;
+        return new Node(create_app(), { element: nodeEl });
     },
     _addExistingOutput: function(terminal, output, connected) {
         var self = this;

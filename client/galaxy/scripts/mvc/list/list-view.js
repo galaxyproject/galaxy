@@ -367,8 +367,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             // console.log( 'models filtered:', shownModels );
 
             panel.views = shownModels.map(itemModel => {
-                var view = panel._createItemView(itemModel);
-                return view;
+                return panel._createItemView(itemModel);
             });
 
             $list.empty();
