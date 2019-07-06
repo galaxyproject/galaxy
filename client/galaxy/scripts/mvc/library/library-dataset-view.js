@@ -741,7 +741,7 @@ var LibraryDatasetView = Backbone.View.extend({
                         <% } %>
                         <% if (item.get("message")) { %>
                             <tr>
-                                <th scope="row">Message</th>
+                                <th scope="row">Description</th>
                                 <td scope="row"><%= _.escape(item.get("message")) %></td>
                             </tr>
                         <% } %>
