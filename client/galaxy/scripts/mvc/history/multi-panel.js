@@ -94,10 +94,8 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         if (columnRight < viewLeft) {
             return false;
         }
-        if (columnLeft > viewRight) {
-            return false;
-        }
-        return true;
+        return columnLeft <= viewRight;
+
     },
 
     /** shortcut to the panel */
