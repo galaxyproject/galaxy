@@ -71,7 +71,7 @@ class DataManagers(object):
                 # File does not exist
                 return None
         except Exception as e:
-            log.error("Error loading data_manager '%s':\n%s" % (e, util.xml_to_string(data_manager_elem)))
+            log.error("Error loading data_manager '%s':\n%s" % (e, util.xml_to_string(data_manager_elem)), exc_info=True)
             return None
         if add_manager:
             self.add_manager(data_manager)
@@ -277,6 +277,7 @@ class DataManager(object):
                                         tool_shed_repository=tool_shed_repository,
                                         use_cached=True)
         self.data_managers.app.toolbox.data_manager_tools[tool.id] = tool
+        toolbox.add_user_data_manager_toolbox(tool)
         self.tool = tool
         return tool
 
