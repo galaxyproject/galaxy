@@ -105,8 +105,8 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
 
                 # Can user manage the permissions on the dataset?
                 can_manage = is_admin or (trans.user and trans.app.security_agent.can_manage_dataset(current_user_roles, content_item.library_dataset_dataset_association.dataset))
-
-                nice_size = util.nice_size(int(content_item.library_dataset_dataset_association.get_size()))
+                raw_size = int(content_item.library_dataset_dataset_association.get_size())
+                nice_size = util.nice_size(raw_size)
 
                 library_dataset_dict = content_item.to_dict()
                 encoded_ldda_id = trans.security.encode_id(content_item.library_dataset_dataset_association.id)
@@ -117,6 +117,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                                         can_manage=can_manage,
                                         state=library_dataset_dict['state'],
                                         file_size=nice_size,
+                                        raw_size=raw_size,
                                         ldda_id=encoded_ldda_id))
                 if content_item.library_dataset_dataset_association.message:
                     return_item.update(dict(message=content_item.library_dataset_dataset_association.message))

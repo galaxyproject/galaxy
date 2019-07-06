@@ -25,7 +25,9 @@ var FolderListView = Backbone.View.extend({
         "click .folder_row": "selectClickedRow",
         "click .sort-folder-name": "sortColumnClicked",
         "click .sort-folder-file_ext": "sortColumnClicked",
-        "click .sort-folder-description": "sortColumnClicked",
+        "click .sort-folder-message": "sortColumnClicked",
+        "click .sort-folder-update_time": "sortColumnClicked",
+        "click .sort-folder-raw_size": "sortColumnClicked",
         "click .sort-folder-state": "sortColumnClicked"
     },
 
@@ -271,6 +273,7 @@ var FolderListView = Backbone.View.extend({
         event.preventDefault();
         this.current_sort_order = this.current_sort_order === "asc" ? "desc" : "asc";
         this.current_sort_key = event.currentTarget.className.replace("sort-folder-", "");
+        console.log("current sort: " + this.current_sort_key)
         this.collection.sortFolder(this.current_sort_key, this.current_sort_order);
         this.renderSortIcon();
     },
@@ -352,10 +355,11 @@ var FolderListView = Backbone.View.extend({
     },
 
     renderSortIcon: function() {
+        $('[class*="sort-icon"]')
+        .removeClass("fa-sort-alpha-desc")
+        .removeClass("fa-sort-alpha-asc");
+
         if (this.current_sort_order === "asc") {
-            $('[class*="sort-icon"]')
-                .removeClass("fa-sort-alpha-desc")
-                .removeClass("fa-sort-alpha-asc");
             $(`.sort-icon-${this.current_sort_key}`).addClass("fa-sort-alpha-asc");
         } else {
             $(`.sort-icon-${this.current_sort_key}`).addClass("fa-sort-alpha-desc");
@@ -499,22 +503,27 @@ var FolderListView = Backbone.View.extend({
                     </th>
                     <th>
                         <a class="sort-folder-name" title="Click to reverse order" href="#">Name</a>
-                        <span title="Sorted alphabetically"
-                            class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span>
+                        <span title="Sorted by Name" class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span>
                     </th>
                     <th style="width:20%;">
-                        <a class="sort-folder-description" title="Click to reverse order" href="#">Description</a>
-                        <span title="Sorted alphabetically" class="sort-icon-description fa"></span>
+                        <a class="sort-folder-message" title="Click to reverse order" href="#">Description</a>
+                        <span title="Sorted by Desc." class="sort-icon-message fa"></span>
                     </th>
                     <th style="width:5%;">
                         <a class="sort-folder-file_ext" title="Click to reverse order" href="#">Data Type</a>
-                        <span title="Sorted alphabetically" class="sort-icon-file_ext fa"></span>
+                        <span title="Sorted by Type" class="sort-icon-file_ext fa"></span>
                     </th>
-                    <th style="width:10%;">Size</th>
-                    <th style="width:160px;">Time Updated (UTC)</th>
+                    <th style="width:10%;">
+                        <a class="sort-folder-raw_size" title="Click to reverse order" href='#'>Size</a>
+                        <span title="Sorted by Size" class="sort-icon-raw_size fa"></span>
+                    </th>
+                    <th style="width:160px;">
+                        <a class="sort-folder-update_time" title="Click to reverse order" href='#'>Time Updated (UTC)</a>
+                        <span title="Sorted by Date" class="sort-icon-update_time fa"></span>
+                    </th>
                     <th style="width:5%;">
                         <a class="sort-folder-state" title="Click to reverse order" href="#">State</a>
-                        <span title="Sorted alphabetically" class="sort-icon-state fa"></span>
+                        <span title="Sorted by State" class="sort-icon-state fa"></span>
                     </th>
                     <th style="width:160px;"></th>
                 </thead>
