@@ -320,10 +320,9 @@ var ToolShedRepositoryView = Backbone.View.extend({
     },
 
     selectedChangeset: function() {
-        var changeset = $("#changeset")
+        return $("#changeset")
             .find("option:selected")
             .val();
-        return changeset;
     },
 
     showToolTPSCreate: function(guid, changeset) {

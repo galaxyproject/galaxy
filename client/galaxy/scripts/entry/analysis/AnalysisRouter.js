@@ -88,8 +88,7 @@ export const getAnalysisRouter = Galaxy =>
             const instance = Vue.extend(component);
             const container = document.createElement("div");
             this.page.display(container);
-            const vm = new instance(props).$mount(container);
-            return vm;
+            return new instance(props).$mount(container);
         },
 
         show_tours: function(tour_id) {
