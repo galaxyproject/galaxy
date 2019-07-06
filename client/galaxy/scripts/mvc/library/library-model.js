@@ -79,7 +79,22 @@ var Folder = Backbone.Collection.extend({
     sortFolder: function(sort_key, sort_order) {
         this.comparator = mod_util.generateFolderComparator(sort_key, sort_order);
         this.sort();
-    }
+    },
+
+    /**
+     * Search the collection and return only the models that have
+     * the search term in their names.
+     * [the term to search]
+     * @type {string}
+     */
+    search: function(search_term) {
+        if (search_term == "") return this;
+        const lowercase_term = search_term.toLowerCase();
+        return this.filter(data => {
+            const lowercase_name = data.get("name").toLowerCase();
+            return lowercase_name.indexOf(lowercase_term) !== -1;
+        });
+    },
 });
 
 var FolderContainer = Backbone.Model.extend({
