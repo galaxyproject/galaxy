@@ -10,18 +10,8 @@
 $fa-font-path: "../../../node_modules/font-awesome/fonts/";
 @import "../../../node_modules/font-awesome/scss/font-awesome.scss";
 
-.fa-icon {
-    // TODO: remove fa-icon and replace with fa
-    @extend .fa;
-}
-
 @import "select2.scss";
 @import "jquery.rating.scss";
-
-/* fix for zero width select2 - remove when fixed there */
-.select2-minwidth {
-    min-width: 256px;
-}
 
 // galaxy sub-components
 @import "reports";
@@ -38,24 +28,27 @@ $fa-font-path: "../../../node_modules/font-awesome/fonts/";
 @import "message.scss";
 @import "toolshed.scss";
 
-// Mixins
+// ==== Select2 ====
+/* fix for zero width select2 - remove when fixed there */
+.select2-minwidth {
+    min-width: 256px;
+}
+
+.select2-drop-active,
+.select2-drop-above.select2-drop-active {
+    border: $border-default;
+    .select2-search {
+        @extend .pt-1;
+    }
+}
+
+// ==== Mixins ====
 @mixin user-select($select) {
     -webkit-touch-callout: #{$select};
     @each $pre in -webkit-, -moz-, -ms-, -o-, -khtml- {
         #{$pre + user-select}: #{$select};
     }
     #{user-select}: #{$select};
-}
-
-.unselectable {
-    @include user-select(none);
-}
-
-.parent-width {
-    //TODO: check out box-sizing w/ bs4
-    //@include box-sizing(border-box);
-    width: 100%;
-    *width: 90%;
 }
 
 @mixin border-radius($radius) {
@@ -65,121 +58,117 @@ $fa-font-path: "../../../node_modules/font-awesome/fonts/";
     border-radius: $radius;
 }
 
-// ==== Real (basic) styles ====
+// ==== Basic styles ====
+
+body {
+    @extend .m-2;
+}
+
+.unselectable {
+    @include user-select(none);
+}
+
+.parent-width {
+    @extend .w-100;
+}
 
 .clear {
     @include clearfix();
 }
 
-body {
+// ==== Page layout styles ====
+
+.full-content {
+    @extend .m-0;
+    @extend .p-0;
+    @extend .w-100;
+    @extend .h-100;
+    @extend .overflow-hidden;
+    @extend .position-absolute;
     background: $body-bg;
     color: $text-color;
-    margin: 10px;
+}
 
-    // For panel layout pages
-    &.full-content {
-        overflow: hidden;
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-    }
+.full-message {
+    @extend .w-100;
+    @extend .overflow-hidden;
+    height: $panel-message-height !important;
+    border-bottom: solid $border-color 1px;
+    font-size: 90%;
+    display: none;
+}
+
+#everything {
+    @extend .d-flex;
+    @extend .flex-column;
+    @extend .full-content;
+}
+
+#columns {
+    @extend .position-relative;
+    flex: 1;
+}
+
+#background {
+    @extend .full-content;
+    z-index: -1;
+}
+
+// Used for dragging panels, popup menus, to deal with capturing clicks in iframes
+#dd-helper {
+    @extend .full-content;
+    opacity: 0;
+    z-index: 900; // Bootstrap elements start at 1000
+    display: none;
 }
 
 // ==== Panel layout styles ====
 
-// Layout the paneled UI using flexbox.
-
-#everything {
-    display: flex;
-    flex-direction: column;
-    position: absolute;
-    top: 0;
-    left: 0;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-}
-
-#columns {
-    // Fill extra space in parent
-    flex: 1;
-    // Allow columns to be absolutely positioned inside
-    position: relative;
-}
-
-#background {
-    position: absolute;
-    background: #fff;
-    z-index: -1;
-    top: 0;
-    left: 0;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-}
-
-#messagebox {
-    width: 100%;
-    height: $panel-message-height !important;
-    overflow: hidden;
-    border-bottom: solid $border-default-color 1px;
-    font-size: 90%;
-    display: none;
-}
-
-#inactivebox {
-    width: 100%;
-    height: $panel-message-height !important;
-    overflow: hidden;
-    border-bottom: solid $border-default-color 1px;
-    font-size: 90%;
-    display: none;
-}
-
-// Panels
 #left,
 #center,
 #right {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    overflow: hidden;
-    background: white;
+    @extend .position-absolute;
+    @extend .h-100;
+    @extend .overflow-hidden;
 }
 #left {
+    @extend .unified-panel;
     left: 0px;
     width: $panel-width;
     border-right: $layout-border;
 }
 #right {
+    @extend .unified-panel;
     right: 0px;
     width: $panel-width;
     border-left: $layout-border;
 }
+#right > .unified-panel-footer {
+    .drag {
+        left: 0;
+    }
+}
 #center {
+    @extend .overflow-hidden;
     left: $panel-width;
     right: $panel-width;
-    overflow: hidden;
     .center-container {
-        position: absolute;
-        width: 100%;
-        height: 100%;
+        @extend .position-absolute;
+        @extend .w-100;
+        @extend .h-100;
         .center-panel {
+            @extend .position-absolute;
+            @extend .w-100;
+            @extend .h-100;
+            @extend .overflow-auto;
             display: none;
-            position: absolute;
-            width: 100%;
-            height: 100%;
             padding: $margin-h $margin-v;
-            overflow: auto;
-            background: $brand-white;
+            background: $white;
         }
         .center-frame {
-            position: absolute;
-            width: 100%;
-            height: 100%;
+            @extend .position-absolute;
+            @extend .w-100;
+            @extend .h-100;
         }
     }
     // Replaces unnecessary if/then logic in base_panels.mako
@@ -191,50 +180,58 @@ body {
     }
 }
 
-#left,
-#right,
-.unified-panel {
-    background: $panel-bg-color;
-    display: flex;
-    flex-direction: column;
-}
+// ==== Unified panel styles ====
 
+.unified-panel {
+    display: flex;
+    @extend .flex-column;
+    background: $panel-bg-color;
+}
 .unified-panel-header {
     @extend .unselectable;
-    @extend .mx-3;
+    @extend .px-3;
+    @extend .d-flex;
     height: $panel_header_height;
     font-size: 1rem;
     font-weight: bold;
-    display: flex;
     align-items: center;
     color: $panel-header-text-color;
+    background: $panel-bg-header-color;
     a {
         color: $panel-header-text-color;
     }
     .unified-panel-header-inner {
-        width: 100%;
+        @extend .w-100;
         align-items: center;
         justify-content: space-between;
     }
     .panel-header-buttons {
+        @extend .float-right;
         order: 9999;
-        float: right;
         .panel-header-button {
             text-align: center;
             &:not(:last-child) {
                 @extend .mr-2;
             }
             &:hover {
-                color: $brand-info;
+                color: $text-color;
             }
         }
     }
 }
-
 .unified-panel-controls {
     @extend .px-3;
 }
-
+.unified-panel-body {
+    @extend .p-0;
+    @extend .w-100;
+    @extend .h-100;
+    @extend .overflow-auto;
+    flex: 1;
+}
+.unified-panel-body-background {
+    background: none repeat scroll 0 0 $panel-bg-color;
+}
 .unified-panel-footer {
     @extend .unselectable;
     position: relative;
@@ -262,15 +259,9 @@ body {
     }
 }
 
-#right > .unified-panel-footer {
-    .drag {
-        left: 0;
-    }
-}
-
 // Needs to be outside panel to show when hidden
 .panel-collapse {
-    @extend .fa-icon;
+    @extend .fa;
     $border-color: darken($panel-footer-bg-color, 20%);
     font-size: 4/3em;
     cursor: pointer;
@@ -315,35 +306,6 @@ body {
     }
 }
 
-.menu-bg {
-    background: whiteSmoke top repeat-x;
-}
-
-div.unified-panel-body {
-    width: 100%;
-    height: 100%;
-    padding: 0px;
-    flex: 1;
-    overflow: auto;
-}
-
-div.unified-panel-body-background {
-    background: none repeat scroll 0 0 $panel-bg-color;
-}
-
-// Used for dragging panels, popup menus, to deal with capturing clicks in iframes
-#dd-helper {
-    background: white;
-    opacity: 0;
-    z-index: 900; // Bootstrap elements start at 1000
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: none;
-}
-
 // Messages for message box, slightly different style
 
 .panel-error-message,
@@ -379,10 +341,11 @@ div.unified-panel-body-background {
     }
 }
 
-// Masthead
+// ==== Masthead ====
+
 #masthead {
-    padding: 0;
-    margin-bottom: 0px;
+    @extend .p-0;
+    @extend .mb-0;
     background-color: $brand-dark;
     height: $masthead-height;
     .navbar-nav {
@@ -395,48 +358,47 @@ div.unified-panel-body-background {
             align-items: center;
             &.active {
                 background: darken($brand-dark, 10%);
+                .nav-link {
+                    color: $white;
+                }
             }
             .nav-link {
                 cursor: pointer;
                 text-decoration: none;
+                color: $gray-300;
                 &:hover {
-                    color: $dropdown-link-active-color;
+                    color: $brand-toggle;
                 }
                 &.nav-icon {
                     font-size: 1.7em;
                 }
                 &.toggle {
-                    color: $dropdown-link-active-color;
+                    color: $brand-toggle;
                 }
             }
             .nav-note {
-                font-weight: bold;
-                font-size: 10px;
-                position: relative;
-                right: 5px;
-                top: 10px;
-                color: $dropdown-link-active-color;
-                width: 0px;
+                @extend .font-weight-bold;
+                @extend .position-relative;
+                right: 0.4rem;
+                top: 0.7rem;
+                font-size: 0.7rem;
+                color: $brand-toggle;
+                width: 0;
             }
         }
     }
     .navbar-brand {
-        position: absolute;
-        left: 0;
-        // top: 0;
+        @extend .position-absolute;
+        @extend .font-weight-bold;
+        left: 0.3rem;
+        top: 0;
         font-family: verdana;
-        font-weight: bold;
-        font-size: 20px;
-        // line-height: 1;
-        color: $white;
-        // Override margin and padding due to shorter navbar height
-        padding: 5px 20px 12px;
-        margin-left: -15px;
+        font-size: 1.25rem;
+        color: $gray-300;
         text-decoration: none;
         .navbar-brand-image {
             display: inline;
             width: 26px;
-            // vertical-align: top;
             margin-left: 0.35em;
             border: none;
         }
@@ -446,9 +408,10 @@ div.unified-panel-body-background {
     }
 }
 
+// ==== Quota meter styles ====
+
 .quota-meter-container {
     position: absolute;
-    // top: 0;
     right: 0;
     height: 32px;
 }
@@ -528,11 +491,11 @@ div.metadataFormBody div.metadataFormTitle {
 
 div.metadataFormDisabled div.metadataFormTitle {
     background: #eee;
-    border-color: $border-default-color;
+    border-color: $border-color;
 }
 
 div.metadataFormDisabled {
-    border-color: $border-default-color;
+    border-color: $border-color;
 }
 
 div.metadataHelpBody {
@@ -552,11 +515,11 @@ div.toolFormBody div.toolFormTitle {
 
 div.toolFormDisabled div.toolFormTitle {
     background: #f5f5f5;
-    border-color: $border-default-color;
+    border-color: $border-color;
 }
 
 div.toolFormDisabled {
-    border-color: $border-default-color;
+    border-color: $border-color;
 }
 
 div.toolHelp {
@@ -693,18 +656,6 @@ div.form-row-input label {
     margin-bottom: 10px;
 }
 
-// Selects
-select {
-    padding: 2px;
-    font-size: $font-size-base;
-    line-height: $line-height-base;
-}
-
-select,
-input,
-textarea {
-    font: inherit;
-}
 
 .form-row {
     select,
@@ -716,23 +667,6 @@ textarea {
         max-width: 90%;
     }
     display: block;
-}
-
-textarea,
-input[type="text"],
-input[type="password"] {
-    font-size: $font-size-base;
-    line-height: $line-height-base;
-}
-
-// Always style buttons and submits as bootstrap buttons
-input[type="submit"],
-button {
-    @extend .btn;
-    @extend .btn-secondary;
-    &.btn-primary {
-        @extend .btn-primary;
-    }
 }
 
 // Messages
@@ -792,8 +726,6 @@ button {
     padding: 5px;
     padding-left: 25px;
     min-height: 15px;
-    //border: 1px solid $error_message_border;
-    //background-color: $error_message_bg;
     background-image: url(../../images/error_small.png);
     background-repeat: no-repeat;
     background-position: 5px 6px;
@@ -923,55 +855,49 @@ div.debug {
 }
 
 // Data grid style
-
 .grid-table {
-    width: 100%;
+    @extend .w-100;
 }
 .grid-header {
-    padding-bottom: 1em;
-}
-.grid-header h2 {
-    margin: 0;
-    margin-bottom: 0.5em;
+    @extend .mb-2;
 }
 .grid-header .title {
-    font-weight: bold;
+    @extend .font-weight-bold;
 }
 .grid {
-    padding-top: 1em;
+    @extend .pt-2;
+    @extend .w-100;
     border-collapse: collapse;
-    width: 100%;
 }
 .grid tbody td {
-    line-height: $line-height-base;
-    border-top: solid #dddddd 1px;
-    border-bottom: solid #dddddd 1px;
-    padding: 5px;
+    @extend .border-top;
+    @extend .border-bottom;
+    @extend .p-1;
 }
 .grid tbody td:empty {
-    padding: 0;
+    @extend .p-0;
 }
 .grid thead tr {
     height: 2em;
 }
 .grid thead th {
+    @extend .p-1;
+    @extend .border-top;
+    @extend .border-bottom;
     line-height: $line-height-base;
-    background: $table-heading-bg;
-    color: contrast($table-heading-bg);
-    border-top: solid $table-border-color 1px;
-    border-bottom: solid $table-border-color 1px;
-    padding: 5px;
+    background: $brand-light;
+    color: $text-color;
     text-align: left;
     white-space: nowrap;
 }
 .grid tfoot td {
-    background-color: #f8f8f8;
-    border-top: solid #dddddd 1px;
-    border-bottom: solid #dddddd 1px;
-    padding: 5px;
+    @extend .border-top;
+    @extend .border-bottom;
+    @extend .p-1;
+    background-color: $brand-light;
 }
 .grid .current {
-    background-color: #eeeeff;
+    background-color: lighten($brand-success, 20%);
 }
 
 // Pulled out of grid base
@@ -1077,32 +1003,25 @@ ul.manage-table-actions li {
 }
 
 .state-progress {
-    border: 1px solid gray;
-    position: relative;
-
-    margin-top: 2px;
-    margin-bottom: 1px;
-
+    @extend .position-relative;
+    @extend .m-1;
+    border: $border-default;
     .info {
-        color: $black;
-        background: $white;
+        color: $text-color;
+        background: $body-bg;
     }
-
     .new {
         background: $state-default-bg;
     }
-
     .running {
         background: $state-running-bg;
     }
-
     .ok {
         background: $state-success-bg;
     }
-
     .note {
-        margin-left: 1em;
-        position: absolute;
+        @extend .position-absolute;
+        @extend .ml-2;
     }
 }
 
@@ -1170,6 +1089,7 @@ a.btn {
 }
 a.action-button {
     color: $btn-default-color;
+    background: $btn-default-bg;
     text-decoration: none;
 }
 .action-button > img {
@@ -1370,7 +1290,7 @@ div.permissionContainer {
 
 .editable-text:hover {
     cursor: text;
-    border: dotted $border-default-color 1px;
+    border: dotted $border-color 1px;
 }
 
 .icon-button.multiinput {
@@ -1753,7 +1673,7 @@ div.toolSectionWrapper {
     @extend .fa;
     @extend .fa-circle;
     @extend .mt-1;
-    color: $white;
+    color: $brand-light;
     position: absolute;
     z-index: 1500;
     > icon {
@@ -1791,7 +1711,7 @@ div.toolSectionWrapper {
 }
 .mark-terminal {
     cursor: pointer;
-    color: darken($border-default-color, 20%);
+    color: $gray-500;
     &.mark-terminal-active {
         color: $brand-success;
     }

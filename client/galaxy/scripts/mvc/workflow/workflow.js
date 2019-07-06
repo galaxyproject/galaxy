@@ -158,12 +158,12 @@ const WorkflowItemView = Backbone.View.extend({
                         <a class="dropdown-item" href="${getAppRoot()}api/workflows/${
                 this.model.id
             }/download?format=json-download">Download</a>
-                        <a class="dropdown-item" id="copy-workflow">Copy</a>
-                        <a class="dropdown-item" id="rename-workflow">Rename</a>
+                        <a class="dropdown-item" href="javascript:void(0)" id="copy-workflow">Copy</a>
+                        <a class="dropdown-item" href="javascript:void(0)" id="rename-workflow">Rename</a>
                         <a class="dropdown-item" href="${getAppRoot()}workflow/display_by_id?id=${
                 this.model.id
             }">View</a>
-                        <a class="dropdown-item" id="delete-workflow">Delete</a>
+                        <a class="dropdown-item" href="javascript:void(0)" id="delete-workflow">Delete</a>
                     </div>`;
         } else {
             return `<div class="dropdown-menu">
@@ -171,7 +171,7 @@ const WorkflowItemView = Backbone.View.extend({
                 "owner"
             )}&slug=${this.model.get("slug")}">View</a>
                         <a class="dropdown-item" href="${getAppRoot()}workflows/run?id=${this.model.id}">Run</a>
-                        <a class="dropdown-item" id="copy-workflow">Copy</a>
+                        <a class="dropdown-item" href="javascript:void(0)" id="copy-workflow">Copy</a>
                         <a class="dropdown-item link-confirm-shared-${
                             this.model.id
                         }" href="${getAppRoot()}workflow/sharing?unshare_me=True&id=${this.model.id}">Remove</a></li>

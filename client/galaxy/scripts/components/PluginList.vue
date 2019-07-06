@@ -20,15 +20,15 @@
                             <div v-else class="ui-thumbnails-icon fa fa-eye" />
                         </td>
                         <td>
-                            <div class="ui-thumbnails-title font-weight-bold text-dark">{{ plugin.html }}</div>
-                            <div class="ui-thumbnails-text text-dark">{{ plugin.description }}</div>
+                            <div class="ui-thumbnails-title font-weight-bold">{{ plugin.html }}</div>
+                            <div class="ui-thumbnails-text">{{ plugin.description }}</div>
                         </td>
                     </tr>
                     <tr v-if="!fixed">
                         <td />
                         <td v-if="plugin.name == name">
                             <div v-if="hdas && hdas.length > 0">
-                                <div class="font-weight-bold text-dark">Select a dataset to visualize:</div>
+                                <div class="font-weight-bold">Select a dataset to visualize:</div>
                                 <div class="ui-select">
                                     <select class="select" v-model="selected">
                                         <option v-for="file in hdas" :key="file.id" :value="file.id">{{
