@@ -716,7 +716,7 @@ class InputParameterModule(WorkflowModule):
                 d[value].append(label)
             intxn_tool_inputs = copy(tool_inputs)
             intxn_tool_inputs.static_options = [(', '.join(set(label)), value, False) for value, label in list(d.items())]
-            intxn_tool_inputs.legal_values = list(set.intersection(*legal_values))
+            intxn_tool_inputs.legal_values = list(set.intersection(*legal_values)) # intxn_vals can probably replace this expression
             input.options = intxn_tool_inputs
         return dict(input=input)
 
