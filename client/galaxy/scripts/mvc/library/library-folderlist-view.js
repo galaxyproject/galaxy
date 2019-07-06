@@ -283,8 +283,7 @@ var FolderListView = Backbone.View.extend({
     searchFolder: function(search_term) {
         const trimmed_term = $.trim(search_term);
         if (trimmed_term !== "") {
-            let result_collection = null;
-            result_collection = this.folder_container.search(search_term);
+            let result_collection = this.folder_container.search(search_term);
             this.collection.reset(result_collection);
         } else {
             this.paginate();

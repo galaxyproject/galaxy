@@ -1421,7 +1421,7 @@ var FolderToolbarView = Backbone.View.extend({
      */
     searchFolder: function(event) {
         const Galaxy = getGalaxyInstance();
-        var search_term = $(".folder-search-input").val();
+        let search_term = $(".folder-search-input").val();
         this.options.search_term = search_term;
         Galaxy.libraries.folderListView.searchFolder(search_term);
     },
