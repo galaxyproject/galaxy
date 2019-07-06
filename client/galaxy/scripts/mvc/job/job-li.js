@@ -107,8 +107,7 @@ var JobListItemView = _super.extend(
                 return undefined;
             }
 
-            var subMatch = _.find(partialMatch.inputs, i => name.indexOf(i.name) !== -1);
-            return subMatch;
+            return _.find(partialMatch.inputs, i => name.indexOf(i.name) !== -1);
         },
 
         // ........................................................................ misc

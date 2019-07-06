@@ -51,9 +51,7 @@ var Libraries = Backbone.Collection.extend({
      */
     getVisible: function(show_deleted, filters) {
         filters = filters || [];
-        var filteredLibraries = new Libraries(this.filter(item => item.isVisible(show_deleted)));
-
-        return filteredLibraries;
+        return new Libraries(this.filter(item => item.isVisible(show_deleted)));
     },
 
     sortLibraries: function(sort_key, sort_order) {
