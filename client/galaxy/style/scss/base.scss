@@ -1528,6 +1528,12 @@ div.toolSectionTitle, div.toolTitle {
             background: darken($panel-bg-color, 5%);
 	}
     }
+
+    &.text-muted a {
+	&:hover {
+	    background: inherit;
+	}
+    }
 }
     
 div.toolTitleNoSection {

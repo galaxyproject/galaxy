@@ -91,13 +91,15 @@
             %else:
                 <div class="toolTitleNoSection text-muted">
             %endif
-                %if "[[" in tool.description and "]]" in tool.description:
-                    ${tool.description.replace( '[[', '' % tool.id ).replace( "]]", "" )}
-                %elif tool.name:
-                    ${tool.name} ${tool.description}
-                %else:
-                    ${tool.description}
-                %endif
+	        <a>
+		    %if "[[" in tool.description and "]]" in tool.description:
+                        ${tool.description.replace( '[[', '' % tool.id ).replace( "]]", "" )}
+                    %elif tool.name:
+                        ${tool.name} ${tool.description}
+                    %else:
+                        ${tool.description}
+                    %endif
+		</a>
             </div>
         %endif
     %endif
