@@ -35,6 +35,14 @@ galaxy.tool\_util.loader module
     :undoc-members:
     :show-inheritance:
 
+galaxy.tool\_util.loader\_directory module
+------------------------------------------
+
+.. automodule:: galaxy.tool_util.loader_directory
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy.tool\_util.output\_checker module
 ----------------------------------------
 

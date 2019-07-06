@@ -92,14 +92,6 @@ galaxy.tools.lint\_util module
     :undoc-members:
     :show-inheritance:
 
-galaxy.tools.loader\_directory module
--------------------------------------
-
-.. automodule:: galaxy.tools.loader_directory
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy.tools.repositories module
 --------------------------------
 
