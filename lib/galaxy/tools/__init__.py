@@ -797,6 +797,7 @@ class Tool(Dictifiable):
         self.containers = containers
 
         self.citations = self._parse_citations(tool_source)
+        self.xrefs = tool_source.parse_xrefs()
 
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible(tool_source)
@@ -1865,6 +1866,7 @@ class Tool(Dictifiable):
 
         tool_dict["edam_operations"] = self.edam_operations
         tool_dict["edam_topics"] = self.edam_topics
+        tool_dict["xrefs"] = self.xrefs
 
         # Fill in ToolShedRepository info
         if hasattr(self, 'tool_shed') and self.tool_shed:

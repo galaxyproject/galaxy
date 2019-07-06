@@ -1,5 +1,5 @@
-tool\_shed\.galaxy\_install\.datatypes package
-==============================================
+tool\_shed.galaxy\_install.datatypes package
+============================================
 
 .. automodule:: tool_shed.galaxy_install.datatypes
     :members:
@@ -9,8 +9,8 @@ tool\_shed\.galaxy\_install\.datatypes package
 Submodules
 ----------
 
-tool\_shed\.galaxy\_install\.datatypes\.custom\_datatype\_manager module
-------------------------------------------------------------------------
+tool\_shed.galaxy\_install.datatypes.custom\_datatype\_manager module
+---------------------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.datatypes.custom_datatype_manager
     :members:

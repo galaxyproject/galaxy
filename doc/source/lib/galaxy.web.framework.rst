@@ -1,5 +1,5 @@
-galaxy\.web\.framework package
-==============================
+galaxy.web.framework package
+============================
 
 .. automodule:: galaxy.web.framework
     :members:
@@ -17,24 +17,24 @@ Subpackages
 Submodules
 ----------
 
-galaxy\.web\.framework\.base module
------------------------------------
+galaxy.web.framework.base module
+--------------------------------
 
 .. automodule:: galaxy.web.framework.base
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy\.web\.framework\.decorators module
------------------------------------------
+galaxy.web.framework.decorators module
+--------------------------------------
 
 .. automodule:: galaxy.web.framework.decorators
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy\.web\.framework\.webapp module
--------------------------------------
+galaxy.web.framework.webapp module
+----------------------------------
 
 .. automodule:: galaxy.web.framework.webapp
     :members:

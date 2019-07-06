@@ -6,9 +6,9 @@ import tempfile
 from sqlalchemy import and_
 
 from galaxy import util
+from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.tool_util.parser.interface import TestCollectionDef
 from galaxy.tools.data_manager.manager import DataManager
-from galaxy.tools.loader_directory import looks_like_a_tool
 from galaxy.tools.repositories import ValidationContext
 from galaxy.web import url_for
 from tool_shed.repository_types import util as rt_util

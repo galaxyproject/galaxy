@@ -18,6 +18,7 @@ database/files
 database/jobs_directory
 database/job_working_directory
 database/pbs
+database/shed_tools
 database/test_errors
 database/tmp
 database/*.sqlite
