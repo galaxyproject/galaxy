@@ -706,15 +706,16 @@ class InputParameterModule(WorkflowModule):
             legal_values = []
             for connection in connections:
                 tool_inputs = connection.input_step.module.tool.inputs.data[connection.input_name]
-                legal_values += tool_inputs.legal_values
-                static_options += tool_inputs.static_options
+                legal_values.append(tool_inputs.legal_values)
+                static_options.append(tool_inputs.static_options)
+            intxn_vals = set.intersection(*[set([option[1] for option in options]) for options in static_options])
+            intxn_opts = [option for options in static_options for option in options if option[1] in intxn_vals]
             d = defaultdict(list)
-            for label, value, selected in list(set(static_options)):
+            for label, value, selected in list(set(intxn_opts)):
                 d[value].append(label)
-            tool_inputs.static_options = [(value, ', '.join(labels), False) for value, labels in list(d.items())]
-            tool_inputs.legal_values = set(legal_values)
+            tool_inputs.static_options = [(', '.join(labels), label, False) for value, labels in list(d.items())]
+            tool_inputs.legal_values = list(set.intersection(*legal_values))
             input.options = tool_inputs
-
         return dict(input=input)
 
     def get_runtime_state(self):
