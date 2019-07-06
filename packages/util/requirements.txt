@@ -1,8 +1,9 @@
 bleach
 boltons
 bz2file; python_version < '3.3'
+cheetah3
 docutils
-logging
+future
 markupsafe
 packaging
 pyyaml
