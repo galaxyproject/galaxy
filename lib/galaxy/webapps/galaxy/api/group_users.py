@@ -5,7 +5,7 @@ import logging
 
 from galaxy import web
 from galaxy.util import unicodify
-from galaxy.web.base.controller import BaseAPIController, url_for
+from galaxy.webapps.base.controller import BaseAPIController, url_for
 
 log = logging.getLogger(__name__)
 

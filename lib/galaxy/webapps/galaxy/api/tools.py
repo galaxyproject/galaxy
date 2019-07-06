@@ -14,8 +14,8 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
 )
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesVisualizationMixin
+from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import UsesVisualizationMixin
 from ._fetch_util import validate_and_normalize_targets
 
 log = logging.getLogger(__name__)
