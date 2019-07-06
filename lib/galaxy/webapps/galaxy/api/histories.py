@@ -34,7 +34,7 @@ from galaxy.web import (
     expose_api_raw,
     url_for
 )
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     ExportsHistoryMixin,
     ImportsHistoryMixin,

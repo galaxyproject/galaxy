@@ -11,7 +11,7 @@ from galaxy.util import (
     restore_text,
     unicodify
 )
-from galaxy.web.base.controller import BaseUIController, web
+from galaxy.webapps.base.controller import BaseUIController, web
 
 
 log = logging.getLogger(__name__)

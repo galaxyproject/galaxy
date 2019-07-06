@@ -17,7 +17,8 @@ from galaxy.model.item_attrs import (
 from galaxy.util import listify, Params, parse_int, sanitize_text
 from galaxy.util.odict import odict
 from galaxy.web import url_for
-from galaxy.web.base.controller import (
+from galaxy.web.framework.helpers import grids, iff, time_ago
+from galaxy.webapps.base.controller import (
     BaseUIController,
     ERROR,
     ExportsHistoryMixin,
@@ -27,7 +28,6 @@ from galaxy.web.base.controller import (
     SUCCESS,
     WARNING,
 )
-from galaxy.web.framework.helpers import grids, iff, time_ago
 from ._create_history_template import render_item
 
 
