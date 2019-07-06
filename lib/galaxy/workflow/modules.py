@@ -4,6 +4,7 @@ Modules used in building workflows
 import json
 import logging
 import re
+from collections import defaultdict
 from xml.etree.ElementTree import (
     Element,
     XML
@@ -698,8 +699,22 @@ class InputParameterModule(WorkflowModule):
         # TODO: Use a dict-based description from YAML tool source
         element = Element("param", name="input", label=self.label, type=parameter_type, optional=str(optional), **parameter_kwds)
         input = parameter_class(None, element)
+
+        # Retrieve possible runtime options for 'select' type inputs
         if parameter_type == 'select' and connections:
-            input.options = connections[0].input_step.module.tool.inputs.data[connections[0].input_name]
+            static_options = []
+            legal_values = []
+            for connection in connections:
+                tool_inputs = connection.input_step.module.tool.inputs.data[connection.input_name]
+                legal_values += tool_inputs.legal_values
+                static_options += tool_inputs.static_options
+            d = defaultdict(list)
+            for label, value, selected in list(set(static_options)):
+                d[value].append(label)
+            tool_inputs.static_options = [(value, ', '.join(labels), False) for value, labels in list(d.items())]
+            tool_inputs.legal_values = set(legal_values)
+            input.options = tool_inputs
+
         return dict(input=input)
 
     def get_runtime_state(self):
