@@ -713,7 +713,7 @@ class InputParameterModule(WorkflowModule):
             d = defaultdict(list)
             for label, value, selected in list(set(intxn_opts)):
                 d[value].append(label)
-            tool_inputs.static_options = [(', '.join(set(labels)), label, False) for value, labels in list(d.items())]
+            tool_inputs.static_options = [(', '.join(set(labels)), value, False) for value, labels in list(d.items())]
             tool_inputs.legal_values = list(set.intersection(*legal_values))
             input.options = tool_inputs
         return dict(input=input)
