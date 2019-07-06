@@ -1,13 +1,16 @@
 galaxy-objectstore
+galaxy-sequence-utils==1.1.3
 galaxy-util
 bdbag
 bx-python
 h5py
 isa-rwval
 numpy
+parsley
 pycryptodome
 pysam
 social_auth_core
 SQLAlchemy==1.2
 sqlalchemy-migrate
+sqlalchemy-utils
 WebOb

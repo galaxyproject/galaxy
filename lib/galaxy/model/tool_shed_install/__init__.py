@@ -4,7 +4,7 @@ import os
 from galaxy.util import asbool
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
-from tool_shed.util import common_util
+from galaxy.util.tool_shed import common_util
 
 log = logging.getLogger(__name__)
 

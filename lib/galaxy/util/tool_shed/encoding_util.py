@@ -1,6 +1,5 @@
 import binascii
 import json
-import logging
 
 from galaxy.util import (
     smart_str,
@@ -8,7 +7,6 @@ from galaxy.util import (
 )
 from galaxy.util.hash_util import hmac_new
 
-log = logging.getLogger(__name__)
 
 encoding_sep = '__esep__'
 encoding_sep2 = '__esepii__'

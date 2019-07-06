@@ -1,6 +1,5 @@
 import logging
 import os.path
-import sys
 
 from migrate.versioning import repository, schema
 from sqlalchemy import (

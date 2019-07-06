@@ -1,13 +1,15 @@
 import json
 import logging
 import os
+import sys
+
+from routes import url_for
 
 from six.moves.urllib.parse import urljoin
 
 from galaxy import util
 from galaxy.util.odict import odict
-from galaxy.web import url_for
-from tool_shed.util import encoding_util, xml_util
+from galaxy.util.tool_shed import encoding_util, xml_util
 
 log = logging.getLogger(__name__)
 
