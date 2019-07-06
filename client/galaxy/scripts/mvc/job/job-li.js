@@ -154,7 +154,7 @@ JobListItemView.prototype.templates = (() => {
             '<span class="name"><%- view.tool.name %></span>',
             "</div>",
             '<div class="subtitle">',
-            '<span class="description"><%- view.tool.description %></span',
+            '<span class="description"><%- view.tool.description %></span>',
             '<span class="create-time">',
             " ",
             _l("Created"),
@@ -169,7 +169,7 @@ JobListItemView.prototype.templates = (() => {
     var subtitleTemplate = BASE_MVC.wrapTemplate(
         [
             '<div class="subtitle">',
-            '<span class="description"><%- view.tool.description %></span',
+            '<span class="description"><%- view.tool.description %></span>',
             //'<span class="create-time">',
             //    ' ', _l( 'Created' ), ': <%= new Date( job.create_time ).toString() %>, ',
             //'</span',
