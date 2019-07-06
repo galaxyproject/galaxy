@@ -5417,7 +5417,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="data_source"/>
       <xs:enumeration value="manage_data"/>
-      <xs:enumeration value="entry_points"/>
+      <xs:enumeration value="interactive"/>
       <xs:enumeration value="expression"/>
     </xs:restriction>
   </xs:simpleType>
