@@ -273,7 +273,6 @@ var FolderListView = Backbone.View.extend({
         event.preventDefault();
         this.current_sort_order = this.current_sort_order === "asc" ? "desc" : "asc";
         this.current_sort_key = event.currentTarget.className.replace("sort-folder-", "");
-        console.log("current sort: " + this.current_sort_key)
         this.collection.sortFolder(this.current_sort_key, this.current_sort_order);
         this.renderSortIcon();
     },
