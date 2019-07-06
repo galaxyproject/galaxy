@@ -141,5 +141,6 @@ def get_config(argv, use_argparse=True, cwd=None):
 
 
 def manage_db():
-    config = get_config(sys.argv)
+    # Migrate has its own args, so cannot use argparse
+    config = get_config(sys.argv, use_argparse=False, cwd=os.getcwd())
     migrate_main(repository=config['repo'], url=config['db_url'])

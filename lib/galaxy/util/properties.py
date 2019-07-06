@@ -71,11 +71,13 @@ def load_app_properties(
     config_prefix="GALAXY_CONFIG_"
 ):
     properties = kwds.copy() if kwds else {}
+    properties['__file__'] = None
     if config_file is None:
         config_file = ini_file
         config_section = ini_section
 
     if config_file:
+        properties['__file__'] = os.path.abspath(config_file)
         if not has_ext(config_file, 'yaml', aliases=True, ignore='sample'):
             if config_section is None:
                 config_section = "app:main"
