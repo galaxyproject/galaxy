@@ -3,7 +3,6 @@ import logging
 import os
 
 from routes import url_for
-
 from six.moves.urllib.parse import urljoin
 
 from galaxy import util
