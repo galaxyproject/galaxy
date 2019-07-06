@@ -105,8 +105,6 @@ def find_root(kwargs):
 class BaseAppConfiguration(object):
     def _set_config_base(self, config_kwargs):
         self.sample_config_dir = os.path.join(os.path.dirname(__file__), 'sample')
-        # TODO: under what conditions is global_conf None, or does it not
-        # contain __file__?
         global_conf = config_kwargs.get('global_conf', None)
         self.config_file = None
         if global_conf and "__file__" in global_conf:
@@ -118,11 +116,12 @@ class BaseAppConfiguration(object):
                     self.config_file = f
                     break
         else:
-            log.warning("global_conf unset or __file__ not in global_conf and "
-                        "not running from source, unable to determine config file, "
-                        "global_conf is: %s", global_conf)
-        assert self.config_file is not None, "Unable to determine app config file"
-        self.config_dir = config_kwargs.get('config_dir', os.path.dirname(self.config_file))
+            log.warning("global_conf unset or __file__ not in global_conf and not running from source, unable to "
+                        "determine config file, global_conf is: %s", global_conf)
+        #assert self.config_file is not None, "Unable to determine app config file"
+        if self.config_file is None:
+            log.warning("No Galaxy config file found, running from current working directory: %s", os.getcwd())
+        self.config_dir = config_kwargs.get('config_dir', os.path.dirname(self.config_file or os.getcwd()))
         self.data_dir = config_kwargs.get('data_dir', None)
         # mutable_config_dir is intentionally not configurable. You can
         # override individual mutable configs with config options, but they
