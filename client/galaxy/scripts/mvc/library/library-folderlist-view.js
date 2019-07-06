@@ -285,10 +285,8 @@ var FolderListView = Backbone.View.extend({
         if (trimmed_term !== "") {
             let result_collection = null;
             result_collection = this.folder_container.search(search_term);
-            this.options.result_models = result_collection.models;
             this.collection.reset(result_collection);
         } else {
-            this.options.result_models = null;
             this.paginate();
         }
     },
