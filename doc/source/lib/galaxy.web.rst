@@ -1,5 +1,5 @@
-galaxy\.web package
-===================
+galaxy.web package
+==================
 
 .. automodule:: galaxy.web
     :members:
@@ -14,38 +14,36 @@ Subpackages
     galaxy.web.base
     galaxy.web.framework
     galaxy.web.proxy
-    galaxy.web.security
-    galaxy.web.stack
 
 Submodules
 ----------
 
-galaxy\.web\.buildapp module
-----------------------------
+galaxy.web.buildapp module
+--------------------------
 
 .. automodule:: galaxy.web.buildapp
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy\.web\.form\_builder module
----------------------------------
+galaxy.web.form\_builder module
+-------------------------------
 
 .. automodule:: galaxy.web.form_builder
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy\.web\.formatting module
-------------------------------
+galaxy.web.formatting module
+----------------------------
 
 .. automodule:: galaxy.web.formatting
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy\.web\.params module
---------------------------
+galaxy.web.params module
+------------------------
 
 .. automodule:: galaxy.web.params
     :members:
