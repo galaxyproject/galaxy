@@ -3611,7 +3611,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                 (select update_time from library_dataset_dataset_association where id = :ldda_id)
             from parent_folders_of
             where library_folder.id = parent_folders_of.folder_id
-        ''')
+        ''').execution_options(autocommit=True)
         log.debug('Updating parent folder update_time: {0} {1} {2}'.format(sql,ldda.library_dataset_id,ldda.id))
         ret = trans.sa_session.execute(sql, {'library_dataset_id': ldda.library_dataset_id, 'ldda_id': ldda.id})
         log.debug('execute returns: {0}'.format(ret.rowcount))
