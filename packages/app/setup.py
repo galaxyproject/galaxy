@@ -63,8 +63,6 @@ PACKAGES = [
     'galaxy.tools.toolbox.lineages',
     'galaxy.tools.util',
     'galaxy.tools.util.galaxyops',
-    'galaxy.tools.verify',
-    'galaxy.tools.verify.asserts',
     'galaxy.tours',
     'galaxy.visualization',
     'galaxy.visualization.data_providers',
