@@ -7,7 +7,7 @@ from galaxy import (
     model,
     web
 )
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseUIController,
 )
 from galaxy.web.framework.helpers import (
