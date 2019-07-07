@@ -74,6 +74,15 @@ class UsersApiTestCase(api.ApiTestCase):
         update_json = update_response.json()
         self.assertEqual(update_json['username'], new_name)
 
+    def test_delete_user(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        response = self._delete("users/%s" % user["id"], admin=True)
+        updated_user = self._get("users/deleted/%s" % user['id'], admin=True).json()
+        assert updated_user['deleted'] is True, updated_user
+
+    def test_purge_user():
+        pass
+
     def test_information(self):
         user = self._setup_user(TEST_USER_EMAIL)
         url = self.__url("information/inputs", user)
