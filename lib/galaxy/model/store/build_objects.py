@@ -14,17 +14,17 @@ from galaxy.util.bunch import Bunch
 
 DESCRIPTION = """Build import ready model objects from YAML description of files.
 
-The positional argument to this script should be a a YAML file containing a data
-fetch API-like YAML file describing files. This script will then import this data
-into a defined object store and populate metadata corresponding to these files as
-datasets into a "model store".
+The positional argument to this script should be a a YAML file containing a
+data fetch API-like YAML file describing files. This script will then import
+this data into a defined object store and populate metadata corresponding to
+these files as datasets into a "model store".
 
-The YAML file should contain a dictionary of destination+elements objects or a list
-of such dictionaries. Each such destination+elements dictionary should contain at least
-two keys - 'destination' and 'items'.
+The YAML file should contain a dictionary of destination+elements objects or a
+list of such dictionaries. Each such destination+elements dictionary should
+contain at least two keys - 'destination' and 'items'.
 
-Examples of destinations for creating libraries and just populating history datasets
-are as follows:
+Examples of destinations for creating libraries and just populating history
+datasets are as follows:
 
 ```
 destination:
@@ -38,10 +38,10 @@ destination:
   type: hdas
 ````
 
-The 'items' definition should be a list of files or library folders. If library folders
-need to be setup they should each be defined with a name and recursive set of items (
-again files or folders). The following code fragment describes both a library folder
-definition and a file entry:
+The 'items' definition should be a list of files or library folders. If library
+folders need to be setup they should each be defined with a name and recursive
+set of items (again files or folders). The following code fragment describes
+both a library folder definition and a file entry:
 
 ```
 items:
@@ -56,14 +56,15 @@ items:
         md5: e5d21b1ea57fc9a31f8ea0110531bf3d
 ```
 
-Currently for each file a filename must be supplied, url information will be stored if
-provided but not fetched on-demand like the upload 2.0/data fetch endpoint.
+Currently for each file a filename must be supplied, url information will be
+stored if provided but not fetched on-demand like the upload 2.0/data fetch
+endpoint.
 
-Differences with respect to the Upload 2.0 YAML/JSON format: currently various src tags
-such as 'url' are not supported, data cleaning options such as to_posix_lines, and
-space_to_tab are not supported, unpacking zip files and walking directoriesm etc.. are
-not supported either. The format consumed by this script should continue to evolve to
-converge with the upload 2.0 format.
+Differences with respect to the Upload 2.0 YAML/JSON format: currently various
+src tags such as 'url' are not supported, data cleaning options such as
+to_posix_lines, and space_to_tab are not supported, unpacking zip files and
+walking directories etc.. are not supported either. The format consumed by
+this script should continue to evolve to converge with the upload 2.0 format.
 """
 
 logging.basicConfig()
@@ -118,7 +119,7 @@ def main(argv=None):
 
 
 def _arg_parser():
-    parser = argparse.ArgumentParser(description=DESCRIPTION)
+    parser = argparse.ArgumentParser(description=DESCRIPTION, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('objects', metavar='OBJECT_CONFIG', help='config file describing files to build objects for')
     parser.add_argument('--object-store-config', help="object store configuration file")
     parser.add_argument('-e', '--export', default="export", help='export path')

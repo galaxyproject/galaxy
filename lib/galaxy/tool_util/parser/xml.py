@@ -197,7 +197,6 @@ class XmlToolSource(ToolSource):
         parallelism = self.root.find("parallelism")
         parallelism_info = None
         if parallelism is not None and parallelism.get("method"):
-            from galaxy.jobs import ParallelismInfo
             return ParallelismInfo(parallelism)
         return parallelism_info
 
@@ -1115,3 +1114,22 @@ class XmlInputSource(InputSource):
             case_page_source = XmlPageSource(case_elem)
             sources.append((value, case_page_source))
         return sources
+
+
+class ParallelismInfo(object):
+    """
+    Stores the information (if any) for running multiple instances of the tool in parallel
+    on the same set of inputs.
+    """
+
+    def __init__(self, tag):
+        self.method = tag.get('method')
+        if isinstance(tag, dict):
+            items = tag.items()
+        else:
+            items = tag.attrib.items()
+        self.attributes = dict([item for item in items if item[0] != 'method'])
+        if len(self.attributes) == 0:
+            # legacy basic mode - provide compatible defaults
+            self.attributes['split_size'] = 20
+            self.attributes['split_mode'] = 'number_of_parts'

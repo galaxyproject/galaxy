@@ -92,13 +92,12 @@ export const CommunicationServerView = Backbone.View.extend({
 
     /**renders the chat icon as a nav item*/
     render: function() {
-        const navItem = {
+        return {
             id: "show-chat-online",
             icon: "fa-comment-o",
             tooltip: _l("Chat online"),
             visible: false,
             onclick: this.makeModalIframe
         };
-        return navItem;
     }
 });

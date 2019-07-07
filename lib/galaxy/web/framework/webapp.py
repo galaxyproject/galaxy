@@ -114,8 +114,8 @@ class WebApplication(base.WebApplication):
         Search for UI controllers in `package_name` and add
         them to the webapp.
         """
-        from galaxy.web.base.controller import BaseUIController
-        from galaxy.web.base.controller import ControllerUnavailable
+        from galaxy.webapps.base.controller import BaseUIController
+        from galaxy.webapps.base.controller import ControllerUnavailable
         package = import_module(package_name)
         controller_dir = package.__path__[0]
         for fname in os.listdir(controller_dir):
@@ -139,8 +139,8 @@ class WebApplication(base.WebApplication):
         Search for UI controllers in `package_name` and add
         them to the webapp.
         """
-        from galaxy.web.base.controller import BaseAPIController
-        from galaxy.web.base.controller import ControllerUnavailable
+        from galaxy.webapps.base.controller import BaseAPIController
+        from galaxy.webapps.base.controller import ControllerUnavailable
         package = import_module(package_name)
         controller_dir = package.__path__[0]
         for fname in os.listdir(controller_dir):

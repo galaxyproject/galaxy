@@ -23,7 +23,7 @@ from galaxy.model import (
     ExtendedMetadataIndex
 )
 from galaxy.web import expose_api
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     HTTPBadRequest,
     url_for,

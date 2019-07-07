@@ -37,6 +37,7 @@ PACKAGES = [
     'galaxy.tool_util.deps.container_resolvers',
     'galaxy.tool_util.deps.mulled',
     'galaxy.tool_util.deps.resolvers',
+    'galaxy.tool_util.linters',
     'galaxy.tool_util.locations',
     'galaxy.tool_util.parser',
 ]

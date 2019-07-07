@@ -9,7 +9,7 @@ import galaxy.util
 from galaxy import web
 from galaxy.tools import DataSourceTool
 from galaxy.web import error, url_for
-from galaxy.web.base.controller import BaseUIController
+from galaxy.webapps.base.controller import BaseUIController
 
 log = logging.getLogger(__name__)
 

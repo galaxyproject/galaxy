@@ -12,7 +12,7 @@ from shutil import rmtree
 from stat import S_IXUSR
 from subprocess import PIPE, Popen
 
-from galaxy.tool_util.deps import build_dependency_manager_from_dict, DependencyManager
+from galaxy.tool_util.deps import build_dependency_manager, DependencyManager
 from galaxy.tool_util.deps.requirements import (
     ToolRequirement,
     ToolRequirements
@@ -610,6 +610,114 @@ def test_config_module_directory_searcher():
         assert module_resolver.module_checker.directories == ["/opt/Modules/modulefiles"]
 
 
+def test_dependency_manager_config_options_global():
+    app_config = {
+        "tool_dependency_dir": "/tmp",
+        "tool_dependency_cache_dir": "/tmp",
+        "conda_auto_init": False,
+    }
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert not dm.to_dict()["cache"]
+
+    app_config["use_cached_dependency_manager"] = True
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert dm.to_dict()["cache"]
+    assert dm.to_dict()["precache"]
+
+    app_config["precache_dependencies"] = False
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert not dm.to_dict()["precache"]
+
+    conda_opts = _first_conda_resolver_options(dm)
+    assert conda_opts["use_local"] is False
+
+    app_config["conda_use_local"] = True
+    dm = __dependency_manager_for_config(app_config.copy())
+    conda_opts = _first_conda_resolver_options(dm)
+    assert conda_opts["use_local"] is True
+
+
+def test_dependency_manager_config_options_embedded_config():
+    app_config = {
+        "dependency_resolution": {
+            "default_base_path": "/tmp",
+            "cache_dir": "/tmp",
+        },
+        "conda_auto_init": False,
+    }
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert not dm.to_dict()["cache"]
+
+    app_config["dependency_resolution"]["cache"] = True
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert dm.to_dict()["cache"]
+    assert dm.to_dict()["precache"]
+
+    app_config["dependency_resolution"]["precache"] = False
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert not dm.to_dict()["precache"]
+
+    conda_opts = _first_conda_resolver_options(dm)
+    assert conda_opts["use_local"] is False
+
+    app_config["conda_use_local"] = True
+    dm = __dependency_manager_for_config(app_config.copy())
+    conda_opts = _first_conda_resolver_options(dm)
+    assert conda_opts["use_local"] is True
+
+
+def test_dependency_manager_config_options_resolution_config():
+    app_config = {
+        "conda_auto_init": False,
+    }
+    resolution_config = {
+        "default_base_path": "/tmp",
+        "cache_dir": "/tmp",
+    }
+    dm = __dependency_manager_for_config(app_config.copy(), resolution_config=resolution_config.copy())
+    assert not dm.to_dict()["cache"]
+
+    resolution_config["cache"] = True
+    dm = __dependency_manager_for_config(app_config.copy(), resolution_config=resolution_config.copy())
+    assert dm.to_dict()["cache"]
+    assert dm.to_dict()["precache"]
+
+    resolution_config["precache"] = False
+    dm = __dependency_manager_for_config(app_config.copy(), resolution_config=resolution_config.copy())
+    assert not dm.to_dict()["precache"]
+
+    conda_opts = _first_conda_resolver_options(dm)
+    assert conda_opts["use_local"] is False
+
+    app_config["conda_use_local"] = True
+    dm = __dependency_manager_for_config(app_config.copy(), resolution_config=resolution_config.copy())
+    conda_opts = _first_conda_resolver_options(dm)
+    assert conda_opts["use_local"] is True
+
+
+def test_dependency_manager_none():
+    # by default tool_dependency_dir will be use to create some default resolvers...
+    app_config = {
+        "conda_auto_init": False,
+        "tool_dependency_dir": "some_not_none_value",
+    }
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert dm.to_dict()["use"]
+
+    # but setting it none disables dependency resolution unless explicit resolvers
+    # are configured.
+    app_config = {
+        "conda_auto_init": False,
+        "tool_dependency_dir": "none",
+    }
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert not dm.to_dict()["use"]
+
+
+def _first_conda_resolver_options(dm):
+    return [r for r in dm.to_dict()["resolvers"] if r["resolver_type"] == "conda"][0]
+
+
 @contextmanager
 def __environ(values, remove=[]):
     """
@@ -652,7 +760,15 @@ def __dependency_manager_for_base_path(default_base_path, conf_file=None):
     dm = DependencyManager(default_base_path=default_base_path, conf_file=conf_file, app_config={"conda_auto_init": False})
     if ROUND_TRIP_TEST_DEPENDENCY_MANAGER_SERIALIZATION:
         as_dict = dm.to_dict()
-        dm = build_dependency_manager_from_dict(as_dict)
+        dm = build_dependency_manager(resolution_config_dict=as_dict)
+    return dm
+
+
+def __dependency_manager_for_config(app_config, resolution_config=None):
+    dm = build_dependency_manager(app_config_dict=app_config, resolution_config_dict=resolution_config)
+    if ROUND_TRIP_TEST_DEPENDENCY_MANAGER_SERIALIZATION:
+        as_dict = dm.to_dict()
+        dm = build_dependency_manager(resolution_config_dict=as_dict)
     return dm
 
 

@@ -54,7 +54,7 @@ export function make_popupmenu(button_element, initial_options) {
                     );
                 }
             });
-            var wrapper = $("<div class='popmenu-wrapper' style='position: absolute;left: 0; top: -1000;'></div>")
+            var wrapper = $("<div class='popmenu-wrapper' style='position: absolute;left: 0;'></div>")
                 .append(menu_element)
                 .appendTo("body");
 
