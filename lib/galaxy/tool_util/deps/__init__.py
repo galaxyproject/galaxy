@@ -36,7 +36,7 @@ def build_dependency_manager(app_config_dict=None, resolution_config_dict=None, 
     """Build a DependencyManager object from app and/or resolution config.
 
     If app_config_dict is specified, it should be application configuration information
-    and configuration options are generally named to identify the context is dependency
+    and configuration options are generally named to identify the context of dependency
     management (e.g. conda_prefix not prefix or use_cached_dependency_manager not cache).
     resolution_config_dict if specified is assumed to be the to_dict() version of a
     DependencyManager and should only contain dependency configuration options.
