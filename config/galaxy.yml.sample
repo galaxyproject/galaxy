@@ -1761,3 +1761,7 @@ galaxy:
   # reason to disable it.
   #use_pbkdf2: true
 
+  # probe_liveness creates empty files at a specified location to indicate
+  # the liveness of your job runners
+  #probe_liveness: false
+  #liveness_probe_directory: /tmp

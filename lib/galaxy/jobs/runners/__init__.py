@@ -2,7 +2,9 @@
 Base classes for job runner plugins.
 """
 import datetime
+import errno
 import logging
+import multiprocessing
 import os
 import string
 import subprocess
@@ -679,6 +681,10 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         Watches jobs currently in the monitor queue and deals with state
         changes (queued to running) and job completion.
         """
+
+        liveness_timer = 0
+        liveness_interval = 60
+        probefile_name = "liveprobe-{}-{}".format(multiprocessing.current_process().name, threading.current_thread().name)
         while True:
             # Take any new watched jobs and put them on the monitor list
             try:
@@ -696,8 +702,42 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
                 self.check_watched_items()
             except Exception:
                 log.exception('Unhandled exception checking active jobs')
+            # execute if we're interested in probing liveness, else ignore
+            if self.app.config.probe_liveness:
+                if liveness_timer == liveness_interval:
+                    log.info("Probulating")
+                    liveness_timer = 0
+                    self._liveness_probe_toucher(probefile_name)
+                liveness_timer += 1
             # Sleep a bit before the next state check
             time.sleep(1)
+
+    def _liveness_probe_toucher(self, probefile_name):
+        # touch liveness probe file to update time if the configuration demands it
+        if "liveness_probe_directory" in self.app.config.__dict__.keys():
+            path = self.app.config.liveness_probe_directory
+            if path[-1] == "/":
+                path = path[:-1]
+            if not os.path.exists(path):
+                log.info("liveness_probe_directory '{}' does not exist, creating".format(path))
+                try:
+                    os.makedirs(path)
+                except OSError as e:
+                    if e.errno == errno.EACCES:
+                        log.error("Cannot create probe path '{}' due to insufficient permissions, disabling liveness probing".format(path))
+                        self.app.config.probe_liveness = False
+        else:
+            log.warning("Path not specified despite probe_liveness being enabled, defaulting to /tmp")
+            path = "/tmp"
+        if self.app.config.probe_liveness:
+            file_path = "{}/{}".format(path, probefile_name)
+            try:
+                with open(file_path, 'a'):
+                    os.utime(file_path, None)
+            except IOError as e:
+                if e.errno == errno.EACCES:
+                    log.error("Liveness probe path '{}' is not writable, disabling liveness probing".format(path))
+                    self.app.config.probe_liveness = False
 
     def monitor_job(self, job_state):
         self.monitor_queue.put(job_state)

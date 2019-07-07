@@ -714,6 +714,11 @@ class Configuration(object):
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 
+        # remote job runner liveness probe file creation variables
+        self.probe_liveness = string_as_bool(kwargs.get('probe_liveness', False))
+        if self.probe_liveness:
+            self.liveness_probe_directory = kwargs.get("liveness_probe_directory", "/tmp")
+
         # Compliance/Policy variables
         self.redact_username_during_deletion = False
         self.redact_email_during_deletion = False
