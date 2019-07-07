@@ -1,10 +1,10 @@
 """The module defines the abstract interface for dealing tool dependency resolution plugins."""
+import errno
 from abc import (
     ABCMeta,
     abstractmethod,
     abstractproperty,
 )
-import errno
 
 import six
 import yaml
