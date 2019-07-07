@@ -278,6 +278,21 @@ var FolderListView = Backbone.View.extend({
     },
 
     /**
+     * In case the search_term is not empty perform the search and render
+     * the result. Render all visible folder items otherwise.
+     * @param  {string} search_term string to search for
+     */
+    searchFolder: function(search_term) {
+        const trimmed_term = $.trim(search_term);
+        if (trimmed_term !== "") {
+            const result_collection = this.folder_container.search(search_term);
+            this.collection.reset(result_collection);
+        } else {
+            this.paginate();
+        }
+    },
+
+    /**
      * User clicked the checkbox in the table heading
      * @param  {context} event
      */
@@ -466,7 +481,7 @@ var FolderListView = Backbone.View.extend({
                             <a title="Return to this folder" href="#/folders/<%- path_item[0] %>">
                                 <%- path_item[1] %>
                             </a>
-                        </li> 
+                        </li>
                     <% } else { %>
                         <li class="breadcrumb-item active">
                             <span title="You are in this folder">
@@ -509,7 +524,7 @@ var FolderListView = Backbone.View.extend({
                         <a class="sort-folder-state" title="Click to reverse order" href="#">State</a>
                         <span title="Sorted by State" class="sort-icon-state fa"></span>
                     </th>
-                    <th style="width:160px;"></th> 
+                    <th style="width:160px;"></th>
                 </thead>
                 <tbody id="folder_list_body">
                     <tr id="first_folder_item">
