@@ -1,6 +1,6 @@
 galaxy-objectstore
 galaxy-sequence-utils==1.1.3
-galaxy-util
+galaxy-util[template]
 bdbag
 bx-python
 h5py
