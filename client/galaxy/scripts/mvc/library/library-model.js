@@ -55,7 +55,7 @@ var Libraries = Backbone.Collection.extend({
     },
 
     sortLibraries: function(sort_key, sort_order) {
-        this.comparator = mod_util.generateLibraryComparator(sort_key, sort_order);
+        this.comparator = mod_util.generateComparator(sort_key, sort_order);
         this.sort();
     }
 });
@@ -77,7 +77,7 @@ var Folder = Backbone.Collection.extend({
     model: LibraryItem,
 
     sortFolder: function(sort_key, sort_order) {
-        this.comparator = mod_util.generateFolderComparator(sort_key, sort_order);
+        this.comparator = mod_util.generateComparator(sort_key, sort_order);
         this.sort();
     }
 });
