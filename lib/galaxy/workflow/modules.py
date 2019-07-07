@@ -704,10 +704,8 @@ class InputParameterModule(WorkflowModule):
         # Retrieve possible runtime options for 'select' type inputs
         if parameter_type == 'select' and connections:
             static_options = []
-            legal_values = []
             for connection in connections:
                 tool_inputs = connection.input_step.module.tool.inputs.data[connection.input_name]
-                legal_values.append(tool_inputs.legal_values)
                 static_options.append(tool_inputs.static_options)
             intxn_vals = set.intersection(*[set([option[1] for option in options]) for options in static_options])
             intxn_opts = [option for options in static_options for option in options if option[1] in intxn_vals]
@@ -716,7 +714,7 @@ class InputParameterModule(WorkflowModule):
                 d[value].append(label)
             intxn_tool_inputs = copy(tool_inputs)
             intxn_tool_inputs.static_options = [(', '.join(set(label)), value, False) for value, label in list(d.items())]
-            intxn_tool_inputs.legal_values = list(set.intersection(*legal_values))  # intxn_vals can probably replace this expression
+            intxn_tool_inputs.legal_values = intxn_vals
             input.options = intxn_tool_inputs
         return dict(input=input)
 
