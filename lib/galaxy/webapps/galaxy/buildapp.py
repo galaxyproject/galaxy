@@ -349,6 +349,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{id:.+?}/test_data', action='test_data', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/citations', action='citations', controller="tools")
+    webapp.mapper.connect('/api/tools/{id:.+?}/xrefs', action='xrefs', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/download', action='download', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/requirements', action='requirements', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/install_dependencies', action='install_dependencies', controller="tools", conditions=dict(method=["POST"]))

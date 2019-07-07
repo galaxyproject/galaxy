@@ -899,8 +899,9 @@ class InstallRepositoryManager(object):
                 new_tools = [self.app.toolbox._tools_by_id.get(tool_d['guid'], None) for tool_d in metadata['tools']]
                 new_requirements = set([tool.requirements.packages for tool in new_tools if tool])
                 [self._view.install_dependencies(r) for r in new_requirements]
-                if self.app.config.use_cached_dependency_manager:
-                    [self.app.toolbox.dependency_manager.build_cache(r) for r in new_requirements]
+                dependency_manager = self.app.toolbox.dependency_manager
+                if dependency_manager.cached:
+                    [dependency_manager.build_cache(r) for r in new_requirements]
 
             if install_tool_dependencies and tool_shed_repository.tool_dependencies and 'tool_dependencies' in metadata:
                 work_dir = tempfile.mkdtemp(prefix="tmp-toolshed-itsr")
@@ -992,7 +993,7 @@ class InstallRepositoryManager(object):
         self.install_model.context.flush()
 
     def __assert_can_install_dependencies(self):
-        if self.app.config.tool_dependency_dir is None:
+        if self.app.tool_dependency_dir is None:
             no_tool_dependency_dir_message = "Tool dependencies can be automatically installed only if you set "
             no_tool_dependency_dir_message += "the value of your 'tool_dependency_dir' setting in your Galaxy "
             no_tool_dependency_dir_message += "configuration file (galaxy.ini) and restart your Galaxy server.  "

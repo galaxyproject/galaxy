@@ -102,8 +102,7 @@ export function showMonitorToggles() {
 // retrieve toggle list from the session storage
 function getToggles() {
     const json = sessionStorage.getItem("global_monitors");
-    const existinglist = json ? JSON.parse(json) : {};
-    return existinglist;
+    return json ? JSON.parse(json) : {};
 }
 
 // put the toggle list back in session storage

@@ -6,7 +6,7 @@
  * @param  {str} sort_order order to sort by (asc, desc)
  * @return {function} two-argument comparator function
  */
-var generateFolderComparator = (sort_key, sort_order) => (itemA, itemB) => {
+var generateComparator = (sort_key, sort_order) => (itemA, itemB) => {
     if (itemA.get("type") === itemB.get("type")) {
         if (!itemA.has(sort_key) && !itemB.has(sort_key)) {
             return 0;
@@ -15,12 +15,24 @@ var generateFolderComparator = (sort_key, sort_order) => (itemA, itemB) => {
         } else if (!itemB.has(sort_key)) {
             return -1;
         }
-        if (itemA.get(sort_key).toLowerCase() > itemB.get(sort_key).toLowerCase()) {
+        var comparable_itemA_key;
+        var comparable_itemB_key;
+        if (typeof itemA.get(sort_key) === "number") {
+            comparable_itemA_key = itemA.get(sort_key);
+            comparable_itemB_key = itemB.get(sort_key);
+        }
+        else
+        {
+            comparable_itemA_key = itemA.get(sort_key).toLowerCase();
+            comparable_itemB_key = itemB.get(sort_key).toLowerCase();
+        }
+        if ( comparable_itemA_key > comparable_itemB_key) {
             return sort_order === "asc" ? 1 : -1;
         }
-        if (itemB.get(sort_key).toLowerCase() > itemA.get(sort_key).toLowerCase()) {
+        if (comparable_itemB_key > comparable_itemA_key) {
             return sort_order === "asc" ? -1 : 1;
         }
+        
         return 0; // equal
     } else {
         if (itemA.get("type") === "folder") {
@@ -29,22 +41,6 @@ var generateFolderComparator = (sort_key, sort_order) => (itemA, itemB) => {
         return 1;
     }
 };
-/**
- * Create alphabetical based two-argument comparator
- * @param  {str} sort_key   key to sort by
- * @param  {str} sort_order order to sort by (asc, desc)
- * @return {function} two-argument comparator function
- */
-var generateLibraryComparator = (sort_key, sort_order) => (libraryA, libraryB) => {
-    if (libraryA.get(sort_key).toLowerCase() > libraryB.get(sort_key).toLowerCase()) {
-        return sort_order === "asc" ? 1 : -1;
-    }
-    if (libraryB.get(sort_key).toLowerCase() > libraryA.get(sort_key).toLowerCase()) {
-        return sort_order === "asc" ? -1 : 1;
-    }
-    return 0; // equal
-};
 export default {
-    generateFolderComparator: generateFolderComparator,
-    generateLibraryComparator: generateLibraryComparator
+    generateComparator: generateComparator
 };
