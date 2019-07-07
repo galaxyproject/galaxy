@@ -12,6 +12,9 @@ from galaxy.util import galaxy_directory
 TOOL_XML_1 = """
 <tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
+    <xrefs>
+        <xref type="bio.tools">bwa</xref>
+    </xrefs>
     <version_command interpreter="python">bwa.py --version</version_command>
     <parallelism method="multi" split_inputs="input1" split_mode="to_size" split_size="1" merge_outputs="out_file1" />
     <command interpreter="python">bwa.py --arg1=42</command>
@@ -84,6 +87,9 @@ class: GalaxyTool
 id: bowtie
 version: 1.0.2
 description: "The Bowtie Mapper"
+xrefs:
+  - type: bio.tools
+    value: bwa
 command: "bowtie_wrapper.pl --map-the-stuff"
 interpreter: "perl"
 runtime_version:
@@ -311,6 +317,10 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         assert attributes1["compare"] == "sim_size"
         assert attributes1["lines_diff"] == 4
 
+    def test_xrefs(self):
+        xrefs = self._tool_source.parse_xrefs()
+        assert xrefs == [{'value': 'bwa', 'reftype': 'bio.tools'}]
+
     def test_exit_code(self):
         tool_source = self._get_tool_source(source_contents="""<tool id="bwa" name="bwa">
             <command detect_errors="exit_code">
@@ -467,6 +477,10 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         attributes1 = output2["attributes"]
         assert attributes1["compare"] == "sim_size"
         assert attributes1["lines_diff"] == 4
+
+    def test_xrefs(self):
+        xrefs = self._tool_source.parse_xrefs()
+        assert xrefs == [{'value': 'bwa', 'reftype': 'bio.tools'}]
 
     def test_sanitize(self):
         assert self._tool_source.parse_sanitize() is True

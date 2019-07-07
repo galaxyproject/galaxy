@@ -1,0 +1,7 @@
+galaxy-data
+pyjwt
+cloudauthz
+# Following three shouldn't be needed, cloudauthz should be updated to require them
+google-api-python-client
+httplib2
+oauth2client

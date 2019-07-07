@@ -9,7 +9,7 @@ from galaxy.openid.openid_manager import OpenIDManager
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.util import unicodify
 from galaxy.web import url_for
-from galaxy.web.base.controller import BaseUIController
+from galaxy.webapps.base.controller import BaseUIController
 
 log = logging.getLogger(__name__)
 

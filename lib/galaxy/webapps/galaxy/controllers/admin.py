@@ -25,10 +25,10 @@ from galaxy.util import (
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.odict import odict
 from galaxy.web import url_for
-from galaxy.web.base import controller
-from galaxy.web.base.controller import UsesQuotaMixin
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
+from galaxy.webapps.base import controller
+from galaxy.webapps.base.controller import UsesQuotaMixin
 from tool_shed.util import (
     common_util,
     encoding_util,
@@ -890,7 +890,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         modules.sort()
         modules.reverse()
         for item in modules:
-            if not item.endswith('.py') or item.startswith('0001_tools'):
+            if not item.endswith('_tools.py') or item.startswith('0001_tools'):
                 continue
             module = item.replace('.py', '')
             migration_stage = int(module.replace('_tools', ''))

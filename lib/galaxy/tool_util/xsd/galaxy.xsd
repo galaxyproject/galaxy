@@ -47,6 +47,7 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="macros" type="Macros" minOccurs="0"/>
         <xs:element name="edam_topics" type="EdamTopics" minOccurs="0"/>
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
+        <xs:element name="xrefs" type="xrefs" minOccurs="0" />
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
         <xs:element name="description" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="tool-descriptions">
@@ -5581,14 +5582,60 @@ A tool can have any number of EDAM operation references.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-        <xs:element name="edam_operation" minOccurs="0" maxOccurs="unbounded">
-          <xs:simpleType>
-            <xs:restriction base="xs:string">
-              <xs:pattern value="operation_[0-9]{4}"></xs:pattern>
-            </xs:restriction>
-          </xs:simpleType>
-        </xs:element>
-      </xs:sequence>
-    </xs:complexType>
+      <xs:element name="edam_operation" minOccurs="0" maxOccurs="unbounded">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:pattern value="operation_[0-9]{4}"></xs:pattern>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="xrefs">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Container tag set for the ``<xref>`` tags.
+A tool can refer multiple reference IDs.
+	
+```xml
+   <!-- Example: this tool is seqtk -->
+   <xrefs>      
+	<xref type="bio.tools">seqtk</xref>
+   </xrefs>
+   <!-- https://bio.tools/seqtk -->
+```
+   
+]]></xs:documentation>
+    </xs:annotation>
+      <xs:sequence>
+        <xs:element name="xref" type="xref" minOccurs="0" maxOccurs="unbounded">
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="xref">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">The ``xref`` element specifies reference 
+information according to a catalog.</xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="xrefType" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``
+is the only supported options.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:simpleType name="xrefType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Type of Reference.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="bio.tools"/>
+      <!--xs:enumeration value="whatelse"/-->
+    </xs:restriction>
+  </xs:simpleType>
 
 </xs:schema>

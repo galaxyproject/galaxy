@@ -50,8 +50,7 @@ var HistoryGridView = GridView.extend({
                         $(`.delayed-value-datasets_by_state[data-id='${historyId}']`).html(stateHtml);
                         $(`.delayed-value-disk_size[data-id='${historyId}']`).html(req.nice_size);
                     };
-                    var xhr = $.ajax(options);
-                    return xhr;
+                    return $.ajax(options);
                 };
             })
         );

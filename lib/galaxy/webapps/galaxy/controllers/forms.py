@@ -6,8 +6,8 @@ import six
 from markupsafe import escape
 
 from galaxy import model, util
-from galaxy.web.base.controller import BaseUIController, web
 from galaxy.web.framework.helpers import grids, iff, time_ago
+from galaxy.webapps.base.controller import BaseUIController, web
 
 log = logging.getLogger(__name__)
 

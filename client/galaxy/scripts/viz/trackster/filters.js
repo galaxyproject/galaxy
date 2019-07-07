@@ -322,10 +322,8 @@ _.extend(NumberFilter.prototype, {
      * Returns true if filter can be applied to element.
      */
     applies_to: function(element) {
-        if (element.length > this.index) {
-            return true;
-        }
-        return false;
+        return element.length > this.index;
+
     },
     /**
      * Helper function: returns true if value in in filter's [low, high] range.

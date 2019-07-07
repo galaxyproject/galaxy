@@ -537,24 +537,16 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.tool_ngram_maxsize = kwargs.get("tool_ngram_maxsize", 4)
         default_tool_test_data_directories = os.environ.get("GALAXY_TEST_FILE_DIR", resolve_path("test-data", self.root))
         self.tool_test_data_directories = kwargs.get("tool_test_data_directories", default_tool_test_data_directories)
-        # Location for tool dependencies.
-        use_tool_dependencies, tool_dependency_dir, use_cached_dependency_manager, tool_dependency_cache_dir, precache_dependencies = \
-            parse_dependency_options(kwargs, self.data_dir, self.dependency_resolvers_config_file)
-        self.use_tool_dependencies = use_tool_dependencies
-        self.tool_dependency_dir = tool_dependency_dir
-        self.use_cached_dependency_manager = use_cached_dependency_manager
-        self.tool_dependency_cache_dir = tool_dependency_cache_dir
-        self.precache_dependencies = precache_dependencies
-        self.dependency_resolvers = kwargs.get("dependency_resolvers")
         # Deployers may either specify a complete list of mapping files or get the default for free and just
         # specify a local mapping file to adapt and extend the default one.
-        if "conda_mapping_files" in kwargs:
-            self.conda_mapping_files = kwargs["conda_mapping_files"]
-        else:
-            self.conda_mapping_files = [
+        if "conda_mapping_files" not in kwargs:
+            conda_mapping_files = [
                 self.local_conda_mapping_file,
                 os.path.join(self.root, "lib", "galaxy", "tool_util", "deps", "resolvers", "default_conda_mapping.yml"),
             ]
+            # dependency resolution options are consumed via config_dict - so don't populate
+            # self, populate config_dict
+            self.config_dict["conda_mapping_files"] = conda_mapping_files
 
         self.enable_beta_mulled_containers = string_as_bool(kwargs.get('enable_beta_mulled_containers', 'False'))
         containers_resolvers_config_file = kwargs.get('containers_resolvers_config_file', None)
@@ -564,7 +556,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
         involucro_path = kwargs.get('involucro_path', None)
         if involucro_path is None:
-            involucro_path = os.path.join(tool_dependency_dir or "database", "involucro")
+            target_dir = resolve_path(kwargs.get("tool_dependency_dir", "dependencies"), self.data_dir)
+            if target_dir == "none":
+                target_dir = "database"
+            involucro_path = os.path.join(target_dir, "involucro")
         self.involucro_path = resolve_path(involucro_path, self.root)
         self.involucro_auto_init = string_as_bool(kwargs.get('involucro_auto_init', True))
         mulled_channels = kwargs.get('mulled_channels')
@@ -1001,34 +996,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 Configuration = GalaxyAppConfiguration
 
 
-def parse_dependency_options(kwargs, root, dependency_resolvers_config_file):
-    # Location for tool dependencies.
-    tool_dependency_dir = kwargs.get("tool_dependency_dir", "dependencies")
-    if tool_dependency_dir.lower() == "none":
-        tool_dependency_dir = None
-
-    if tool_dependency_dir is not None:
-        tool_dependency_dir = resolve_path(tool_dependency_dir, root)
-        # Setting the following flag to true will ultimately cause tool dependencies
-        # to be located in the shell environment and used by the job that is executing
-        # the tool.
-        use_tool_dependencies = True
-        tool_dependency_cache_dir = kwargs.get('tool_dependency_cache_dir', os.path.join(tool_dependency_dir, '_cache'))
-        use_cached_dependency_manager = string_as_bool(kwargs.get("use_cached_dependency_manager", 'False'))
-        precache_dependencies = string_as_bool(kwargs.get("precache_dependencies", 'True'))
-    else:
-        tool_dependency_dir = None
-        if dependency_resolvers_config_file is None:
-            use_tool_dependencies = bool(kwargs.get("dependency_resolvers", None))
-        else:
-            use_tool_dependencies = os.path.exists(dependency_resolvers_config_file)
-        tool_dependency_cache_dir = None
-        precache_dependencies = False
-        use_cached_dependency_manager = False
-
-    return use_tool_dependencies, tool_dependency_dir, use_cached_dependency_manager, tool_dependency_cache_dir, precache_dependencies
-
-
 def get_database_engine_options(kwargs, model_prefix=''):
     """
     Allow options for the SQLAlchemy database engine to be passed by using
@@ -1307,3 +1274,7 @@ class ConfiguresGalaxyMixin(object):
             except Exception:
                 log.info("Waiting for database: attempt %d of %d" % (i, attempts))
                 time.sleep(pause)
+
+    @property
+    def tool_dependency_dir(self):
+        return self.toolbox.dependency_manager.default_base_path

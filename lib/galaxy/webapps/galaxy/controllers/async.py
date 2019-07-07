@@ -15,7 +15,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.hash_util import hmac_new
-from galaxy.web.base.controller import BaseUIController
+from galaxy.webapps.base.controller import BaseUIController
 
 log = logging.getLogger(__name__)
 

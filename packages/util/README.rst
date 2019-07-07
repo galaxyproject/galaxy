@@ -1,6 +1,6 @@
 
 .. image:: https://badge.fury.io/py/galaxy-util.svg
-   :target: https://pypi.python.org/pypi/galaxy-util/
+   :target: https://pypi.org/project/galaxy-util/
 
 
 Overview

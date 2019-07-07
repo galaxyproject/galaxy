@@ -25,7 +25,8 @@ var FolderToolbarView = Backbone.View.extend({
         "click .toolbtn-show-locinfo": "showLocInfo",
         "keydown .page_size": "changePageSize",
         "blur .page_size": "changePageSize",
-        "click .toolbtn-collection-import": "showCollectionSelect"
+        "click .toolbtn-collection-import": "showCollectionSelect",
+        "keyup .folder-search-input": "searchFolder"
     },
 
     defaults: {
@@ -210,10 +211,12 @@ var FolderToolbarView = Backbone.View.extend({
         }
     },
 
+    /**
+     * This function returns a promise
+     */
     fetchUserHistories: function() {
         this.histories = new mod_library_model.GalaxyHistories();
-        var promise = this.histories.fetch();
-        return promise;
+        return this.histories.fetch();
     },
 
     importAllIntoHistory: function() {
@@ -238,9 +241,11 @@ var FolderToolbarView = Backbone.View.extend({
         }
     },
 
+    /**
+     * This function returns a promise
+     */
     createNewHistory: function(new_history_name) {
-        var promise = $.post(`${getAppRoot()}api/histories`, { name: new_history_name });
-        return promise;
+        return $.post(`${getAppRoot()}api/histories`, { name: new_history_name });
     },
 
     processImportToHistory: function(history_id, history_name) {
@@ -1416,6 +1421,17 @@ var FolderToolbarView = Backbone.View.extend({
         return hdca.save(options);
     },
 
+    /**
+     * Take the contents of the search field and send it to the list view
+     * to query the collection of folder items.
+     */
+    searchFolder: function(event) {
+        const Galaxy = getGalaxyInstance();
+        const search_term = $(".folder-search-input").val();
+        this.options.search_term = search_term;
+        Galaxy.libraries.folderListView.searchFolder(search_term);
+    },
+
     templateToolBar: function() {
         return _.template(
             `<div class="library_style_container">
@@ -1425,6 +1441,7 @@ var FolderToolbarView = Backbone.View.extend({
                     </a>
                     <div>
                         <form class="form-inline">
+                            <input type="text" id="folder-filter" class="form-control folder-search-input mr-1" placeholder="Search" size="15">
                             <button style="display:none;" title="Create new folder"
                                 class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1"
                                 type="button">

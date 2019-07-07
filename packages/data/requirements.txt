@@ -4,7 +4,7 @@ bdbag
 bx-python
 h5py
 isa-rwval
-numpy
+numpy<=1.16
 pycryptodome
 pysam
 social_auth_core
