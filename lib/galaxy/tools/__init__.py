@@ -697,6 +697,10 @@ class Tool(Dictifiable):
         self.home_target = home_target
         self.tmp_target = tmp_target
         self.docker_env_pass_through = tool_source.parse_docker_env_pass_through()
+        if self.environment_variables:
+            if not self.docker_env_pass_through:
+                self.docker_env_pass_through = []
+            self.docker_env_pass_through.extend(map(lambda x: x['name'], self.environment_variables))
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
