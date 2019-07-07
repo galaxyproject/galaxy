@@ -1086,11 +1086,7 @@ class ToolModule(WorkflowModule):
     # ---- Run time ---------------------------------------------------------
 
     def recover_state(self, state, **kwds):
-        """ Recover state `dict` from simple dictionary describing configuration
-        state (potentially from persisted step state).
-
-        Sub-classes should supply a `default_state` method which contains the
-        initial state `dict` with key, value pairs for all available attributes.
+        """
         """
         super(ToolModule, self).recover_state(state, **kwds)
         if kwds.get("fill_defaults", False) and self.tool:
