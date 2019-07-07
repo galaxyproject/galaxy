@@ -36,30 +36,33 @@ const fileLoaderConfigRule = { rules: [{ test: fileLoaderTest, use: ["file-loade
 webpackConfig.module = merge.smart(webpackConfig.module, fileLoaderConfigRule);
 webpackConfig.output.publicPath = "";
 
-const sections = [];
+webpackConfig.resolve.modules.push( path.join(__dirname, "galaxy/style/scss") );
 
-glob("./galaxy/docs/galaxy-*.md", (err, files) => {
-    files.forEach(file => {
-        const name = file.match(/galaxy-(\w+).md/)[1];
-        sections.push({ name: "Galaxy " + name, content: file });
-    });
-}),
-    sections.push(
-        ...[
-            {
-                name: "Basic Bootstrap Styles",
-                content: "./galaxy/docs/bootstrap.md"
-            }
-            // This will require additional configuration
-            // {
-            //     name: 'Components',
-            //     components: './galaxy/scripts/components/*.vue'
-            // }
-        ]
-    );
+galaxyStyleDocs = []
+glob.sync("./galaxy/docs/galaxy-*.md").forEach(file => {
+    const name = file.match(/galaxy-(\w+).md/)[1];
+    galaxyStyleDocs.push({ name: name, content: file });
+});
+
+const sections = [
+    {
+	name: 'Components',
+	components: './galaxy/scripts/components/**/*.vue'
+    },
+    {
+	name: 'Galaxy styles',
+	sections: galaxyStyleDocs
+    },
+    {
+	name: "Basic Bootstrap Styles",
+	content: "./galaxy/docs/bootstrap.md"
+    }
+];
 
 module.exports = {
     webpackConfig,
+    pagePerSection: true,
     sections,
-    require: ["./galaxy/style/scss/base.scss"]
+    require: ["./galaxy/style/scss/base.scss", "./galaxy/scripts/polyfills.js", "./galaxy/scripts/bundleEntries.js"],
+    vuex: "./galaxy/scripts/store/index.js"
 };
