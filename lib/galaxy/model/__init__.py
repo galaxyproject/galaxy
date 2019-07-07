@@ -31,6 +31,7 @@ from sqlalchemy import (
     not_,
     or_,
     select,
+    text,
     true,
     type_coerce,
     types)
@@ -3424,6 +3425,7 @@ class LibraryDataset(RepresentById):
                     uploaded_by=ldda.user.email,
                     message=ldda.message,
                     date_uploaded=ldda.create_time.isoformat(),
+                    update_time=ldda.update_time.isoformat(),
                     file_size=int(ldda.get_size()),
                     file_ext=ldda.ext,
                     data_type=ldda.datatype.__class__.__module__ + '.' + ldda.datatype.__class__.__name__,
@@ -3592,6 +3594,26 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
             rval['metadata_' + name] = val
         return rval
 
+    def updateParentFolderUpdateTimes(self):
+        # sets the update_time for all continaing folders up the tree
+        ldda = self
+        db_session = object_session(ldda)
+
+        sql = text(
+        '''
+            with recursive
+            parent_folders_of(folder_id) as (
+                select folder_id from library_dataset where id = :library_dataset_id
+                union all
+                select library_folder.parent_id from library_folder, parent_folders_of
+                where library_folder.id = parent_folders_of.folder_id
+            )
+            update library_folder 
+            set update_time = (select update_time from library_dataset_dataset_association where id = :ldda_id)
+            from parent_folders_of
+            where library_folder.id = parent_folders_of.folder_id
+        ''')
+        db_session.execute(sql, {'library_dataset_id': ldda.library_dataset_id, 'ldda_id': ldda.id})
 
 class ExtendedMetadata(RepresentById):
     def __init__(self, data):
