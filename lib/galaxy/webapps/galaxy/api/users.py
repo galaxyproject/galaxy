@@ -257,7 +257,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
     @web.require_admin
     def undelete(self, trans, id, **kwd):
         """
-        UNDELETE /api/users/{id}
+        PUT /api/users/{id}
         undelete the user with the given ``id``
 
         :param id: the encoded id of the user to be undeleted
