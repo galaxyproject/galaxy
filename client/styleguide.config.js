@@ -1,5 +1,6 @@
 const path = require("path");
 const glob = require("glob");
+const fs = require("fs");
 const merge = require("webpack-merge");
 
 let webpackConfig = require("./webpack.config.js");
@@ -47,7 +48,17 @@ glob.sync("./galaxy/docs/galaxy-*.md").forEach(file => {
 const sections = [
     {
 	name: 'Components',
-	components: './galaxy/scripts/components/**/*.vue'
+	// Components that are directories will get their own section
+	sections: glob.sync("./galaxy/scripts/components/*").map(file => {
+	    if (fs.lstatSync(file).isDirectory()) {
+		return {
+		    name: path.basename(file),
+		    components: file + "/**/*.vue"
+		};
+	    }
+	}).filter( v => v ),
+	// ...while top level components are handled here.
+	components: './galaxy/scripts/components/*.vue',
     },
     {
 	name: 'Galaxy styles',

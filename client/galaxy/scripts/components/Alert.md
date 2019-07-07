@@ -1,12 +1,10 @@
-# Basic alert types
-
-Default alert:
+### Default alert
 
 ```js
 <Alert>An alert with all defaults</Alert>
 ```
 
-Alert variants:
+### Alert variants
 
 ```js
 <div v-for="variant in [ 'success', 'info', 'warning', 'error' ]">
@@ -14,7 +12,7 @@ Alert variants:
 </div>
 ```
 
-Dismissible:
+### Dismissible
 
 ```js
 <div v-for="variant in [ 'success', 'info', 'warning', 'error' ]">
