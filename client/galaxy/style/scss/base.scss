@@ -1483,10 +1483,6 @@ div.permissionContainer {
     min-height: 100%;
 }
 
-div.toolSectionWrapper {
-    @extend .mb-1;
-}
-
 div.toolSectionTitle {
     font-weight: 500;
     font-size: $h4-font-size;
@@ -1496,8 +1492,7 @@ div.toolSectionTitle {
 }
 
 div.toolPanelLabel {
-    @extend .mt-3;
-    @extend .mb-2;
+    @extend .py-1;
     @extend .px-3;
     font-weight: bold;
     font-size: $h4-font-size;
