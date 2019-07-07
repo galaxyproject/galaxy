@@ -39,12 +39,17 @@ from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter,
     HiddenToolParameter,
+    IntegerToolParameter,
     is_runtime_value,
     parameter_types,
     runtime_to_json,
     SelectToolParameter,
     TextToolParameter,
     workflow_building_modes
+)
+from galaxy.tools.parameters.grouping import (
+    Conditional,
+    ConditionalWhen,
 )
 from galaxy.tools.parameters.history_query import HistoryQuery
 from galaxy.tools.parameters.wrapped import make_dict_copy
@@ -94,7 +99,7 @@ class WorkflowModule(object):
     @classmethod
     def from_workflow_step(Class, trans, step, **kwds):
         module = Class(trans, **kwds)
-        module.recover_state(step.tool_inputs)
+        module.recover_state(step.tool_inputs, from_tool_form=False)
         module.label = step.label
         return module
 
@@ -135,6 +140,12 @@ class WorkflowModule(object):
             return self.state.encode(Bunch(inputs=inputs), self.trans.app, nested=nested)
         else:
             return self.state.inputs
+
+    def get_export_state(self):
+        return self.get_state(nested=True)
+
+    def get_tool_state(self):
+        return self.get_state(nested=False)
 
     def recover_state(self, state, **kwds):
         """ Recover state `dict` from simple dictionary describing configuration
@@ -665,9 +676,9 @@ class InputParameterModule(WorkflowModule):
 
     def get_inputs(self):
         # TODO: Use an external xml or yaml file to load the parameter definition
-        parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)
-        optional = self.state.inputs.get("optional", self.default_optional)
-        default_value = self.state.inputs.get("default", self.default_value) or ''
+        parameter_def = self._parse_state_into_dict()
+        parameter_type = parameter_def["parameter_type"]
+        optional = parameter_def["optional"]
         input_parameter_type = SelectToolParameter(None, XML(
             '''
             <param name="parameter_type" label="Parameter type" type="select" value="%s">
@@ -684,34 +695,95 @@ class InputParameterModule(WorkflowModule):
                 # item 0 is option description, item 1 is value, item 2 is "selected"
                 option[2] = True
                 input_parameter_type.static_options[i] = tuple(option)
-        input_default_value = TextToolParameter(None, XML(
-            '''
-            <param name="default" label="Default Value" value="%s">
-            </param>
-            '''
-            % default_value))
-        return OrderedDict([("parameter_type", input_parameter_type),
-                            ("optional", BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", value=optional))),
-                            ("default", input_default_value)])
+
+        parameter_type_cond = Conditional()
+        parameter_type_cond.name = "parameter_definition"
+        parameter_type_cond.test_param = input_parameter_type
+        cases = []
+
+        log.info("optional value is %s " % optional)
+        for param_type in ["text", "integer"]:
+            if param_type == "text":
+                input_default_value = TextToolParameter(None, XML(
+                    '''
+                    <param name="default" label="Default Value" value="%s">
+                    </param>
+                    '''
+                    % (parameter_def.get("default", "") or "")))
+            elif param_type == "integer":
+                log.info("parameter_def is %s" % parameter_def)
+                input_default_value = IntegerToolParameter(None, XML(
+                    '''
+                    <param name="default" label="Default Value" value="%s">
+                    </param>
+                    '''
+                    % (parameter_def.get("default", None) or '0')))
+
+            optional_value = BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", checked=optional))
+            optional_cond = Conditional()
+            optional_cond.name = "optional"
+            optional_cond.test_param = optional_value
+
+            when_text = ConditionalWhen()
+            when_text.value = param_type
+            when_text.inputs = OrderedDict()
+            when_text.inputs["optional"] = optional_cond
+
+            log.info("parameter_def is %s" % parameter_def)
+            specify_default_checked = "default" in parameter_def
+            specify_default = BooleanToolParameter(None, Element("param", name="specify_default", label="Specify a default value", type="boolean", checked=specify_default_checked))
+            specify_default_cond = Conditional()
+            specify_default_cond.name = "specify_default"
+            specify_default_cond.test_param = specify_default
+
+            when_specify_default_true = ConditionalWhen()
+            when_specify_default_true.value = "true"
+            when_specify_default_true.inputs = OrderedDict()
+            when_specify_default_true.inputs["default"] = input_default_value
+
+            when_specify_default_false = ConditionalWhen()
+            when_specify_default_false.value = "false"
+            when_specify_default_false.inputs = OrderedDict()
+
+            specify_default_cond_cases = [when_specify_default_true, when_specify_default_false]
+            specify_default_cond.cases = specify_default_cond_cases
+
+            when_true = ConditionalWhen()
+            when_true.value = "true"
+            when_true.inputs = OrderedDict()
+            when_true.inputs["default"] = specify_default_cond
+
+            when_false = ConditionalWhen()
+            when_false.value = "false"
+            when_false.inputs = OrderedDict()
+
+            optional_cases = [when_true, when_false]
+            optional_cond.cases = optional_cases
+
+            cases.append(when_text)
+
+        parameter_type_cond.cases = cases
+        # ("optional", ),
+        return OrderedDict([("parameter_definition", parameter_type_cond)])
 
     def get_runtime_inputs(self, **kwds):
-        parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)
-        optional = self.state.inputs.get("optional", self.default_optional)
+        parameter_def = self._parse_state_into_dict()
+        parameter_type = parameter_def["parameter_type"]
+        optional = parameter_def["optional"]
         if parameter_type not in ["text", "boolean", "integer", "float", "color"]:
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
         parameter_class = parameter_types[parameter_type]
         parameter_kwds = {}
-        if "default" in self.state.inputs:
-            optional = True
-        default_value = self.state.inputs.get("default", self.default_default_value)
-        if default_value:
-            parameter_kwds["value"] = str(default_value)
-        else:
-            if parameter_type in ["integer", "float"]:
-                parameter_kwds["value"] = str(0)
+
+        if optional:
+            default_value = str(parameter_def.get("default", self.default_default_value))
+            parameter_kwds["value"] = default_value
+
+        if "value" not in parameter_kwds and parameter_type in ["integer", "float"]:
+            parameter_kwds["value"] = str(0)
 
         # TODO: Use a dict-based description from YAML tool source
-        element = Element("param", name="input", label=self.label, type=parameter_type, optional=str(optional), **parameter_kwds)
+        element = Element("param", name="input", label=self.label, type=parameter_type, optional=optional, **parameter_kwds)
         input = parameter_class(None, element)
         return dict(input=input)
 
@@ -724,10 +796,11 @@ class InputParameterModule(WorkflowModule):
         if data_only:
             return []
 
+        parameter_def = self._parse_state_into_dict()
         return [dict(
             name='output',
             label=self.label,
-            type=self.state.inputs.get('parameter_type', self.parameter_type),
+            type=parameter_def.get('parameter_type'),
             parameter=True,
         )]
 
@@ -744,6 +817,69 @@ class InputParameterModule(WorkflowModule):
             input_value = default_value.get("value", NO_REPLACEMENT)
         step_outputs = dict(output=input_value)
         progress.set_outputs_for_input(invocation_step, step_outputs)
+
+    def recover_state(self, state, **kwds):
+        """ Recover state `dict` from simple dictionary describing configuration
+        state (potentially from persisted step state).
+
+        Sub-classes should supply a `default_state` method which contains the
+        initial state `dict` with key, value pairs for all available attributes.
+        """
+        # terrible hack, undo...
+        if "from_tool_from" in kwds:
+            from_tool_form = kwds["from_tool_form"]
+        else:
+            from_tool_form = not state or "parameter_definition" in state
+        if not from_tool_form:
+            state = safe_loads(state)
+            # convert clean format in database to toolform state.
+            default_set, default_value = False, None
+            if "default" in state:
+                default_set = True
+                default_value = state["default"]
+                state["optional"] = True
+            state = {
+                "parameter_definition": {
+                    "parameter_type": state["parameter_type"],
+                    "optional": {
+                        "optional": str(state.get("optional", False))
+                    }
+                }
+            }
+            if default_set:
+                state["parameter_definition"]["optional"]["specify_default"] = {}
+                state["parameter_definition"]["optional"]["specify_default"]["specify_default"] = True
+                state["parameter_definition"]["optional"]["specify_default"]["default"] = default_value
+            state = json.dumps(state)
+        super(InputParameterModule, self).recover_state(state, **kwds)
+
+    def get_export_state(self):
+        return self._parse_state_into_dict()
+
+    def _parse_state_into_dict(self):
+        inputs = self.state.inputs
+        # 19.01/19.05 tool state...
+        rval = {}
+        if "parameter_type" in inputs:
+            rval.update({"parameter_type": inputs["parameter_type"], "optional": False})
+        # expanded tool state...
+        elif "parameter_definition" in inputs:
+            parameters_def = inputs["parameter_definition"]
+            if "optional" in parameters_def:
+                optional_state = parameters_def["optional"]
+                optional = bool(optional_state["optional"])
+                if "specify_default" in optional_state and bool(optional_state["specify_default"]["specify_default"]):
+                    rval["default"] = optional_state["specify_default"]["default"]
+            else:
+                optional = False
+            rval.update({"parameter_type": parameters_def["parameter_type"], "optional": optional})
+        else:
+            rval.update({"parameter_type": self.default_parameter_type, "optional": self.default_optional})
+        return rval
+
+    def save_to_step(self, step):
+        step.type = self.type
+        step.tool_inputs = self._parse_state_into_dict()
 
 
 class PauseModule(WorkflowModule):

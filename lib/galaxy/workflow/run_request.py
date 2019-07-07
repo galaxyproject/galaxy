@@ -2,6 +2,8 @@ import json
 import logging
 import uuid
 
+import six
+
 from galaxy import (
     exceptions,
     model
@@ -83,7 +85,9 @@ def _normalize_inputs(steps, inputs, inputs_by):
             if possible_input_key in inputs:
                 inputs_key = possible_input_key
         default_value = json.loads(step.tool_inputs.get("default") or 'null')
-        optional = json.loads(step.tool_inputs.get("optional") or 'false')
+        optional = step.tool_inputs.get("optional") or False
+        if isinstance(optional, six.string_types):
+            optional = json.loads(optional)
         if not inputs_key and default_value is None and not optional:
             message = "Workflow cannot be run because an expected input step '%s' (%s) has no input dataset." % (step.id, step.label)
             raise exceptions.MessageException(message)

@@ -621,7 +621,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 'label': module.label,
                 'content_id': module.get_content_id(),
                 'name': module.get_name(),
-                'tool_state': module.get_state(),
+                'tool_state': module.get_tool_state(),
                 'errors': module.get_errors(),
                 'inputs': module.get_all_inputs(connectable_only=True),
                 'outputs': module.get_all_outputs(),
@@ -820,10 +820,7 @@ class WorkflowContentsManager(UsesAnnotations):
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
             content_id = module.get_content_id()
             # Export differences for backward compatibility
-            if module.type == 'tool':
-                tool_state = module.get_state(nested=False)
-            else:
-                tool_state = module.state.inputs
+            tool_state = module.get_export_state()
             # Step info
             step_dict = {
                 'id': step.order_index,
