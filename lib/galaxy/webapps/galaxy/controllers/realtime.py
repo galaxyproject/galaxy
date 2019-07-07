@@ -7,12 +7,12 @@ from galaxy import (
     model,
     web
 )
-from galaxy.webapps.base.controller import (
-    BaseUIController,
-)
 from galaxy.web.framework.helpers import (
     grids,
     time_ago,
+)
+from galaxy.webapps.base.controller import (
+    BaseUIController,
 )
 
 log = logging.getLogger(__name__)
