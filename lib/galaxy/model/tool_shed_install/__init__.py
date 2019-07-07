@@ -555,14 +555,14 @@ class ToolDependency(object):
 
     def installation_directory(self, app):
         if self.type == 'package':
-            return os.path.join(app.config.tool_dependency_dir,
+            return os.path.join(app.tool_dependency_dir,
                                 self.name,
                                 self.version,
                                 self.tool_shed_repository.owner,
                                 self.tool_shed_repository.name,
                                 self.tool_shed_repository.installed_changeset_revision)
         if self.type == 'set_environment':
-            return os.path.join(app.config.tool_dependency_dir,
+            return os.path.join(app.tool_dependency_dir,
                                 'environment_settings',
                                 self.name,
                                 self.tool_shed_repository.owner,
