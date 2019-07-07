@@ -47,7 +47,7 @@ log = logging.getLogger(__name__)
 
 real_file = os.path.realpath(__file__)
 GALAXY_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(real_file), os.pardir))
-if not os.path.exists(os.path.join(GALAXY_ROOT_DIR, 'setup.py')):
+if not os.path.exists(os.path.join(GALAXY_ROOT_DIR, 'run.sh')):
     # Galaxy is installed
     GALAXY_ROOT_DIR = None
 else:
