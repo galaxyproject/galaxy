@@ -2400,6 +2400,7 @@ mapping:
             desc: See description of 'tool_dependency_dir'.
           resolvers:
             desc: See description of 'dependency_resolvers'.
+
       default_job_resubmission_condition:
         type: str
         required: false
