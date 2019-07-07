@@ -1977,7 +1977,11 @@ class JobWrapper(HasResourceParameters):
         container_runtime_path = os.path.join(working_directory, "container_runtime.json")
         if os.path.exists(container_runtime_path):
             with open(container_runtime_path, "r") as f:
-                container_runtime = json.load(f)
+                try:
+                    container_runtime = json.load(f)
+                except ValueError:
+                    # File exists, but is not fully populated yet
+                    return False
             log.debug("found container runtime %s" % container_runtime)
             self.app.realtime_manager.configure_entry_points(job, container_runtime)
             return True
