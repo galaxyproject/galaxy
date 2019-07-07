@@ -7,9 +7,8 @@ from galaxy.config import (
     configure_logging,
     find_path,
     find_root,
-    parse_dependency_options,
 )
-from galaxy.tool_util.deps import CachedDependencyManager, DependencyManager, NullDependencyManager
+from galaxy.tool_util.deps import build_dependency_manager
 from galaxy.util.script import main_factory
 
 DESCRIPTION = "Script to manage tool dependencies (with focus on a Conda environments)."
@@ -29,24 +28,7 @@ def _build_dependency_manager_no_config(kwargs):
     configure_logging(kwargs)
     root = find_root(kwargs)
     dependency_resolvers_config_file = find_path(kwargs, "dependency_resolvers_config_file", root)
-    use_dependencies, tool_dependency_dir, use_cached_dependency_manager, tool_dependency_cache_dir, precache_dependencies = \
-        parse_dependency_options(kwargs, root, dependency_resolvers_config_file)
-
-    if not use_dependencies:
-        dependency_manager = NullDependencyManager()
-    else:
-        dependency_manager_kwds = {
-            'default_base_path': tool_dependency_dir,
-            'conf_file': dependency_resolvers_config_file,
-            'app_config': kwargs,
-        }
-
-        if use_cached_dependency_manager:
-            dependency_manager_kwds['tool_dependency_cache_dir'] = tool_dependency_cache_dir
-            dependency_manager = CachedDependencyManager(**dependency_manager_kwds)
-        else:
-            dependency_manager = DependencyManager(**dependency_manager_kwds)
-
+    dependency_manager = build_dependency_manager(app_config_dict=kwargs, conf_file=dependency_resolvers_config_file, default_tool_dependency_dir="database/dependencies")
     return dependency_manager
 
 
