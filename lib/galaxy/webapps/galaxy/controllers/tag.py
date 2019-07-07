@@ -9,7 +9,7 @@ from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import and_, func
 
 from galaxy import web
-from galaxy.web.base.controller import BaseUIController, UsesTagsMixin
+from galaxy.webapps.base.controller import BaseUIController, UsesTagsMixin
 
 log = logging.getLogger(__name__)
 

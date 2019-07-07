@@ -78,8 +78,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                         history_id: this.history_id,
                         collection_id: historyContent.attributes.id
                     });
-                    var jobStatesSummary = this.jobStateSummariesCollection.get(jobSourceId);
-                    historyContent.jobStatesSummary = jobStatesSummary;
+                    historyContent.jobStatesSummary = this.jobStateSummariesCollection.get(jobSourceId);
                 }
             }
         });

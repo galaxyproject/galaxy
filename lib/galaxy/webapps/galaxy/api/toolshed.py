@@ -14,7 +14,7 @@ from galaxy import (
 )
 from galaxy.exceptions import MessageException
 from galaxy.web import expose_api
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 from tool_shed.util import (
     common_util,
     repository_util,

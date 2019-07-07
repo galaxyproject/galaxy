@@ -26,14 +26,14 @@ ${render_galaxy_repository_actions( repository )}
                         <input type="hidden" name="tool_dependency_ids" value="${trans.security.encode_id( tool_dependency.id )}"/>
                         <%
                             if tool_dependency.type == 'package':
-                                install_dir = os.path.join( trans.app.config.tool_dependency_dir,
+                                install_dir = os.path.join( trans.app.tool_dependency_dir,
                                                             tool_dependency.name,
                                                             tool_dependency.version,
                                                             tool_dependency.tool_shed_repository.owner,
                                                             tool_dependency.tool_shed_repository.name,
                                                             tool_dependency.tool_shed_repository.installed_changeset_revision )
                             elif tool_dependency.type == 'set_environment':
-                                install_dir = os.path.join( trans.app.config.tool_dependency_dir,
+                                install_dir = os.path.join( trans.app.tool_dependency_dir,
                                                             'environment_settings',
                                                             tool_dependency.name,
                                                             tool_dependency.tool_shed_repository.owner,

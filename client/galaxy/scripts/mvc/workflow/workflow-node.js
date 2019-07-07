@@ -317,8 +317,7 @@ var Node = Backbone.Model.extend({
         var new_body = nodeView.newInputsDiv();
         var newTerminalViews = {};
         _.each(data.inputs, input => {
-            var terminalView = node.nodeView.addDataInput(input, new_body);
-            newTerminalViews[input.name] = terminalView;
+            newTerminalViews[input.name] = node.nodeView.addDataInput(input, new_body);
         });
         // Cleanup any leftover terminals
         _.each(_.difference(_.values(nodeView.terminalViews), _.values(newTerminalViews)), unusedView => {
