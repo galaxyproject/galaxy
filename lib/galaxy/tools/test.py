@@ -4,9 +4,9 @@ import os.path
 
 from six import string_types
 
-from galaxy.tool_util.verify.interactor import ToolTestDescription
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
+from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.util import (
     string_as_bool,
     unicodify,
