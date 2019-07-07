@@ -705,18 +705,27 @@ class InputParameterModule(WorkflowModule):
         if parameter_type == 'select' and connections:
             static_options = []
             for connection in connections:
-                tool_inputs = connection.input_step.module.tool.inputs.data[connection.input_name]
-                static_options.append(tool_inputs.static_options)
-            intxn_vals = set.intersection(*[set([option[1] for option in options]) for options in static_options])
-            intxn_opts = [option for options in static_options for option in options if option[1] in intxn_vals]
-            d = defaultdict(list)
-            for label, value, selected in list(set(intxn_opts)):
-                d[value].append(label)
-            intxn_tool_inputs = copy(tool_inputs)
-            intxn_tool_inputs.static_options = [(', '.join(set(label)), value, False) for value, label in list(d.items())]
-            intxn_tool_inputs.legal_values = intxn_vals
-            input.options = intxn_tool_inputs
-            input.display = tool_inputs.display
+                tool_inputs = connection.input_step.module.tool.inputs
+                if connection.input_name not in tool_inputs and "|" in connection.input_name:
+                    param_name, case_name = connection.input_name.split("|")
+                    param = tool_inputs.data[param_name] 
+                    if param.type == "conditional":
+                        sel_case = [case for case in param.cases if case_name in list(case.inputs.data.keys())][0]
+                        input_data = sel_case.inputs.data[case_name]
+                else:
+                    input_data = tool_inputs.data[connection.input_name]
+                static_options.append(input_data.static_options)
+            if static_options != []:
+                intxn_vals = set.intersection(*[set([option[1] for option in options]) for options in static_options])
+                intxn_opts = [option for options in static_options for option in options if option[1] in intxn_vals]
+                d = defaultdict(list)
+                for label, value, selected in list(set(intxn_opts)):
+                    d[value].append(label)
+                intxn_input = copy(input_data)
+                intxn_input.static_options = [(', '.join(set(label)), value, False) for value, label in list(d.items())]
+                intxn_input.legal_values = intxn_vals
+                input.options = intxn_input
+                input.display = input_data.display
         return dict(input=input)
 
     def get_runtime_state(self):
