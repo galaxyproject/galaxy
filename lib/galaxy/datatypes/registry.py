@@ -993,7 +993,7 @@ class Registry(object):
 
 def example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True):
     galaxy_dir = galaxy.util.galaxy_directory()
-    sample_conf = os.path.join(galaxy_dir, "config", "datatypes_conf.xml.sample")
+    sample_conf = os.path.join(galaxy_dir, "lib", "galaxy", "config", "sample", "datatypes_conf.xml.sample")
     config = Bunch(sniff_compressed_dynamic_datatypes_default=sniff_compressed_dynamic_datatypes_default)
     datatypes_registry = Registry(config)
     datatypes_registry.load_datatypes(root_dir=galaxy_dir, config=sample_conf)
