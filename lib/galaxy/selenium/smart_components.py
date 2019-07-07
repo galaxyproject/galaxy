@@ -8,7 +8,7 @@ class SmartComponent(object):
     """Wrap a Component with driver aware methods.
 
     Allows smarter selectors that know how to wait for themselves, test themselves,
-    click themselvers, etc.... More "magic", but much cleaner usage.
+    click themselves, etc.... More "magic", but much cleaner usage.
     """
 
     def __init__(self, component, has_driver):
