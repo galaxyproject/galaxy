@@ -1491,8 +1491,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             //this.debug( '_pairDragstart', ev, pair )
             // auto select the pair causing the event and move all selected
             pair.$el.addClass("selected");
-            var $selected = this.$(".paired-columns .dataset.selected");
-            this.$dragging = $selected;
+            this.$dragging = this.$(".paired-columns .dataset.selected");
         },
         /** drag communication with pair sub-views: dragend - remove the placeholder */
         _pairDragend: function(ev, pair) {

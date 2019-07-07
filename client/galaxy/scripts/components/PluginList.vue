@@ -14,7 +14,7 @@
                 <table v-if="match(plugin)">
                     <tr class="ui-thumbnails-item" @click="select(plugin)">
                         <td>
-                            <img v-if="plugin.logo" class="ui-thumbnails-image" :src="plugin.logo" />
+                            <img v-if="plugin.logo" alt="ui thumbnails" class="ui-thumbnails-image" :src="plugin.logo" />
                             <div v-else class="ui-thumbnails-icon fa fa-eye" />
                         </td>
                         <td>

@@ -210,10 +210,12 @@ var FolderToolbarView = Backbone.View.extend({
         }
     },
 
+    /**
+     * This function returns a promise
+     */
     fetchUserHistories: function() {
         this.histories = new mod_library_model.GalaxyHistories();
-        var promise = this.histories.fetch();
-        return promise;
+        return this.histories.fetch();
     },
 
     importAllIntoHistory: function() {
@@ -238,9 +240,11 @@ var FolderToolbarView = Backbone.View.extend({
         }
     },
 
+    /**
+     * This function returns a promise
+     */
     createNewHistory: function(new_history_name) {
-        var promise = $.post(`${getAppRoot()}api/histories`, { name: new_history_name });
-        return promise;
+        return $.post(`${getAppRoot()}api/histories`, { name: new_history_name });
     },
 
     processImportToHistory: function(history_id, history_name) {
