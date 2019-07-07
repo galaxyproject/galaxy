@@ -716,6 +716,7 @@ class InputParameterModule(WorkflowModule):
             intxn_tool_inputs.static_options = [(', '.join(set(label)), value, False) for value, label in list(d.items())]
             intxn_tool_inputs.legal_values = intxn_vals
             input.options = intxn_tool_inputs
+            input.display = tool_inputs.display
         return dict(input=input)
 
     def get_runtime_state(self):
