@@ -35,7 +35,6 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous
 )
-from galaxy.web.form_builder import AddressField
 from galaxy.webapps.base.controller import (
     BaseAPIController,
     BaseUIController,
@@ -43,6 +42,7 @@ from galaxy.webapps.base.controller import (
     UsesFormDefinitionsMixin,
     UsesTagsMixin
 )
+from galaxy.web.form_builder import AddressField
 
 
 log = logging.getLogger(__name__)
@@ -240,19 +240,28 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         :param purge: (optional) if True, purge the user
         :type  purge: bool
         """
-        if not trans.app.config.allow_user_deletion:
-            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete users.')
+        user = self.get_user(trans, id)
         purge = util.string_as_bool(kwd.get('purge', False))
         if purge:
-            raise exceptions.NotImplemented('Purge option has not been implemented yet')
-        user = self.get_user(trans, id)
-        self.user_manager.delete(user)
+            log.debug("Purging user from api %s" % user)
+            self.user_manager.purge(user)
+        else:
+            self.user_manager.delete(user)
         return self.user_serializer.serialize_to_view(user, view='detailed')
 
     @expose_api
     @web.require_admin
-    def undelete(self, trans, **kwd):
-        raise exceptions.NotImplemented()
+    def undelete(self, trans, id, **kwd):
+        """
+        UNDELETE /api/users/{id}
+        undelete the user with the given ``id``
+
+        :param id: the encoded id of the user to be undeleted
+        :type  id: str
+        """
+        user = self.get_user(trans, id)
+        self.user_manager.undelete(user)
+        return self.user_serializer.serialize_to_view(user, view='detailed')
 
     # TODO: move to more basal, common resource than this
     def anon_user_api_value(self, trans):

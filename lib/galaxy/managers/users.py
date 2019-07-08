@@ -4,7 +4,9 @@ Manager and Serializer for Users.
 import logging
 import random
 import socket
+import time
 from datetime import datetime
+from galaxy.util.hash_util import new_secure_hash
 
 from markupsafe import escape
 from sqlalchemy import and_, desc, exc, func, true
@@ -36,7 +38,6 @@ you may want to notify an administrator.
 If you're having trouble using the link when clicking it from email client, you
 can also copy and paste it into your browser.
 """
-
 
 class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     foreign_key_name = 'user'
@@ -109,7 +110,109 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return user
 
     def delete(self, user):
+        if not self.app.config.allow_user_deletion:
+            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete/undelete users.')
+        # Check first if it is already deleted. If so, say so and do nothing.
+        # Unsure if we should add username to the log.debug or if that breaks the gdrp support
+        if user.deleted:
+            log.debug("User already deleted, but setting delete flag just in case.")
+        if user.purged:
+            log.debug("Cannot delete purged user, but setting delete flag just in case.")
+
         user.deleted = True
+        log.debug("User %s deleted" % user.username)
+        self.session().add(user)
+        self.session().flush()
+
+    def undelete(self, user):
+        log.debug("Requested undelete of user %s" % user.username)
+        if not self.app.config.allow_user_deletion:
+            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete/undelete users.')
+        if user.purged:
+            raise exceptions.ItemDeletionException('Purged user cannot be undeleted.')
+        if not user.deleted:
+            log.debug('User \'%s\' has not been deleted, so it cannot be undeleted.' % user.email)
+        user.deleted = False
+        self.session().add(user)
+        self.session().flush()
+
+    def purge(self, user):
+        log.debug("Requested purge of user %s" % user)
+        if not self.app.config.allow_user_deletion:
+            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete/undelete users.')
+        if not user.deleted:
+            raise exceptions.MessageException('User \'%s\' has not been deleted, so it cannot be purged.' % user.email, 'error')
+        else:
+            log.debug("Purging user %s" % user)
+        private_role = self.app.security_agent.get_private_user_role(user)
+        # Delete History
+        for active_history in user.active_histories:
+            self.session().refresh(active_history)
+            for hda in active_history.active_datasets:
+                # Delete HistoryDatasetAssociation
+                hda.deleted = True
+                self.session().add(hda)
+            active_history.deleted = True
+            self.session().add(active_history)
+        # Delete UserGroupAssociations
+        for uga in user.groups:
+            self.session().delete(uga)
+        # Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE
+        for ura in user.roles:
+            if ura.role_id != private_role.id:
+                self.session().delete(ura)
+        # Delete UserAddresses
+        for address in user.addresses:
+            self.session().delete(address)
+        # Purge the user
+        user.purged = True
+        compliance_log = logging.getLogger('COMPLIANCE')
+        compliance_log.info('delete-user-event: %s' % user.username)
+        # Maybe there is some case in the future where an admin needs
+        # to prove that a user was using a server for some reason (e.g.
+        # a court case.) So we make this painfully hard to recover (and
+        # not immediately reversable) in line with GDPR, but still
+        # leave open the possibility to prove someone was part of the
+        # server just in case. By knowing the exact email + approximate
+        # time of deletion, one could run through hashes for every
+        # second of the surrounding days/weeks.
+        pseudorandom_value = str(int(time.time()))
+        # Replace email + username with a (theoretically) unreversable
+        # hash. If provided with the username we can probably re-hash
+        # to identify if it is needed for some reason.
+        #
+        # Deleting multiple times will re-hash the username/email
+        email_hash = new_secure_hash(user.email + pseudorandom_value)
+        uname_hash = new_secure_hash(user.username + pseudorandom_value)
+        # We must also redact username
+        for role in user.all_roles():
+            if self.app.config.redact_username_during_deletion:
+                role.name = role.name.replace(user.username, uname_hash)
+                role.description = role.description.replace(user.username, uname_hash)
+
+            if self.app.config.redact_email_during_deletion:
+                role.name = role.name.replace(user.email, email_hash)
+                role.description = role.description.replace(user.email, email_hash)
+            user.email = email_hash
+            user.username = uname_hash
+        log.debug("User credentials changed. email is now %s and name is %s" % (user.email, user.username))
+        # Redact user addresses as well
+        if self.app.config.redact_user_address_during_deletion:
+            user_addresses = self.session().query(trans.app.model.UserAddress) \
+                .filter(trans.app.model.UserAddress.user_id == user.id).all()
+
+            for addr in user_addresses:
+                addr.desc = new_secure_hash(addr.desc + pseudorandom_value)
+                addr.name = new_secure_hash(addr.name + pseudorandom_value)
+                addr.institution = new_secure_hash(addr.institution + pseudorandom_value)
+                addr.address = new_secure_hash(addr.address + pseudorandom_value)
+                addr.city = new_secure_hash(addr.city + pseudorandom_value)
+                addr.state = new_secure_hash(addr.state + pseudorandom_value)
+                addr.postal_code = new_secure_hash(addr.postal_code + pseudorandom_value)
+                addr.country = new_secure_hash(addr.country + pseudorandom_value)
+                addr.phone = new_secure_hash(addr.phone + pseudorandom_value)
+                self.session().add(addr)
+
         self.session().add(user)
         self.session().flush()
 
