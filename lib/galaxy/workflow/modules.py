@@ -709,13 +709,13 @@ class InputParameterModule(WorkflowModule):
                 # Select options within conditionals have a deeper hierarchy: cases
                 if connection.input_name not in tool_inputs and "|" in connection.input_name:
                     param_name, case_name = connection.input_name.split("|")
-                    param = tool_inputs.data[param_name] 
+                    param = tool_inputs.data[param_name]
                     if param.type == "conditional":
                         sel_case = [case for case in param.cases if case_name in list(case.inputs.data.keys())][0]
                         input_data = sel_case.inputs.data[case_name]
                 else:
                     input_data = tool_inputs.data[connection.input_name]
-                static_options.append(input_data.static_options) # Aggregation input select options from several connections
+                static_options.append(input_data.static_options)  # Aggregation input select options from several connections
             if static_options != []:
                 # Intersection based on values.
                 intxn_vals = set.intersection(*[set([option[1] for option in options]) for options in static_options])
