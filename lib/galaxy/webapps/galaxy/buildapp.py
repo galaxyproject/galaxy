@@ -1824,6 +1824,8 @@ def populate_api_routes(webapp, app):
         "create", "/api/metrics", controller="metrics", action="create", conditions=dict(method=["POST"])
     )
 
+    webapp.mapper.connect("docs", "/api/docs", controller="docs", action="index", conditions={"method": "GET"})
+
 
 def _add_item_tags_controller(webapp, name_prefix, path_prefix, **kwd):
     # Not just using map.resources because actions should be based on name not id

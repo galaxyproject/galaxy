@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 
 import mako.lookup
 import mako.runtime
+from apispec import APISpec
 from babel import Locale
 from babel.support import Translations
 from sqlalchemy import (
@@ -99,6 +100,52 @@ class WebApplication(base.WebApplication):
         self.mako_template_lookup = self.create_mako_template_lookup(galaxy_app, name)
         # Security helper
         self.security = galaxy_app.security
+
+    def build_apispec(self):
+        """
+        Traverse all route paths starting with "api" and create an APISpec instance.
+        """
+        # API specification builder
+        apispec = APISpec(title=self.name,
+                          version="0.0.0-unsupported", # galaxy_app.config.version_major,
+                          openapi_version="3.0.2")
+        import re, sys
+        from apispec import yaml_utils
+        RE_URL = re.compile(r"""
+            (?::\(|{)
+                (\w*)
+                (?::.*)?
+            (?:\)|})""", re.X)
+        for rule in self.mapper.matchlist:
+            if rule.routepath.endswith(".:(format)") or not rule.routepath.startswith("api/"):
+                continue
+            # Try to replace routes various ways to encode variables with simple swagger {form}
+            swagger_path = "/%s" % RE_URL.sub(r'{\1}', rule.routepath)
+            controller = rule.defaults.get('controller', '')
+            action = rule.defaults.get('action', '')
+            # Get the list of methods for the route
+            methods = []
+            if rule.conditions:
+                m = rule.conditions.get('method', [])
+                methods = type(m) is str and [m] or m
+            # Find the controller class
+            if controller not in self.api_controllers:
+                log.warning("No controller class found for '%s' while building API spec", controller)
+                continue
+            controller_class = self.api_controllers[controller]
+            if not hasattr(controller_class, action):
+                log.warning("No action found for '%s' in class '%s' while building API spec", action, controller_class)
+                continue
+            action_method = getattr(controller_class, action)
+            # First try to load method docs from docstring
+            operations = yaml_utils.load_operations_from_docstring(action_method.__doc__)
+            # Add methods that have routes but are not documents
+            for method in methods:
+                if method.lower() not in operations:
+                    operations[method.lower()] = {}
+            # Store the swagger path
+            apispec.path(path=swagger_path, operations=operations)
+        return apispec
 
     def create_mako_template_lookup(self, galaxy_app, name):
         paths = []
