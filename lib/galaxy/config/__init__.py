@@ -645,7 +645,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             # so dependending on the context a better default can be used (
             # request url in a web thread, Docker parent in IE stuff, etc...)
             galaxy_infrastructure_url = "http://localhost"
-            web_port = self.galaxy_infrastructure_web_port or self.guess_galaxy_port()
+            web_port = self.galaxy_infrastructure_web_port
             if web_port:
                 galaxy_infrastructure_url += ":%s" % (web_port)
             galaxy_infrastructure_url_set = False
@@ -954,19 +954,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         """ Resolve a path relative to Galaxy's root.
         """
         return resolve_path(path, self.root)
-
-    def guess_galaxy_port(self):
-        # Code derived from Jupyter work ie.mako
-        config = configparser.SafeConfigParser({'port': '8080'})
-        if self.config_file:
-            config.read(self.config_file)
-
-        try:
-            port = config.getint('server:%s' % self.server_name, 'port')
-        except Exception:
-            # uWSGI galaxy installations don't use paster and only speak uWSGI not http
-            port = None
-        return port
 
     @staticmethod
     def _parse_allowed_origin_hostnames(kwargs):
