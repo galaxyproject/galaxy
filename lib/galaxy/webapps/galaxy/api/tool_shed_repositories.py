@@ -16,7 +16,7 @@ from galaxy import (
     web
 )
 from galaxy.web import expose_api
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager

@@ -13,7 +13,7 @@ from sqlalchemy import false
 
 import galaxy.model
 from galaxy import util
-from galaxy.web.base.controller import BaseUIController, web
+from galaxy.webapps.base.controller import BaseUIController, web
 from galaxy.webapps.reports.controllers.jobs import sorter
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
 

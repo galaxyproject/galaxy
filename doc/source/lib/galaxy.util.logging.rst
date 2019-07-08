@@ -1,5 +1,5 @@
-galaxy\.util\.logging package
-=============================
+galaxy.util.logging package
+===========================
 
 .. automodule:: galaxy.util.logging
     :members:
@@ -9,8 +9,8 @@ galaxy\.util\.logging package
 Submodules
 ----------
 
-galaxy\.util\.logging\.fluent\_log module
------------------------------------------
+galaxy.util.logging.fluent\_log module
+--------------------------------------
 
 .. automodule:: galaxy.util.logging.fluent_log
     :members:

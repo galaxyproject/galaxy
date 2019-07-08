@@ -1,6 +1,6 @@
 
 .. image:: https://badge.fury.io/py/galaxy-objectstore.svg
-   :target: https://pypi.python.org/pypi/galaxy-objectstore/
+   :target: https://pypi.org/project/galaxy-objectstore/
 
 
 Overview

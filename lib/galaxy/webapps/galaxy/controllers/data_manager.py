@@ -7,7 +7,7 @@ from six import string_types
 import galaxy.queue_worker
 from galaxy import web
 from galaxy.util import nice_size, unicodify
-from galaxy.web.base.controller import BaseUIController
+from galaxy.webapps.base.controller import BaseUIController
 
 log = logging.getLogger(__name__)
 

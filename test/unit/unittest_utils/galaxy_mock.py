@@ -151,6 +151,10 @@ class MockAppConfig(Bunch):
         # set by MockDir
         self.root = root
 
+    @property
+    def config_dict(self):
+        return self.dict()
+
 
 class MockWebapp(object):
 

@@ -7,7 +7,7 @@ from galaxy import web
 from galaxy.exceptions import ItemAccessibilityException
 from galaxy.model.search import GalaxySearchEngine
 from galaxy.util import unicodify
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     SharableItemSecurityMixin
 )
