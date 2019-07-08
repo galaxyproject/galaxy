@@ -1477,55 +1477,59 @@ div.permissionContainer {
 .toolMenuContainer {
     color: $panel-text-color;
     a {
-        color: $panel-text-color;
+	color: $panel-text-color;
     }
     background: $panel-bg-color;
     min-height: 100%;
-    @extend .m-3;
-}
-
-div.toolSectionWrapper {
-    @extend .mb-1;
 }
 
 div.toolSectionTitle {
     font-weight: 500;
     font-size: $h4-font-size;
-}
-
-div.toolPanelLabel {
-    @extend .mt-3;
-    @extend .mb-2;
-    font-weight: bold;
-    color: $gray-600;
-    text-transform: uppercase;
-}
-
-div.toolTitle {
-    @extend .m-2;
-    display: block;
-    .labels {
-        float: right;
-    }
-}
-
-div a.tool-link {
-    text-decoration: none;
-    display: block;
-    span.tool-old-link {
-        text-decoration: underline;
-    }
     &:hover {
         background: darken($panel-bg-color, 5%);
     }
 }
 
-div.toolTitleNoSection {
-    @extend .pb-1;
+div.toolPanelLabel {
+    @extend .py-1;
+    @extend .px-3;
     font-weight: bold;
+    font-size: $h4-font-size;
+    color: $gray-600;
+    text-transform: uppercase;
 }
 
-// Dataset Display Styles
+div.toolSectionTitle, div.toolTitle, div.toolTitleNoSection {
+    display: block;
+    .labels {
+        float: right;
+    }
+
+    a {
+	@extend .px-3;
+	@extend .py-1;
+	text-decoration: none;
+	display: block;
+	&:hover {
+            background: darken($panel-bg-color, 5%);
+	}
+    }
+
+    &.text-muted a {
+	&:hover {
+	    background: inherit;
+	}
+    }
+}
+
+div.toolSectionWrapper {
+    div.toolTitle a, div.toolPanelLabel {
+	@extend .pl-4;
+	font-size: inherit;
+    }
+}
+
 #loading_indicator {
     position: fixed;
     right: 10px;
