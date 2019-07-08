@@ -130,7 +130,8 @@ class UserListGrid(grids.Grid):
         ActivatedColumn("Activated", attach_popup=False),
         APIKeyColumn("API Key", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
+        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
+        grids.PurgedColumn("Purged", key="purged", visible=False, filterable="advanced")
     ]
     columns.append(grids.MulticolFilterColumn("Search",
                                               cols_to_filter=[columns[0], columns[1]],
@@ -170,6 +171,8 @@ class UserListGrid(grids.Grid):
     ]
     num_rows_per_page = 50
     use_paging = True
+    default_filter = dict(purged="False")
+    use_default_filter = True
 
     def get_current_item(self, trans, **kwargs):
         return trans.user
