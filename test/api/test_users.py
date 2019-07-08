@@ -78,23 +78,23 @@ class UsersApiTestCase(api.ApiTestCase):
 
     def test_delete_user(self):
         user = self._setup_user(TEST_USER_EMAIL1)
-        response = self._delete("users/%s" % user["id"], admin=True)
+        self._delete("users/%s" % user["id"], admin=True)
         updated_user = self._get("users/deleted/%s" % user['id'], admin=True).json()
         assert updated_user['deleted'] is True, updated_user
 
     def test_purge_user(self):
         user = self._setup_user(TEST_USER_EMAIL1)
-        response = self._delete("users/%s" % user["id"], purge=True, admin=True)
+        self._delete("users/%s" % user["id"], purge=True, admin=True)
         updated_user = self._get("users/deleted/%s" % user['id'], admin=True).json()
         assert updated_user['deleted'] is True, updated_user
         assert updated_user['purged'] is True, updated_user
 
     def test_undelete_user(self):
         user = self._setup_user(TEST_USER_EMAIL2)
-        response = self._delete("users/%s" % user["id"], admin=True)
+        self._delete("users/%s" % user["id"], admin=True)
         updated_user = self._get("users/deleted/%s" % user['id'], admin=True).json()
         assert updated_user['deleted'] is True, updated_user
-        response = self._put("users/%s" % user["id"], admin=True)
+        self._put("users/%s" % user["id"], admin=True)
         updated_user = self._get("users/%s" % user['id'], admin=True).json()
         assert updated_user['deleted'] is False, updated_user
 
