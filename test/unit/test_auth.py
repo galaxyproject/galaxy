@@ -7,6 +7,7 @@ def test_alwaysreject():
     t = AlwaysReject()
     assert t.authenticate('testmail', 'testuser', 'secret', dict()) == (None, '', '')
 
+
 def test_localdb():
     user = User(email='testmail', username='tester')
     user.set_password_cleartext('test')
