@@ -71,7 +71,7 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
         assert db_schema.version == current_version
         migrate()
         return
-    elif app and getattr(app.config, 'database_auto_migrate', False):
+    elif getattr(app.config, 'database_auto_migrate', False):
         migrate()
         return
 

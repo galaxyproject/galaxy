@@ -1199,7 +1199,7 @@ class ConfiguresGalaxyMixin(object):
         # TODO: Consider more aggressive check here that this is not the same
         # database file under the hood.
         combined_install_database = not(install_db_url and install_db_url != db_url)
-        install_db_url = install_db_url or db_url
+        install_db_url = db_url if combined_install_database else install_db_url
         install_database_options = self.config.database_engine_options if combined_install_database else self.config.install_database_engine_options
 
         if self.config.database_wait:
