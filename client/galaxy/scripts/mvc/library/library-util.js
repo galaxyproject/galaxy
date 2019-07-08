@@ -13,7 +13,6 @@ var generateComparator = (sort_key, sort_order) => (itemA, itemB) => {
     } else if (!itemB.has(sort_key)) {
         return -1;
     }
-    var folder_bonus = 0.5;
     var comparable_itemA_key;
     var comparable_itemB_key;
     if (typeof itemA.get(sort_key) === "number") {

@@ -106,8 +106,8 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 # Can user manage the permissions on the dataset?
                 can_manage = is_admin or (trans.user and trans.app.security_agent.can_manage_dataset(current_user_roles, content_item.library_dataset_dataset_association.dataset))
                 raw_size = int(content_item.library_dataset_dataset_association.get_size())
-                update_time = content_item.library_dataset_dataset_association.update_time.strftime("%Y-%m-%d %I:%M %p")
                 nice_size = util.nice_size(raw_size)
+                update_time = content_item.library_dataset_dataset_association.update_time.strftime("%Y-%m-%d %I:%M %p")
 
                 library_dataset_dict = content_item.to_dict()
                 encoded_ldda_id = trans.security.encode_id(content_item.library_dataset_dataset_association.id)
