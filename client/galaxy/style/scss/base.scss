@@ -1486,9 +1486,6 @@ div.permissionContainer {
 div.toolSectionTitle {
     font-weight: 500;
     font-size: $h4-font-size;
-    &:hover {
-        background: darken($panel-bg-color, 5%);
-    }
 }
 
 div.toolPanelLabel {

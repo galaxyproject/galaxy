@@ -181,7 +181,7 @@ const AdminPanel = Backbone.View.extend({
 
     _templateSection: function(options) {
         return `<div class="toolSectionWrapper">
-                    <div class="toolSectionTitle">${_l(options.title)}</div>
+                    <div class="toolSectionTitle px-3">${_l(options.title)}</div>
                     <div class="toolSectionBody"/>
                 </div>`;
     },
