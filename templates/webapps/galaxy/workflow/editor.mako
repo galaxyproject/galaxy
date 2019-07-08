@@ -146,10 +146,10 @@
     </div>
 
     <div class="unified-panel-controls">
-        <div id="tool-search" class="bar">
+        <div id="tool-search" class="search-input">
             <input id="tool-search-query" class="search-query parent-width" name="query" placeholder="search tools" autocomplete="off" type="text">
-             <a id="search-clear-btn" title="" data-original-title="clear search (esc)"> </a>
-             <span id="search-spinner" class="search-spinner fa fa-spinner fa-spin"></span>
+            <span id="search-clear-btn" class="search-clear fa fa-times-circle" title="" data-original-title="clear search (esc)" />
+            <span id="search-spinner" class="search-loading fa fa-spinner fa-spin" />
         </div>
     </div>
 
