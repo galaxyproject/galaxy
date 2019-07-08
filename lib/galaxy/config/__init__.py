@@ -26,6 +26,8 @@ from six.moves import configparser
 
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
+from galaxy.model import mapping
+from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
 from galaxy.tool_util.deps.container_resolvers.mulled import DEFAULT_CHANNELS
 from galaxy.util import (
     ExecutionTimer,
@@ -1014,7 +1016,6 @@ def get_database_url(config):
 
 def init_models_from_config(config, map_install_models=False, object_store=None, trace_logger=None):
     db_url = get_database_url(config)
-    from galaxy.model import mapping
     model = mapping.init(
         config.file_path,
         db_url,
@@ -1199,6 +1200,7 @@ class ConfiguresGalaxyMixin(object):
         # database file under the hood.
         combined_install_database = not(install_db_url and install_db_url != db_url)
         install_db_url = install_db_url or db_url
+        install_database_options = self.config.database_engine_options if combined_install_database else self.config.install_database_engine_options
 
         if self.config.database_wait:
             self._wait_for_database(db_url)
@@ -1212,17 +1214,11 @@ class ConfiguresGalaxyMixin(object):
             # is a new installation, we'll restrict the tool migration messaging.
             from galaxy.model.migrate.check import create_or_verify_database
             create_or_verify_database(db_url, config_file, self.config.database_engine_options, app=self)
-            if not combined_install_database:
-                from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
-                tsi_create_or_verify_database(install_db_url, self.config.install_database_engine_options, app=self)
+            tsi_create_or_verify_database(install_db_url, install_database_options, app=self)
 
         if check_migrate_tools:
             # Alert the Galaxy admin to tools that have been moved from the distribution to the tool shed.
             from tool_shed.galaxy_install.migrate.check import verify_tools
-            if combined_install_database:
-                install_database_options = self.config.database_engine_options
-            else:
-                install_database_options = self.config.install_database_engine_options
             verify_tools(self, install_db_url, config_file, install_database_options)
 
         self.model = init_models_from_config(
@@ -1238,9 +1234,8 @@ class ConfiguresGalaxyMixin(object):
             from galaxy.model.tool_shed_install import mapping as install_mapping
             install_db_url = self.config.install_database_connection
             log.info("Install database using its own connection %s" % install_db_url)
-            install_db_engine_options = self.config.install_database_engine_options
             self.install_model = install_mapping.init(install_db_url,
-                                                      install_db_engine_options)
+                                                      install_database_options)
 
     def _configure_signal_handlers(self, handlers):
         for sig, handler in handlers.items():
