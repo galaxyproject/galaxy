@@ -10,6 +10,8 @@ from base import api  # noqa: I100,I202
 from base.populators import skip_without_tool
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
+TEST_USER_EMAIL1 = "user1_for_users_index_test@bx.psu.edu"
+TEST_USER_EMAIL2 = "user2_for_users_index_test@bx.psu.edu"
 
 
 class UsersApiTestCase(api.ApiTestCase):
@@ -75,13 +77,26 @@ class UsersApiTestCase(api.ApiTestCase):
         self.assertEqual(update_json['username'], new_name)
 
     def test_delete_user(self):
-        user = self._setup_user(TEST_USER_EMAIL)
+        user = self._setup_user(TEST_USER_EMAIL1)
         response = self._delete("users/%s" % user["id"], admin=True)
         updated_user = self._get("users/deleted/%s" % user['id'], admin=True).json()
         assert updated_user['deleted'] is True, updated_user
 
-    def test_purge_user():
-        pass
+    def test_purge_user(self):
+        user = self._setup_user(TEST_USER_EMAIL1)
+        response = self._delete("users/%s" % user["id"], purge=True, admin=True)
+        updated_user = self._get("users/deleted/%s" % user['id'], admin=True).json()
+        assert updated_user['deleted'] is True, updated_user
+        assert updated_user['purged'] is True, updated_user
+
+    def test_undelete_user(self):
+        user = self._setup_user(TEST_USER_EMAIL2)
+        response = self._delete("users/%s" % user["id"], admin=True)
+        updated_user = self._get("users/deleted/%s" % user['id'], admin=True).json()
+        assert updated_user['deleted'] is True, updated_user
+        response = self._put("users/%s" % user["id"], admin=True)
+        updated_user = self._get("users/%s" % user['id'], admin=True).json()
+        assert updated_user['deleted'] is False, updated_user
 
     def test_information(self):
         user = self._setup_user(TEST_USER_EMAIL)
