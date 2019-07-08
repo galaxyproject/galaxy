@@ -198,8 +198,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         log.debug("User credentials changed. email is now %s and name is %s" % (user.email, user.username))
         # Redact user addresses as well
         if self.app.config.redact_user_address_during_deletion:
-            user_addresses = self.session().query(trans.app.model.UserAddress) \
-                .filter(trans.app.model.UserAddress.user_id == user.id).all()
+            user_addresses = self.session().query(self.app.model.UserAddress) \
+                .filter(self.app.model.UserAddress.user_id == user.id).all()
 
             for addr in user_addresses:
                 addr.desc = new_secure_hash(addr.desc + pseudorandom_value)
