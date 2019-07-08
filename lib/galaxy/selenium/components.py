@@ -193,7 +193,7 @@ class Component(object):
         elif attr in self._text:
             return self._text[attr]
         else:
-            raise KeyError("Failed to find referenced sub-component/selector/label/text [%s]" % attr)
+            raise AttributeError("Failed to find referenced sub-component/selector/label/text [%s]" % attr)
 
     __getitem__ = __getattr__
 

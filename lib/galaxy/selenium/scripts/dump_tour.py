@@ -5,9 +5,7 @@ import os
 import sys
 import time
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'test')))
-
-from galaxy_selenium import cli
+from galaxy.selenium import cli
 
 DESCRIPTION = "Walk a Galaxy tour and dump screenshots."
 

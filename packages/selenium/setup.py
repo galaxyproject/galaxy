@@ -33,9 +33,11 @@ TEST_DIR = 'tests'
 PACKAGES = [
     'galaxy',
     'galaxy.selenium',
+    'galaxy.selenium.scripts',
 ]
 ENTRY_POINTS = '''
         [console_scripts]
+        gx-dump-tour=galaxy.selenium.scripts.dump_tour:main
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
