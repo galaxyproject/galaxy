@@ -1500,11 +1500,7 @@ div.toolPanelLabel {
     text-transform: uppercase;
 }
 
-div.toolSectionWrapper div.toolPanelLabel {
-    font-size: inherit;
-}
-
-div.toolSectionTitle, div.toolTitle {
+div.toolSectionTitle, div.toolTitle, div.toolTitleNoSection {
     display: block;
     .labels {
         float: right;
@@ -1515,10 +1511,6 @@ div.toolSectionTitle, div.toolTitle {
 	@extend .py-1;
 	text-decoration: none;
 	display: block;
-	span.tool-old-link {
-	    font-weight: 500;
-            // text-decoration: underline;
-	}
 	&:hover {
             background: darken($panel-bg-color, 5%);
 	}
@@ -1530,13 +1522,14 @@ div.toolSectionTitle, div.toolTitle {
 	}
     }
 }
-    
-div.toolTitleNoSection {
-    @extend .pb-1;
-    font-weight: bold;
+
+div.toolSectionWrapper {
+    div.toolTitle a, div.toolPanelLabel {
+	@extend .pl-4;
+	font-size: inherit;
+    }
 }
 
-// Dataset Display Styles
 #loading_indicator {
     position: fixed;
     right: 10px;
