@@ -3616,9 +3616,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                 FROM parent_folders_of
                 WHERE library_folder.id = parent_folders_of.folder_id
             ''').execution_options(autocommit=True)
-        log.debug('Updating parent folder update_times: {0} {1} {2}'. format(sql, ldda.library_dataset_id, ldda.id))
         ret = object_session(self).execute(sql, {'library_dataset_id': ldda.library_dataset_id, 'ldda_id': ldda.id})
-        log.debug('updated parent folders: {0}'.format(ret.rowcount))
+        if ret.rowcount < 1:
+            log.warn('Attempt to updated parent folder times failed: {0} records updated.'.format(ret.rowcount))
 
 
 class ExtendedMetadata(RepresentById):
