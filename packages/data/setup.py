@@ -47,7 +47,8 @@ PACKAGES = [
 ]
 ENTRY_POINTS = '''
         [console_scripts]
-        gx-build-objects=galaxy.model.store.build_objects:main
+        galaxy-build-objects=galaxy.model.store.build_objects:main
+        galaxy-manage-db=galaxy.model.orm.scripts:manage_db
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
