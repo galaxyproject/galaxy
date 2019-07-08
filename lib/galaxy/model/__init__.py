@@ -3601,20 +3601,20 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
         sql = text(
             '''
                 WITH RECURSIVE parent_folders_of(folder_id) AS
-                (SELECT folder_id
-                FROM library_dataset
-                WHERE id = :library_dataset_id
-                UNION ALL SELECT library_folder.parent_id
-                FROM library_folder,
-                        parent_folders_of
-                WHERE library_folder.id = parent_folders_of.folder_id )
+                    (SELECT folder_id
+                    FROM library_dataset
+                    WHERE id = :library_dataset_id
+                    UNION ALL 
+                    SELECT library_folder.parent_id
+                    FROM library_folder, parent_folders_of
+                    WHERE library_folder.id = parent_folders_of.folder_id )
                 UPDATE library_folder
                 SET update_time =
-                (SELECT update_time
-                FROM library_dataset_dataset_association
-                WHERE id = :ldda_id)
-                FROM parent_folders_of
-                WHERE library_folder.id = parent_folders_of.folder_id
+                    (SELECT update_time
+                    FROM library_dataset_dataset_association
+                    WHERE id = :ldda_id)
+                WHERE exists (SELECT 1 FROM parent_folders_of 
+                    WHERE library_folder.id = parent_folders_of.folder_id)
             ''').execution_options(autocommit=True)
         ret = object_session(self).execute(sql, {'library_dataset_id': ldda.library_dataset_id, 'ldda_id': ldda.id})
         if ret.rowcount < 1:
