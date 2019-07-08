@@ -1,0 +1,93 @@
+<template>
+    <div>
+        <div v-if="category.model_class.endsWith('ToolSection')" class="toolSectionWrapper">
+            <div class="toolSectionTitle">
+                <a @click="opened = !opened" href="javascript:void(0)">
+                    <span>
+                        {{ category.name }}
+                    </span>
+                </a>
+            </div>
+            <transition name="slide">
+                <div v-if="opened">
+                    <template v-for="tool in category.elems.map((el => el.toJSON()))">
+                        <tool v-if="tool.model_class.endsWith('Tool')" :tool="tool"></tool>
+                        <div v-else-if="tool.model_class === 'ToolSectionLabel'" class="toolPanelLabel">
+                            <span>
+                                {{ tool.text }}
+                            </span>
+                        </div>
+                    </template>
+                </div>
+            </transition>
+        </div>
+        <div v-else-if="category.model_class.endsWith('Tool')">
+            <tool :tool="category" :no-section="true"></tool>
+        </div>
+        <div v-else-if="category.model_class.endsWith('ToolSectionLabel')" class="toolPanelLabel">
+            <span>
+                {{ category.text }}
+            </span>
+        </div>
+    </div>
+</template>
+
+<script>
+  import Tool from './Tool.vue';
+
+  export default {
+    name: "ToolSection",
+    components: {
+      Tool
+    },
+    props: {
+      category: {
+        type: Object,
+      },
+    },
+    methods: {
+
+    },
+    data() {
+      return {
+        opened: false
+      }
+    },
+    created() {
+    }
+  };
+</script>
+
+<style scoped>
+    .slide-enter-active {
+        -moz-transition-duration: 0.2s;
+        -webkit-transition-duration: 0.2s;
+        -o-transition-duration: 0.2s;
+        transition-duration: 0.2s;
+        -moz-transition-timing-function: ease-in;
+        -webkit-transition-timing-function: ease-in;
+        -o-transition-timing-function: ease-in;
+        transition-timing-function: ease-in;
+    }
+
+    .slide-leave-active {
+        -moz-transition-duration: 0.2s;
+        -webkit-transition-duration: 0.2s;
+        -o-transition-duration: 0.2s;
+        transition-duration: 0.2s;
+        -moz-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+        -webkit-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+        -o-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+        transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+    }
+
+    .slide-enter-to, .slide-leave {
+        max-height: 100px;
+        overflow: hidden;
+    }
+
+    .slide-enter, .slide-leave-to {
+        overflow: hidden;
+        max-height: 0;
+    }
+</style>
