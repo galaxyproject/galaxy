@@ -11,7 +11,7 @@ cat <<EOF
 '${0##*/} -list'                    for listing all the tool ids
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory, test_path
                                     can be pytest selector
-'${0##*/} -integration (test_path)' for running all integration test scripts in the ./test/api directory, test_path
+'${0##*/} -integration (test_path)' for running all integration test scripts in the ./test/integration directory, test_path
                                     can be pytest selector
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
