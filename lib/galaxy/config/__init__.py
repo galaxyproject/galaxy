@@ -35,7 +35,7 @@ from galaxy.util import (
 )
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.util.logging import LOGLV_TRACE
-from galaxy.util.properties import running_from_source
+from galaxy.util.properties import find_config_file, running_from_source
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.web_stack import (
     get_stack_facts,
@@ -105,21 +105,22 @@ def find_root(kwargs):
 class BaseAppConfiguration(object):
     def _set_config_base(self, config_kwargs):
         self.sample_config_dir = os.path.join(os.path.dirname(__file__), 'sample')
-        global_conf = config_kwargs.get('global_conf', None)
-        self.config_file = None
-        if global_conf and "__file__" in global_conf:
-            self.config_file = global_conf['__file__']
-        elif running_from_source:
-            for f in ('config/%s.ini' % self.__class__.default_config_file_name,
-                      os.path.join(self.sample_config_dir, '%s.sample' % self.__class__.default_config_file_name)):
-                if os.path.exists(f):
-                    self.config_file = f
-                    break
-        else:
-            log.warning("global_conf unset or __file__ not in global_conf and not running from source, unable to "
-                        "determine config file, global_conf is: %s", global_conf)
+        self.config_file = find_config_file('galaxy')
+        # Parse global_conf and save the parser
+        self.global_conf = config_kwargs.get('global_conf', None)
+        self.global_conf_parser = configparser.ConfigParser()
+        if not self.config_file and self.global_conf and "__file__" in self.global_conf:
+            self.config_file = self.global_conf['__file__']
         if self.config_file is None:
             log.warning("No Galaxy config file found, running from current working directory: %s", os.getcwd())
+        else:
+            try:
+                self.global_conf_parser.read(self.config_file)
+            except (IOError, OSError):
+                raise
+            except Exception:
+                # Not an INI file
+                pass
         self.config_dir = config_kwargs.get('config_dir', os.path.dirname(self.config_file or os.getcwd()))
         self.data_dir = config_kwargs.get('data_dir', None)
         # mutable_config_dir is intentionally not configurable. You can
@@ -129,9 +130,11 @@ class BaseAppConfiguration(object):
         if running_from_source:
             if self.data_dir is None:
                 self.data_dir = os.path.join(self.root, 'database')
+            if self.config_file is None:
+                self.config_dir = os.path.join(self.root, 'config')
             self.mutable_config_dir = self.config_dir
             # TODO: do we still need to support ../shed_tools?
-            self.shed_tools_dir = "database/shed_tools"
+            self.shed_tools_dir = os.path.join(self.data_dir, 'shed_tools')
         else:
             if self.data_dir is None:
                 self.data_dir = os.path.join(self.config_dir, 'data')
@@ -608,15 +611,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self.distributed_object_store_config_file = resolve_path(self.distributed_object_store_config_file, self.root)
         self.irods_root_collection_path = kwargs.get('irods_root_collection_path', None)
         self.irods_default_resource = kwargs.get('irods_default_resource', None)
-        # Parse global_conf and save the parser
-        global_conf = kwargs.get('global_conf', None)
-        global_conf_parser = configparser.ConfigParser()
-        self.global_conf_parser = global_conf_parser
-        if self.config_file is not None:
-            global_conf_parser.read(self.config_file)
         # Heartbeat log file name override
-        if global_conf is not None and 'heartbeat_log' in global_conf:
-            self.heartbeat_log = global_conf['heartbeat_log']
+        if self.global_conf is not None and 'heartbeat_log' in self.global_conf:
+            self.heartbeat_log = self.global_conf['heartbeat_log']
         if self.heartbeat_log is None:
             self.heartbeat_log = 'heartbeat_{server_name}.log'
         # Determine which 'server:' this is
@@ -633,7 +630,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.config_dict['base_server_name'] = self.base_server_name = self.server_name
         # Store all configured server names for the message queue routing
         self.server_names = []
-        for section in global_conf_parser.sections():
+        for section in self.global_conf_parser.sections():
             if section.startswith('server:'):
                 self.server_names.append(section.replace('server:', '', 1))
 
