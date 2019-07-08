@@ -171,14 +171,6 @@ client-eslint: node-deps  ## Run client linting
 client-test-watch: client ## Watch and run qunit tests on changes via Karma
 	cd client && yarn run test-watch
 
-wheels: wheel-galaxy
-
-# FIXME: it'd be great if client time could be compared against the wheel and
-# not rebuild client if unnecessary. But it's really only a problem in dev.
-# When this stuff goes into production it won't be as big of a deal.
-wheel-galaxy: client
-	python setup.py bdist_wheel
-
 # Release Targets
 release-create-rc: release-ensure-upstream ## Create a release-candidate branch
 	git checkout dev

@@ -13,7 +13,7 @@ SOURCE_DIR = "galaxy"
 
 _version_re = re.compile(r'__version__\s+=\s+(.*)')
 
-with open('%s/project_galaxy_util.py' % SOURCE_DIR, 'rb') as f:
+with open('%s/project_galaxy_meta.py' % SOURCE_DIR, 'rb') as f:
     init_contents = f.read().decode('utf-8')
 
     def get_var(var_name):
