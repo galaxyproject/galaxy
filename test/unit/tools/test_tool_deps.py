@@ -731,7 +731,7 @@ def __environ(values, keys_to_remove=[]):
         for key in keys_to_remove:
             try:
                 del environ[key]
-                new_keys.remove(key) # Because key no longer exists 
+                new_keys.remove(key)  # Because key no longer exists
             except KeyError:
                 pass
         yield
@@ -752,35 +752,35 @@ def test_environ_contextmanager_env_restored():
 
 
 def test_environ_contextmanager_env_updated_and_restored():
-    """ 
-        os.environ must be preserved across calls to __environ 
+    """
+        os.environ must be preserved across calls to __environ
         when updating existing or adding new key:value pairs
     """
     key, val = 'foo_test_678363', '42'
     os.environ[key] = val
-    new_key, new_val1 = 'foo_test_new', '53' # add new key + value
-    new_val2 = '43' # update old key's value
-    to_update = { new_key: new_val1, key: new_val2 }
+    new_key, new_val1 = 'foo_test_new', '53'  # add new key + value
+    new_val2 = '43'  # update old key's value
+    to_update = {new_key: new_val1, key: new_val2}
     with __environ(values=to_update):
         pass
-    assert os.environ[key] == val # value should not change
-    assert new_key not in os.environ # key should not be added
+    assert os.environ[key] == val  # value should not change
+    assert new_key not in os.environ  # key should not be added
     del os.environ[key]
 
 
 def test_environ_contextmanager_env_removed_and_restored():
-    """ 
-        os.environ must be preserved across calls to __environ 
+    """
+        os.environ must be preserved across calls to __environ
         when removing key:value pairs
     """
     key, val = 'foo_test_678363', '42'
     os.environ[key] = val
-    new_key, new_val = 'foo_test_new', '53' # add new key + value
-    to_update = { new_key: new_val }
+    new_key, new_val = 'foo_test_new', '53'  # add new key + value
+    to_update = {new_key: new_val}
     with __environ(values=to_update, keys_to_remove=[key, new_key]):
         pass
-    assert os.environ[key] == val # key should be present w/value
-    assert new_key not in os.environ # key should not be added
+    assert os.environ[key] == val  # key should be present w/value
+    assert new_key not in os.environ  # key should not be added
     del os.environ[key]
 
 
