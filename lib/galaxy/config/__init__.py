@@ -1199,7 +1199,7 @@ class ConfiguresGalaxyMixin(object):
         # TODO: Consider more aggressive check here that this is not the same
         # database file under the hood.
         combined_install_database = not(install_db_url and install_db_url != db_url)
-        install_db_url = db_url if combined_install_database else install_db_url
+        install_db_url = install_db_url or db_url
         install_database_options = self.config.database_engine_options if combined_install_database else self.config.install_database_engine_options
 
         if self.config.database_wait:
@@ -1213,8 +1213,9 @@ class ConfiguresGalaxyMixin(object):
             # Initialize database / check for appropriate schema version.  # If this
             # is a new installation, we'll restrict the tool migration messaging.
             from galaxy.model.migrate.check import create_or_verify_database
-            create_or_verify_database(db_url, config_file, self.config.database_engine_options, app=self)
-            tsi_create_or_verify_database(install_db_url, install_database_options, app=self)
+            create_or_verify_database(db_url, config_file, self.config.database_engine_options, app=self, map_install_models=combined_install_database)
+            if not combined_install_database:
+                tsi_create_or_verify_database(install_db_url, install_database_options, app=self)
 
         if check_migrate_tools:
             # Alert the Galaxy admin to tools that have been moved from the distribution to the tool shed.
