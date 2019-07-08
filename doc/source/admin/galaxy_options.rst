@@ -1,3 +1,28 @@
+~~~~~~~~~~~~~~
+``config_dir``
+~~~~~~~~~~~~~~
+
+:Description:
+    The directory that will be prepended to relative paths in options
+    specifying other Galaxy config files (e.g. datatypes_config_file).
+    Defaults to the directory in which galaxy.yml is located.
+:Default: ``false``
+:Type: str
+
+
+~~~~~~~~~~~~
+``data_dir``
+~~~~~~~~~~~~
+
+:Description:
+    The directory that will be prepended to relative paths in options
+    specifying Galaxy data/cache directories and files (such as the
+    default SQLite database, file_path, etc.). Defaults to `database/`
+    if running Galaxy from source or `<config_dir>/data` otherwise.
+:Default: ``false``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -271,14 +296,13 @@
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Path to the directory in which tool dependencies are placed.  This
-    is used by the Tool Shed to install dependencies and can also be
-    used by administrators to manually install or link to
-    dependencies.  For details, see:
-    https://galaxyproject.org/admin/config/tool-dependencies Set the
+    Various dependency resolver configuration parameters will have
+    defaults set relative to this path, such as the default conda
+    prefix, default Galaxy packages path, legacy tool shed
+    dependencies path, and the dependency cache directory.  Set the
     string to None to explicitly disable tool dependency handling. If
     this option is set to none or an invalid path, installing tools
-    with dependencies from the Tool Shed will fail.
+    with dependencies from the Tool Shed or in Conda will fail.
 :Default: ``database/dependencies``
 :Type: str
 
@@ -405,7 +429,9 @@
     share.  Set the following option to True to cache the dependencies
     in a folder. This option is beta and should only be used if you
     experience long waiting times before a job is actually submitted
-    to your cluster.
+    to your cluster.  This only affects tools where some requirements
+    can be resolved but not others, most modern best practice tools
+    can use prebuilt environments in the Conda directory.
 :Default: ``false``
 :Type: bool
 
@@ -3208,6 +3234,20 @@
     dependency_resolvers_config_file is used.
 :Default: ``None``
 :Type: seq
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``dependency_resolution``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Alternative representation of various dependency resolution
+    parameters. Takes the dictified version of a DependencyManager
+    object - so this is ideal for automating the configuration of
+    dependency resolution from one application that uses a
+    DependencyManager to another.
+:Default: ``None``
+:Type: map
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
