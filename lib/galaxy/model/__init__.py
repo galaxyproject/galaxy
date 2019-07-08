@@ -3594,7 +3594,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
             rval['metadata_' + name] = val
         return rval
 
-    def updateParentFolderUpdateTimes(self,trans):
+    def updateParentFolderUpdateTimes(self):
         # sets the update_time for all continaing folders up the tree
         ldda = self
 
@@ -3612,9 +3612,9 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
             from parent_folders_of
             where library_folder.id = parent_folders_of.folder_id
         ''').execution_options(autocommit=True)
-        log.debug('Updating parent folder update_time: {0} {1} {2}'.format(sql,ldda.library_dataset_id,ldda.id))
-        ret = trans.sa_session.execute(sql, {'library_dataset_id': ldda.library_dataset_id, 'ldda_id': ldda.id})
-        log.debug('execute returns: {0}'.format(ret.rowcount))
+        log.debug('Updating parent folder update_times: {0} {1} {2}'.format(sql,ldda.library_dataset_id,ldda.id))
+        ret = object_session(self).execute(sql, {'library_dataset_id': ldda.library_dataset_id, 'ldda_id': ldda.id})
+        log.debug('updated parent folders: {0}'.format(ret.rowcount))
 
 class ExtendedMetadata(RepresentById):
     def __init__(self, data):
