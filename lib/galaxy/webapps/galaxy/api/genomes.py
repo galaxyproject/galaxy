@@ -19,6 +19,17 @@ class GenomesController(BaseAPIController):
     def index(self, trans, **kwd):
         """
         GET /api/genomes: returns a list of installed genomes
+        ---
+        get:
+            description: returns a list of installed genomes
+            responses:
+                200:
+                    content:
+                        application/json: 
+                            schema:
+                                type: array
+                                items:
+                                    type: string
         """
 
         return self.app.genomes.get_dbkeys(trans, **kwd)
