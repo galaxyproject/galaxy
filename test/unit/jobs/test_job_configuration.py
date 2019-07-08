@@ -13,8 +13,8 @@ from galaxy.web_stack import ApplicationStack, UWSGIApplicationStack
 
 # File would be slightly more readable if contents were embedded directly, but
 # there are advantages to testing the documentation/examples.
-SIMPLE_JOB_CONF = os.path.join(os.path.dirname(__file__), "..", "..", "..", "config", "job_conf.xml.sample_basic")
-ADVANCED_JOB_CONF = os.path.join(os.path.dirname(__file__), "..", "..", "..", "config", "job_conf.xml.sample_advanced")
+SIMPLE_JOB_CONF = os.path.join(os.path.dirname(__file__), "..", "..", "..", "lib", "galaxy", "config", "sample", "job_conf.xml.sample_basic")
+ADVANCED_JOB_CONF = os.path.join(os.path.dirname(__file__), "..", "..", "..", "lib", "galaxy", "config", "sample", "job_conf.xml.sample_advanced")
 ADVANCED_JOB_CONF_YAML = os.path.join(os.path.dirname(__file__), "job_conf.sample_advanced.yml")
 CONDITIONAL_RUNNER_JOB_CONF = os.path.join(os.path.dirname(__file__), "conditional_runners_job_conf.xml")
 HANDLER_TEMPLATE_JOB_CONF = os.path.join(os.path.dirname(__file__), "handler_template_job_conf.xml")

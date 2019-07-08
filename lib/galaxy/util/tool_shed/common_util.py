@@ -1,3 +1,4 @@
+import errno
 import json
 import logging
 import os
@@ -12,6 +13,10 @@ from galaxy.util.tool_shed import encoding_util, xml_util
 log = logging.getLogger(__name__)
 
 REPOSITORY_OWNER = 'devteam'
+TOOL_MIGRATION_SCRIPTS_DIR = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), os.pardir, 'galaxy_install', 'migrate', 'scripts'))
+TOOL_MIGRATION_VERSIONS_DIR = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), os.pardir, 'galaxy_install', 'migrate', 'versions'))
 
 
 def accumulate_tool_dependencies(tool_shed_accessible, tool_dependencies, all_tool_dependencies):
@@ -25,7 +30,10 @@ def accumulate_tool_dependencies(tool_shed_accessible, tool_dependencies, all_to
 
 def check_for_missing_tools(app, tool_panel_configs, latest_tool_migration_script_number):
     # Get the 000x_tools.xml file associated with the current migrate_tools version number.
-    tools_xml_file_path = os.path.abspath(os.path.join('scripts', 'migrate_tools', '%04d_tools.xml' % latest_tool_migration_script_number))
+    tools_xml_file_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                                       os.pardir, 'galaxy_install',
+                                                       'migrate', 'scripts',
+                                                       '%04d_tools.xml' % latest_tool_migration_script_number))
     # Parse the XML and load the file attributes for later checking against the proprietary tool_panel_config.
     migrated_tool_configs_dict = odict()
     tree, error_message = xml_util.parse_xml(tools_xml_file_path)
@@ -143,7 +151,14 @@ def get_non_shed_tool_panel_configs(app):
     for config_filename in app.config.tool_configs:
         # Any config file that includes a tool_path attribute in the root tag set like the following is shed-related.
         # <toolbox tool_path="database/shed_tools">
-        tree, error_message = xml_util.parse_xml(config_filename)
+        try:
+            tree, error_message = xml_util.parse_xml(config_filename)
+        except (OSError, IOError) as exc:
+            if (config_filename == app.config.shed_tool_conf and not
+                    app.config.shed_tool_conf_set and
+                    exc.errno == errno.ENOENT):
+                continue
+            raise
         if tree is None:
             continue
         root = tree.getroot()

@@ -33,10 +33,6 @@ for arg in "$@"; do
 done
 
 SAMPLES="
-    config/migrated_tools_conf.xml.sample
-    config/shed_tool_conf.xml.sample
-    config/shed_tool_data_table_conf.xml.sample
-    config/shed_data_manager_conf.xml.sample
     lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml.sample
     tool-data/shared/ucsc/builds.txt.sample
     tool-data/shared/ucsc/manual_builds.txt.sample
