@@ -58,7 +58,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_default_limits_cpu=dict(map=str, default=None),
             k8s_default_limits_memory=dict(map=str, default=None),
             k8s_pod_retries=dict(map=int, valid=lambda x: int >= 0, default=3),
-            k8s_pod_retrials=dict(map=int, valid=lambda x: int >= 0, default=3))
+            k8s_pod_retrials=dict(map=int, valid=lambda x: int >= 0, default=3),
+            k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800))
 
         if 'runner_param_specs' not in kwargs:
             kwargs['runner_param_specs'] = dict()
@@ -220,8 +221,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return produce_unique_k8s_job_name(app_prefix='galaxy', instance_id=instance_id, job_id=galaxy_internal_job_id)
 
     def __get_k8s_job_spec(self, ajs):
-        """Creates the k8s Job spec. For a Job spec, the only requirement is to have a .spec.template."""
-        k8s_job_spec = {"template": self.__get_k8s_job_spec_template(ajs)}
+        """Creates the k8s Job spec. For a Job spec, the only requirement is to have a .spec.template.
+        If the job hangs around unlimited it will be ended after k8s wall time limit, which sets activeDeadlineSeconds"""
+        k8s_job_spec = {"template": self.__get_k8s_job_spec_template(ajs),
+                        "activeDeadlineSeconds": int(self.runner_params['k8s_walltime_limit'])}
         return k8s_job_spec
 
     def __get_k8s_job_spec_template(self, ajs):
