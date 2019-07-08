@@ -3600,17 +3600,21 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
 
         sql = text(
         '''
-            with recursive
-            parent_folders_of(folder_id) as (
-                select folder_id from library_dataset where id = :library_dataset_id
-                union all
-                select library_folder.parent_id from library_folder, parent_folders_of
-                where library_folder.id = parent_folders_of.folder_id
-            )
-            update library_folder set update_time =
-                (select update_time from library_dataset_dataset_association where id = :ldda_id)
-            from parent_folders_of
-            where library_folder.id = parent_folders_of.folder_id
+            WITH RECURSIVE parent_folders_of(folder_id) AS
+              (SELECT folder_id
+               FROM library_dataset
+               WHERE id = :library_dataset_id
+               UNION ALL SELECT library_folder.parent_id
+               FROM library_folder,
+                    parent_folders_of
+               WHERE library_folder.id = parent_folders_of.folder_id )
+            UPDATE library_folder
+            SET update_time =
+              (SELECT update_time
+               FROM library_dataset_dataset_association
+               WHERE id = :ldda_id)
+            FROM parent_folders_of
+            WHERE library_folder.id = parent_folders_of.folder_id
         ''').execution_options(autocommit=True)
         log.debug('Updating parent folder update_times: {0} {1} {2}'.format(sql,ldda.library_dataset_id,ldda.id))
         ret = object_session(self).execute(sql, {'library_dataset_id': ldda.library_dataset_id, 'ldda_id': ldda.id})
