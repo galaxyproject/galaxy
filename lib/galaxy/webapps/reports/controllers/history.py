@@ -7,7 +7,7 @@ from sqlalchemy import and_
 
 import galaxy.model
 from galaxy import util
-from galaxy.web.base.controller import BaseUIController, web
+from galaxy.webapps.base.controller import BaseUIController, web
 
 log = logging.getLogger(__name__)
 

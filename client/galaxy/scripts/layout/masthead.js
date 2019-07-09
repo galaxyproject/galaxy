@@ -99,7 +99,7 @@ const View = Backbone.View.extend({
         return `
             <nav id="masthead" class="navbar navbar-expand justify-content-center navbar-dark">
                 <a class="navbar-brand">
-                    <img class="navbar-brand-image"/>
+                    <img alt="navigation brand image" class="navbar-brand-image"/>
                     <span class="navbar-brand-title"/>
                 </a>
                 <ul class="navbar-nav"/>

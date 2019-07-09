@@ -31,15 +31,15 @@ from galaxy.web import (
     error,
     url_for
 )
-from galaxy.web.base.controller import (
+from galaxy.web.framework.helpers import (
+    grids,
+    time_ago
+)
+from galaxy.webapps.base.controller import (
     BaseUIController,
     SharableMixin,
     UsesStoredWorkflowMixin,
     UsesVisualizationMixin
-)
-from galaxy.web.framework.helpers import (
-    grids,
-    time_ago
 )
 
 

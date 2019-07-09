@@ -1,5 +1,5 @@
-tool\_shed\.capsule package
-===========================
+tool\_shed.capsule package
+==========================
 
 .. automodule:: tool_shed.capsule
     :members:
@@ -9,8 +9,8 @@ tool\_shed\.capsule package
 Submodules
 ----------
 
-tool\_shed\.capsule\.capsule\_manager module
---------------------------------------------
+tool\_shed.capsule.capsule\_manager module
+------------------------------------------
 
 .. automodule:: tool_shed.capsule.capsule_manager
     :members:

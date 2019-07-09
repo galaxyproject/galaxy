@@ -65,7 +65,7 @@ log = logging.getLogger(__name__)
 
 
 class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, ListableDependencyResolver, InstallableDependencyResolver, SpecificationPatternDependencyResolver, MappableDependencyResolver):
-    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['conda_prefix', 'versionless', 'ensure_channels', 'auto_install', 'auto_init']
+    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['conda_prefix', 'versionless', 'ensure_channels', 'auto_install', 'auto_init', 'use_local']
     resolver_type = "conda"
     config_options = {
         'prefix': None,
@@ -127,6 +127,7 @@ class CondaDependencyResolver(DependencyResolver, MultipleDependencyResolver, Li
             copy_dependencies=copy_dependencies,
             use_local=use_local,
         )
+        self.use_local = use_local
         self.ensure_channels = ensure_channels
 
         # Conda operations options (these define how resolution will occur)

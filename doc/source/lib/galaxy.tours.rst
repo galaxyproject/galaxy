@@ -1,5 +1,5 @@
-galaxy\.tours package
-=====================
+galaxy.tours package
+====================
 
 .. automodule:: galaxy.tours
     :members:

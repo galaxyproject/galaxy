@@ -42,6 +42,7 @@ PACKAGES = [
     'galaxy.model.orm',
     'galaxy.model.store',
     'galaxy.model.tool_shed_install',
+    'galaxy.quota',
     'galaxy.security',
 ]
 ENTRY_POINTS = '''

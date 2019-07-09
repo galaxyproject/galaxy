@@ -220,13 +220,13 @@ mapping:
         default: database/dependencies
         required: false
         desc: |
-          Path to the directory in which tool dependencies are placed.  This is used by
-          the Tool Shed to install dependencies and can also be used by administrators
-          to manually install or link to dependencies.  For details, see:
-            https://galaxyproject.org/admin/config/tool-dependencies
+          Various dependency resolver configuration parameters will have defaults set relative
+          to this path, such as the default conda prefix, default Galaxy packages path, legacy
+          tool shed dependencies path, and the dependency cache directory.
+
           Set the string to None to explicitly disable tool dependency handling.
           If this option is set to none or an invalid path, installing tools with dependencies
-          from the Tool Shed will fail.
+          from the Tool Shed or in Conda will fail.
 
       dependency_resolvers_config_file:
         type: str
@@ -316,6 +316,10 @@ mapping:
           to cache the dependencies in a folder. This option is beta and should only be
           used if you experience long waiting times before a job is actually submitted
           to your cluster.
+
+          This only affects tools where some requirements can be resolved but not others,
+          most modern best practice tools can use prebuilt environments in the Conda
+          directory.
 
       tool_dependency_cache_dir:
         type: str
@@ -2364,6 +2368,32 @@ mapping:
           Rather than specifying a dependency_resolvers_config_file, the definition of the
           resolvers to enable can be embedded into Galaxy's config with this option.
           This has no effect if a dependency_resolvers_config_file is used.
+
+      dependency_resolution:
+        type: map
+        desc: |
+          Alternative representation of various dependency resolution parameters. Takes the
+          dictified version of a DependencyManager object - so this is ideal for automating the
+          configuration of dependency resolution from one application that uses a DependencyManager
+          to another.
+        mapping:
+          cache:
+            type: bool
+            default: false
+            desc: See description of 'use_cached_dependency_manager'.
+          precache:
+            type: bool
+            default: true
+            desc: See description of 'precache_dependencies'.
+          cache_dir:
+            type: str
+            default: '<tool_dependency_cache_dir>/_cache'
+            desc: See description of 'tool_dependency_cache_dir'.
+          default_base_path:
+            default: database/dependencies
+            desc: See description of 'tool_dependency_dir'.
+          resolvers:
+            desc: See description of 'dependency_resolvers'.
 
       default_job_resubmission_condition:
         type: str

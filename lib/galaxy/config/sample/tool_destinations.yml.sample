@@ -1,0 +1,313 @@
+# Dynamic Tool Destinations config has four main levels (or key properties) - tools,
+# default_destination, users, and verbose.
+#
+# Under tools is where you put the IDs of the tools. Tool IDs must be
+# distinct. In each tool is a list of rules, each of which contain rule-specific
+# parameters. Dynamic Tool Destination is set up to allow and fix a few light errors
+# in the config, but it's best to follow the specified template.
+#
+# default_destination, the second key property, specifies which global destination
+# to default to in case none of the rules apply.
+#
+# users, the third key property, can be used to assign a priority to a user. Three priorities
+# are available low, med, and high. By default all users are assumed to be med priority. If
+# a rule has priority destinations the user will be set to the destination which matches their priority
+# or if their priority isn't available they will be matched to the next closest one.
+#
+# A fourth key property is verbose. When this is set to True, Dynamic Tool Destination
+# gives much more descriptive output regarding the steps it's taking in mapping your tools to
+# the appropriate destinations, including config validation and any potential errors found in the
+# config.
+#
+# Note: Configurations can be validated with the following command:
+#
+#    python lib/galaxy/jobs/dynamic_tool_destination.py -c
+#
+# or
+#
+#    python lib/galaxy/jobs/dynamic_tool_destination.py -c /path/to/tool_destinations.yml
+#
+# The general template is as follows (note that this template
+# does not use quote symbols), using spades and smalt as an example
+# (spades for showing what each field is for, and smalt
+# to give a fairly real-world example):
+#
+# Ex:
+#
+# tools:
+#   spades:
+#     rules:
+#       - rule_type: what kind of rule is it?
+#         nice_value: what kind of priority does this rule have over others?
+#         destination: how should this tool be run?
+#         lower_bound: what's the max file size?
+#         upper_bound: what's the minimum file size?
+#         users: #(optional) which users does this rule apply to
+#           - user@example.com
+#     default_destination: this tool-specific field is optional
+#   smalt_map:
+#     rules:
+#       - rule_type: file_size
+#         nice_value: 0
+#         lower_bound: 0
+#         upper_bound: 2 GB
+#         destination: cluster_low_4
+#       - rule_type: file_size
+#         nice_value: 0
+#         lower_bound: 2 GB
+#         upper_bound: 4 GB
+#         destination: cluster_low_8
+#       - rule_type: file_size
+#         nice_value: 0
+#         lower_bound: 4 GB
+#         upper_bound: Infinity
+#         destination: cluster_low_16
+#     default_destination: cluster_default
+# users:
+#   user_low@example.com:
+#     priority: low
+#   user_med@example.com:
+#     priority: med
+#   user_high@example.com:
+#     priority: high
+# default_destination: this global field is mandatory
+# verbose: True
+#
+#
+#
+# Looking at this example, some things must be clarified: each entry in the list of
+# rules per tool is specified by '-'. Per rule, regardless of rule type,
+# the following fields are mandatory:
+# rule_type, nice_value, and destination.
+#
+# Some of the other fields are mandatory only for specific rule types, which will be
+# further discussed below.
+#
+# Starting with rule_type, there are currently 3 rule types: file_size, records,
+# and arguments.
+#
+# file_size and records rules are based on how large the files are: if they fall
+# within specified limits, then the rule is satisfied, and the tool may proceed
+# with the appropriate destination.
+#
+# file_size and records rules have the following required parameters on top of the base
+# mandatory parameters:
+# upper_bound
+# lower_bound
+#
+# Bounds are allowed to be specified in bytes (48000 for example) or a higher size unit,
+# including the unit abbreviation (4 GB or 10 TB for example). Additionally, upper_bound
+# is allowed to be Infinite; simply specify Infinite in order to do so.
+#
+# **The rule will allow the lower_bound, up to but not including the upper_bound
+#
+# The third rule_type is arguments, which has arguments as a mandatory parameter on top of
+# the base mandatory parameters. The arguments parameter is specified using the following
+# template:
+#
+#
+# arguments:
+#   argument_name: the_argument
+#
+#
+# A real world example is shown below:
+#
+#
+# tools:
+#   spades:
+#     rules:
+#       - rule_type: arguments
+#         nice_value: -19
+#         destination: fail
+#         fail_message: Don't do that
+#         arguments:
+#           my_section:
+#             my_condition:
+#               careful: true
+#     default_destination: cluster_low
+# default_destination: cluster
+# verbose: False
+#
+#
+# Next up, nice_value is used for prioritizing rules over others in case two rules
+# match. nice_value basically translates to, "the higher the nice_value, the 'nicer'
+# the tool is about being picked last". So based off of that idea, a rule with a nice
+# value of -5 is guaranteed to be picked over a rule with a nice value of 10. nice_value
+# is allowed to go from -20 to 20. If two rules have the same nice value and both were
+# satisfied, the first rule in the config file will be picked. In summary, first-come-
+# first-serve basis unless nice_value overrides that.
+#
+#
+# Finally, destination simply refers to the specific way the tool will run. Each
+# destination ID refers to a specific configuration to run the tool with.
+#
+# Some rules may call for the job to fail if certain conditions are encountered. In
+# this case, destination simply refers to 'fail'.
+#
+# For example, the following rule is set to fail the job if a file that is too large
+# (more than 4GB) is encountered:
+#
+#
+# tools:
+#   spades:
+#     rules:
+#       - rule_type: file_size
+#         nice_value: 0
+#         destination: fail
+#         fail_message: Data too large
+#         lower_bound: 4 GB
+#         upper_bound: Infinity
+#
+#
+# As shown above, a rule with 'fail' as the destination requires an additional
+# parameter, 'fail_message', which DynamicToolDestination uses to print a helpful error
+# message to the user indicating why the job failed (showing up inside the job log in
+# Galaxy's history panel).
+
+
+tools:
+  spades:
+    rules:
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 0
+        upper_bound: 10 MB
+        fail_message: Too few reads for spades to work
+        destination: fail
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 10 MB
+        upper_bound: 2 GB
+        destination:
+          priority:
+            low: slurm_low_24
+            med: slurm_med_24
+            high: slurm_high_24
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 2 GB
+        upper_bound: 4 GB
+        destination:
+          priority:
+            low: slurm_low_48
+            med: slurm_med_48
+            high: slurm_high_48
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 4 GB
+        upper_bound: Infinity
+        fail_message: Too much data, shoudn't run
+        destination: fail
+      - rule_type: arguments
+        nice_value: 0
+        arguments:
+          careful: true
+        destination:
+          priority:
+            low: slurm_low_48
+            med: slurm_med_48
+            high: slurm_high_48
+    default_destination:
+      priority:
+        low: slurm_low_16
+        med: slurm_med_16
+        high: slurm_high_16
+
+  srst2:
+    rules:
+      - rule_type: records
+        nice_value: 0
+        lower_bound: 0
+        upper_bound: 100
+        destination:
+          priority:
+            low: slurm_low_4
+            med: slurm_med_4
+            high: slurm_high_4
+      - rule_type: records
+        nice_value: 0
+        lower_bound: 100
+        upper_bound: 1000
+        destination:
+          priority:
+            low: slurm_low_8
+            med: slurm_med_8
+            high: slurm_high_8
+      - rule_type: records
+        nice_value: 0
+        lower_bound: 1000
+        upper_bound: 10000
+        destination:
+          priority:
+            low: slurm_low_8
+            med: slurm_med_8
+            high: slurm_high_8
+      - rule_type: records
+        nice_value: 0
+        lower_bound: 1000000
+        upper_bound: Infinity
+        fail_message: Using the wrong tool
+        destination: fail
+
+  smalt_map:
+    rules:
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 0
+        upper_bound: 2 GB
+        destination:
+          priority:
+            low: slurm_low_4
+            med: slurm_med_4
+            high: slurm_high_4
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 2 GB
+        upper_bound: 4 GB
+        destination:
+          priority:
+            low: slurm_low_8
+            med: slurm_med_8
+            high: slurm_high_8
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 4 GB
+        upper_bound: Infinity
+        destination:
+          priority:
+            low: slurm_low_16
+            med: slurm_med_16
+            high: slurm_high_16
+
+  fastqc:
+    rules:
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 0
+        upper_bound: 400 MB
+        fail_message: File size too small
+        destination: fail
+      - rule_type: file_size
+        nice_value: 0
+        lower_bound: 400 MB
+        upper_bound: Infinity
+        destination:
+          priority:
+            low: slurm_low_4
+            med: slurm_med_4
+            high: slurm_high_4
+    default_destination:
+      priority:
+        low: slurm_low_16
+        med: slurm_med_16
+        high: slurm_high_16
+
+default_destination:
+  priority:
+    low: slurm_low_default
+    med: slurm_med_default
+    high: slurm_high_default
+users:
+  user@email.com:
+    priority: high
+verbose: True

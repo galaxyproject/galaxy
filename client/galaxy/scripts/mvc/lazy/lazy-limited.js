@@ -55,8 +55,7 @@ export default Backbone.View.extend({
                 // TODO: View is unused here.
                 //var view = this.content_list[model.id];
                 if (!this.content_list[model.id]) {
-                    var content = this.new_content(model);
-                    this.content_list[model.id] = content;
+                    this.content_list[model.id] = this.new_content(model);
                     if (this._done()) {
                         break;
                     }

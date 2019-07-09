@@ -28,7 +28,7 @@ export default Backbone.View.extend({
                     <table>
                     <tr>
                         <td class="charts-description-image-td">
-                            <img class="charts-description-image"/>
+                            <img alt="charts description" class="charts-description-image"/>
                         </td>
                         <td>
                             <div class="charts-description-title"/>

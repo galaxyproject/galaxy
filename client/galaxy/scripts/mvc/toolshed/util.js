@@ -40,8 +40,7 @@ var addToQueue = metadata => {
 var queueLength = () => {
     if (window.localStorage.hasOwnProperty("repositories")) {
         var repo_queue = JSON.parse(window.localStorage.repositories);
-        var queue_length = Object.keys(repo_queue).length;
-        return queue_length;
+        return Object.keys(repo_queue).length;
     } else {
         return 0;
     }

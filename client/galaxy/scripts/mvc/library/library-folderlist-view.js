@@ -25,7 +25,9 @@ var FolderListView = Backbone.View.extend({
         "click .folder_row": "selectClickedRow",
         "click .sort-folder-name": "sortColumnClicked",
         "click .sort-folder-file_ext": "sortColumnClicked",
-        "click .sort-folder-description": "sortColumnClicked",
+        "click .sort-folder-message": "sortColumnClicked",
+        "click .sort-folder-update_time": "sortColumnClicked",
+        "click .sort-folder-raw_size": "sortColumnClicked",
         "click .sort-folder-state": "sortColumnClicked"
     },
 
@@ -276,6 +278,21 @@ var FolderListView = Backbone.View.extend({
     },
 
     /**
+     * In case the search_term is not empty perform the search and render
+     * the result. Render all visible folder items otherwise.
+     * @param  {string} search_term string to search for
+     */
+    searchFolder: function(search_term) {
+        const trimmed_term = $.trim(search_term);
+        if (trimmed_term !== "") {
+            const result_collection = this.folder_container.search(search_term);
+            this.collection.reset(result_collection);
+        } else {
+            this.paginate();
+        }
+    },
+
+    /**
      * User clicked the checkbox in the table heading
      * @param  {context} event
      */
@@ -337,10 +354,11 @@ var FolderListView = Backbone.View.extend({
     },
 
     renderSortIcon: function() {
+        $('[class*="sort-icon"]')
+        .removeClass("fa-sort-alpha-desc")
+        .removeClass("fa-sort-alpha-asc");
+
         if (this.current_sort_order === "asc") {
-            $('[class*="sort-icon"]')
-                .removeClass("fa-sort-alpha-desc")
-                .removeClass("fa-sort-alpha-asc");
             $(`.sort-icon-${this.current_sort_key}`).addClass("fa-sort-alpha-asc");
         } else {
             $(`.sort-icon-${this.current_sort_key}`).addClass("fa-sort-alpha-desc");
@@ -463,7 +481,7 @@ var FolderListView = Backbone.View.extend({
                             <a title="Return to this folder" href="#/folders/<%- path_item[0] %>">
                                 <%- path_item[1] %>
                             </a>
-                        </li> 
+                        </li>
                     <% } else { %>
                         <li class="breadcrumb-item active">
                             <span title="You are in this folder">
@@ -484,24 +502,29 @@ var FolderListView = Backbone.View.extend({
                     </th>
                     <th>
                         <a class="sort-folder-name" title="Click to reverse order" href="#">Name</a>
-                        <span title="Sorted alphabetically"
-                            class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span>
+                        <span title="Sorted by Name" class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span>
                     </th>
                     <th style="width:20%;">
-                        <a class="sort-folder-description" title="Click to reverse order" href="#">Description</a>
-                        <span title="Sorted alphabetically" class="sort-icon-description fa"></span>
+                        <a class="sort-folder-message" title="Click to reverse order" href="#">Description</a>
+                        <span title="Sorted by Desc." class="sort-icon-message fa"></span>
                     </th>
                     <th style="width:5%;">
                         <a class="sort-folder-file_ext" title="Click to reverse order" href="#">Data Type</a>
-                        <span title="Sorted alphabetically" class="sort-icon-file_ext fa"></span>
+                        <span title="Sorted by Type" class="sort-icon-file_ext fa"></span>
                     </th>
-                    <th style="width:10%;">Size</th>
-                    <th style="width:160px;">Time Updated (UTC)</th>
+                    <th style="width:10%;">
+                        <a class="sort-folder-raw_size" title="Click to reverse order" href='#'>Size</a>
+                        <span title="Sorted by Size" class="sort-icon-raw_size fa"></span>
+                    </th>
+                    <th style="width:160px;">
+                        <a class="sort-folder-update_time" title="Click to reverse order" href='#'>Time Updated (UTC)</a>
+                        <span title="Sorted by Date" class="sort-icon-update_time fa"></span>
+                    </th>
                     <th style="width:5%;">
                         <a class="sort-folder-state" title="Click to reverse order" href="#">State</a>
-                        <span title="Sorted alphabetically" class="sort-icon-state fa"></span>
+                        <span title="Sorted by State" class="sort-icon-state fa"></span>
                     </th>
-                    <th style="width:160px;"></th> 
+                    <th style="width:160px;"></th>
                 </thead>
                 <tbody id="folder_list_body">
                     <tr id="first_folder_item">

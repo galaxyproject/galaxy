@@ -24,7 +24,7 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-from galaxy.web.base import controller
+from galaxy.webapps.base import controller
 
 log = logging.getLogger(__name__)
 

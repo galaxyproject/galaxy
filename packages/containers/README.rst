@@ -1,6 +1,6 @@
 
 .. image:: https://badge.fury.io/py/galaxy-containers.svg
-   :target: https://pypi.python.org/pypi/galaxy-containers/
+   :target: https://pypi.org/project/galaxy-containers/
 
 
 Overview
