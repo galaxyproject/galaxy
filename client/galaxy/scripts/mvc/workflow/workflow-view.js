@@ -47,6 +47,7 @@ function reset_tool_search(initValue) {
 
         // Reset search input.
         tool_menu_frame.find("#search-spinner").hide();
+        tool_menu_frame.find("#search-clear-btn").show();
         if (initValue) {
             var search_input = tool_menu_frame.find("#tool-search-query");
             search_input.val("search tools");
@@ -155,6 +156,7 @@ export default Backbone.View.extend({
                     }
                     // Start a new ajax-request in X ms
                     $("#search-spinner").show();
+                    $("#search-clear-btn").hide();
                     this.timer = window.setTimeout(() => {
                         $.get(
                             self.urls.tool_search,
@@ -209,6 +211,7 @@ export default Backbone.View.extend({
                                     $("#search-no-results").show();
                                 }
                                 $("#search-spinner").hide();
+                                $("#search-clear-btn").show();
                             },
                             "json"
                         );
