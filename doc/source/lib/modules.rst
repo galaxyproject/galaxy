@@ -6,5 +6,4 @@ lib
 
    galaxy
    galaxy_ext
-   mimeparse
    tool_shed
