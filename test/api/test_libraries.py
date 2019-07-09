@@ -248,10 +248,9 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
         dataset_update_time = create_response.json()['update_time']
-        container_fetch_response = self.galaxy_interactor.get("folders/%s/contents" % folder_id )
+        container_fetch_response = self.galaxy_interactor.get("folders/%s/contents" % folder_id)
         container_update_time = container_fetch_response.json()['folder_contents'][0]['update_time']
         assert dataset_update_time == container_update_time, container_fetch_response
-
 
     def test_update_dataset_in_folder(self):
         ld = self._create_dataset_in_folder_in_library("ForUpdateDataset")
