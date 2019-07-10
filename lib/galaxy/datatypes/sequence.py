@@ -700,7 +700,7 @@ class BaseFastq(Sequence):
         >>> Fastq().sniff(fname)
         True
         >>> fname = get_test_fname('2.fastq')
-        >>> Fastq().sniff( fname )
+        >>> Fastq().sniff(fname)
         True
         >>> FastqSanger().sniff(fname)
         False
@@ -713,6 +713,9 @@ class BaseFastq(Sequence):
         >>> Fastq().sniff(fname)
         True
         >>> FastqCSSanger().sniff(fname)
+        True
+        >>> fname = get_test_fname('2.fastqsanger')
+        >>> FastqSanger().sniff(fname)
         True
         """
         compressed = file_prefix.compressed_format is not None
