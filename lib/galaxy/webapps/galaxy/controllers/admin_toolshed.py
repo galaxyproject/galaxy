@@ -161,15 +161,6 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def browse_tool_shed(self, trans, **kwd):
-        tool_shed_url = kwd.get('tool_shed_url', '')
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
-        params = dict(galaxy_url=web.url_for('/', qualified=True))
-        url = util.build_url(tool_shed_url, pathspec=['repository', 'browse_valid_categories'], params=params)
-        return trans.response.send_redirect(url)
-
-    @web.expose
-    @web.require_admin
     def browse_toolsheds(self, trans, **kwd):
         app = {
             'jscript': "adminToolshed"
@@ -179,14 +170,6 @@ class AdminToolshed(AdminGalaxy):
                                        'title': 'Galaxy Tool Sheds',
                                        'app': app,
                                        'bundle': 'extended'})
-
-    @web.expose
-    @web.require_admin
-    def browse_tool_sheds(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
-        return trans.fill_template('/webapps/galaxy/admin/tool_sheds.mako',
-                                   message=message,
-                                   status='error')
 
     @web.expose
     @web.require_admin
@@ -281,27 +264,44 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def find_tools_in_tool_shed(self, trans, **kwd):
-        tool_shed_url = kwd.get('tool_shed_url', '')
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
-        params = dict(galaxy_url=web.url_for('/', qualified=True))
-        url = util.build_url(tool_shed_url, pathspec=['repository', 'find_tools'], params=params)
-        return trans.response.send_redirect(url)
-
-    @web.expose
-    @web.require_admin
-    def find_workflows_in_tool_shed(self, trans, **kwd):
-        tool_shed_url = kwd.get('tool_shed_url', '')
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
-        params = dict(galaxy_url=web.url_for('/', qualified=True))
-        url = util.build_url(tool_shed_url, pathspec=['repository', 'find_workflows'], params=params)
-        return trans.response.send_redirect(url)
-
-    @web.expose
-    @web.require_admin
     def generate_workflow_image(self, trans, workflow_name, repository_id=None):
         """Return an svg image representation of a workflow dictionary created when the workflow was exported."""
         return workflow_util.generate_workflow_image(trans, workflow_name, repository_metadata_id=None, repository_id=repository_id)
+
+    @web.expose
+    @web.require_admin
+    def view_tool_metadata(self, trans, repository_id, tool_id, **kwd):
+        message = escape(kwd.get('message', ''))
+        status = kwd.get('status', 'done')
+        repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
+        repository_metadata = repository.metadata
+        shed_config_dict = repository.get_shed_config_dict(trans.app)
+        tool_metadata = {}
+        tool_lineage = []
+        tool = None
+        if 'tools' in repository_metadata:
+            for tool_metadata_dict in repository_metadata['tools']:
+                if tool_metadata_dict['id'] == tool_id:
+                    tool_metadata = tool_metadata_dict
+                    tool_config = tool_metadata['tool_config']
+                    if shed_config_dict and shed_config_dict.get('tool_path'):
+                        tool_config = os.path.join(shed_config_dict.get('tool_path'), tool_config)
+                    tool = trans.app.toolbox.get_tool(tool_id=tool_metadata['guid'], exact=True)
+                    if not tool:
+                        tool = trans.app.toolbox.load_tool(os.path.abspath(tool_config), guid=tool_metadata['guid'])
+                        if tool:
+                            tool._lineage = trans.app.toolbox._lineage_map.register(tool)
+                    if tool:
+                        tool_lineage = tool.lineage.get_version_ids(reverse=True)
+                    break
+        return trans.fill_template("/admin/tool_shed_repository/view_tool_metadata.mako",
+                                   repository=repository,
+                                   repository_metadata=repository_metadata,
+                                   tool=tool,
+                                   tool_metadata=tool_metadata,
+                                   tool_lineage=tool_lineage,
+                                   message=message,
+                                   status=status)
 
     @web.json
     @web.require_admin
@@ -1775,41 +1775,6 @@ class AdminToolshed(AdminGalaxy):
                                                         id=trans.security.encode_id(repository.id),
                                                         message=message,
                                                         status=status))
-
-    @web.expose
-    @web.require_admin
-    def view_tool_metadata(self, trans, repository_id, tool_id, **kwd):
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
-        repository_metadata = repository.metadata
-        shed_config_dict = repository.get_shed_config_dict(trans.app)
-        tool_metadata = {}
-        tool_lineage = []
-        tool = None
-        if 'tools' in repository_metadata:
-            for tool_metadata_dict in repository_metadata['tools']:
-                if tool_metadata_dict['id'] == tool_id:
-                    tool_metadata = tool_metadata_dict
-                    tool_config = tool_metadata['tool_config']
-                    if shed_config_dict and shed_config_dict.get('tool_path'):
-                        tool_config = os.path.join(shed_config_dict.get('tool_path'), tool_config)
-                    tool = trans.app.toolbox.get_tool(tool_id=tool_metadata['guid'], exact=True)
-                    if not tool:
-                        tool = trans.app.toolbox.load_tool(os.path.abspath(tool_config), guid=tool_metadata['guid'])
-                        if tool:
-                            tool._lineage = trans.app.toolbox._lineage_map.register(tool)
-                    if tool:
-                        tool_lineage = tool.lineage.get_version_ids(reverse=True)
-                    break
-        return trans.fill_template("/admin/tool_shed_repository/view_tool_metadata.mako",
-                                   repository=repository,
-                                   repository_metadata=repository_metadata,
-                                   tool=tool,
-                                   tool_metadata=tool_metadata,
-                                   tool_lineage=tool_lineage,
-                                   message=message,
-                                   status=status)
 
     @web.expose
     @web.require_admin
