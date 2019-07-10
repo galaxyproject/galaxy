@@ -216,6 +216,11 @@
                  zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
                  to failed) -->
 
+            <!-- <param id="k8s_walltime_limit">172800</param> -->
+            <!-- Controls the maximum time before kubernetes terminates the job. Sets activeDeadlineSeconds
+                 in the kubernetes job spec. Once a Job reaches activeDeadlineSeconds, all of its running Pods are
+                 terminated and the Job status will become `type: Failed` with `reason: DeadlineExceeded`. -->
+
             <!-- <param id="k8s_galaxy_instance_id">my-instance</param> -->
             <!-- Identifies the Galaxy instance where this runner belongs. Setting this variable means that the runner
                  will trust k8s Jobs with the structure galaxy-my-instance-<number> to be its own. This variable needs
