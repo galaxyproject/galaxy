@@ -430,23 +430,18 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 job_state.running = False
                 self.mark_as_finished(job_state)
                 return None
-            elif failed > 0 and self.__job_failed_due_to_low_memory(job_state):
-                return self._handle_job_failure(job, job_state, reason="OOM")
             elif active > 0 and failed <= max_pod_retries:
                 if not job_state.running:
                     job_state.running = True
                     job_state.job_wrapper.change_state(model.Job.states.RUNNING)
                 return job_state
-            elif failed > max_pod_retries:
-                return self._handle_job_failure(job, job_state)
             elif job_state.job_wrapper.get_job().state == model.Job.states.DELETED:
                 # Job has been deleted via stop_job, cleanup and remove from watched_jobs by returning `None`
                 if job_state.job_wrapper.cleanup_job in ("always", "onsuccess"):
                     job_state.job_wrapper.cleanup()
                 return None
             else:
-                # We really shouldn't reach this point, but we might if the job has been killed by the kubernetes admin
-                log.info("Kubernetes job '%s' not classified as succ., active or failed. Full Job object: \n%s", job.name, job.obj)
+                return self._handle_job_failure(job, job_state)
 
         elif len(jobs.response['items']) == 0:
             # there is no job responding to this job_id, it is either lost or something happened.
@@ -463,12 +458,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             self.mark_as_failed(job_state)
             return job_state
 
-    def _handle_job_failure(self, job, job_state, reason=None):
+    def _handle_job_failure(self, job, job_state):
+        # Figure out why job has failed
         with open(job_state.error_file, 'a') as error_file:
-            if reason == "OOM":
+            if self.__job_failed_due_to_low_memory(job_state):
                 error_file.write("Job killed after running out of memory. Try with more memory.\n")
                 job_state.fail_message = "Tool failed due to insufficient memory. Try with more memory."
                 job_state.runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
+            elif self.__job_failed_due_to_walltime_limit(job):
+                error_file.write("DeadlineExceeded")
+                job_state.fail_message = "Job was active longer than specified deadline"
+                job_state.runner_state = JobState.runner_states.WALLTIME_REACHED
             else:
                 error_file.write("Exceeded max number of Kubernetes pod retrials allowed for job\n")
                 job_state.fail_message = "More pods failed than allowed. See stdout for pods details."
@@ -476,6 +476,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         self.mark_as_failed(job_state)
         job.scale(replicas=0)
         return None
+
+    def __job_failed_due_to_walltime_limit(self, job):
+        conditions = job.obj['status']['conditions']
+        return any(True for c in conditions if c['type'] == 'Failed' and c['reason'] == 'DeadlineExceeded')
 
     def __job_failed_due_to_low_memory(self, job_state):
         """
@@ -486,8 +490,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         pods = Pod.objects(self._pykube_api).filter(selector="app=%s" % job_state.job_id,
                                                     namespace=self.runner_params['k8s_namespace'])
-        pod = Pod(self._pykube_api, pods.response['items'][0])
+        if not pods.response['items']:
+            return False
 
+        pod = Pod(self._pykube_api, pods.response['items'][0])
         if pod.obj['status']['phase'] == "Failed" and \
                 pod.obj['status']['containerStatuses'][0]['state']['terminated']['reason'] == "OOMKilled":
             return True
