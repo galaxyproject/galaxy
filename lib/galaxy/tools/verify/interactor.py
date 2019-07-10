@@ -579,7 +579,7 @@ class GalaxyInteractorApi(object):
         try:
             test_user = [user for user in all_users if user["email"] == email][0]
         except IndexError:
-            username = re.sub('[^a-z-\d]', '--', email.lower())
+            username = re.sub(r"[^a-z-\d]", '--', email.lower())
             password = password or 'testpass'
             # If remote user middleware is enabled - this endpoint consumes
             # ``remote_user_email`` otherwise it requires ``email``, ``password``
