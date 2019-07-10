@@ -101,7 +101,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             ldda.dbkey = new_genome_build
             changed = True
         if changed:
-            ldda.updateParentFolderUpdateTimes()
+            ldda.update_parent_folder_update_times()
             trans.sa_session.add(ldda)
             trans.sa_session.flush()
         return changed

@@ -3594,7 +3594,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
             rval['metadata_' + name] = val
         return rval
 
-    def updateParentFolderUpdateTimes(self):
+    def update_parent_folder_update_times(self):
         # sets the update_time for all continaing folders up the tree
         ldda = self
 
