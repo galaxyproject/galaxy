@@ -714,7 +714,7 @@ class BaseFastq(Sequence):
         True
         >>> FastqCSSanger().sniff(fname)
         True
-        >>> fname = get_test_fname('2.fastqsanger')
+        >>> fname = get_test_fname('4.fastqsanger')
         >>> FastqSanger().sniff(fname)
         True
         """
