@@ -3,8 +3,8 @@ import time
 
 import pytest
 
+import galaxy.model.database_heartbeat as heartbeat
 import galaxy.web_stack as stack
-from galaxy.model.database_heartbeat import DatabaseHeartbeat
 
 
 @pytest.fixture
@@ -13,7 +13,7 @@ def heartbeat_app(database_app, monkeypatch):
     def test_send_control_task(*args, **kwargs):
         return
 
-    monkeypatch.setattr(stack.database_heartbeat, "send_control_task", test_send_control_task)
+    monkeypatch.setattr(heartbeat, "send_control_task", test_send_control_task)
     with setup_heartbeat_app(database_app()) as heartbeat_app:
         yield heartbeat_app
 
@@ -23,7 +23,7 @@ def setup_heartbeat_app(app):
     app.config.server_name = 'test_heartbeat'
     app.config.attach_to_pools = False
     app.application_stack = stack.application_stack_instance(app=app)
-    app.database_heartbeat = DatabaseHeartbeat(application_stack=app.application_stack, heartbeat_interval=0.1)
+    app.database_heartbeat = heartbeat.DatabaseHeartbeat(application_stack=app.application_stack, heartbeat_interval=0.1)
     yield app
     app.database_heartbeat.shutdown()
 
