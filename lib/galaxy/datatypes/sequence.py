@@ -694,6 +694,9 @@ class BaseFastq(Sequence):
         >>> fname = get_test_fname('1.fastqsanger')
         >>> FastqSanger().sniff(fname)
         True
+        >>> fname = get_test_fname('4.fastqsanger')
+        >>> FastqSanger().sniff(fname)
+        True
         >>> fname = get_test_fname('3.fastq')
         >>> FastqSanger().sniff(fname)
         False
@@ -713,9 +716,6 @@ class BaseFastq(Sequence):
         >>> Fastq().sniff(fname)
         True
         >>> FastqCSSanger().sniff(fname)
-        True
-        >>> fname = get_test_fname('4.fastqsanger')
-        >>> FastqSanger().sniff(fname)
         True
         """
         compressed = file_prefix.compressed_format is not None
@@ -821,25 +821,9 @@ class FastqSanger(Fastq):
     @staticmethod
     def quality_check(lines):
         """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
-        is_ambiguous = True
-        within_typical_upper_bound = True
         for line in islice(lines, 3, None, 4):
-            if ' ' in line:
+            if not all(_ >= '!' and _ <= 'S' for _ in line[0]) or ' ' in line:
                 return False
-            if is_ambiguous:
-                for q in line[0]:
-                    if q < '!' or q > '~':
-                        return False
-                    if q < ';':
-                        # encoding is Phred+33
-                        is_ambiguous = False
-                    elif q > 'M':
-                        within_typical_upper_bound = False
-            else:
-                if any(_ < '!' or _ > '~' for _ in line[0]):
-                    return False
-        if is_ambiguous and not within_typical_upper_bound:
-            return False
         return True
 
 
