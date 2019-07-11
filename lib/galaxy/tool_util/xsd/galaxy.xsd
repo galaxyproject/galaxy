@@ -4583,6 +4583,11 @@ variable instead of shell variable.
 define.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="strip" type="PermissiveBoolean" default="false">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Whether to strip leading and trailing whitespace from the calculated value before exporting the environment variable.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
