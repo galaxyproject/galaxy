@@ -89,14 +89,14 @@ steps:
         - 'a[href$="tool_runner?tool_id=Filter1"]'
 
     - title: "Filter Tool"
-      element: '.center-panel'
+      element: '#center-panel'
       intro: "Your tool is loaded into the main Galaxy page and ready for use."
       position: "right"
       #backdropContainer: 'background'
       #backdrop: true
 
     - title: "Tool parameters"
-      element: '.center-panel .ui-portlet'
+      element: '#center-panel .ui-portlet'
       intro: "Here you can choose your tool parameters. Select your input dataset from your history and specify parameters for your analysis."
       position: "right"
 

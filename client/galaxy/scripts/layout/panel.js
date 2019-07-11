@@ -202,7 +202,7 @@ const CenterPanel = Backbone.View.extend({
     initialize: function(options) {
         this.setElement($(this.template()));
         this.$frame = this.$(".center-frame");
-        this.$panel = this.$(".center-panel");
+        this.$panel = this.$("#center-panel");
         this.$frame.on("load", this._iframeChangeHandler.bind(this));
     },
 
@@ -259,7 +259,7 @@ const CenterPanel = Backbone.View.extend({
         return (
             '<div class="center-container">' +
             '<iframe id="galaxy_main" name="galaxy_main" frameborder="0" class="center-frame" />' +
-            '<div class="center-panel" />' +
+            '<div id="center-panel" />' +
             "</div>"
         );
     },
