@@ -114,19 +114,16 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if not self.app.config.allow_user_deletion:
             raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete/undelete users.')
         # Check first if it is already deleted. If so, say so and do nothing.
-        # Unsure if we should add username to the log.debug or if that breaks the gdrp support
+        # Unsure if we should add username to the log.debug or if that breaks the GDPR support
         if user.deleted:
             log.debug("User already deleted, but setting delete flag just in case.")
         if user.purged:
             log.debug("Cannot delete purged user, but setting delete flag just in case.")
-
         user.deleted = True
-        log.debug("User %s deleted" % user.username)
         self.session().add(user)
         self.session().flush()
 
     def undelete(self, user):
-        log.debug("Requested undelete of user %s" % user.username)
         if not self.app.config.allow_user_deletion:
             raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete/undelete users.')
         if user.purged:
@@ -138,13 +135,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         self.session().flush()
 
     def purge(self, user):
-        log.debug("Requested purge of user %s" % user)
         if not self.app.config.allow_user_deletion:
             raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete/undelete users.')
         if not user.deleted:
             raise exceptions.MessageException('User \'%s\' has not been deleted, so it cannot be purged.' % user.email, 'error')
-        else:
-            log.debug("Purging user %s" % user)
         private_role = self.app.security_agent.get_private_user_role(user)
         # Delete History
         for active_history in user.active_histories:
@@ -196,7 +190,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 role.description = role.description.replace(user.email, email_hash)
             user.email = email_hash
             user.username = uname_hash
-        log.debug("User credentials changed. email is now %s and name is %s" % (user.email, user.username))
         # Redact user addresses as well
         if self.app.config.redact_user_address_during_deletion:
             user_addresses = self.session().query(self.app.model.UserAddress) \
