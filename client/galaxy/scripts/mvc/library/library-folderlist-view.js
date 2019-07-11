@@ -517,7 +517,7 @@ var FolderListView = Backbone.View.extend({
                         <span title="Sorted by Size" class="sort-icon-raw_size fa"></span>
                     </th>
                     <th style="width:160px;">
-                        <a class="sort-folder-update_time" title="Click to reverse order" href='#'>Time Updated (UTC)</a>
+                        <a class="sort-folder-update_time" title="Click to reverse order" href='#'>Date Updated (UTC)</a>
                         <span title="Sorted by Date" class="sort-icon-update_time fa"></span>
                     </th>
                     <th style="width:5%;">

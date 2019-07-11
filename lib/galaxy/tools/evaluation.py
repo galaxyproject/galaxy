@@ -547,7 +547,8 @@ class ToolEvaluator(object):
             os.close(fd)
             self.__write_workdir_file(config_filename, environment_variable_template, param_dict, strip=environment_variable_def.get("strip", False))
             config_file_basename = os.path.basename(config_filename)
-            environment_variable["value"] = "`cat %s`" % config_file_basename
+            # environment setup in job file template happens before `cd $working_directory`
+            environment_variable["value"] = '`cat "$_GALAXY_JOB_DIR/%s"`' % config_file_basename
             environment_variable["raw"] = True
             environment_variables.append(environment_variable)
 

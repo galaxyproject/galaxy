@@ -232,6 +232,26 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
 
+    def test_create_dataset_in_subfolder(self):
+        library = self.library_populator.new_private_library("ForCreateDatasets")
+        folder_response = self._create_folder(library)
+        self._assert_status_code_is(folder_response, 200)
+        folder_id = folder_response.json()[0]['id']
+        subfolder_response = self._create_subfolder(folder_id)
+        self._assert_status_code_is(folder_response, 200)
+        print(subfolder_response.json())
+        subfolder_id = subfolder_response.json()['id']
+        history_id = self.dataset_populator.new_history()
+        hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3 sub")['id']
+        payload = {'from_hda_id': hda_id}
+        create_response = self._post("folders/%s/contents" % subfolder_id, payload)
+        self._assert_status_code_is(create_response, 200)
+        self._assert_has_keys(create_response.json(), "name", "id")
+        dataset_update_time = create_response.json()['update_time']
+        container_fetch_response = self.galaxy_interactor.get("folders/%s/contents" % folder_id)
+        container_update_time = container_fetch_response.json()['folder_contents'][0]['update_time']
+        assert dataset_update_time == container_update_time, container_fetch_response
+
     def test_update_dataset_in_folder(self):
         ld = self._create_dataset_in_folder_in_library("ForUpdateDataset")
         data = {'name': 'updated_name', 'file_ext': 'fastq', 'misc_info': 'updated_info', 'genome_build': 'updated_genome_build'}
@@ -300,6 +320,13 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
             name="New Folder",
         )
         return self._post("libraries/%s/contents" % library["id"], data=create_data)
+
+    def _create_subfolder(self, containing_folder_id):
+        create_data = dict(
+            description="new subfolder desc",
+            name="New Subfolder",
+        )
+        return self._post("folders/%s" % containing_folder_id, data=create_data)
 
     def _create_dataset_in_folder_in_library(self, library_name):
         library = self.library_populator.new_private_library(library_name)

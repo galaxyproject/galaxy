@@ -1,0 +1,59 @@
+<containers_resolvers>
+  <explicit />
+  <!-- explicit: resolves container URI for a job through explict container
+       tags in the tool XML wrapper. -->
+
+  <!-- All mulled flavors below only work if enable_beta_mulled_containers is
+       set to true in the galaxy.yaml config file. -->
+
+  <!-- <cached_mulled /> -->
+  <!-- cached_mulled: resolves container URI through bioconda to mulled
+       automatic mapping, preferring cached images in the accessible docker
+       engine. Requires docker engine. -->
+
+  <!-- <cached_mulled_singularity /> -->
+  <!-- cached_mulled_singularity: resolves container URI through
+       bioconda to mulled automatic mapping, preferring cached singularity
+       images to building local singularity images. Only works with
+       enable_beta_mulled_containers set to true in the galaxy.yaml config file.
+       -->
+
+  <!-- <mulled auto_install="True"/> -->
+  <!-- mulled: only resolves container URI through bioconda to mulled automatic
+       mapping. Should be the method of choice if mulled resolution is required
+       but the container execution is handled by a container orchestration
+       instead of docker directly (ie. Galaxy has no access to a docker client
+       binary). It works of course with direct docker engine tool executions.
+       Set auto_install to False if Galaxy should pull container images
+       through the admin interface or API, but not automatically when
+       a tool is run.
+       -->
+
+  <!-- <mulled_singularity auto_install="True"/> -->
+  <!-- mulled_singularity: only resolves container URI through bioconda to mulled automatic
+       mapping. Should be the method of choice if mulled resolution is required
+       but the container execution is handled by a container orchestration
+       instead of singularity directly (ie. Galaxy has no access to a singularity client
+       binary). It works of course with direct singularity tool executions.
+       Set auto_install to False if Galaxy should pull container images
+       through the admin interface or API, but not automatically when
+       a tool is run.
+       -->
+
+  <!-- <build_mulled auto_install="True"/> -->
+  <!-- build_mulled: builds a docker image locally for one or more bioconda
+       packages listed in the tools definition.
+       Set auto_install to False if Galaxy should build container images
+       through the admin interface or API, but not automatically when
+       a tool is run.
+       -->
+ 
+  <!-- <build_mulled_singularity auto_install="True"/> -->
+  <!-- build_mulled_singularity: builds a singularity image locally for one
+       or more package requirements listed as part of the tool's definition.
+       Set auto_install to False if Galaxy should build container images
+       through the admin interface or API, but not automatically when
+       a tool is run.
+
+  -->
+</containers_resolvers>

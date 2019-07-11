@@ -4649,7 +4649,7 @@ define.</xs:documentation>
         </xs:attribute>
         <xs:attribute name="strip" type="PermissiveBoolean" default="false">
         <xs:annotation>
-          <xs:documentation xml:lang="en">Whether to strip whitespace.</xs:documentation>
+          <xs:documentation xml:lang="en">Whether to strip leading and trailing whitespace from the calculated value before exporting the environment variable.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       </xs:extension>

@@ -1,0 +1,138 @@
+<?xml version="1.0"?>
+<!-- If job_metrics.xml exists, this file will define the default job metric
+     plugin used for all jobs. Individual job_conf.xml destinations can
+     disable metric collection by setting metrics="off" on that destination.
+     The metrics attribute on destination definition elements can also be
+     a path - in which case that XML metrics file will be loaded and used for
+     that destination. Finally, the destination element may contain a job_metrics
+     child element (with all options defined below) to define job metrics in an
+     embedded manner directly in the job_conf.xml file.
+-->
+<job_metrics>
+  <!-- Each element in this file corresponds to a job instrumentation plugin
+       used to generate metrics in lib/galaxy/jobs/metrics/instrumenters. -->
+
+  <!-- Core plugin captures Galaxy slots, start and end of job (in seconds
+       since epoch) and computes runtime in seconds. -->
+  <core />
+
+  <!-- Uncomment to dump processor count for each job - linux only. -->
+  <!-- <cpuinfo /> -->
+  <!-- Uncomment to dump information about all processors for for each
+       job - this is likely too much data. Linux only. -->
+  <!-- <cpuinfo verbose="true" /> -->
+
+  <!-- Uncomment to dump system memory information for each job - linux
+       only. -->
+  <!-- <meminfo /> -->
+
+  <!-- Uncomment to record operating system each job is executed on - linux
+       only. -->
+  <!-- <uname /> -->
+
+  <!-- Uncomment following to enable plugin dumping complete environment
+       for each job, potentially useful for debuging -->
+  <!-- <env /> -->
+  <!-- env plugin can also record more targetted, obviously useful variables
+       as well. -->
+  <!-- <env variables="HOSTNAME,SLURM_CPUS_ON_NODE,SLURM_JOBID" /> -->
+
+  <!-- If galaxy jobs are run in cgroups, like slurm does if memory limits
+       are enforced, we can try to grep some information from this. By default,
+       only a small set of cgroup parameters will be recorded, the list of which
+       can be found in lib/galaxy/jobs/metrics/instrumenters/cgroup.py.  -->
+  <!-- <cgroup /> -->
+  <!-- All params from the `cpuacct,cpu` and `memory` controllers can be
+       recorded.  -->
+  <!-- <cgroup verbose="true" /> -->
+  <!-- Or, specific params can be recorded. -->
+  <!-- <cgroup params="cpuacct.usage,memory.max_usage_in_bytes,memory.memsw.max_usage_in_bytes" /> -->
+
+  <!-- Uncomment to record hostname - *nix only -->
+  <!-- <hostname /> -->
+
+  <!-- <collectl /> -->
+  <!-- Collectl (http://collectl.sourceforge.net/) is a powerful monitoring
+       utility capable of gathering numerous system and process level
+       statistics of running applications. The Galaxy collectl job metrics
+       plugin by default will grab a variety of process level metrics
+       aggregated across all processes corresponding to a job, this behavior
+       is highly customiziable - both using the attributes documented below
+       or simply hacking up the code in lib/galaxy/jobs/metrics.
+
+       Warning: In order to use this plugin collectl must be available on the
+       compute server the job runs on and on the local Galaxy server as well
+       (unless in this latter case summarize_process_data is set to False).
+
+       Attributes (the follow describes attributes that can be used with
+       the collectl job metrics element above to modify its behavior).
+
+       'summarize_process_data': Boolean indicating whether to run collectl
+              in playback mode after jobs complete and gather process level
+              statistics for the job run. These statistics can be customized
+              with the 'process_statistics' attribute. (defaults to True)
+
+       'saved_logs_path': If set (it is off by default), all collectl logs
+              will be saved to the specified path after jobs complete. These
+              logs can later be replayed using collectl offline to generate
+              full time-series data corresponding to a job run.
+
+       'subsystems': Comma separated list of collectl subystems to collect
+              data for. Plugin doesn't currently expose all of them or offer
+              summary data for any of them except 'process' but extensions
+              would be welcome. May seem pointless to include subsystems
+              beside process since they won't be processed online by Galaxy -
+              but if 'saved_logs_path' these files can be played back at anytime.
+
+              Available subsystems - 'process', 'cpu', 'memory', 'network',
+              'disk', 'network'. (Default 'process').
+
+              Warning: If you override this - be sure to include 'process'
+              unless 'summarize_process_data' is set to false.
+
+       'process_statistics': If 'summarize_process_data' this attribute can be
+              specified as a comma separated list to override the statistics
+              that are gathered. Each statistics is of the for X_Y where X
+              if one of 'min', 'max', 'count', 'avg', or 'sum' and Y is a
+              value from 'S', 'VmSize', 'VmLck', 'VmRSS', 'VmData', 'VmStk',
+              'VmExe', 'VmLib', 'CPU', 'SysT', 'UsrT', 'PCT', 'AccumT' 'WKB',
+              'RKBC', 'WKBC', 'RSYS', 'WSYS', 'CNCL', 'MajF', 'MinF'. Consult
+              lib/galaxy/jobs/metrics/collectl/processes.py for more details
+              on what each of these resource types means.
+
+              Defaults to 'max_VmSize,avg_VmSize,max_VmRSS,avg_VmRSS,sum_SysT,sum_UsrT,max_PCT avg_PCT,max_AccumT,sum_RSYS,sum_WSYS'
+              as variety of statistics roughly describing CPU and memory
+              usage of the program and VERY ROUGHLY describing I/O consumption.
+
+       'procfilt_on': By default Galaxy will tell collectl to only collect
+             'process' level data for the current user (as identified)
+             by 'username' (default) - this can be disabled by settting this
+             to 'none' - the plugin will still only aggregate process level
+             statistics for the jobs process tree - but the additional
+             information can still be used offline with 'saved_logs_path'
+             if set. Obsecurely, this can also be set 'uid' to identify
+             the current user to filter on by UID instead of username -
+             this may needed on some clusters(?).
+
+       'interval': The time (in seconds) between data collection points.
+              Collectl uses a variety of different defaults for different
+              subsystems if this is not set, but process information (likely
+              the most pertinent for Galaxy jobs will collect data every
+              60 seconds).
+
+       'flush': Interval (in seconds I think) between when collectl will
+              flush its buffer to disk. Galaxy overrides this to disable
+              flushing by default if not set.
+
+       'local_collectl_path', 'remote_collectl_path', 'collectl_path':
+              By default, jobs will just assume collectl is on the PATH, but
+              it can be overridden with 'local_collectl_path' and
+              'remote_collectl_path' (or simply 'collectl_path' if it is not
+              on the path but installed in the same location both locally and
+              remotely).
+
+        There are more and more increasingly obsecure options including -
+        log_collectl_program_output, interval2, and interval3. Consult
+        source code for more details.
+  -->
+</job_metrics>

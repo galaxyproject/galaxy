@@ -244,7 +244,7 @@ class GalaxyInteractorApi(object):
     def wait_for_job(self, job_id, history_id, maxseconds):
         self.wait_for(lambda: not self.__job_ready(job_id, history_id), maxseconds=maxseconds)
 
-    def wait_for(self, func, **kwd):
+    def wait_for(self, func, what='Tool test run', **kwd):
         sleep_amount = 0.2
         slept = 0
         walltime_exceeded = int(kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT))
@@ -258,7 +258,7 @@ class GalaxyInteractorApi(object):
             else:
                 return
 
-        message = 'Tool test run exceeded walltime [total %s, max %s], terminating.' % (slept, walltime_exceeded)
+        message = '%s exceeded walltime [total %s, max %s], terminating.' % (what, slept, walltime_exceeded)
         log.info(message)
         raise AssertionError(message)
 
@@ -579,7 +579,7 @@ class GalaxyInteractorApi(object):
         try:
             test_user = [user for user in all_users if user["email"] == email][0]
         except IndexError:
-            username = re.sub('[^a-z-]', '--', email.lower())
+            username = re.sub(r"[^a-z-\d]", '--', email.lower())
             password = password or 'testpass'
             # If remote user middleware is enabled - this endpoint consumes
             # ``remote_user_email`` otherwise it requires ``email``, ``password``

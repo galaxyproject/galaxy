@@ -11,6 +11,7 @@ import galaxy.queues
 import galaxy.quota
 import galaxy.security
 from galaxy import config, job_metrics, jobs
+from galaxy.config_watchers import ConfigWatchers
 from galaxy.containers import build_container_interfaces
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
@@ -41,7 +42,6 @@ from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.web import url_for
 from galaxy.web.proxy import ProxyManager
 from galaxy.web_stack import application_stack_instance
-from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
 from galaxy.webhooks import WebhooksRegistry
 from tool_shed.galaxy_install import (
     installed_repository_manager,

@@ -94,16 +94,6 @@ const AdminPanel = Backbone.View.extend({
                         enabled: this.settings.is_tool_shed_installed
                     },
                     {
-                        title: _l("Install new tools (Legacy)"),
-                        url: "admin_toolshed/browse_tool_sheds",
-                        enabled: this.settings.is_tool_shed_installed
-                    },
-                    {
-                        title: "Install new tools (Beta)",
-                        url: "admin_toolshed/browse_toolsheds",
-                        enabled: this.settings.is_tool_shed_installed && this.config.enable_beta_ts_api_install
-                    },
-                    {
                         title: _l("Monitor installation"),
                         url: "admin_toolshed/monitor_repository_installation",
                         enabled: this.settings.installing_repository_ids

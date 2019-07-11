@@ -886,7 +886,10 @@ class JobHandlerStopQueue(Monitors):
                                      .filter((model.Job.state == model.Job.states.DELETED_NEW) &
                                              (model.Job.handler == self.app.config.server_name)).all()
             for job in newly_deleted_jobs:
-                jobs_to_check.append((job, job.stderr))
+                # job.stderr is always a string (job.job_stderr + job.tool_stderr, possibly `''`),
+                # while any `not None` message returned in self.queue.get_nowait() is interpreted
+                # as an error, so here we use None if job.stderr is false-y
+                jobs_to_check.append((job, job.stderr or None))
         # Also pull from the queue (in the case of Administrative stopped jobs)
         try:
             while 1:
