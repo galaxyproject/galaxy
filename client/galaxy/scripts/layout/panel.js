@@ -201,7 +201,7 @@ const RightPanel = SidePanel.extend({
 const CenterPanel = Backbone.View.extend({
     initialize: function(options) {
         this.setElement($(this.template()));
-        this.$frame = this.$(".center-frame");
+        this.$frame = this.$("#galaxy_main");
         this.$panel = this.$("#center-panel");
         this.$frame.on("load", this._iframeChangeHandler.bind(this));
     },
@@ -217,7 +217,7 @@ const CenterPanel = Backbone.View.extend({
             if (location && location.host) {
                 $(iframe).show();
                 this.$panel.empty().hide();
-                Galaxy.trigger("center-frame:load", {
+                Galaxy.trigger("galaxy_main:load", {
                     fullpath: location.pathname + location.search + location.hash,
                     pathname: location.pathname,
                     search: location.search,
@@ -258,7 +258,7 @@ const CenterPanel = Backbone.View.extend({
     template: function() {
         return (
             '<div id="center-container">' +
-            '<iframe id="galaxy_main" name="galaxy_main" frameborder="0" class="center-frame" />' +
+            '<iframe id="galaxy_main" name="galaxy_main" frameborder="0" />' +
             '<div id="center-panel" />' +
             "</div>"
         );
