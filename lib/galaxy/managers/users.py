@@ -6,7 +6,6 @@ import random
 import socket
 import time
 from datetime import datetime
-from galaxy.util.hash_util import new_secure_hash
 
 from markupsafe import escape
 from sqlalchemy import and_, desc, exc, func, true
@@ -22,6 +21,7 @@ from galaxy.managers import (
     deletable
 )
 from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
+from galaxy.util.hash_util import new_secure_hash
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
@@ -38,6 +38,7 @@ you may want to notify an administrator.
 If you're having trouble using the link when clicking it from email client, you
 can also copy and paste it into your browser.
 """
+
 
 class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     foreign_key_name = 'user'

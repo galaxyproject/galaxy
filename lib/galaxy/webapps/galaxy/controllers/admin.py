@@ -166,7 +166,7 @@ class UserListGrid(grids.Grid):
         grids.GridColumnFilter("Deleted", args=dict(deleted=True, purged=False)),
         grids.GridColumnFilter("Purged", args=dict(purged=True)),
         grids.GridColumnFilter("All", args=dict(deleted='All'))
-        ]
+    ]
     num_rows_per_page = 50
     use_paging = True
     default_filter = dict(purged="False")

@@ -35,6 +35,7 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous
 )
+from galaxy.web.form_builder import AddressField
 from galaxy.webapps.base.controller import (
     BaseAPIController,
     BaseUIController,
@@ -42,7 +43,6 @@ from galaxy.webapps.base.controller import (
     UsesFormDefinitionsMixin,
     UsesTagsMixin
 )
-from galaxy.web.form_builder import AddressField
 
 
 log = logging.getLogger(__name__)
