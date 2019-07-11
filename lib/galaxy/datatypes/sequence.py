@@ -822,7 +822,7 @@ class FastqSanger(Fastq):
     def quality_check(lines):
         """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
         for line in islice(lines, 3, None, 4):
-            if not all(_ >= '!' and _ <= 'S' for _ in line[0]) or ' ' in line:
+            if not all(_ >= '!' and _ <= 'S' for _ in line[0]):
                 return False
         return True
 
