@@ -243,7 +243,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         user = self.get_user(trans, id)
         purge = util.string_as_bool(kwd.get('purge', False))
         if purge:
-            log.debug("Purging user from api %s" % user)
+            log.debug("Purging user %s" % user)
             self.user_manager.purge(user)
         else:
             self.user_manager.delete(user)
@@ -253,8 +253,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
     @web.require_admin
     def undelete(self, trans, id, **kwd):
         """
-        UNDELETE /api/users/{id}
-        undelete the user with the given ``id``
+        POST /api/users/{id}
+        Undelete the user with the given ``id``
 
         :param id: the encoded id of the user to be undeleted
         :type  id: str

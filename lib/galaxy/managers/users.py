@@ -111,8 +111,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return user
 
     def delete(self, user):
+        """Mark the given user deleted."""
         if not self.app.config.allow_user_deletion:
-            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete/undelete users.')
+            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete users.')
         # Check first if it is already deleted. If so, say so and do nothing.
         # Unsure if we should add username to the log.debug or if that breaks the GDPR support
         if user.deleted:
@@ -124,8 +125,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         self.session().flush()
 
     def undelete(self, user):
+        """Remove the deleted flag for the given user."""
         if not self.app.config.allow_user_deletion:
-            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete/undelete users.')
+            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to undelete users.')
         if user.purged:
             raise exceptions.ItemDeletionException('Purged user cannot be undeleted.')
         if not user.deleted:
@@ -135,10 +137,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         self.session().flush()
 
     def purge(self, user):
+        """Purge the given user. They must have the deleted flag already."""
         if not self.app.config.allow_user_deletion:
-            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete/undelete users.')
+            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete or purge users.')
         if not user.deleted:
-            raise exceptions.MessageException('User \'%s\' has not been deleted, so it cannot be purged.' % user.email, 'error')
+            raise exceptions.MessageException('User \'%s\' has not been deleted, so they cannot be purged.' % user.email)
         private_role = self.app.security_agent.get_private_user_role(user)
         # Delete History
         for active_history in user.active_histories:
