@@ -8,13 +8,15 @@ import galaxy.web_stack as stack
 
 
 @pytest.fixture
-def heartbeat_app(database_app, monkeypatch):
+def heartbeat_app(database_app):
 
-    def test_send_control_task(*args, **kwargs):
-        return
+    class QueueWorker(object):
 
-    monkeypatch.setattr(heartbeat, "send_control_task", test_send_control_task)
+        def send_control_task(self, *args, **kwargs):
+            return
+
     with setup_heartbeat_app(database_app()) as heartbeat_app:
+        heartbeat_app.queue_worker = QueueWorker()
         yield heartbeat_app
 
 
