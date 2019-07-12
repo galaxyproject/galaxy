@@ -1692,7 +1692,7 @@ def _executable():
         if uwsgi is not None:
             for name in ('home', 'virtualenv', 'venv', 'pyhome'):
                 if name in uwsgi.opt:
-                    virtualenv = uwsgi.opt[name]
+                    virtualenv = unicodify(uwsgi.opt[name])
                     break
         if virtualenv is None and 'VIRTUAL_ENV' in os.environ:
             virtualenv = os.environ['VIRTUAL_ENV']
