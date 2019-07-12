@@ -8,7 +8,6 @@ from string import punctuation as PUNCTUATION
 import six
 from sqlalchemy import and_, false, or_
 
-import galaxy.queue_worker
 from galaxy import (
     model,
     util,
@@ -1609,7 +1608,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     def jobs_control(self, trans, job_lock=None, **kwd):
         if job_lock is not None:
             job_lock = True if job_lock == 'true' else False
-            galaxy.queue_worker.send_control_task(trans.app, 'admin_job_lock', kwargs={'job_lock': job_lock}, get_response=True)
+            trans.app.queue_worker.send_control_task('admin_job_lock', kwargs={'job_lock': job_lock}, get_response=True)
         job_lock = trans.app.job_manager.job_lock
         return {'job_lock': job_lock}
 
@@ -1757,7 +1756,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
                 f.write("\n".join(new_whitelist))
             trans.app.config.sanitize_whitelist = new_whitelist
-            galaxy.queue_worker.send_control_task(trans.app, 'reload_sanitize_whitelist', noop_self=True)
+            trans.app.queue_worker.send_control_task('reload_sanitize_whitelist', noop_self=True)
             # dispatch a message to reload list for other processes
         return trans.fill_template('/webapps/galaxy/admin/sanitize_whitelist.mako',
                                    sanitize_all=trans.app.config.sanitize_all_html,

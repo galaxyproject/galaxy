@@ -1,9 +1,6 @@
 from os.path import dirname
 
-from galaxy.queue_worker import (
-    job_rule_modules,
-    send_control_task,
-)
+from galaxy.queue_worker import job_rule_modules
 from galaxy.tools.toolbox.watcher import (
     get_tool_conf_watcher,
     get_tool_watcher,
@@ -27,11 +24,11 @@ class ConfigWatchers(object):
         # If the reload_data_managers callback wins, the cache will miss the tools that had been removed from the cache
         # and will be blind to further changes in these tools.
         self.tool_config_watcher = get_tool_conf_watcher(
-            reload_callback=lambda: send_control_task(self.app, 'reload_toolbox'),
+            reload_callback=lambda: self.app.queue_worker.send_control_task('reload_toolbox'),
             tool_cache=self.app.tool_cache,
         )
         self.data_manager_config_watcher = get_tool_conf_watcher(
-            reload_callback=lambda: send_control_task(self.app, 'reload_data_managers'),
+            reload_callback=lambda: self.app.queue_worker.send_control_task('reload_data_managers'),
         )
         self.tool_data_watcher = get_watcher(self.app.config, 'watch_tool_data_dir', monitor_what_str='data tables')
         self.tool_watcher = get_tool_watcher(self, app.config)
@@ -63,14 +60,14 @@ class ConfigWatchers(object):
         for tool_data_path in self.tool_data_paths:
             self.tool_data_watcher.watch_directory(
                 tool_data_path,
-                callback=lambda path: send_control_task(self.app, 'reload_tool_data_tables', kwargs={'path': path}),
+                callback=lambda path: self.app.queue_worker.send_control_task('reload_tool_data_tables', kwargs={'path': path}),
                 require_extensions=('.loc',),
                 recursive=True,
             )
         for job_rules_directory in self.job_rules_paths:
             self.job_rule_watcher.watch_directory(
                 job_rules_directory,
-                callback=lambda: send_control_task(self.app, 'reload_job_rules'),
+                callback=lambda: self.app.queue_worker.send_control_task('reload_job_rules'),
                 recursive=True,
                 ignore_extensions=('.pyc', '.pyo', '.pyd'))
         self.active = True
