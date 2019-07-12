@@ -5,7 +5,6 @@ import threading
 
 from galaxy.model import WorkerProcess
 from galaxy.model.orm.now import now
-from galaxy.queue_worker import send_control_task
 
 log = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ class DatabaseHeartbeat(object):
         if worker_process:
             self.sa_session.delete(worker_process)
             self.sa_session.flush()
-            send_control_task(self.application_stack.app, 'reconfigure_watcher', noop_self=True)
+            self.application_stack.app.queue_worker.send_control_task('reconfigure_watcher', noop_self=True)
 
     def get_active_processes(self, last_seen_seconds=None):
         """Return all processes seen in ``last_seen_seconds`` seconds."""

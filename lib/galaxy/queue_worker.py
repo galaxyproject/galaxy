@@ -331,6 +331,12 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         self.direct_queue = None
         self.control_queues = []
 
+    def send_control_task(self, task, noop_self=False, get_response=False, routing_key='control.*', kwargs=None):
+        return send_control_task(app=self.app, task=task, noop_self=noop_self, get_response=get_response, routing_key=routing_key, kwargs=kwargs)
+
+    def send_local_control_task(self, task, kwargs=None):
+        return send_local_control_task(app=self.app, task=task, kwargs=kwargs)
+
     @property
     def declare_queues(self):
         # dynamically produce queues, allows addressing all known processes at a given time
