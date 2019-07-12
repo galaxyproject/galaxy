@@ -90,9 +90,22 @@ def job_config(jobs_directory):
             <param id="k8s_config_path">$k8s_config_path</param>
             <param id="k8s_galaxy_instance_id">gx-short-id</param>
         </plugin>
+        <plugin id="k8s_walltime_short" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
+            <param id="k8s_persistent_volume_claims">jobs-directory-claim:$jobs_directory,tool-directory-claim:$tool_directory</param>
+            <param id="k8s_config_path">$k8s_config_path</param>
+            <param id="k8s_galaxy_instance_id">gx-short-id</param>
+            <param id="k8s_walltime_limit">10</param>
+        </plugin>
     </plugins>
     <destinations default="k8s_destination">
         <destination id="k8s_destination" runner="k8s">
+            <param id="limits_cpu">1.9</param>
+            <param id="limits_memory">10M</param>
+            <param id="docker_enabled">true</param>
+            <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
+            <env id="SOME_ENV_VAR">42</env>
+        </destination>
+        <destination id="k8s_destination_walltime_short" runner="k8s_walltime_short">
             <param id="limits_cpu">1.9</param>
             <param id="limits_memory">10M</param>
             <param id="docker_enabled">true</param>
@@ -104,6 +117,7 @@ def job_config(jobs_directory):
     </destinations>
     <tools>
         <tool id="upload1" destination="local_dest"/>
+        <tool id="create_2" destination="k8s_destination_walltime_short"/>
     </tools>
 </job_conf>
 """)
@@ -255,3 +269,19 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         MEM = '10'
         MEM_PER_SLOT = '5'
         assert [CPU, MEM, MEM_PER_SLOT] == dataset_content.split('\n'), dataset_content
+
+    @skip_without_tool('create_2')
+    def test_walltime_limit(self):
+        running_response = self.dataset_populator.run_tool(
+            'create_2',
+            {'sleep_time': 60},
+            self.history_id,
+            assert_ok=False
+        )
+        result = self.dataset_populator.wait_for_tool_run(run_response=running_response,
+                                                          history_id=self.history_id,
+                                                          assert_ok=False).json()
+        details = self.dataset_populator.get_job_details(result['jobs'][0]['id'], full=True).json()
+        assert details['state'] == 'error'
+        hda_details = self.dataset_populator.get_history_dataset_details(self.history_id, assert_ok=False)
+        assert hda_details['misc_info'] == 'Job was active longer than specified deadline'
