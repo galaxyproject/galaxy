@@ -40,7 +40,7 @@ def send_local_control_task(app, task, kwargs=None):
     payload = {'task': task,
                'kwargs': kwargs}
     routing_key = 'control.%s@%s' % (app.config.server_name, socket.gethostname())
-    control_task = ControlTask(app.control_worker)
+    control_task = ControlTask(app.queue_worker)
     control_task.send_task(payload, routing_key, local=True, get_response=False)
 
 
@@ -60,14 +60,14 @@ def send_control_task(app, task, noop_self=False, get_response=False, routing_ke
                'kwargs': kwargs}
     if noop_self:
         payload['noop'] = app.config.server_name
-    control_task = ControlTask(app.control_worker)
+    control_task = ControlTask(app.queue_worker)
     return control_task.send_task(payload=payload, routing_key=routing_key, get_response=get_response)
 
 
 class ControlTask(object):
 
-    def __init__(self, control_worker):
-        self.control_worker = control_worker
+    def __init__(self, queue_worker):
+        self.queue_worker = queue_worker
         self.correlation_id = None
         self.callback_queue = Queue(uuid(), exclusive=True, auto_delete=True)
         self.response = object()
@@ -77,20 +77,20 @@ class ControlTask(object):
     @property
     def connection(self):
         if self._connection is None:
-            self._connection = self.control_worker.connection.clone()
+            self._connection = self.queue_worker.connection.clone()
         return self._connection
 
     @property
     def control_queues(self):
-        return self.control_worker.control_queues
+        return self.queue_worker.control_queues
 
     @property
     def exchange(self):
-        return self.control_worker.exchange_queue.exchange
+        return self.queue_worker.exchange_queue.exchange
 
     @property
     def declare_queues(self):
-        return self.control_worker.declare_queues
+        return self.queue_worker.declare_queues
 
     def on_response(self, message):
         if message.properties['correlation_id'] == self.correlation_id:
