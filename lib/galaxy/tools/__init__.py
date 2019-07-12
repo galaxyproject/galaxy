@@ -2508,6 +2508,32 @@ class DataManagerTool(OutputParameterJSONTool):
         return False
 
 
+class UserDataManager(DataManagerTool):
+    tool_type = 'manage_data_user'
+    default_tool_action = DataManagerToolAction
+
+    def __init__(self, config_file, root, app, guid=None, data_manager_id=None, **kwds):
+        self.data_manager_id = data_manager_id
+        super(UserDataManager, self).__init__(config_file, root, app, guid=guid, **kwds)
+        if self.data_manager_id is None:
+            self.data_manager_id = self.id
+
+    def allow_user_access(self, user, attempting_access=True):
+        """
+        :param user: model object representing user.
+        :type user: galaxy.model.User
+        :param attempting_access: is the user attempting to do something with the
+                               the tool (set false for incidental checks like toolbox
+                               listing)
+        :type attempting_access:  bool
+
+        :returns: bool -- Whether the user is allowed to access the tool.
+        Data Manager tools are only accessible to admins.
+        """
+        return True
+
+
+
 class DatabaseOperationTool(Tool):
     default_tool_action = ModelOperationToolAction
     require_dataset_ok = True
@@ -3041,7 +3067,7 @@ class FilterFromFileTool(DatabaseOperationTool):
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool,
-                   DataManagerTool, DataSourceTool, AsyncDataSourceTool,
+                   DataManagerTool, UserDataManager, DataSourceTool, AsyncDataSourceTool,
                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
                    BuildListCollectionTool, ExtractDatasetCollectionTool,
                    DataDestinationTool]:

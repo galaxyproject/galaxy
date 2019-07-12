@@ -313,6 +313,14 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             tool_path = string.Template(tool_path).safe_substitute(tool_path_vars)
         return tool_path
 
+    def add_user_data_manager_toolbox(self, tool):
+        tool.hidden = False
+
+        tool_key= "tool_%s" % tool.id
+        tool_section = self.create_section({"data_manager":"Data Managers"})
+        self._integrated_tool_panel.update_or_append(-1, tool_key, tool)
+        self.__add_tool_to_tool_panel(tool, panel_component=self._tool_panel, section=False)
+
     def __add_tool_to_tool_panel(self, tool, panel_component, section=False):
         # See if a version of this tool is already loaded into the tool panel.
         # The value of panel_component will be a ToolSection (if the value of
