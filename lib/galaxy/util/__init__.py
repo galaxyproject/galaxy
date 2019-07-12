@@ -1685,7 +1685,7 @@ def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):
             f.write(chunk)
 
 
-def _executable():
+def get_executable():
     exe = sys.executable
     if exe.endswith('uwsgi'):
         virtualenv = None
@@ -1703,9 +1703,6 @@ def _executable():
             if not os.path.exists(exe):
                 exe = 'python'
     return exe
-
-
-executable = _executable()
 
 
 class ExecutionTimer(object):
