@@ -168,6 +168,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             if not trans.user_is_admin:
                 assert trans.user == user
                 assert not user.deleted
+        except exceptions.ItemDeletionException:
+            raise
         except Exception:
             raise exceptions.RequestParameterInvalidException('Invalid user id specified', id=id)
         return self.user_serializer.serialize_to_view(user, view='detailed')
@@ -253,7 +255,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
     @web.require_admin
     def undelete(self, trans, id, **kwd):
         """
-        POST /api/users/{id}
+        POST /api/users/deleted/{id}/undelete
         Undelete the user with the given ``id``
 
         :param id: the encoded id of the user to be undeleted
