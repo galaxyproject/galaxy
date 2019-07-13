@@ -3,7 +3,6 @@ import tempfile
 from contextlib import contextmanager
 from os import (
     chmod,
-    environ,
     makedirs,
     stat,
     symlink,
@@ -22,6 +21,8 @@ from galaxy.tool_util.deps.resolvers.galaxy_packages import GalaxyPackageDepende
 from galaxy.tool_util.deps.resolvers.lmod import LmodDependency, LmodDependencyResolver
 from galaxy.tool_util.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
 from galaxy.util.bunch import Bunch
+
+from .util import modify_environ
 
 # If true, test created DependencyManager objects by serializing out to json and re-constituting.
 ROUND_TRIP_TEST_DEPENDENCY_MANAGER_SERIALIZATION = True
@@ -582,7 +583,7 @@ def test_config_modulepath():
 
 def test_config_MODULEPATH():
     # Test reads and splits MODULEPATH if modulepath is not specified.
-    with __environ({"MODULEPATH": "/opt/modules/modulefiles:/usr/local/modules/modulefiles"}):
+    with modify_environ({"MODULEPATH": "/opt/modules/modulefiles:/usr/local/modules/modulefiles"}):
         with __parse_resolvers('''<dependency_resolvers>
   <modules find_by="directory" />
 </dependency_resolvers>
@@ -593,7 +594,7 @@ def test_config_MODULEPATH():
 def test_config_MODULESHOME():
     # Test fallbacks to read MODULESHOME if modulepath is not specified and
     # neither is MODULEPATH.
-    with __environ({"MODULESHOME": "/opt/modules"}, keys_to_remove=["MODULEPATH"]):
+    with modify_environ({"MODULESHOME": "/opt/modules"}, keys_to_remove=["MODULEPATH"]):
         with __parse_resolvers('''<dependency_resolvers>
   <modules find_by="directory" />
 </dependency_resolvers>
@@ -716,72 +717,6 @@ def test_dependency_manager_none():
 
 def _first_conda_resolver_options(dm):
     return [r for r in dm.to_dict()["resolvers"] if r["resolver_type"] == "conda"][0]
-
-
-@contextmanager
-def __environ(values, keys_to_remove=[]):
-    """
-    Modify the environment for a test, adding/updating values in dict `values` and
-    removing any environment variables mentioned in list `remove`.
-    """
-    new_keys = set(values.keys()) - set(environ.keys())
-    old_environ = environ.copy()
-    try:
-        environ.update(values)
-        for key in keys_to_remove:
-            try:
-                del environ[key]
-                new_keys.remove(key)  # Because key no longer exists
-            except KeyError:
-                pass
-        yield
-    finally:
-        for key in new_keys:
-            del environ[key]
-        environ.update(old_environ)
-
-
-def test_environ_contextmanager_env_restored():
-    """ os.environ must be preserved across calls to __environ """
-    key, val = 'foo_test_678363', '42'
-    os.environ[key] = val
-    with __environ({}, []):
-        pass
-    assert os.environ[key] == val
-    del os.environ[key]
-
-
-def test_environ_contextmanager_env_updated_and_restored():
-    """
-        os.environ must be preserved across calls to __environ
-        when updating existing or adding new key:value pairs
-    """
-    key, val = 'foo_test_678363', '42'
-    os.environ[key] = val
-    new_key, new_val1 = 'foo_test_new', '53'  # add new key + value
-    new_val2 = '43'  # update old key's value
-    to_update = {new_key: new_val1, key: new_val2}
-    with __environ(values=to_update):
-        pass
-    assert os.environ[key] == val  # value should not change
-    assert new_key not in os.environ  # key should not be added
-    del os.environ[key]
-
-
-def test_environ_contextmanager_env_removed_and_restored():
-    """
-        os.environ must be preserved across calls to __environ
-        when removing key:value pairs
-    """
-    key, val = 'foo_test_678363', '42'
-    os.environ[key] = val
-    new_key, new_val = 'foo_test_new', '53'  # add new key + value
-    to_update = {new_key: new_val}
-    with __environ(values=to_update, keys_to_remove=[key, new_key]):
-        pass
-    assert os.environ[key] == val  # key should be present w/value
-    assert new_key not in os.environ  # key should not be added
-    del os.environ[key]
 
 
 @contextmanager
