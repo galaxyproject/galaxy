@@ -21,7 +21,6 @@ from galaxy.tool_util.deps.resolvers.galaxy_packages import GalaxyPackageDepende
 from galaxy.tool_util.deps.resolvers.lmod import LmodDependency, LmodDependencyResolver
 from galaxy.tool_util.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
 from galaxy.util.bunch import Bunch
-
 from .util import modify_environ
 
 # If true, test created DependencyManager objects by serializing out to json and re-constituting.
