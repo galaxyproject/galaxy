@@ -735,54 +735,6 @@ button {
     }
 }
 
-.search-query {
-    display: inline-block;
-    padding: 4px;
-    font-size: $font-size-base;
-    line-height: $line-height-base;
-    color: $text-color;
-    border: 1px solid $border-default-color;
-    padding-left: 14px !important;
-    padding-right: 14px;
-    margin-bottom: 0;
-    @include border-radius(14px);
-    background: $brand-white;
-}
-.search-query:focus {
-    border-color: darken(rgba(82, 168, 236, 0.8), 15%);
-    $shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
-    @include box-shadow($shadow);
-    outline: 0;
-    outline: thin dotted \9; /* IE6-8 */
-}
-
-.search-spinner {
-    position: absolute;
-    display: none;
-    right: 6px;
-    top: 5px;
-    font-size: 1.4em;
-    color: #888;
-}
-
-#tool-search {
-    position: relative;
-    @extend .mb-2;
-    #search-clear-btn {
-        position: absolute;
-        right: 6px;
-        top: 6px;
-        display: block;
-        font-size: 1.4em !important;
-        text-decoration: none;
-        color: #888;
-        @extend .fa-icon;
-        &:before {
-            content: "\f057";
-        }
-    }
-}
-
 // Messages
 
 .errormessagelarge,
@@ -1477,55 +1429,59 @@ div.permissionContainer {
 .toolMenuContainer {
     color: $panel-text-color;
     a {
-        color: $panel-text-color;
+	color: $panel-text-color;
     }
     background: $panel-bg-color;
     min-height: 100%;
-    @extend .m-3;
-}
-
-div.toolSectionWrapper {
-    @extend .mb-1;
 }
 
 div.toolSectionTitle {
     font-weight: 500;
     font-size: $h4-font-size;
-}
-
-div.toolPanelLabel {
-    @extend .mt-3;
-    @extend .mb-2;
-    font-weight: bold;
-    color: $gray-600;
-    text-transform: uppercase;
-}
-
-div.toolTitle {
-    @extend .m-2;
-    display: block;
-    .labels {
-        float: right;
-    }
-}
-
-div a.tool-link {
-    text-decoration: none;
-    display: block;
-    span.tool-old-link {
-        text-decoration: underline;
-    }
     &:hover {
         background: darken($panel-bg-color, 5%);
     }
 }
 
-div.toolTitleNoSection {
-    @extend .pb-1;
+div.toolPanelLabel {
+    @extend .py-1;
+    @extend .px-3;
     font-weight: bold;
+    font-size: $h4-font-size;
+    color: $gray-600;
+    text-transform: uppercase;
 }
 
-// Dataset Display Styles
+div.toolSectionTitle, div.toolTitle, div.toolTitleNoSection {
+    display: block;
+    .labels {
+        float: right;
+    }
+
+    a {
+	@extend .px-3;
+	@extend .py-1;
+	text-decoration: none;
+	display: block;
+	&:hover {
+            background: darken($panel-bg-color, 5%);
+	}
+    }
+
+    &.text-muted a {
+	&:hover {
+	    background: inherit;
+	}
+    }
+}
+
+div.toolSectionWrapper {
+    div.toolTitle a, div.toolPanelLabel {
+	@extend .pl-4;
+	font-size: inherit;
+    }
+}
+
 #loading_indicator {
     position: fixed;
     right: 10px;

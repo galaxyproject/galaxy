@@ -194,7 +194,7 @@ galaxy:
   # Galaxy code distribution to the Tool Shed. This functionality is
   # largely untested in modern Galaxy releases and has serious issues
   # such as #7273 and the possibility of slowing down Galaxy startup, so
-  # the default and recommended value is False.
+  # the default and recommended value is false.
   #check_migrate_tools: false
 
   # Tool config maintained by tool migration scripts.  If you use the
@@ -215,14 +215,13 @@ galaxy:
   # an attribute in the <toolbox> tag.
   #tool_path: tools
 
-  # Path to the directory in which tool dependencies are placed.  This
-  # is used by the Tool Shed to install dependencies and can also be
-  # used by administrators to manually install or link to dependencies.
-  # For details, see:   https://galaxyproject.org/admin/config/tool-
-  # dependencies Set the string to None to explicitly disable tool
-  # dependency handling. If this option is set to none or an invalid
-  # path, installing tools with dependencies from the Tool Shed will
-  # fail.
+  # Various dependency resolver configuration parameters will have
+  # defaults set relative to this path, such as the default conda
+  # prefix, default Galaxy packages path, legacy tool shed dependencies
+  # path, and the dependency cache directory.  Set the string to None to
+  # explicitly disable tool dependency handling. If this option is set
+  # to none or an invalid path, installing tools with dependencies from
+  # the Tool Shed or in Conda will fail.
   #tool_dependency_dir: database/dependencies
 
   # The dependency resolvers config file specifies an ordering and
@@ -254,16 +253,16 @@ galaxy:
   # Use locally-built conda packages.
   #conda_use_local: false
 
-  # Set to True to instruct Galaxy to look for and install missing tool
+  # Set to true to instruct Galaxy to look for and install missing tool
   # dependencies before each job runs.
   #conda_auto_install: false
 
-  # Set to True to instruct Galaxy to install Conda from the web
+  # Set to true to instruct Galaxy to install Conda from the web
   # automatically if it cannot find a local copy and conda_exec is not
   # configured.
   #conda_auto_init: true
 
-  # You must set this to True if conda_prefix and job_working_directory
+  # You must set this to true if conda_prefix and job_working_directory
   # are not on the same volume, or some conda dependencies will fail to
   # execute at job runtime. Conda will copy packages content instead of
   # creating hardlinks or symlinks. This will prevent problems with some
@@ -274,10 +273,12 @@ galaxy:
   # Certain dependency resolvers (namely Conda) take a considerable
   # amount of time to build an isolated job environment in the
   # job_working_directory if the job working directory is on a network
-  # share.  Set the following option to True to cache the dependencies
-  # in a folder. This option is beta and should only be used if you
+  # share.  Set this option to true to cache the dependencies in a
+  # folder. This option is beta and should only be used if you
   # experience long waiting times before a job is actually submitted to
-  # your cluster.
+  # your cluster.  This only affects tools where some requirements can
+  # be resolved but not others, most modern best practice tools can use
+  # prebuilt environments in the Conda directory.
   #use_cached_dependency_manager: false
 
   # By default the tool_dependency_cache_dir is the _cache directory of
@@ -286,7 +287,7 @@ galaxy:
 
   # By default, when using a cached dependency manager, the dependencies
   # are cached when installing new tools and when using tools for the
-  # first time. Set this to False if you prefer dependencies to be
+  # first time. Set this to false if you prefer dependencies to be
   # cached only when installing new tools.
   #precache_dependencies: true
 
@@ -295,7 +296,7 @@ galaxy:
   # not exist).
   #tool_sheds_config_file: config/tool_sheds_conf.xml
 
-  # Set to True to enable monitoring of tools and tool directories
+  # Set to true to enable monitoring of tools and tool directories
   # listed in any tool config file specified in tool_config_file option.
   # If changes are found, tools are automatically reloaded.  Watchdog (
   # https://pypi.org/project/watchdog/ ) must be installed and available
@@ -306,7 +307,7 @@ galaxy:
   # scenarios than the watchdog default.
   #watch_tools: 'false'
 
-  # Set to True to enable monitoring of dynamic job rules. If changes
+  # Set to true to enable monitoring of dynamic job rules. If changes
   # are found, rules are automatically reloaded. Takes the same values
   # as the 'watch_tools' option.
   #watch_job_rules: 'false'
@@ -344,7 +345,7 @@ galaxy:
   # `requirement`s. The following path is the location of involucro on
   # the Galaxy host. This is ignored if the relevant container resolver
   # isn't enabled, and will install on demand unless involucro_auto_init
-  # is set to False.
+  # is set to false.
   #involucro_path: database/dependencies/involucro
 
   # Install involucro as needed to build Docker or Singularity
@@ -399,7 +400,7 @@ galaxy:
   # installed from a ToolShed. Defaults to tool_data_path.
   #shed_tool_data_path: tool-data
 
-  # Set to True to enable monitoring of the tool_data and
+  # Set to true to enable monitoring of the tool_data and
   # shed_tool_data_path directories. If changes in tool data table files
   # are found, the tool data tables for that data manager are
   # automatically reloaded. Watchdog (
@@ -427,7 +428,7 @@ galaxy:
 
   # Enable sniffing of compressed datatypes. This can be
   # configured/overridden on a per-datatype basis in the
-  # datatypes_conf.xml file. With this option set to False the
+  # datatypes_conf.xml file. With this option set to false the
   # compressed datatypes will be unpacked before sniffing.
   #sniff_compressed_dynamic_datatypes_default: true
 
@@ -450,7 +451,7 @@ galaxy:
   #interactive_environment_plugins_directory: null
 
   # To run interactive environment containers in Docker Swarm mode (on
-  # an existing swarm), set this option to True and set
+  # an existing swarm), set this option to true and set
   # `docker_connect_port` in the IE plugin config (ini) file(s) of any
   # IE plugins you have enabled and ensure that you are not using any
   # `docker run`-specific options in your plugins' `command_inject`
@@ -599,7 +600,7 @@ galaxy:
   # instance. If no message specified the warning box will not be shown.
   #registration_warning_message: Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.
 
-  # User account activation feature global flag.  If set to "False", the
+  # User account activation feature global flag.  If set to false, the
   # rest of the Account activation configuration is ignored and user
   # activation is disabled (i.e. accounts are active since
   # registration). The activation is also not working in case the SMTP
@@ -633,10 +634,10 @@ galaxy:
   # Galaxy can display data at various external browsers.  These options
   # specify which browsers should be available.  URLs and builds
   # available at these browsers are defined in the specified files.  If
-  # use_remote_user = True, display application servers will be denied
-  # access to Galaxy and so displaying datasets in these sites will
-  # fail. display_servers contains a list of hostnames which should be
-  # allowed to bypass security to display datasets.  Please be aware
+  # use_remote_user is set to true, display application servers will be
+  # denied access to Galaxy and so displaying datasets in these sites
+  # will fail. display_servers contains a list of hostnames which should
+  # be allowed to bypass security to display datasets.  Please be aware
   # that there are security implications if this is allowed.  More
   # details (including required changes to the proxy server config) are
   # available in the Apache proxy documentation on the Galaxy Community
@@ -646,15 +647,14 @@ galaxy:
   # uncomment the line below to allow them).
   #display_servers: hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu
 
-  # To disable the old-style display applications that are hardcoded
-  # into datatype classes, set enable_old_display_applications = False.
-  # This may be desirable due to using the new-style, XML-defined,
-  # display applications that have been defined for many of the
-  # datatypes that have the old-style. There is also a potential
-  # security concern with the old-style applications, where a malicious
-  # party could provide a link that appears to reference the Galaxy
-  # server, but contains a redirect to a third-party server, tricking a
-  # Galaxy user to access said site.
+  # Set this to false to disable the old-style display applications that
+  # are hardcoded into datatype classes. This may be desirable due to
+  # using the new-style, XML-defined, display applications that have
+  # been defined for many of the datatypes that have the old-style.
+  # There is also a potential security concern with the old-style
+  # applications, where a malicious party could provide a link that
+  # appears to reference the Galaxy server, but contains a redirect to a
+  # third-party server, tricking a Galaxy user to access said site.
   #enable_old_display_applications: true
 
   # Show a message box under the masthead.
@@ -804,7 +804,7 @@ galaxy:
   # For help on configuring the Advanced proxy features, see:
   # https://docs.galaxyproject.org/en/master/admin/production.html
   # Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile.
-  # Set this to True to inform Galaxy that mod_xsendfile is enabled
+  # Set this to true to inform Galaxy that mod_xsendfile is enabled
   # upstream.
   #apache_xsendfile: false
 
@@ -862,9 +862,9 @@ galaxy:
   # other services based on Galaxy's session cookie.  It will attempt to
   # do this by default though you do need to install node+npm and do an
   # npm install from `lib/galaxy/web/proxy/js`.  It is generally more
-  # robust to configure this externally, managing it however Galaxy is
-  # managed.  If True, Galaxy will only launch the proxy if it is
-  # actually going to be used (e.g. for Jupyter).
+  # robust to configure this externally, managing it in the same way
+  # Galaxy itself is managed.  If true, Galaxy will only launch the
+  # proxy if it is actually going to be used (e.g. for Jupyter).
   #dynamic_proxy_manage: true
 
   # As of 16.04 Galaxy supports multiple proxy types. The original
@@ -877,11 +877,13 @@ galaxy:
   #dynamic_proxy_session_map: database/session_map.sqlite
 
   # Set the port and IP for the dynamic proxy to bind to, this must
-  # match the external configuration if dynamic_proxy_manage is False.
+  # match the external configuration if dynamic_proxy_manage is set to
+  # false.
   #dynamic_proxy_bind_port: 8800
 
   # Set the port and IP for the dynamic proxy to bind to, this must
-  # match the external configuration if dynamic_proxy_manage is False.
+  # match the external configuration if dynamic_proxy_manage is set to
+  # false.
   #dynamic_proxy_bind_ip: 0.0.0.0
 
   # Enable verbose debugging of Galaxy-managed dynamic proxy.
@@ -918,7 +920,7 @@ galaxy:
   # if you are managing the proxy manually.
   #dynamic_proxy_golang_api_key: ''
 
-  # If True, Galaxy will attempt to configure a simple root logger if a
+  # If true, Galaxy will attempt to configure a simple root logger if a
   # "loggers" section does not appear in this configuration file.
   #auto_configure_logging: true
 
@@ -980,8 +982,7 @@ galaxy:
   # By default Galaxy will serve non-HTML tool output that may
   # potentially contain browser executable JavaScript content as plain
   # text.  This will for instance cause SVG datasets to not render
-  # properly and so may be disabled by setting the following option to
-  # True.
+  # properly and so may be disabled by setting this option to true.
   #serve_xss_vulnerable_mimetypes: false
 
   # Return a Access-Control-Allow-Origin response header that matches
@@ -993,11 +994,11 @@ galaxy:
   # https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
   #allowed_origin_hostnames: ''
 
-  # Set the following to True to use Jupyter nbconvert to build HTML
-  # from Jupyter notebooks in Galaxy histories.  This process may allow
-  # users to execute arbitrary code or serve arbitrary HTML.  If
-  # enabled, Jupyter must be available and on Galaxy's PATH, to do this
-  # run `pip install jinja2 pygments jupyter` in Galaxy's virtualenv.
+  # Set to true to use Jupyter nbconvert to build HTML from Jupyter
+  # notebooks in Galaxy histories.  This process may allow users to
+  # execute arbitrary code or serve arbitrary HTML.  If enabled, Jupyter
+  # must be available and on Galaxy's PATH, to do this run `pip install
+  # jinja2 pygments jupyter` in Galaxy's virtualenv.
   #trust_jupyter_notebook_conversion: false
 
   # Debug enables access to various config options useful for
@@ -1127,7 +1128,7 @@ galaxy:
   # to paste filesystem paths to files and directories in a box, and
   # these paths will be added to a library.  For history uploads, this
   # allows pasting in paths as URIs. (i.e. prefixed with file://). Set
-  # to True to enable.  Please note the security implication that this
+  # to true to enable.  Please note the security implication that this
   # will give Galaxy Admins access to anything your Galaxy user has
   # access to.
   #allow_path_paste: false
@@ -1250,8 +1251,8 @@ galaxy:
   #remote_user_logout_href: ''
 
   # If your proxy and/or authentication source does not normalize e-mail
-  # addresses or user names being passed to Galaxy - set the following
-  # option to True to force these to lower case.
+  # addresses or user names being passed to Galaxy - set this option to
+  # true to force these to lower case.
   #normalize_remote_user_email: false
 
   # If an e-mail address is specified here, it will hijack remote user
@@ -1272,7 +1273,7 @@ galaxy:
   #require_login: false
 
   # Show the site's welcome page (see welcome_url) alongside the login
-  # page (even if require_login is True)
+  # page (even if require_login is true).
   #show_welcome_with_login: false
 
   # Allow unregistered users to create new accounts (otherwise, they
@@ -1282,7 +1283,8 @@ galaxy:
   # Allow administrators to delete accounts.
   #allow_user_deletion: false
 
-  # Allow administrators to log in as other users (useful for debugging)
+  # Allow administrators to log in as other users (useful for
+  # debugging).
   #allow_user_impersonation: false
 
   # When using LDAP for authentication, allow administrators to pre-
@@ -1294,30 +1296,30 @@ galaxy:
   # by an administrator in the cleanup scripts run via cron)
   #allow_user_dataset_purge: true
 
-  # By default, users' data will be public, but setting this to True
+  # By default, users' data will be public, but setting this to true
   # will cause it to be private.  Does not affect existing users and
   # data, only ones created after this option is set.  Users may still
   # change their default back to public.
   #new_user_dataset_access_role_default_private: false
 
-  # Expose user list.  Setting this to True will expose the user list to
+  # Expose user list.  Setting this to true will expose the user list to
   # authenticated users.  This makes sharing datasets in smaller galaxy
   # instances much easier as they can type a name/email and have the
   # correct user show up. This makes less sense on large public Galaxy
   # instances where that data shouldn't be exposed.  For semi-public
   # Galaxies, it may make sense to expose just the username and not
-  # email, or vice versa.  If enable_beta_gdpr is set to True, then this
-  # option will be overridden and set to False.
+  # email, or vice versa.  If enable_beta_gdpr is set to true, then this
+  # option will be overridden and set to false.
   #expose_user_name: false
 
-  # Expose user list.  Setting this to True will expose the user list to
+  # Expose user list.  Setting this to true will expose the user list to
   # authenticated users.  This makes sharing datasets in smaller galaxy
   # instances much easier as they can type a name/email and have the
   # correct user show up. This makes less sense on large public Galaxy
   # instances where that data shouldn't be exposed.  For semi-public
   # Galaxies, it may make sense to expose just the username and not
-  # email, or vice versa.  If enable_beta_gdpr is set to True, then this
-  # option will be overridden and set to False.
+  # email, or vice versa.  If enable_beta_gdpr is set to true, then this
+  # option will be overridden and set to false.
   #expose_user_email: false
 
   # Whitelist for local network addresses for "Upload from URL" dialog.
@@ -1341,10 +1343,6 @@ galaxy:
   # support the right to erasure.  Please read the GDPR section under
   # the special topics area of the admin documentation.
   #enable_beta_gdpr: false
-
-  # Enable the new interface for installing tools from Tool Shed via the
-  # API. Admin menu will list both if enabled.
-  #enable_beta_ts_api_install: true
 
   # Enable the new container interface for Interactive Environments
   #enable_beta_containers_interface: false
@@ -1450,14 +1448,14 @@ galaxy:
   # Enable a feature when running workflows.  When enabled, default
   # datasets are selected for "Set at Runtime" inputs from the history
   # such that the same input will not be selected twice, unless there
-  # are more inputs than compatible datasets in the history. When False,
+  # are more inputs than compatible datasets in the history. When false,
   # the most recently added compatible item in the history will be used
   # for each "Set at Runtime" input, independent of others in the
-  # Workflow
+  # workflow.
   #enable_unique_workflow_defaults: false
 
   # The URL to the myExperiment instance being used (omit scheme but
-  # include port)
+  # include port).
   #myexperiment_url: www.myexperiment.org:80
 
   # Enable Galaxy's "Upload via FTP" interface.  You'll need to install
@@ -1482,8 +1480,8 @@ galaxy:
   # a particular user.
   #ftp_upload_dir_template: ${ftp_upload_dir}/${ftp_upload_dir_identifier
 
-  # This should be set to False to prevent Galaxy from deleting uploaded
-  # FTP files as it imports them.
+  # Set to false to prevent Galaxy from deleting uploaded FTP files as
+  # it imports them.
   #ftp_upload_purge: true
 
   # Enable enforcement of quotas.  Quotas can be set from the Admin
@@ -1540,6 +1538,13 @@ galaxy:
   # dependency_resolvers_config_file is used.
   #dependency_resolvers: null
 
+  # Alternative representation of various dependency resolution
+  # parameters. Takes the dictified version of a DependencyManager
+  # object - so this is ideal for automating the configuration of
+  # dependency resolution from one application that uses a
+  # DependencyManager to another.
+  #dependency_resolution: null
+
   # When jobs fail due to job runner problems, Galaxy can be configured
   # to retry these or reroute the jobs to new destinations. Very fine
   # control of this is available with resubmit declarations in
@@ -1580,7 +1585,7 @@ galaxy:
   # fail.  In these instances, you can choose to retry setting it
   # internally or leave it in a failed state (since retrying internally
   # may cause the Galaxy process to be unresponsive).  If this option is
-  # set to False, the user will be given the option to retry externally,
+  # set to false, the user will be given the option to retry externally,
   # or set metadata manually (when possible).
   #retry_metadata_internally: true
 
@@ -1700,7 +1705,7 @@ galaxy:
   # several extra database queries must be performed to determine the
   # number of jobs a user has dispatched to a given destination.  By
   # default, these queries will happen for every job that is waiting to
-  # run, but if cache_user_job_count is set to True, it will only happen
+  # run, but if cache_user_job_count is set to true, it will only happen
   # once per iteration of the handler queue. Although better for
   # performance due to reduced queries, the trade-off is a greater
   # possibility that jobs will be dispatched past the configured limits

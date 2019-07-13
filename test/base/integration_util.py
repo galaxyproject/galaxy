@@ -10,7 +10,7 @@ from unittest import skip, SkipTest, TestCase
 import pytest
 
 from galaxy.tool_util.deps.commands import which
-from galaxy.tools.verify.test_data import TestDataResolver
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from .api import UsesApiTestCaseMixin
 from .driver_util import GalaxyTestDriver
 
