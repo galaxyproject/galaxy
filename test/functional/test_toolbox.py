@@ -11,8 +11,8 @@ except ImportError:
 from base.driver_util import setup_keep_outdir, target_url_parts
 from base.instrument import register_job_data
 from base.testcase import FunctionalTestCase  # noqa: I100,I201,I202
+from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool  # noqa: I201
 from galaxy.tools import DataManagerTool  # noqa: I201
-from galaxy.tools.verify.interactor import GalaxyInteractorApi, verify_tool  # noqa: I201
 
 log = logging.getLogger(__name__)
 

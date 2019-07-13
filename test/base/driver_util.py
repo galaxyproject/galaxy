@@ -34,7 +34,7 @@ from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.model import mapping
 from galaxy.model.tool_shed_install import mapping as toolshed_mapping
-from galaxy.tools.verify.interactor import GalaxyInteractorApi, verify_tool
+from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp

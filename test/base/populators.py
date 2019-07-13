@@ -23,7 +23,7 @@ from gxformat2 import (
 from pkg_resources import resource_string
 from six import StringIO
 
-from galaxy.tools.verify.test_data import TestDataResolver
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import unicodify
 from . import api_asserts
 
