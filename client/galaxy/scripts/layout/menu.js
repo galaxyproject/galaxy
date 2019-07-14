@@ -106,7 +106,7 @@ const Collection = Backbone.Collection.extend({
                                 downloadImage(iFrameDoc.getElementsByTagName("body")[0]);
                         }
                         else {
-                            let centerPanel = document.getElementById("center-panel");
+                            const centerPanel = document.getElementById("center-panel");
                             const center = centerPanel ? centerPanel.firstElementChild : document.getElementById("center");
                             if (center) {
                                 downloadImage(center);
