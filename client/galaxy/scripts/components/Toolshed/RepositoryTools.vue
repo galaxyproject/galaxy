@@ -3,7 +3,7 @@
         <tbody>
             <tr v-if="canExpand && expanded" class="bg-transparent">
                 <td :class="clsFirstColumn">
-                    <a href="#" @click.stop.prevent="onExpand">
+                    <a href="javascript:void(0)" @click.stop.prevent="onExpand">
                         <span class="fa fa-angle-double-up" />
                         <span>Show less</span>
                     </a>
@@ -20,7 +20,7 @@
             </tr>
             <tr v-if="canExpand && !expanded" class="bg-transparent">
                 <td :class="clsFirstColumn">
-                    <a href="#" @click.stop.prevent="onExpand">
+                    <a href="javascript:void(0)" @click.stop.prevent="onExpand">
                         <span class="fa fa-angle-double-down" />
                         <span>Show more</span>
                     </a>
