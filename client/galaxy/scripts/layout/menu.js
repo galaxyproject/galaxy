@@ -9,6 +9,8 @@ import _l from "utils/localization";
 import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
+import html2canvas from "html2canvas";
+import { saveAs } from "file-saver";
 
 function logoutClick() {
     const galaxy = getGalaxyInstance();
@@ -81,7 +83,41 @@ const Collection = Backbone.Collection.extend({
                     title: _l("Interactive Environments"),
                     url: "visualization/gie_list",
                     target: "galaxy_main"
+                },
+                {
+                    title: _l("Download png Screenshot (beta)"),
+                    onclick: () => {
+                        const downloadImage = element => {
+                            html2canvas(element).then(
+                                function (canvas) {
+                                    canvas.toBlob(function (blob) {
+                                        saveAs(blob, "galaxy_screenshot.png");
+                                    });
+                                },
+                                function (err) {
+                                    alert(`not supported on this page error: ${err} `);
+                                }
+                            );
+                        };
+
+                        const iFrame = document.getElementById("galaxy_main");
+                        if (iFrame && iFrame.style.display != "none") {
+                            const iFrameDoc = iFrame.contentDocument || iFrame.contentWindow.document;
+                                downloadImage(iFrameDoc.getElementsByTagName("body")[0]);
+                        }
+                        else {
+                            let centerPanel = document.getElementById("center-panel");
+                            const center = centerPanel ? centerPanel.firstElementChild : document.getElementById("center");
+
+                            if (center) {
+                                downloadImage(center);
+                            } else {
+                                alert("Could not find image to download on this page");
+                            }
+                        }
+                    }
                 }
+
             ]
         });
 
