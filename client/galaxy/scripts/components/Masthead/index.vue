@@ -43,6 +43,7 @@ export default {
 }
 
 .framed {
+    min-height: 100vh;
     #messagebox,
     #masthead {
         display: none;
