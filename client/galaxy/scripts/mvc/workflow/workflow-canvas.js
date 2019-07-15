@@ -115,7 +115,7 @@ class CanvasManager {
             bottom: "1rem",
             cursor: "pointer"
         });
-        const zoomButton = $(`<a class="btn btn-light">${zoomLevels[defaultZoomLevel] * 100}%</a>`).css({
+        const zoomButton = $(`<a class="btn btn-light" title="Reset Zoom Level">${zoomLevels[defaultZoomLevel] * 100}%</a>`).css({
             width: "4rem"
         });
 
