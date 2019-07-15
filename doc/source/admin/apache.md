@@ -228,7 +228,7 @@ previous section:
     ```yaml
     uwsgi:
         #...
-        socket: unix:///srv/galaxy/var/uwsgi.sock
+        socket: /srv/galaxy/var/uwsgi.sock
         mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
         manage-script-name: true
         # `module` MUST NOT be set when `mount` is in use
