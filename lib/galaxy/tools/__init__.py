@@ -3038,12 +3038,48 @@ class FilterFromFileTool(DatabaseOperationTool):
         )
 
 
+class SplitCollectionByNumberTool(DatabaseOperationTool):
+    tool_type = 'split_collection_by_number'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        hdca = incoming["input"]
+        number_split = incoming["how"]
+        input_length = hdca.collection.element_count
+        number_of_collections_out = input_length//number_split
+        extra_data = input_length%number_split
+        iter_list = iter(hdca.collection.elements)
+
+        if extra_data != 0:
+            number_of_collections_out += 1
+
+        for i in range(0, number_of_collections_out):
+            current_collection_elements = odict()
+
+            for j, dce in enumerate(iter_list, start=1):
+                dce_object = dce.element_object
+                element_identifier = dce.element_identifier
+
+                if getattr(dce_object, "history_content_type", None) == "dataset":
+                    copied_value = dce_object.copy(force_flush=False)
+                else:
+                    copied_value = dce_object.copy()
+
+                current_collection_elements[element_identifier] = copied_value
+                if (j >= number_split):
+                    break
+
+            self._add_datasets_to_history(history, itervalues(current_collection_elements))
+            output_collections.create_collection(
+                self.outputs["output"], "output_{}".format(i), elements=current_collection_elements
+            )
+
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
 for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool,
                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
-                   BuildListCollectionTool, ExtractDatasetCollectionTool,
+                   BuildListCollectionTool, ExtractDatasetCollectionTool, SplitCollectionByNumberTool,
                    DataDestinationTool]:
     tool_types[tool_class.tool_type] = tool_class
 

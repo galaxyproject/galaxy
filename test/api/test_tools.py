@@ -1867,6 +1867,9 @@ class ToolsTestCase(api.ApiTestCase):
             assert second_collection_level['collection_type'] == 'list'
             assert second_collection_level['elements'][0]['element_type'] == 'hda'
 
+    @skip_without_tool("__SPLIT_COLLECTION_BY_NUMBER__")
+    
+
     @skip_without_tool("collection_type_source")
     def test_map_over_collection_type_source(self):
         with self.dataset_populator.test_history() as history_id:

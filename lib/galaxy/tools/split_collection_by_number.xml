@@ -1,0 +1,39 @@
+<tool id="__SPLIT_COLLECTION_BY_NUMBER__"
+      name="Split Collection"
+      version="1.0.0"
+      tool_type="split_collection_by_number">
+    <description>by number into multiple collections</description>
+    <type class="SplitCollectionByNumberTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <inputs>
+        <param type="data_collection" name="input" label="Input Collection"
+            help="Collection to split into parts"
+            optional="false"/>
+        <param type="integer" value="2" min="1" name="how"
+            label="Maximum Number of Elements"
+            help="Maximum number of elements to be found in each collection"
+            optional="false"/>
+    </inputs>
+    <outputs>
+        <collection format_source="input" type_source="input" name="output" label="Collection Split by $how" >
+            <discover_datasets pattern="__default__" directory="./" visible="false" />
+        </collection>
+    </outputs>
+    <tests>
+    </tests>
+    <help><![CDATA[
+    
+.. class:: infomark
+
+        This tool takes an input list and an integer greater than  
+        or equal to one to split the input list into multiple lists.
+        The number of lists generated is based on how many times the 
+        input number goes into th number of items in the list.
+        First outputs will be the from the beginning of the list
+        while the last ones are from the end.
+
+        This tool will create new history datasets from your collection
+        but your quota usage will not increase.
+    ]]></help>
+</tool>
