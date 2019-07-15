@@ -97,7 +97,7 @@ class PageApiTestCase(BasePageApiTestCase):
         page_response = self._post("pages", page_request)
         self._assert_status_code_is(page_response, 400)
         self._assert_error_code_is(page_response, error_codes.USER_REQUEST_INVALID_PARAMETER)
-        assert "embedded HTML content" in page_response.content
+        assert "embedded HTML content" in page_response.text
 
     def test_show(self):
         response_json = self._create_valid_page_with_slug("pagetoshow")

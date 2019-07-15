@@ -5,7 +5,10 @@ import argparse
 import json
 import sys
 
-from galaxy.tools.verify.interactor import GalaxyInteractorApi, verify_tool
+from .interactor import (
+    GalaxyInteractorApi,
+    verify_tool,
+)
 
 DESCRIPTION = """Script to quickly run a tool test against a running Galaxy instance."""
 ALL_TESTS = "*all_tests*"

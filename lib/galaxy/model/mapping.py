@@ -2776,6 +2776,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     if map_install_models:
         import galaxy.model.tool_shed_install.mapping  # noqa: F401
         from galaxy.model import tool_shed_install
+        galaxy.model.tool_shed_install.mapping.init(url=url, engine_options=engine_options, create_tables=create_tables)
         model_modules.append(tool_shed_install)
 
     result = ModelMapping(model_modules, engine=engine)

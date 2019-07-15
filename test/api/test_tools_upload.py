@@ -12,7 +12,7 @@ from base.populators import (
     uses_test_history,
 )
 
-from galaxy.tools.verify.test_data import TestDataResolver
+from galaxy.tool_util.verify.test_data import TestDataResolver
 
 
 class ToolsUploadTestCase(api.ApiTestCase):
