@@ -141,7 +141,7 @@ jobs:
       - *restore_repo_cache
       - run: sudo apt-get update
       # For uwsgi
-      - run: sudo apt-get install -y libpython3.5-dev
+      # - run: sudo apt-get install -y libpython3.5-dev
       - *install_tox
       - run: tox -e py35-first_startup
   validate_test_tools:
