@@ -100,6 +100,8 @@ PACKAGES = [
 ]
 ENTRY_POINTS = '''
         [console_scripts]
+        galaxy-main=galaxy.main:main
+        galaxy-config=galaxy.config.script:main
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
