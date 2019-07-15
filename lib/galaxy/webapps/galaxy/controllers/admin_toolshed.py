@@ -161,18 +161,6 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def browse_toolsheds(self, trans, **kwd):
-        app = {
-            'jscript': "adminToolshed"
-        }
-        return trans.fill_template('galaxy.panels.mako',
-                                   config={
-                                       'title': 'Galaxy Tool Sheds',
-                                       'app': app,
-                                       'bundle': 'extended'})
-
-    @web.expose
-    @web.require_admin
     def check_for_updates(self, trans, **kwd):
         """Send a request to the relevant tool shed to see if there are any updates."""
         repository_id = kwd.get('id', None)
