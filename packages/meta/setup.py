@@ -32,10 +32,6 @@ TEST_DIR = 'tests'
 PACKAGES = []
 ENTRY_POINTS = '''
         [console_scripts]
-        galaxy-paster=galaxy.util.pastescript.serve:run
-        galaxy-main=galaxy.main:main
-        galaxy-config=galaxy.config.script:main
-        galaxy-manage-db=galaxy.model.orm.scripts:manage_db
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.
