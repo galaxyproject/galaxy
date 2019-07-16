@@ -37,7 +37,7 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="javascript:void(0)">HIV-TRACE</a>
+      <a class="navbar-brand" href="#">HIV-TRACE</a>
     </div>
 
     <!-- Collect the nav links, forms, and other content for toggling -->
@@ -45,7 +45,7 @@
 
       <ul class="nav navbar-nav">
         <li class="dropdown hidden">
-          <a href="javascript:void(0)" class="dropdown-toggle" data-toggle="dropdown">Load file<b class="caret"></b></a>
+          <a href="javascript:void(0)" role="button" class="dropdown-toggle" data-toggle="dropdown">Load file<b class="caret"></b></a>
           <ul class="dropdown-menu">
             <li><input type="file" id="json_file"></li>
           </ul>

@@ -473,7 +473,7 @@ var FolderListView = Backbone.View.extend({
         return _.template(
             `<ol class="breadcrumb">
                 <li class="breadcrumb-item">
-                    <a title="Return to the list of libraries" href="javascript:void(0)">Libraries</a>
+                    <a title="Return to the list of libraries" href="#">Libraries</a>
                 </li>
                 <% _.each(path, function(path_item) { %>
                     <% if (path_item[0] != id) { %>
@@ -501,23 +501,23 @@ var FolderListView = Backbone.View.extend({
                         <input id="select-all-checkboxes" style="margin: 0;" type="checkbox">
                     </th>
                     <th>
-                        <a class="sort-folder-name" title="Click to reverse order" href="javascript:void(0)">Name</a>
+                        <a class="sort-folder-name" title="Click to reverse order" href="javascript:void(0)" role="button">Name</a>
                         <span title="Sorted by Name" class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span>
                     </th>
                     <th style="width:20%;">
-                        <a class="sort-folder-message" title="Click to reverse order" href="javascript:void(0)">Description</a>
+                        <a class="sort-folder-message" title="Click to reverse order" href="javascript:void(0)" role="button">Description</a>
                         <span title="Sorted by Desc." class="sort-icon-message fa"></span>
                     </th>
                     <th style="width:5%;">
-                        <a class="sort-folder-file_ext" title="Click to reverse order" href="javascript:void(0)">Data Type</a>
+                        <a class="sort-folder-file_ext" title="Click to reverse order" href="javascript:void(0)" role="button">Data Type</a>
                         <span title="Sorted by Type" class="sort-icon-file_ext fa"></span>
                     </th>
                     <th style="width:10%;">
-                        <a class="sort-folder-raw_size" title="Click to reverse order" href="javascript:void(0)">Size</a>
+                        <a class="sort-folder-raw_size" title="Click to reverse order" href="javascript:void(0)" role="button">Size</a>
                         <span title="Sorted by Size" class="sort-icon-raw_size fa"></span>
                     </th>
                     <th style="width:160px;">
-                        <a class="sort-folder-update_time" title="Click to reverse order" href=href="javascript:void(0)">Date Updated (UTC)</a>
+                        <a class="sort-folder-update_time" title="Click to reverse order" href=href="javascript:void(0)" role="button">Date Updated (UTC)</a>
                         <span title="Sorted by Date" class="sort-icon-update_time fa"></span>
                     </th>
                     <th style="width:5%;">

@@ -11,6 +11,7 @@
                     :key="url"
                     class="dropdown-item"
                     href="javascript:void(0)"
+                    role="button"
                     @click.prevent="onToolshed(url)"
                     >{{ url }}</a
                 >

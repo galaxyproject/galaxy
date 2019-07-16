@@ -2,7 +2,7 @@
     <div>
         <b-table striped :items="repositories" :fields="fields">
             <template slot="name" slot-scope="row">
-                <b-link href="javascript:void(0)" class="font-weight-bold" @click="row.toggleDetails">
+                <b-link href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
                     {{ row.item.name }}
                 </b-link>
             </template>

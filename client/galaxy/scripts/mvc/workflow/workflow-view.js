@@ -453,7 +453,7 @@ export default Backbone.View.extend({
 
         // Tool menu
         $("div.toolSectionBody").hide();
-        $("div.toolSectionTitle > span").wrap("<a href='javascript:void(0)'></a>");
+        $("div.toolSectionTitle > span").wrap("<a href='javascript:void(0)' role='button'></a>");
         var last_expanded = null;
         $("div.toolSectionTitle").each(function() {
             var body = $(this).next("div.toolSectionBody");
@@ -494,7 +494,7 @@ export default Backbone.View.extend({
         var $section = $(
             '<div class="toolSectionWrapper">' +
                 '<div class="toolSectionTitle">' +
-                '<a href="javascript:void(0)"><span>Workflows</span></a>' +
+                '<a href="javascript:void(0)" role="button"><span>Workflows</span></a>' +
                 "</div>" +
                 '<div class="toolSectionBody">' +
                 '<div class="toolSectionBg"/>' +
@@ -531,6 +531,7 @@ export default Backbone.View.extend({
                 });
                 var $add = $("<a/>")
                     .attr("href", "javascript:void(0)")
+                    .attr("role", "button")
                     .html(workflow.name)
                     .on("click", () => {
                         self.add_node_for_subworkflow(workflow.latest_id, workflow.name);
