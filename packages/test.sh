@@ -3,8 +3,7 @@
 set -e
 
 # Don't display the pip progress bar when running under CI
-PIP_PROGRESS_BAR=
-[ "$CI" = "true" ] && PIP_PROGRESS_BAR='--progress-bar off'
+[ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
 
 # Change to packages directory.
 cd "$(dirname "$0")"
@@ -15,7 +14,7 @@ TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
 virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
 . "${TEST_ENV_DIR}/bin/activate"
-pip install ${PIP_PROGRESS_BAR} pytest
+pip install pytest
 
 # ensure ordered by dependency dag
 PACKAGE_DIRS=(
@@ -41,9 +40,9 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     run_tests=${RUN_TESTS[$i]}
 
     cd "$package_dir"
-    pip install ${PIP_PROGRESS_BAR} -e .
+    pip install -e .
     if [ "$package_dir" = "util" ]; then
-        pip install ${PIP_PROGRESS_BAR} -e '.[template,jstree]'
+        pip install -e '.[template,jstree]'
     fi
 
     if [[ "$run_tests" == "1" ]]; then
