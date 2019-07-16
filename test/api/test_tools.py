@@ -1879,7 +1879,6 @@ class ToolsTestCase(api.ApiTestCase):
             generated_collections = self._run("__FILTER_FROM_FILE__", history_id, inputs, assert_ok=True)['generated_collections']
             output_collection_1, output_collection_2 = generated_collections
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            history_contents = self.dataset_populator._get_contents_request(history_id).json()
             assert output_collection_1['collection_type'] == output_collection_2['collection_type'] == 'list:list', output_collection_1
             collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=output_collection_1['hid'])
             assert collection_details['element_count'] == 2

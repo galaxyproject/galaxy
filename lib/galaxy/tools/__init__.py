@@ -3045,10 +3045,11 @@ class SplitCollectionByNumberTool(DatabaseOperationTool):
         hdca = incoming["input"]
         number_split = incoming["how"]
         input_length = hdca.collection.element_count
-        number_of_collections_out = input_length//number_split
-        extra_data = input_length%number_split
+        number_of_collections_out = input_length // number_split
+        extra_data = input_length % number_split
         iter_list = iter(hdca.collection.elements)
 
+        # If the input collection is not completely divisible by the integer input, need one more collection out
         if extra_data != 0:
             number_of_collections_out += 1
 
