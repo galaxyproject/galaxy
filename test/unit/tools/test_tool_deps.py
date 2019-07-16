@@ -3,7 +3,6 @@ import tempfile
 from contextlib import contextmanager
 from os import (
     chmod,
-    environ,
     makedirs,
     stat,
     symlink,
@@ -22,6 +21,7 @@ from galaxy.tool_util.deps.resolvers.galaxy_packages import GalaxyPackageDepende
 from galaxy.tool_util.deps.resolvers.lmod import LmodDependency, LmodDependencyResolver
 from galaxy.tool_util.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
 from galaxy.util.bunch import Bunch
+from .util import modify_environ
 
 # If true, test created DependencyManager objects by serializing out to json and re-constituting.
 ROUND_TRIP_TEST_DEPENDENCY_MANAGER_SERIALIZATION = True
@@ -582,7 +582,7 @@ def test_config_modulepath():
 
 def test_config_MODULEPATH():
     # Test reads and splits MODULEPATH if modulepath is not specified.
-    with __environ({"MODULEPATH": "/opt/modules/modulefiles:/usr/local/modules/modulefiles"}):
+    with modify_environ({"MODULEPATH": "/opt/modules/modulefiles:/usr/local/modules/modulefiles"}):
         with __parse_resolvers('''<dependency_resolvers>
   <modules find_by="directory" />
 </dependency_resolvers>
@@ -593,7 +593,7 @@ def test_config_MODULEPATH():
 def test_config_MODULESHOME():
     # Test fallbacks to read MODULESHOME if modulepath is not specified and
     # neither is MODULEPATH.
-    with __environ({"MODULESHOME": "/opt/modules"}, remove="MODULEPATH"):
+    with modify_environ({"MODULESHOME": "/opt/modules"}, keys_to_remove=["MODULEPATH"]):
         with __parse_resolvers('''<dependency_resolvers>
   <modules find_by="directory" />
 </dependency_resolvers>
@@ -716,28 +716,6 @@ def test_dependency_manager_none():
 
 def _first_conda_resolver_options(dm):
     return [r for r in dm.to_dict()["resolvers"] if r["resolver_type"] == "conda"][0]
-
-
-@contextmanager
-def __environ(values, remove=[]):
-    """
-    Modify the environment for a test, adding/updating values in dict `values` and
-    removing any environment variables mentioned in list `remove`.
-    """
-    new_keys = set(environ.keys()) - set(values.keys())
-    old_environ = environ.copy()
-    try:
-        environ.update(values)
-        for to_remove in remove:
-            try:
-                del environ[remove]
-            except KeyError:
-                pass
-        yield
-    finally:
-        environ.update(old_environ)
-        for key in new_keys:
-            del environ[key]
 
 
 @contextmanager
