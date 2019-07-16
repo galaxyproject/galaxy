@@ -333,7 +333,7 @@
             	 <div class="input-group input-group-sm" >
             	 	<span class="input-group-addon" id = "network_pairwise_table_legend">
 						<i class = "fa fa-question"></i></button>
-					</span>K
+					</span>
 						<span class="input-group-addon">
                            Show as % <input type = 'checkbox'  data-hivtrace-ui-role = 'pairwise_table_pecentage'> </input>
                         </span>
