@@ -2,17 +2,17 @@
       name="Split Collection"
       version="1.0.0"
       tool_type="split_collection_by_number">
-    <description>by number into multiple collections</description>
+    <description>by integer into multiple smaller collections</description>
     <type class="SplitCollectionByNumberTool" module="galaxy.tools" />
     <action module="galaxy.tools.actions.model_operations"
             class="ModelOperationToolAction"/>
     <inputs>
         <param type="data_collection" name="input" label="Input Collection"
-            help="Collection to split into parts"
+            help="Collection to split into different parts"
             optional="false"/>
-        <param type="integer" value="2" min="1" name="how"
+        <param type="integer" value="" min="1" name="how"
             label="Maximum Number of Elements"
-            help="Maximum number of elements to be found in each collection"
+            help="Maximum number of elements to be found in each new collection"
             optional="false"/>
     </inputs>
     <outputs>
@@ -21,6 +21,29 @@
         </collection>
     </outputs>
     <tests>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="in1" value="simple_line.txt" />
+                    <element name="in2" value="simple_line_alternative.txt" />
+                </collection>
+            </param>
+            <param name="how" value="1" />
+            <output_collection name="output" type="list">
+                <element name="in1">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="output" type="list">
+                <element name="in2">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a different line of text.\n$" />
+                  </assert_contents>
+                </element>
+            </output_collection>
+        </test>
     </tests>
     <help><![CDATA[
     

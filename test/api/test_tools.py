@@ -1868,7 +1868,21 @@ class ToolsTestCase(api.ApiTestCase):
             assert second_collection_level['elements'][0]['element_type'] == 'hda'
 
     @skip_without_tool("__SPLIT_COLLECTION_BY_NUMBER__")
-    
+    def test_split_collection_by_number(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=[("A", "A"), ("B", "B")]).json()['id']
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            inputs = {
+                "input": {'values': [dict(src="hdca", id=hdca_id)]},
+                "how": ["2"]
+            }
+            generated_collections = self._run("__FILTER_FROM_FILE__", history_id, inputs, assert_ok=True)['generated_collections']
+            output_collection_1, output_collection_2 = generated_collections
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            history_contents = self.dataset_populator._get_contents_request(history_id).json()
+            assert output_collection_1['collection_type'] == output_collection_2['collection_type'] == 'list:list', output_collection_1
+            collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=output_collection_1['hid'])
+            assert collection_details['element_count'] == 2
 
     @skip_without_tool("collection_type_source")
     def test_map_over_collection_type_source(self):
