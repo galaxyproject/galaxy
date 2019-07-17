@@ -3087,11 +3087,11 @@ class SplitCollectionByNumberTool(DatabaseOperationTool):
 
             # Build result:
             for i in range(0, num_big):
-                result.append(hdca.collection.elements[i*big: i*big + big])
+                result.append(hdca.collection.elements[i * big: i * big + big])
 
             offset = num_big * big
             for i in range(0, num_small):
-                result.append(hdca.collection.elements[offset + i*small: offset + i*small + small])
+                result.append(hdca.collection.elements[offset + i * small: offset + i * small + small])
 
             # Results to history
             for i, collection in enumerate(result):
