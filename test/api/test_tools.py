@@ -1874,7 +1874,8 @@ class ToolsTestCase(api.ApiTestCase):
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             inputs = {
                 "input": {'values': [dict(src="hdca", id=hdca_id)]},
-                "how": ["2"]
+                "how|how_split": "number_of_collections",
+                "how|num_collecton": 2
             }
             generated_collections = self._run("__FILTER_FROM_FILE__", history_id, inputs, assert_ok=True)['generated_collections']
             output_collection_1, output_collection_2 = generated_collections

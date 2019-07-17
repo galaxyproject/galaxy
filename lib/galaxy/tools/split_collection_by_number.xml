@@ -10,13 +10,27 @@
         <param type="data_collection" name="input" label="Input Collection"
             help="Collection to split into different parts"
             optional="false"/>
-        <param type="integer" value="" min="1" name="how"
-            label="Maximum Number of Elements"
-            help="Maximum number of elements to be found in each new collection"
-            optional="false"/>
+        <conditional name="how">
+            <param type="select" name="how_split" label="How should collections be created">
+                <option value="number_of_collections" selected="true">Number of collections wanted.</option>
+                <option value="maximum_elements">Maximum number of elements in each collection.</option>
+            </param>
+            <when value="number_of_collections">
+                <param type="integer" name="num_collecton"
+                    value="" min="2"
+                    label="Number of collections"
+                    help="Split the large collection into this many collections (if possible)" />
+            </when>
+            <when value="maximum_elements">
+                <param type="integer" name="num_collection"
+                value="" min="1"
+                label="Maximum Number of Elements" 
+                help="Maximum number of elements to be found in each new collection" />
+            </when>
+        </conditional>
     </inputs>
     <outputs>
-        <collection format_source="input" type_source="input" name="output" label="Collection Split by $how" >
+        <collection format_source="input" type_source="input" name="output" label="Split using $how.how_split with $how.num_collection " >
             <discover_datasets pattern="__default__" directory="./" visible="false" />
         </collection>
     </outputs>
@@ -28,7 +42,32 @@
                     <element name="in2" value="simple_line_alternative.txt" />
                 </collection>
             </param>
-            <param name="how" value="1" />
+            <param name="how_split" value="maximum_elements" />
+            <param name="num_collection" value="1" />
+            <output_collection name="output" type="list">
+                <element name="in1">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="output" type="list">
+                <element name="in2">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a different line of text.\n$" />
+                  </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="in1" value="simple_line.txt" />
+                    <element name="in2" value="simple_line_alternative.txt" />
+                </collection>
+            </param>
+            <param name="how_split" value="number_of_collections" />
+            <param name="num_collection" value="2" />
             <output_collection name="output" type="list">
                 <element name="in1">
                   <assert_contents>

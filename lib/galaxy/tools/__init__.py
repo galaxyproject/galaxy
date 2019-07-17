@@ -3043,36 +3043,74 @@ class SplitCollectionByNumberTool(DatabaseOperationTool):
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
-        number_split = incoming["how"]
+        how_split = incoming["how"]['how_split']
+        number = incoming["how"]["num_collection"]
         input_length = hdca.collection.element_count
-        number_of_collections_out = input_length // number_split
-        extra_data = input_length % number_split
-        iter_list = iter(hdca.collection.elements)
 
-        # If the input collection is not completely divisible by the integer input, need one more collection out
-        if extra_data != 0:
-            number_of_collections_out += 1
+        if how_split == "maximum_elements":
+            iter_list = iter(hdca.collection.elements)
+            number_of_collections_out = input_length // number
 
-        for i in range(0, number_of_collections_out):
-            current_collection_elements = odict()
+            # If the input collection is not completely divisible by the integer input, need one more collection out
+            if (input_length % number != 0):
+                number_of_collections_out += 1
 
-            for j, dce in enumerate(iter_list, start=1):
-                dce_object = dce.element_object
-                element_identifier = dce.element_identifier
+            for i in range(0, number_of_collections_out):
+                current_collection_elements = odict()
 
-                if getattr(dce_object, "history_content_type", None) == "dataset":
-                    copied_value = dce_object.copy(force_flush=False)
-                else:
-                    copied_value = dce_object.copy()
+                for j, dce in enumerate(iter_list, start=1):
+                    dce_object = dce.element_object
+                    element_identifier = dce.element_identifier
 
-                current_collection_elements[element_identifier] = copied_value
-                if (j >= number_split):
-                    break
+                    if getattr(dce_object, "history_content_type", None) == "dataset":
+                        copied_value = dce_object.copy(force_flush=False)
+                    else:
+                        copied_value = dce_object.copy()
 
-            self._add_datasets_to_history(history, itervalues(current_collection_elements))
-            output_collections.create_collection(
-                self.outputs["output"], "output_{}".format(i), elements=current_collection_elements
-            )
+                    current_collection_elements[element_identifier] = copied_value
+                    if (j >= number):
+                        break
+
+                self._add_datasets_to_history(history, itervalues(current_collection_elements))
+                output_collections.create_collection(
+                    self.outputs["output"], "output_{}".format(i), elements=current_collection_elements
+                )
+        else:
+            small = input_length // number
+            big = small + 1
+
+            # Number of each group:
+            num_big = input_length % number  # The remainder
+            num_small = number - num_big
+
+            result = []
+
+            # Build result:
+            for i in range(0, num_big):
+                result.append(hdca.collection.elements[i*big: i*big + big])
+
+            offset = num_big * big
+            for i in range(0, num_small):
+                result.append(hdca.collection.elements[offset + i*small: offset + i*small + small])
+
+            # Results to history
+            for i, collection in enumerate(result):
+                current_collection_elements = odict()
+
+                for dce in collection:
+                    dce_object = dce.element_object
+                    element_identifier = dce.element_identifier
+
+                    if getattr(dce_object, "history_content_type", None) == "dataset":
+                        copied_value = dce_object.copy(force_flush=False)
+                    else:
+                        copied_value = dce_object.copy()
+                    current_collection_elements[element_identifier] = copied_value
+
+                self._add_datasets_to_history(history, itervalues(current_collection_elements))
+                output_collections.create_collection(
+                    self.outputs["output"], "output_{}".format(i), elements=current_collection_elements
+                )
 
 
 # Populate tool_type to ToolClass mappings
