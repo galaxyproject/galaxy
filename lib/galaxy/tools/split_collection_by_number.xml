@@ -16,7 +16,7 @@
                 <option value="maximum_elements">Maximum number of elements in each collection.</option>
             </param>
             <when value="number_of_collections">
-                <param type="integer" name="num_collecton"
+                <param type="integer" name="num_collection"
                     value="" min="2"
                     label="Number of collections"
                     help="Split the large collection into this many collections (if possible)" />
