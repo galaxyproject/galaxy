@@ -52,8 +52,8 @@ const ToolPanel = Backbone.View.extend({
                 title: _l("Show favorites"),
                 icon: "fa fa-star-o",
                 onclick: e => {
-                    var search_query = $("#tool-search-query");
-                    var header_btn = $(".panel-header-button");
+                    const search_query = $("#tool-search-query");
+                    const header_btn = $(".panel-header-button");
                     $(".panel-header-button .fa").toggleClass("fa-star-o fa-star");
                     //hide the tooltip
                     header_btn.tooltip('hide');
@@ -66,7 +66,6 @@ const ToolPanel = Backbone.View.extend({
                     else
                         {
                             search_query.val("#favorites").trigger("change");
-
                         }
                 }
             });
