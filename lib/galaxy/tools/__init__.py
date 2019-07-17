@@ -3095,6 +3095,8 @@ class SplitCollectionByNumberTool(DatabaseOperationTool):
 
             # Results to history
             for i, collection in enumerate(result):
+                if len(collection) == 0:
+                    break
                 current_collection_elements = odict()
 
                 for dce in collection:
