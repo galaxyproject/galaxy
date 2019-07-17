@@ -76,7 +76,7 @@ $orange: #f89406;
 
 /*Additional properties for button version
  iOS requires the button element instead of an anchor tag.
- If you want the anchor version, it requires `href="javascript:void(0)"`.*/
+ If you want the anchor version, it requires `href="#"`.*/
 button.toast-close-button {
     padding: 0;
     cursor: pointer;
