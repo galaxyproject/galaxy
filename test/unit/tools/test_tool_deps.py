@@ -3,7 +3,6 @@ import tempfile
 from contextlib import contextmanager
 from os import (
     chmod,
-    environ,
     makedirs,
     stat,
     symlink,
@@ -12,16 +11,20 @@ from shutil import rmtree
 from stat import S_IXUSR
 from subprocess import PIPE, Popen
 
-from galaxy.tools.deps import DependencyManager
-from galaxy.tools.deps.requirements import (
+from galaxy.tool_util.deps import build_dependency_manager, DependencyManager
+from galaxy.tool_util.deps.requirements import (
     ToolRequirement,
     ToolRequirements
 )
-from galaxy.tools.deps.resolvers import NullDependency
-from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
-from galaxy.tools.deps.resolvers.lmod import LmodDependency, LmodDependencyResolver
-from galaxy.tools.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
+from galaxy.tool_util.deps.resolvers import NullDependency
+from galaxy.tool_util.deps.resolvers.galaxy_packages import GalaxyPackageDependency
+from galaxy.tool_util.deps.resolvers.lmod import LmodDependency, LmodDependencyResolver
+from galaxy.tool_util.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
 from galaxy.util.bunch import Bunch
+from .util import modify_environ
+
+# If true, test created DependencyManager objects by serializing out to json and re-constituting.
+ROUND_TRIP_TEST_DEPENDENCY_MANAGER_SERIALIZATION = True
 
 
 def test_tool_dependencies():
@@ -560,6 +563,13 @@ def test_config_module_defaults():
         module_resolver = dependency_resolvers[0]
         assert module_resolver.module_checker.__class__.__name__ == "AvailModuleChecker"
 
+    with __parse_resolvers('''
+-  type: modules
+   prefetch: false
+''', extension=".yml") as dependency_resolvers:
+        module_resolver = dependency_resolvers[0]
+        assert module_resolver.module_checker.__class__.__name__ == "AvailModuleChecker"
+
 
 def test_config_modulepath():
     # Test reads and splits MODULEPATH if modulepath is not specified.
@@ -572,7 +582,7 @@ def test_config_modulepath():
 
 def test_config_MODULEPATH():
     # Test reads and splits MODULEPATH if modulepath is not specified.
-    with __environ({"MODULEPATH": "/opt/modules/modulefiles:/usr/local/modules/modulefiles"}):
+    with modify_environ({"MODULEPATH": "/opt/modules/modulefiles:/usr/local/modules/modulefiles"}):
         with __parse_resolvers('''<dependency_resolvers>
   <modules find_by="directory" />
 </dependency_resolvers>
@@ -583,7 +593,7 @@ def test_config_MODULEPATH():
 def test_config_MODULESHOME():
     # Test fallbacks to read MODULESHOME if modulepath is not specified and
     # neither is MODULEPATH.
-    with __environ({"MODULESHOME": "/opt/modules"}, remove="MODULEPATH"):
+    with modify_environ({"MODULESHOME": "/opt/modules"}, keys_to_remove=["MODULEPATH"]):
         with __parse_resolvers('''<dependency_resolvers>
   <modules find_by="directory" />
 </dependency_resolvers>
@@ -600,46 +610,144 @@ def test_config_module_directory_searcher():
         assert module_resolver.module_checker.directories == ["/opt/Modules/modulefiles"]
 
 
-@contextmanager
-def __environ(values, remove=[]):
-    """
-    Modify the environment for a test, adding/updating values in dict `values` and
-    removing any environment variables mentioned in list `remove`.
-    """
-    new_keys = set(environ.keys()) - set(values.keys())
-    old_environ = environ.copy()
-    try:
-        environ.update(values)
-        for to_remove in remove:
-            try:
-                del environ[remove]
-            except KeyError:
-                pass
-        yield
-    finally:
-        environ.update(old_environ)
-        for key in new_keys:
-            del environ[key]
+def test_dependency_manager_config_options_global():
+    app_config = {
+        "tool_dependency_dir": "/tmp",
+        "tool_dependency_cache_dir": "/tmp",
+        "conda_auto_init": False,
+    }
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert not dm.to_dict()["cache"]
+
+    app_config["use_cached_dependency_manager"] = True
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert dm.to_dict()["cache"]
+    assert dm.to_dict()["precache"]
+
+    app_config["precache_dependencies"] = False
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert not dm.to_dict()["precache"]
+
+    conda_opts = _first_conda_resolver_options(dm)
+    assert conda_opts["use_local"] is False
+
+    app_config["conda_use_local"] = True
+    dm = __dependency_manager_for_config(app_config.copy())
+    conda_opts = _first_conda_resolver_options(dm)
+    assert conda_opts["use_local"] is True
+
+
+def test_dependency_manager_config_options_embedded_config():
+    app_config = {
+        "dependency_resolution": {
+            "default_base_path": "/tmp",
+            "cache_dir": "/tmp",
+        },
+        "conda_auto_init": False,
+    }
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert not dm.to_dict()["cache"]
+
+    app_config["dependency_resolution"]["cache"] = True
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert dm.to_dict()["cache"]
+    assert dm.to_dict()["precache"]
+
+    app_config["dependency_resolution"]["precache"] = False
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert not dm.to_dict()["precache"]
+
+    conda_opts = _first_conda_resolver_options(dm)
+    assert conda_opts["use_local"] is False
+
+    app_config["conda_use_local"] = True
+    dm = __dependency_manager_for_config(app_config.copy())
+    conda_opts = _first_conda_resolver_options(dm)
+    assert conda_opts["use_local"] is True
+
+
+def test_dependency_manager_config_options_resolution_config():
+    app_config = {
+        "conda_auto_init": False,
+    }
+    resolution_config = {
+        "default_base_path": "/tmp",
+        "cache_dir": "/tmp",
+    }
+    dm = __dependency_manager_for_config(app_config.copy(), resolution_config=resolution_config.copy())
+    assert not dm.to_dict()["cache"]
+
+    resolution_config["cache"] = True
+    dm = __dependency_manager_for_config(app_config.copy(), resolution_config=resolution_config.copy())
+    assert dm.to_dict()["cache"]
+    assert dm.to_dict()["precache"]
+
+    resolution_config["precache"] = False
+    dm = __dependency_manager_for_config(app_config.copy(), resolution_config=resolution_config.copy())
+    assert not dm.to_dict()["precache"]
+
+    conda_opts = _first_conda_resolver_options(dm)
+    assert conda_opts["use_local"] is False
+
+    app_config["conda_use_local"] = True
+    dm = __dependency_manager_for_config(app_config.copy(), resolution_config=resolution_config.copy())
+    conda_opts = _first_conda_resolver_options(dm)
+    assert conda_opts["use_local"] is True
+
+
+def test_dependency_manager_none():
+    # by default tool_dependency_dir will be use to create some default resolvers...
+    app_config = {
+        "conda_auto_init": False,
+        "tool_dependency_dir": "some_not_none_value",
+    }
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert dm.to_dict()["use"]
+
+    # but setting it none disables dependency resolution unless explicit resolvers
+    # are configured.
+    app_config = {
+        "conda_auto_init": False,
+        "tool_dependency_dir": "none",
+    }
+    dm = __dependency_manager_for_config(app_config.copy())
+    assert not dm.to_dict()["use"]
+
+
+def _first_conda_resolver_options(dm):
+    return [r for r in dm.to_dict()["resolvers"] if r["resolver_type"] == "conda"][0]
 
 
 @contextmanager
-def __parse_resolvers(xml_content):
-    with __dependency_manager(xml_content) as dm:
+def __parse_resolvers(file_content, extension=".xml"):
+    with __dependency_manager(file_content, extension=extension) as dm:
         yield dm.dependency_resolvers
 
 
 @contextmanager
-def __dependency_manager(xml_content):
+def __dependency_manager(file_content, extension=".xml"):
     with __test_base_path() as base_path:
-        with tempfile.NamedTemporaryFile('w+') as tmp:
-            tmp.write(xml_content)
+        with tempfile.NamedTemporaryFile('w+', suffix=extension) as tmp:
+            tmp.write(file_content)
             tmp.flush()
             dm = __dependency_manager_for_base_path(default_base_path=base_path, conf_file=tmp.name)
             yield dm
 
 
 def __dependency_manager_for_base_path(default_base_path, conf_file=None):
-    return DependencyManager(default_base_path=default_base_path, conf_file=conf_file, app_config={"conda_auto_init": False})
+    dm = DependencyManager(default_base_path=default_base_path, conf_file=conf_file, app_config={"conda_auto_init": False})
+    if ROUND_TRIP_TEST_DEPENDENCY_MANAGER_SERIALIZATION:
+        as_dict = dm.to_dict()
+        dm = build_dependency_manager(resolution_config_dict=as_dict)
+    return dm
+
+
+def __dependency_manager_for_config(app_config, resolution_config=None):
+    dm = build_dependency_manager(app_config_dict=app_config, resolution_config_dict=resolution_config)
+    if ROUND_TRIP_TEST_DEPENDENCY_MANAGER_SERIALIZATION:
+        as_dict = dm.to_dict()
+        dm = build_dependency_manager(resolution_config_dict=as_dict)
+    return dm
 
 
 class _SimpleDependencyManager(object):

@@ -13,13 +13,12 @@ from galaxy import (
 from galaxy.auth import AuthManager
 from galaxy.datatypes import registry
 from galaxy.jobs.manager import NoopManager
-from galaxy.managers import tags
-from galaxy.model import mapping
-from galaxy.tools.deps.containers import NullContainerFinder
+from galaxy.model import mapping, tags
+from galaxy.security import idencoding
+from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.web import security
-from galaxy.web.stack import ApplicationStack
+from galaxy.web_stack import ApplicationStack
 
 
 # =============================================================================
@@ -62,10 +61,10 @@ class MockApp(object):
         self.security = self.config.security
         self.name = kwargs.get('name', 'galaxy')
         self.object_store = objectstore.build_object_store_from_config(self.config)
-        self.model = mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=self.object_store)
+        self.model = mapping.init("/tmp", self.config.database_connection, create_tables=True, object_store=self.object_store)
         self.security_agent = self.model.security_agent
         self.visualizations_registry = MockVisualizationsRegistry()
-        self.tag_handler = tags.GalaxyTagManager(self.model.context)
+        self.tag_handler = tags.GalaxyTagHandler(self.model.context)
         self.quota_agent = quota.QuotaAgent(self.model)
         self.init_datatypes()
         self.job_config = Bunch(
@@ -81,6 +80,10 @@ class MockApp(object):
         self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
         self.auth_manager = AuthManager(self)
+
+        def url_for(*args, **kwds):
+            return "/mock/url"
+        self.url_for = url_for
 
     def init_datatypes(self):
         datatypes_registry = registry.Registry()
@@ -107,8 +110,10 @@ class MockAppConfig(Bunch):
     def __init__(self, root=None, **kwargs):
         Bunch.__init__(self, **kwargs)
         root = root or '/tmp'
-        self.security = security.SecurityHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
+        self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
+        self.database_connection = kwargs.get('database_connection', "sqlite:///:memory:")
         self.use_remote_user = kwargs.get('use_remote_user', False)
+        self.data_dir = '/tmp'
         self.file_path = '/tmp'
         self.jobs_directory = '/tmp'
         self.new_file_path = '/tmp'
@@ -147,12 +152,22 @@ class MockAppConfig(Bunch):
         # set by MockDir
         self.root = root
 
+    @property
+    def config_dict(self):
+        return self.dict()
+
+    def __getattr__(self, name):
+        # Handle the automatic config file _set options
+        if name.endswith('_file_set'):
+            return False
+        return super(MockAppConfig, self).__getattr__(name)
+
 
 class MockWebapp(object):
 
     def __init__(self, **kwargs):
         self.name = kwargs.get('name', 'galaxy')
-        self.security = security.SecurityHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
+        self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
 
 
 class MockTrans(object):

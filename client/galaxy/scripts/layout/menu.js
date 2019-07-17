@@ -11,9 +11,9 @@ import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
 
 function logoutClick() {
-    let galaxy = getGalaxyInstance();
-    let session_csrf_token = galaxy.session_csrf_token;
-    let url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
+    const galaxy = getGalaxyInstance();
+    const session_csrf_token = galaxy.session_csrf_token;
+    const url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
     axios.get(url).then(() => {
         if (galaxy.user) {
             galaxy.user.clearSessionStorage();
@@ -22,7 +22,7 @@ function logoutClick() {
     });
 }
 
-var Collection = Backbone.Collection.extend({
+const Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
         defaults: {
             visible: true,
@@ -33,12 +33,12 @@ var Collection = Backbone.Collection.extend({
         options = options || {};
         this.reset();
 
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         //
         // Chat server tab
         //
-        var extendedNavItem = new CommunicationServerView();
+        const extendedNavItem = new CommunicationServerView();
         this.add(extendedNavItem.render());
 
         //
@@ -129,9 +129,9 @@ var Collection = Backbone.Collection.extend({
             callback: function(webhooks) {
                 $(document).ready(() => {
                     webhooks.each(model => {
-                        var webhook = model.toJSON();
+                        const webhook = model.toJSON();
                         if (webhook.activate) {
-                            var obj = {
+                            const obj = {
                                 id: webhook.id,
                                 icon: webhook.config.icon,
                                 url: webhook.config.url,
@@ -141,7 +141,7 @@ var Collection = Backbone.Collection.extend({
                             };
 
                             // Galaxy.page is undefined for data libraries, workflows pages
-                            let Galaxy = getGalaxyInstance();
+                            const Galaxy = getGalaxyInstance();
                             if (Galaxy.page) {
                                 Galaxy.page.masthead.collection.add(obj);
                             } else if (Galaxy.masthead) {
@@ -172,7 +172,7 @@ var Collection = Backbone.Collection.extend({
         //
         // Help tab.
         //
-        var helpTab = {
+        const helpTab = {
             id: "help",
             title: _l("Help"),
             tooltip: _l("Support, contact, and community"),
@@ -232,7 +232,7 @@ var Collection = Backbone.Collection.extend({
         //
         // User tab.
         //
-        var userTab = {};
+        let userTab = {};
         if (!Galaxy.user.id) {
             if (options.allow_user_creation) {
                 userTab = {
@@ -240,7 +240,7 @@ var Collection = Backbone.Collection.extend({
                     title: _l("Login or Register"),
                     cls: "loggedout-only",
                     url: "login",
-                    tooltip: _l("Account registration or login")
+                    tooltip: _l("Log in or register a new account")
                 };
             } else {
                 userTab = {
@@ -248,7 +248,7 @@ var Collection = Backbone.Collection.extend({
                     title: _l("Login"),
                     cls: "loggedout-only",
                     tooltip: _l("Login"),
-                    url: "user/login",
+                    url: "login",
                     target: "galaxy_main",
                     noscratchbook: true
                 };
@@ -279,22 +279,27 @@ var Collection = Backbone.Collection.extend({
                         onclick: logoutClick
                     },
                     {
-                        title: _l("Saved Datasets"),
+                        title: _l("Datasets"),
                         url: "datasets/list",
                         target: "__use_router__"
                     },
                     {
-                        title: _l("Saved Histories"),
+                        title: _l("Histories"),
                         url: "histories/list",
                         target: "__use_router__"
                     },
                     {
-                        title: _l("Saved Pages"),
+                        title: _l("Histories shared with me"),
+                        url: "histories/list_shared",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: _l("Pages"),
                         url: "pages/list",
                         target: "__use_router__"
                     },
                     {
-                        title: _l("Saved Visualizations"),
+                        title: _l("Visualizations"),
                         url: "visualizations/list",
                         target: "__use_router__"
                     }
@@ -307,7 +312,7 @@ var Collection = Backbone.Collection.extend({
 });
 
 /** Masthead tab **/
-var Tab = Backbone.View.extend({
+const Tab = Backbone.View.extend({
     initialize: function(options) {
         this.model = options.model;
         this.setElement(this._template());
@@ -403,9 +408,9 @@ var Tab = Backbone.View.extend({
                 if (options.onclick) {
                     options.onclick();
                 } else {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     if (options.target == "__use_router__" && typeof Galaxy.page != "undefined") {
-                        Galaxy.page.router.push(options.url);
+                        Galaxy.page.router.executeUseRouter(options.url);
                     } else {
                         try {
                             Galaxy.frame.add(options);
@@ -429,7 +434,7 @@ var Tab = Backbone.View.extend({
 
     /** Handle click event */
     _toggleClick: function(e) {
-        var model = this.model;
+        const model = this.model;
         e.preventDefault();
         $(".tooltip").hide();
         model.trigger("dispatch", m => {
@@ -442,9 +447,9 @@ var Tab = Backbone.View.extend({
                 if (model.get("onclick")) {
                     model.get("onclick")();
                 } else {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     if (model.attributes.target == "__use_router__" && typeof Galaxy.page != "undefined") {
-                        Galaxy.page.router.push(model.attributes.url);
+                        Galaxy.page.router.executeUseRouter(model.attributes.url);
                     } else {
                         Galaxy.frame.add(model.attributes);
                     }

@@ -123,6 +123,11 @@ class ToolPanelElements(odict, HasPanelItems):
         else:
             self.insert(index, key, value)
 
+    def get_label(self, label):
+        for element in self.values():
+            if isinstance(element, ToolSection) and element.name == label:
+                return element
+
     def has_tool_with_id(self, tool_id):
         key = 'tool_%s' % tool_id
         return key in self

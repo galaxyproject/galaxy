@@ -1,3 +1,5 @@
+@import "scss/mixins";
+
 // all histories
 .history-panel {
     @extend .flex-vertical-container;
@@ -34,7 +36,6 @@
         }
 
         //TODO: move these out
-        .tags-display,
         .annotation-display {
             display: none;
             margin-bottom: 8px;
@@ -194,15 +195,6 @@
                 }
             }
         }
-        div.nametags {
-            max-height: 26px;
-            overflow-y: auto;
-            span.badge {
-                display: inline-block;
-                margin-right: 2px;
-                text-decoration: none;
-            }
-        }
     }
 }
 
@@ -218,7 +210,6 @@
     .subtitle,
     .history-size,
     //TODO: move these out
-    .tags-display .prompt,
     .annotation-display .prompt {
         display: none;
     }
@@ -479,21 +470,6 @@
         .btn {
             @extend .btn-sm;
         }
-        .search-control {
-            display: inline-block;
-            width: 40%;
-
-            .search-clear,
-            .search-loading {
-                margin-top: -22px;
-            }
-        }
-        input.search-query {
-            font-size: 90%;
-            height: 21px;
-            line-height: normal;
-            padding: 2px 2px 1px 2px;
-        }
         .open-more-options {
             padding: 2px 6px 2px 6px;
             font-size: 100%;
@@ -523,7 +499,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            max-height: 22px;
         }
         &.control-column-right {
             text-align: right;
@@ -628,4 +603,10 @@
             margin-right: 8px;
         }
     }
+}
+
+// History panel tags editor
+.history-panel .tags-display {
+    padding: 1px;
+    @include shutterFade(250px);
 }

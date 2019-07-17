@@ -36,7 +36,7 @@ def add_ui_controllers(webapp, app):
     Search for controllers in the 'galaxy.webapps.controllers' module and add
     them to the webapp.
     """
-    from galaxy.web.base.controller import BaseUIController
+    from galaxy.webapps.base.controller import BaseUIController
     import galaxy.webapps.tool_shed.controllers
     controller_dir = galaxy.webapps.tool_shed.controllers.__path__[0]
     for fname in os.listdir(controller_dir):
@@ -281,7 +281,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                                               args=(conf,),
                                               kwargs=dict(templating_formatters=build_template_error_formatters()))
             except MiddlewareWrapUnsupported as exc:
-                log.warning(str(exc))
+                log.warning(util.unicodify(exc))
                 import galaxy.web.framework.middleware.error
                 app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
         else:

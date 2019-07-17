@@ -82,7 +82,7 @@ class Registry(object):
         self.display_sites = {}
         self.legacy_build_sites = {}
 
-    def load_datatypes(self, root_dir=None, config=None, deactivate=False, override=True):
+    def load_datatypes(self, root_dir=None, config=None, deactivate=False, override=True, use_converters=True, use_display_applications=True, use_build_sites=True):
         """
         Parse a datatypes XML file located at root_dir/config (if processing the Galaxy distributed config) or contained within
         an installed Tool Shed repository.  If deactivate is True, an installed Tool Shed repository that includes custom datatypes
@@ -119,14 +119,28 @@ class Registry(object):
                 root = config
             registration = root.find('registration')
             # Set default paths defined in local datatypes_conf.xml.
-            if not self.converters_path:
-                self.converters_path_attr = registration.get('converters_path', 'lib/galaxy/datatypes/converters')
-                self.converters_path = os.path.join(root_dir, self.converters_path_attr)
-                if not os.path.isdir(self.converters_path):
-                    raise ConfigurationError("Directory does not exist: %s" % self.converters_path)
-            if not self.display_applications_path:
-                self.display_path_attr = registration.get('display_path', 'display_applications')
-                self.display_applications_path = os.path.join(root_dir, self.display_path_attr)
+            if use_converters:
+                if not self.converters_path:
+                    self.converters_path_attr = registration.get('converters_path', 'lib/galaxy/datatypes/converters')
+                    self.converters_path = os.path.join(root_dir, self.converters_path_attr)
+                    if self.converters_path_attr == 'lib/galaxy/datatypes/converters' \
+                            and not os.path.isdir(self.converters_path):
+                        # Deal with the old default of this path being set in
+                        # datatypes_conf.xml.sample (this path is not useful in an
+                        # "installed Galaxy" world)
+                        self.converters_path_attr = os.path.abspath(os.path.join(os.path.dirname(__file__), 'converters'))
+                        self.converters_path = self.converters_path_attr
+                    if not os.path.isdir(self.converters_path):
+                        raise ConfigurationError("Directory does not exist: %s" % self.converters_path)
+            if use_display_applications:
+                if not self.display_applications_path:
+                    self.display_path_attr = registration.get('display_path', 'display_applications')
+                    self.display_applications_path = os.path.join(root_dir, self.display_path_attr)
+                    if self.display_path_attr == 'display_applications' \
+                            and not os.path.isdir('display_applications'):
+                        # Ditto as with converters_path
+                        self.display_path_attr = os.path.abspath(os.path.join(os.path.dirname(__file__), 'display_applications', 'configs'))
+                        self.display_applications_path = self.display_path_attr
             # Proprietary datatype's <registration> tag may have special attributes, proprietary_converter_path and proprietary_display_path.
             proprietary_converter_path = registration.get('proprietary_converter_path', None)
             proprietary_display_path = registration.get('proprietary_display_path', None)
@@ -222,7 +236,7 @@ class Registry(object):
                                             datatype_class = getattr(imported_module, datatype_class_name)
                                     except Exception as e:
                                         full_path = os.path.join(proprietary_path, proprietary_datatype_module)
-                                        self.log.debug("Exception importing proprietary code file %s: %s" % (str(full_path), str(e)))
+                                        self.log.debug("Exception importing proprietary code file %s: %s", full_path, galaxy.util.unicodify(e))
                                 # Either the above exception was thrown because the proprietary_datatype_module is not derived from a class
                                 # in the repository, or we are loading Galaxy's datatypes. In either case we'll look in the registry.
                                 if datatype_class is None:
@@ -367,7 +381,8 @@ class Registry(object):
                                         compressed_sniffers=compressed_sniffers)
             self.upload_file_formats.sort()
             # Load build sites
-            self._load_build_sites(root)
+            if use_build_sites:
+                self._load_build_sites(root)
         self.set_default_values()
 
         def append_to_sniff_order():
@@ -731,7 +746,7 @@ class Registry(object):
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
-        set_meta_tool = toolbox.load_hidden_lib_tool("galaxy/datatypes/set_metadata_tool.xml")
+        set_meta_tool = toolbox.load_hidden_lib_tool(os.path.abspath(os.path.join(os.path.dirname(__file__), "set_metadata_tool.xml")))
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug("Loaded external metadata tool: %s", self.set_external_metadata_tool.id)
 
@@ -978,7 +993,7 @@ class Registry(object):
 
 def example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True):
     galaxy_dir = galaxy.util.galaxy_directory()
-    sample_conf = os.path.join(galaxy_dir, "config", "datatypes_conf.xml.sample")
+    sample_conf = os.path.join(galaxy_dir, "lib", "galaxy", "config", "sample", "datatypes_conf.xml.sample")
     config = Bunch(sniff_compressed_dynamic_datatypes_default=sniff_compressed_dynamic_datatypes_default)
     datatypes_registry = Registry(config)
     datatypes_registry.load_datatypes(root_dir=galaxy_dir, config=sample_conf)

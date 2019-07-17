@@ -15,8 +15,10 @@ mock = "*"
 NoseHTML = "*"
 pygithub3 = {version = "*", markers = "python_version < '3'"}
 pytest = "*"
+pytest-cov = "*"
 pytest-html = "*"
 pytest-pythonpath = "*"
+pytest-postgresql = "*"
 recommonmark = "*"
 selenium = "*"
 Sphinx = "*"
@@ -40,6 +42,7 @@ uWSGI = "*"
 pysam = "==0.15.2"
 bdbag = "==1.4.1"  # 1.5.0 requires Python >=2.7.9
 bleach = "*"
+cwltool = "==1.0.20180721142728"
 "bz2file" = {version = "*", markers = "python_version < '3.3'"}
 ipaddress = {version = "*", markers = "python_version < '3.3'"}
 isa-rwval = "*"
@@ -65,7 +68,7 @@ bioblend = "*"
 boto = "*"
 kombu = "*"
 psutil = "*"
-pulsar-galaxy-lib = "*"
+pulsar-galaxy-lib = "==0.12.1"
 sqlalchemy-migrate = "*"
 sqlparse = "*"
 svgwrite = "*"
@@ -73,8 +76,8 @@ pyparsing = "*"
 "Fabric3" = "*"
 paramiko = "*"
 python-genomespaceclient = "<2.0"
-social_auth_core = {version = "==3.1.0", extras = ['openidconnect']}
-cloudauthz = "<=0.2.0"
+social_auth_core = {version = "==3.1.0+gx0", extras = ['openidconnect']}
+cloudauthz = "==0.6.0"
 gxformat2 = "*"
 
 [requires]

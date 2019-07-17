@@ -8,6 +8,8 @@ import sys
 
 from sqlalchemy import Boolean, Column, MetaData, Table
 
+from galaxy.model.migrate.versions.util import drop_column, engine_false
+
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
@@ -19,19 +21,11 @@ log.addHandler(handler)
 metadata = MetaData()
 
 
-def engine_false(migrate_engine):
-    if migrate_engine.name in ['postgres', 'postgresql']:
-        return "FALSE"
-    elif migrate_engine.name in ['mysql', 'sqlite']:
-        return 0
-    else:
-        raise Exception('Unknown database type: %s' % migrate_engine.name)
-
-
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
+
     ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
     c = Column("uninstalled", Boolean, default=False)
     try:
@@ -52,14 +46,9 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
+
     ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
     # SQLAlchemy Migrate has a bug when dropping a boolean column in SQLite
     if migrate_engine.name != 'sqlite':
-        try:
-            ToolShedRepository_table.c.uninstalled.drop()
-        except Exception:
-            log.exception("Dropping column uninstalled from the tool_shed_repository table failed.")
-        try:
-            ToolShedRepository_table.c.dist_to_shed.drop()
-        except Exception:
-            log.exception("Dropping column dist_to_shed from the tool_shed_repository table failed.")
+        drop_column('uninstalled', ToolShedRepository_table)
+        drop_column('dist_to_shed', ToolShedRepository_table)

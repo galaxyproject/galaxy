@@ -9,7 +9,7 @@ from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import and_, func
 
 from galaxy import web
-from galaxy.web.base.controller import BaseUIController, UsesTagsMixin
+from galaxy.webapps.base.controller import BaseUIController, UsesTagsMixin
 
 log = logging.getLogger(__name__)
 
@@ -90,7 +90,6 @@ class TagsController(BaseUIController, UsesTagsMixin):
         user = trans.user
         item_class = self.get_class(item_class)
         q = '' if q is None else q
-        q = q.encode('utf-8')
         if q.find(":") == -1:
             return self._get_tag_autocomplete_names(trans, q, limit, timestamp, user, item, item_class)
         else:

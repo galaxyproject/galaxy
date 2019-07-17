@@ -12,22 +12,25 @@ from sqlalchemy import or_
 from galaxy import exceptions
 from galaxy import model
 from galaxy import util
-from galaxy.managers.datasets import DatasetManager
-from galaxy.managers.jobs import JobSearch
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesLibraryMixinItems
+from galaxy.managers.jobs import JobManager, JobSearch
+from galaxy.web import (
+    expose_api,
+    expose_api_anonymous,
+)
+from galaxy.webapps.base.controller import (
+    BaseAPIController,
+    UsesVisualizationMixin
+)
 from galaxy.work.context import WorkRequestContext
 
 log = logging.getLogger(__name__)
 
 
-class JobController(BaseAPIController, UsesLibraryMixinItems):
+class JobController(BaseAPIController, UsesVisualizationMixin):
 
     def __init__(self, app):
         super(JobController, self).__init__(app)
-        self.dataset_manager = DatasetManager(app)
+        self.job_manager = JobManager(app)
         self.job_search = JobSearch(app)
 
     @expose_api
@@ -164,8 +167,34 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                         raw_value=str(metric_value),
                     )
 
-                job_dict['job_metrics'] = [metric_to_dict(metric) for metric in job.metrics]
+                job_dict['job_metrics'] = self._metrics_as_dict(trans, job)
         return job_dict
+
+    @expose_api
+    def common_problems(self, trans, id, **kwd):
+        """
+        * GET /api/jobs/{id}/common_problems
+            check inputs and job for common potential problems to aid in error reporting
+        """
+        job = self.__get_job(trans, id)
+        seen_ids = set()
+        has_empty_inputs = False
+        has_duplicate_inputs = False
+        for job_input_assoc in job.input_datasets:
+            input_dataset_instance = job_input_assoc.dataset
+            if input_dataset_instance is None:
+                continue
+            if input_dataset_instance.get_total_size() == 0:
+                has_empty_inputs = True
+            input_instance_id = input_dataset_instance.id
+            if input_instance_id in seen_ids:
+                has_duplicate_inputs = True
+            else:
+                seen_ids.add(input_instance_id)
+        # TODO: check percent of failing jobs around a window on job.update_time for handler - report if high.
+        # TODO: check percent of failing jobs around a window on job.update_time for destination_id - report if high.
+        # TODO: sniff inputs (add flag to allow checking files?)
+        return {"has_empty_inputs": has_empty_inputs, "has_duplicate_inputs": has_duplicate_inputs}
 
     @expose_api
     def inputs(self, trans, id, **kwd):
@@ -240,6 +269,163 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
 
     @expose_api_anonymous
+    def metrics(self, trans, **kwd):
+        """
+        * GET /api/jobs/{job_id}/metrics
+        * GET /api/datasets/{dataset_id}/metrics
+            Return job metrics for specified job. Job accessibility checks are slightly
+            different than dataset checks, so both methods are available.
+
+        :type   job_id: string
+        :param  job_id: Encoded job id
+
+        :type   dataset_id: string
+        :param  dataset_id: Encoded HDA or LDDA id
+
+        :type   hda_ldda: string
+        :param  hda_ldda: hda if dataset_id is an HDA id (default), ldda if
+                          it is an ldda id.
+
+        :rtype:     list
+        :returns:   list containing job metrics
+        """
+        job = self.__get_job(trans, **kwd)
+        if not trans.user_is_admin and not trans.app.config.expose_potentially_sensitive_job_metrics:
+            return []
+
+        return self._metrics_as_dict(trans, job)
+
+    def _metrics_as_dict(self, trans, job):
+
+        def metric_to_dict(metric):
+            metric_name = metric.metric_name
+            metric_value = metric.metric_value
+            metric_plugin = metric.plugin
+            title, value = trans.app.job_metrics.format(metric_plugin, metric_name, metric_value)
+            return dict(
+                title=title,
+                value=value,
+                plugin=metric_plugin,
+                name=metric_name,
+                raw_value=str(metric_value),
+            )
+
+        metrics = [m for m in job.metrics if m.plugin != 'env' or trans.user_is_admin]
+        return list(map(metric_to_dict, metrics))
+
+    @expose_api_anonymous
+    def parameters_display(self, trans, **kwd):
+        """
+        * GET /api/jobs/{job_id}/parameters_display
+        * GET /api/datasets/{dataset_id}/parameters_display
+
+            Resolve parameters as a list for nested display. More client logic
+            here than is ideal but it is hard to reason about tool parameter
+            types on the client relative to the server. Job accessibility checks
+            are slightly different than dataset checks, so both methods are
+            available.
+
+            This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+            this endpoint will change frequently.
+
+        :type   job_id: string
+        :param  job_id: Encoded job id
+
+        :type   dataset_id: string
+        :param  dataset_id: Encoded HDA or LDDA id
+
+        :type   hda_ldda: string
+        :param  hda_ldda: hda if dataset_id is an HDA id (default), ldda if
+                          it is an ldda id.
+
+        :rtype:     list
+        :returns:   job parameters for for display
+        """
+        job = self.__get_job(trans, **kwd)
+
+        def inputs_recursive(input_params, param_values, depth=1, upgrade_messages=None):
+            if upgrade_messages is None:
+                upgrade_messages = {}
+
+            rval = []
+
+            for input_index, input in enumerate(input_params.values()):
+                if input.name in param_values:
+                    if input.type == "repeat":
+                        for i in range(len(param_values[input.name])):
+                            rval.extend(inputs_recursive(input.inputs, param_values[input.name][i], depth=depth + 1))
+                    elif input.type == "section":
+                        # Get the value of the current Section parameter
+                        rval.append(dict(text=input.name, depth=depth))
+                        rval.extend(inputs_recursive(input.inputs, param_values[input.name], depth=depth + 1, upgrade_messages=upgrade_messages.get(input.name)))
+                    elif input.type == "conditional":
+                        try:
+                            current_case = param_values[input.name]['__current_case__']
+                            is_valid = True
+                        except Exception:
+                            current_case = None
+                            is_valid = False
+                        if is_valid:
+                            rval.append(dict(text=input.test_param.label, depth=depth, value=input.cases[current_case].value))
+                            rval.extend(inputs_recursive(input.cases[current_case].inputs, param_values[input.name], depth=depth + 1, upgrade_messages=upgrade_messages.get(input.name)))
+                        else:
+                            rval.append(dict(text=input.name, depth=depth, notes="The previously used value is no longer valid.", error=True))
+                    elif input.type == "upload_dataset":
+                        rval.append(dict(text=input.group_title(param_values), depth=depth, value="%s uploaded datasets" % len(param_values[input.name])))
+                    elif input.type == "data":
+                        value = []
+                        for i, element in enumerate(util.listify(param_values[input.name])):
+                            if element.history_content_type == "dataset":
+                                hda = element
+                                encoded_id = trans.security.encode_id(hda.id)
+                                value.append({"src": "hda", "id": encoded_id, "hid": hda.hid, "name": hda.name})
+                            else:
+                                value.append({"hid": element.hid, "name": element.name})
+                        rval.append(dict(text=input.label, depth=depth, value=value))
+                    elif input.visible:
+                        if hasattr(input, "label") and input.label:
+                            label = input.label
+                        else:
+                            # value for label not required, fallback to input name (same as tool panel)
+                            label = input.name
+                        rval.append(dict(text=label, depth=depth, value=input.value_to_display_text(param_values[input.name]), notes=upgrade_messages.get(input.name, '')))
+                else:
+                    # Parameter does not have a stored value.
+                    # Get parameter label.
+                    if input.type == "conditional":
+                        label = input.test_param.label
+                    elif input.type == "repeat":
+                        label = input.label()
+                    else:
+                        label = input.label or input.name
+                    rval.append(dict(text=label, depth=depth, notes="not used (parameter was added after this job was run)"))
+
+            return rval
+
+        # Load the tool
+        toolbox = self.app.toolbox
+        tool = toolbox.get_tool(job.tool_id, job.tool_version)
+        assert tool is not None, 'Requested tool has not been loaded.'
+
+        params_objects = None
+        upgrade_messages = {}
+        has_parameter_errors = False
+
+        # Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
+        try:
+            params_objects = job.get_param_values(self.app, ignore_errors=False)
+        except Exception:
+            params_objects = job.get_param_values(self.app, ignore_errors=True)
+            # use different param_objects in the following line, since we want to display original values as much as possible
+            upgrade_messages = tool.check_and_update_param_values(job.get_param_values(self.app, ignore_errors=True),
+                                                                  trans,
+                                                                  update_values=False)
+            has_parameter_errors = True
+
+        parameters = inputs_recursive(tool.inputs, params_objects, depth=1, upgrade_messages=upgrade_messages)
+        return {"parameters": parameters, "has_parameter_errors": has_parameter_errors}
+
+    @expose_api_anonymous
     def build_for_rerun(self, trans, id, **kwd):
         """
         * GET /api/jobs/{id}/build_for_rerun
@@ -280,23 +466,18 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                 dataset_dict = dict(src="ldda", id=trans.security.encode_id(dataset.id))
         return dict(name=job_dataset_association.name, dataset=dataset_dict)
 
-    def __get_job(self, trans, id):
-        try:
-            decoded_job_id = self.decode_id(id)
-        except Exception:
-            raise exceptions.MalformedId()
-        job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
-        if job is None:
-            raise exceptions.ObjectNotFound()
-        belongs_to_user = (job.user == trans.user) if job.user else (job.session_id == trans.get_galaxy_session().id)
-        if not trans.user_is_admin and not belongs_to_user:
-            # Check access granted via output datasets.
-            if not job.output_datasets:
-                raise exceptions.ItemAccessibilityException("Job has no output datasets.")
-            for data_assoc in job.output_datasets:
-                if not self.dataset_manager.is_accessible(data_assoc.dataset.dataset, trans.user):
-                    raise exceptions.ItemAccessibilityException("You are not allowed to rerun this job.")
-        return job
+    def __get_job(self, trans, job_id=None, dataset_id=None, **kwd):
+        if job_id is not None:
+            try:
+                decoded_job_id = self.decode_id(job_id)
+            except Exception:
+                raise exceptions.MalformedId()
+            return self.job_manager.get_accessible_job(trans, decoded_job_id)
+        else:
+            hda_ldda = kwd.get("hda_ldda", "hda")
+            # Following checks dataset accessible
+            dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
+            return dataset_instance.creating_job
 
     @expose_api
     def create(self, trans, payload, **kwd):

@@ -24,7 +24,6 @@ QUnit.module("Masthead test", {
             logo_src: "../../../static/images/galaxyIcon_noText.png",
             is_admin_user: "is_admin_user",
             active_view: "analysis",
-            ftp_upload_dir: "ftp_upload_dir",
             ftp_upload_site: "ftp_upload_site",
             datatypes_disable_auto: true,
             allow_user_creation: true,

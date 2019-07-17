@@ -1,7 +1,7 @@
 // Bootstrap variables and core framework
-@import "../../../node_modules/bootstrap/scss/_functions.scss";
+@import "~bootstrap/scss/_functions.scss";
 @import "theme/blue.scss";
-@import "../../../node_modules/bootstrap/scss/bootstrap.scss";
+@import "~bootstrap/scss/bootstrap.scss";
 
 // Bootstrap-related style overrides
 @import "overrides.scss";
@@ -36,6 +36,7 @@ $fa-font-path: "../../../node_modules/font-awesome/fonts/";
 @import "flex.scss";
 @import "charts.scss";
 @import "message.scss";
+@import "toolshed.scss";
 
 // Mixins
 @mixin user-select($select) {
@@ -139,7 +140,6 @@ body {
 }
 
 // Panels
-
 #left,
 #center,
 #right {
@@ -147,19 +147,22 @@ body {
     top: 0;
     height: 100%;
     overflow: hidden;
-    background: #fff;
+    background: white;
 }
 #left {
     left: 0px;
     width: $panel-width;
-    z-index: 200;
     border-right: $layout-border;
+}
+#right {
+    right: 0px;
+    width: $panel-width;
+    border-left: $layout-border;
 }
 #center {
     left: $panel-width;
     right: $panel-width;
     overflow: hidden;
-    z-index: 1;
     .center-container {
         position: absolute;
         width: 100%;
@@ -188,21 +191,6 @@ body {
     }
 }
 
-#right {
-    width: $panel-width;
-    right: 0px;
-    z-index: 200;
-    border-left: $layout-border;
-}
-
-#left,
-#right,
-.unified-panel {
-    background: $panel-bg-color;
-    display: flex;
-    flex-direction: column;
-}
-
 #left,
 #right,
 .unified-panel {
@@ -215,7 +203,6 @@ body {
     @extend .unselectable;
     @extend .mx-3;
     height: $panel_header_height;
-    z-index: 1000;
     font-size: 1rem;
     font-weight: bold;
     display: flex;
@@ -254,7 +241,6 @@ body {
     height: $panel_footer_height;
     line-height: $panel_footer_height;
     width: 100%;
-    z-index: 1000; // Above #dd-helper
     border-top: $layout-border;
     background: $panel-footer-bg-color;
     color: $panel-header-text-color;
@@ -284,41 +270,47 @@ body {
 
 // Needs to be outside panel to show when hidden
 .panel-collapse {
-    @extend .unified-panel-footer;
-    font-size: 4/3em;
     @extend .fa-icon;
-    &:before {
-        content: "\f053";
-    }
-    &.hidden:before {
-        content: "\f054";
-    }
-    z-index: 201;
+    $border-color: darken($panel-footer-bg-color, 20%);
+    font-size: 4/3em;
     cursor: pointer;
     display: block;
     position: fixed;
-    left: 0;
-    top: inherit;
-    bottom: 0;
-    padding: 0 5px;
     text-align: center;
     height: $panel_footer_height;
     line-height: $panel_footer_height;
-    width: $panel_footer_height - 5;
-    background: none;
-    border-right: $layout-border;
-    border-top: $layout-border;
+    width: $panel_footer_height;
     background: $panel-footer-bg-color;
+    border: solid $panel-footer-bg-color 1px;
+    z-index: 1;
     &.right {
-        left: inherit;
         right: 0;
-        border-right: none;
-        border-left: $layout_border;
-        &.right:before {
+        border-top-left-radius: $border-radius-base;
+        line-height: inherit;
+        &:before {
             content: "\f054";
         }
-        &.right.hidden:before {
+        &.hidden:before {
             content: "\f053";
+        }
+        &.hidden {
+            border-top-color: $border-color;
+            border-left-color: $border-color;
+        }
+    }
+    &.left {
+        left: 0;
+        border-top-right-radius: $border-radius-base;
+        line-height: inherit;
+        &:before {
+            content: "\f053";
+        }
+        &.hidden:before {
+            content: "\f054";
+        }
+        &.hidden {
+            border-top-color: $border-color;
+            border-right-color: $border-color;
         }
     }
 }
@@ -500,6 +492,7 @@ div.unified-panel-body-background {
         @extend .text-dark;
         font-size: 12px;
         text-decoration: none;
+        display: block;
     }
 }
 
@@ -683,6 +676,11 @@ div.form-row-input label {
     margin-top: 5px;
 }
 
+#run-workflow {
+    @extend .float-right;
+    @extend .mt-3;
+}
+
 .workflow-right {
     background: $white;
 }
@@ -737,64 +735,15 @@ button {
     }
 }
 
-.search-query {
-    display: inline-block;
-    padding: 4px;
-    font-size: $font-size-base;
-    line-height: $line-height-base;
-    color: $text-color;
-    border: 1px solid $border-default-color;
-    padding-left: 14px !important;
-    padding-right: 14px;
-    margin-bottom: 0;
-    @include border-radius(14px);
-    max-width: auto;
-    background: $brand-white;
-}
-.search-query:focus {
-    border-color: darken(rgba(82, 168, 236, 0.8), 15%);
-    $shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
-    @include box-shadow($shadow);
-    outline: 0;
-    outline: thin dotted \9; /* IE6-8 */
-}
-
-.search-spinner {
-    position: absolute;
-    display: none;
-    right: 6px;
-    top: 5px;
-    font-size: 1.4em;
-    color: #888;
-}
-
-#tool-search {
-    position: relative;
-    @extend .mb-2;
-    #search-clear-btn {
-        position: absolute;
-        right: 6px;
-        top: 6px;
-        display: block;
-        font-size: 1.4em !important;
-        text-decoration: none;
-        color: #888;
-        @extend .fa-icon;
-        &:before {
-            content: "\f057";
-        }
-    }
-}
-
 // Messages
 
 .errormessagelarge,
 .warningmessagelarge,
 .donemessagelarge,
 .infomessagelarge,
-.ui-form-help .error,
-.ui-form-help .warning,
-.ui-form-help .note {
+.form-help .error,
+.form-help .warning,
+.form-help .note {
     @extend .alert;
     min-height: 36px;
     padding-left: 52px;
@@ -836,9 +785,9 @@ button {
 .warningmessagesmall,
 .donemessagesmall,
 .infomessagesmall,
-.ui-form-help .error,
-.ui-form-help .warning,
-.ui-form-help .note {
+.form-help .error,
+.form-help .warning,
+.form-help .note {
     @extend .alert;
     padding: 5px;
     padding-left: 25px;
@@ -852,13 +801,13 @@ button {
 
 .errormessage,
 .errormessagesmall,
-.ui-form-help .error {
+.form-help .error {
     @extend .alert-danger;
 }
 
 .warningmessage,
 .warningmessagesmall,
-.ui-form-help .warning {
+.form-help .warning {
     @extend .alert-warning;
     background-image: url(../../images/warn_small.png);
 }
@@ -871,7 +820,7 @@ button {
 
 .infomessage,
 .infomessagesmall,
-.ui-form-help .note {
+.form-help .note {
     @extend .alert-info;
     background-image: url(../../images/info_small.png);
 }
@@ -1323,34 +1272,11 @@ div.popmenu-wrapper {
     top: 100%;
     z-index: 20000;
 
-    ul.dropdown-menu {
+    .dropdown-menu {
         // Since our menus are contained in a positioned div, need to override some styles
         display: block;
         position: relative;
         float: none;
-    }
-}
-
-// For all dropdowns, define some additional item types
-ul.dropdown-menu {
-    a {
-        text-decoration: none;
-    }
-    li.head > a {
-        // From nav-list nav-header
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-        font-size: 11px;
-        font-weight: bold;
-        line-height: $line-height-base;
-        color: $text-color;
-        text-transform: uppercase;
-    }
-    li.head > a:hover {
-        background: inherit;
-        border-color: transparent;
-    }
-    li > a {
-        @extend .dropdown-item;
     }
 }
 
@@ -1373,8 +1299,6 @@ div.permissionContainer {
 .text-content {
     hr {
         display: block;
-        background: black;
-        color: black;
         width: 100%;
         height: 1px;
         border: none;
@@ -1502,87 +1426,61 @@ div.permissionContainer {
 @import "ui/error-modal.scss";
 
 // ==== Tool menu styles
-
 .toolMenuContainer {
     color: $panel-text-color;
     a {
-        color: $panel-text-color;
-        // text-decoration: none;
+	color: $panel-text-color;
     }
     background: $panel-bg-color;
     min-height: 100%;
-    @extend .m-3;
-}
-
-div.toolSectionPad {
-    margin: 0;
-    padding: 0;
-    height: 5px;
-    font-size: 0px;
-}
-
-div.toolSectionWrapper {
-    margin-bottom: 5px;
-}
-
-div.toolSectionDetailsInner {
-    margin-left: 5px;
-    margin-right: 5px;
 }
 
 div.toolSectionTitle {
     font-weight: 500;
-    font-size: 1rem;
-}
-
-div.toolPanelLabel {
-    padding-top: 10px;
-    padding-bottom: 5px;
-    font-weight: bold;
-    color: gray;
-    text-transform: uppercase;
-}
-
-div.toolTitle {
-    margin-left: 10px;
-    margin-right: 10px;
-    display: block;
-    .labels {
-        float: right;
-        margin-left: 2px;
-    }
-}
-
-div a.tool-link {
-    text-decoration: none;
-    display: block;
-    padding-top: 5px;
-    padding-bottom: 5px;
-
-    span.tool-old-link {
-        text-decoration: underline;
-    }
-
+    font-size: $h4-font-size;
     &:hover {
         background: darken($panel-bg-color, 5%);
     }
 }
 
-div.toolSectionBody div.toolPanelLabel {
-    padding-top: 5px;
-    padding-bottom: 5px;
-    margin-left: 16px;
-    margin-right: 10px;
-    display: list-item;
-    list-style: none outside;
-}
-
-div.toolTitleNoSection {
-    padding-bottom: 5px;
+div.toolPanelLabel {
+    @extend .py-1;
+    @extend .px-3;
     font-weight: bold;
+    font-size: $h4-font-size;
+    color: $gray-600;
+    text-transform: uppercase;
 }
 
-// Dataset Display Styles
+div.toolSectionTitle, div.toolTitle, div.toolTitleNoSection {
+    display: block;
+    .labels {
+        float: right;
+    }
+
+    a {
+	@extend .px-3;
+	@extend .py-1;
+	text-decoration: none;
+	display: block;
+	&:hover {
+            background: darken($panel-bg-color, 5%);
+	}
+    }
+
+    &.text-muted a {
+	&:hover {
+	    background: inherit;
+	}
+    }
+}
+
+div.toolSectionWrapper {
+    div.toolTitle a, div.toolPanelLabel {
+	@extend .pl-4;
+	font-size: inherit;
+    }
+}
 
 #loading_indicator {
     position: fixed;
@@ -1844,19 +1742,6 @@ div.toolTitleNoSection {
     opacity: 1;
 }
 
-/* Temporary tag editor display; will be moved to a scoped Vue SFC upon refactoring */
-.tags-display {
-    @extend %vertical-spacing;
-    .select2-container {
-        max-height: 80px;
-        overflow: auto;
-        min-width: 0px;
-        .select2-choices {
-            border-radius: 3px;
-        }
-    }
-}
-
 /* TEMPORARY, REFACTOR THIS -- This is only image-related styles from the
  * workflow editor; everything should be moved out of the mako and into its own
  * file */
@@ -1896,8 +1781,11 @@ div.toolTitleNoSection {
         color: $brand-success;
     }
 }
-.input-terminal-active > icon {
+.input-terminal-active.can-accept > icon {
     color: $brand-success;
+}
+.input-terminal-active.cannot-accept > icon {
+    color: $brand-warning;
 }
 .drag-terminal {
     @extend .fa;
@@ -1953,7 +1841,8 @@ div.toolTitleNoSection {
 }
 
 /* Toolshed, reports custom styles from mako templates */
-body.toolshed {
+body.toolshed,
+body.reports {
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -1965,15 +1854,6 @@ body.toolshed {
     }
     .toolMenu {
         margin-left: 10px;
-    }
-}
-
-body.reports {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    #left {
-        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
     }
 }
 

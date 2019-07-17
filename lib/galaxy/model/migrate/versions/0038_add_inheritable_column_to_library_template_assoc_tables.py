@@ -12,29 +12,19 @@ import logging
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
 
 from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrate.versions.util import engine_false
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
-def engine_false(migrate_engine):
-    if migrate_engine.name in ['postgres', 'postgresql']:
-        return "FALSE"
-    elif migrate_engine.name in ['mysql', 'sqlite']:
-        return 0
-    else:
-        raise Exception('Unknown database type: %s' % migrate_engine.name)
-
-
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
 
-    #
     # In case of sqlite, check if the previous migration script deleted the
     # request table and if so, restore the table.
-    #
     if migrate_engine.name == 'sqlite':
         if not migrate_engine.has_table('request'):
             # load the tables referenced in foreign keys
@@ -83,5 +73,4 @@ def upgrade(migrate_engine):
 
 
 def downgrade(migrate_engine):
-    metadata.bind = migrate_engine
     pass

@@ -9,7 +9,7 @@ import PopupMenu from "mvc/ui/popup-menu";
 import LoadingIndicator from "ui/loading-indicator";
 import { init_refresh_on_change } from "onload/globalInits/init_refresh_on_change";
 import store from "../../store";
-import slug from "slug";
+import slugify from "slugify";
 
 // This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
 // not appended to the identifier of a nested array.
@@ -22,7 +22,6 @@ export default Backbone.View.extend({
 
     // Initialize
     initialize: function(grid_config) {
-        console.log("Grid initialize", grid_config, this);
         this.grid = new GridModel();
         this.title = grid_config.title;
         this.active_tab = grid_config.active_tab;
@@ -35,7 +34,7 @@ export default Backbone.View.extend({
         store.watch(
             state => state.gridSearch.searchTags,
             newTags => {
-                let tagArray = Array.from(newTags);
+                const tagArray = Array.from(newTags);
                 self.grid.add_filter("tags", tagArray, false);
                 self.openAdvancedSearch();
                 self.render_filter_button("tags", tagArray);
@@ -85,7 +84,7 @@ export default Backbone.View.extend({
     handle_refresh: function(refresh_frames) {
         if (refresh_frames) {
             if ($.inArray("history", refresh_frames) > -1) {
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 if (Galaxy && Galaxy.currHistoryPanel) {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 }
@@ -698,6 +697,6 @@ export default Backbone.View.extend({
     // use for conditional styling in the various kinds of grids
     // instead of acres of if/then statements in javascript
     getRootClassName({ title = "grid" }) {
-        return slug(title).toLowerCase();
+        return slugify(title).toLowerCase();
     }
 });

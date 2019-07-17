@@ -7,7 +7,10 @@ import socket
 
 from markupsafe import escape
 
-from galaxy.util import send_mail
+from galaxy.util import (
+    send_mail,
+    unicodify,
+)
 from galaxy.util.logging import get_logger
 
 log = get_logger(__name__)
@@ -55,7 +58,7 @@ class EmailAction(DefaultJobAction):
         try:
             send_mail(frm, to, subject, body, app.config)
         except Exception as e:
-            log.error("EmailAction PJA Failed, exception: %s" % e)
+            log.error("EmailAction PJA Failed, exception: %s", unicodify(e))
 
     @classmethod
     def get_short_str(cls, pja):
@@ -282,9 +285,10 @@ class ColumnSetAction(DefaultJobAction):
                 for k, v in action.action_arguments.items():
                     if v:
                         # Try to use both pure integer and 'cX' format.
-                        if v[0] == 'c':
-                            v = v[1:]
-                        v = int(v)
+                        if not isinstance(v, int):
+                            if v[0] == 'c':
+                                v = v[1:]
+                            v = int(v)
                         if v != 0:
                             setattr(dataset_assoc.dataset.metadata, k, v)
 

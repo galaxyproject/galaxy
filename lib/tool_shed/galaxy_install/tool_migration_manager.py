@@ -2,6 +2,7 @@
 Manage automatic installation of tools configured in the xxx.xml files in ~/scripts/migrate_tools (e.g., 0002_tools.xml).
 All of the tools were at some point included in the Galaxy distribution, but are now hosted in the main Galaxy tool shed.
 """
+import errno
 import logging
 import os
 import shutil
@@ -31,6 +32,12 @@ from tool_shed.util import (
 log = logging.getLogger(__name__)
 
 
+MIGRATED_TOOLS_CONF_XML = """<?xml version="1.0"?>
+<toolbox tool_path="{shed_tools_dir}">
+</toolbox>
+"""
+
+
 class ToolMigrationManager(object):
 
     def __init__(self, app, latest_migration_script_number, tool_shed_install_config, migrated_tools_config,
@@ -47,7 +54,7 @@ class ToolMigrationManager(object):
         self.tpm = tool_panel_manager.ToolPanelManager(self.app)
         # If install_dependencies is True but tool_dependency_dir is not set, do not attempt
         # to install but print informative error message.
-        if install_dependencies and app.config.tool_dependency_dir is None:
+        if install_dependencies and app.tool_dependency_dir is None:
             message = 'You are attempting to install tool dependencies but do not have a value '
             message += 'for "tool_dependency_dir" set in your galaxy.ini file.  Set this '
             message += 'location value to the path where you want tool dependencies installed and '
@@ -59,7 +66,15 @@ class ToolMigrationManager(object):
         self.proprietary_tool_panel_elems = self.get_proprietary_tool_panel_elems(latest_migration_script_number)
         # Set the location where the repositories will be installed by retrieving the tool_path
         # setting from migrated_tools_config.
-        tree, error_message = xml_util.parse_xml(migrated_tools_config)
+        try:
+            tree, error_message = xml_util.parse_xml(migrated_tools_config)
+        except (IOError, OSError) as exc:
+            if exc.errno == errno.ENOENT:
+                with open(migrated_tools_config, 'w') as fh:
+                    fh.write(MIGRATED_TOOLS_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir))
+                tree, error_message = xml_util.parse_xml(migrated_tools_config)
+            else:
+                raise
         if tree is None:
             log.error(error_message)
         else:

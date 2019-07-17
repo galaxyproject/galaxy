@@ -3,6 +3,8 @@ from __future__ import print_function
 
 import sys
 
+from galaxy.util import unicodify
+
 
 def warn(msg):
     # TODO: since everything printed to stderr results in job.state = error, we
@@ -35,7 +37,7 @@ def parse_cols_arg(cols):
 
 def default_printer(stream, exc, obj):
     print("%d: %s" % (obj.linenum, obj.current_line), file=stream)
-    print("\tError: %s" % (str(exc)), file=stream)
+    print("\tError: %s" % unicodify(exc), file=stream)
 
 
 def skipped(reader, filedesc=""):

@@ -5,24 +5,60 @@
  * argument can be made that it more properly belongs in the component that is
  * handling the inputs.
  *
- * TODO: convert this python endpoint to a legit json REST service
+ * TODO: convert the associated python endpoint to a legit json REST service
  */
 
 import axios from "axios";
 import { createTag } from "./model";
 import { Subject } from "rxjs";
-import { filter, debounceTime, switchMap, distinctUntilChanged } from "rxjs/operators";
+import { map, filter, debounceTime, switchMap, distinctUntilChanged } from "rxjs/operators";
 
-export function buildTagService({ id, itemClass, context, debounceInterval = 150 }) {
+export class TagService {
+    constructor({ id, itemClass, context, debounceInterval = 150 }) {
+        this.id = id;
+        this.itemClass = itemClass;
+        this.context = context;
+        this.debounceInterval = debounceInterval;
+
+        // Buffer for autocomplete text changes
+        this._searchText = new Subject();
+    }
+
+    /**
+     * Autocomplete observable. Subscribe to this object to get updates to
+     * matching autocomplete results as the autocompleteSearchText property is
+     * changed
+     */
+    get autocompleteOptions() {
+        return this._searchText.pipe(
+            map(txt => txt.replace("name:", "")),
+            filter(txt => txt.length),
+            debounceTime(this.debounceInterval),
+            distinctUntilChanged(),
+            switchMap(txt => this.autocomplete(txt))
+        );
+    }
+
+    /**
+     * Set this property to start process of retrieving autocomplete results.
+     */
+    set autocompleteSearchText(txt) {
+        this._searchText.next(txt);
+    }
+
     /**
      * Save tag, input can be text string or tag model
      * @param {string|Tag} tag
      * @returns Promise yielding new tag model
      */
-    async function saveTag(rawTag) {
-        let tag = createTag(rawTag);
-        let url = `/tag/add_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&new_tag=${tag.text}`;
-        let response = await axios.get(url);
+    async save(rawTag) {
+        const { id, itemClass, context } = this;
+        const tag = createTag(rawTag);
+        if (!tag.valid) {
+            throw new Error("Invalid tag");
+        }
+        const url = `/tag/add_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&new_tag=${tag.text}`;
+        const response = await axios.get(url);
         if (response.status !== 200) {
             throw new Error(`Unable to save tag: ${tag}`);
         }
@@ -34,10 +70,13 @@ export function buildTagService({ id, itemClass, context, debounceInterval = 150
      * @param {string|Tag} tag
      * @returns Promise yielding deleted tag model
      */
-    async function deleteTag(rawTag) {
-        let tag = createTag(rawTag);
-        let url = `/tag/remove_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&tag_name=${tag.text}`;
-        let response = await axios.get(url);
+    async delete(rawTag) {
+        const { id, itemClass, context } = this;
+        const tag = createTag(rawTag);
+        const url = `/tag/remove_tag_async?item_id=${id}&item_class=${itemClass}&context=${context}&tag_name=${
+            tag.text
+        }`;
+        const response = await axios.get(url);
         if (response.status !== 200) {
             throw new Error(`Unable to delete tag: ${tag}`);
         }
@@ -49,52 +88,20 @@ export function buildTagService({ id, itemClass, context, debounceInterval = 150
      * @param {string} searchText
      * @returns Promise yielding an array of tag models
      */
-    async function autocomplete(searchText) {
-        let url = `/tag/tag_autocomplete_data?item_id=${id}&item_class=${itemClass}&q=${searchText}`;
-        let response = await axios.get(url);
+    async autocomplete(searchText) {
+        const { id, itemClass } = this;
+        const url = `/tag/tag_autocomplete_data?item_id=${id}&item_class=${itemClass}&q=${searchText}`;
+        const response = await axios.get(url);
         if (response.status !== 200) {
             throw new Error(`Unable to retrieve autocomplete tags for search string: ${searchText}`);
         }
         return parseAutocompleteResults(response.data).map(createTag);
     }
-
-    /**
-     * Incoming autocomplete search text buffer
-     */
-    const _searchText = new Subject();
-
-    return {
-        // saves a single tag
-        save: saveTag,
-
-        // deletes a single tag
-        delete: deleteTag,
-
-        // returns options matching a search string for autocomplete this is
-        // exposed for testing purposes only, in practice a consuming component
-        // will set the autocompleteSearchText property and observe results by
-        // subscribing to the autocompleteOptions observable property
-        autocomplete,
-
-        // input point for autocomplete text search
-        set autocompleteSearchText(txt) {
-            _searchText.next(txt);
-        },
-
-        // output of autocomplete search results
-        // subscribe to this observable to get results
-        autocompleteOptions: _searchText.pipe(
-            filter(txt => txt.length),
-            debounceTime(debounceInterval),
-            distinctUntilChanged(),
-            switchMap(autocomplete)
-        )
-    };
 }
 
 /**
- * Parser for the archaic result format in the current API.
- * See testData/autocompleteResponse.txt for a sample
+ * Utility function parser for the archaic result format in the current API. See
+ * testData/autocompleteResponse.txt for a sample.
  * @param {string} rawResponse
  */
 export function parseAutocompleteResults(rawResponse) {

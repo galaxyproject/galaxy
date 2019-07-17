@@ -7,7 +7,6 @@ import BASE_MVC from "mvc/base-mvc";
 import baseCreator from "mvc/collection/base-creator";
 import UI_MODAL from "mvc/ui/ui-modal";
 import _l from "utils/localization";
-import RuleCollectionBuilder from "components/RuleCollectionBuilder.vue";
 import Vue from "vue";
 import { getGalaxyInstance } from "app";
 
@@ -852,14 +851,14 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     _l("Create a different kind of collection"),
                     ' <span class="caret"></span>',
                     "</button>",
-                    '<ul class="dropdown-menu" role="menu">',
-                    '<li><a href="#">',
+                    '<div class="dropdown-menu" role="menu">',
+                    '<a class="dropdown-item" href="#">',
                     _l("Create a <i>single</i> pair"),
-                    "</a></li>",
-                    '<li><a href="#">',
+                    "</a>",
+                    '<a class="dropdown-item" href="#">',
                     _l("Create a list of <i>unpaired</i> datasets"),
-                    "</a></li>",
-                    "</ul>",
+                    "</a>",
+                    "</div>",
                     "</div>",
                     "</div>",
 
@@ -1012,7 +1011,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
 const collectionCreatorModalSetup = function _collectionCreatorModalSetup(options) {
     const deferred = jQuery.Deferred();
-    let Galaxy = getGalaxyInstance();
+    const Galaxy = getGalaxyInstance();
     const modal = Galaxy.modal || new UI_MODAL.View();
 
     const creatorOptions = _.defaults(options || {}, {
@@ -1077,24 +1076,28 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
         title: title
     });
     const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options); // eslint-disable-line no-unused-vars
-    var ruleCollectionBuilderInstance = Vue.extend(RuleCollectionBuilder);
-    var vm = document.createElement("div");
-    showEl(vm);
-    new ruleCollectionBuilderInstance({
-        propsData: {
-            initialElements: elements,
-            elementsType: elementsType,
-            importType: importType,
-            ftpUploadSite: options.ftpUploadSite,
-            creationFn: options.creationFn,
-            oncancel: options.oncancel,
-            oncreate: options.oncreate,
-            defaultHideSourceItems: options.defaultHideSourceItems,
-            saveRulesFn: options.saveRulesFn,
-            initialRules: options.initialRules
+    return import(/* webpackChunkName: "ruleCollectionBuilder" */ "components/RuleCollectionBuilder.vue").then(
+        module => {
+            var ruleCollectionBuilderInstance = Vue.extend(module.default);
+            var vm = document.createElement("div");
+            showEl(vm);
+            new ruleCollectionBuilderInstance({
+                propsData: {
+                    initialElements: elements,
+                    elementsType: elementsType,
+                    importType: importType,
+                    ftpUploadSite: options.ftpUploadSite,
+                    creationFn: options.creationFn,
+                    oncancel: options.oncancel,
+                    oncreate: options.oncreate,
+                    defaultHideSourceItems: options.defaultHideSourceItems,
+                    saveRulesFn: options.saveRulesFn,
+                    initialRules: options.initialRules
+                }
+            }).$mount(vm);
+            return deferred;
         }
-    }).$mount(vm);
-    return deferred;
+    );
 };
 
 /** List collection flavor of collectionCreatorModal. */

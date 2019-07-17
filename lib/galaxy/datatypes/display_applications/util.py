@@ -1,6 +1,4 @@
-from Crypto.Cipher import Blowfish
-
-from galaxy.util import smart_str
+from galaxy.security.idencoding import IdEncodingHelper
 
 
 def encode_dataset_user(trans, dataset, user):
@@ -10,11 +8,8 @@ def encode_dataset_user(trans, dataset, user):
     if user is None:
         user_hash = 'None'
     else:
-        user_hash = str(user.id)
-        # Pad to a multiple of 8 with leading "!"
-        user_hash = ("!" * (8 - len(user_hash) % 8)) + user_hash
-        cipher = Blowfish.new(smart_str(dataset.create_time), mode=Blowfish.MODE_ECB)
-        user_hash = cipher.encrypt(user_hash).encode('hex')
+        security = IdEncodingHelper(id_secret=dataset.create_time)
+        user_hash = security.encode_id(user.id)
     return dataset_hash, user_hash
 
 
@@ -27,8 +22,8 @@ def decode_dataset_user(trans, dataset_hash, user_hash):
     if user_hash in [None, 'None']:
         user = None
     else:
-        cipher = Blowfish.new(smart_str(dataset.create_time), mode=Blowfish.MODE_ECB)
-        user_id = cipher.decrypt(user_hash.decode('hex')).lstrip("!")
-        user = trans.sa_session.query(trans.app.model.User).get(int(user_id))
+        security = IdEncodingHelper(id_secret=dataset.create_time)
+        user_id = security.decode_id(user_hash)
+        user = trans.sa_session.query(trans.app.model.User).get(user_id)
         assert user, "A Bad user id was passed to decode_dataset_user"
     return dataset, user

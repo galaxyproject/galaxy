@@ -2,7 +2,7 @@ import logging
 import os
 import tempfile
 
-from galaxy.tools.deps.resolvers import NullDependency
+from galaxy.tool_util.deps.resolvers import NullDependency
 from galaxy.util import listify, url_get
 from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.env_file_builder import EnvFileBuilder

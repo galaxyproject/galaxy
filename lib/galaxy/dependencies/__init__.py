@@ -8,6 +8,7 @@ from os.path import dirname, join
 from xml.etree import ElementTree
 
 import pkg_resources
+import yaml
 
 from galaxy.containers import parse_containers_config
 from galaxy.util import asbool
@@ -27,25 +28,53 @@ class ConditionalDependencies(object):
         self.conditional_reqs = []
         self.container_interface_types = []
         self.job_rule_modules = []
+        self.error_report_modules = []
         self.parse_configs()
         self.get_conditional_requirements()
 
     def parse_configs(self):
         self.config = load_app_properties(config_file=self.config_file)
-        job_conf_xml = self.config.get(
-            "job_config_file",
-            join(dirname(self.config_file), 'job_conf.xml'))
-        try:
-            for plugin in ElementTree.parse(job_conf_xml).find('plugins').findall('plugin'):
-                if 'load' in plugin.attrib:
-                    self.job_runners.append(plugin.attrib['load'])
-        except (OSError, IOError):
-            pass
-        try:
-            for plugin in ElementTree.parse(job_conf_xml).findall('.//destination/param[@id="rules_module"]'):
-                self.job_rule_modules.append(plugin.text)
-        except (OSError, IOError):
-            pass
+
+        def load_job_config_dict(job_conf_dict):
+            for runner in job_conf_dict.get("runners"):
+                if "load" in runner:
+                    self.job_runners.append(runner.get("load"))
+                if "rules_module" in runner:
+                    self.job_rule_modules.append(plugin.text)
+                if "params" in runner:
+                    runner_params = runner["params"]
+                    if "rules_module" in runner_params:
+                        self.job_rule_modules.append(plugin.text)
+
+        if "job_config" in self.config:
+            load_job_config_dict(self.config.get("job_config"))
+        else:
+            job_conf_path = self.config.get(
+                "job_config_file",
+                join(dirname(self.config_file), 'job_conf.xml'))
+            if '.xml' in job_conf_path:
+                try:
+                    try:
+                        for plugin in ElementTree.parse(job_conf_path).find('plugins').findall('plugin'):
+                            if 'load' in plugin.attrib:
+                                self.job_runners.append(plugin.attrib['load'])
+                    except (OSError, IOError):
+                        pass
+                    try:
+                        for plugin in ElementTree.parse(job_conf_path).findall('.//destination/param[@id="rules_module"]'):
+                            self.job_rule_modules.append(plugin.text)
+                    except (OSError, IOError):
+                        pass
+                except ElementTree.ParseError:
+                    pass
+            else:
+                try:
+                    with open("job_conf_path", "r") as f:
+                        job_conf_dict = yaml.safe_load(f)
+                    load_job_config_dict(job_conf_dict)
+                except (OSError, IOError):
+                    pass
+
         object_store_conf_xml = self.config.get(
             "object_store_config_file",
             join(dirname(self.config_file), 'object_store_conf.xml'))
@@ -74,6 +103,17 @@ class ConditionalDependencies(object):
             join(dirname(self.config_file), 'containers_conf.yml'))
         containers_conf = parse_containers_config(containers_conf_yml)
         self.container_interface_types = [c.get('type', None) for c in containers_conf.values()]
+
+        # Parse error report config
+        error_report_yml = self.config.get(
+            "error_report_file",
+            join(dirname(self.config_file), 'error_report.yml'))
+        try:
+            with open(error_report_yml, "r") as f:
+                error_reporters = yaml.safe_load(f)
+                self.error_report_modules = [er.get('type', None) for er in error_reporters]
+        except (OSError, IOError):
+            pass
 
     def get_conditional_requirements(self):
         crfile = join(dirname(__file__), 'conditional-requirements.txt')
@@ -146,8 +186,14 @@ class ConditionalDependencies(object):
                 ('docker' in self.container_interface_types or
                  'docker_swarm' in self.container_interface_types))
 
-    def check_social_auth_core(self):
-        return self.config.get("enable_oidc", False)
+    def check_python_gitlab(self):
+        return 'gitlab' in self.error_report_modules
+
+    def check_pygithub(self):
+        return 'github' in self.error_report_modules
+
+    def check_influxdb(self):
+        return 'influxdb' in self.error_report_modules
 
 
 def optional(config_file=None):

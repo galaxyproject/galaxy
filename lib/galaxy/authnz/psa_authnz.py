@@ -20,12 +20,14 @@ DEFAULTS = {
 BACKENDS = {
     'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
     'globus': 'social_core.backends.globus.GlobusOpenIdConnect',
+    'elixir': 'social_core.backends.elixir.ElixirOpenIdConnect',
     'okta': 'social_core.backends.okta.OktaOpenIdConnect'
 }
 
 BACKENDS_NAME = {
     'google': 'google-openidconnect',
     'globus': 'globus',
+    'elixir': 'elixir',
     'okta': 'okta-openidconnect'
 }
 

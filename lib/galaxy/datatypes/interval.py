@@ -19,7 +19,6 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.gff_util import parse_gff3_attributes, parse_gff_attributes
-from galaxy.web import url_for
 from . import (
     data,
     dataproviders
@@ -260,10 +259,10 @@ class Interval(Tabular):
         # Accumulate links for valid sites
         ret_val = []
         for site_name, site_url in valid_sites:
-            internal_url = url_for(controller='dataset', dataset_id=dataset.id,
-                                   action='display_at', filename='ucsc_' + site_name)
+            internal_url = app.url_for(controller='dataset', dataset_id=dataset.id,
+                                       action='display_at', filename='ucsc_' + site_name)
             display_url = quote_plus("%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" %
-                                     (base_url, url_for(controller='root'), dataset.id, type))
+                                     (base_url, app.url_for(controller='root'), dataset.id, type))
             redirect_url = quote_plus("%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" %
                                       (site_url, dataset.dbkey, chrom, start, stop))
             link = '%s?redirect_url=%s&display_url=%s' % (internal_url, redirect_url, display_url)
@@ -607,10 +606,10 @@ class _RemoteCallMixin(object):
         the data available, followed by redirecting to the remote site with a
         link back to the available information.
         """
-        internal_url = "%s" % url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='%s_%s' % (type, site_name))
+        internal_url = "%s" % app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='%s_%s' % (type, site_name))
         base_url = app.config.get("display_at_callback", base_url)
         display_url = quote_plus("%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" %
-                                 (base_url, url_for(controller='root'), dataset.id, type))
+                                 (base_url, app.url_for(controller='root'), dataset.id, type))
         link = '%s?redirect_url=%s&display_url=%s' % (internal_url, redirect_url, display_url)
         return link
 
@@ -773,9 +772,8 @@ class Gff(Tabular, _RemoteCallMixin):
                         break
                 if seqid is not None:
                     return (seqid, str(start), str(stop))  # Necessary to return strings?
-            except Exception as e:
-                # unexpected error
-                log.exception(str(e))
+            except Exception:
+                log.exception('Unexpected error')
         return (None, None, None)  # could not determine viewport
 
     def ucsc_links(self, dataset, type, app, base_url):
@@ -1142,9 +1140,8 @@ class Wiggle(Tabular, _RemoteCallMixin):
                         break
                 if chrom is not None:
                     return (chrom, str(start), str(end))  # Necessary to return strings?
-            except Exception as e:
-                # unexpected error
-                log.exception(str(e))
+            except Exception:
+                log.exception('Unexpected error')
         return (None, None, None)  # could not determine viewport
 
     def gbrowse_links(self, dataset, type, app, base_url):
@@ -1324,9 +1321,8 @@ class CustomTrack(Tabular):
                     if not max_line_count:
                         # exceeded viewport or total line count to check
                         break
-            except Exception as e:
-                # unexpected error
-                log.exception(str(e))
+            except Exception:
+                log.exception('Unexpected error')
         return (None, None, None)  # could not determine viewport
 
     def ucsc_links(self, dataset, type, app, base_url):
@@ -1335,8 +1331,8 @@ class CustomTrack(Tabular):
         if chrom is not None:
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites('ucsc'):
-                    internal_url = "%s" % url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name)
-                    display_url = quote_plus("%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for(controller='root'), dataset.id, type))
+                    internal_url = "%s" % app.url_for(controller='dataset', dataset_id=dataset.id, action='display_at', filename='ucsc_' + site_name)
+                    display_url = quote_plus("%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, app.url_for(controller='root'), dataset.id, type))
                     redirect_url = quote_plus("%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop))
                     link = '%s?redirect_url=%s&display_url=%s' % (internal_url, redirect_url, display_url)
                     ret_val.append((site_name, link))

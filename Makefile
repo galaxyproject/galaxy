@@ -1,15 +1,15 @@
+# Location of virtualenv used for development.
+VENV?=.venv
+# Source virtualenv to execute command (flake8, sphinx, twine, etc...)
+IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 RELEASE_CURR:=16.01
-RELEASE_CURR_MINOR_NEXT:=$(shell python scripts/bootstrap_history.py --print-next-minor-version)
+RELEASE_CURR_MINOR_NEXT:=$(shell $(IN_VENV) python scripts/bootstrap_history.py --print-next-minor-version)
 RELEASE_NEXT:=16.04
 # TODO: This needs to be updated with create_release_rc
 #RELEASE_NEXT_BRANCH:=release_$(RELEASE_NEXT)
 RELEASE_NEXT_BRANCH:=dev
 RELEASE_UPSTREAM:=upstream
 MY_UPSTREAM:=origin
-# Location of virtualenv used for development.
-VENV?=.venv
-# Source virtualenv to execute command (flake8, sphinx, twine, etc...)
-IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/webapps/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 DOCS_DIR=doc
@@ -129,11 +129,14 @@ release-check-blocking-prs: ## Check github for release blocking PRs
 release-bootstrap-history: ## bootstrap history for a new release
 	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
 
-update-dependencies:  ## update linting + dev dependencies
-	sh lib/galaxy/dependencies/pipfiles/update.sh
+build-dependencies-docker: ## Builds the docker container used for dependency updates
+	$(MAKE) -C lib/galaxy/dependencies/pipfiles/docker
 
-update-and-commit-dependencies:  ## update and commit linting + dev dependencies
-	sh lib/galaxy/dependencies/pipfiles/update.sh -c
+update-dependencies:  build-dependencies-docker ## update linting + dev dependencies
+	sh lib/galaxy/dependencies/pipfiles/update.sh -d
+
+update-and-commit-dependencies: build-dependencies-docker ## update and commit linting + dev dependencies
+	sh lib/galaxy/dependencies/pipfiles/update.sh -d -c
 
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN

@@ -28,14 +28,14 @@ var ControlledFetchCollection = Backbone.Collection.extend({
      */
     fetch: function(options) {
         options = this._buildFetchOptions(options);
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         Galaxy.debug("fetch options:", options);
         return Backbone.Collection.prototype.fetch.call(this, options);
     },
 
     /** build ajax data/parameters from options */
     _buildFetchOptions: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         // note: we normally want options passed in to override the defaults built here
         // so most of these fns will generate defaults
@@ -271,7 +271,7 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
 
     /** fetch the first 'page' of data */
     fetchFirst: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         Galaxy.debug("ControlledFetchCollection.fetchFirst:", options);
         options = options ? _.clone(options) : {};
         this.allFetched = false;
@@ -286,7 +286,7 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
 
     /** fetch the next page of data */
     fetchMore: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         Galaxy.debug("ControlledFetchCollection.fetchMore:", options);
         options = _.clone(options || {});

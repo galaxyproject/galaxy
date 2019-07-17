@@ -2,7 +2,7 @@ import logging
 import os
 from json import dumps
 
-from galaxy.jobs.datasets import DatasetPath
+from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.util.odict import odict
 from . import ToolAction
@@ -18,8 +18,11 @@ class SetMetadataToolAction(ToolAction):
         Execute using a web transaction.
         """
         trans.check_user_activation()
-        job, odict = self.execute_via_app(tool, trans.app, trans.get_galaxy_session().id,
-                                          trans.history.id, trans.user, incoming, set_output_hid,
+        session = trans.get_galaxy_session()
+        session_id = session and session.id
+        history_id = trans.history and trans.history.id
+        job, odict = self.execute_via_app(tool, trans.app, session_id,
+                                          history_id, trans.user, incoming, set_output_hid,
                                           overwrite, history, job_params)
         # FIXME: can remove this when logging in execute_via_app method.
         trans.log_event("Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
@@ -62,6 +65,7 @@ class SetMetadataToolAction(ToolAction):
             job.tool_version = tool.version
         except AttributeError:
             job.tool_version = "1.0.1"
+        job.dynamic_tool = tool.dynamic_tool
         job.state = job.states.WAITING  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         sa_session.add(job)
         sa_session.flush()  # ensure job.id is available
@@ -74,7 +78,7 @@ class SetMetadataToolAction(ToolAction):
         job_working_dir = app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(job.id))
         datatypes_config = os.path.join(job_working_dir, 'registry.xml')
         app.datatypes_registry.to_xml_file(path=datatypes_config)
-        external_metadata_wrapper = get_metadata_compute_strategy(app, job.id)
+        external_metadata_wrapper = get_metadata_compute_strategy(app.config, job.id)
         output_datatasets_dict = {
             dataset_name: dataset,
         }

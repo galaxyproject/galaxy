@@ -1,0 +1,11 @@
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+
+execution:
+  environments:
+    local_dest:
+      runner: local
+      env:
+        - execute: "echo 'moo std cow'"
+        - execute: "(>&2 echo 'moo err cow')"

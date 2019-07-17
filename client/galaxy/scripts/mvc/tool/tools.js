@@ -347,9 +347,7 @@ var ToolSearch = Backbone.Model.extend({
     SEARCH_RESERVED_TERMS_FAVORITES: ["#favs", "#favorites", "#favourites"],
 
     defaults: {
-        search_hint_string: "search tools",
         min_chars_for_search: 3,
-        clear_btn_url: "",
         visible: true,
         query: "",
         results: null,
@@ -367,7 +365,7 @@ var ToolSearch = Backbone.Model.extend({
      * Do the search and update the results.
      */
     do_search: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var query = this.attributes.query;
 
         // If query is too short, do not search.
@@ -436,16 +434,24 @@ var ToolPanel = Backbone.Model.extend({
 
         var // Helper to recursively parse tool panel.
             parse_elt = elt_dict => {
-                var type = elt_dict.model_class;
+                const type = elt_dict.model_class;
                 // There are many types of tools; for now, anything that ends in 'Tool'
-                // is treated as a generic tool.
+                // and is not a ExpressionTool is treated as a generic tool.
                 if (type.indexOf("Tool") === type.length - 4) {
-                    return self.attributes.tools.get(elt_dict.id);
+                    const tool = self.attributes.tools.get(elt_dict.id);
+                    if (type === "ExpressionTool") {
+                        tool.hide();
+                    }
+                    return tool;
                 } else if (type === "ToolSection") {
                     // Parse elements.
-                    var elems = _.map(elt_dict.elems, parse_elt);
+                    const elems = _.map(elt_dict.elems, parse_elt).filter(el => el.is_visible());
                     elt_dict.elems = elems;
-                    return new ToolSection(elt_dict);
+                    const section = new ToolSection(elt_dict);
+                    if (elems.length == 0) {
+                        section.hide();
+                    }
+                    return section;
                 } else if (type === "ToolSectionLabel") {
                     return new ToolSectionLabel(elt_dict);
                 }
@@ -529,7 +535,7 @@ var ToolLinkView = BaseView.extend({
         if (this.model.id === "upload1") {
             $link.find("a").on("click", e => {
                 e.preventDefault();
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 Galaxy.upload.show();
             });
         } else if (formStyle === "regular") {
@@ -537,7 +543,7 @@ var ToolLinkView = BaseView.extend({
             var self = this;
             $link.find("a").on("click", e => {
                 e.preventDefault();
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 Galaxy.router.push("/", {
                     tool_id: self.model.id,
                     version: self.model.get("version")
@@ -627,7 +633,7 @@ var ToolSectionView = BaseView.extend({
 var ToolSearchView = Backbone.View.extend({
     tagName: "div",
     id: "tool-search",
-    className: "bar",
+    className: "search-input",
 
     events: {
         click: "focus_and_select",
@@ -641,7 +647,6 @@ var ToolSearchView = Backbone.View.extend({
         if (!this.model.is_visible()) {
             this.$el.hide();
         }
-
         this.$el.find("[title]").tooltip();
         return this;
     },
@@ -766,10 +771,9 @@ var templates = {
     // the search bar at the top of the tool panel
     tool_search: _.template(
         `<input id="tool-search-query" class="search-query parent-width" name="query"
-                placeholder="<%- search_hint_string %>" autocomplete="off" type="text" />
-         <a id="search-clear-btn" title="clear search (esc)"> </a>
-         <span id="search-spinner" class="search-spinner fa fa-spinner fa-spin"></span>
-    `
+                placeholder="search tools" autocomplete="off" type="text" />
+         <span id="search-clear-btn" class="search-clear fa fa-times-circle" title="clear search (esc)"/>
+         <span id="search-spinner" class="search-loading fa fa-spinner fa-spin"/>`
     ),
 
     // the category level container in the tool panel (e.g. 'Get Data', 'Text Manipulation')

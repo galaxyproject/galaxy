@@ -12,23 +12,22 @@ import Modal from "mvc/ui/ui-modal";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import Webhooks from "mvc/webhooks";
 
-var View = Backbone.View.extend({
+const View = Backbone.View.extend({
     initialize: function(options) {
-        let Galaxy = getGalaxyInstance();
-        var self = this;
+        const Galaxy = getGalaxyInstance();
         this.modal = Galaxy.modal || new Modal.View();
         this.form = new ToolFormBase(
             Utils.merge(
                 {
                     listen_to_history: true,
                     always_refresh: false,
-                    buildmodel: function(process, form) {
-                        var options = form.model.attributes;
+                    buildmodel: (process, form) => {
+                        const options = form.model.attributes;
 
                         // build request url
-                        var build_url = "";
-                        var build_data = {};
-                        var job_id = options.job_id;
+                        let build_url = "";
+                        let build_data = {};
+                        const job_id = options.job_id;
                         if (job_id) {
                             build_url = `${getAppRoot()}api/jobs/${job_id}/build_for_rerun`;
                         } else {
@@ -42,18 +41,18 @@ var View = Backbone.View.extend({
                         Utils.get({
                             url: build_url,
                             data: build_data,
-                            success: function(data) {
+                            success: data => {
                                 if (!data.display) {
                                     window.location = getAppRoot();
                                     return;
                                 }
                                 form.model.set(data);
-                                self._customize(form);
+                                this._customize(form);
                                 Galaxy.emit.debug("tool-form-base::_buildModel()", "Initial tool model ready.", data);
                                 process.resolve();
                             },
-                            error: function(response, status) {
-                                var error_message = (response && response.err_msg) || "Uncaught error.";
+                            error: (response, status) => {
+                                const error_message = (response && response.err_msg) || "Uncaught error.";
                                 if (status == 401) {
                                     window.location = `${getAppRoot()}user/login?${$.param({
                                         redirect: `${getAppRoot()}?tool_id=${options.id}`
@@ -72,7 +71,7 @@ var View = Backbone.View.extend({
                                             title: _l("Tool request failed"),
                                             body: error_message,
                                             buttons: {
-                                                Close: function() {
+                                                Close: () => {
                                                     Galaxy.modal.hide();
                                                 }
                                             }
@@ -87,8 +86,8 @@ var View = Backbone.View.extend({
                             }
                         });
                     },
-                    postchange: function(process, form) {
-                        var current_state = {
+                    postchange: (process, form) => {
+                        const current_state = {
                             tool_id: form.model.get("id"),
                             tool_version: form.model.get("version"),
                             inputs: $.extend(true, {}, form.data.create())
@@ -99,13 +98,13 @@ var View = Backbone.View.extend({
                             type: "POST",
                             url: `${getAppRoot()}api/tools/${form.model.get("id")}/build`,
                             data: current_state,
-                            success: function(data) {
+                            success: data => {
                                 form.update(data);
                                 form.wait(false);
                                 Galaxy.emit.debug("tool-form::postchange()", "Received new model.", data);
                                 process.resolve();
                             },
-                            error: function(response) {
+                            error: response => {
                                 Galaxy.emit.debug("tool-form::postchange()", "Refresh request failed.", response);
                                 process.reject();
                             }
@@ -121,19 +120,18 @@ var View = Backbone.View.extend({
     },
 
     _customize: function(form) {
-        var self = this;
-        var options = form.model.attributes;
+        const options = form.model.attributes;
         // build execute button
-        var execute_button = new Ui.Button({
+        const execute_button = new Ui.Button({
             icon: "fa-check",
             tooltip: `Execute: ${options.name} (${options.version})`,
             title: _l("Execute"),
             cls: "btn btn-primary",
             wait_cls: "btn btn-info",
-            onclick: function() {
+            onclick: () => {
                 execute_button.wait();
                 form.portlet.disable();
-                self.submit(options, () => {
+                this.submit(options, () => {
                     execute_button.unwait();
                     form.portlet.enable();
                 });
@@ -143,7 +141,7 @@ var View = Backbone.View.extend({
 
         // remap feature
         if (options.job_id && options.job_remap) {
-            var label, help;
+            let label, help;
             if (options.job_remap === "job_produced_collection_elements") {
                 label = "Replace elements in collection ?";
                 help =
@@ -166,12 +164,12 @@ var View = Backbone.View.extend({
         }
 
         // Job Re-use Options
-        let Galaxy = getGalaxyInstance();
-        var extra_user_preferences = {};
+        const Galaxy = getGalaxyInstance();
+        let extra_user_preferences = {};
         if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
             extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
         }
-        var use_cached_job =
+        const use_cached_job =
             "use_cached_job|use_cached_job_checkbox" in extra_user_preferences
                 ? extra_user_preferences["use_cached_job|use_cached_job_checkbox"]
                 : false;
@@ -194,21 +192,22 @@ var View = Backbone.View.extend({
      * @param{function} callback  - Called when request has completed
      */
     submit: function(options, callback) {
-        let Galaxy = getGalaxyInstance();
-        var self = this;
-        var job_def = {
+        const Galaxy = getGalaxyInstance();
+        const history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
+        const job_def = {
+            history_id: history_id,
             tool_id: options.id,
             tool_version: options.version,
             inputs: this.form.data.create()
         };
         this.form.trigger("reset");
-        if (!self.validate(job_def)) {
+        if (!this.validate(job_def)) {
             Galaxy.emit.debug("tool-form::submit()", "Submission canceled. Validation failed.");
             callback && callback();
             return;
         }
         if (options.action !== `${getAppRoot()}tool_runner/index`) {
-            var $f = $("<form/>").attr({
+            const $f = $("<form/>").attr({
                 action: options.action,
                 method: options.method,
                 enctype: options.enctype
@@ -228,39 +227,43 @@ var View = Backbone.View.extend({
             type: "POST",
             url: `${getAppRoot()}api/tools`,
             data: job_def,
-            success: function(response) {
+            success: response => {
                 callback && callback();
-                self.$el.children().hide();
-                self.$el.append(self._templateSuccess(response, job_def));
+                this.$el.children().hide();
+                this.$el.append(this._templateSuccess(response, job_def));
+                this.$el.parent().scrollTop(0);
                 // Show Webhook if job is running
                 if (response.jobs && response.jobs.length > 0) {
-                    self.$el.append($("<div/>", { id: "webhook-view" }));
+                    this.$el.append($("<div/>", { id: "webhook-view" }));
                     new Webhooks.WebhookView({
                         type: "tool",
                         toolId: job_def.tool_id
                     });
                 }
-                Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshContents();
+                if (Galaxy.currHistoryPanel) {
+                    this.form.stopListening(Galaxy.currHistoryPanel.collection);
+                    Galaxy.currHistoryPanel.refreshContents();
+                }
             },
-            error: function(response) {
+            error: response => {
                 callback && callback();
                 Galaxy.emit.debug("tool-form::submit", "Submission failed.", response);
-                var input_found = false;
+                let input_found = false;
                 if (response && response.err_data) {
-                    var error_messages = self.form.data.matchResponse(response.err_data);
-                    for (var input_id in error_messages) {
-                        self.form.highlight(input_id, error_messages[input_id]);
+                    const error_messages = this.form.data.matchResponse(response.err_data);
+                    for (const input_id in error_messages) {
+                        this.form.highlight(input_id, error_messages[input_id]);
                         input_found = true;
                         break;
                     }
                 }
                 if (!input_found) {
-                    self.modal.show({
+                    this.modal.show({
                         title: _l("Job submission failed"),
-                        body: self._templateError(job_def, response && response.err_msg),
+                        body: this._templateError(job_def, response && response.err_msg),
                         buttons: {
-                            Close: function() {
-                                self.modal.hide();
+                            Close: () => {
+                                this.modal.hide();
                             }
                         }
                     });
@@ -273,15 +276,15 @@ var View = Backbone.View.extend({
      * @param{dict}     job_def   - Job execution dictionary
      */
     validate: function(job_def) {
-        let Galaxy = getGalaxyInstance();
-        var job_inputs = job_def.inputs;
-        var batch_n = -1;
-        var batch_src = null;
-        for (var job_input_id in job_inputs) {
-            var input_value = job_inputs[job_input_id];
-            var input_id = this.form.data.match(job_input_id);
-            var input_field = this.form.field_list[input_id];
-            var input_def = this.form.input_list[input_id];
+        const Galaxy = getGalaxyInstance();
+        const job_inputs = job_def.inputs;
+        let batch_n = -1;
+        let batch_src = null;
+        for (const job_input_id in job_inputs) {
+            const input_value = job_inputs[job_input_id];
+            const input_id = this.form.data.match(job_input_id);
+            const input_field = this.form.field_list[input_id];
+            const input_def = this.form.input_list[input_id];
             if (!input_id || !input_def || !input_field) {
                 Galaxy.emit.debug("tool-form::validate()", "Retrieving input objects failed.");
                 continue;
@@ -291,19 +294,15 @@ var View = Backbone.View.extend({
                 return false;
             }
             if (input_field.validate) {
-                // wish there was a way to just reset this input field
-                const reset = () => {
-                    this.form.trigger("reset");
-                };
-                const validateObject = input_field.validate(reset);
-                if (!validateObject.valid) {
-                    this.form.highlight(input_id, validateObject.message);
+                const message = input_field.validate();
+                if (message) {
+                    this.form.highlight(input_id, message);
                     return false;
                 }
             }
             if (input_value && input_value.batch) {
-                var n = input_value.values.length;
-                var src = n > 0 && input_value.values[0] && input_value.values[0].src;
+                const n = input_value.values.length;
+                const src = n > 0 && input_value.values[0] && input_value.values[0].src;
                 if (src) {
                     if (batch_src === null) {
                         batch_src = src;
@@ -330,12 +329,12 @@ var View = Backbone.View.extend({
     },
 
     _getInputs: function(job_def) {
-        var inputs = [];
-        var index = {};
-        for (let i in job_def.inputs) {
-            let input = job_def.inputs[i];
+        const inputs = [];
+        const index = {};
+        for (const i in job_def.inputs) {
+            const input = job_def.inputs[i];
             if (input && $.isArray(input.values)) {
-                for (let j of input.values) {
+                for (const j of input.values) {
                     if (j.src && !index[j.id]) {
                         inputs.push(j);
                         index[j.id] = true;
@@ -346,36 +345,33 @@ var View = Backbone.View.extend({
         return inputs;
     },
 
-    _templateRow: function(list, title, max = 3) {
-        var blurb = "";
-        list.sort(function(a, b) {
-            return b.hid - a.hid;
-        });
+    _templateRow: function(list, title) {
+        let blurb = "";
         if (list.length > 0) {
             blurb += `<p>${title}:</p>`;
-            for (let item of list) {
-                let rowString = max > 0 ? `${item.hid}: ${_.escape(item.name)}` : "...";
-                blurb += `<p class="messagerow">
-                            <b>${rowString}</b>
-                          </p>`;
-                if (max-- <= 0) {
-                    break;
-                }
+            list.sort((a, b) => {
+                b.hid - a.hid;
+            });
+            blurb += `<ul>`;
+            for (const item of list) {
+                const rowString = `${item.hid}: ${_.escape(item.name)}`;
+                blurb += `<li><b>${rowString}</b></li>`;
             }
+            blurb += `</ul>`;
         }
         return blurb;
     },
 
     _templateSuccess: function(response, job_def) {
-        var njobs = response.jobs.length;
+        const njobs = response && response.jobs ? response.jobs.length : 0;
         if (njobs > 0) {
-            var inputs = this._getInputs(job_def);
-            var ninputs = inputs.length;
-            var noutputs = response.outputs.length;
-            var njobsText = njobs > 1 ? `${njobs} jobs` : `1 job`;
-            var ninputsText = ninputs > 1 ? `${ninputs} inputs` : `this input`;
-            var noutputsText = noutputs > 1 ? `${noutputs} outputs` : `this output`;
-            var tool_name = this.form.model.get("name");
+            const inputs = this._getInputs(job_def);
+            const ninputs = inputs.length;
+            const noutputs = response.outputs.length;
+            const njobsText = njobs > 1 ? `${njobs} jobs` : `1 job`;
+            const ninputsText = ninputs > 1 ? `${ninputs} inputs` : `this input`;
+            const noutputsText = noutputs > 1 ? `${noutputs} outputs` : `this output`;
+            const tool_name = this.form.model.get("name");
             return `<div class="donemessagelarge">
                         <p>
                             Executed <b>${tool_name}</b> and successfully added ${njobsText} to the queue.

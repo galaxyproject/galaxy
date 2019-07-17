@@ -7,7 +7,7 @@ from six import string_types
 import galaxy.queue_worker
 from galaxy import web
 from galaxy.util import nice_size, unicodify
-from galaxy.web.base.controller import BaseUIController
+from galaxy.webapps.base.controller import BaseUIController
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ class DataManager(BaseUIController):
         message = kwd.get('message', '')
         status = kwd.get('status', 'info')
         data_managers = []
-        for data_manager_id, data_manager in sorted(trans.app.data_managers.data_managers.iteritems(),
+        for data_manager_id, data_manager in sorted(trans.app.data_managers.data_managers.items(),
                                                     key=lambda data_manager: data_manager[1].name):
             data_managers.append({'toolUrl': web.url_for(controller='root',
                                                          tool_id=data_manager.tool.id),

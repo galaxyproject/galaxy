@@ -5,12 +5,16 @@ import tempfile
 import unittest
 from math import isinf
 
-from galaxy.tools.parser.factory import get_tool_source
+from galaxy.tool_util.parser.factory import get_tool_source
+from galaxy.util import galaxy_directory
 
 
 TOOL_XML_1 = """
 <tool name="BWA Mapper" id="bwa" version="1.0.1" is_multi_byte="true" display_interface="true" require_login="true" hidden="true">
     <description>The BWA Mapper</description>
+    <xrefs>
+        <xref type="bio.tools">bwa</xref>
+    </xrefs>
     <version_command interpreter="python">bwa.py --version</version_command>
     <parallelism method="multi" split_inputs="input1" split_mode="to_size" split_size="1" merge_outputs="out_file1" />
     <command interpreter="python">bwa.py --arg1=42</command>
@@ -41,12 +45,51 @@ TOOL_XML_1 = """
 </tool>
 """
 
+TOOL_WITH_TOKEN = r"""
+<tool id="tool_with_token" name="Token" version="1">
+    <macros>
+        <token name="@ESCAPE_IDENTIFIER@">
+<![CDATA[
+#set identifier = re.sub('[^\s\w\-]', '_', str($file.element_identifier))
+        ]]></token>
+        <token name="@NESTED_TOKEN@">
+<![CDATA[
+    before
+    @ESCAPE_IDENTIFIER@
+    after
+        ]]></token>
+    </macros>
+    <command>
+@NESTED_TOKEN@
+    </command>
+</tool>
+"""
+
+TOOL_WITH_RECURSIVE_TOKEN = r"""
+<tool id="tool_with_recursive_token" name="Token" version="1">
+    <macros>
+        <token name="@NESTED_TOKEN@">
+<![CDATA[
+    before
+    @NESTED_TOKEN@
+    after
+        ]]></token>
+    </macros>
+    <command>
+@NESTED_TOKEN@
+    </command>
+</tool>
+"""
+
 TOOL_YAML_1 = """
 name: "Bowtie Mapper"
 class: GalaxyTool
 id: bowtie
 version: 1.0.2
 description: "The Bowtie Mapper"
+xrefs:
+  - type: bio.tools
+    value: bwa
 command: "bowtie_wrapper.pl --map-the-stuff"
 interpreter: "perl"
 runtime_version:
@@ -92,6 +135,39 @@ tests:
          compare: sim_size
 """
 
+TOOL_EXPRESSION_XML_1 = """
+<tool name="parse_int" id="parse_int" version="0.1.0" tool_type="expression">
+    <description>Parse Int</description>
+    <expression type="ecma5.1">
+        {return {'output': parseInt($job.input1)};}
+    </expression>
+    <inputs>
+        <input type="text" label="Text to parse." name="input1" />
+    </inputs>
+    <outputs>
+        <output type="integer" name="out1" from="output" />
+    </outputs>
+    <help>Parse an integer from text.</help>
+</tool>
+"""
+
+
+TOOL_EXPRESSION_YAML_1 = """
+class: GalaxyExpressionTool
+name: "parse_int"
+id: parse_int
+version: 1.0.2
+expression: "{return {'output': parseInt($job.input1)};}"
+inputs:
+ - name: input1
+   label: Text to parse
+   type: text
+outputs:
+  out1:
+    type: integer
+    from: "#output"
+"""
+
 
 class BaseLoaderTestCase(unittest.TestCase):
 
@@ -117,6 +193,22 @@ class BaseLoaderTestCase(unittest.TestCase):
             path = source_file_name
         tool_source = get_tool_source(path)
         return tool_source
+
+
+class XmlExpressionLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = "expression.xml"
+    source_contents = TOOL_EXPRESSION_XML_1
+
+    def test_expression(self):
+        assert self._tool_source.parse_expression().strip() == "{return {'output': parseInt($job.input1)};}"
+
+    def test_tool_type(self):
+        assert self._tool_source.parse_tool_type() == "expression"
+
+
+class YamlExpressionLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = "expression.yml"
+    source_contents = TOOL_EXPRESSION_XML_1
 
 
 class XmlLoaderTestCase(BaseLoaderTestCase):
@@ -225,6 +317,10 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         assert attributes1["compare"] == "sim_size"
         assert attributes1["lines_diff"] == 4
 
+    def test_xrefs(self):
+        xrefs = self._tool_source.parse_xrefs()
+        assert xrefs == [{'value': 'bwa', 'reftype': 'bio.tools'}]
+
     def test_exit_code(self):
         tool_source = self._get_tool_source(source_contents="""<tool id="bwa" name="bwa">
             <command detect_errors="exit_code">
@@ -252,6 +348,16 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
 
     def test_refresh_option(self):
         assert self._tool_source.parse_refresh() is False
+
+    def test_nested_token(self):
+        tool_source = self._get_tool_source(source_contents=TOOL_WITH_TOKEN)
+        command = tool_source.parse_command()
+        assert command
+        assert '@' not in command
+
+    def test_recursive_token(self):
+        with self.assertRaises(Exception):
+            self._get_tool_source(source_contents=TOOL_WITH_RECURSIVE_TOKEN)
 
 
 class YamlLoaderTestCase(BaseLoaderTestCase):
@@ -372,6 +478,10 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         assert attributes1["compare"] == "sim_size"
         assert attributes1["lines_diff"] == 4
 
+    def test_xrefs(self):
+        xrefs = self._tool_source.parse_xrefs()
+        assert xrefs == [{'value': 'bwa', 'reftype': 'bio.tools'}]
+
     def test_sanitize(self):
         assert self._tool_source.parse_sanitize() is True
 
@@ -426,7 +536,7 @@ class DataSourceLoaderTestCase(BaseLoaderTestCase):
 
 
 class ApplyRulesToolLoaderTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/apply_rules.xml")
+    source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/apply_rules.xml")
     source_contents = None
 
     def test_tool_type(self):
@@ -442,7 +552,7 @@ class ApplyRulesToolLoaderTestCase(BaseLoaderTestCase):
 
 
 class BuildListToolLoaderTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/build_list.xml")
+    source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/build_list.xml")
     source_contents = None
 
     def test_tool_type(self):
@@ -452,7 +562,7 @@ class BuildListToolLoaderTestCase(BaseLoaderTestCase):
 
 
 class SpecialToolLoaderTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/imp_exp/exp_history_to_archive.xml")
+    source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/imp_exp/exp_history_to_archive.xml")
     source_contents = None
 
     def test_tool_type(self):
@@ -477,7 +587,7 @@ class SpecialToolLoaderTestCase(BaseLoaderTestCase):
 
 
 class CollectionTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/collection_two_paired.xml")
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_two_paired.xml")
     source_contents = None
 
     def test_tests(self):
@@ -491,7 +601,7 @@ class CollectionTestCase(BaseLoaderTestCase):
 
 
 class CollectionOutputXmlTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/collection_creates_pair.xml")
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_creates_pair.xml")
     source_contents = None
 
     def test_tests(self):
@@ -500,7 +610,7 @@ class CollectionOutputXmlTestCase(BaseLoaderTestCase):
 
 
 class CollectionOutputYamlTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/collection_creates_pair_y.yml")
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_creates_pair_y.yml")
     source_contents = None
 
     def test_tests(self):
@@ -509,7 +619,7 @@ class CollectionOutputYamlTestCase(BaseLoaderTestCase):
 
 
 class ExpectationsTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/detect_errors.xml")
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/detect_errors.xml")
     source_contents = None
 
     def test_tests(self):

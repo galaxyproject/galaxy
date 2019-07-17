@@ -51,13 +51,11 @@ var Libraries = Backbone.Collection.extend({
      */
     getVisible: function(show_deleted, filters) {
         filters = filters || [];
-        var filteredLibraries = new Libraries(this.filter(item => item.isVisible(show_deleted)));
-
-        return filteredLibraries;
+        return new Libraries(this.filter(item => item.isVisible(show_deleted)));
     },
 
     sortLibraries: function(sort_key, sort_order) {
-        this.comparator = mod_util.generateLibraryComparator(sort_key, sort_order);
+        this.comparator = mod_util.generateComparator(sort_key, sort_order);
         this.sort();
     }
 });
@@ -77,11 +75,6 @@ var FolderAsModel = LibraryItem.extend({
 
 var Folder = Backbone.Collection.extend({
     model: LibraryItem,
-
-    sortFolder: function(sort_key, sort_order) {
-        this.comparator = mod_util.generateFolderComparator(sort_key, sort_order);
-        this.sort();
-    }
 });
 
 var FolderContainer = Backbone.Model.extend({
@@ -90,8 +83,30 @@ var FolderContainer = Backbone.Model.extend({
         urlRoot: `${getAppRoot()}api/folders/`,
         id: "unknown"
     },
+
+    /**
+     * Search the folder and return only the models that have
+     * the search term in their names.
+     * [the term to search]
+     * @type {string}
+     */
+    search: function(search_term) {
+        if (search_term == "") return this;
+        const lowercase_term = search_term.toLowerCase();
+        return this.get("folder").filter(data => {
+            const lowercase_name = data.get("name").toLowerCase();
+            return lowercase_name.indexOf(lowercase_term) !== -1;
+        });
+    },
+
+    sortFolder: function(sort_key, sort_order) {
+        this.get("folder").comparator = mod_util.generateComparator(sort_key, sort_order);
+        this.get("folder").sort();
+        return this.get("folder");
+    },
+
     parse: function(obj) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         // empty the collection
         this.get("folder").reset();
         // response is not a simple array, it contains metadata

@@ -121,8 +121,7 @@ class UsersApiTestCase(api.ApiTestCase):
 
     @skip_without_tool("cat1")
     def test_search_favorites(self):
-        user = self._setup_user(TEST_USER_EMAIL)
-        user_key = self._setup_user_get_key(TEST_USER_EMAIL)
+        user, user_key = self._setup_user_get_key(TEST_USER_EMAIL)
         url = self._api_url("users/%s/favorites/tools" % user["id"], params=dict(key=user_key))
         fav_response = put(url, data=json.dumps({"object_id" : "cat1"}))
         self._assert_status_code_is_ok(fav_response)

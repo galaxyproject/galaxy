@@ -8,12 +8,14 @@ from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.tools import global_tool_errors
 from galaxy.util.json import safe_dumps
 from galaxy.util.odict import odict
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
-from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesVisualizationMixin
+from galaxy.web import (
+    expose_api,
+    expose_api_anonymous,
+    expose_api_anonymous_and_sessionless,
+    expose_api_raw_anonymous_and_sessionless,
+)
+from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import UsesVisualizationMixin
 from ._fetch_util import validate_and_normalize_targets
 
 log = logging.getLogger(__name__)
@@ -401,7 +403,12 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             rval.append(citation.to_dict('bibtex'))
         return rval
 
-    @web.expose_api_raw
+    @expose_api_anonymous_and_sessionless
+    def xrefs(self, trans, id, **kwds):
+        tool = self._get_tool(id, user=trans.user)
+        return tool.xrefs
+
+    @web.legacy_expose_api_raw
     @web.require_admin
     def download(self, trans, id, **kwds):
         tool_tarball = trans.app.toolbox.package_tool(trans, id)
@@ -453,12 +460,13 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     def create(self, trans, payload, **kwd):
         """
         POST /api/tools
-        Executes tool using specified inputs and returns tool's outputs.
+        Execute tool with a given parameter payload
         """
         tool_id = payload.get("tool_id")
+        tool_uuid = payload.get("tool_uuid")
         if tool_id in PROTECTED_TOOLS:
             raise exceptions.RequestParameterInvalidException("Cannot execute tool [%s] directly, must use alternative endpoint." % tool_id)
-        if tool_id is None:
+        if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
         return self._create(trans, payload, **kwd)
 
@@ -467,11 +475,19 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         if action == 'rerun':
             raise Exception("'rerun' action has been deprecated")
 
-        # -- Execute tool. --
-
         # Get tool.
         tool_version = payload.get('tool_version', None)
-        tool = trans.app.toolbox.get_tool(payload['tool_id'], tool_version) if 'tool_id' in payload else None
+        tool_id = payload.get('tool_id', None)
+        tool_uuid = payload.get('tool_uuid', None)
+        get_kwds = dict(
+            tool_id=tool_id,
+            tool_uuid=tool_uuid,
+            tool_version=tool_version,
+        )
+        if tool_id is None and tool_uuid is None:
+            raise exceptions.RequestParameterMissingException("Must specify either a tool_id or a tool_uuid.")
+
+        tool = trans.app.toolbox.get_tool(**get_kwds)
         if not tool or not tool.allow_user_access(trans.user):
             raise exceptions.MessageException('Tool not found or not accessible.')
         if trans.app.config.user_activation_on:
@@ -492,21 +508,14 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         # Set up inputs.
         inputs = payload.get('inputs', {})
+
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.items():
             if k.startswith('files_') or k.startswith('__files_'):
                 inputs[k] = v
 
         # for inputs that are coming from the Library, copy them into the history
-        input_patch = {}
-        for k, v in inputs.items():
-            if isinstance(v, dict) and v.get('src', '') == 'ldda' and 'id' in v:
-                ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(self.decode_id(v['id']))
-                if trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset):
-                    input_patch[k] = ldda.to_history_dataset_association(target_history, add_to_history=True)
-
-        for k, v in input_patch.items():
-            inputs[k] = v
+        self._patch_library_inputs(trans, inputs, target_history)
 
         # TODO: encode data ids and decode ids.
         # TODO: handle dbkeys
@@ -554,6 +563,27 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             rval['implicit_collections'].append(output_dict)
 
         return rval
+
+    def _patch_library_inputs(self, trans, inputs, target_history):
+        """
+        Transform inputs from the data libaray to history items.
+        """
+        for k, v in inputs.items():
+            new_value = self._patch_library_dataset(trans, v, target_history)
+            if new_value:
+                v = new_value
+            elif isinstance(v, dict) and 'values' in v:
+                for index, value in enumerate(v['values']):
+                    patched = self._patch_library_dataset(trans, value, target_history)
+                    if patched:
+                        v['values'][index] = patched
+            inputs[k] = v
+
+    def _patch_library_dataset(self, trans, v, target_history):
+        if isinstance(v, dict) and 'id' in v and v.get('src') == 'ldda':
+            ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(self.decode_id(v['id']))
+            if trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset):
+                return ldda.to_history_dataset_association(target_history, add_to_history=True)
 
     #
     # -- Helper methods --
