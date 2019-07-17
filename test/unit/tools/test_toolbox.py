@@ -16,7 +16,7 @@ from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
 from .test_toolbox_filters import mock_trans
 from ..tools_support import UsesApp, UsesTools
-from ..unittest_utils.sample_data import SIMPLE_TOOL_WITH_MACRO, SIMPLE_MACRO
+from ..unittest_utils.sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
 
 log = logging.getLogger(__name__)
 

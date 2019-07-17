@@ -4,7 +4,7 @@ from tempfile import mkdtemp
 
 from galaxy.tool_util.loader import load_tool, template_macro_params
 from galaxy.util import parse_xml
-from .sample_data import SIMPLE_TOOL_WITH_MACRO, SIMPLE_MACRO
+from .sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
 
 
 def test_loader():
