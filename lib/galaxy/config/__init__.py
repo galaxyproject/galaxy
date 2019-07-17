@@ -100,7 +100,7 @@ def resolve_path(path, root):
 
 
 def find_root(kwargs):
-    root = kwargs.get('root_dir', '.')
+    root = os.path.abspath(kwargs.get('root_dir', '.'))
     return root
 
 
