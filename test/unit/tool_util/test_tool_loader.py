@@ -1,27 +1,10 @@
 import os
 from shutil import rmtree
-from string import Template
 from tempfile import mkdtemp
 
 from galaxy.tool_util.loader import load_tool, template_macro_params
 from galaxy.util import parse_xml
-
-
-SIMPLE_TOOL_WITH_MACRO = """<tool id="tool_with_macro" name="macro_annotation" version="@WRAPPER_VERSION@">
-    <expand macro="inputs" />
-    <macros>
-        <import>external.xml</import>
-    </macros>
-</tool>"""
-
-SIMPLE_MACRO = Template("""
-<macros>
-    <token name="@WRAPPER_VERSION@">$tool_version</token>
-    <macro name="inputs">
-        <inputs/>
-    </macro>
-</macros>
-""")
+from .sample_data import SIMPLE_MACRO, SIMPLE_TOOL_WITH_MACRO
 
 
 def test_loader():
