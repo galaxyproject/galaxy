@@ -98,7 +98,7 @@ class SelectorTemplate(Target):
         if name in self._children:
             return self._children[name](**{"_": self.selector})
         else:
-            raise KeyError("Could not find child [%s] in %s" % (name, self._children))
+            raise AttributeError("Could not find child [%s] in %s" % (name, self._children))
 
     __getitem__ = __getattr__
 
@@ -193,7 +193,7 @@ class Component(object):
         elif attr in self._text:
             return self._text[attr]
         else:
-            raise Exception("Failed to find referenced sub-component/selector/label/text [%s]" % attr)
+            raise AttributeError("Failed to find referenced sub-component/selector/label/text [%s]" % attr)
 
     __getitem__ = __getattr__
 
