@@ -1,4 +1,4 @@
-"""Integration tests for the Pulsar embedded runner."""
+"""Integration tests for the Pulsar embedded runner with remote metadata."""
 
 import os
 
@@ -8,7 +8,7 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 EMBEDDED_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_metadata_job_conf.yml")
 
 
-class EmbeddedPulsarIntegrationInstance(integration_util.IntegrationInstance):
+class EmbeddedMetadataPulsarIntegrationInstance(integration_util.IntegrationInstance):
     """Describe a Galaxy test instance with embedded pulsar configured."""
 
     framework_tool_and_types = True
@@ -18,6 +18,6 @@ class EmbeddedPulsarIntegrationInstance(integration_util.IntegrationInstance):
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE
 
 
-instance = integration_util.integration_module_instance(EmbeddedPulsarIntegrationInstance)
+instance = integration_util.integration_module_instance(EmbeddedMetadataPulsarIntegrationInstance)
 
 test_tools = integration_util.integration_tool_runner(["simple_constructs"])
