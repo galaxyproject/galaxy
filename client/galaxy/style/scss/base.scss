@@ -1429,7 +1429,7 @@ div.permissionContainer {
 .toolMenuContainer {
     color: $panel-text-color;
     a {
-	color: $panel-text-color;
+        color: $panel-text-color;
     }
     background: $panel-bg-color;
     min-height: 100%;
@@ -1438,9 +1438,6 @@ div.permissionContainer {
 div.toolSectionTitle {
     font-weight: 500;
     font-size: $h4-font-size;
-    &:hover {
-        background: darken($panel-bg-color, 5%);
-    }
 }
 
 div.toolPanelLabel {
@@ -1457,28 +1454,26 @@ div.toolSectionTitle, div.toolTitle, div.toolTitleNoSection {
     .labels {
         float: right;
     }
-
     a {
-	@extend .px-3;
-	@extend .py-1;
-	text-decoration: none;
-	display: block;
-	&:hover {
+        @extend .px-3;
+        @extend .py-1;
+        text-decoration: none;
+        display: block;
+        &:hover {
             background: darken($panel-bg-color, 5%);
-	}
+        }
     }
-
     &.text-muted a {
-	&:hover {
-	    background: inherit;
-	}
+        &:hover {
+            background: inherit;
+        }
     }
 }
 
 div.toolSectionWrapper {
-    div.toolTitle a, div.toolPanelLabel {
-	@extend .pl-4;
-	font-size: inherit;
+    div.toolTitle a {
+        @extend .pl-4;
+        font-size: inherit;
     }
 }
 
