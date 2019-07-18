@@ -1,3 +1,4 @@
 include *.rst LICENSE
 include galaxy/datatypes/test/*
+include galaxy/config/datatypes_conf.xml.sample
 
