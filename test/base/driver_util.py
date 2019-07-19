@@ -933,6 +933,11 @@ class GalaxyTestDriver(TestDriver):
                         galaxy_db_path,
                         **setup_galaxy_config_kwds
                     )
+
+                    isolate_galaxy_config = getattr(config_object, "isolate_galaxy_config", False)
+                    if isolate_galaxy_config:
+                        galaxy_config["config_dir"] = tempdir
+
                     self._saved_galaxy_config = galaxy_config
 
             if galaxy_config is not None:

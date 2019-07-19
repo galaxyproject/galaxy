@@ -60,6 +60,10 @@ class IntegrationInstance(UsesApiTestCaseMixin):
     # Subclasses can override this to force uwsgi for tests.
     require_uwsgi = False
 
+    # Don't pull in default configs for un-configured things from Galaxy's
+    # config directory and such.
+    isolate_galaxy_config = True
+
     @classmethod
     def setUpClass(cls):
         """Configure and start Galaxy for a test."""
