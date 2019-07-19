@@ -16,7 +16,7 @@ virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
 . "${TEST_ENV_DIR}/bin/activate"
 pip install pytest
 
-# ensure ordered by dependency dag
+# Packages must be ordered by dependency DAG
 PACKAGE_DIRS=(
     util
     objectstore
@@ -32,17 +32,17 @@ PACKAGE_DIRS=(
     app
     web_apps
 )
-# containers has no tests, tool_util not yet working 100%,
-# data has many problems quota, tool shed install database, etc..
+# Whether packages are ready to be tested
 RUN_TESTS=(1 1 1 1 1 1 1 1 1 0 0 0 0)
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     package_dir=${PACKAGE_DIRS[$i]}
     run_tests=${RUN_TESTS[$i]}
 
     cd "$package_dir"
-    pip install -e .
+    make dist
+    pip install dist/*.whl
     if [ "$package_dir" = "util" ]; then
-        pip install -e '.[template,jstree]'
+        pip install "$(echo dist/*.whl)[template,jstree]"
     fi
 
     if [[ "$run_tests" == "1" ]]; then
