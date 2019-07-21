@@ -6,6 +6,13 @@ tool\_shed.galaxy\_install.migrate package
     :undoc-members:
     :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+    tool_shed.galaxy_install.migrate.versions
+
 Submodules
 ----------
 
