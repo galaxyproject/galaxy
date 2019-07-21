@@ -54,5 +54,4 @@ class CompressionUtilTestCase(unittest.TestCase):
                 expected_type = six.text_type
             fmt, fh = get_fileobj_raw(path, mode, allowed_fmts)
             assert fmt == expected_fmt
-            if 'b' in mode or fmt is not None:
-                assert isinstance(fh.read(1), expected_type)
+            assert isinstance(fh.read(0), expected_type)
