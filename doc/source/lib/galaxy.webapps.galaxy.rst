@@ -25,12 +25,4 @@ galaxy.webapps.galaxy.buildapp module
     :undoc-members:
     :show-inheritance:
 
-galaxy.webapps.galaxy.config\_watchers module
----------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.config_watchers
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 
