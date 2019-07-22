@@ -1873,16 +1873,15 @@ class ToolsTestCase(api.ApiTestCase):
             hdca_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=[("A", "A"), ("B", "B")]).json()['id']
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             inputs = {
-                "input": {'values': [dict(src="hdca", id=hdca_id)]},
+                "input": {'values': {'src': 'hdca', 'id': hdca_id}},
                 "how|how_split": "number_of_collections",
                 "how|num_collecton": 2
             }
-            generated_collections = self._run("__FILTER_FROM_FILE__", history_id, inputs, assert_ok=True)['generated_collections']
+            generated_collections = self._run("__FILTER_FROM_FILE__", history_id, inputs, assert_ok=True)['output_collections']
             output_collection_1, output_collection_2 = generated_collections
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            assert output_collection_1['collection_type'] == output_collection_2['collection_type'] == 'list:list', output_collection_1
+            assert output_collection_1['collection_type'] == output_collection_2['collection_type'] == 'list', output_collection_1
             collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=output_collection_1['hid'])
-            assert collection_details['element_count'] == 2
+            assert collection_details['element_count'] == 1
 
     @skip_without_tool("collection_type_source")
     def test_map_over_collection_type_source(self):
