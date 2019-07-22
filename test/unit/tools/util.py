@@ -7,7 +7,6 @@ from galaxy.util import bunch
 from ..tools_support import UsesApp
 
 
-
 class BaseParameterTestCase(TestCase, UsesApp):
 
     def setUp(self):
