@@ -1,6 +1,7 @@
 <tool id="shapefile_composite" name="composite shapefile tool" version="1.0.0">
     <requirements>
         <requirement type="package" version="1.8.6">fiona</requirement>
+        <requirement type="package" version="3.6">python</requirement>
     </requirements>
     <command><![CDATA[
         mkdir '$output_shapefile.extra_files_path' &&
