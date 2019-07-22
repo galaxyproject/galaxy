@@ -451,7 +451,7 @@ class Fasta(Sequence):
                     start_offset = f.tell()
                 part_file.write(line)
         except Exception as e:
-            log.error('Unable to size split FASTA file: %s' % str(e))
+            log.error('Unable to size split FASTA file: %s', util.unicodify(e))
             raise
         finally:
             f.close()
@@ -488,7 +488,7 @@ class Fasta(Sequence):
                         rec_count = 1
                 part_file.write(line)
         except Exception as e:
-            log.error('Unable to count split FASTA file: %s' % str(e))
+            log.error('Unable to count split FASTA file: %s', util.unicodify(e))
             raise
         finally:
             f.close()
@@ -694,13 +694,16 @@ class BaseFastq(Sequence):
         >>> fname = get_test_fname('1.fastqsanger')
         >>> FastqSanger().sniff(fname)
         True
+        >>> fname = get_test_fname('4.fastqsanger')
+        >>> FastqSanger().sniff(fname)
+        True
         >>> fname = get_test_fname('3.fastq')
         >>> FastqSanger().sniff(fname)
         False
         >>> Fastq().sniff(fname)
         True
         >>> fname = get_test_fname('2.fastq')
-        >>> Fastq().sniff( fname )
+        >>> Fastq().sniff(fname)
         True
         >>> FastqSanger().sniff(fname)
         False
@@ -819,7 +822,7 @@ class FastqSanger(Fastq):
     def quality_check(lines):
         """Presuming lines are lines from a fastq file, return True if the qualities are compatible with sanger encoding"""
         for line in islice(lines, 3, None, 4):
-            if not all(_ >= '!' and _ <= 'M' for _ in line[0]) or ' ' in line:
+            if not all(_ >= '!' and _ <= 'S' for _ in line[0]):
                 return False
         return True
 

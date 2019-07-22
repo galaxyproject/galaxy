@@ -1,0 +1,4 @@
+galaxy-auth
+galaxy-job-execution
+galaxy-web-framework
+galaxy-web-stack

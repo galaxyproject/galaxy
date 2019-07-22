@@ -57,7 +57,7 @@ source/api/ts_api.rst: source/lib/galaxy.webapps.tool_shed.api.rst
 	sed -i.bak -e 's/^galaxy\\\.webapps\\\.tool\\_shed\\\.api\\\.//' $@
 	rm -f $@.bak
 
-source/admin/config_logging_default_yaml.rst: ../lib/galaxy/config.py
+source/admin/config_logging_default_yaml.rst: ../lib/galaxy/config/__init__.py
 	printf '.. code-block:: yaml\n\n' > $@
 	printf '    galaxy:\n' >> $@
 	printf '      logging:\n        ' >> $@

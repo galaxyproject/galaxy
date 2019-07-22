@@ -703,6 +703,12 @@ var LibraryDatasetView = Backbone.View.extend({
                                 <td><%= _.escape(item.get("file_size")) %></td>
                             </tr>
                         <% } %>
+                        <% if (item.get("update_time")) { %>
+                            <tr>
+                                <th scope="row">Date last updated (UTC)</th>
+                                <td><%= _.escape(item.get("update_time")) %></td>
+                            </tr>
+                        <% } %>
                         <% if (item.get("date_uploaded")) { %>
                             <tr>
                                 <th scope="row">Date uploaded (UTC)</th>
@@ -741,7 +747,7 @@ var LibraryDatasetView = Backbone.View.extend({
                         <% } %>
                         <% if (item.get("message")) { %>
                             <tr>
-                                <th scope="row">Message</th>
+                                <th scope="row">Description</th>
                                 <td scope="row"><%= _.escape(item.get("message")) %></td>
                             </tr>
                         <% } %>
@@ -880,6 +886,12 @@ var LibraryDatasetView = Backbone.View.extend({
                                 <td><%= _.escape(ldda.get("file_size")) %></td>
                             </tr>
                         <% } %>
+                        <% if (ldda.get("update_time")) { %>
+                            <tr>
+                                <th scope="row">Date last updated (UTC)</th>
+                                <td><%= _.escape(ldda.get("update_time")) %></td>
+                            </tr>
+                        <% } %>
                         <% if (ldda.get("date_uploaded")) { %>
                             <tr>
                                 <th scope="row">Date uploaded (UTC)</th>
@@ -1005,6 +1017,10 @@ var LibraryDatasetView = Backbone.View.extend({
                         <tr>
                             <th scope="row">Size</th>
                             <td><%= _.escape(item.get("file_size")) %></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Date last updated (UTC)</th>
+                            <td><%= _.escape(item.get("update_time")) %></td>
                         </tr>
                         <tr>
                             <th scope="row">Date uploaded (UTC)</th>

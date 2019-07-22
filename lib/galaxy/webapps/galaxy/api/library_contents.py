@@ -23,7 +23,7 @@ from galaxy.model import (
     ExtendedMetadataIndex
 )
 from galaxy.web import expose_api
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     HTTPBadRequest,
     url_for,
@@ -99,7 +99,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         except NoResultFound:
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         except Exception as e:
-            raise exceptions.InternalServerError('Error loading from the database.' + str(e))
+            raise exceptions.InternalServerError('Error loading from the database.' + util.unicodify(e))
         if not (trans.user_is_admin or trans.app.security_agent.can_access_library(current_user_roles, library)):
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         encoded_id = 'F' + trans.security.encode_id(library.root_folder.id)
@@ -226,7 +226,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             # security is checked in the downstream controller
             parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
         except Exception as e:
-            return str(e)
+            return util.unicodify(e)
         # The rest of the security happens in the library_common controller.
         real_folder_id = trans.security.encode_id(parent.id)
 
@@ -480,5 +480,5 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             log.exception('library_contents API, delete: uncaught exception: %s, %s',
                           id, str(kwd))
             trans.response.status = 500
-            rval.update({'error': str(exc)})
+            rval.update({'error': util.unicodify(exc)})
         return rval

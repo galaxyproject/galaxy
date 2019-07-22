@@ -21,8 +21,8 @@ from galaxy import (
     web
 )
 from galaxy.tools.repositories import ValidationContext
-from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField, SelectField
+from galaxy.webapps.base.controller import BaseUIController
 from galaxy.webapps.reports.framework import grids
 from galaxy.webapps.tool_shed.util import ratings_util
 from tool_shed.capsule import capsule_manager
@@ -900,7 +900,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                        message=message,
                                        status=status)
         except Exception as e:
-            message = "Error displaying tool, probably due to a problem in the tool config.  The exception is: %s." % str(e)
+            message = "Error displaying tool, probably due to a problem in the tool config.  The exception is: %s." % util.unicodify(e)
         if trans.webapp.name == 'galaxy' or render_repository_actions_for == 'galaxy':
             return trans.response.send_redirect(web.url_for(controller='repository',
                                                             action='preview_tools_in_changeset',
@@ -1801,7 +1801,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                        message=message,
                                        status='error')
         except Exception as e:
-            message = "Exception thrown attempting to display tool: %s." % str(e)
+            message = "Exception thrown attempting to display tool: %s." % util.unicodify(e)
         if trans.webapp.name == 'galaxy':
             return trans.response.send_redirect(web.url_for(controller='repository',
                                                             action='preview_tools_in_changeset',
@@ -2371,8 +2371,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     try:
                         hg_util.remove_file(repo_dir, selected_file, force=True)
                     except Exception as e:
-                        log.debug("Error removing the following file using the mercurial API:\n %s" % str(selected_file))
-                        log.debug("The error was: %s" % str(e))
+                        log.debug("Error removing the following file using the mercurial API:\n %s", selected_file)
+                        log.debug("The error was: %s", util.unicodify(e))
                         log.debug("Attempting to remove the file using a different approach.")
                         relative_selected_file = selected_file.split('repo_%d' % repository.id)[1].lstrip('/')
                         repo.dirstate.remove(relative_selected_file)
@@ -2461,7 +2461,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 message = "Your message has been sent"
                 status = "done"
             except Exception as e:
-                message = "An error occurred sending your message by email: %s" % str(e)
+                message = "An error occurred sending your message by email: %s" % util.unicodify(e)
                 status = "error"
         else:
             # Do all we can to eliminate spam.

@@ -470,21 +470,6 @@
         .btn {
             @extend .btn-sm;
         }
-        .search-control {
-            display: inline-block;
-            width: 40%;
-
-            .search-clear,
-            .search-loading {
-                margin-top: -22px;
-            }
-        }
-        input.search-query {
-            font-size: 90%;
-            height: 21px;
-            line-height: normal;
-            padding: 2px 2px 1px 2px;
-        }
         .open-more-options {
             padding: 2px 6px 2px 6px;
             font-size: 100%;
@@ -514,7 +499,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            max-height: 22px;
         }
         &.control-column-right {
             text-align: right;

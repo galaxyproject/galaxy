@@ -1,5 +1,5 @@
-tool\_shed\.galaxy\_install\.tool\_dependencies package
-=======================================================
+tool\_shed.galaxy\_install.tool\_dependencies package
+=====================================================
 
 .. automodule:: tool_shed.galaxy_install.tool_dependencies
     :members:
@@ -16,8 +16,8 @@ Subpackages
 Submodules
 ----------
 
-tool\_shed\.galaxy\_install\.tool\_dependencies\.env\_manager module
---------------------------------------------------------------------
+tool\_shed.galaxy\_install.tool\_dependencies.env\_manager module
+-----------------------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.tool_dependencies.env_manager
     :members:

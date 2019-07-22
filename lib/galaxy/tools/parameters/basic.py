@@ -751,7 +751,7 @@ class BaseURLToolParameter(HiddenToolParameter):
         try:
             return url_for(self.value, qualified=True)
         except Exception as e:
-            log.debug('Url creation failed for "%s": %s', self.name, e)
+            log.debug('Url creation failed for "%s": %s', self.name, unicodify(e))
             return self.value
 
     def to_dict(self, trans, other_values={}):
@@ -841,7 +841,7 @@ class SelectToolParameter(ToolParameter):
                 call_other_values = self._get_dynamic_options_call_other_values(trans, other_values)
                 return set(v for _, v, _ in eval(self.dynamic_options, self.tool.code_namespace, call_other_values))
             except Exception as e:
-                log.debug("Determining legal values failed for '%s': %s", self.name, e)
+                log.debug("Determining legal values failed for '%s': %s", self.name, unicodify(e))
                 return set()
         else:
             return self.legal_values

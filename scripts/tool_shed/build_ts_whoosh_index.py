@@ -24,7 +24,7 @@ from whoosh.filedb.filestore import FileStorage
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 import galaxy.webapps.tool_shed.model.mapping
-from galaxy.tools.loader_directory import load_tool_elements_from_path
+from galaxy.tool_util.loader_directory import load_tool_elements_from_path
 from galaxy.util import (
     directory_hash_id,
     pretty_print_time_interval,

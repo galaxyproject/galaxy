@@ -30,7 +30,7 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
 )
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     SharableMixin,
     url_for,
@@ -466,7 +466,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(self.decode_id(workflow_id))
         except Exception as e:
             trans.response.status = 400
-            return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str(e))
+            return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, util.unicodify(e))
 
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin:

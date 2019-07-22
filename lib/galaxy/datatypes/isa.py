@@ -195,7 +195,7 @@ class _Isa(data.Data):
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek %s" % str(exc)
+            out = "Can't create peek: %s" % util.unicodify(exc)
         return out
 
     # Generate primary file {{{2

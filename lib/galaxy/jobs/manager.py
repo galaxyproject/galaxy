@@ -9,7 +9,7 @@ from sqlalchemy.sql.expression import null
 from galaxy.exceptions import HandlerAssignmentError, ToolExecutionError
 from galaxy.jobs import handler, NoopQueue
 from galaxy.model import Job
-from galaxy.web.stack.message import JobHandlerMessage
+from galaxy.web_stack.message import JobHandlerMessage
 
 log = logging.getLogger(__name__)
 

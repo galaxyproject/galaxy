@@ -24,10 +24,10 @@ from base import populators  # noqa: I100,I202
 from base.api import UsesApiTestCaseMixin  # noqa: I100
 from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address  # noqa: I100
 from base.testcase import FunctionalTestCase  # noqa: I100
-from galaxy_selenium import (  # noqa: I100,I201
+from galaxy.selenium import (  # noqa: I100,I201
     driver_factory,
 )
-from galaxy_selenium.navigates_galaxy import (  # noqa: I100
+from galaxy.selenium.navigates_galaxy import (  # noqa: I100
     NavigatesGalaxy,
     retry_during_transitions
 )

@@ -117,7 +117,7 @@ var TagsEditor = Backbone.View.extend(baseMVC.LoggableMixin)
             });
             if (renderedArray.length === 0) {
                 // If there are no tags to render we just show the add-tag-button
-                renderedArray.push(`<img src=${addButton} class="add-tag-button" title="Add tags"/>`);
+                renderedArray.push(`<img alt="add tag button" src=${addButton} class="add-tag-button" title="Add tags"/>`);
             }
             return renderedArray.join(" ");
         },

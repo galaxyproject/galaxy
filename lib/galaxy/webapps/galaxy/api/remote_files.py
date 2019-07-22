@@ -10,14 +10,15 @@ from operator import itemgetter
 from galaxy import exceptions
 from galaxy.util import (
     jstree,
-    smart_str
+    smart_str,
+    unicodify
 )
 from galaxy.util.path import (
     safe_path,
     safe_walk
 )
 from galaxy.web import expose_api
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
@@ -58,9 +59,9 @@ class RemoteFilesAPIController(BaseAPIController):
                     try:
                         userdir_jstree = self.__create_jstree(full_import_dir, disable, whitelist=trans.app.config.user_library_import_symlink_whitelist)
                         response = userdir_jstree.jsonData()
-                    except Exception as exception:
-                        log.debug(str(exception))
-                        raise exceptions.InternalServerError('Could not create tree representation of the given folder: ' + str(full_import_dir))
+                    except Exception as e:
+                        log.debug(unicodify(e))
+                        raise exceptions.InternalServerError('Could not create tree representation of the given folder: %s' % full_import_dir)
                     if not response:
                         raise exceptions.ObjectNotFound('You do not have any files in your user directory. Use FTP to upload there.')
                 elif format == 'ajax':
@@ -68,8 +69,8 @@ class RemoteFilesAPIController(BaseAPIController):
                 else:
                     try:
                         response = self.__load_all_filenames(full_import_dir, whitelist=trans.app.config.user_library_import_symlink_whitelist)
-                    except Exception as exception:
-                        log.error('Could not get user import files: %s', str(exception), exc_info=True)
+                    except Exception:
+                        log.exception('Could not get user import files')
                         raise exceptions.InternalServerError('Could not get the files from your user directory folder.')
             else:
                 raise exceptions.InternalServerError('Could not get the files from your user directory folder.')
@@ -82,16 +83,16 @@ class RemoteFilesAPIController(BaseAPIController):
                 try:
                     importdir_jstree = self.__create_jstree(base_dir, disable, whitelist=trans.app.config.user_library_import_symlink_whitelist)
                     response = importdir_jstree.jsonData()
-                except Exception as exception:
-                    log.debug(str(exception))
-                    raise exceptions.InternalServerError('Could not create tree representation of the given folder: ' + str(base_dir))
+                except Exception as e:
+                    log.debug(unicodify(e))
+                    raise exceptions.InternalServerError('Could not create tree representation of the given folder: %s' % base_dir)
             elif format == 'ajax':
                 raise exceptions.NotImplemented('Not implemented yet. Sorry.')
             else:
                 try:
                     response = self.__load_all_filenames(base_dir, trans.app.config.user_library_import_symlink_whitelist)
-                except Exception as exception:
-                    log.error('Could not get user import files: %s', str(exception), exc_info=True)
+                except Exception:
+                    log.exception('Could not get user import files')
                     raise exceptions.InternalServerError('Could not get the files from your import directory folder.')
         else:
             user_ftp_base_dir = trans.app.config.ftp_upload_dir
@@ -104,8 +105,8 @@ class RemoteFilesAPIController(BaseAPIController):
                 else:
                     log.warning('You do not have an FTP directory named as your login at this Galaxy instance.')
                     return None
-            except Exception as exception:
-                log.warning('Could not get ftp files: %s', str(exception), exc_info=True)
+            except Exception:
+                log.warning('Could not get ftp files', exc_info=True)
                 return None
         return response
 

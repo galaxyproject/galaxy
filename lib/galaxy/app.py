@@ -11,15 +11,18 @@ import galaxy.queues
 import galaxy.quota
 import galaxy.security
 from galaxy import config, job_metrics, jobs
+from galaxy.config_watchers import ConfigWatchers
 from galaxy.containers import build_container_interfaces
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.tools import DynamicToolManager
+from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.tool_util.deps.views import DependencyResolversView
+from galaxy.tool_util.verify import test_data
 from galaxy.tools.cache import (
     ToolCache,
     ToolShedRepositoryCache
@@ -27,7 +30,6 @@ from galaxy.tools.cache import (
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.tools.special_tools import load_lib_tools
-from galaxy.tools.verify import test_data
 from galaxy.tours import ToursRegistry
 from galaxy.util import (
     ExecutionTimer,
@@ -38,9 +40,7 @@ from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.web import url_for
 from galaxy.web.proxy import ProxyManager
-from galaxy.web.stack import application_stack_instance
-from galaxy.web.stack.database_heartbeat import DatabaseHeartbeat
-from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
+from galaxy.web_stack import application_stack_instance
 from galaxy.webhooks import WebhooksRegistry
 from tool_shed.galaxy_install import (
     installed_repository_manager,
@@ -183,7 +183,9 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
 
         if self.config.enable_oidc:
             from galaxy.authnz import managers
-            self.authnz_manager = managers.AuthnzManager(self, self.config.oidc_config, self.config.oidc_backends_config)
+            self.authnz_manager = managers.AuthnzManager(self,
+                                                         self.config.oidc_config,
+                                                         self.config.oidc_backends_config)
 
         self.sentry_client = None
         if self.config.sentry_dsn:

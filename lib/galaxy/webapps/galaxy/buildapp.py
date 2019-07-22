@@ -112,6 +112,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/admin/groups', 'admin')
     webapp.add_client_route('/admin/repositories', 'admin')
     webapp.add_client_route('/admin/tool_versions', 'admin')
+    webapp.add_client_route('/admin/toolshed', 'admin')
     webapp.add_client_route('/admin/quotas', 'admin')
     webapp.add_client_route('/admin/form/{form_id}', 'admin')
     webapp.add_client_route('/admin/api_keys', 'admin')
@@ -348,6 +349,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{id:.+?}/test_data', action='test_data', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/citations', action='citations', controller="tools")
+    webapp.mapper.connect('/api/tools/{id:.+?}/xrefs', action='xrefs', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/download', action='download', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/requirements', action='requirements', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/install_dependencies', action='install_dependencies', controller="tools", conditions=dict(method=["POST"]))
@@ -960,6 +962,12 @@ def populate_api_routes(webapp, app):
                           action='search',
                           conditions=dict(method=["GET", "POST"]))
 
+    webapp.mapper.connect('tool_shed_request',
+                          '/api/tool_shed/request',
+                          controller='toolshed',
+                          action='request',
+                          conditions=dict(method=["GET"]))
+
     webapp.mapper.connect('tool_shed_status',
                           '/api/tool_shed/status',
                           controller='toolshed',
@@ -1159,7 +1167,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                                           args=(conf,),
                                           kwargs=dict(templating_formatters=build_template_error_formatters()))
         except MiddlewareWrapUnsupported as exc:
-            log.warning(str(exc))
+            log.warning(util.unicodify(exc))
             import galaxy.web.framework.middleware.error
             app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
     else:

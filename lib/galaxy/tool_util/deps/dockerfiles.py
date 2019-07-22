@@ -1,11 +1,11 @@
 import logging
 import os
 
-from ..deps import commands
-from ..deps import docker_util
-from ..deps.container_classes import docker_cache_path
-from ..deps.requirements import parse_requirements_from_xml
-from ...tools import loader_directory
+from galaxy.tool_util.deps import commands
+from galaxy.tool_util.deps import docker_util
+from galaxy.tool_util.deps.container_classes import docker_cache_path
+from galaxy.tool_util.deps.requirements import parse_requirements_from_xml
+from galaxy.tool_util.loader_directory import load_tool_elements_from_path
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ def docker_host_args(**kwds):
 def dockerfile_build(path, dockerfile=None, error=log.error, **kwds):
     expected_container_names = set()
     tool_directories = set()
-    for (tool_path, tool_xml) in loader_directory.load_tool_elements_from_path(path):
+    for (tool_path, tool_xml) in load_tool_elements_from_path(path):
         requirements, containers = parse_requirements_from_xml(tool_xml)
         for container in containers:
             if container.type == "docker":

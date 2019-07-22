@@ -1491,8 +1491,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             //this.debug( '_pairDragstart', ev, pair )
             // auto select the pair causing the event and move all selected
             pair.$el.addClass("selected");
-            var $selected = this.$(".paired-columns .dataset.selected");
-            this.$dragging = $selected;
+            this.$dragging = this.$(".paired-columns .dataset.selected");
         },
         /** drag communication with pair sub-views: dragend - remove the placeholder */
         _pairDragend: function(ev, pair) {
@@ -1569,7 +1568,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     "</span>",
                     '<span class="title-info unpaired-info"></span>',
                     "</div>",
-                    '<div class="unpaired-filter forward-unpaired-filter float-left">',
+                    '<div class="unpaired-filter forward-unpaired-filter float-left search-input">',
                     '<input class="search-query" placeholder="',
                     _l("Filter this list"),
                     '" />',
@@ -1597,7 +1596,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     "</span>",
                     '<span class="title-info unpaired-info"></span>',
                     "</div>",
-                    '<div class="unpaired-filter reverse-unpaired-filter float-left">',
+                    '<div class="unpaired-filter reverse-unpaired-filter float-left search-input">',
                     '<input class="search-query" placeholder="',
                     _l("Filter this list"),
                     '" />',

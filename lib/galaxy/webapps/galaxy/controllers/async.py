@@ -10,9 +10,12 @@ import requests
 from six.moves.urllib.parse import urlencode
 
 from galaxy import jobs, web
-from galaxy.util import Params
+from galaxy.util import (
+    Params,
+    unicodify,
+)
 from galaxy.util.hash_util import hmac_new
-from galaxy.web.base.controller import BaseUIController
+from galaxy.webapps.base.controller import BaseUIController
 
 log = logging.getLogger(__name__)
 
@@ -171,7 +174,7 @@ class ASync(BaseUIController):
                     raise Exception(text)
                 data.state = data.blurb = data.states.RUNNING
             except Exception as e:
-                data.info = str(e)
+                data.info = unicodify(e)
                 data.state = data.blurb = data.states.ERROR
 
             trans.sa_session.flush()

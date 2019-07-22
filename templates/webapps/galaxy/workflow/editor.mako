@@ -57,6 +57,9 @@
     ${parent.stylesheets()}
 
     <style type="text/css">
+    #center {
+        z-index: 0;
+    }
     canvas { position: absolute; z-index: 10; }
     canvas.dragging { position: absolute; z-index: 1000; }
     </style>
@@ -88,13 +91,15 @@
             %else:
                 <div class="toolTitleNoSection text-muted">
             %endif
-                %if "[[" in tool.description and "]]" in tool.description:
-                    ${tool.description.replace( '[[', '' % tool.id ).replace( "]]", "" )}
-                %elif tool.name:
-                    ${tool.name} ${tool.description}
-                %else:
-                    ${tool.description}
-                %endif
+	        <a>
+		    %if "[[" in tool.description and "]]" in tool.description:
+                        ${tool.description.replace( '[[', '' % tool.id ).replace( "]]", "" )}
+                    %elif tool.name:
+                        ${tool.name} ${tool.description}
+                    %else:
+                        ${tool.description}
+                    %endif
+		</a>
             </div>
         %endif
     %endif
@@ -143,10 +148,10 @@
     </div>
 
     <div class="unified-panel-controls">
-        <div id="tool-search" class="bar">
+        <div id="tool-search" class="search-input">
             <input id="tool-search-query" class="search-query parent-width" name="query" placeholder="search tools" autocomplete="off" type="text">
-             <a id="search-clear-btn" title="" data-original-title="clear search (esc)"> </a>
-             <span id="search-spinner" class="search-spinner fa fa-spinner fa-spin"></span>
+            <span id="search-clear-btn" class="search-clear fa fa-times-circle" title="" data-original-title="clear search (esc)" />
+            <span id="search-spinner" class="search-loading fa fa-spinner fa-spin" />
         </div>
     </div>
 

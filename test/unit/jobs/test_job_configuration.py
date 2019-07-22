@@ -9,12 +9,12 @@ from pykwalify.core import Core
 
 from galaxy.jobs import JobConfiguration
 from galaxy.util import bunch
-from galaxy.web.stack import ApplicationStack, UWSGIApplicationStack
+from galaxy.web_stack import ApplicationStack, UWSGIApplicationStack
 
 # File would be slightly more readable if contents were embedded directly, but
 # there are advantages to testing the documentation/examples.
-SIMPLE_JOB_CONF = os.path.join(os.path.dirname(__file__), "..", "..", "..", "config", "job_conf.xml.sample_basic")
-ADVANCED_JOB_CONF = os.path.join(os.path.dirname(__file__), "..", "..", "..", "config", "job_conf.xml.sample_advanced")
+SIMPLE_JOB_CONF = os.path.join(os.path.dirname(__file__), "..", "..", "..", "lib", "galaxy", "config", "sample", "job_conf.xml.sample_basic")
+ADVANCED_JOB_CONF = os.path.join(os.path.dirname(__file__), "..", "..", "..", "lib", "galaxy", "config", "sample", "job_conf.xml.sample_advanced")
 ADVANCED_JOB_CONF_YAML = os.path.join(os.path.dirname(__file__), "job_conf.sample_advanced.yml")
 CONDITIONAL_RUNNER_JOB_CONF = os.path.join(os.path.dirname(__file__), "conditional_runners_job_conf.xml")
 HANDLER_TEMPLATE_JOB_CONF = os.path.join(os.path.dirname(__file__), "handler_template_job_conf.xml")
@@ -68,8 +68,8 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
             base_handler_pools = self._job_configuration_base_pools or JobConfiguration.DEFAULT_BASE_HANDLER_POOLS
             mock_uwsgi = mock.Mock()
             mock_uwsgi.mule_id = lambda: 1
-            with mock.patch('galaxy.web.stack.uwsgi', mock_uwsgi), \
-                    mock.patch('galaxy.web.stack.uwsgi.opt', self._uwsgi_opt), \
+            with mock.patch('galaxy.web_stack.uwsgi', mock_uwsgi), \
+                    mock.patch('galaxy.web_stack.uwsgi.opt', self._uwsgi_opt), \
                     mock.patch('galaxy.jobs.JobConfiguration.DEFAULT_BASE_HANDLER_POOLS', base_handler_pools):
                 self._job_configuration = JobConfiguration(self.app)
         return self._job_configuration

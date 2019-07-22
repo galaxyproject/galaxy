@@ -91,21 +91,19 @@ export default Backbone.View.extend({
         } else if (output.parameter) {
             terminalViewClass = TerminalViews.OutputParameterTerminalView;
         }
-        const terminalView = new terminalViewClass({
+        return new terminalViewClass({
             node: this.node,
             output: output
-        })
-        return terminalView
+        });
     },
 
     outputViewforOutput: function(output, terminalView) {
         const outputViewClass = output.parameter ? DataViews.ParameterOutputView : DataViews.DataOutputView;
-        const outputView = new outputViewClass({
+        return new outputViewClass({
             output: output,
             terminalElement: terminalView.el,
             nodeView: this
         });
-        return outputView
     },
 
     addDataOutput: function(output) {

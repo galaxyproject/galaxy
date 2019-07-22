@@ -15,12 +15,12 @@ from galaxy import (
 )
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError
-from galaxy.web.base.controller import (
+from galaxy.web.params import QuotaParamParser
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     url_for,
     UsesQuotaMixin
 )
-from galaxy.web.params import QuotaParamParser
 
 log = logging.getLogger(__name__)
 
@@ -71,12 +71,12 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         try:
             self.validate_in_users_and_groups(trans, payload)
         except Exception as e:
-            raise HTTPBadRequest(detail=str(e))
+            raise HTTPBadRequest(detail=util.unicodify(e))
         params = self.get_quota_params(payload)
         try:
             quota, message = self._create_quota(params)
         except ActionInputError as e:
-            raise HTTPBadRequest(detail=str(e))
+            raise HTTPBadRequest(detail=util.unicodify(e))
         item = quota.to_dict(value_mapper={'id': trans.security.encode_id})
         item['url'] = url_for('quota', id=trans.security.encode_id(quota.id))
         item['message'] = message
@@ -92,7 +92,7 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         try:
             self.validate_in_users_and_groups(trans, payload)
         except Exception as e:
-            raise HTTPBadRequest(detail=str(e))
+            raise HTTPBadRequest(detail=util.unicodify(e))
 
         quota = self.get_quota(trans, id, deleted=False)
 
@@ -116,7 +116,7 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
             try:
                 message = method(quota, params)
             except ActionInputError as e:
-                raise HTTPBadRequest(detail=str(e))
+                raise HTTPBadRequest(detail=util.unicodify(e))
             messages.append(message)
         return '; '.join(messages)
 
@@ -139,7 +139,7 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
             if util.string_as_bool(payload.get('purge', False)):
                 message += self._purge_quota(quota, params)
         except ActionInputError as e:
-            raise HTTPBadRequest(detail=str(e))
+            raise HTTPBadRequest(detail=util.unicodify(e))
         return message
 
     @web.legacy_expose_api
@@ -153,4 +153,4 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         try:
             return self._undelete_quota(quota)
         except ActionInputError as e:
-            raise HTTPBadRequest(detail=str(e))
+            raise HTTPBadRequest(detail=util.unicodify(e))

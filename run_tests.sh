@@ -11,7 +11,7 @@ cat <<EOF
 '${0##*/} -list'                    for listing all the tool ids
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory, test_path
                                     can be pytest selector
-'${0##*/} -integration (test_path)' for running all integration test scripts in the ./test/api directory, test_path
+'${0##*/} -integration (test_path)' for running all integration test scripts in the ./test/integration directory, test_path
                                     can be pytest selector
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
@@ -363,7 +363,7 @@ do
       -a|-api|--api)
           GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE="True"  # Run these tests with a non-trivial object store.
           export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
-          GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
           test_script="pytest"
           report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
@@ -375,7 +375,7 @@ do
           fi
           ;;
       -selenium|--selenium)
-          GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
           test_script="./scripts/functional_tests.py"
           report_file="./run_selenium_tests.html"
           skip_client_build=""
@@ -430,7 +430,7 @@ do
           shift 1
           ;;
       -main|-main_tools|--main_tools)
-          GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,config/tool_conf.xml.main"
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,config/tool_conf.xml.main"
           marker="-m tool"
           test_script="pytest"
           report_file="run_framework_tests.html"
@@ -507,7 +507,7 @@ do
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
           test_script="pytest"
-          unit_extra='--doctest-modules --ignore lib/galaxy/web/proxy/js/node_modules/ --ignore lib/galaxy/webapps/tool_shed/controllers --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/galaxy/webapps/tool_shed/model/migrate'
+          unit_extra='--doctest-modules --ignore lib/galaxy/web/proxy/js/node_modules/ --ignore lib/galaxy/webapps/tool_shed/controllers --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/galaxy/webapps/tool_shed/model/migrate --ignore lib/galaxy/tools/bundled'
           if [ $# -gt 1 ]; then
               unit_extra="$unit_extra $2"
               shift 2
@@ -517,7 +517,7 @@ do
           fi
           ;;
       -i|-integration|--integration)
-          GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
           test_script="pytest"
           report_file="./run_integration_tests.html"
           if [ $# -gt 1 ]; then

@@ -29,8 +29,8 @@ from galaxy.util import (
 from galaxy.util.checkers import check_binary
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
-from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
 from galaxy.web.framework.helpers import grids, iff, time_ago
+from galaxy.webapps.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
 
 log = logging.getLogger(__name__)
 
@@ -483,7 +483,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 try:
                     message = data.datatype.convert_dataset(trans, data, target_type)
                 except Exception as e:
-                    return self.message_exception(trans, str(e))
+                    return self.message_exception(trans, util.unicodify(e))
         elif operation == 'permission':
             if not trans.user:
                 return self.message_exception(trans, 'You must be logged in if you want to change permissions.')
@@ -830,7 +830,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             action_param = display_link.get_param_name_by_url(action_param)
                         except ValueError as e:
                             log.debug(e)
-                            return paste.httpexceptions.HTTPNotFound(str(e))
+                            return paste.httpexceptions.HTTPNotFound(util.unicodify(e))
                         value = display_link.get_param_value(action_param)
                         assert value, "An invalid parameter name was provided: %s" % action_param
                         assert value.parameter.viewable, "This parameter is not viewable."

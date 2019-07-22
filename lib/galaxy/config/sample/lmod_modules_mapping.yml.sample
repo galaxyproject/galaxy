@@ -1,0 +1,47 @@
+# This is an example mapping file for the LMOD Dependency resolver (in YAML format)
+#
+# The goal of this file is to map tool's requirements to existing LMOD modules available on your system
+# Of course, if the name of a requirement and the name of a module match perfectly, there is no need to map them together through this mapping file.
+#
+# This is a sample file so the first thing to do to activate the mapping system is to create a copy of this file called "lmod_modules_mapping.yml".
+# The Lmod dependency resolver is programmed to search and use this YAML file automatically if it exists in the "config" folder of your Galaxy instance.
+# Alternatively, you can also use the "mapping_files" attribute of the <lmod /> resolver in the dependency_resolvers_conf.xml file to specify a custom mapping file
+#
+# Example 1:
+#
+# Let's say that one of the wrapper installed on your Galaxy instance has the following requirement:
+#
+#	<requirements>
+#		<requirement type="package" version="1.5.0">PIPITS</requirement>
+#	</requirements>
+#
+# But unfortunately, the name of the corresponding module file on your system is "pipits_pipeline/1.5.0"
+#
+# Then, to make Galaxy load/unload the appropriate module, you just have to add the following lines (without to the #) to the "lmod_modules_mapping.yml" file:
+#
+#- from:
+#    name: PIPITS
+#    version: 1.5.0
+#  to:
+#    name: pipits_pipeline
+#    version: 1.5.0.6
+#
+#
+# Example 2:
+#
+# The requirements section specify a requirement on the PIPITS tool but do not ask for a specific version of it:
+#
+#	<requirements>
+#		<requirement type="package">PIPITS</requirement>
+#	</requirements>
+#
+# Although, there is no version required you may want to force the loading of a version that is known to run well on your system.
+#
+# In that case you can add the following lines to the "lmod_modules_mapping.yml" file:
+#
+#- from:
+#    name: PIPITS
+#    unversioned: true
+#  to:
+#    name: pipits_pipeline
+#    version: 1.4.0

@@ -17,6 +17,7 @@ from cloudauthz.exceptions import (
 
 from galaxy import exceptions
 from galaxy import model
+from galaxy.util import unicodify
 from .custos_authnz import CustosAuthnz
 from .psa_authnz import (
     BACKENDS_NAME,
@@ -147,7 +148,7 @@ class AuthnzManager(object):
                 return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name])
             except Exception as e:
                 log.exception('An error occurred when loading {}'.format(identity_provider_class.__name__))
-                return False, str(e), None
+                return False, unicodify(e), None
         else:
             msg = 'The requested identity provider, `{}`, is not a recognized/expected provider.'.format(provider)
             log.debug(msg)
@@ -303,10 +304,14 @@ class AuthnzManager(object):
             ca = CloudAuthz()
             log.info("Requesting credentials using CloudAuthz with config id `{}` on be half of user `{}`.".format(
                 cloudauthz.id, user_id))
-            return ca.authorize(cloudauthz.provider, config)
+            credentials = ca.authorize(cloudauthz.provider, config)
+            return credentials
         except CloudAuthzBaseException as e:
             log.info(e)
             raise exceptions.AuthenticationFailed(e)
+        except NotImplementedError as e:
+            log.info(e)
+            raise exceptions.RequestParameterInvalidException(e)
 
     def get_cloud_access_credentials_in_file(self, new_file_path, cloudauthz, sa_session, user_id, request=None):
         """

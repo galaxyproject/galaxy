@@ -114,7 +114,9 @@ $layout-border: none;
 // Borders
 $border-radius-base: 0.1875rem;
 $border-radius-large: 0.3125rem;
+$border-radius-extralarge: 1rem;
 $border-default-color: $gray-400;
+$border-default: 1px solid $border-default-color;
 
 // Buttons
 $btn-default-color: $text-color;

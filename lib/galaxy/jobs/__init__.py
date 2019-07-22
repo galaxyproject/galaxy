@@ -44,7 +44,7 @@ from galaxy.util import safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.xml_macros import load
-from galaxy.web.stack.handlers import ConfiguresHandlers
+from galaxy.web_stack.handlers import ConfiguresHandlers
 
 log = logging.getLogger(__name__)
 
@@ -1182,7 +1182,7 @@ class JobWrapper(HasResourceParameters):
             self.job_destination
         except JobMappingException as exc:
             log.debug("(%s) fail(): Job destination raised JobMappingException('%s'), caching fake '__fail__' "
-                      "destination for completion of fail method", self.get_id_tag(), str(exc.failure_message))
+                      "destination for completion of fail method", self.get_id_tag(), unicodify(exc.failure_message))
             self.job_runner_mapper.cached_job_destination = JobDestination(id='__fail__')
 
         # Might be AssertionError or other exception
@@ -1205,9 +1205,9 @@ class JobWrapper(HasResourceParameters):
                 for dataset_path in self.get_output_fnames():
                     try:
                         shutil.move(dataset_path.false_path, dataset_path.real_path)
-                        log.debug("fail(): Moved %s to %s" % (dataset_path.false_path, dataset_path.real_path))
+                        log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
                     except (IOError, OSError) as e:
-                        log.error("fail(): Missing output file in working directory: %s" % e)
+                        log.error("fail(): Missing output file in working directory: %s", unicodify(e))
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
@@ -1420,7 +1420,7 @@ class JobWrapper(HasResourceParameters):
                     trynum = self.app.config.retry_job_output_collection
                 except (OSError, ObjectNotFound) as e:
                     trynum += 1
-                    log.warning('Error accessing dataset with ID %i, will retry: %s', dataset.dataset.id, e)
+                    log.warning('Error accessing dataset with ID %i, will retry: %s', dataset.dataset.id, unicodify(e))
                     time.sleep(2)
         if getattr(dataset, "hidden_beneath_collection_instance", None):
             dataset.visible = False
@@ -2394,22 +2394,3 @@ class NoopQueue(object):
 
     def shutdown(self):
         return
-
-
-class ParallelismInfo(object):
-    """
-    Stores the information (if any) for running multiple instances of the tool in parallel
-    on the same set of inputs.
-    """
-
-    def __init__(self, tag):
-        self.method = tag.get('method')
-        if isinstance(tag, dict):
-            items = tag.items()
-        else:
-            items = tag.attrib.items()
-        self.attributes = dict([item for item in items if item[0] != 'method'])
-        if len(self.attributes) == 0:
-            # legacy basic mode - provide compatible defaults
-            self.attributes['split_size'] = 20
-            self.attributes['split_mode'] = 'number_of_parts'

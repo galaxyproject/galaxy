@@ -50,8 +50,8 @@ function TagModel(props = {}) {
         enumerable: false,
         get: function() {
             if (!this.text.length) return false;
-            if (this.text == "name:") return false;
-            return true;
+            return this.text != "name:";
+
         }
     });
 }

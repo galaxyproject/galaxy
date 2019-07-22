@@ -6,7 +6,8 @@ import logging
 from galaxy import web
 from galaxy.exceptions import ItemAccessibilityException
 from galaxy.model.search import GalaxySearchEngine
-from galaxy.web.base.controller import (
+from galaxy.util import unicodify
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     SharableItemSecurityMixin
 )
@@ -29,14 +30,14 @@ class SearchController(BaseAPIController, SharableItemSecurityMixin):
             try:
                 query = se.query(query_txt)
             except Exception as e:
-                return {'error': str(e)}
+                return {'error': unicodify(e)}
             if query is not None:
                 query.decode_query_ids(trans)
                 current_user_roles = trans.get_current_user_roles()
                 try:
                     results = query.process(trans)
                 except Exception as e:
-                    return {'error': str(e)}
+                    return {'error': unicodify(e)}
                 for item in results:
                     append = False
                     if trans.user_is_admin:
