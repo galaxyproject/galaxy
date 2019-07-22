@@ -44,14 +44,14 @@
             </param>
             <param name="how_split" value="maximum_elements" />
             <param name="num_collection" value="1" />
-            <output_collection name="output" type="list">
+            <output_collection name="output_0" type="list">
                 <element name="in1">
                   <assert_contents>
                     <has_text_matching expression="^This is a line of text.\n$" />
                   </assert_contents>
                 </element>
             </output_collection>
-            <output_collection name="output" type="list">
+            <output_collection name="output_1" type="list">
                 <element name="in2">
                   <assert_contents>
                     <has_text_matching expression="^This is a different line of text.\n$" />
@@ -68,14 +68,14 @@
             </param>
             <param name="how_split" value="number_of_collections" />
             <param name="num_collection" value="2" />
-            <output_collection name="output" type="list">
+            <output_collection name="output_0" type="list">
                 <element name="in1">
                   <assert_contents>
                     <has_text_matching expression="^This is a line of text.\n$" />
                   </assert_contents>
                 </element>
             </output_collection>
-            <output_collection name="output" type="list">
+            <output_collection name="output_1" type="list">
                 <element name="in2">
                   <assert_contents>
                     <has_text_matching expression="^This is a different line of text.\n$" />
