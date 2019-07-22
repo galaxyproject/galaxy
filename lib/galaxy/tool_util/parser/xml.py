@@ -141,6 +141,7 @@ class XmlToolSource(ToolSource):
             definition = {
                 "name": environment_variable_el.get("name"),
                 "template": environment_variable_el.text,
+                "strip": string_as_bool(environment_variable_el.get("strip", False)),
             }
             environment_variables.append(
                 definition

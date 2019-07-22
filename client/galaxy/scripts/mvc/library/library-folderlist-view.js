@@ -55,7 +55,6 @@ var FolderListView = Backbone.View.extend({
         // start to listen if someone modifies the collection
         this.listenTo(this.collection, "add", this.renderOne);
         this.listenTo(this.collection, "remove", this.removeOne);
-        this.listenTo(this.collection, "sort", this.rePaint);
         this.listenTo(this.collection, "reset", this.rePaint);
 
         this.fetchFolder();
@@ -273,7 +272,8 @@ var FolderListView = Backbone.View.extend({
         event.preventDefault();
         this.current_sort_order = this.current_sort_order === "asc" ? "desc" : "asc";
         this.current_sort_key = event.currentTarget.className.replace("sort-folder-", "");
-        this.collection.sortFolder(this.current_sort_key, this.current_sort_order);
+        const sorted_folder = this.folder_container.sortFolder(this.current_sort_key, this.current_sort_order);
+        this.collection.reset(sorted_folder.models);
         this.renderSortIcon();
     },
 
@@ -517,7 +517,7 @@ var FolderListView = Backbone.View.extend({
                         <span title="Sorted by Size" class="sort-icon-raw_size fa"></span>
                     </th>
                     <th style="width:160px;">
-                        <a class="sort-folder-update_time" title="Click to reverse order" href='#'>Time Updated (UTC)</a>
+                        <a class="sort-folder-update_time" title="Click to reverse order" href='#'>Date Updated (UTC)</a>
                         <span title="Sorted by Date" class="sort-icon-update_time fa"></span>
                     </th>
                     <th style="width:5%;">

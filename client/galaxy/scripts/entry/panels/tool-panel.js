@@ -155,9 +155,9 @@ const ToolPanel = Backbone.View.extend({
                     <div class="toolSectionPad"/>
                     <div class="toolSectionPad"/>
                     <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
-                        <span>
+                        <a>
                             ${_l("Workflows")}
-                        </span>
+                        </a>
                     </div>
                         <div id="internal-workflows" class="toolSectionBody">
                             <div class="toolSectionBg"/>

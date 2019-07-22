@@ -17,7 +17,6 @@ import Circster from "viz/circster";
 export { PhylovizView as phyloviz } from "viz/phyloviz";
 export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
 import GalaxyLibrary from "galaxy.library";
-import AdminToolshed from "admin.toolshed";
 export { default as pages } from "galaxy.pages";
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";
 import { HistoryCollection } from "mvc/history/history-model";
@@ -35,10 +34,6 @@ export { default as ToolshedGroups } from "toolshed/toolshed.groups";
 export { default as IES } from "galaxy.interactive_environments";
 
 export { Toast } from "ui/toast"; // TODO: remove when external consumers are updated/gone (IES right now)
-
-export function adminToolshed(options) {
-    new AdminToolshed.GalaxyApp(options);
-}
 
 export function trackster(options) {
     new TracksterUIView(options);

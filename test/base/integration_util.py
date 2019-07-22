@@ -10,7 +10,7 @@ from unittest import skip, SkipTest, TestCase
 import pytest
 
 from galaxy.tool_util.deps.commands import which
-from galaxy.tools.verify.test_data import TestDataResolver
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from .api import UsesApiTestCaseMixin
 from .driver_util import GalaxyTestDriver
 
@@ -59,6 +59,10 @@ class IntegrationInstance(UsesApiTestCaseMixin):
     prefer_template_database = True
     # Subclasses can override this to force uwsgi for tests.
     require_uwsgi = False
+
+    # Don't pull in default configs for un-configured things from Galaxy's
+    # config directory and such.
+    isolate_galaxy_config = True
 
     @classmethod
     def setUpClass(cls):

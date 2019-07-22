@@ -4,7 +4,7 @@ import tempfile
 
 import pytest
 
-from galaxy.tools.verify import (
+from galaxy.tool_util.verify import (
     files_contains,
     files_diff,
     files_re_match,

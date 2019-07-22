@@ -34,7 +34,7 @@ from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.model import mapping
 from galaxy.model.tool_shed_install import mapping as toolshed_mapping
-from galaxy.tools.verify.interactor import GalaxyInteractorApi, verify_tool
+from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
@@ -166,11 +166,13 @@ def setup_galaxy_config(
     if tool_dependency_dir is None:
         tool_dependency_dir = tempfile.mkdtemp(dir=tmpdir, prefix="tool_dependencies")
     tool_data_table_config_path = _tool_data_table_config_path(default_tool_data_table_config_path)
-    default_data_manager_config = 'config/data_manager_conf.xml.sample'
+    default_data_manager_config = None
     for data_manager_config in ['config/data_manager_conf.xml', 'data_manager_conf.xml']:
         if os.path.exists(data_manager_config):
             default_data_manager_config = data_manager_config
-    data_manager_config_file = "%s,test/functional/tools/sample_data_manager_conf.xml" % default_data_manager_config
+    data_manager_config_file = "test/functional/tools/sample_data_manager_conf.xml"
+    if default_data_manager_config is not None:
+        data_manager_config_file = "%s,%s" % (default_data_manager_config, data_manager_config_file)
     master_api_key = get_master_api_key()
     cleanup_job = 'never' if ("GALAXY_TEST_NO_CLEANUP" in os.environ or
                               "TOOL_SHED_TEST_NO_CLEANUP" in os.environ) else 'onsuccess'
@@ -191,8 +193,6 @@ def setup_galaxy_config(
         tool_conf = "%s,%s" % (tool_conf, shed_tool_conf)
 
     shed_tool_data_table_config = default_shed_tool_data_table_config
-    if shed_tool_data_table_config is None:
-        shed_tool_data_table_config = 'config/shed_tool_data_table_conf.xml'
 
     config = dict(
         admin_users='test@bx.psu.edu',
@@ -288,7 +288,7 @@ def _tool_data_table_config_path(default_tool_data_table_config_path=None):
     if tool_data_table_config_path is None:
         # ... otherise find whatever Galaxy would use as the default and
         # the sample data for fucntional tests to that.
-        default_tool_data_config = 'config/tool_data_table_conf.xml.sample'
+        default_tool_data_config = 'lib/galaxy/config/sample/tool_data_table_conf.xml.sample'
         for tool_data_config in ['config/tool_data_table_conf.xml', 'tool_data_table_conf.xml']:
             if os.path.exists(tool_data_config):
                 default_tool_data_config = tool_data_config
@@ -555,7 +555,7 @@ def build_galaxy_app(simple_kwargs):
     """
     log.info("Galaxy database connection: %s", simple_kwargs["database_connection"])
     simple_kwargs['global_conf'] = get_webapp_global_conf()
-    simple_kwargs['global_conf']['__file__'] = "config/galaxy.yml.sample"
+    simple_kwargs['global_conf']['__file__'] = "lib/galaxy/config/sample/galaxy.yml.sample"
     simple_kwargs = load_app_properties(
         kwds=simple_kwargs
     )
@@ -933,6 +933,11 @@ class GalaxyTestDriver(TestDriver):
                         galaxy_db_path,
                         **setup_galaxy_config_kwds
                     )
+
+                    isolate_galaxy_config = getattr(config_object, "isolate_galaxy_config", False)
+                    if isolate_galaxy_config:
+                        galaxy_config["config_dir"] = tempdir
+
                     self._saved_galaxy_config = galaxy_config
 
             if galaxy_config is not None:

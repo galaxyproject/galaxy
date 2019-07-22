@@ -40,9 +40,12 @@ PACKAGES = [
     'galaxy.tool_util.linters',
     'galaxy.tool_util.locations',
     'galaxy.tool_util.parser',
+    'galaxy.tool_util.verify',
+    'galaxy.tool_util.verify.asserts',
 ]
 ENTRY_POINTS = '''
         [console_scripts]
+        galaxy-tool-test=galaxy.tool_util.verify.script:main
         mulled-build=galaxy.tool_util.deps.mulled.mulled_build:main
         mulled-build-channel=galaxy.tool_util.deps.mulled.mulled_build_channel:main
         mulled-search=galaxy.tool_util.deps.mulled.mulled_search:main

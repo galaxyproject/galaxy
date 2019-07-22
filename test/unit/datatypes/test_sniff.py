@@ -18,11 +18,10 @@ def assert_converts_to_1234_convert_sep2tabs(content, expected='1\t2\n3\t4\n'):
 
 
 def assert_converts_to_1234_convert(content, block_size=1024):
-    fname = get_test_fname('temp2.txt')
-    with open(fname, 'w') as fh:
-        fh.write(content)
-    rval = convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), block_size=block_size)
-    actual_contents = open(fname).read()
+    with tempfile.NamedTemporaryFile(delete=False, mode='w') as tf:
+        tf.write(content)
+    rval = convert_newlines(tf.name, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir(), block_size=block_size)
+    actual_contents = open(tf.name).read()
     assert '1 2\n3 4\n' == actual_contents, actual_contents
     assert rval == (2, None), "rval != %s for %s" % (rval, content)
 

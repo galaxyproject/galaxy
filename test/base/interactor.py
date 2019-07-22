@@ -1,4 +1,4 @@
-from galaxy.tools.verify.interactor import GalaxyInteractorApi
+from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
 
 
 class TestCaseGalaxyInteractor(GalaxyInteractorApi):
