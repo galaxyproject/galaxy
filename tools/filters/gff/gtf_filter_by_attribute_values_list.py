@@ -55,10 +55,11 @@ def gff_filter(gff_file, attribute_name, ids_file, output_file):
     # Filter GFF file using ids.
     output = open(output_file, 'w')
     for line in open(gff_file):
-        fields = line.split('\t')
-        attributes = parse_gff_attributes(fields[8])
-        if (attribute_name in attributes) and (attributes[attribute_name] in ids_dict):
-            output.write(line)
+        if (line[0] != '#'):
+            fields = line.split('\t')
+            attributes = parse_gff_attributes(fields[8])
+            if (attribute_name in attributes) and (attributes[attribute_name] in ids_dict):
+                output.write(line)
     output.close()
 
 
