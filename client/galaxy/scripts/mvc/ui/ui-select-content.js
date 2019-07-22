@@ -346,7 +346,6 @@ const View = Backbone.View.extend({
         this.button_dialog = new Ui.Button({
             icon: "fa-folder-open-o",
             tooltip: "Browse Datasets",
-            cls: "ml-2",
             onclick: () => {
                 const current = this.model.get("current");
                 const cnf = this.config[current];
@@ -364,10 +363,10 @@ const View = Backbone.View.extend({
         });
 
         // append views
-        const $fields = $("<div/>").addClass("w-100");
+        const $fields = $("<div/>").addClass("flex-fill");
         this.$el
             .empty()
-            .addClass("d-flex flex-row")
+            .addClass("d-flex flex-row flex-wrap")
             .append($("<div/>").append(this.button_type.$el))
             .append($fields)
             .append($("<div/>").append(this.button_dialog.$el));
