@@ -363,7 +363,7 @@ const View = Backbone.View.extend({
         });
 
         // append views
-        const $fields = $("<div/>").addClass("flex-fill");
+        const $fields = $("<div/>").addClass("flex-fill mr-2");
         this.$el
             .empty()
             .addClass("d-flex flex-row flex-wrap")
