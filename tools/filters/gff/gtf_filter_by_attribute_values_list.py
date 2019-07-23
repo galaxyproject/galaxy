@@ -6,8 +6,9 @@
 #
 from __future__ import print_function
 
-import sys
 import re
+import sys
+
 
 def gff_filter(gff_file, attribute_name, ids_file, output_file):
     # Put ids in dict for quick lookup.
@@ -24,12 +25,12 @@ def gff_filter(gff_file, attribute_name, ids_file, output_file):
                 if line.startswith('#'):
                     output.write(line)
                 else:
-                    # Create pattern using attribute to filter
-                    prog = re.compile(r".*"+re.escape(attribute_name)+r" \"(.+?)\"\;")
+                    # Create pattern using attribute to filter 
+                    prog = re.compile(r".*" + re.escape(attribute_name) + r" \"(.+?)\"\;")
                     line_match = prog.match(line)
-                    # If there is a match and the id after the filtered attribute (attribut "id";) is in the list. We print it
+                    # If there is a match and the id after the filtered attribute (attribut "id";) is in the list, we print it
                     if line_match and line_match.group(1) in ids_dict:
-                            output.write(line)
+                        output.write(line)
 
 
 if __name__ == "__main__":
