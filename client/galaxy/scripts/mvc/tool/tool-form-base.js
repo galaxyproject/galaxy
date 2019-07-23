@@ -280,7 +280,7 @@ export default FormBase.extend({
                 }
             }).$mount(vm);
         }
-	if (options.xrefs) {
+	if (options.xrefs && options.xrefs.length) {
             var xrefInstance = Vue.extend(xrefs);
             vm = document.createElement("div");
             $el.append(vm);
