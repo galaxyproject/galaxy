@@ -25,7 +25,7 @@ def gff_filter(gff_file, attribute_name, ids_file, output_file):
                 if line.startswith('#'):
                     output.write(line)
                 else:
-                    # Create pattern using attribute to filter 
+                    # Create pattern using attribute to filter
                     prog = re.compile(r".*" + re.escape(attribute_name) + r" \"(.+?)\"\;")
                     line_match = prog.match(line)
                     # If there is a match and the id after the filtered attribute (attribut "id";) is in the list, we print it
