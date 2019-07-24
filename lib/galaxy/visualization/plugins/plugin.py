@@ -5,6 +5,7 @@ from a query string and render a webpage based on those data.
 import copy
 import logging
 import os
+import re
 
 import mako.lookup
 
@@ -72,7 +73,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         self.config = config
         base_url = context.get('base_url', '')
         self.base_url = '/'.join([base_url, self.name]) if base_url else self.name
-        self.static_path = os.path.join(self.path.replace('./config', './static'), 'static')
+        self.static_path = self._get_static_path(self.path)
         if os.path.exists(os.path.join(self.static_path, 'logo.png')):
             self.config['logo'] = '/'.join([self.static_path, 'logo.png'])
         template_cache_dir = context.get('template_cache_dir', None)
@@ -126,6 +127,12 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         if self.name in self.app.visualizations_registry.BUILT_IN_VISUALIZATIONS:
             return url_for(controller='visualization', action=self.name)
         return url_for('visualization_plugin', visualization_name=self.name)
+
+    def _get_static_path(self, path):
+        match = re.match(r'.*/config/(.*)', path)
+        if match:
+            return os.path.join('./static', match.group(1), 'static')
+        return None
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
         """
