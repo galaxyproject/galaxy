@@ -335,7 +335,7 @@ const View = Backbone.View.extend({
         this.button_type = new Ui.RadioButton.View({
             value: this.model.get("current"),
             data: this.button_data,
-            cls: "mr-2",
+            cls: "mr-2 mt-2",
             onchange: function(value) {
                 self.model.set("current", value);
                 self.trigger("change");
@@ -346,6 +346,7 @@ const View = Backbone.View.extend({
         this.button_dialog = new Ui.Button({
             icon: "fa-folder-open-o",
             tooltip: "Browse Datasets",
+            cls: "mt-2",
             onclick: () => {
                 const current = this.model.get("current");
                 const cnf = this.config[current];
@@ -363,10 +364,10 @@ const View = Backbone.View.extend({
         });
 
         // append views
-        const $fields = $("<div/>").addClass("flex-fill mr-2");
+        const $fields = $("<div/>").addClass("flex-fill mr-2 mt-2");
         this.$el
             .empty()
-            .addClass("d-flex flex-row flex-wrap")
+            .addClass("d-flex flex-row flex-wrap mt-n2")
             .append($("<div/>").append(this.button_type.$el))
             .append($fields)
             .append($("<div/>").append(this.button_dialog.$el));
