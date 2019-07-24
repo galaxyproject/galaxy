@@ -299,11 +299,12 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
 
             remote_pulsar_app_config = job_destination.params.get("pulsar_app_config", {})
+            job_directory_files = []
             config_files = job_wrapper.extra_filenames
             tool_script = os.path.join(job_wrapper.working_directory, "tool_script.sh")
             if os.path.exists(tool_script):
                 log.debug("Registering tool_script for Pulsar transfer [%s]" % tool_script)
-                config_files.append(tool_script)
+                job_directory_files.append(tool_script)
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 input_files=self.get_input_files(job_wrapper),
@@ -318,6 +319,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 arbitrary_files=unstructured_path_rewrites,
                 touch_outputs=output_names,
                 remote_pulsar_app_config=remote_pulsar_app_config,
+                job_directory_files=job_directory_files,
                 container=None if not remote_container else remote_container.container_id,
             )
             job_id = pulsar_submit_job(client, client_job_description, remote_job_config)
@@ -378,12 +380,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
             remote_working_directory = remote_job_config['working_directory']
             remote_job_directory = os.path.abspath(os.path.join(remote_working_directory, os.path.pardir))
             remote_tool_directory = os.path.abspath(os.path.join(remote_job_directory, "tool_files"))
-            # This should be remote_job_directory ideally, this patch using configs is a workaround for
-            # older Pulsar versions that didn't support writing stuff to the job directory natively.
-            script_directory = os.path.join(remote_job_directory, "configs")
             remote_command_params = dict(
                 working_directory=remote_job_config['metadata_directory'],
-                script_directory=script_directory,
+                script_directory=remote_job_directory,
                 metadata_kwds=metadata_kwds,
                 dependency_resolution=dependency_resolution,
             )
