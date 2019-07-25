@@ -189,6 +189,8 @@ class VisualizationsRegistry(object):
         if config is not None:
             plugin = self._build_plugin(plugin_name, plugin_path, config)
             return plugin
+        else:
+            raise ObjectNotFound('Visualization XML not found: %s.' % config_file)
 
     def _build_plugin(self, plugin_name, plugin_path, config):
         # TODO: as builder not factory

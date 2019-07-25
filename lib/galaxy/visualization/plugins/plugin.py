@@ -5,10 +5,10 @@ from a query string and render a webpage based on those data.
 import copy
 import logging
 import os
-import re
 
 import mako.lookup
 
+from galaxy.exceptions import MessageException
 from galaxy.managers import api_keys
 from galaxy.visualization.plugins import (
     interactive_environments,
@@ -129,10 +129,11 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         return url_for('visualization_plugin', visualization_name=self.name)
 
     def _get_static_path(self, path):
-        match = re.match(r'.*/config/(.*)', path)
-        if match:
-            return os.path.join('./static', match.group(1), 'static')
-        return None
+        if '/config/' in path:
+            match = path.split('/config/')[-1]
+            return os.path.join('./static', match, 'static')
+        else:
+            raise MessageException('Failed to determine static path: %s.' % path)
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
         """
