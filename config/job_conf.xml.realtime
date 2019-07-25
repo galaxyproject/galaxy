@@ -14,6 +14,7 @@
           <param id="docker_net">bridge</param>
           <param id="docker_auto_rm">true</param>
           <param id="require_container">true</param>
+          <param id="docker_set_user"></param>
         </destination>
 
         <destination id="docker_dispatch" runner="dynamic">
