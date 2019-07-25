@@ -35,7 +35,7 @@
     },
     methods: {
       open(e) {
-        const formStyle = this.tool.form_style;
+        const formStyle = this.tool['form_style'];
         const Galaxy = getGalaxyInstance();
 
         if (this.tool.id === "upload1") {

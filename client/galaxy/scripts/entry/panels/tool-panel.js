@@ -82,16 +82,30 @@ const ToolPanel = Backbone.View.extend({
 
       const toolBox = Vue.extend(ToolBox);
       const node = document.createElement("div");
+      const appRoot = getAppRoot();
 
       this.$el.append(node);
       new toolBox({
         propsData: {
           toolSearch: this.tool_panel.get('tool_search').toJSON(),
           tools: this.tool_panel.get('tools').toJSON(),
-          layout: this.tool_panel.get('layout').toJSON()
+          layout: this.tool_panel.get('layout').toJSON(),
+
+          workflowsTitle: _l("Workflows"),
+          workflows: [{
+            title: _l("All workflows"),
+            href: `${appRoot}workflows/list`
+          }, ...this.stored_workflow_menu_entries.map(menuEntry => {
+            return {
+              title: menuEntry.stored_workflow.name,
+              href: `${appRoot}workflows/run?id=${menuEntry.encoded_stored_workflow_id}`
+            }
+          })],
         }
       }).$mount(node);
     }
+
+
     // build the dom for the workflow portion of the tool menu
     // add internal workflow list
     this.$("#internal-workflows").append(
