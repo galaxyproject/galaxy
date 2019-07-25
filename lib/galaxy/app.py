@@ -23,6 +23,7 @@ from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.tool_util.deps.views import DependencyResolversView
+from galaxy.tool_util.verify import test_data
 from galaxy.tools.cache import (
     ToolCache,
     ToolShedRepositoryCache
@@ -30,7 +31,6 @@ from galaxy.tools.cache import (
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.tools.special_tools import load_lib_tools
-from galaxy.tools.verify import test_data
 from galaxy.tours import ToursRegistry
 from galaxy.util import (
     ExecutionTimer,
@@ -184,7 +184,9 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
 
         if self.config.enable_oidc:
             from galaxy.authnz import managers
-            self.authnz_manager = managers.AuthnzManager(self, self.config.oidc_config, self.config.oidc_backends_config)
+            self.authnz_manager = managers.AuthnzManager(self,
+                                                         self.config.oidc_config,
+                                                         self.config.oidc_backends_config)
 
         self.sentry_client = None
         if self.config.sentry_dsn:

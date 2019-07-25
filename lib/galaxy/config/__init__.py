@@ -100,7 +100,7 @@ def resolve_path(path, root):
 
 
 def find_root(kwargs):
-    root = kwargs.get('root_dir', '.')
+    root = os.path.abspath(kwargs.get('root_dir', '.'))
     return root
 
 
@@ -556,9 +556,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
         involucro_path = kwargs.get('involucro_path', None)
         if involucro_path is None:
-            target_dir = resolve_path(kwargs.get("tool_dependency_dir", "dependencies"), self.data_dir)
+            target_dir = kwargs.get("tool_dependency_dir", "dependencies")
             if target_dir == "none":
-                target_dir = "database"
+                target_dir = "dependencies"
+            target_dir = resolve_path(target_dir, self.data_dir)
             involucro_path = os.path.join(target_dir, "involucro")
         self.involucro_path = resolve_path(involucro_path, self.root)
         self.involucro_auto_init = string_as_bool(kwargs.get('involucro_auto_init', True))

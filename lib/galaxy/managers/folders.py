@@ -78,6 +78,23 @@ class FolderManager(object):
             folder = self.check_accessible(trans, folder)
         return folder
 
+    def check_modifyable(self, trans, folder):
+        """
+        Check whether the user can modify the folder (name and description).
+
+        :returns:   the original folder
+        :rtype:     LibraryFolder
+
+        :raises: AuthenticationRequired, InsufficientPermissionsException
+        """
+        if not trans.user:
+            raise AuthenticationRequired("Must be logged in to manage Galaxy items.", type='error')
+        current_user_roles = trans.get_current_user_roles()
+        if not trans.app.security_agent.can_modify_library_item(current_user_roles, folder):
+            raise InsufficientPermissionsException("You don't have permissions to modify this folder.", type='error')
+        else:
+            return folder
+
     def check_manageable(self, trans, folder):
         """
         Check whether the user can manage the folder.
@@ -171,8 +188,7 @@ class FolderManager(object):
         """
         changed = False
         if not trans.user_is_admin:
-            if not self.check_manageable(trans, folder):
-                raise InsufficientPermissionsException("You do not have proper permission to update the library folder.")
+            folder = self.check_modifyable(trans, folder)
         if folder.deleted is True:
             raise ItemAccessibilityException("You cannot update a deleted library folder. Undelete it first.")
         if name is not None and name != folder.name:

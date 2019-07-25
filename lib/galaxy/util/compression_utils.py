@@ -47,8 +47,13 @@ def get_fileobj_raw(filename, mode="r", compressed_formats=None):
         compressed_format = 'bz2'
     elif 'zip' in compressed_formats and zipfile.is_zipfile(filename):
         # Return fileobj for the first file in a zip file.
-        with zipfile.ZipFile(filename, mode) as zh:
-            fh = zh.open(zh.namelist()[0], mode)
+        # 'b' is not allowed in the ZipFile mode argument
+        # since it always opens files in binary mode.
+        # For emulating text mode, we will be returning the binary fh in a
+        # TextIOWrapper.
+        zf_mode = mode.replace('b', '')
+        with zipfile.ZipFile(filename, zf_mode) as zh:
+            fh = zh.open(zh.namelist()[0], zf_mode)
         compressed_format = 'zip'
     elif 'b' in mode:
         return compressed_format, open(filename, mode)

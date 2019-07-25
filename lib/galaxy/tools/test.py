@@ -6,7 +6,7 @@ from six import string_types
 
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
-from galaxy.tools.verify.interactor import ToolTestDescription
+from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.util import (
     string_as_bool,
     unicodify,
