@@ -133,7 +133,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             match = path.split('/config/')[-1]
             return os.path.join('./static', match, 'static')
         else:
-            raise MessageException('Failed to determine static path: %s.' % path)
+            log.debug('Visualization has no static path: %s.' % path)
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
         """
