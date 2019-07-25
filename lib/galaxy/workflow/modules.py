@@ -715,7 +715,7 @@ class InputParameterModule(WorkflowModule):
                         input_data = sel_case.inputs.data[case_name]
                 else:
                     input_data = tool_inputs.data[connection.input_name]
-                static_options.append(input_data.static_options)  # Aggregation input select options from several connections
+                static_options.append(input_data.get_options(self.trans,None))  # Aggregation input select options from several connections
             if static_options != []:
                 # Intersection based on values.
                 intxn_vals = set.intersection(*[set([option[1] for option in options]) for options in static_options])
