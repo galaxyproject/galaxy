@@ -8,7 +8,6 @@ import os
 
 import mako.lookup
 
-from galaxy.exceptions import MessageException
 from galaxy.managers import api_keys
 from galaxy.visualization.plugins import (
     interactive_environments,
