@@ -14,6 +14,7 @@ import six
 
 import galaxy.model
 from galaxy import util
+from galaxy.datatypes import registry, sniff
 from galaxy.exceptions import (
     RequestParameterInvalidException
 )
@@ -512,6 +513,12 @@ def persist_hdas(elements, model_persistence_context):
                 fields_match = discovered_file.match
                 designation = fields_match.designation
                 ext = fields_match.ext
+                if not ext or ext == 'auto':
+                    r = registry.example_datatype_registry_for_sample()
+                    try:
+                        ext = sniff.guess_ext(discovered_file[0], r.sniff_order)
+                    except Exception:
+                        log.warning("Failed to sniff extension for dataset [%s]", discovered_file[0])
                 dbkey = fields_match.dbkey
                 info = element.get("info", None)
                 link_data = discovered_file.match.link_data
