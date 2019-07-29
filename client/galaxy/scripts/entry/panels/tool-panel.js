@@ -87,6 +87,8 @@ const ToolPanel = Backbone.View.extend({
       this.$el.append(node);
       new toolBox({
         propsData: {
+          appRoot: getAppRoot(),
+          toolsTitle: _l("Tools"),
           toolSearch: this.tool_panel.get('tool_search').toJSON(),
           tools: this.tool_panel.get('tools').toJSON(),
           layout: this.tool_panel.get('layout').toJSON(),
@@ -97,8 +99,8 @@ const ToolPanel = Backbone.View.extend({
             href: `${appRoot}workflows/list`
           }, ...this.stored_workflow_menu_entries.map(menuEntry => {
             return {
-              title: menuEntry.stored_workflow.name,
-              href: `${appRoot}workflows/run?id=${menuEntry.encoded_stored_workflow_id}`
+              title: menuEntry['stored_workflow']['name'],
+              href: `${appRoot}workflows/run?id=${menuEntry['encoded_stored_workflow_id']}`
             }
           })],
         }

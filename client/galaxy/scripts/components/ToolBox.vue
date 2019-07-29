@@ -4,6 +4,12 @@
         <div>The new Vue tools panel</div>
         <hr />
 
+
+        <tool-search />
+
+
+
+
             <div class="toolMenu">
                 <tool-section v-for="category in layout" :category="category"></tool-section>
             </div>
@@ -28,11 +34,13 @@
 
 <script>
   import ToolSection from './ToolSection';
+  import ToolSearch from './ToolSearch';
 
   export default {
     name: "ToolBox",
     components: {
-      ToolSection
+      ToolSection,
+      ToolSearch
     },
     props: {
       tools: {

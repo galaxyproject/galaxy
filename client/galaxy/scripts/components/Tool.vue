@@ -19,7 +19,7 @@
 </template>
 
 <script>
-  import { getGalaxyInstance } from "app";
+  import { getGalaxyInstance } from "app"; // FIXME:
 
   export default {
     name: "Tool",
