@@ -231,9 +231,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
         if "job_metrics_config_file" not in conf:
             conf["job_metrics"] = self.app.job_metrics
         if "staging_directory" not in conf:
-            conf["staging_directory"] = "database/pulsar_staging"
+            conf["staging_directory"] = os.path.join(self.app.config.data_dir, "pulsar_staging")
         if "persistence_directory" not in conf:
-            conf["persistence_directory"] = "database/pulsar_persisted_data"
+            conf["persistence_directory"] = os.path.join(self.app.config.data_dir, "pulsar_persisted_data")
         if "galaxy_home" not in conf:
             conf["galaxy_home"] = galaxy_directory()
         self.pulsar_app = pulsar.core.PulsarApp(**conf)
