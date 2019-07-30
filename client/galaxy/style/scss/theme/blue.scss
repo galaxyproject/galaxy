@@ -15,7 +15,7 @@ $gray-100: $brand-light;
 $gray-200: darken($brand-light, 5%); // welcome background
 $gray-300: darken($brand-light, 10%);
 
-// Dark grays for text colors
+// Dark grays for foreground
 $gray-900: $brand-dark; // text-regular
 $gray-800: lighten($gray-900, 10%);
 $gray-700: lighten($gray-900, 10%);
