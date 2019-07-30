@@ -358,7 +358,7 @@
     $mph-column_width: 312px;
     $mph-border_width: 1px;
     $mph-column_gap: 8px;
-    $mph-header_height: 29px;
+    $mph-header_height: 40px;
     $mph-footer_height: 0;
     $mph-controls_height: 20px;
 
@@ -423,13 +423,15 @@
     & > .footer {
         width: 100%;
         background-color: $white;
-        .btn {
-            height: 21px;
-        }
+
     }
     & > .header {
         min-height: $mph-header_height;
         max-height: $mph-header_height;
+        .search-control {
+            width: 300px;
+            float: left;
+        }
         // popover containing sorting and filters
         .more-options {
             .btn {
