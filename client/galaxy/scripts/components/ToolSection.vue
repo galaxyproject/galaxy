@@ -10,7 +10,7 @@
             </div>
             <transition name="slide">
                 <div v-if="opened">
-                    <template v-for="tool in category.elems.map((el => el.toJSON()))">
+                    <template v-for="tool in category.elems">
                         <tool v-if="tool.model_class.endsWith('Tool')" :tool="tool"></tool>
                         <div v-else-if="tool.model_class === 'ToolSectionLabel'" class="toolPanelLabel">
                             <span>
@@ -33,29 +33,44 @@
 </template>
 
 <script>
-  import Tool from './Tool.vue';
+    import Tool from './Tool.vue';
 
-  export default {
-    name: "ToolSection",
-    components: {
-      Tool
-    },
-    props: {
-      category: {
-        type: Object,
-      },
-    },
-    methods: {
-
-    },
-    data() {
-      return {
-        opened: false
-      }
-    },
-    created() {
-    }
-  };
+    export default {
+        name: "ToolSection",
+        components: {
+            Tool
+        },
+        props: {
+            category: {
+                type: Object,
+            },
+            isFiltered: {
+                type: Boolean
+            }
+        },
+        methods: {},
+        data() {
+            return {
+                opened: false
+            }
+        },
+        watch: {
+            isFiltered(newVal) {
+                if (newVal) {
+                    this.opened = true;
+                } else {
+                    this.opened = false;
+                }
+            }
+        },
+        mounted() {
+            if (this.isFiltered) {
+                this.opened = true;
+            } else {
+                this.opened = false;
+            }
+        }
+    };
 </script>
 
 <style scoped>

@@ -51,7 +51,6 @@
       }
     },
     created() {
-      console.log(this.tool)
     }
   };
 </script>

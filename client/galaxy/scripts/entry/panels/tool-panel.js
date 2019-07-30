@@ -54,9 +54,9 @@ const ToolPanel = Backbone.View.extend({
         title: _l("Show favorites"),
         icon: "fa fa-star-o",
         onclick: e => {
-          $("#tool-search-query")
-            .val("#favorites")
-            .trigger("change");
+          const toolSearchQueryNode = document.querySelector('.tool-search-query');
+          toolSearchQueryNode.value = "#favorites";
+          toolSearchQueryNode.dispatchEvent(new Event("input"));
         }
       });
       panel_buttons.push(this.favorite_button);
@@ -77,21 +77,25 @@ const ToolPanel = Backbone.View.extend({
   render: function() {
     // if there are tools, render panel and display everything
     if (this.tool_panel.get("layout").size() > 0) {
-      this.$el.find(".toolMenu").replaceWith(this.tool_panel_view.$el);
-      this.tool_panel_view.render();
+      // this.$el.find(".toolMenu").replaceWith(this.tool_panel_view.$el);
+      // this.tool_panel_view.render();
 
       const toolBox = Vue.extend(ToolBox);
       const node = document.createElement("div");
       const appRoot = getAppRoot();
 
-      this.$el.append(node);
+      this.$el.replaceWith(node);
       new toolBox({
         propsData: {
           appRoot: getAppRoot(),
           toolsTitle: _l("Tools"),
-          toolSearch: this.tool_panel.get('tool_search').toJSON(),
-          tools: this.tool_panel.get('tools').toJSON(),
-          layout: this.tool_panel.get('layout').toJSON(),
+          layout: _.map(this.tool_panel.get('layout').toJSON(), (category) => {
+            return {...category,
+              elems: _.map(category.elems, el => {
+                return el.toJSON();
+              })
+            }
+          }),
 
           workflowsTitle: _l("Workflows"),
           workflows: [{
@@ -110,7 +114,7 @@ const ToolPanel = Backbone.View.extend({
 
     // build the dom for the workflow portion of the tool menu
     // add internal workflow list
-    this.$("#internal-workflows").append(
+    /*this.$("#internal-workflows").append(
       this._templateAllWorkflow({
         title: _l("All workflows"),
         href: "workflows/list"
@@ -123,7 +127,7 @@ const ToolPanel = Backbone.View.extend({
           href: `workflows/run?id=${menu_entry.encoded_stored_workflow_id}`
         })
       );
-    });
+    });*/
   },
 
   /** build a link to one tool */

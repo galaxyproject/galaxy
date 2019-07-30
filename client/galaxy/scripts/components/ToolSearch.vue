@@ -4,7 +4,7 @@
                    ref="input"
                    @click="focusAndSelect"
                    @keydown.esc="clear"
-                   class="search-query parent-width"
+                   class="search-query parent-width tool-search-query"
                    name="query" placeholder="search tools" autocomplete="off"
                    type="text">
             <span class="search-clear fa fa-times-circle" v-b-tooltip.hover
@@ -78,8 +78,8 @@
                     }
                 }
             }, 400),
-            handleResponse(data) {
-                this.$emit("results", data);
+            handleResponse(response) {
+                this.$emit("results", response.data);
 
                 // console.log(data);
 
