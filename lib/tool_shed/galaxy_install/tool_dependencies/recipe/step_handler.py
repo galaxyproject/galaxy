@@ -709,15 +709,26 @@ class MoveDirectoryFiles(RecipeStep):
         source_directory = os.path.abspath(os.path.join(current_dir, source_dir))
         destination_directory = os.path.abspath(os.path.join(destination_dir))
         if not os.path.isdir(destination_directory):
-            os.makedirs(destination_directory)
-        for dir_entry in os.listdir(source_directory):
-            source_entry = os.path.join(source_directory, dir_entry)
-            if os.path.islink(source_entry):
-                destination_entry = os.path.join(destination_directory, dir_entry)
-                os.symlink(os.readlink(source_entry), destination_entry)
-                os.remove(source_entry)
-            else:
-                shutil.move(source_entry, destination_directory)
+            os.mkdir(destination_directory)
+        info = os.stat(destination_directory)
+        uid = info.st_uid
+        gid = info.st_gid
+        for root, dir_entry, file_entry in os.walk(source_directory):
+            for dirs in dir_entry:
+                source_entry = os.path.relpath(os.path.join(root, dirs),source_directory)
+                destination_entry = os.path.join(destination_directory, source_entry)
+                if os.path.islink(os.path.join(root, dirs)):
+                   os.symlink(os.readlink(os.path.join(root, dirs)), destination_entry)
+                   os.remove(source_entry)
+                if os.path.isdir(os.path.join(root, dirs)):
+                   os.mkdir(destination_entry)  
+                   os.chown(destination_entry,uid,gid)
+                   os.chmod(destination_entry,stat.S_ISGID | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRUSR)
+            for allfiles in file_entry:
+                source_entry = os.path.relpath(os.path.join(root, allfiles),source_directory)
+                destination_entry = os.path.join(destination_directory, source_entry)
+                shutil.copy(os.path.join(root, allfiles), destination_entry)
+                os.chown(destination_entry, uid, gid)
 
     def prepare_step(self, tool_dependency, action_elem, action_dict, install_environment, is_binary_download):
         # <action type="move_directory_files">

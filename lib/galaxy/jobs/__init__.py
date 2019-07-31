@@ -1416,7 +1416,6 @@ class JobWrapper(HasResourceParameters):
                 try:
                     # Attempt to short circuit NFS attribute caching
                     os.stat(dataset.dataset.file_name)
-                    os.chown(dataset.dataset.file_name, os.getuid(), -1)
                     trynum = self.app.config.retry_job_output_collection
                 except (OSError, ObjectNotFound) as e:
                     trynum += 1
