@@ -1714,7 +1714,7 @@ div.toolSectionWrapper {
 }
 .mark-terminal {
     cursor: pointer;
-    color: $gray-500;
+    color: $text-muted;
     &.mark-terminal-active {
         color: $brand-success;
     }

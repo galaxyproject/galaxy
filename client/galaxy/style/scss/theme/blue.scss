@@ -9,24 +9,25 @@ $brand-light: #f8f9fa;
 $brand-dark: #2c3143;
 $brand-toggle: gold;
 
+// Text colors
+$text-color: $brand-dark;
+$text-muted: lighten($text-color, 10%);
+$border-color: lighten($text-color, 60%);
+
 // Light grays for backgrounds
 $white: lighten($brand-light, 15%); // body background
 $gray-100: $brand-light;
 $gray-200: darken($brand-light, 5%); // welcome background
 $gray-300: darken($brand-light, 10%);
 
-// Dark grays for foreground
-$gray-900: $brand-dark; // text-regular
+// Dark grays for foregrounds
+$gray-900: $brand-dark;
 $gray-800: lighten($gray-900, 10%);
-$gray-700: lighten($gray-900, 10%);
-$gray-600: lighten($gray-900, 10%); // text-muted
-$gray-500: lighten($gray-900, 10%);
-$gray-400: lighten($gray-900, 60%); // default borders
+$gray-700: lighten($gray-900, 20%);
+$gray-600: lighten($gray-900, 30%);
+$gray-500: lighten($gray-900, 40%);
+$gray-400: lighten($gray-900, 50%);
 $black: $brand-dark;
-
-// Text colors
-$text-color: $gray-900;
-$text-muted: $gray-600;
 
 // These variables don't actually determine the colors in Bootstrap 4, instead
 // they use a map called $theme-colors, so here we override that
@@ -123,7 +124,6 @@ $layout-border: none;
 $border-radius-base: 0.1875rem;
 $border-radius-large: 0.3125rem;
 $border-radius-extralarge: 1rem;
-$border-color: $gray-400;
 $border-default: 1px solid $border-color;
 
 // Buttons
@@ -138,7 +138,7 @@ $form-border: darken($form-heading-bg, 20%);
 // Table
 $table-heading-bg: $panel-bg-color;
 $table-bg-accent: darken($panel-bg-color, 5%);
-$table-border-color: $gray-400;
+$table-border-color: $border-color;
 
 // Additional state colors
 $state-default-bg: $gray-200;

@@ -317,7 +317,7 @@
                 @extend .position-relative;
                 @extend .font-italic;
                 @extend .h6;
-                color: $gray-500;
+                color: $text-muted;
                 //TODO: move out for localization
                 content: "Click here to edit annotation";
             }

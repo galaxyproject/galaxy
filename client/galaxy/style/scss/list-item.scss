@@ -88,14 +88,14 @@ $vertical-gap: 8px;
             text-decoration: underline;
         }
         .subtitle {
-            color: $gray-500;
+            color: $text-muted;
             font-size: 90%;
             a {
                 color: inherit;
             }
         }
         .state-description {
-            color: $gray-500;
+            color: $text-muted;
             font-size: 90%;
             a {
                 color: inherit;
@@ -156,7 +156,7 @@ $vertical-gap: 8px;
             }
         }
         .subtitle {
-            color: $gray-500;
+            color: $text-muted;
             font-size: 90%;
             a {
                 color: inherit;
