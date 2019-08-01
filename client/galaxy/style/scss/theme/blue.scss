@@ -22,11 +22,11 @@ $gray-300: darken($brand-light, 10%);
 
 // Dark grays for foregrounds
 $gray-900: $brand-dark;
-$gray-800: lighten($gray-900, 10%);
-$gray-700: lighten($gray-900, 20%);
-$gray-600: lighten($gray-900, 30%);
-$gray-500: lighten($gray-900, 40%);
-$gray-400: lighten($gray-900, 50%);
+$gray-800: $text-muted;
+$gray-700: $text-muted;
+$gray-600: $text-muted;
+$gray-500: $text-muted;
+$gray-400: $border-color;
 $black: $brand-dark;
 
 // These variables don't actually determine the colors in Bootstrap 4, instead
