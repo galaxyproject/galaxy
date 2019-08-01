@@ -52,21 +52,17 @@ const ToolPanel = Backbone.View.extend({
                 title: _l("Show favorites"),
                 icon: "fa fa-star-o",
                 onclick: e => {
-                    const search_query = $("#tool-search-query");
-                    const header_btn = $(".panel-header-button");
-                    $(".panel-header-button .fa").toggleClass("fa-star-o fa-star");
-                    //hide the tooltip
-                    header_btn.tooltip('hide');
-                    if(search_query.val().indexOf("#favorites")!= -1)
-                        {
-                            search_query.val("");
-                            search_query.keyup();
-                            header_btn.attr("title","");
-                        }
-                    else
-                        {
-                            search_query.val("#favorites").trigger("change");
-                        }
+                    const $search_query = $("#tool-search-query");
+                    const $header_btn = $(".panel-header-button");
+                    $header_btn.find(".fa").toggleClass("fa-star-o fa-star");
+                    $header_btn.tooltip("hide");
+                    if ($search_query.val().indexOf("#favorites") != -1) {
+                        $search_query.val("");
+                        $search_query.keyup();
+                        $header_btn.attr("title", "");
+                    } else {
+                        $search_query.val("#favorites").trigger("change");
+                    }
                 }
             });
             panel_buttons.push(this.favorite_button);
