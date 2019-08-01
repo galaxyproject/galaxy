@@ -5,7 +5,6 @@ import { getGalaxyInstance } from "app";
 
 import Vue from "vue";
 import SidePanelVue from '../components/SidePanel.vue';
-import ToolBox from '../components/ToolBox.vue';
 
 const MIN_PANEL_WIDTH = 160;
 const MAX_PANEL_WIDTH = 800;
@@ -32,7 +31,7 @@ const SidePanel = Backbone.View.extend({
         const panel = this.view;
         const components = this.view.model.attributes || {};
 
-        if (this.id === 'left') {
+        if (this.id === 'left' && this.view && this.view.isVueWrapper) {
 
             const SidePanel = Vue.extend(SidePanelVue);
             const node = document.createElement("div");
@@ -41,7 +40,7 @@ const SidePanel = Backbone.View.extend({
             new SidePanel({
                 propsData: {
                     side: 'left',
-                    currentPanel: ToolBox,
+                    currentPanel:  this.view.getVueComponent(),
                     currentPanelProperties: this.view.getProperties()
                 }
             }).$mount(node);

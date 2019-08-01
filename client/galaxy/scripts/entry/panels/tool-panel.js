@@ -8,7 +8,7 @@ import _ from "libs/underscore";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import Buttons from "mvc/ui/ui-buttons";
-import Vue from "vue";
+import ToolBox from "../../components/ToolBox.vue";
 
 const ToolPanel = Backbone.View.extend({
   initialize: function(page, options) {
@@ -71,6 +71,12 @@ const ToolPanel = Backbone.View.extend({
 
     // build body template
     this.setElement(this._template());
+  },
+
+  isVueWrapper: true,
+
+  getVueComponent: function() {
+    return ToolBox;
   },
 
   getProperties: function() {
