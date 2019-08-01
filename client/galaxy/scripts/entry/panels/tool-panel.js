@@ -9,7 +9,6 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import Buttons from "mvc/ui/ui-buttons";
 import Vue from "vue";
-import ToolBox from "components/ToolBox.vue";
 
 const ToolPanel = Backbone.View.extend({
   initialize: function(page, options) {
@@ -74,42 +73,39 @@ const ToolPanel = Backbone.View.extend({
     this.setElement(this._template());
   },
 
+  getProperties: function() {
+    const appRoot = getAppRoot();
+    return {
+      appRoot: getAppRoot(),
+      toolsTitle: _l("Tools"),
+      layout: _.map(this.tool_panel.get('layout').toJSON(), (category) => {
+        return {...category,
+          elems: _.map(category.elems, el => {
+            return el.toJSON();
+          })
+        }
+      }),
+
+      workflowsTitle: _l("Workflows"),
+      workflows: [{
+        title: _l("All workflows"),
+        href: `${appRoot}workflows/list`
+      }, ...this.stored_workflow_menu_entries.map(menuEntry => {
+        return {
+          title: menuEntry['stored_workflow']['name'],
+          href: `${appRoot}workflows/run?id=${menuEntry['encoded_stored_workflow_id']}`
+        }
+      })],
+    }
+  },
+
   render: function() {
     // if there are tools, render panel and display everything
-    if (this.tool_panel.get("layout").size() > 0) {
+    // if (this.tool_panel.get("layout").size() > 0) {
       // this.$el.find(".toolMenu").replaceWith(this.tool_panel_view.$el);
       // this.tool_panel_view.render();
 
-      const toolBox = Vue.extend(ToolBox);
-      const node = document.createElement("div");
-      const appRoot = getAppRoot();
-
-      this.$el.replaceWith(node);
-      new toolBox({
-        propsData: {
-          appRoot: getAppRoot(),
-          toolsTitle: _l("Tools"),
-          layout: _.map(this.tool_panel.get('layout').toJSON(), (category) => {
-            return {...category,
-              elems: _.map(category.elems, el => {
-                return el.toJSON();
-              })
-            }
-          }),
-
-          workflowsTitle: _l("Workflows"),
-          workflows: [{
-            title: _l("All workflows"),
-            href: `${appRoot}workflows/list`
-          }, ...this.stored_workflow_menu_entries.map(menuEntry => {
-            return {
-              title: menuEntry['stored_workflow']['name'],
-              href: `${appRoot}workflows/run?id=${menuEntry['encoded_stored_workflow_id']}`
-            }
-          })],
-        }
-      }).$mount(node);
-    }
+    // }
 
 
     // build the dom for the workflow portion of the tool menu

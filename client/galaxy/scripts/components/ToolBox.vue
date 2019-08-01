@@ -1,27 +1,36 @@
 <template>
-    <div class="toolMenuContainer">
+    <div class="unified-panel-wrapper">
+        <div class="unified-panel-header" unselectable="on">
+            <div class="unified-panel-header-inner">
+                <div class="panel-header-buttons" />
+                <div class="panel-header-text">Tools</div>
+            </div>
+        </div>
         <div class="unified-panel-controls">
             <tool-search @results="setResults"/>
         </div>
+        <div class="unified-panel-body">
+            <div class="toolMenuContainer">
+                    <div class="toolMenu">
+                        <tool-section v-for="category in toolsLayout" :category="category" :isFiltered="isFiltered"></tool-section>
+                    </div>
+                    <div class="toolSectionPad"></div>
+                    <div class="toolSectionPad"></div>
 
-            <div class="toolMenu">
-                <tool-section v-for="category in toolsLayout" :category="category" :isFiltered="isFiltered"></tool-section>
-            </div>
-            <div class="toolSectionPad"></div>
-            <div class="toolSectionPad"></div>
+                    <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
+                        <a>{{ workflowsTitle }}</a>
+                    </div>
+                    <div id="internal-workflows" class="toolSectionBody">
+                        <div class="toolSectionBg"></div>
 
-            <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
-                <a>{{ workflowsTitle }}</a>
+                        <div class="toolTitle" v-for="workflow in workflows">
+                            <a :href="workflow.href">
+                                {{ workflow.title }}
+                            </a>
+                        </div>
+                    </div>
             </div>
-            <div id="internal-workflows" class="toolSectionBody">
-                <div class="toolSectionBg"></div>
-
-                <div class="toolTitle" v-for="workflow in workflows">
-                    <a :href="workflow.href">
-                        {{ workflow.title }}
-                    </a>
-                </div>
-            </div>
+        </div>
     </div>
 
 </template>
@@ -107,5 +116,9 @@
 </script>
 
 <style scoped>
-
+    .unified-panel-wrapper {
+        display: flex;
+        flex-flow: column;
+        height: 100%;
+    }
 </style>

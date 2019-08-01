@@ -3,6 +3,10 @@ import _ from "underscore";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
 
+import Vue from "vue";
+import SidePanelVue from '../components/SidePanel.vue';
+import ToolBox from '../components/ToolBox.vue';
+
 const MIN_PANEL_WIDTH = 160;
 const MAX_PANEL_WIDTH = 800;
 
@@ -27,14 +31,31 @@ const SidePanel = Backbone.View.extend({
         const self = this;
         const panel = this.view;
         const components = this.view.model.attributes || {};
-        this.$el.html(this._templatePanel(this.id));
-        _.each(components.buttons, button => {
-            self.$(".panel-header-buttons").append(button.$el);
-        });
-        this.$el.addClass(components.cls);
-        this.$(".panel-header-text").html(_.escape(components.title));
-        this.$(".unified-panel-body").append(panel.$el);
-        panel.render();
+
+        if (this.id === 'left') {
+
+            const SidePanel = Vue.extend(SidePanelVue);
+            const node = document.createElement("div");
+
+            this.$el.replaceWith(node);
+            new SidePanel({
+                propsData: {
+                    side: 'left',
+                    currentPanel: ToolBox,
+                    currentPanelProperties: this.view.getProperties()
+                }
+            }).$mount(node);
+
+        } else {
+            this.$el.html(this._templatePanel(this.id));
+            _.each(components.buttons, button => {
+                self.$(".panel-header-buttons").append(button.$el);
+            });
+            this.$el.addClass(components.cls);
+            this.$(".panel-header-text").html(_.escape(components.title));
+            this.$(".unified-panel-body").append(panel.$el);
+            panel.render();
+        }
     },
 
     /** panel dom template. id is 'right' or 'left' */
