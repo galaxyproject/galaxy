@@ -1016,6 +1016,15 @@ class LibraryPopulator(object):
         api_asserts.assert_status_code_is(get_response, 200)
         return get_response.json()
 
+    def get_folder_contents_with_name(self, folder_id, name):
+        all_contents_response = self.galaxy_interactor.get("folders/%s/contents" % folder_id)
+        api_asserts.assert_status_code_is(all_contents_response, 200)
+        all_contents = all_contents_response.json()["folder_contents"]
+        matching = [c for c in all_contents if c["name"] == name]
+        if len(matching) == 0:
+            raise Exception("Failed to find folder contents with name [%s], contents are %s" % (name, all_contents))
+        return matching[0]
+
     def setup_fetch_to_folder(self, test_name):
         history_id = self.dataset_populator.new_history()
         library = self.new_private_library(test_name)

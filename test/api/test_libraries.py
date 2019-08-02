@@ -112,12 +112,13 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
             "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
         }
         self.dataset_populator.fetch(payload)
-        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
-        assert dataset["file_size"] == 61, dataset
-        assert dataset["genome_build"] == "hg19", dataset
-        assert dataset["misc_info"] == "my cool bed", dataset
+        dataset = self.library_populator.get_folder_contents_with_name(library["root_folder_id"], "4.bed")
+        assert dataset["raw_size"] == 61, dataset
         assert dataset["file_ext"] == "bed", dataset
-        assert dataset["created_from_basename"] == "4.bed"
+        dataset_details = self.galaxy_interactor.get("libraries/datasets/%s" % dataset["id"]).json()
+        assert dataset_details["genome_build"] == "hg19", dataset_details
+        assert dataset_details["misc_info"] == "my cool bed", dataset_details
+        assert dataset_details["created_from_basename"] == "4.bed"
 
     def test_fetch_zip_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("flat_zip")
@@ -132,8 +133,8 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
             "__files": {"files_0|file_data": open(bed_test_data_path, 'rb')}
         }
         self.dataset_populator.fetch(payload)
-        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
-        assert dataset["file_size"] == 61, dataset
+        dataset = self.library_populator.get_folder_contents_with_name(library["root_folder_id"], "4.bed")
+        assert dataset["raw_size"] == 61, dataset
 
     def test_fetch_single_url_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
@@ -152,8 +153,8 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
             "validate_hashes": True
         }
         self.dataset_populator.fetch(payload)
-        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
-        assert dataset["file_size"] == 61, dataset
+        dataset = self.library_populator.get_folder_contents_with_name(library["root_folder_id"], "4.bed")
+        assert dataset["raw_size"] == 61, dataset
 
     def test_fetch_failed_validation(self):
         # Exception handling is really rough here - we should be creating a dataset in error instead
@@ -194,8 +195,8 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
             "targets": json.dumps(targets),
         }
         self.dataset_populator.fetch(payload)
-        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
-        assert dataset["file_size"] == 61, dataset
+        dataset = self.library_populator.get_folder_contents_with_name(library["root_folder_id"], "4.bed")
+        assert dataset["raw_size"] == 61, dataset
 
     @unittest.skip  # reference URLs changed, checksums now invalid.
     def test_fetch_bagit_archive_to_folder(self):
@@ -211,11 +212,11 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
             "__files": {"files_0|file_data": open(example_bag_path)},
         }
         self.dataset_populator.fetch(payload)
-        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/README.txt")
-        assert dataset["file_size"] == 66, dataset
+        dataset = self.library_populator.get_folder_contents_with_name(library["root_folder_id"], "README.txt")
+        assert dataset["raw_size"] == 66, dataset
 
-        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/bdbag-profile.json")
-        assert dataset["file_size"] == 723, dataset
+        dataset = self.library_populator.get_folder_contents_with_name(library["root_folder_id"], "bdbag-profile.json")
+        assert dataset["raw_size"] == 723, dataset
 
     def _setup_fetch_to_folder(self, test_name):
         return self.library_populator.setup_fetch_to_folder(test_name)
