@@ -80,6 +80,7 @@ const ToolPanel = Backbone.View.extend({
   },
 
   getProperties: function() {
+    const Galaxy = getGalaxyInstance();
     const appRoot = getAppRoot();
     return {
       appRoot: getAppRoot(),
@@ -91,6 +92,8 @@ const ToolPanel = Backbone.View.extend({
           })
         }
       }),
+
+      isUser: !!(Galaxy.user && Galaxy.user.id),
 
       workflowsTitle: _l("Workflows"),
       workflows: [{

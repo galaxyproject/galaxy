@@ -3,6 +3,8 @@
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
                 <div class="panel-header-buttons">
+
+                    <favorites-button v-if="isUser"></favorites-button>
                     <upload-button></upload-button>
                 </div>
                 <div class="panel-header-text">Tools</div>
@@ -41,11 +43,13 @@
     import ToolSection from './ToolSection';
     import ToolSearch from './ToolSearch';
     import UploadButton from './UploadButton';
+    import FavoritesButton from './FavoritesButton';
 
     export default {
         name: "ToolBox",
         components: {
             UploadButton,
+            FavoritesButton,
             ToolSection,
             ToolSearch
         },
@@ -69,6 +73,10 @@
             },
             workflows: {
                 type: Array
+            },
+            isUser: {
+                type: Boolean,
+                default: false
             }
         },
         computed: {
