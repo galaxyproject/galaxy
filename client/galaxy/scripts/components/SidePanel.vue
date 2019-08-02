@@ -61,6 +61,20 @@
             },
             toggle() {
                 this.show = !this.show;
+
+                if (this.show) {
+                    document.getElementById('center').style.transition = `${this.side} 200ms linear`;
+                    document.getElementById('center').style[this.side] = this.width + 'px';
+                    setTimeout(()=>{
+                        document.getElementById('center').style.transition = '';
+                    }, 250);
+                } else {
+                    document.getElementById('center').style.transition = `${this.side} 200ms linear`;
+                    document.getElementById('center').style[this.side] = '0';
+                    setTimeout(()=>{
+                        document.getElementById('center').style.transition = '';
+                    }, 250);
+                }
             }
         }
     }
