@@ -82,9 +82,10 @@
                 this.$emit("results", response.data);
 
                 // console.log(data);
-
-                this.showSpinner = false;
-                this.showClear = true;
+                setTimeout(() => {
+                    this.showSpinner = false;
+                    this.showClear = true;
+                }, 200);
             },
             handleError(err) {
                 // FIXME: if in debug mode
