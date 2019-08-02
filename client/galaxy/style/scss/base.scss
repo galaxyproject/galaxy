@@ -659,7 +659,6 @@ div.form-row-input label {
     margin-bottom: 10px;
 }
 
-
 .form-row {
     select,
     textarea,
@@ -1372,7 +1371,9 @@ div.toolPanelLabel {
     text-transform: uppercase;
 }
 
-div.toolSectionTitle, div.toolTitle, div.toolTitleNoSection {
+div.toolSectionTitle,
+div.toolTitle,
+div.toolTitleNoSection {
     display: block;
     .labels {
         float: right;
