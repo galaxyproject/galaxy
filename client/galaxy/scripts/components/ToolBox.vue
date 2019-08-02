@@ -2,7 +2,9 @@
     <div class="unified-panel-wrapper">
         <div class="unified-panel-header" unselectable="on">
             <div class="unified-panel-header-inner">
-                <div class="panel-header-buttons" />
+                <div class="panel-header-buttons">
+                    <upload-button></upload-button>
+                </div>
                 <div class="panel-header-text">Tools</div>
             </div>
         </div>
@@ -38,10 +40,12 @@
 <script>
     import ToolSection from './ToolSection';
     import ToolSearch from './ToolSearch';
+    import UploadButton from './UploadButton';
 
     export default {
         name: "ToolBox",
         components: {
+            UploadButton,
             ToolSection,
             ToolSearch
         },
