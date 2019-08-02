@@ -19,6 +19,7 @@ from abc import ABCMeta, abstractmethod
 from json import loads
 from xml.etree import ElementTree
 
+import packaging.version
 import six
 import yaml
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
@@ -903,7 +904,8 @@ class JobWrapper(HasResourceParameters):
         if self._dataset_path_rewriter is None:
             outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
             if outputs_to_working_directory:
-                self._dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter(self.working_directory)
+                output_directory = self.outputs_directory
+                self._dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter(self.working_directory, output_directory)
             else:
                 self._dataset_path_rewriter = NullDatasetPathRewriter()
         return self._dataset_path_rewriter
@@ -911,6 +913,17 @@ class JobWrapper(HasResourceParameters):
     @property
     def dataset_path_rewriter(self):
         return self._job_dataset_path_rewriter
+
+    @property
+    def outputs_directory(self):
+        """Default location of ``outputs_to_working_directory``.
+        """
+        return None if self.created_with_galaxy_version < packaging.version.parse("20.01") else "outputs"
+
+    @property
+    def created_with_galaxy_version(self):
+        galaxy_version = self.get_job().galaxy_version or "19.05"
+        return packaging.version.parse(galaxy_version)
 
     @property
     def dependency_shell_commands(self):
@@ -2130,7 +2143,7 @@ class JobWrapper(HasResourceParameters):
     def get_output_destination(self, output_path):
         """
         Destination for outputs marked as from_work_dir. This is the normal case,
-        just copy these files directly to the ulimate destination.
+        just copy these files directly to the ultimate destination.
         """
         return output_path
 

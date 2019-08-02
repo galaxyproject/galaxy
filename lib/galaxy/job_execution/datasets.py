@@ -82,14 +82,18 @@ class OutputsToWorkingDirectoryPathRewriter(object):
     is responsible for copying these out after job is complete.
     """
 
-    def __init__(self, working_directory):
+    def __init__(self, working_directory, outputs_directory_name):
         self.working_directory = working_directory
+        self.outputs_directory_name = outputs_directory_name
 
     def rewrite_dataset_path(self, dataset, dataset_type):
         """ Keep path the same.
         """
         if dataset_type == 'output':
-            false_path = os.path.abspath(os.path.join(self.working_directory, "galaxy_dataset_%d.dat" % dataset.id))
+            base_output_directory = os.path.abspath(self.working_directory)
+            if self.outputs_directory_name is not None:
+                base_output_directory = os.path.join(base_output_directory, self.outputs_directory_name)
+            false_path = os.path.join(base_output_directory, "galaxy_dataset_%d.dat" % dataset.id)
             return false_path
         else:
             return None
