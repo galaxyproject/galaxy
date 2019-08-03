@@ -84,6 +84,13 @@ class ToolParameter(Dictifiable):
     Describes a parameter accepted by a tool. This is just a simple stub at the
     moment but in the future should encapsulate more complex parameters (lists
     of valid choices, validation logic, ...)
+
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch(app=None)
+    >>> p = TextToolParameter(None, XML('<param argument="--parameter-name" type="text" value="default" />'))
+    >>> print(p.name)
+    parameter_name
+    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', '--parameter-name'), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', 'parameter_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
     """
     dict_collection_visible_keys = ['name', 'argument', 'type', 'label', 'help', 'refresh_on_change']
 
@@ -250,7 +257,7 @@ class ToolParameter(Dictifiable):
         if name is None:
             argument = input_source.get('argument')
             if argument:
-                name = argument.lstrip('-')
+                name = argument.lstrip('-').replace("-", "_")
             else:
                 raise ValueError("parameter must specify a name.")
         return name
