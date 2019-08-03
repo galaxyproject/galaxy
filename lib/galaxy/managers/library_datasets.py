@@ -43,7 +43,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         try:
             ld = trans.sa_session.query(trans.app.model.LibraryDataset).filter(trans.app.model.LibraryDataset.table.c.id == decoded_library_dataset_id).one()
         except Exception as e:
-            raise InternalServerError('Error loading from the database.' + str(e))
+            raise InternalServerError('Error loading from the database.' + util.unicodify(e))
         ld = self.secure(trans, ld, check_accessible)
         return ld
 

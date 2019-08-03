@@ -352,10 +352,16 @@ class WorkflowProgress(object):
         try:
             replacement = step_outputs[output_name]
         except KeyError:
-            # Must resolve.
-            template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
-            message = template % (output_name, step_outputs)
-            raise Exception(message)
+            replacement = self.inputs_by_step_id.get(output_step_id)
+            if connection.output_step.type == 'parameter_input' and output_step_id is not None:
+                # FIXME: parameter_input step outputs should be properly recorded as step outputs, but for now we can
+                # short-circuit and just pick the input value
+                pass
+            else:
+                # Must resolve.
+                template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
+                message = template % (output_name, step_outputs)
+                raise Exception(message)
         if isinstance(replacement, model.HistoryDatasetCollectionAssociation):
             if not replacement.collection.populated:
                 if not replacement.collection.waiting_for_elements:

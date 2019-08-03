@@ -699,7 +699,7 @@ class Bcf(BaseBcf):
             subprocess.check_call(cmd)
             shutil.move(dataset_symlink + '.csi', index_file.file_name)
         except Exception as e:
-            raise Exception('Error setting BCF metadata: %s' % (str(e)))
+            raise Exception('Error setting BCF metadata: %s' % util.unicodify(e))
         finally:
             # Remove temp file and symlink
             os.remove(dataset_symlink)
