@@ -3,11 +3,6 @@ API operations on the contents of a data library.
 """
 import logging
 
-from sqlalchemy.orm.exc import (
-    MultipleResultsFound,
-    NoResultFound,
-)
-
 from galaxy import (
     exceptions,
     managers,
@@ -39,123 +34,6 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def __init__(self, app):
         super(LibraryContentsController, self).__init__(app)
         self.hda_manager = managers.hdas.HDAManager(app)
-
-    @expose_api
-    def index(self, trans, library_id, **kwd):
-        """
-        index( self, trans, library_id, **kwd )
-        * GET /api/libraries/{library_id}/contents:
-            Returns a list of library files and folders.
-
-        .. note:: May be slow! Returns all content traversing recursively through all folders.
-        .. seealso:: :class:`galaxy.webapps.galaxy.api.FolderContentsController.index` for a non-recursive solution
-
-        :param  library_id: the encoded id of the library
-        :type   library_id: str
-
-        :returns:   list of dictionaries of the form:
-            * id:   the encoded id of the library item
-            * name: the 'library path'
-                or relationship of the library item to the root
-            * type: 'file' or 'folder'
-            * url:  the url to get detailed information on the library item
-        :rtype:     list
-
-        :raises:  MalformedId, InconsistentDatabase, RequestParameterInvalidException, InternalServerError
-        """
-        rval = []
-        current_user_roles = trans.get_current_user_roles()
-
-        def traverse(folder):
-            admin = trans.user_is_admin
-            rval = []
-            for subfolder in folder.active_folders:
-                if not admin:
-                    can_access, folder_ids = trans.app.security_agent.check_folder_contents(trans.user, current_user_roles, subfolder)
-                if (admin or can_access) and not subfolder.deleted:
-                    subfolder.api_path = folder.api_path + '/' + subfolder.name
-                    subfolder.api_type = 'folder'
-                    rval.append(subfolder)
-                    rval.extend(traverse(subfolder))
-            for ld in folder.datasets:
-                if not admin:
-                    can_access = trans.app.security_agent.can_access_dataset(
-                        current_user_roles,
-                        ld.library_dataset_dataset_association.dataset
-                    )
-                if (admin or can_access) and not ld.deleted:
-                    ld.api_path = folder.api_path + '/' + ld.name
-                    ld.api_type = 'file'
-                    rval.append(ld)
-            return rval
-        try:
-            decoded_library_id = self.decode_id(library_id)
-        except Exception:
-            raise exceptions.MalformedId('Malformed library id ( %s ) specified, unable to decode.' % library_id)
-        try:
-            library = trans.sa_session.query(trans.app.model.Library).filter(trans.app.model.Library.table.c.id == decoded_library_id).one()
-        except MultipleResultsFound:
-            raise exceptions.InconsistentDatabase('Multiple libraries found with the same id.')
-        except NoResultFound:
-            raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
-        except Exception as e:
-            raise exceptions.InternalServerError('Error loading from the database.' + util.unicodify(e))
-        if not (trans.user_is_admin or trans.app.security_agent.can_access_library(current_user_roles, library)):
-            raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
-        encoded_id = 'F' + trans.security.encode_id(library.root_folder.id)
-        # appending root folder
-        rval.append(dict(id=encoded_id,
-                         type='folder',
-                         name='/',
-                         url=url_for('library_content', library_id=library_id, id=encoded_id)))
-        library.root_folder.api_path = ''
-        # appending all other items in the library recursively
-        for content in traverse(library.root_folder):
-            encoded_id = trans.security.encode_id(content.id)
-            if content.api_type == 'folder':
-                encoded_id = 'F' + encoded_id
-            rval.append(dict(id=encoded_id,
-                             type=content.api_type,
-                             name=content.api_path,
-                             url=url_for('library_content', library_id=library_id, id=encoded_id, )))
-        return rval
-
-    @expose_api
-    def show(self, trans, id, library_id, **kwd):
-        """
-        show( self, trans, id, library_id, **kwd )
-        * GET /api/libraries/{library_id}/contents/{id}
-            Returns information about library file or folder.
-
-        :param  id:         the encoded id of the library item to return
-        :type   id:         str
-
-        :param  library_id: the encoded id of the library that contains this item
-        :type   library_id: str
-
-        :returns:   detailed library item information
-        :rtype:     dict
-
-        .. seealso::
-            :func:`galaxy.model.LibraryDataset.to_dict` and
-            :attr:`galaxy.model.LibraryFolder.dict_element_visible_keys`
-        """
-        class_name, content_id = self._decode_library_content_id(id)
-        if class_name == 'LibraryFolder':
-            content = self.get_library_folder(trans, content_id, check_ownership=False, check_accessible=True)
-            rval = content.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
-            rval['id'] = 'F' + str(rval['id'])
-            if rval['parent_id'] is not None:  # This can happen for root folders.
-                rval['parent_id'] = 'F' + str(trans.security.encode_id(rval['parent_id']))
-            rval['parent_library_id'] = trans.security.encode_id(rval['parent_library_id'])
-        else:
-            content = self.get_library_dataset(trans, content_id, check_ownership=False, check_accessible=True)
-            rval = content.to_dict(view='element')
-            rval['id'] = trans.security.encode_id(rval['id'])
-            rval['ldda_id'] = trans.security.encode_id(rval['ldda_id'])
-            rval['folder_id'] = 'F' + str(trans.security.encode_id(rval['folder_id']))
-            rval['parent_library_id'] = trans.security.encode_id(rval['parent_library_id'])
-        return rval
 
     @expose_api
     def create(self, trans, library_id, payload, **kwd):
