@@ -684,7 +684,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
             read_content = fh.read()
         assert read_content == file_content
 
-        assert library_dataset["raw_size"] == 12, library_dataset
+        assert library_dataset["file_size"] == "12 bytes", library_dataset
 
     def link_data_only(self):
         content = "hello world\n"
@@ -761,7 +761,7 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         self.dataset_populator.fetch(payload)
         dataset = self.library_populator.get_folder_contents_with_name(library["root_folder_id"], "4.bed")
         assert dataset["raw_size"] == 61, dataset
-        assert dataset["file_name"] == bed_test_data_path, dataset
+        assert dataset["name"] == "4.bed", dataset
         assert os.path.exists(bed_test_data_path)
 
     def test_fetch_recursive_archive(self):
