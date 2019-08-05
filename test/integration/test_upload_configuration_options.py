@@ -684,7 +684,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
             read_content = fh.read()
         assert read_content == file_content
 
-        assert library_dataset["file_size"] == 12, library_dataset
+        assert library_dataset["raw_size"] == 12, library_dataset
 
     def link_data_only(self):
         content = "hello world\n"
@@ -696,8 +696,8 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
         response = self.library_populator.raw_library_contents_create(library["id"], payload, files=files)
         assert response.status_code == 200, response.json()
         dataset = response.json()[0]
-        ok_dataset = self.library_populator.wait_on_library_dataset(library, dataset)
-        assert ok_dataset["file_size"] == 12, ok_dataset
+        ok_dataset = self.library_populator.wait_on_library_dataset(dataset)
+        assert ok_dataset["raw_size"] == 12, ok_dataset
         assert ok_dataset["file_name"] == file_path, ok_dataset
 
     @classmethod
@@ -741,8 +741,8 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
             "targets": json.dumps(targets),
         }
         self.dataset_populator.fetch(payload)
-        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
-        assert dataset["file_size"] == 61, dataset
+        dataset = self.library_populator.get_folder_contents_with_name(library["root_folder_id"], "4.bed")
+        assert dataset["raw_size"] == 61, dataset
         assert os.path.exists(bed_test_data_path)
 
     def test_fetch_link_data_only(self):
@@ -759,8 +759,8 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
             "targets": json.dumps(targets),
         }
         self.dataset_populator.fetch(payload)
-        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
-        assert dataset["file_size"] == 61, dataset
+        dataset = self.library_populator.get_folder_contents_with_name(library["root_folder_id"], "4.bed")
+        assert dataset["raw_size"] == 61, dataset
         assert dataset["file_name"] == bed_test_data_path, dataset
         assert os.path.exists(bed_test_data_path)
 
@@ -776,14 +776,15 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
             "targets": json.dumps(targets),
         }
         self.dataset_populator.fetch(payload)
-        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/file1")
-        assert dataset["file_size"] == 6, dataset
+        dataset = self.library_populator.get_folder_contents_with_name(library["root_folder_id"], "file1")
+        assert dataset["raw_size"] == 6, dataset
 
-        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/file2")
-        assert dataset["file_size"] == 6, dataset
+        dataset = self.library_populator.get_folder_contents_with_name(library["root_folder_id"], "file2")
+        assert dataset["raw_size"] == 6, dataset
 
-        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/dir1/file3")
-        assert dataset["file_size"] == 11, dataset
+        folder_dir1 = self.library_populator.get_folder_contents_with_name(library["root_folder_id"], "dir1")
+        dataset = self.library_populator.get_folder_contents_with_name(folder_dir1["id"], "file3")
+        assert dataset["raw_size"] == 11, dataset
 
     def test_fetch_history_compressed_type(self):
         destination = {"type": "hdas"}
@@ -842,8 +843,8 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         matching = [l for l in libraries if l["name"] == "My Cool Library"]
         assert len(matching) == 1
         library = matching[0]
-        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/file1")
-        assert dataset["file_size"] == 6, dataset
+        dataset = self.library_populator.get_folder_contents_with_name(library["root_folder_id"], "file1")
+        assert dataset["raw_size"] == 6, dataset
 
 
 class TestDirectoryAndCompressedTypes(BaseUploadContentConfigurationTestCase):

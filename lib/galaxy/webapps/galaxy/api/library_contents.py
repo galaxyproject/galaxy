@@ -4,7 +4,6 @@ API operations on the contents of a data library.
 import logging
 
 from galaxy import (
-    exceptions,
     managers,
     util,
 )
@@ -38,7 +37,6 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api
     def create(self, trans, library_id, payload, **kwd):
         """
-        create( self, trans, library_id, payload, **kwd )
         * POST /api/libraries/{library_id}/contents:
             create a new library file or folder
 

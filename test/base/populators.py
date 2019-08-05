@@ -969,9 +969,9 @@ class LibraryPopulator(object):
         library = self.new_private_library(name)
         payload, files = self.create_dataset_request(library, **create_dataset_kwds)
         dataset = self.raw_library_contents_create(library["id"], payload, files=files).json()[0]
-        return self.wait_on_library_dataset(library, dataset)
+        return self.wait_on_library_dataset(dataset)
 
-    def wait_on_library_dataset(self, library, dataset):
+    def wait_on_library_dataset(self, dataset):
         def show():
             return self.galaxy_interactor.get("libraries/datasets/%s" % (dataset["id"]))
 
