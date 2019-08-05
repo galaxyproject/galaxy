@@ -38,7 +38,8 @@ pre {
     }
 }
 
-.dropdown-item, .dropdown-header {
+.dropdown-item,
+.dropdown-header {
     color: $text-color;
 }
 
@@ -129,7 +130,10 @@ pre.code {
 }
 
 // increase visibility of links within alert boxes
-.alert-info, .alert-danger, .alert-warning, .alert-success {
+.alert-info,
+.alert-danger,
+.alert-warning,
+.alert-success {
     a {
         font-weight: bold;
     }
@@ -139,6 +143,6 @@ pre.code {
 .dropdown-header {
     font-size: 1rem;
     color: $brand-dark;
-    padding: .5rem 1.5rem .5rem 1rem;
+    padding: 0.5rem 1.5rem 0.5rem 1rem;
     font-weight: bold;
 }

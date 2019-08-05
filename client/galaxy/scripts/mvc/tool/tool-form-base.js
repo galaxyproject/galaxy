@@ -280,13 +280,13 @@ export default FormBase.extend({
                 }
             }).$mount(vm);
         }
-	if (options.xrefs && options.xrefs.length) {
+        if (options.xrefs && options.xrefs.length) {
             var xrefInstance = Vue.extend(xrefs);
             vm = document.createElement("div");
             $el.append(vm);
             new xrefInstance({
                 propsData: {
-                    id: options.id, 
+                    id: options.id,
                     source: "tools"
                 }
             }).$mount(vm);
