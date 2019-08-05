@@ -973,7 +973,7 @@ class LibraryPopulator(object):
 
     def wait_on_library_dataset(self, library, dataset):
         def show():
-            return self.galaxy_interactor.get("libraries/%s/contents/%s" % (library["id"], dataset["id"]))
+            return self.galaxy_interactor.get("libraries/datasets/%s" % (dataset["id"]))
 
         wait_on_state(show, assert_ok=True, timeout=DEFAULT_TIMEOUT)
         return show().json()
@@ -985,8 +985,8 @@ class LibraryPopulator(object):
         url_rel = "libraries/%s/contents" % library_id
         return self.galaxy_interactor.post(url_rel, payload, files=files)
 
-    def show_ldda(self, library_id, library_dataset_id):
-        return self.galaxy_interactor.get("libraries/%s/contents/%s" % (library_id, library_dataset_id))
+    def show_ldda(self, library_dataset_id):
+        return self.galaxy_interactor.get("libraries/datasets/%s" % (library_dataset_id))
 
     def new_library_dataset_in_private_library(self, library_name="private_dataset", wait=True):
         library = self.new_private_library(library_name)
@@ -998,7 +998,7 @@ class LibraryPopulator(object):
         library_dataset = library_datasets[0]
         if wait:
             def show():
-                return self.show_ldda(library["id"], library_dataset["id"])
+                return self.show_ldda(library_dataset["id"])
 
             wait_on_state(show, assert_ok=True)
             library_dataset = show().json()

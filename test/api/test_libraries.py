@@ -89,9 +89,8 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
     def test_show_private_dataset_permissions(self):
         library, library_dataset = self.library_populator.new_library_dataset_in_private_library("ForCreateDatasets", wait=True)
         with self._different_user():
-            response = self.library_populator.show_ldda(library["id"], library_dataset["id"])
-            # TODO: this should really be 403 and a proper JSON exception.
-            self._assert_status_code_is(response, 400)
+            response = self.library_populator.show_ldda(library_dataset["id"])
+            self._assert_status_code_is(response, 404)
 
     def test_create_dataset(self):
         library, library_dataset = self.library_populator.new_library_dataset_in_private_library("ForCreateDatasets", wait=True)
