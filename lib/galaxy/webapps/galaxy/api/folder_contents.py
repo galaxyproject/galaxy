@@ -275,7 +275,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
             InsufficientPermissionsException, ItemAccessibilityException,
             InternalServerError
         """
-        encoded_folder_id_16 = self.__decode_library_content_id(trans, encoded_folder_id)
+        encoded_folder_id_16 = self.__decode_library_content_id(encoded_folder_id)
         from_hda_id = payload.pop('from_hda_id', None)
         from_hdca_id = payload.pop('from_hdca_id', None)
         ldda_message = payload.pop('ldda_message', '')
@@ -297,7 +297,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 log.exception(exc)
                 raise exc
 
-    def __decode_library_content_id(self, trans, encoded_folder_id):
+    def __decode_library_content_id(self, encoded_folder_id):
         """
         Identifies whether the id provided is properly encoded
         LibraryFolder.
@@ -314,17 +314,3 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
             return encoded_folder_id[1:]
         else:
             raise exceptions.MalformedId('Malformed folder id ( %s ) specified, unable to decode.' % str(encoded_folder_id))
-
-    @expose_api
-    def show(self, trans, id, library_id, **kwd):
-        """
-        GET /api/folders/{encoded_folder_id}/
-        """
-        raise exceptions.NotImplemented('Showing the library folder content is not implemented here.')
-
-    @expose_api
-    def update(self, trans, id, library_id, payload, **kwd):
-        """
-        PUT /api/folders/{encoded_folder_id}/contents
-        """
-        raise exceptions.NotImplemented('Updating the library folder content is not implemented here.')
