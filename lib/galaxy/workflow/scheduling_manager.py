@@ -282,7 +282,9 @@ class WorkflowRequestMonitor(Monitors):
             log.debug("Attempting to schedule workflow invocation [%s]", invocation_id)
             self.__attempt_schedule(invocation_id, workflow_scheduler)
             if not self.monitor_running:
+                log.info("monitor complete, leaving __schedule loop")
                 return
+        log.debug("__schedule loop complete")
 
     def __attempt_schedule(self, invocation_id, workflow_scheduler):
         sa_session = self.app.model.context
@@ -296,6 +298,7 @@ class WorkflowRequestMonitor(Monitors):
             # workflow invocation in a given history, to force sequential
             # activation.
             if self.app.config.history_local_serial_workflow_scheduling:
+                log.warn("Checking invocation for history_local_serial_workflow_scheduling, option known to cause Galaxy to become unstable.")
                 for i in workflow_invocation.history.workflow_invocations:
                     if i.active and i.id < workflow_invocation.id:
                         return False

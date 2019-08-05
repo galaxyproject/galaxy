@@ -71,7 +71,9 @@ def __invoke(trans, workflow, workflow_run_config, workflow_invocation=None, pop
     """ Run the supplied workflow in the supplied target_history.
     """
     if populate_state:
+        log.debug("calling populate module and state")
         modules.populate_module_and_state(trans, workflow, workflow_run_config.param_map, allow_tool_state_corrections=workflow_run_config.allow_tool_state_corrections)
+        log.debug("modules and states populated")
 
     invoker = WorkflowInvoker(
         trans,
@@ -82,6 +84,7 @@ def __invoke(trans, workflow, workflow_run_config, workflow_invocation=None, pop
     try:
         outputs = invoker.invoke()
     except modules.CancelWorkflowEvaluation:
+        log.debug("Workflow cancelled")
         if workflow_invocation:
             if workflow_invocation.cancel():
                 trans.sa_session.add(workflow_invocation)
@@ -171,8 +174,10 @@ class WorkflowInvoker(object):
             log.info("Cancelled workflow evaluation due to deleted history")
             raise modules.CancelWorkflowEvaluation()
 
+        log.debug("about to calculate remaining steps")
         remaining_steps = self.progress.remaining_steps()
         delayed_steps = False
+        log.debug("walking remaining steps")
         for (step, workflow_invocation_step) in remaining_steps:
             step_delayed = False
             step_timer = ExecutionTimer()

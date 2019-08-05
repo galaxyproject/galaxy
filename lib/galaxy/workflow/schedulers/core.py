@@ -30,10 +30,12 @@ class CoreWorkflowSchedulingPlugin(ActiveWorkflowSchedulingPlugin):
             history=history,
             user=history.user
         )  # trans-like object not tied to a web-thread.
+        log.debug("preparing workflow_run_config context for workflow scheduling")
         workflow_run_config = run_request.workflow_request_to_run_config(
             request_context,
             workflow_invocation
         )
+        log.debug("about to delete to run.schedule")
         run.schedule(
             trans=request_context,
             workflow=workflow,
