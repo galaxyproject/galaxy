@@ -1788,7 +1788,7 @@ statement. A good example tool that demonstrates many conditional parameters is
     </param>
     <when value="tsv">
         <param name="input_table" type="data" format="tabular" label="Tabular File" argument="--input-fp"/>
-        <param type="select" label="Process metadata associated with observations when converting" argument="--process-obs-metadata">
+        <param argument="--process-obs-metadata" type="select" label="Process metadata associated with observations when converting">
             <option value="" selected="true">Do Not process metadata</option>
             <option value="taxonomy">taxonomy</option>
             <option value="naive">naive</option>
