@@ -8,7 +8,9 @@ import _ from "libs/underscore";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import Buttons from "mvc/ui/ui-buttons";
+import Vue from "vue";
 import ToolBox from "../../components/ToolBox.vue";
+import SidePanel from '../../components/SidePanel.vue';
 
 const ToolPanel = Backbone.View.extend({
   initialize: function(page, options) {
@@ -76,7 +78,15 @@ const ToolPanel = Backbone.View.extend({
   isVueWrapper: true,
 
   getVueComponent: function() {
-    return ToolBox;
+    const SidePanelClass = Vue.extend(SidePanel);
+
+    return new SidePanelClass({
+      propsData: {
+        side: 'left',
+        currentPanel:  ToolBox,
+        currentPanelProperties: this.getProperties()
+      }
+    });
   },
 
   getProperties: function() {
