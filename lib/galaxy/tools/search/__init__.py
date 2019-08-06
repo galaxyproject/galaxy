@@ -6,7 +6,6 @@ import logging
 import re
 import tempfile
 
-from bleach import clean
 from whoosh import analysis
 from whoosh.analysis import StandardAnalyzer
 from whoosh.fields import (
