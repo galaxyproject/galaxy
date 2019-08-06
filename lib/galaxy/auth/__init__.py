@@ -65,7 +65,7 @@ class AuthManager(object):
                 if auth_results[0] is True:
                     try:
                         auth_return = parse_auth_results(trans, auth_results, options)
-                    except Conflict as conflict :
+                    except Conflict as conflict:
                         log.exception(conflict)
                         raise
                     return auth_return
