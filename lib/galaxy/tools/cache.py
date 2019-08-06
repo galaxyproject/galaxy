@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import defaultdict
 from threading import (
     local,
     Lock,
@@ -155,8 +156,21 @@ class ToolShedRepositoryCache(object):
             repositories = self.cache.repositories
         return repositories
 
+    @property
+    def tool_shed_repos_by_tuple(self):
+        try:
+            return self.cache.repos_by_tuple
+        except AttributeError:
+            self.rebuild()
+            return self.cache.repos_by_tuple
+
     def rebuild(self):
-        self.cache.repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).all()
+        repositories = self.app.install_model.context.current.query(self.app.install_model.ToolShedRepository).all()
+        self.cache.repositories = repositories
+        repos_by_tuple = defaultdict(list)
+        for repository in repositories:
+            repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
+        self.cache.repos_by_tuple = repos_by_tuple
 
     def get_installed_repository(self, tool_shed=None, name=None, owner=None, installed_changeset_revision=None, changeset_revision=None, repository_id=None):
         try:
@@ -182,12 +196,24 @@ class ToolShedRepositoryCache(object):
                 return repos[0]
             else:
                 return None
-        repos = [repo for repo in self.tool_shed_repositories if repo.tool_shed == tool_shed and repo.owner == owner and repo.name == name]
-        if installed_changeset_revision:
-            repos = [repo for repo in repos if repo.installed_changeset_revision == installed_changeset_revision]
-        if changeset_revision:
-            repos = [repo for repo in repos if repo.changeset_revision == changeset_revision]
-        if repos:
-            return repos[0]
-        else:
-            return None
+        repos = self.tool_shed_repos_by_tuple[(tool_shed, owner, name)]
+        for repo in repos:
+            if installed_changeset_revision and changeset_revision:
+                if repo.installed_changeset_revision == installed_changeset_revision and repo.changeset_revision == changeset_revision:
+                    return repo
+                else:
+                    continue
+            elif installed_changeset_revision:
+                if repo.installed_changeset_revision == installed_changeset_revision:
+                    return repo
+                else:
+                    continue
+            elif changeset_revision:
+                if repo.changeset_revision == changeset_revision:
+                    return repo
+                else:
+                    continue
+            else:
+                return repo
+
+        return None
