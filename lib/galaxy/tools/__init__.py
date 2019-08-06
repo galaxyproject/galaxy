@@ -1246,6 +1246,13 @@ class Tool(Dictifiable):
             self.__ensure_help()
         return self.__help_by_page
 
+    @property
+    def raw_help(self):
+        # may return rst (or Markdown in the future)
+        tool_source = self.__help_source
+        help_text = tool_source.parse_help()
+        return help_text
+
     def __ensure_help(self):
         with HELP_UNINITIALIZED:
             if self.__help is HELP_UNINITIALIZED:
