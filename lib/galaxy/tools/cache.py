@@ -199,22 +199,10 @@ class ToolShedRepositoryCache(object):
                 return None
         repos = self.tool_shed_repos_by_tuple[(tool_shed, owner, name)]
         for repo in repos:
-            if installed_changeset_revision and changeset_revision:
-                if repo.installed_changeset_revision == installed_changeset_revision and repo.changeset_revision == changeset_revision:
-                    return repo
-                else:
-                    continue
-            elif installed_changeset_revision:
-                if repo.installed_changeset_revision == installed_changeset_revision:
-                    return repo
-                else:
-                    continue
-            elif changeset_revision:
-                if repo.changeset_revision == changeset_revision:
-                    return repo
-                else:
-                    continue
-            else:
-                return repo
+            if installed_changeset_revision and repo.installed_changeset_revision != installed_changeset_revision:
+                continue
+            if changeset_revision and repo.changeset_revision != changeset_revision:
+                continue
+            return repo
 
         return None
