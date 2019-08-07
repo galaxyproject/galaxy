@@ -204,13 +204,4 @@ class ToolShedRepositoryCache(object):
             if changeset_revision and repo.changeset_revision != changeset_revision:
                 continue
             return repo
-
-        repos = [repo for repo in self.tool_shed_repositories if repo.name == name and repo.owner == owner and repo.tool_shed == tool_shed]
-        if installed_changeset_revision:
-            repos = [repo for repo in repos if repo.installed_changeset_revision == installed_changeset_revision]
-        if changeset_revision:
-            repos = [repo for repo in repos if repo.changeset_revision == changeset_revision]
-        if repos:
-            return repos[0]
-        else:
-            return None
+        return None
