@@ -706,7 +706,7 @@ class InputParameterModule(WorkflowModule):
             static_options = []
             for connection in connections:
                 tool_inputs = connection.input_step.module.tool.inputs
-                # Select options within conditionals have a deeper hierarchy: cases
+                # Account for select options within conditionals 
                 if connection.input_name not in tool_inputs and "|" in connection.input_name:
                     param_name, case_name = connection.input_name.split("|")
                     param = tool_inputs.data[param_name]
