@@ -10,7 +10,10 @@ import tempfile
 import threading
 from collections import OrderedDict
 from datetime import datetime
-from xml.etree import ElementTree
+try:
+    from xml.etree import cElementTree as ElementTree
+except ImportError:
+    from xml.etree import ElementTree
 
 import packaging.version
 import webob.exc

@@ -16,7 +16,6 @@ import time
 import traceback
 from abc import ABCMeta, abstractmethod
 from json import loads
-from xml.etree import ElementTree
 
 import six
 import yaml
@@ -40,7 +39,7 @@ from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.output_checker import check_output, DETECTED_JOB_STATE
-from galaxy.util import safe_makedirs, unicodify
+from galaxy.util import ElementTree, safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.xml_macros import load

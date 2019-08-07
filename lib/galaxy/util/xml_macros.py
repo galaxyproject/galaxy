@@ -1,6 +1,9 @@
 import os
 from copy import deepcopy
-from xml.etree import ElementInclude, ElementTree
+try:
+    from xml.etree import ElementInclude, cElementTree as ElementTree
+except ImportError:
+    from xml.etree import ElementInclude, ElementTree
 
 
 REQUIRED_PARAMETER = object()

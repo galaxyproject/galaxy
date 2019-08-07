@@ -28,7 +28,11 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
-from xml.etree import ElementInclude, ElementTree
+try:
+    from xml.etree import cElementTree as ElementTree
+except ImportError:
+    from xml.etree import ElementTree
+from xml.etree import ElementInclude
 from xml.etree.ElementTree import ParseError
 
 try:

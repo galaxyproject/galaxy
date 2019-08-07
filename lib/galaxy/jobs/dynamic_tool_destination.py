@@ -9,7 +9,10 @@ import os
 import re
 import sys
 from functools import reduce
-from xml.etree import ElementTree as ET
+try:
+    from xml.etree import cElementTree as ET
+except ImportError:
+    from xml.etree import ElementTree as ET
 
 import numpy as np
 import yaml
