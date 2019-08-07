@@ -142,6 +142,7 @@ class ToolShedRepositoryCache(object):
 
     def add_local_repository(self, repository):
         self.cache.repositories.append(repository)
+        self.cache.repos_by_tuple[(repository.tool_shed, repository.owner, repository.name)].append(repository)
 
     @property
     def tool_shed_repositories(self):
