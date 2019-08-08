@@ -297,7 +297,6 @@ def test_loader():
         xml = tool_dir.load()
         input_els = xml.findall("inputs")
         assert len(input_els) == 3
-        print(input_els[0].text)
         assert input_els[0].find("cow").text == "hello"
         assert input_els[1].find("cow").text == "world"
         assert input_els[2].find("cow").text == "the_default"
