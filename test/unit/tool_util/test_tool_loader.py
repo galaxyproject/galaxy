@@ -277,7 +277,7 @@ def test_loader():
         assert input_els[1].text == "world"
         assert input_els[2].text == "the_default"
 
-    # Test macros XML macros with @ expansions and recurisve
+    # Test macros XML macros with @ expansions and recursive
     with TestToolDirectory() as tool_dir:
         tool_dir.write('''
 <tool>
