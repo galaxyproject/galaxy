@@ -45,7 +45,10 @@ def upgrade(migrate_engine):
 
     OldWorkflowStepConnection_table = Table("workflow_step_connection", metadata, autoload=True)
     for index in OldWorkflowStepConnection_table.indexes:
-        index.drop()
+        try:
+            index.drop()
+        except Exception:
+            log.exception("Dropping index '%s' from table '%s' failed", index, OldWorkflowStepConnection_table)
     OldWorkflowStepConnection_table.rename("workflow_step_connection_preupgrade145")
     # Try to deregister that table to work around some caching problems it seems.
     OldWorkflowStepConnection_table.deregister()

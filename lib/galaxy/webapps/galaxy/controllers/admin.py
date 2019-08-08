@@ -130,7 +130,8 @@ class UserListGrid(grids.Grid):
         ActivatedColumn("Activated", attach_popup=False),
         APIKeyColumn("API Key", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
+        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
+        grids.PurgedColumn("Purged", key="purged", visible=False, filterable="advanced")
     ]
     columns.append(grids.MulticolFilterColumn("Search",
                                               cols_to_filter=[columns[0], columns[1]],
@@ -170,6 +171,8 @@ class UserListGrid(grids.Grid):
     ]
     num_rows_per_page = 50
     use_paging = True
+    default_filter = dict(purged="False")
+    use_default_filter = True
 
     def get_current_item(self, trans, **kwargs):
         return trans.user
@@ -851,7 +854,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
     def check_for_tool_dependencies(self, trans, migration_stage):
         # Get the 000x_tools.xml file associated with migration_stage.
-        tools_xml_file_path = os.path.abspath(os.path.join(trans.app.config.root, 'scripts', 'migrate_tools', '%04d_tools.xml' % migration_stage))
+        tools_xml_file_path = os.path.abspath(os.path.join(common_util.TOOL_MIGRATION_SCRIPTS_DIR, '%04d_tools.xml' % migration_stage))
         tree = util.parse_xml(tools_xml_file_path)
         root = tree.getroot()
         tool_shed = root.get('name')
@@ -884,6 +887,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         message = escape(util.restore_text(kwd.get('message', '')))
         status = util.restore_text(kwd.get('status', 'done'))
         migration_stages_dict = odict()
+        # FIXME: this isn't valid in an installed context
         migration_scripts_dir = os.path.abspath(os.path.join(trans.app.config.root, 'lib', 'tool_shed', 'galaxy_install', 'migrate', 'versions'))
         modules = os.listdir(migration_scripts_dir)
         modules.sort()

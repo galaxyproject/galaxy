@@ -71,11 +71,13 @@ def load_app_properties(
     config_prefix="GALAXY_CONFIG_"
 ):
     properties = kwds.copy() if kwds else {}
+    properties['__file__'] = None
     if config_file is None:
         config_file = ini_file
         config_section = ini_section
 
     if config_file:
+        properties['__file__'] = os.path.abspath(config_file)
         if not has_ext(config_file, 'yaml', aliases=True, ignore='sample'):
             if config_section is None:
                 config_section = "app:main"
@@ -169,6 +171,31 @@ class NicerConfigParser(ConfigParser):
                 raise
 
 
+def _running_from_source():
+    try:
+        # is there a better way to do this?
+        assert os.path.exists('run.sh')
+        assert os.path.exists('lib/galaxy/__init__.py')
+        assert os.path.exists('scripts/common_startup.sh')
+        return True
+    except AssertionError:
+        return False
+
+
+running_from_source = _running_from_source()
+
+
+def get_data_dir(properties):
+    data_dir = properties.get('data_dir', None)
+    if data_dir is None:
+        if running_from_source:
+            data_dir = './database'
+        else:
+            config_dir = properties.get('config_dir', os.path.dirname(properties['__file__']))
+            data_dir = os.path.join(config_dir, 'data')
+    return data_dir
+
+
 def __get_all_configs(dirs, names):
     return list(filter(os.path.exists, starmap(os.path.join, product(dirs, names))))
 
@@ -196,4 +223,4 @@ def __default_properties(path):
     }
 
 
-__all__ = ('find_config_file', 'load_app_properties', 'NicerConfigParser')
+__all__ = ('find_config_file', 'get_data_dir', 'load_app_properties', 'NicerConfigParser', 'running_from_source')

@@ -546,6 +546,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         # I don't see a reason why hdas copied into libraries should not be visible.
         # If there is, refactor `ldda.visible = True` to do this only when adding HDCAs.
         ldda.visible = True
+        ldda.update_parent_folder_update_times()
         trans.sa_session.flush()
         ldda_dict = ldda.to_dict()
         rval = trans.security.encode_dict_ids(ldda_dict)

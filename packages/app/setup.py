@@ -63,8 +63,6 @@ PACKAGES = [
     'galaxy.tools.toolbox.lineages',
     'galaxy.tools.util',
     'galaxy.tools.util.galaxyops',
-    'galaxy.tools.verify',
-    'galaxy.tools.verify.asserts',
     'galaxy.tours',
     'galaxy.visualization',
     'galaxy.visualization.data_providers',
@@ -102,6 +100,8 @@ PACKAGES = [
 ]
 ENTRY_POINTS = '''
         [console_scripts]
+        galaxy-main=galaxy.main:main
+        galaxy-config=galaxy.config.script:main
 '''
 PACKAGE_DATA = {
     # Be sure to update MANIFEST.in for source dist.

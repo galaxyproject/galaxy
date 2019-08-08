@@ -1,1 +1,1 @@
-../../../test/unit/tools/test_tool_deps.py
+../../../test/unit/tool_util/test_tool_deps.py

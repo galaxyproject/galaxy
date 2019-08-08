@@ -347,9 +347,7 @@ var ToolSearch = Backbone.Model.extend({
     SEARCH_RESERVED_TERMS_FAVORITES: ["#favs", "#favorites", "#favourites"],
 
     defaults: {
-        search_hint_string: "search tools",
         min_chars_for_search: 3,
-        clear_btn_url: "",
         visible: true,
         query: "",
         results: null,
@@ -635,7 +633,7 @@ var ToolSectionView = BaseView.extend({
 var ToolSearchView = Backbone.View.extend({
     tagName: "div",
     id: "tool-search",
-    className: "bar",
+    className: "search-input",
 
     events: {
         click: "focus_and_select",
@@ -649,7 +647,6 @@ var ToolSearchView = Backbone.View.extend({
         if (!this.model.is_visible()) {
             this.$el.hide();
         }
-
         this.$el.find("[title]").tooltip();
         return this;
     },
@@ -774,10 +771,9 @@ var templates = {
     // the search bar at the top of the tool panel
     tool_search: _.template(
         `<input id="tool-search-query" class="search-query parent-width" name="query"
-                placeholder="<%- search_hint_string %>" autocomplete="off" type="text" />
-         <a id="search-clear-btn" title="clear search (esc)"> </a>
-         <span id="search-spinner" class="search-spinner fa fa-spinner fa-spin"></span>
-    `
+                placeholder="search tools" autocomplete="off" type="text" />
+         <span id="search-clear-btn" class="search-clear fa fa-times-circle" title="clear search (esc)"/>
+         <span id="search-spinner" class="search-loading fa fa-spinner fa-spin"/>`
     ),
 
     // the category level container in the tool panel (e.g. 'Get Data', 'Text Manipulation')

@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<object_store type="hierarchical">
+    <backends>
+        <object_store type="distributed" id="primary" order="0">
+            <backends>
+                <backend id="files1" type="disk" weight="1">
+                    <files_dir path="database/files1"/>
+                    <extra_dir type="temp" path="database/tmp1"/>
+                    <extra_dir type="job_work" path="database/job_working_directory1"/>
+                </backend>
+                <backend id="files2" type="disk" weight="1">
+                    <files_dir path="database/files2"/>
+                    <extra_dir type="temp" path="database/tmp2"/>
+                    <extra_dir type="job_work" path="database/job_working_directory2"/>
+                </backend>
+            </backends>
+        </object_store>
+        <object_store type="disk" id="secondary" order="1">
+            <files_dir path="database/files3"/>
+            <extra_dir type="temp" path="database/tmp3"/>
+            <extra_dir type="job_work" path="database/job_working_directory3"/>
+        </object_store>
+
+        <!-- Sample S3 Object Store
+             The "size" attribute of <cache> is in gigabytes.
+        -->
+        <!--
+        <object_store type="s3">
+             <auth access_key="...." secret_key="....." />
+             <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
+             <cache path="database/object_store_cache" size="1000" />
+             <extra_dir type="job_work" path="database/job_working_directory_s3"/>
+             <extra_dir type="temp" path="database/tmp_s3"/>
+        </object_store>
+        -->
+
+        <!-- Sample Swift Object Store
+             The "size" attribute of <cache> is in gigabytes.
+        -->
+        <!--
+        <object_store type="swift">
+            <auth access_key="...." secret_key="....." />
+            <bucket name="unique_bucket_name" use_reduced_redundancy="False" max_chunk_size="250"/>
+            <connection host="" port="" is_secure="" conn_path="" multipart="True"/>
+            <cache path="database/object_store_cache" size="1000" />
+            <extra_dir type="job_work" path="database/job_working_directory_swift"/>
+            <extra_dir type="temp" path="database/tmp_swift"/>
+        </object_store>
+        -->
+
+        <!-- Sample Azure Object Store
+             The "size" attribute of <cache> is in gigabytes.
+        -->
+        <!--
+        <object_store type="azure_blob">
+        <auth account_name="..." account_key="...." />
+            <container name="unique_container_name" max_chunk_size="250"/>
+            <cache path="database/object_store_cache" size="100" />
+            <extra_dir type="job_work" path="database/job_working_directory_azure"/>
+            <extra_dir type="temp" path="database/tmp_azure"/>
+        </object_store>
+        -->
+
+        <!-- Cloud ObjectStore: Amazon Simple Storage Service (S3)
+             The "size" attribute of <cache> is in gigabytes.
+        -->
+        <!--
+        <object_store type="cloud" provider="aws" order="0">
+            <auth access_key="..." secret_key="..." />
+            <bucket name="..." use_reduced_redundancy="False" />
+            <cache path="database/object_store_cache" size="100" />
+            <extra_dir type="job_work" path="database/job_working_directory_s3"/>
+            <extra_dir type="temp" path="database/tmp_s3"/>
+        </object_store>
+        -->
+
+        <!-- Cloud ObjectStore: Microsoft Azure Blob Storage
+             The "size" attribute of <cache> is in gigabytes.
+        -->
+        <!--
+        <object_store type="cloud" provider="azure" order="0">
+            <auth subscription_id="..." client_id="..." secret="..." tenant="..." />
+            <bucket name="..." use_reduced_redundancy="False" />
+            <cache path="database/object_store_cache" size="100" />
+            <extra_dir type="job_work" path="database/job_working_directory_azure"/>
+            <extra_dir type="temp" path="database/tmp_azure"/>
+        </object_store>
+        -->
+
+        <!-- Cloud ObjectStore: Google Compute Platform (GCP)
+             The "size" attribute of <cache> is in gigabytes.
+        -->
+        <!--
+        <object_store type="cloud" provider="google" order="0">
+            <auth credentials_file="..." />
+            <bucket name="..." use_reduced_redundancy="False" />
+            <cache path="database/object_store_cache" size="1000" />
+            <extra_dir type="job_work" path="database/job_working_directory_gcp"/>
+            <extra_dir type="temp" path="database/tmp_gcp"/>
+        </object_store>
+        -->
+
+    </backends>
+</object_store>

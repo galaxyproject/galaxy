@@ -4,7 +4,7 @@
 // ---------------------------------------------------------------------------- dataset states
 //.dataset .state-icon {
 .state-icon {
-    @extend .fa-icon;
+    @extend .fa;
     display: inline-block;
     margin-right: 4px;
     vertical-align: middle;
@@ -309,17 +309,15 @@
             @extend %vertical-spacing;
             .annotation {
                 @extend %info-section;
-                //white-space: pre-line;
                 white-space: pre-wrap;
                 overflow: auto;
             }
             // fake placeholder for editable text annotation
             .annotation:empty:after {
-                position: relative;
-                top: -4px;
-                font-size: 10px;
-                font-style: italic;
-                color: grey;
+                @extend .position-relative;
+                @extend .font-italic;
+                @extend .h6;
+                color: $text-muted;
                 //TODO: move out for localization
                 content: "Click here to edit annotation";
             }

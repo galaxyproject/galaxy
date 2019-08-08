@@ -147,6 +147,9 @@ class CloudManager(sharable.SharableModelManager):
                       'os_project_domain_name': prj_domain_name,
                       'os_user_domain_name': user_domain_name}
             connection = CloudProviderFactory().create_provider(ProviderList.OPENSTACK, config)
+        elif provider == "gcp":
+            config = {"gcp_service_creds_dict": credentials}
+            connection = CloudProviderFactory().create_provider(ProviderList.GCP, config)
         else:
             raise RequestParameterInvalidException("Unrecognized provider '{}'; the following are the supported "
                                                    "providers: {}.".format(provider, SUPPORTED_PROVIDERS.keys()))
@@ -340,8 +343,8 @@ class CloudManager(sharable.SharableModelManager):
                 try:
                     object_label = hda.name.replace(" ", "_")
                     args = {
-                        # We encode ID here because it the tool wrapper assumes
-                        # it receives an encoded ID and attempts decoding it.
+                        # We encode ID here because the tool wrapper expects
+                        # an encoded ID and attempts decoding it.
                         "authz_id": trans.security.encode_id(cloudauthz.id),
                         "bucket": bucket_name,
                         "object_label": object_label,

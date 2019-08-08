@@ -235,6 +235,11 @@ class ToolBox(BaseGalaxyToolBox):
     def __init__(self, config_filenames, tool_root_dir, app):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
+        # This is here to deal with the old default value, which doesn't make
+        # sense in an "installed Galaxy" world.
+        # FIXME: ./
+        if tool_root_dir == './tools':
+            tool_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'bundled'))
         super(ToolBox, self).__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
@@ -694,6 +699,10 @@ class Tool(Dictifiable):
         self.home_target = home_target
         self.tmp_target = tmp_target
         self.docker_env_pass_through = tool_source.parse_docker_env_pass_through()
+        if self.environment_variables:
+            if not self.docker_env_pass_through:
+                self.docker_env_pass_through = []
+            self.docker_env_pass_through.extend(map(lambda x: x['name'], self.environment_variables))
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
@@ -1231,6 +1240,13 @@ class Tool(Dictifiable):
         if self.__help_by_page is HELP_UNINITIALIZED:
             self.__ensure_help()
         return self.__help_by_page
+
+    @property
+    def raw_help(self):
+        # may return rst (or Markdown in the future)
+        tool_source = self.__help_source
+        help_text = tool_source.parse_help()
+        return help_text
 
     def __ensure_help(self):
         with HELP_UNINITIALIZED:
