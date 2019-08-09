@@ -323,7 +323,6 @@ _.extend(NumberFilter.prototype, {
      */
     applies_to: function(element) {
         return element.length > this.index;
-
     },
     /**
      * Helper function: returns true if value in in filter's [low, high] range.

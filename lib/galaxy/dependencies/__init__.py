@@ -136,7 +136,7 @@ class ConditionalDependencies(object):
     def check_drmaa(self):
         return ("galaxy.jobs.runners.drmaa:DRMAAJobRunner" in self.job_runners or
                 "galaxy.jobs.runners.slurm:SlurmJobRunner" in self.job_runners or
-                "galaxy.jobs.runners.drmaauniva:DRMAAUnivaJobRunner" in self.job_runners)
+                "galaxy.jobs.runners.univa:UnivaJobRunner" in self.job_runners)
 
     def check_galaxycloudrunner(self):
         return ("galaxycloudrunner.rules" in self.job_rule_modules)

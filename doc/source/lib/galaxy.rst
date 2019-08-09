@@ -14,6 +14,7 @@ Subpackages
     galaxy.actions
     galaxy.auth
     galaxy.authnz
+    galaxy.config
     galaxy.containers
     galaxy.datatypes
     galaxy.dependencies
@@ -30,6 +31,7 @@ Subpackages
     galaxy.openid
     galaxy.quota
     galaxy.security
+    galaxy.selenium
     galaxy.tool_util
     galaxy.tools
     galaxy.tours
@@ -53,10 +55,10 @@ galaxy.app module
     :undoc-members:
     :show-inheritance:
 
-galaxy.config module
---------------------
+galaxy.config\_watchers module
+------------------------------
 
-.. automodule:: galaxy.config
+.. automodule:: galaxy.config_watchers
     :members:
     :undoc-members:
     :show-inheritance:

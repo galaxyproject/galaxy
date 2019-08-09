@@ -74,12 +74,7 @@ var FolderAsModel = LibraryItem.extend({
 });
 
 var Folder = Backbone.Collection.extend({
-    model: LibraryItem,
-
-    sortFolder: function(sort_key, sort_order) {
-        this.comparator = mod_util.generateComparator(sort_key, sort_order);
-        this.sort();
-    }
+    model: LibraryItem
 });
 
 var FolderContainer = Backbone.Model.extend({
@@ -102,6 +97,12 @@ var FolderContainer = Backbone.Model.extend({
             const lowercase_name = data.get("name").toLowerCase();
             return lowercase_name.indexOf(lowercase_term) !== -1;
         });
+    },
+
+    sortFolder: function(sort_key, sort_order) {
+        this.get("folder").comparator = mod_util.generateComparator(sort_key, sort_order);
+        this.get("folder").sort();
+        return this.get("folder");
     },
 
     parse: function(obj) {

@@ -34,7 +34,7 @@ from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.model import mapping
 from galaxy.model.tool_shed_install import mapping as toolshed_mapping
-from galaxy.tools.verify.interactor import GalaxyInteractorApi, verify_tool
+from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
@@ -933,6 +933,11 @@ class GalaxyTestDriver(TestDriver):
                         galaxy_db_path,
                         **setup_galaxy_config_kwds
                     )
+
+                    isolate_galaxy_config = getattr(config_object, "isolate_galaxy_config", False)
+                    if isolate_galaxy_config:
+                        galaxy_config["config_dir"] = tempdir
+
                     self._saved_galaxy_config = galaxy_config
 
             if galaxy_config is not None:

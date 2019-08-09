@@ -204,7 +204,7 @@ mapping:
           tool_config_files (i.e., tool_conf.xml) have been migrated from the Galaxy
           code distribution to the Tool Shed. This functionality is largely untested
           in modern Galaxy releases and has serious issues such as #7273 and the possibility
-          of slowing down Galaxy startup, so the default and recommended value is False.
+          of slowing down Galaxy startup, so the default and recommended value is false.
 
       migrated_tools_config:
         type: str
@@ -302,7 +302,7 @@ mapping:
         default: false
         required: false
         desc: |
-          Set to True to instruct Galaxy to look for and install missing tool
+          Set to true to instruct Galaxy to look for and install missing tool
           dependencies before each job runs.
 
       conda_auto_init:
@@ -310,7 +310,7 @@ mapping:
         default: true
         required: false
         desc: |
-          Set to True to instruct Galaxy to install Conda from the web automatically
+          Set to true to instruct Galaxy to install Conda from the web automatically
           if it cannot find a local copy and conda_exec is not configured.
 
       conda_copy_dependencies:
@@ -318,7 +318,7 @@ mapping:
         default: false
         required: false
         desc: |
-          You must set this to True if conda_prefix and job_working_directory are not on the same
+          You must set this to true if conda_prefix and job_working_directory are not on the same
           volume, or some conda dependencies will fail to execute at job runtime.
           Conda will copy packages content instead of creating hardlinks or symlinks.
           This will prevent problems with some specific packages (perl, R), at the cost
@@ -331,7 +331,7 @@ mapping:
         desc: |
           Certain dependency resolvers (namely Conda) take a considerable amount of
           time to build an isolated job environment in the job_working_directory if the
-          job working directory is on a network share.  Set the following option to True
+          job working directory is on a network share.  Set this option to true
           to cache the dependencies in a folder. This option is beta and should only be
           used if you experience long waiting times before a job is actually submitted
           to your cluster.
@@ -355,7 +355,7 @@ mapping:
         desc: |
           By default, when using a cached dependency manager, the dependencies are cached
           when installing new tools and when using tools for the first time.
-          Set this to False if you prefer dependencies to be cached only when installing new tools.
+          Set this to false if you prefer dependencies to be cached only when installing new tools.
 
       tool_sheds_config_file:
         type: str
@@ -370,7 +370,7 @@ mapping:
         default: 'false'
         required: false
         desc: |
-          Set to True to enable monitoring of tools and tool directories
+          Set to true to enable monitoring of tools and tool directories
           listed in any tool config file specified in tool_config_file option.
           If changes are found, tools are automatically reloaded.  Watchdog (
           https://pypi.org/project/watchdog/ ) must be installed and
@@ -385,7 +385,7 @@ mapping:
         default: 'false'
         required: false
         desc: |
-          Set to True to enable monitoring of dynamic job rules. If changes are
+          Set to true to enable monitoring of dynamic job rules. If changes are
           found, rules are automatically reloaded. Takes the same values as the
           'watch_tools' option.
 
@@ -435,7 +435,7 @@ mapping:
           dependencies referenced in tools as `requirement`s. The following path is
           the location of involucro on the Galaxy host. This is ignored if the relevant
           container resolver isn't enabled, and will install on demand unless
-          involucro_auto_init is set to False.
+          involucro_auto_init is set to false.
 
       involucro_auto_init:
         type: bool
@@ -524,7 +524,7 @@ mapping:
         default: 'false'
         required: false
         desc: |
-          Set to True to enable monitoring of the tool_data and shed_tool_data_path
+          Set to true to enable monitoring of the tool_data and shed_tool_data_path
           directories. If changes in tool data table files are found, the tool data
           tables for that data manager are automatically reloaded.
           Watchdog ( https://pypi.org/project/watchdog/ ) must be installed and
@@ -565,7 +565,7 @@ mapping:
         desc: |
           Enable sniffing of compressed datatypes. This can be configured/overridden
           on a per-datatype basis in the datatypes_conf.xml file.
-          With this option set to False the compressed datatypes will be unpacked
+          With this option set to false the compressed datatypes will be unpacked
           before sniffing.
 
 
@@ -604,7 +604,7 @@ mapping:
         required: false
         desc: |
           To run interactive environment containers in Docker Swarm mode (on an
-          existing swarm), set this option to True and set `docker_connect_port` in the
+          existing swarm), set this option to true and set `docker_connect_port` in the
           IE plugin config (ini) file(s) of any IE plugins you have enabled and ensure
           that you are not using any `docker run`-specific options in your plugins'
           `command_inject` options (swarm mode services run using `docker service
@@ -842,7 +842,7 @@ mapping:
         default: false
         required: false
         desc: |
-          User account activation feature global flag.  If set to "False", the rest of
+          User account activation feature global flag.  If set to false, the rest of
           the Account activation configuration is ignored and user activation is
           disabled (i.e. accounts are active since registration).
           The activation is also not working in case the SMTP server is not defined.
@@ -900,7 +900,7 @@ mapping:
           which browsers should be available.  URLs and builds available at these
           browsers are defined in the specified files.
 
-          If use_remote_user = True, display application servers will be denied access
+          If use_remote_user is set to true, display application servers will be denied access
           to Galaxy and so displaying datasets in these sites will fail.
           display_servers contains a list of hostnames which should be allowed to
           bypass security to display datasets.  Please be aware that there are security
@@ -918,8 +918,8 @@ mapping:
         default: true
         required: false
         desc: |
-          To disable the old-style display applications that are hardcoded into
-          datatype classes, set enable_old_display_applications = False.
+          Set this to false to disable the old-style display applications that
+          are hardcoded into datatype classes.
           This may be desirable due to using the new-style, XML-defined, display
           applications that have been defined for many of the datatypes that have the
           old-style.
@@ -1201,7 +1201,7 @@ mapping:
           https://docs.galaxyproject.org/en/master/admin/production.html
 
           Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile.  Set
-          this to True to inform Galaxy that mod_xsendfile is enabled upstream.
+          this to true to inform Galaxy that mod_xsendfile is enabled upstream.
 
       nginx_x_accel_redirect_base:
         type: str
@@ -1292,7 +1292,7 @@ mapping:
           services based on Galaxy's session cookie.  It will attempt to do this by
           default though you do need to install node+npm and do an npm install from
           `lib/galaxy/web/proxy/js`.  It is generally more robust to configure this
-          externally, managing it however Galaxy is managed.  If True, Galaxy will only
+          externally, managing it in the same way Galaxy itself is managed.  If true, Galaxy will only
           launch the proxy if it is actually going to be used (e.g. for Jupyter).
 
       dynamic_proxy:
@@ -1318,7 +1318,7 @@ mapping:
         required: false
         desc: |
           Set the port and IP for the dynamic proxy to bind to, this must match
-          the external configuration if dynamic_proxy_manage is False.
+          the external configuration if dynamic_proxy_manage is set to false.
 
       dynamic_proxy_bind_ip:
         type: str
@@ -1326,7 +1326,7 @@ mapping:
         required: false
         desc: |
           Set the port and IP for the dynamic proxy to bind to, this must match
-          the external configuration if dynamic_proxy_manage is False.
+          the external configuration if dynamic_proxy_manage is set to false.
 
       dynamic_proxy_debug:
         type: bool
@@ -1394,7 +1394,7 @@ mapping:
         default: true
         required: false
         desc: |
-          If True, Galaxy will attempt to configure a simple root logger if a
+          If true, Galaxy will attempt to configure a simple root logger if a
           "loggers" section does not appear in this configuration file.
 
       log_level:
@@ -1408,7 +1408,7 @@ mapping:
 
       logging:
         type: map
-        allowempty: True
+        allowempty: true
         desc: |
           Controls where and how the server logs messages. If unset, the default is to log all messages to standard
           output at the level defined by the `log_level` configuration option. Configuration is described in the
@@ -1497,7 +1497,7 @@ mapping:
           By default Galaxy will serve non-HTML tool output that may potentially
           contain browser executable JavaScript content as plain text.  This will for
           instance cause SVG datasets to not render properly and so may be disabled
-          by setting the following option to True.
+          by setting this option to true.
 
       allowed_origin_hostnames:
         type: str
@@ -1516,7 +1516,7 @@ mapping:
         default: false
         required: false
         desc: |
-          Set the following to True to use Jupyter nbconvert to build HTML from Jupyter
+          Set to true to use Jupyter nbconvert to build HTML from Jupyter
           notebooks in Galaxy histories.  This process may allow users to execute
           arbitrary code or serve arbitrary HTML.  If enabled, Jupyter must be
           available and on Galaxy's PATH, to do this run
@@ -1725,7 +1725,7 @@ mapping:
           adds an option to the admin library upload tool allowing admins to paste
           filesystem paths to files and directories in a box, and these paths will be
           added to a library.  For history uploads, this allows pasting in paths as URIs.
-          (i.e. prefixed with file://). Set to True to enable.  Please note the security
+          (i.e. prefixed with file://). Set to true to enable.  Please note the security
           implication that this will give Galaxy Admins access to anything your Galaxy
           user has access to.
 
@@ -1921,8 +1921,8 @@ mapping:
         required: false
         desc: |
           If your proxy and/or authentication source does not normalize e-mail
-          addresses or user names being passed to Galaxy - set the following option
-          to True to force these to lower case.
+          addresses or user names being passed to Galaxy - set this option
+          to true to force these to lower case.
 
       single_user:
         type: str
@@ -1958,7 +1958,7 @@ mapping:
         required: false
         desc: |
           Show the site's welcome page (see welcome_url) alongside the login page
-          (even if require_login is True)
+          (even if require_login is true).
 
       allow_user_creation:
         type: bool
@@ -1980,7 +1980,7 @@ mapping:
         default: false
         required: false
         desc: |
-          Allow administrators to log in as other users (useful for debugging)
+          Allow administrators to log in as other users (useful for debugging).
 
       show_user_prepopulate_form:
         type: bool
@@ -2004,7 +2004,7 @@ mapping:
         default: false
         required: false
         desc: |
-          By default, users' data will be public, but setting this to True will cause
+          By default, users' data will be public, but setting this to true will cause
           it to be private.  Does not affect existing users and data, only ones created
           after this option is set.  Users may still change their default back to
           public.
@@ -2014,30 +2014,30 @@ mapping:
         default: false
         required: false
         desc: |
-          Expose user list.  Setting this to True will expose the user list to
+          Expose user list.  Setting this to true will expose the user list to
           authenticated users.  This makes sharing datasets in smaller galaxy instances
           much easier as they can type a name/email and have the correct user show up.
           This makes less sense on large public Galaxy instances where that data
           shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
           just the username and not email, or vice versa.
 
-          If enable_beta_gdpr is set to True, then this option will be
-          overridden and set to False.
+          If enable_beta_gdpr is set to true, then this option will be
+          overridden and set to false.
 
       expose_user_email:
         type: bool
         default: false
         required: false
         desc: |
-          Expose user list.  Setting this to True will expose the user list to
+          Expose user list.  Setting this to true will expose the user list to
           authenticated users.  This makes sharing datasets in smaller galaxy instances
           much easier as they can type a name/email and have the correct user show up.
           This makes less sense on large public Galaxy instances where that data
           shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
           just the username and not email, or vice versa.
 
-          If enable_beta_gdpr is set to True, then this option will be
-          overridden and set to False.
+          If enable_beta_gdpr is set to true, then this option will be
+          overridden and set to false.
 
       fetch_url_whitelist:
         type: str
@@ -2070,13 +2070,6 @@ mapping:
 
           Please read the GDPR section under the special topics area of the
           admin documentation.
-      enable_beta_ts_api_install:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Enable the new interface for installing tools from Tool Shed
-          via the API. Admin menu will list both if enabled.
 
       enable_beta_containers_interface:
         type: bool
@@ -2254,15 +2247,15 @@ mapping:
           are selected for "Set at Runtime" inputs from the history such that the
           same input will not be selected twice, unless there are more inputs than
           compatible datasets in the history.
-          When False, the most recently added compatible item in the history will
-          be used for each "Set at Runtime" input, independent of others in the Workflow
+          When false, the most recently added compatible item in the history will
+          be used for each "Set at Runtime" input, independent of others in the workflow.
 
       myexperiment_url:
         type: str
         default: www.myexperiment.org:80
         required: false
         desc: |
-          The URL to the myExperiment instance being used (omit scheme but include port)
+          The URL to the myExperiment instance being used (omit scheme but include port).
 
       ftp_upload_dir:
         type: str
@@ -2306,7 +2299,7 @@ mapping:
         default: true
         required: false
         desc: |
-          This should be set to False to prevent Galaxy from deleting uploaded FTP files
+          Set to false to prevent Galaxy from deleting uploaded FTP files
           as it imports them.
 
       enable_quotas:
@@ -2481,7 +2474,7 @@ mapping:
           Although it is fairly reliable, setting metadata can occasionally fail.  In
           these instances, you can choose to retry setting it internally or leave it in
           a failed state (since retrying internally may cause the Galaxy process to be
-          unresponsive).  If this option is set to False, the user will be given the
+          unresponsive).  If this option is set to false, the user will be given the
           option to retry externally, or set metadata manually (when possible).
 
       max_metadata_value_size:
@@ -2647,7 +2640,7 @@ mapping:
           extra database queries must be performed to determine the number of jobs a
           user has dispatched to a given destination.  By default, these queries will
           happen for every job that is waiting to run, but if cache_user_job_count is
-          set to True, it will only happen once per iteration of the handler queue.
+          set to true, it will only happen once per iteration of the handler queue.
           Although better for performance due to reduced queries, the trade-off is a
           greater possibility that jobs will be dispatched past the configured limits
           if running many handlers.

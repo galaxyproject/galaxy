@@ -343,6 +343,20 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
         # Make sure the positions have been updated.
         map(tweak_step, updated_workflow_content['steps'].items())
 
+    def test_update_tags(self):
+        workflow_object = self.workflow_populator.load_workflow(name="test_import")
+        upload_response = self.__test_upload(workflow=workflow_object)
+        workflow = upload_response.json()
+        workflow['tags'] = ['a_tag', 'b_tag']
+        update_response = self._update_workflow(workflow['id'], workflow).json()
+        assert update_response['tags'] == ['a_tag', 'b_tag']
+        del workflow['tags']
+        update_response = self._update_workflow(workflow['id'], workflow).json()
+        assert update_response['tags'] == ['a_tag', 'b_tag']
+        workflow['tags'] = []
+        update_response = self._update_workflow(workflow['id'], workflow).json()
+        assert update_response['tags'] == []
+
     def test_update_no_tool_id(self):
         workflow_object = self.workflow_populator.load_workflow(name="test_import")
         upload_response = self.__test_upload(workflow=workflow_object)

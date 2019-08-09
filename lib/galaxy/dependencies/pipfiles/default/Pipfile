@@ -68,7 +68,7 @@ bioblend = "*"
 boto = "*"
 kombu = "*"
 psutil = "*"
-pulsar-galaxy-lib = "*"
+pulsar-galaxy-lib = "==0.12.1"
 sqlalchemy-migrate = "*"
 sqlparse = "*"
 svgwrite = "*"
@@ -77,7 +77,7 @@ pyparsing = "*"
 paramiko = "*"
 python-genomespaceclient = "<2.0"
 social_auth_core = {version = "==3.1.0+gx0", extras = ['openidconnect']}
-cloudauthz = "<=0.4.0"
+cloudauthz = "==0.6.0"
 gxformat2 = "*"
 
 [requires]

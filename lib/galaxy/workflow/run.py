@@ -352,10 +352,16 @@ class WorkflowProgress(object):
         try:
             replacement = step_outputs[output_name]
         except KeyError:
-            # Must resolve.
-            template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
-            message = template % (output_name, step_outputs)
-            raise Exception(message)
+            replacement = self.inputs_by_step_id.get(output_step_id)
+            if connection.output_step.type == 'parameter_input' and output_step_id is not None:
+                # FIXME: parameter_input step outputs should be properly recorded as step outputs, but for now we can
+                # short-circuit and just pick the input value
+                pass
+            else:
+                # Must resolve.
+                template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
+                message = template % (output_name, step_outputs)
+                raise Exception(message)
         if isinstance(replacement, model.HistoryDatasetCollectionAssociation):
             if not replacement.collection.populated:
                 if not replacement.collection.waiting_for_elements:
@@ -399,7 +405,7 @@ class WorkflowProgress(object):
         else:
             return step_outputs[output_name]
 
-    def set_outputs_for_input(self, invocation_step, outputs=None):
+    def set_outputs_for_input(self, invocation_step, outputs=None, already_persisted=False):
         step = invocation_step.workflow_step
 
         if outputs is None:
@@ -414,7 +420,7 @@ class WorkflowProgress(object):
             elif step_id in self.inputs_by_step_id:
                 outputs['output'] = self.inputs_by_step_id[step_id]
 
-        self.set_step_outputs(invocation_step, outputs)
+        self.set_step_outputs(invocation_step, outputs, already_persisted=already_persisted)
 
     def set_step_outputs(self, invocation_step, outputs, already_persisted=False):
         step = invocation_step.workflow_step
