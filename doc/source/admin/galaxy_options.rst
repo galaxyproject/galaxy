@@ -3505,6 +3505,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_schedulers_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optional file containing workflow schedulers configuration,
+    similar to job handler configuration
+:Default: ``config/workflow_schedulers_conf.xml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ``cache_user_job_count``
 ~~~~~~~~~~~~~~~~~~~~~~~~

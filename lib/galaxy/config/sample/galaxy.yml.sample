@@ -1701,6 +1701,10 @@ galaxy:
   # tags to do the mapping).
   #workflow_resource_params_mapper: config/workflow_resource_mapper_conf.yml
 
+  # Optional file containing workflow schedulers configuration, similar
+  # to job handler configuration
+  #workflow_schedulers_config_file: config/workflow_schedulers_conf.xml
+
   # If using job concurrency limits (configured in job_config_file),
   # several extra database queries must be performed to determine the
   # number of jobs a user has dispatched to a given destination.  By
