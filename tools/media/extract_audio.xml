@@ -5,8 +5,8 @@
     </requirements>
   <command>ffmpeg -y -hide_banner -nostats -loglevel panic -i $input -ar $rate -ac $channels -c:a $samplesize -f wav $out_file1</command>
    <inputs>
-    <param name="input" type="data" format="binary" label="from dataset" help="A video file"/>
-    <param name="rate" type="select" label="Bit Rate">
+    <param name="input" type="data" format="binary" label="From dataset" help="A video file"/>
+    <param name="rate" type="select" label="Sample Rate">
       <option value="8000">8KHz</option>
       <option value="16000">16KHz</option>
       <option value="22050">22.05KHz</option>
@@ -14,13 +14,13 @@
       <option value="48000">48KHz</option>
       <option value="96000">96KHz (Archival Quality)</option>
     </param>
-    <param name="channels" type="select" label="Channels">   
+    <param name="channels" type="select" label="Channels" help="Number of channels in the output">   
 	<option value="1">Mono</option>
 	<option value="2">Stereo</option>
     </param>
-    <param name="samplesize" type="select" label="SampleSize">
-        <option value="pcm_s16le">16</option>
-        <option value="pcm_s24le">24</option>
+    <param name="samplesize" type="select" label="Sample Size" help="Sample size of output in bits per sample">
+        <option value="pcm_s16le">16 Bits per Sample</option>
+        <option value="pcm_s24le">24 Bits per Sample</option>
     </param>
   </inputs>
   <outputs>

@@ -1,0 +1,21 @@
+<tool id="ES-1" name="Silence Remove" version="1.0.2">
+  <description>Removes ending silence</description>
+    <requirements>
+        <requirement type="package" version="8.30">coreutils</requirement>
+    </requirements>
+  <command>ffmpeg -y -hide_banner -nostats -loglevel panic -i $input -af "areverse,silenceremove=start_periods=1:start_duration=1:start_threshold=-60dB:detection=peak,aformat=s32,areverse" -f wav $out_file1</command>
+  <inputs>
+    <param name="input" type="data" format="binary" label="From dataset" help="An audio file"/>
+    <param name="start_threshold" type="integer" value="-60" label="Silence threshold" help="A threshold decibel value for silence"/> 
+  </inputs>
+  <outputs>
+    <data format="binary" name="out_file1" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+This tool trims off the silence at the end of input audio file.  
+ </help>
+</tool>

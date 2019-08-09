@@ -13,6 +13,10 @@
     <tool file="media/sox_trim.xml"/>
     -->
   </section>
+  <section id="silence" name="Silence Tools">
+    <tool file="silence_remove/extract_silence.xml"/>
+  </section>
+  
   <section id="Transcribe" name="Speech to Text">
     <tool file="aws/transcribe.xml"/>
   </section>
