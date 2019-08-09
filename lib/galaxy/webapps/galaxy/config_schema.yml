@@ -2612,6 +2612,14 @@ mapping:
           descriptions (additional types of mappings via these files could be implemented but
           haven't yet - for instance using workflow tags to do the mapping).
 
+      workflow_schedulers_config_file:
+        type: str
+        default: config/workflow_schedulers_conf.xml
+        required: false
+        desc: |
+          Optional configuration file similar to `job_config_file` to specify
+          which Galaxy processes should schedule workflows.
+
       cache_user_job_count:
         type: bool
         default: false
