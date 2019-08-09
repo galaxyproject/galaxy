@@ -20,6 +20,12 @@ def assert_has_line(output, line):
     assert match is not None, "No line of output file was '%s' (output was '%s') " % (line, output)
 
 
+def assert_has_n_lines(output, n):
+    """ Asserts the specified output if the number of lines match the given number."""
+    for counter, line in enumerate(output.split('\n')):
+        pass
+    assert counter == int(n), "Expected number of lines (%s) do not match with obtained number ('%s')" % (n, counter)
+
 def assert_has_text_matching(output, expression):
     """ Asserts the specified output contains text matching the
     regular expression specified by the argument expression."""

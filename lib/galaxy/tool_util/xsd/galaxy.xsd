@@ -716,6 +716,7 @@ specified and instead a series of assertions is made about the output.
             <!-- &#009; is XML escape code for tab -->
             <has_line line="chr7&#009;127471195&#009;127489808" />
             <has_n_columns n="3" />
+            <has_n_lines n="3" />
         </assert_contents>
     </output>
 </test>
@@ -1599,6 +1600,12 @@ module.
       <xs:element name="has_line" type="xs:anyType">
         <xs:annotation>
           <xs:documentation><![CDATA[Asserts a line matching the specified string (``line``) appears in the output (e.g. ``<has_line line="A full example line." />``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="has_n_lines" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts a file matching the specified n (``lines``) in the output (e.g. ``<has_n_lines n="3" />``).]]>
           </xs:documentation>
         </xs:annotation>
       </xs:element>
