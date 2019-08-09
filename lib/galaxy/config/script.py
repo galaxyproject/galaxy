@@ -51,14 +51,14 @@ Start Galaxy by running the command from directory [{}]:
 # whole thing into galaxy.config for templating, so for now just substitute some lines. In the future we will build
 # configs differently.
 GALAXY_CONFIG_SUBSTITUTIONS = {
-    '  http: 127.0.0.1:8080':                           '  ${uwsgi_transport}: ${host}:${port}',
-    '  static-map: /static/style=static/style/blue':    '  static-map: /static=${static_path}/style/blue',
-    '  static-map: /static=static':                     '  static-map: /static=${static_path}',
-    '  static-map: /favicon.ico=static/favicon.ico':    '  static-map: /static=${static_path}/favicon.ico',
-    '  virtualenv: .venv':                              '  #venv: .venv   # not used when running installed',
-    '  pythonpath: lib':                                '  #pythonpath: lib  # not used  when running installed',
-    '  #config_dir: false':                             '  config_dir: ${config_dir}',
-    '  #data_dir: false':                               '  data_dir: ${data_dir}',
+    '  http: 127.0.0.1:8080': '  ${uwsgi_transport}: ${host}:${port}',
+    '  static-map: /static/style=static/style/blue': '  static-map: /static=${static_path}/style/blue',
+    '  static-map: /static=static': '  static-map: /static=${static_path}',
+    '  static-map: /favicon.ico=static/favicon.ico': '  static-map: /static=${static_path}/favicon.ico',
+    '  virtualenv: .venv': '  #venv: .venv   # not used when running installed',
+    '  pythonpath: lib': '  #pythonpath: lib  # not used  when running installed',
+    '  #config_dir: false': '  config_dir: ${config_dir}',
+    '  #data_dir: false': '  data_dir: ${data_dir}',
     '  #database_connection: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE': '  database_connection: ${database_connection}',
 }
 
