@@ -26,6 +26,7 @@ def assert_has_n_lines(output, n):
         pass
     assert counter == int(n), "Expected number of lines (%s) do not match with obtained number ('%s')" % (n, counter)
 
+
 def assert_has_text_matching(output, expression):
     """ Asserts the specified output contains text matching the
     regular expression specified by the argument expression."""
