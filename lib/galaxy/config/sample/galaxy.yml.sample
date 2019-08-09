@@ -1701,8 +1701,8 @@ galaxy:
   # tags to do the mapping).
   #workflow_resource_params_mapper: config/workflow_resource_mapper_conf.yml
 
-  # Optional file containing workflow schedulers configuration, similar
-  # to job handler configuration
+  # Optional configuration file similar to `job_config_file` to specify
+  # which Galaxy processes should schedule workflows.
   #workflow_schedulers_config_file: config/workflow_schedulers_conf.xml
 
   # If using job concurrency limits (configured in job_config_file),
