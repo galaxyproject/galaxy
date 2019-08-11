@@ -10,17 +10,17 @@
     <command><![CDATA[
         #set $PROXY_PREFIX = ""
         sed -i "s|PROXY_PREFIX|${PROXY_PREFIX}|" /etc/nginx/conf.d/nginx.conf &&
-
-        cp '$infile' /data/data_pack.tar.gz &&
+        rm /data/* -rf &&
+        cp '$infile' /data/data_pack.zip &&
         cd /data &&
-        tar xvfz data_pack.tar.gz &&
+        unzip data_pack.zip &&
         supervisord &&
         tail -f /var/log/supervisor/*
 
     ]]>
     </command>
     <inputs>
-        <param name="infile" type="data" format="tar.gz,zip" label="HiCExplorer archive"/>
+        <param name="infile" type="data" format="zip" label="HiCExplorer archive"/>
     </inputs>
     <outputs>
         <data name="outfile" format="txt" />

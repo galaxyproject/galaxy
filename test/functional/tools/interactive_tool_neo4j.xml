@@ -10,11 +10,15 @@
             but docker does not expose 7687?
         -->
     </entry_points>
+    <environment_variables>
+        <environment_variable name="USER_GID">2345</environment_variable>
+        <environment_variable name="USER_UID">2345</environment_variable>
+        <environment_variable name="MONITOR_TRAFFIC">false</environment_variable>
+    </environment_variables>
     <command><![CDATA[
-    
-        export USER_UID=2345 &&
-        export USER_GID=2345 &&
-        export MONITOR_TRAFFIC=false &&
+        ##export USER_UID=2345 &&
+        ##export USER_GID=2345 &&
+        ##export MONITOR_TRAFFIC=false &&
         mkdir -p /data/neo4jdb &&
         unzip '$infile' -d /data/neo4jdb &&
         ls -l /data/neo4jdb &&

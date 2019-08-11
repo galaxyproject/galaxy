@@ -2,13 +2,26 @@
     <requirements>
         <container type="docker">bgruening/docker-jupyter-notebook:ie2</container>
     </requirements>
+
+
+HISTORY_ID
+
+
     <entry_points>
         <entry_point name="Jupyter Interactive Tool">
             <port>8888</port>
             <url>ipython/tree</url>
         </entry_point>
     </entry_points>
+    <environment_variables>
+        <environment_variable name="HISTORY_ID">${__app__.security.encode_id($jupyter_notebook.history_id)}</environment_variable>
+        <environment_variable name="REMOTE_HOST">TODO</environment_variable>
+        <environment_variable name="GALAXY_URL">TODO</environment_variable>
+        <environment_variable name="API_KEY">TODO</environment_variable>
+    </environment_variables>
+
     <command detect_errors="aggressive"><![CDATA[
+    
         #import re
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/ &&
