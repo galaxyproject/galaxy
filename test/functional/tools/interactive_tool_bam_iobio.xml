@@ -16,11 +16,10 @@
     #set $PUB_HTTP_PORT = '80'
 
     cd /var/www/html &&
-    sed -i "s@wss://services.iobio.io/samtools/@ws://127.0.0.1/samtools/@" js/bam.iobio.js/bam.iobio.js &&
-    sed -i "s@wss://services.iobio.io/bamreaddepther/@ws://${PUB_HOSTNAME}:${PUB_HTTP_PORT}/bamreaddepther/@" js/bam.iobio.js/bam.iobio.js &&
-    sed -i "s@wss://services.iobio.io/bamstatsalive/@ws://${PUB_HOSTNAME}:${PUB_HTTP_PORT}/bamstatsalive/@" js/bam.iobio.js/bam.iobio.js &&
-    sed -i "s@wss://services.iobio.io/samheader/@ws://${PUB_HOSTNAME}:${PUB_HTTP_PORT}/samheader/@" js/bam.iobio.js/bam.iobio.js &&
-
+    sed -i "s@\"wss://services.iobio.io/samtools/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/samtools/\"@" js/bam.iobio.js/bam.iobio.js &&
+    sed -i "s@\"wss://services.iobio.io/bamreaddepther/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/bamreaddepther/\"@" js/bam.iobio.js/bam.iobio.js &&
+    sed -i "s@\"wss://services.iobio.io/bamstatsalive/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/bamstatsalive/\"@" js/bam.iobio.js/bam.iobio.js &&
+    sed -i "s@\"wss://services.iobio.io/samheader/\"@((window.location.protocol === \"https:\") ? \"wss://\" : \"ws://\") + window.location.host + \"/samheader/\"@" js/bam.iobio.js/bam.iobio.js &&
 
         cp '${infile}' /input/bamfile.bam &&
         cp '${infile.metadata.bam_index}' /input/bamfile.bam.bai &&
