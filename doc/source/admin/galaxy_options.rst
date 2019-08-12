@@ -1216,7 +1216,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Show visualization tab in masthead.
+    Show visualization tab and list in masthead.
 :Default: ``true``
 :Type: bool
 
