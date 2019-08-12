@@ -2,11 +2,6 @@
     <requirements>
         <container type="docker">bgruening/docker-jupyter-notebook:ie2</container>
     </requirements>
-
-
-HISTORY_ID
-
-
     <entry_points>
         <entry_point name="Jupyter Interactive Tool">
             <port>8888</port>
@@ -14,14 +9,25 @@ HISTORY_ID
         </entry_point>
     </entry_points>
     <environment_variables>
-        <environment_variable name="HISTORY_ID">${__app__.security.encode_id($jupyter_notebook.history_id)}</environment_variable>
+        <environment_variable name="HISTORY_ID" strip="True">
+            #if $jupyter_notebook:
+                ${__app__.security.encode_id($jupyter_notebook.history_id)}
+            #else:
+                ${__app__.security.encode_id($out_file1.history_id)}
+            #end if
+        </environment_variable>
         <environment_variable name="REMOTE_HOST">TODO</environment_variable>
-        <environment_variable name="GALAXY_URL">TODO</environment_variable>
-        <environment_variable name="API_KEY">TODO</environment_variable>
+        <environment_variable name="GALAXY_URL">${__app__.config.galaxy_infrastructure_url}</environment_variable>
+        <environment_variable name="API_KEY" strip="True">
+            #if $__user__:
+                #for $api_key in $__user__.api_keys:
+                    ${api_key.key}
+                    #break
+                #end for
+            #end if
+        </environment_variable>
     </environment_variables>
-
     <command detect_errors="aggressive"><![CDATA[
-    
         #import re
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/ &&
