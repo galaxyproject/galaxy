@@ -657,6 +657,9 @@ galaxy:
   # third-party server, tricking a Galaxy user to access said site.
   #enable_old_display_applications: true
 
+  # Show visualization tab in masthead.
+  #visualizations_visible: true
+
   # Show a message box under the masthead.
   #message_box_visible: false
 

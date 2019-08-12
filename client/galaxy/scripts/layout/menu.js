@@ -66,24 +66,26 @@ const Collection = Backbone.Collection.extend({
         //
         // Visualization tab.
         //
-        this.add({
-            id: "visualization",
-            title: _l("Visualize"),
-            tooltip: _l("Visualize datasets"),
-            disabled: !Galaxy.user.id,
-            menu: [
-                {
-                    title: _l("Create Visualization"),
-                    url: "visualizations",
-                    target: "__use_router__"
-                },
-                {
-                    title: _l("Interactive Environments"),
-                    url: "visualization/gie_list",
-                    target: "galaxy_main"
-                }
-            ]
-        });
+        if (Galaxy.config.visualizations_visible) {
+            this.add({
+                id: "visualization",
+                title: _l("Visualize"),
+                tooltip: _l("Visualize datasets"),
+                disabled: !Galaxy.user.id,
+                menu: [
+                    {
+                        title: _l("Create Visualization"),
+                        url: "visualizations",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: _l("Interactive Environments"),
+                        url: "visualization/gie_list",
+                        target: "galaxy_main"
+                    }
+                ]
+            });
+        }
 
         //
         // 'Shared Items' or Libraries tab.

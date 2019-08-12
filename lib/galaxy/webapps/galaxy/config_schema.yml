@@ -909,6 +909,13 @@ mapping:
           Galaxy server, but contains a redirect to a third-party server, tricking a
           Galaxy user to access said site.
 
+      visualizations_visible:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Show visualization tab in masthead.
+
       message_box_visible:
         type: bool
         default: false
