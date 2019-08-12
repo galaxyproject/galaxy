@@ -299,14 +299,16 @@ const Collection = Backbone.Collection.extend({
                         title: _l("Pages"),
                         url: "pages/list",
                         target: "__use_router__"
-                    },
-                    {
-                        title: _l("Visualizations"),
-                        url: "visualizations/list",
-                        target: "__use_router__"
                     }
                 ]
             };
+            if (Galaxy.config.visualizations_visible) {
+                userTab.menu.push({
+                    title: _l("Visualizations"),
+                    url: "visualizations/list",
+                    target: "__use_router__"
+                });
+            }
         }
         this.add(userTab);
         return new $.Deferred().resolve().promise();
