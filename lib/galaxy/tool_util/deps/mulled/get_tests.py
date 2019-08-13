@@ -163,7 +163,7 @@ def get_alternative_versions(filepath, filename, recipes_path=None, github_repo=
         return [n.replace('%s/' % recipes_path, '') for n in glob('%s/%s/*/%s' % (recipes_path, filepath, filename))]
     # else use the GitHub API:
     versions = []
-    r = json.loads(requests.get('https://api.github.com/repos/%s/contents/%s' % (github_repo, filepath)).content)
+    r = json.loads(requests.get('https://api.github.com/repos/%s/contents/%s' % (github_repo, filepath)).text)
     for subfile in r:
         if subfile['type'] == 'dir':
             if requests.get('https://raw.githubusercontent.com/%s/master/%s/%s' % (github_repo, subfile['path'], filename)).status_code == 200:
