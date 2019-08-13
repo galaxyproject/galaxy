@@ -624,7 +624,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 outfname, zpathext = os.path.splitext(zpath)
 
                 if zpathext == '':
-                    path = '.'.join([path, ldda.extension]) # Add extension if we don't have one
+                    path = '.'.join([path, ldda.extension])  # Add extension if we don't have one
 
                 if is_composite:
                     # need to add all the components from the extra_files_path to the zip
