@@ -25,4 +25,6 @@ uwsgi:
 
 galaxy:
 
+  outputs_to_working_directory: true
   realtime_prefix: realtime
+  realtime_map: database/realtime_map.sqlite
