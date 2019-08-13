@@ -138,13 +138,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if show_published:
             filter1 = or_(filter1, (trans.app.model.StoredWorkflow.published == true()))
         for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).options(
+                joinedload("annotations")).options(
                 joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
                 joinedload("tags")).filter(
                     filter1, trans.app.model.StoredWorkflow.table.c.deleted == false()).order_by(
                     desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
-
             item = wf.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)
+            item['annotations'] = [x.annotation for x in wf.annotations]
             item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
             item['number_of_steps'] = wf.latest_workflow.step_count
@@ -154,6 +155,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             rval.append(item)
         for wf_sa in trans.sa_session.query(model.StoredWorkflowUserShareAssociation).join(
                 model.StoredWorkflowUserShareAssociation.stored_workflow).options(
+                joinedload("stored_workflow").joinedload("annotations")).options(
                 joinedload("stored_workflow").joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
                 joinedload("stored_workflow").joinedload("user")).options(
                 joinedload("stored_workflow").joinedload("tags")).filter(model.StoredWorkflowUserShareAssociation.user == trans.user).filter(
@@ -161,6 +163,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 desc(model.StoredWorkflow.update_time)).all():
             item = wf_sa.stored_workflow.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
+            item['annotations'] = [x.annotation for x in wf_sa.annotations]
             item['url'] = url_for('workflow', id=encoded_id)
             item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username
