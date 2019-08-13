@@ -29,7 +29,6 @@ from sqlalchemy import (
     inspect,
     join,
     not_,
-    null,
     or_,
     select,
     text,
@@ -511,22 +510,30 @@ class User(Dictifiable, RepresentById):
         """
         db_session = object_session(self)
 
-        # Query DISTINCT datasets
-        #   join on HDAs which aren't purged
-        #   joining that on Histories which aren't purged (and owned by us)
-        #   joining on LDDAs where the current dataset is NOT in the LDDA table
-        #   as a CTE
-        cte = db_session \
-            .query(Dataset.id, func.coalesce(Dataset.total_size, func.coalesce(Dataset.file_size, 0)).label("file_size")) \
-            .distinct(Dataset.id) \
-            .join(HistoryDatasetAssociation).filter_by(purged=False) \
-            .join(History).filter_by(user_id=self.id, purged=False) \
-            .outerjoin(LibraryDatasetDatasetAssociation, Dataset.id == LibraryDatasetDatasetAssociation.dataset_id) \
-            .filter(LibraryDatasetDatasetAssociation.id == null()) \
-            .cte("per_user_datasets")
+        results = db_session.execute("""
+            WITH per_user_histories AS
+            (
+                SELECT history.id as id
+                FROM history
+                WHERE history.user_id = :user_id
+                    AND history.purged = false
+            ),
+            per_hist_hdas AS (
+                SELECT DISTINCT history_dataset_association.dataset_id as id
+                FROM history_dataset_association
+                WHERE history_dataset_association.purged = false
+                    AND history_dataset_association.history_id in (SELECT id from per_user_histories)
+            )
 
-        q = db_session.query(func.sum(cte.c.file_size)).select_from(cte)
-        return q.one()[0]
+            SELECT sum(coalesce(dataset.total_size, coalesce(dataset.file_size)))
+            FROM dataset
+            LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
+            WHERE dataset.id in (SELECT id from per_hist_hdas)
+                AND library_dataset_dataset_association.id IS NULL;
+        """, {'user_id': self.id})
+
+        res = next(results)
+        return res[0]
 
     def calculate_and_set_disk_usage(self):
         """
