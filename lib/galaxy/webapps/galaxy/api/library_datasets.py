@@ -623,6 +623,9 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 zpath = os.path.split(path)[-1]  # comes as base_name/fname
                 outfname, zpathext = os.path.splitext(zpath)
 
+                if zpathext == '':
+                    path = '.'.join([path, ldda.extension]) # Add extension if we don't have one
+
                 if is_composite:
                     # need to add all the components from the extra_files_path to the zip
                     if zpathext == '':
@@ -647,6 +650,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         efp, fname = os.path.split(fpath)
                         if fname > '':
                             fname = fname.translate(trantab)
+                        if zpathext == '':
+                            fname = '.'.join([fname, ldda.extension])  # Add extension if we don't have one
                         try:
                             if format == 'zip':
                                 archive.add(fpath, fname)
@@ -702,7 +707,11 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 fStat = os.stat(dataset.file_name)
                 trans.response.set_content_type(ldda.get_mime())
                 trans.response.headers['Content-Length'] = int(fStat.st_size)
-                fname = ldda.name
+                zname, zext = os.path.splitext(ldda.name)
+                if zext == '':
+                    fname = '.'.join([ldda.name, ldda.extension])
+                else:
+                    fname = ldda.name
                 fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
                 try:
