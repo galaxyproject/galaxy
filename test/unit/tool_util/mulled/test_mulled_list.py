@@ -1,4 +1,4 @@
-from galaxy.tools.deps.mulled.mulled_list import get_missing_containers, get_missing_envs, get_singularity_containers
+from galaxy.tool_util.deps.mulled.mulled_list import get_missing_containers, get_missing_envs, get_singularity_containers
 
 # def test_get_quay_containers():
 #     lst = get_quay_containers()

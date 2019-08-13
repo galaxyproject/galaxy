@@ -6,7 +6,7 @@ import subprocess
 from glob import glob
 from subprocess import check_output
 
-from get_tests import hashed_test_search, main_test_search
+from .get_tests import hashed_test_search, main_test_search
 
 
 def get_list_from_file(filename):

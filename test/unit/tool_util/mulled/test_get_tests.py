@@ -1,4 +1,4 @@
-from galaxy.tools.deps.mulled.get_tests import deep_test_search, find_anaconda_versions, get_alternative_versions, get_anaconda_url, get_commands_from_yaml, get_run_test, get_test_from_anaconda, hashed_test_search, main_test_search, open_recipe_file, prepend_anaconda_url
+from galaxy.tool_util.deps.mulled.get_tests import deep_test_search, find_anaconda_versions, get_alternative_versions, get_anaconda_url, get_commands_from_yaml, get_run_test, get_test_from_anaconda, hashed_test_search, main_test_search, open_recipe_file, prepend_anaconda_url
 from galaxy.util import smart_str
 
 

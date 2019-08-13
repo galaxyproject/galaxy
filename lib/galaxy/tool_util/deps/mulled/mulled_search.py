@@ -6,8 +6,8 @@ import logging
 import sys
 import tempfile
 
-from galaxy.tools.deps.mulled.mulled_list import get_singularity_containers
-from galaxy.tools.deps.mulled.util import build_target, v2_image_name
+from .mulled_list import get_singularity_containers
+from .util import build_target, v2_image_name
 
 try:
     from conda.cli.python_api import run_command

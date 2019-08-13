@@ -1,6 +1,6 @@
 import pytest
 
-from galaxy.tools.deps.mulled.mulled_update_singularity_containers import docker_to_singularity, get_list_from_file, singularity_container_test
+from galaxy.tool_util.deps.mulled.mulled_update_singularity_containers import docker_to_singularity, get_list_from_file, singularity_container_test
 from galaxy.util import which
 
 

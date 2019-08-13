@@ -1,6 +1,6 @@
 import pytest
 
-from galaxy.tools.deps.mulled.mulled_search import CondaSearch, get_package_hash, GitHubSearch, QuaySearch, run_command, singularity_search
+from galaxy.tool_util.deps.mulled.mulled_search import CondaSearch, get_package_hash, GitHubSearch, QuaySearch, run_command, singularity_search
 
 
 def test_quay_search():

@@ -16,7 +16,8 @@ import requests
 import yaml
 from jinja2 import Template
 from jinja2.exceptions import UndefinedError
-from util import split_container_name
+
+from .util import split_container_name
 
 
 def get_commands_from_yaml(yaml_content):
