@@ -508,19 +508,24 @@ class User(Dictifiable, RepresentById):
         Return byte count total of disk space used by all non-purged, non-library
         HDAs in non-purged histories.
         """
-        # maintain a list so that we don't double count
-        dataset_ids = []
-        total = 0
-        # this can be a huge number and can run out of memory, so we avoid the mappers
         db_session = object_session(self)
-        for history in db_session.query(History).enable_eagerloads(False).filter_by(user_id=self.id, purged=False).yield_per(1000):
-            for hda in db_session.query(HistoryDatasetAssociation).enable_eagerloads(False).filter_by(history_id=history.id, purged=False).yield_per(1000):
-                # TODO: def hda.counts_toward_disk_usage():
-                #   return ( not self.dataset.purged and not self.dataset.library_associations )
-                if hda.dataset.id not in dataset_ids and not hda.dataset.purged and not hda.dataset.library_associations:
-                    dataset_ids.append(hda.dataset.id)
-                    total += hda.dataset.get_total_size()
-        return total
+
+        # Query DISTINCT datasets
+        #   join on HDAs which aren't purged
+        #   joining that on Histories which aren't purged (and owned by us)
+        #   joining on LDDAs where the current dataset is NOT in the LDDA table
+        #   as a CTE
+        cte = db_session \
+            .query(Dataset.id, func.coalesce(Dataset.total_size, func.coalesce(Dataset.file_size, 0)).label("file_size")) \
+            .distinct(Dataset.id) \
+            .join(HistoryDatasetAssociation).filter_by(purged=False) \
+            .join(History).filter_by(user_id=self.id, purged=False) \
+            .outerjoin(LibraryDatasetDatasetAssociation, Dataset.id == LibraryDatasetDatasetAssociation.dataset_id) \
+            .filter(LibraryDatasetDatasetAssociation.id==None) \
+            .cte("per_user_datasets")
+
+        q = db_session.query(func.sum(cte.c.file_size)).select_from(cte)
+        return q.one()[0]
 
     def calculate_and_set_disk_usage(self):
         """
