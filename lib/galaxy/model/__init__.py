@@ -29,6 +29,7 @@ from sqlalchemy import (
     inspect,
     join,
     not_,
+    null,
     or_,
     select,
     text,
@@ -521,7 +522,7 @@ class User(Dictifiable, RepresentById):
             .join(HistoryDatasetAssociation).filter_by(purged=False) \
             .join(History).filter_by(user_id=self.id, purged=False) \
             .outerjoin(LibraryDatasetDatasetAssociation, Dataset.id == LibraryDatasetDatasetAssociation.dataset_id) \
-            .filter(LibraryDatasetDatasetAssociation.id==None) \
+            .filter(LibraryDatasetDatasetAssociation.id == null()) \
             .cte("per_user_datasets")
 
         q = db_session.query(func.sum(cte.c.file_size)).select_from(cte)
