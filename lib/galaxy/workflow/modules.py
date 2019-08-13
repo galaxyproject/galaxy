@@ -594,7 +594,7 @@ class InputModule(WorkflowModule):
         progress.set_outputs_for_input(invocation_step, step_outputs)
 
     def recover_mapping(self, invocation_step, progress):
-        progress.set_outputs_for_input(invocation_step)
+        progress.set_outputs_for_input(invocation_step, already_persisted=True)
 
 
 class InputDataModule(InputModule):
@@ -1304,17 +1304,6 @@ class ToolModule(WorkflowModule):
             raise Exception(message)
 
         return complete
-
-    def recover_mapping(self, invocation_step, progress):
-        outputs = {}
-
-        for output_dataset_assoc in invocation_step.output_datasets:
-            outputs[output_dataset_assoc.output_name] = output_dataset_assoc.dataset
-
-        for output_dataset_collection_assoc in invocation_step.output_dataset_collections:
-            outputs[output_dataset_collection_assoc.output_name] = output_dataset_collection_assoc.dataset_collection
-
-        progress.set_step_outputs(invocation_step, outputs)
 
     def _effective_post_job_actions(self, step):
         effective_post_job_actions = step.post_job_actions[:]

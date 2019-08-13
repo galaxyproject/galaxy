@@ -1064,7 +1064,7 @@ class ToolTestDescription(object):
         self.exception = processed_test_dict.get("exception", None)
 
         self.output_collections = map(TestCollectionOutputDef.from_dict, processed_test_dict.get("output_collections", []))
-        self.command_line = processed_test_dict.get("command", None)
+        self.command_line = processed_test_dict.get("command_line", None)
         self.stdout = processed_test_dict.get("stdout", None)
         self.stderr = processed_test_dict.get("stderr", None)
         self.expect_exit_code = processed_test_dict.get("expect_exit_code", None)

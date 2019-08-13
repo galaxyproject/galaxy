@@ -405,7 +405,7 @@ class WorkflowProgress(object):
         else:
             return step_outputs[output_name]
 
-    def set_outputs_for_input(self, invocation_step, outputs=None):
+    def set_outputs_for_input(self, invocation_step, outputs=None, already_persisted=False):
         step = invocation_step.workflow_step
 
         if outputs is None:
@@ -420,7 +420,7 @@ class WorkflowProgress(object):
             elif step_id in self.inputs_by_step_id:
                 outputs['output'] = self.inputs_by_step_id[step_id]
 
-        self.set_step_outputs(invocation_step, outputs)
+        self.set_step_outputs(invocation_step, outputs, already_persisted=already_persisted)
 
     def set_step_outputs(self, invocation_step, outputs, already_persisted=False):
         step = invocation_step.workflow_step

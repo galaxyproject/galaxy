@@ -62,8 +62,19 @@ def test_loader():
     <expand macro="inputs">
         <input name="first_input" />
     </expand>
+    <expand macro="inputs">
+        <input name="second_input" />
+    </expand>
+    <expand macro="inputs">
+        <input name="third_input" />
+    </expand>
     <macros>
         <macro name="inputs">
+            <expand macro="foo">
+                <yield />
+            </expand>
+        </macro>
+        <macro name="foo">
             <inputs>
                 <yield />
             </inputs>
@@ -71,7 +82,9 @@ def test_loader():
     </macros>
 </tool>''')
         xml = tool_dir.load()
-        assert xml.find("inputs").find("input").get("name") == "first_input"
+        assert xml.findall("inputs")[0].find("input").get("name") == "first_input"
+        assert xml.findall("inputs")[1].find("input").get("name") == "second_input"
+        assert xml.findall("inputs")[2].find("input").get("name") == "third_input"
 
     # Test recursive macro applications.
     with TestToolDirectory() as tool_dir:
@@ -227,6 +240,8 @@ def test_loader():
         tool_dir.write('''
 <tool>
     <expand macro="inputs" bar="hello" />
+    <expand macro="inputs" bar="my awesome" />
+    <expand macro="inputs" bar="doggo" />
     <macros>
         <xml name="inputs" tokens="bar" token_quote="$$">
             <inputs type="the type is $$BAR$$" />
@@ -236,8 +251,10 @@ def test_loader():
 ''')
         xml = tool_dir.load()
         input_els = xml.findall("inputs")
-        assert len(input_els) == 1
+        assert len(input_els) == 3
         assert input_els[0].attrib["type"] == "the type is hello"
+        assert input_els[1].attrib["type"] == "the type is my awesome"
+        assert input_els[2].attrib["type"] == "the type is doggo"
 
     # Test macros XML macros with @ expansions in text
     with TestToolDirectory() as tool_dir:
@@ -259,3 +276,27 @@ def test_loader():
         assert input_els[0].text == "hello"
         assert input_els[1].text == "world"
         assert input_els[2].text == "the_default"
+
+    # Test macros XML macros with @ expansions and recursive
+    with TestToolDirectory() as tool_dir:
+        tool_dir.write('''
+<tool>
+    <expand macro="inputs" foo="hello" />
+    <expand macro="inputs" foo="world" />
+    <expand macro="inputs" />
+    <macros>
+        <xml name="inputs" token_foo="the_default">
+            <expand macro="real_inputs"><cow>@FOO@</cow></expand>
+        </xml>
+        <xml name="real_inputs">
+            <inputs><yield /></inputs>
+        </xml>
+    </macros>
+</tool>
+''')
+        xml = tool_dir.load()
+        input_els = xml.findall("inputs")
+        assert len(input_els) == 3
+        assert input_els[0].find("cow").text == "hello"
+        assert input_els[1].find("cow").text == "world"
+        assert input_els[2].find("cow").text == "the_default"

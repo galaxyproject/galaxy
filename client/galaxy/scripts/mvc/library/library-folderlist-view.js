@@ -355,8 +355,8 @@ var FolderListView = Backbone.View.extend({
 
     renderSortIcon: function() {
         $('[class*="sort-icon"]')
-        .removeClass("fa-sort-alpha-desc")
-        .removeClass("fa-sort-alpha-asc");
+            .removeClass("fa-sort-alpha-desc")
+            .removeClass("fa-sort-alpha-asc");
 
         if (this.current_sort_order === "asc") {
             $(`.sort-icon-${this.current_sort_key}`).addClass("fa-sort-alpha-asc");
