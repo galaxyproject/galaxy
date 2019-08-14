@@ -1,6 +1,6 @@
 <tool id="interactive_tool_jupyter_notebook" tool_type="interactive" name="Interactive Jupyter Notebook" version="0.1">
     <requirements>
-        <container type="docker">bgruening/docker-jupyter-notebook:ie2</container>
+        <container type="docker">quay.io/bgruening/docker-jupyter-notebook:ie2</container>
     </requirements>
     <entry_points>
         <entry_point name="Jupyter Interactive Tool">
@@ -9,14 +9,9 @@
         </entry_point>
     </entry_points>
     <environment_variables>
-        <environment_variable name="HISTORY_ID" strip="True">
-            #if $jupyter_notebook:
-                ${__app__.security.encode_id($jupyter_notebook.history_id)}
-            #else:
-                ${__app__.security.encode_id($out_file1.history_id)}
-            #end if
-        </environment_variable>
-        <environment_variable name="REMOTE_HOST">TODO</environment_variable>
+        <environment_variable name="HISTORY_ID" strip="True">${__app__.security.encode_id($jupyter_notebook.history_id)}</environment_variable>
+        <environment_variable name="REMOTE_HOST">${__app__.config.galaxy_infrastructure_url}</environment_variable>
+        <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
         <environment_variable name="GALAXY_URL">${__app__.config.galaxy_infrastructure_url}</environment_variable>
         <environment_variable name="API_KEY" strip="True">
             #if $__user__:
@@ -33,67 +28,73 @@
         mkdir -p ./jupyter/outputs/ &&
         mkdir -p ./jupyter/data &&
 
-        #for $i, $input in enumerate($inputs):
-            #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-            ln -sf '$input' './jupyter/data/${cleaned_name}_${i}' &&
-        #end for
+        #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+        ln -sf '$input' './jupyter/data/${cleaned_name}' &&
 
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&
+        export PATH=/home/jovyan/.local/bin:\$PATH &&
 
         #if $mode.mode_select == 'scratch':
             ## copy default notebook
             cp '$__tool_directory__/default_notebook.ipynb' ./ipython_galaxy_notebook.ipynb &&
-            /startup.sh
-        #else:
+            jupyter trust ./ipython_galaxy_notebook.ipynb &&
+            jupyter lab --no-browser --NotebookApp.shutdown_button=True &&
+            cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
 
-            #for $i, $ipynb in enumerate($mode.ipynbs):
-                #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-                cp '$ipynb' ./${cleaned_name}_${i}.ipynb &&
-            #end for
+        #else:
+            #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+            cp '$mode.ipynb' ./${cleaned_name}.ipynb &&
+            jupyter trust ./${cleaned_name}.ipynb &&
+
             #if $mode.run_it:
                 jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
-                mv ./ipython_galaxy_notebook.ipynb $jupyter_notebook
             #else:
-                /startup.sh
+                jupyter lab --no-browser --NotebookApp.shutdown_button=True &&
             #end if
-
+            cp ./ipython_galaxy_notebook.ipynb '$jupyter_notebook'
         #end if
     ]]>
     </command>
     <inputs>
 
         <conditional name="mode">
-            <param argument="mode_select" type="select" label="Do you already have a notebook?" help="If not, no problem we will provide you with a default one.">
+            <param name="mode_select" type="select" label="Do you already have a notebook?" help="If not, no problem we will provide you with a default one.">
                 <option value="scratch">Start with a fresh notebook</option>
                 <option value="previous">Load a previous notebook</option>
             </param>
             <when value="scratch"/>
             <when value="previous">
-                <param name="ipynbs" type="data" format="ipynb" multiple="true" label="IPython Notebook"/>
+                <param name="ipynb" type="data" format="ipynb" label="IPython Notebook"/>
                 <param name="run_it" type="boolean" truevalue="true" falsevalue="false" label="Execute notebook and return a new one."
                     help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>
             </when>
         </conditional>
-
-        <param name="inputs" type="data" optional="true" multiple="true" label="Include data into the environment"/>
+        <param name="input" type="data" optional="true" label="Include data into the environment"/>
 
     </inputs>
     <outputs>
-        <data name="out_file1" format="txt">
-            <filter>(mode['mode_select'] == 'previous' and not mode['run_it']) or mode['mode_select'] == 'scratch'</filter>
-        </data>
-        <data name="jupyter_notebook" format="ipynb" label="Executed Notebook">
-            <filter>mode['mode_select'] == 'previous'</filter>
-            <filter>mode['run_it']</filter>
-        </data>
-        <!--data auto_format="true" name="collected_container_data">
-            <discover_datasets pattern="__designation__" directory="./jupyter/outputs/" visible="true" recurse="true" />
-        </data-->
+        <data name="jupyter_notebook" format="ipynb" label="Executed Notebook"></data>
     </outputs>
     <tests>
+        <test expect_num_outputs="1">
+            <param name="mode" value="previous" />
+            <param name="ipynb" value="test.ipynb" />
+            <param name="run_it" value="true" />
+            <output name="jupyter_notebook" file="test.ipynb" ftype="ipynb"/>
+        </test>
     </tests>
     <help>
-    Interactive tool.
+    The Jupyter Notebook is an open-source web application that allows you to create and share documents that contain live code, equations,
+    visualizations and narrative text. Uses include: data cleaning and transformation, numerical simulation, statistical modeling, data visualization,
+    machine learning, and much more.
+    
+    Galaxy offers you to use Jupyter Notebooks directly in Galaxy accessing and interacting with Galaxy datasets as you like. A very common use-case is to
+    do the heavy lifting and data reduction steps in Galaxy and the plotting and more `interactive` part on smaller datasets in Jupyter.
+    
+    You can start with a new Jupyter notebook from scratch or load an already existing one, e.g. from your collegue and execute it on your dataset.
+    If you have a defined input dataset you can even execute a Jupyter notebook in a workflow, given that the notebook is writing the output back to the history.
+    
+    You can import data into the notebook via a predefined `get()` function and write results back to Galaxy with a `put()` function.
     </help>
 </tool>
