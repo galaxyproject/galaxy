@@ -1,7 +1,7 @@
 """This module contains a linting functions for tool inputs."""
-from galaxy.tools.parameters.basic import ToolParameter
 from galaxy.util import string_as_bool
 from ._util import is_datasource, is_valid_cheetah_placeholder
+from ..parser.util import _parse_name
 
 
 def lint_inputs(tool_xml, lint_ctx):
@@ -24,7 +24,7 @@ def lint_inputs(tool_xml, lint_ctx):
             continue
 
         param_type = param_attrib["type"]
-        param_name = ToolParameter.parse_name(param)
+        param_name = _parse_name(param_attrib.get("name"), param_attrib.get("name"))
 
         if not is_valid_cheetah_placeholder(param_name):
             lint_ctx.warn("Param input [%s] is not a valid Cheetah placeholder.", param_name)

@@ -3,17 +3,20 @@ from collections import OrderedDict
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
-from .interface import InputSource
-from .interface import PageSource
-from .interface import PagesSource
-from .interface import ToolSource
+from .interface import (
+    InputSource,
+    PageSource,
+    PagesSource,
+    ToolSource,
+)
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
 from .output_objects import (
     ToolOutput,
     ToolOutputCollection,
     ToolOutputCollectionStructure,
 )
-from .util import error_on_exit_code, is_dict
+from .stdio import error_on_exit_code
+from .util import is_dict
 
 
 class YamlToolSource(ToolSource):

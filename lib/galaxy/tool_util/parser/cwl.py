@@ -4,15 +4,17 @@ from collections import OrderedDict
 
 from galaxy.tool_util.cwl import tool_proxy
 from galaxy.tool_util.deps import requirements
-from .error_level import StdioErrorLevel
 from .interface import (
     PageSource,
     PagesSource,
     ToolSource,
-    ToolStdioExitCode
 )
 from .output_actions import ToolOutputActionGroup
 from .output_objects import ToolOutput
+from .stdio import (
+    StdioErrorLevel,
+    ToolStdioExitCode,
+)
 from .yaml import YamlInputSource
 
 log = logging.getLogger(__name__)

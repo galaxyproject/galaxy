@@ -1,7 +1,7 @@
 import re
 from logging import getLogger
 
-from galaxy.tool_util.parser.error_level import StdioErrorLevel
+from galaxy.tool_util.parser.stdio import StdioErrorLevel
 from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 
