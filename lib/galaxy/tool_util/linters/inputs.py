@@ -24,7 +24,7 @@ def lint_inputs(tool_xml, lint_ctx):
             continue
 
         param_type = param_attrib["type"]
-        param_name = _parse_name(param_attrib.get("name"), param_attrib.get("name"))
+        param_name = _parse_name(param_attrib.get("name"), param_attrib.get("argument"))
 
         if not is_valid_cheetah_placeholder(param_name):
             lint_ctx.warn("Param input [%s] is not a valid Cheetah placeholder.", param_name)
