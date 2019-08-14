@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:gxdocs="http://galaxyproject.org/xml/1.0" elementFormDefault="qualified" attributeFormDefault="unqualified">
+    <xs:element name="display">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="dynamic_links" minOccurs="0" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="dynamic_param" minOccurs="0" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:attribute name="name" type="xs:string" />
+                                    <xs:attribute name="value" type="xs:string" />
+                                    <xs:attribute name="separator" type="xs:string" default="\t" />
+                                    <xs:attribute name="split" type="PermissiveBoolean" default="false" />
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="filter" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+                            <xs:element name="url" type="xs:string" minOccurs="1" maxOccurs="1" />
+                            <xs:element name="param" type="ParamType" minOccurs="0" maxOccurs="unbounded" />
+                        </xs:sequence>
+                        <xs:attribute name="from_data_table" type="xs:string" />
+                        <xs:attribute name="from_file" type="xs:string" />
+                        <xs:attribute name="site_type" type="xs:string" />
+                        <xs:attribute name="skip_startswith" type="xs:string" />
+                        <xs:attribute name="id" type="xs:string" />
+                        <xs:attribute name="name" type="xs:string" />
+                        <!-- <xs:assert test="(@from_data_table and not @from_file and not @site_type) or (not @from_data_table and @from_file and not @site_type) or (not @from_data_table and not @from_file and @site_type)"/> -->
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="link" minOccurs="0" maxOccurs="unbounded">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="url" type="xs:string" minOccurs="1" maxOccurs="1" />
+                            <xs:element name="param" type="ParamType" minOccurs="0" maxOccurs="unbounded" />
+                        </xs:sequence>
+                        <xs:attribute name="id" type="xs:string" />
+                        <xs:attribute name="name" type="xs:string" />
+                    </xs:complexType>
+                </xs:element>
+            </xs:sequence>
+            <xs:attribute name="id" type="xs:string" />
+            <xs:attribute name="version" type="xs:string" />
+            <xs:attribute name="name" type="xs:string" />
+        </xs:complexType>
+    </xs:element>
+    <xs:simpleType name="PermissiveBoolean">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for PermissiveBoolean</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="0" />
+            <xs:enumeration value="1" />
+            <xs:enumeration value="true" />
+            <xs:enumeration value="false" />
+            <xs:enumeration value="True" />
+            <xs:enumeration value="False" />
+            <xs:enumeration value="yes" />
+            <xs:enumeration value="no" />
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:simpleType name="ParamTypeType">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for ParamTypeType</xs:documentation>
+        </xs:annotation>
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="data" />
+            <xs:enumeration value="template" />
+        </xs:restriction>
+    </xs:simpleType>
+    <xs:complexType name="ParamType">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">Documentation for ParamType</xs:documentation>
+        </xs:annotation>
+        <xs:simpleContent>
+            <xs:extension base="xs:string">
+                <xs:attribute name="type" type="ParamTypeType" />
+                <xs:attribute name="name" type="xs:string" />
+                <xs:attribute name="url" type="xs:string" />
+                <xs:attribute name="mimetype" type="xs:string" />
+                <xs:attribute name="guess_mimetype" type="PermissiveBoolean" default="false" />
+                <xs:attribute name="allow_extra_files_access" type="PermissiveBoolean" default="false" />
+                <xs:attribute name="viewable" type="PermissiveBoolean" />
+                <xs:attribute name="strip" type="PermissiveBoolean" default="false" />
+                <xs:attribute name="strip_https" type="PermissiveBoolean" default="false" />
+                <xs:attribute name="force_url_param" type="PermissiveBoolean" default="false" />
+                <xs:attribute name="force_conversion" type="PermissiveBoolean" default="false" />
+                <xs:attribute name="format" type="xs:string" />
+                <xs:attribute name="metadata" type="xs:string" />
+                <xs:attribute name="dataset" type="xs:string" />
+            </xs:extension>
+        </xs:simpleContent>
+    </xs:complexType>
+</xs:schema>
