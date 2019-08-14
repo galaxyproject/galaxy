@@ -668,6 +668,7 @@ class DefaultToolAction(object):
 
     def _new_job_for_session(self, trans, tool, history):
         job = trans.app.model.Job()
+        job.galaxy_version = trans.app.config.version_major
         galaxy_session = None
 
         if hasattr(trans, "get_galaxy_session"):
@@ -677,7 +678,8 @@ class DefaultToolAction(object):
                 job.session_id = model.cached_id(galaxy_session)
         if trans.user is not None:
             job.user_id = model.cached_id(trans.user)
-        job.history_id = model.cached_id(history)
+        if history:
+            job.history_id = model.cached_id(history)
         job.tool_id = tool.id
         try:
             # For backward compatibility, some tools may not have versions yet.

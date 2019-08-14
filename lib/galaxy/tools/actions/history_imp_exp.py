@@ -18,6 +18,7 @@ class ImportHistoryToolAction(ToolAction):
         #
         trans.check_user_activation()
         job = trans.app.model.Job()
+        job.galaxy_version = trans.app.config.version_major
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
         if history:
@@ -87,6 +88,7 @@ class ExportHistoryToolAction(ToolAction):
         # Create the job and output dataset objects
         #
         job = trans.app.model.Job()
+        job.galaxy_version = trans.app.config.version_major
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
         if history:

@@ -52,6 +52,7 @@ class SetMetadataToolAction(ToolAction):
 
         # Create the job object
         job = app.model.Job()
+        job.galaxy_version = app.config.version_major
         job.session_id = session_id
         job.history_id = history_id
         job.tool_id = tool.id
