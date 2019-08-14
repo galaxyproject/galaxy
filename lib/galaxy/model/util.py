@@ -10,24 +10,36 @@ def pgcalc(sa_session, id, dryrun=False):
     TODO: Check against the recently updated versions of sqlalchemy if this
     'special' postgresql version is even necessary.
     """
-    sql_calc = """SELECT COALESCE(SUM(total_size), 0)
-                  FROM (  SELECT DISTINCT ON (d.id) d.total_size, d.id
-                          FROM history_dataset_association hda
-                               JOIN history h ON h.id = hda.history_id
-                               JOIN dataset d ON hda.dataset_id = d.id
-                          WHERE h.user_id = :id
-                                AND h.purged = false
-                                AND hda.purged = false
-                                AND d.purged = false
-                                AND d.id NOT IN (SELECT dataset_id
-                                                 FROM library_dataset_dataset_association)
-                  ) sizes"""
+    ctes = """
+        WITH per_user_histories AS
+        (
+            SELECT history.id as id
+            FROM history
+            WHERE history.user_id = :id
+                AND history.purged = false
+        ),
+        per_hist_hdas AS (
+            SELECT DISTINCT history_dataset_association.dataset_id as id
+            FROM history_dataset_association
+            WHERE history_dataset_association.purged = false
+                AND history_dataset_association.history_id in (SELECT id from per_user_histories)
+        )
+    """
+
+    sql_calc = """
+        SELECT sum(coalesce(dataset.total_size, coalesce(dataset.file_size, 0)))
+        FROM dataset
+        LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
+        WHERE dataset.id in (SELECT id from per_hist_hdas)
+            AND library_dataset_dataset_association.id IS NULL
+    """
+
     sql_update = """UPDATE galaxy_user
                     SET disk_usage = (%s)
                     WHERE id = :id
                     RETURNING disk_usage;""" % sql_calc
     if dryrun:
-        r = sa_session.execute(sql_calc, {'id': id})
+        r = sa_session.execute(ctes + sql_calc, {'id': id})
     else:
-        r = sa_session.execute(sql_update, {'id': id})
+        r = sa_session.execute(ctes + sql_update, {'id': id})
     return r.fetchone()[0]

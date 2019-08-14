@@ -508,32 +508,19 @@ class User(Dictifiable, RepresentById):
         Return byte count total of disk space used by all non-purged, non-library
         HDAs in non-purged histories.
         """
+        # maintain a list so that we don't double count
+        dataset_ids = []
+        total = 0
+        # this can be a huge number and can run out of memory, so we avoid the mappers
         db_session = object_session(self)
-
-        results = db_session.execute("""
-            WITH per_user_histories AS
-            (
-                SELECT history.id as id
-                FROM history
-                WHERE history.user_id = :user_id
-                    AND history.purged = false
-            ),
-            per_hist_hdas AS (
-                SELECT DISTINCT history_dataset_association.dataset_id as id
-                FROM history_dataset_association
-                WHERE history_dataset_association.purged = false
-                    AND history_dataset_association.history_id in (SELECT id from per_user_histories)
-            )
-
-            SELECT sum(coalesce(dataset.total_size, coalesce(dataset.file_size)))
-            FROM dataset
-            LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
-            WHERE dataset.id in (SELECT id from per_hist_hdas)
-                AND library_dataset_dataset_association.id IS NULL;
-        """, {'user_id': self.id})
-
-        res = next(results)
-        return res[0]
+        for history in db_session.query(History).enable_eagerloads(False).filter_by(user_id=self.id, purged=False).yield_per(1000):
+            for hda in db_session.query(HistoryDatasetAssociation).enable_eagerloads(False).filter_by(history_id=history.id, purged=False).yield_per(1000):
+                # TODO: def hda.counts_toward_disk_usage():
+                #   return ( not self.dataset.purged and not self.dataset.library_associations )
+                if hda.dataset.id not in dataset_ids and not hda.dataset.purged and not hda.dataset.library_associations:
+                    dataset_ids.append(hda.dataset.id)
+                    total += hda.dataset.get_total_size()
+        return total
 
     def calculate_and_set_disk_usage(self):
         """
