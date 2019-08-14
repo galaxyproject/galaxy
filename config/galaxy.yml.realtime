@@ -24,7 +24,12 @@ uwsgi:
 
 
 galaxy:
-
+  # outputs_to_working_directory will provide you with a better level of isolation. It is highly recommended to set
+  # this parameter with interactive tools.
   outputs_to_working_directory: true
   realtime_prefix: realtime
   realtime_map: database/realtime_map.sqlite
+  # If you develop interactive tools locally and do not have a full FQDN you can
+  # use an arbritrary one, e.g. 'bag' here, iff you set this hostname in your
+  # job_conf.xml as well (see the corresponding comment).
+  galaxy_infrastructure_url: http://bag:8080
