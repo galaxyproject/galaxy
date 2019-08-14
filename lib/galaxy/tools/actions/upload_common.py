@@ -385,6 +385,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     Create the upload job.
     """
     job = trans.app.model.Job()
+    job.galaxy_version = trans.app.config.version_major
     galaxy_session = trans.get_galaxy_session()
     if type(galaxy_session) == trans.model.GalaxySession:
         job.session_id = galaxy_session.id

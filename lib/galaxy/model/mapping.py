@@ -593,6 +593,7 @@ model.Job.table = Table(
     Column("library_folder_id", Integer, ForeignKey("library_folder.id"), index=True),
     Column("tool_id", String(255)),
     Column("tool_version", TEXT, default="1.0.0"),
+    Column("galaxy_version", String(64), default=None),
     Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), index=True, nullable=True),
     Column("state", String(64), index=True),
     Column("info", TrimmedString(255)),
