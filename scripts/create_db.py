@@ -15,6 +15,7 @@ database will be constructed.
 .. seealso: galaxy.ini, specifically the settings: database_connection and
 database file
 """
+import logging
 import os.path
 import sys
 
@@ -24,6 +25,9 @@ from galaxy.model.migrate.check import create_or_verify_database as create_db
 from galaxy.model.orm.scripts import get_config
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as create_install_db
 from galaxy.webapps.tool_shed.model.migrate.check import create_or_verify_database as create_tool_shed_db
+
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 
 def invoke_create():
