@@ -6,11 +6,18 @@ from __future__ import print_function
 import datetime
 import logging
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table,
+    TEXT
+)
 
-now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+now = datetime.datetime.utcnow
 metadata = MetaData()
 
 DataManagerHistoryAssociation_table = Table("data_manager_history_association", metadata,
@@ -32,6 +39,7 @@ def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
+
     try:
         DataManagerHistoryAssociation_table.create()
         log.debug("Created data_manager_history_association table")
@@ -47,6 +55,7 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
+
     try:
         DataManagerHistoryAssociation_table.drop()
         log.debug("Dropped data_manager_history_association table")

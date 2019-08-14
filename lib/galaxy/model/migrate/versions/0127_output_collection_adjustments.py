@@ -5,10 +5,23 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table, TEXT, Unicode
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table,
+    TEXT,
+    Unicode
+)
 
 from galaxy.model.custom_types import TrimmedString
-from galaxy.model.migrate.versions.util import add_column, create_table, drop_column, drop_table
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    create_table,
+    drop_column,
+    drop_table
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -22,18 +35,12 @@ JobToImplicitOutputDatasetCollectionAssociation_table = Table(
 )
 
 
-TABLES = [
-    JobToImplicitOutputDatasetCollectionAssociation_table,
-]
-
-
 def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    for table in TABLES:
-        create_table(table)
+    create_table(JobToImplicitOutputDatasetCollectionAssociation_table)
 
     dataset_collection_table = Table("dataset_collection", metadata, autoload=True)
     # need server_default because column in non-null
@@ -48,8 +55,7 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    for table in TABLES:
-        drop_table(table)
+    drop_table(JobToImplicitOutputDatasetCollectionAssociation_table)
 
     dataset_collection_table = Table("dataset_collection", metadata, autoload=True)
     drop_column('populated_state', dataset_collection_table)

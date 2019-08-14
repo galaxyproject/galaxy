@@ -5,16 +5,26 @@ from __future__ import print_function
 
 import datetime
 import logging
-from collections import OrderedDict
 
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table
+)
 
 from galaxy.model.custom_types import TrimmedString
-from galaxy.model.migrate.versions.util import add_column, create_table, drop_column, drop_table
-
-now = datetime.datetime.utcnow
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    create_table,
+    drop_column,
+    drop_table
+)
 
 log = logging.getLogger(__name__)
+now = datetime.datetime.utcnow
 metadata = MetaData()
 
 workflow_invocation_output_dataset_association_table = Table(
@@ -71,16 +81,14 @@ def get_new_tables():
     # Normally we define this globally in the file, but we need to delay the
     # reading of existing tables because an existing workflow_invocation_step
     # table exists that we want to recreate.
-
-    tables = OrderedDict()
-    tables["workflow_invocation_output_dataset_association"] = workflow_invocation_output_dataset_association_table
-    tables["workflow_invocation_output_dataset_collection_association"] = workflow_invocation_output_dataset_collection_association_table
-    tables["workflow_invocation_step_output_dataset_association"] = workflow_invocation_step_output_dataset_association_table
-    tables["workflow_invocation_step_output_dataset_collection_association"] = workflow_invocation_step_output_dataset_collection_association_table
-    tables["implicit_collection_jobs"] = implicit_collection_jobs_table
-    tables["implicit_collection_jobs_job_association"] = implicit_collection_jobs_job_association_table
-
-    return tables
+    return [
+        workflow_invocation_output_dataset_association_table,
+        workflow_invocation_output_dataset_collection_association_table,
+        workflow_invocation_step_output_dataset_association_table,
+        workflow_invocation_step_output_dataset_collection_association_table,
+        implicit_collection_jobs_table,
+        implicit_collection_jobs_job_association_table
+    ]
 
 
 def upgrade(migrate_engine):
@@ -88,8 +96,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    tables = get_new_tables()
-    for table in tables.values():
+    for table in get_new_tables():
         create_table(table)
 
     # Set default for creation to scheduled, actual mapping has new as default.
@@ -127,6 +134,5 @@ def downgrade(migrate_engine):
     drop_column("state", "workflow_invocation_step", metadata)
     drop_column("element_count", "dataset_collection", metadata)
 
-    tables = get_new_tables()
-    for table in reversed(list(tables.values())):
+    for table in reversed(get_new_tables()):
         drop_table(table)

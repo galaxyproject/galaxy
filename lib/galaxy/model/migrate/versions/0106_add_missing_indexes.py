@@ -13,7 +13,6 @@ from galaxy.model.migrate.versions.util import (
 )
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 metadata = MetaData()
 
 indexes = (

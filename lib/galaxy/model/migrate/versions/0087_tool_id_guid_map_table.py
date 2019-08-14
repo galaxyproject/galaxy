@@ -5,22 +5,25 @@ from __future__ import print_function
 
 import datetime
 import logging
-import sys
 
-from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, TEXT
+from sqlalchemy import (
+    Column,
+    DateTime,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    TEXT
+)
 
-# Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrate.versions.util import (
+    create_table,
+    drop_table
+)
 
-now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter(format)
-handler.setFormatter(formatter)
-log.addHandler(handler)
-
+now = datetime.datetime.utcnow
 metadata = MetaData()
 
 ToolIdGuidMap_table = Table("tool_id_guid_map", metadata,
@@ -36,19 +39,15 @@ ToolIdGuidMap_table = Table("tool_id_guid_map", metadata,
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        ToolIdGuidMap_table.create()
-    except Exception:
-        log.exception("Creating tool_id_guid_map table failed.")
+
+    create_table(ToolIdGuidMap_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        ToolIdGuidMap_table.drop()
-    except Exception:
-        log.exception("Dropping tool_id_guid_map table failed.")
+
+    drop_table(ToolIdGuidMap_table)

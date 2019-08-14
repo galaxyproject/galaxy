@@ -5,7 +5,12 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, MetaData, Table, TEXT
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+    TEXT
+)
 
 from galaxy.model.custom_types import JSONType
 from galaxy.model.migrate.versions.util import (

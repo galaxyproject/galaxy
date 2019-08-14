@@ -51,8 +51,15 @@ def create_table(table):
         log.exception("Creating table '%s' failed.", table)
 
 
-def drop_table(table):
+def drop_table(table, metadata=None):
+    """
+    :param table: Table to drop
+    :type table: :class:`Table` or str
+    """
     try:
+        if not isinstance(table, Table):
+            assert metadata is not None
+            table = Table(table, metadata, autoload=True)
         table.drop()
     except Exception:
         log.exception("Dropping table '%s' failed.", table)

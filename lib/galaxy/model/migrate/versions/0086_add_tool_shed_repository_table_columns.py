@@ -4,21 +4,22 @@ Migration script to add the metadata, update_available and includes_datatypes co
 from __future__ import print_function
 
 import logging
-import sys
 
-from sqlalchemy import Boolean, Column, MetaData, Table
+from sqlalchemy import (
+    Boolean,
+    Column,
+    MetaData,
+    Table
+)
 
 from galaxy.model.custom_types import JSONType
-from galaxy.model.migrate.versions.util import add_column, drop_column, engine_false
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    drop_column,
+    engine_false
+)
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter(format)
-handler.setFormatter(formatter)
-log.addHandler(handler)
-
 metadata = MetaData()
 
 

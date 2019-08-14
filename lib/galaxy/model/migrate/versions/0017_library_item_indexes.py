@@ -5,17 +5,14 @@ library_dataset.name, library_dataset_dataset_association.name.
 from __future__ import print_function
 
 import logging
-import sys
 
-from sqlalchemy import Index, MetaData, Table
+from sqlalchemy import (
+    Index,
+    MetaData,
+    Table
+)
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter(format)
-handler.setFormatter(formatter)
-log.addHandler(handler)
 metadata = MetaData()
 
 

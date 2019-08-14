@@ -5,23 +5,30 @@ from __future__ import print_function
 
 import datetime
 import logging
-import sys
 from json import loads
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table, TEXT
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    TEXT
+)
 
-from galaxy.model.custom_types import _sniffnfix_pg9_hex, TrimmedString
-from galaxy.model.migrate.versions.util import localtimestamp, nextval
+from galaxy.model.custom_types import (
+    _sniffnfix_pg9_hex,
+    TrimmedString
+)
+from galaxy.model.migrate.versions.util import (
+    localtimestamp,
+    nextval
+)
 
-now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter(format)
-handler.setFormatter(formatter)
-log.addHandler(handler)
-
+now = datetime.datetime.utcnow
 metadata = MetaData()
 
 

@@ -4,21 +4,22 @@ Migration script to add status and error_message columns to the tool_dependency 
 from __future__ import print_function
 
 import logging
-import sys
 
-from sqlalchemy import Boolean, Column, MetaData, Table, TEXT
+from sqlalchemy import (
+    Boolean,
+    Column,
+    MetaData,
+    Table,
+    TEXT
+)
 
 from galaxy.model.custom_types import TrimmedString
-from galaxy.model.migrate.versions.util import add_column, drop_column
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    drop_column
+)
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter(format)
-handler.setFormatter(formatter)
-log.addHandler(handler)
-
 metadata = MetaData()
 
 

@@ -1161,8 +1161,7 @@ model.FormDefinition.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("name", TrimmedString(255), nullable=False),
     Column("desc", TEXT),
-    Column("form_definition_current_id", Integer,
-        ForeignKey("form_definition_current.id", name='for_def_form_def_current_id_fk', use_alter=True), index=True),
+    Column("form_definition_current_id", Integer, ForeignKey("form_definition_current.id", use_alter=True), index=True, nullable=False),
     Column("fields", JSONType()),
     Column("type", TrimmedString(255), index=True),
     Column("layout", JSONType()))
