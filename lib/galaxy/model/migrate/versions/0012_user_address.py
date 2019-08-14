@@ -67,7 +67,7 @@ def upgrade(migrate_engine):
     if migrate_engine.name != 'sqlite':
         drop_column('submitted', Request_table)
     col = Column("state", TrimmedString(255), index=True)
-    add_column(col, Request_table, index_name='ix_request_state')
+    add_column(col, Request_table, metadata, index_name='ix_request_state')
 
 
 def downgrade(migrate_engine):

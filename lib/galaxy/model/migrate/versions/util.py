@@ -65,18 +65,23 @@ def drop_table(table, metadata=None):
         log.exception("Dropping table '%s' failed.", table)
 
 
-def add_column(column, table, metadata=None, **kwds):
+def add_column(column, table, metadata, **kwds):
     """
     :param table: Table to add the column to
     :type table: :class:`Table` or str
 
-    :param metadata: Needed only if ``table`` is a table name
     :type metadata: :class:`Metadata`
     """
     try:
+        migrate_engine = metadata.bind
         if not isinstance(table, Table):
-            assert metadata is not None
             table = Table(table, metadata, autoload=True)
+        if migrate_engine.name == 'sqlite' and column.index and column.foreign_keys:
+            # SQLAlchemy Migrate has a bug when adding a column with both a
+            # ForeignKey and an index in SQLite. Since SQLite creates an index
+            # anyway, we can drop the explicit index creation.
+            del kwds['index_name']
+            column.index = False
         column.create(table, **kwds)
         assert column is table.c[column.name]
     except Exception:

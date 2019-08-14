@@ -30,15 +30,15 @@ def upgrade(migrate_engine):
 
     ToolShedRepository_table = Table("tool_shed_repository", metadata, autoload=True)
     c = Column("metadata", JSONType(), nullable=True)
-    add_column(c, ToolShedRepository_table)
+    add_column(c, ToolShedRepository_table, metadata)
     c = Column("includes_datatypes", Boolean, index=True, default=False)
-    add_column(c, ToolShedRepository_table, index_name="ix_tool_shed_repository_includes_datatypes")
+    add_column(c, ToolShedRepository_table, metadata, index_name="ix_tool_shed_repository_includes_datatypes")
     try:
         migrate_engine.execute("UPDATE tool_shed_repository SET includes_datatypes=%s" % engine_false(migrate_engine))
     except Exception:
         log.exception("Updating column 'includes_datatypes' of table 'tool_shed_repository' failed.")
     c = Column("update_available", Boolean, default=False)
-    add_column(c, ToolShedRepository_table)
+    add_column(c, ToolShedRepository_table, metadata)
     try:
         migrate_engine.execute("UPDATE tool_shed_repository SET update_available=%s" % engine_false(migrate_engine))
     except Exception:

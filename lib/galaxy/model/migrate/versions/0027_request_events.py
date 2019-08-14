@@ -57,9 +57,7 @@ def upgrade(migrate_engine):
     cmd = cmd % (nextval(migrate_engine, 'request_event'), localtimestamp(migrate_engine), localtimestamp(migrate_engine), 'Imported from request table')
     migrate_engine.execute(cmd)
 
-    if migrate_engine.name != 'sqlite':
-        # Delete the state column
-        drop_column('state', 'request', metadata)
+    drop_column('state', 'request', metadata)
 
 
 def downgrade(migrate_engine):

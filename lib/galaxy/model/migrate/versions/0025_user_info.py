@@ -26,11 +26,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # SQLAlchemy Migrate has a bug when adding a column with both a ForeignKey and a index in SQLite
-    if migrate_engine.name != 'sqlite':
-        col = Column("form_values_id", Integer, ForeignKey('form_values.id', name='user_form_values_id_fk'), index=True)
-    else:
-        col = Column("form_values_id", Integer, index=True)
+    col = Column("form_values_id", Integer, ForeignKey('form_values.id', name='user_form_values_id_fk'), index=True)
     add_column(col, 'galaxy_user', metadata, index_name='ix_galaxy_user_form_values_id')
 
 

@@ -49,23 +49,15 @@ def upgrade(migrate_engine):
     # Add the dataset_files column in 'sample' table
     Sample_table = Table("sample", metadata, autoload=True)
     col = Column("dataset_files", JSONType())
-    add_column(col, Sample_table)
+    add_column(col, Sample_table, metadata)
 
     # Add the library_id column in 'sample' table
-    # SQLAlchemy Migrate has a bug when adding a column with both a ForeignKey and a index in SQLite
-    if migrate_engine.name != 'sqlite':
-        col = Column("library_id", Integer, ForeignKey("library.id"), index=True)
-    else:
-        col = Column("library_id", Integer, index=True)
-    add_column(col, Sample_table, index_name='ix_sample_library_id')
+    col = Column("library_id", Integer, ForeignKey("library.id"), index=True)
+    add_column(col, Sample_table, metadata, index_name='ix_sample_library_id')
 
     # Add the library_id column in 'sample' table
-    # SQLAlchemy Migrate has a bug when adding a column with both a ForeignKey and a index in SQLite
-    if migrate_engine.name != 'sqlite':
-        col = Column("folder_id", Integer, ForeignKey("library_folder.id"), index=True)
-    else:
-        col = Column("folder_id", Integer, index=True)
-    add_column(col, Sample_table, index_name='ix_sample_library_folder_id')
+    col = Column("folder_id", Integer, ForeignKey("library_folder.id"), index=True)
+    add_column(col, Sample_table, metadata, index_name='ix_sample_library_folder_id')
 
 
 def downgrade(migrate_engine):
@@ -78,18 +70,10 @@ def downgrade(migrate_engine):
     drop_column('dataset_files', Sample_table)
 
     Request_table = Table("request", metadata, autoload=True)
-    # SQLAlchemy Migrate has a bug when adding a column with both a ForeignKey and a index in SQLite
-    if migrate_engine.name != 'sqlite':
-        col = Column('folder_id', Integer, ForeignKey('library_folder.id', name='request_folder_id_fk'), index=True)
-    else:
-        col = Column('folder_id', Integer, index=True)
-    add_column(col, Request_table, index_name='ix_request_folder_id')
+    col = Column('folder_id', Integer, ForeignKey('library_folder.id', name='request_folder_id_fk'), index=True)
+    add_column(col, Request_table, metadata, index_name='ix_request_folder_id')
 
-    # SQLAlchemy Migrate has a bug when adding a column with both a ForeignKey and a index in SQLite
-    if migrate_engine.name != 'sqlite':
-        col = Column('library_id', Integer, ForeignKey("library.id"), index=True)
-    else:
-        col = Column('library_id', Integer, index=True)
-    add_column(col, Request_table, index_name='ix_request_library_id')
+    col = Column('library_id', Integer, ForeignKey("library.id"), index=True)
+    add_column(col, Request_table, metadata, index_name='ix_request_library_id')
 
     drop_column('datatx_info', 'request_type', metadata)

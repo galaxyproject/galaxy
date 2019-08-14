@@ -46,11 +46,7 @@ def upgrade(migrate_engine):
     create_table(JobToOutputLibraryDataset_table)
 
     # Create the library_folder_id column
-    # SQLAlchemy Migrate has a bug when adding a column with both a ForeignKey and a index in SQLite
-    if migrate_engine.name != 'sqlite':
-        col = Column("library_folder_id", Integer, ForeignKey('library_folder.id', name='job_library_folder_id_fk'), index=True)
-    else:
-        col = Column("library_folder_id", Integer, index=True)
+    col = Column("library_folder_id", Integer, ForeignKey('library_folder.id', name='job_library_folder_id_fk'), index=True)
     add_column(col, 'job', metadata, index_name='ix_job_library_folder_id')
 
     # Create the ix_dataset_state index

@@ -331,9 +331,9 @@ def upgrade(migrate_engine):
     # Add 2 new columns to the galaxy_user table
     User_table = Table("galaxy_user", metadata, autoload=True)
     col = Column('deleted', Boolean, index=True, default=False)
-    add_column(col, User_table, index_name='ix_galaxy_user_deleted')
+    add_column(col, User_table, metadata, index_name='ix_galaxy_user_deleted')
     col = Column('purged', Boolean, index=True, default=False)
-    add_column(col, User_table, index_name='ix_galaxy_user_purged')
+    add_column(col, User_table, metadata, index_name='ix_galaxy_user_purged')
     # Add 1 new column to the history_dataset_association table
     HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
     col = Column('copied_from_library_dataset_dataset_association_id', Integer, nullable=True)

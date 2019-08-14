@@ -24,9 +24,9 @@ def upgrade(migrate_engine):
 
     # Create dbkey columns.
     x = Column("dbkey", TEXT)
-    add_column(x, Visualization_table)
+    add_column(x, Visualization_table, metadata)
     y = Column("dbkey", TEXT)
-    add_column(y, Visualization_revision_table)
+    add_column(y, Visualization_revision_table, metadata)
     # Manually create indexes for compatability w/ mysql_length.
     xi = Index("ix_visualization_dbkey", Visualization_table.c.dbkey, mysql_length=200)
     xi.create()

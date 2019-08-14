@@ -178,7 +178,7 @@ def upgrade(migrate_engine):
     RequestType_table = Table("request_type", metadata, autoload=True)
     # create foreign key field to the sequencer table in the request_type table
     col = Column("sequencer_id", Integer, ForeignKey("sequencer.id"), nullable=True)
-    add_column(col, RequestType_table)
+    add_column(col, RequestType_table, metadata)
     # copy the sequencer information contained in the 'datatx_info' column
     # of the request_type table to the form values referenced in the sequencer table
     cmd = "SELECT id, name, datatx_info FROM request_type ORDER BY id ASC"
@@ -223,7 +223,7 @@ def downgrade(migrate_engine):
     RequestType_table = Table("request_type", metadata, autoload=True)
     # create the 'datatx_info' column
     col = Column("datatx_info", JSONType())
-    add_column(col, RequestType_table)
+    add_column(col, RequestType_table, metadata)
     # restore the datatx_info column data in the request_type table with data from
     # the sequencer and the form_values table
     cmd = "SELECT request_type.id, form_values.content "\
