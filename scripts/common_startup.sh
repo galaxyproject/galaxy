@@ -207,7 +207,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
         # If git is not used and static/client_build_hash.txt is present, next
         # client rebuilds must be done manually by the admin
         if [ "$GIT_BRANCH" = "0" ]; then
-            echo "Skipping Galaxy client build because git is not in use and the client build state cannot be compared against local changes.  If you have made local modifications, then manual client builds will be required."
+            echo "Skipping Galaxy client build because git is not in use and the client build state cannot be compared against local changes.  If you have made local modifications, then manual client builds will be required.  See ./client/README.md for more information."
             SKIP_CLIENT_BUILD=1
         else
             # Check if anything has changed in client/ since the last build
