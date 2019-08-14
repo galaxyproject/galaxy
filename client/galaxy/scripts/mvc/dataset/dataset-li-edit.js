@@ -264,8 +264,14 @@ var DatasetListItemEdit = _super.extend(
         _renderVisualizationsButton: function() {
             //TODO: someday - lazyload visualizations
             const Galaxy = getGalaxyInstance();
-            let visualizations = this.model.get("visualizations");
-            if (!Galaxy.config.visualizations_visible || this.model.isDeletedOrPurged() || !this.hasUser || !this.model.hasData() || _.isEmpty(visualizations)) {
+            const visualizations = this.model.get("visualizations");
+            if (
+                !Galaxy.config.visualizations_visible ||
+                this.model.isDeletedOrPurged() ||
+                !this.hasUser ||
+                !this.model.hasData() ||
+                _.isEmpty(visualizations)
+            ) {
                 return null;
             }
             if (!_.isObject(visualizations[0])) {
