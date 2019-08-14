@@ -293,8 +293,8 @@ class InputSource(object):
     def parse_name(self):
         """Return name of an input source
         returns the name or if absent the argument property
-        in the later case leading dashes are stripped and
-        internal dashes are replaced by underscore
+        In the latter case, leading dashes are stripped and
+        all remaining dashes are replaced by underscores.
         """
         return _parse_name(self.get('name'), self.get('argument'))
 
