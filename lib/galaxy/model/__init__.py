@@ -556,6 +556,7 @@ class User(Dictifiable, RepresentById):
             return r.fetchone()[0]
         else:
             r = sa_session.execute(ctes + sql_update, {'id': self.id})
+            sa_session.refresh(self)
             # There is no RETURNING clause because sqlite does not support it, so
             # we return None
             return None
