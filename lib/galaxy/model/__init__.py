@@ -50,7 +50,6 @@ import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
 from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
-from galaxy.model.util import pgcalc
 from galaxy.security import get_permitted_actions
 from galaxy.util import (directory_hash_id, ready_name_for_url,
                          unicodify, unique_id)
@@ -509,14 +508,57 @@ class User(Dictifiable, RepresentById):
         HDAs in non-purged histories.
         """
         # maintain a list so that we don't double count
-        return pgcalc(object_session(self), self.id, dryrun=True)
+        db_session = object_session(self)
+        return self._calculate_or_set_disk_usage(db_session, dryrun=True)
 
     def calculate_and_set_disk_usage(self):
         """
         Calculates and sets user disk usage.
         """
         db_session = object_session(self)
-        pgcalc(db_session, self.id, dryrun=False)
+        self._calculate_or_set_disk_usage(db_session, dryrun=False)
+
+    def _calculate_or_set_disk_usage(self, sa_session, dryrun=True):
+        """
+        Utility to calculate (returning a value) or just set the disk usage
+        (returning None / applying immediately)
+        """
+
+        ctes = """
+            WITH per_user_histories AS
+            (
+                SELECT history.id as id
+                FROM history
+                WHERE history.user_id = :id
+                    AND history.purged = false
+            ),
+            per_hist_hdas AS (
+                SELECT DISTINCT history_dataset_association.dataset_id as id
+                FROM history_dataset_association
+                WHERE history_dataset_association.purged = false
+                    AND history_dataset_association.history_id in (SELECT id from per_user_histories)
+            )
+        """
+
+        sql_calc = """
+            SELECT sum(coalesce(dataset.total_size, coalesce(dataset.file_size, 0)))
+            FROM dataset
+            LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
+            WHERE dataset.id in (SELECT id from per_hist_hdas)
+                AND library_dataset_dataset_association.id IS NULL
+        """
+
+        sql_update = """UPDATE galaxy_user
+                        SET disk_usage = (%s)
+                        WHERE id = :id""" % sql_calc
+        if dryrun:
+            r = sa_session.execute(ctes + sql_calc, {'id': self.id})
+            return r.fetchone()[0]
+        else:
+            r = sa_session.execute(ctes + sql_update, {'id': self.id})
+            # There is no RETURNING clause because sqlite does not support it, so
+            # we return None
+            return None
 
     @staticmethod
     def user_template_environment(user):
