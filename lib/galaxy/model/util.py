@@ -10,6 +10,7 @@ def pgcalc(sa_session, id, dryrun=False):
     TODO: Check against the recently updated versions of sqlalchemy if this
     'special' postgresql version is even necessary.
     """
+
     ctes = """
         WITH per_user_histories AS
         (
@@ -36,10 +37,12 @@ def pgcalc(sa_session, id, dryrun=False):
 
     sql_update = """UPDATE galaxy_user
                     SET disk_usage = (%s)
-                    WHERE id = :id
-                    RETURNING disk_usage;""" % sql_calc
+                    WHERE id = :id""" % sql_calc
     if dryrun:
         r = sa_session.execute(ctes + sql_calc, {'id': id})
+        return r.fetchone()[0]
     else:
         r = sa_session.execute(ctes + sql_update, {'id': id})
-    return r.fetchone()[0]
+        # There is no RETURNING clause because sqlite does not support it, so
+        # we return None
+        return None
