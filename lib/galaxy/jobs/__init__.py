@@ -2409,7 +2409,7 @@ class ComputeEnvironment(object):
 class SimpleComputeEnvironment(object):
 
     def config_directory(self):
-        return self.working_directory()
+        return os.path.join(self.working_directory(), "configs")
 
     def sep(self):
         return os.path.sep
