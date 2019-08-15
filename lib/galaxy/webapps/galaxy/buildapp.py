@@ -51,9 +51,11 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
         except Exception:
             traceback.print_exc()
             sys.exit(1)
-    # Call app's shutdown method when the interpeter exits, this cleanly stops
-    # the various Galaxy application daemon threads
-    app.application_stack.register_postfork_function(atexit.register, app.shutdown)
+
+    if kwargs.get('register_shutdown_at_exit', True):
+        # Call app's shutdown method when the interpeter exits, this cleanly stops
+        # the various Galaxy application daemon threads
+        app.application_stack.register_postfork_function(atexit.register, app.shutdown)
     # Create the universe WSGI application
     webapp = GalaxyWebApplication(app, session_cookie='galaxysession', name='galaxy')
 

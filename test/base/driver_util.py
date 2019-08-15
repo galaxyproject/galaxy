@@ -776,7 +776,8 @@ def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, con
         kwargs['global_conf'],
         app=app,
         use_translogger=False,
-        static_enabled=True
+        static_enabled=True,
+        register_shutdown_at_exit=False
     )
     server, port = serve_webapp(
         webapp,
