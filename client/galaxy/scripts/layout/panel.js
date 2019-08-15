@@ -29,11 +29,10 @@ const SidePanel = Backbone.View.extend({
         const components = this.view.model.attributes || {};
 
         if (this.id === 'left' && this.view && this.view.isVueWrapper) {
-            const sidePanel = this.view.getVueComponent();
             const node = document.createElement("div");
-
             this.$el.replaceWith(node);
-            sidePanel.$mount(node);
+
+            this.view.mountVueComponent(node);
         } else {
             this.$el.html(this._templatePanel(this.id));
             _.each(components.buttons, button => {
