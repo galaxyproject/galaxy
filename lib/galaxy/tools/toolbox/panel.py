@@ -1,10 +1,10 @@
 from abc import abstractmethod
-from collections import OrderedDict
 
 from six import iteritems
 
 from galaxy.util import bunch
 from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.odict import odict
 from .parser import ensure_tool_conf_item
 
 
@@ -112,7 +112,7 @@ class ToolSectionLabel(Dictifiable):
         return super(ToolSectionLabel, self).to_dict()
 
 
-class ToolPanelElements(OrderedDict, HasPanelItems):
+class ToolPanelElements(odict, HasPanelItems):
     """ Represents an ordered dictionary of tool entries - abstraction
     used both by tool panel itself (normal and integrated) and its sections.
     """
