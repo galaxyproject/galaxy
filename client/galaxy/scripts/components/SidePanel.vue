@@ -1,9 +1,5 @@
 <template>
-    <div :id="side" class="unified-panel-outer-wrap" :style="{
-        left: show ? '0' : `-${width}px`,
-        width: width + 'px'
-    }">
-
+    <div :id="side" class="unified-panel-outer-wrap" :style="styles">
         <component :is="currentPanel" v-bind="currentPanelProperties"></component>
 
         <div class="unified-panel-footer">
@@ -29,6 +25,14 @@
               show: true,
               width: 288
           }
+        },
+        computed: {
+            styles() {
+                const styles = {};
+                styles[this.side] = this.show ? '0' : `-${this.width}px`;
+                styles['width'] = this.width + 'px';
+                return styles;
+            },
         },
         methods: {
             dragHandler(e) {
