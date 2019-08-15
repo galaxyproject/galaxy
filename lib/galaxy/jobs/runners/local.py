@@ -214,10 +214,16 @@ class LocalJobRunner(BaseJobRunner):
             return False
 
     def _terminate(self, proc):
-        os.killpg(proc.pid, 15)
-        sleep(1)
-        if proc.poll() is None:
-            os.killpg(proc.pid, 9)
+        process_exists = True
+        try:
+            os.killpg(proc.pid, 15)
+        except OSError as e:
+            if e.errno == errno.ESRCH:
+                process_exists = False
+        if process_exists:
+            sleep(1)
+            if proc.poll() is None:
+                os.killpg(proc.pid, 9)
         return proc.wait()  # reap
 
     def __poll_if_needed(self, proc, job_wrapper, job_id):
