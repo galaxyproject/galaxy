@@ -41,9 +41,11 @@ def upgrade(migrate_engine):
 
     # Delete the library_id column in 'request' table
     Request_table = Table("request", metadata, autoload=True)
+    # TODO: Dropping a column used in a foreign key fails in MySQL, need to remove the FK first.
     drop_column('library_id', Request_table)
 
     # Delete the folder_id column in 'request' table
+    # TODO: Dropping a column used in a foreign key fails in MySQL, need to remove the FK first.
     drop_column('folder_id', Request_table)
 
     # Add the dataset_files column in 'sample' table
@@ -70,7 +72,7 @@ def downgrade(migrate_engine):
     drop_column('dataset_files', Sample_table)
 
     Request_table = Table("request", metadata, autoload=True)
-    col = Column('folder_id', Integer, ForeignKey('library_folder.id', name='request_folder_id_fk'), index=True)
+    col = Column('folder_id', Integer, ForeignKey('library_folder.id'), index=True)
     add_column(col, Request_table, metadata, index_name='ix_request_folder_id')
 
     col = Column('library_id', Integer, ForeignKey("library.id"), index=True)

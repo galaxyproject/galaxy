@@ -103,7 +103,7 @@ def upgrade(migrate_engine):
             sequencer_id)
         migrate_engine.execute(cmd)
 
-    # drop the 'sequencer_id' column in the 'request_type' table
+    # TODO: Dropping a column used in a foreign key fails in MySQL, need to remove the FK first.
     drop_column('sequencer_id', 'request_type', metadata)
 
 

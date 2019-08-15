@@ -38,14 +38,9 @@ def upgrade(migrate_engine):
 
     create_table(DynamicTool_table)
 
-    if migrate_engine.name in ['postgres', 'postgresql']:
-        workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), nullable=True)
-        job_workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), nullable=True)
-    else:
-        workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, nullable=True)
-        job_workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, nullable=True)
-
+    workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), nullable=True)
     add_column(workflow_dynamic_tool_id_column, "workflow_step", metadata)
+    job_workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), nullable=True)
     add_column(job_workflow_dynamic_tool_id_column, "job", metadata)
 
 

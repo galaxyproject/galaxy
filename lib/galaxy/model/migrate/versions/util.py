@@ -1,9 +1,12 @@
 import logging
 
 from sqlalchemy import (
+    BLOB,
     Index,
-    Table
+    Table,
+    Text
 )
+from sqlalchemy.dialects.mysql import MEDIUMBLOB
 
 log = logging.getLogger(__name__)
 
@@ -124,7 +127,7 @@ def drop_column(column_name, table, metadata=None):
         log.exception("Dropping column '%s' from table '%s' failed.", column_name, table)
 
 
-def add_index(index_name, table, column_name, metadata=None):
+def add_index(index_name, table, column_name, metadata=None, **kwds):
     """
     :param table: Table to add the index to
     :type table: :class:`Table` or str
@@ -137,7 +140,11 @@ def add_index(index_name, table, column_name, metadata=None):
             assert metadata is not None
             table = Table(table, metadata, autoload=True)
         if index_name not in [ix.name for ix in table.indexes]:
-            index = Index(index_name, table.c[column_name])
+            column = table.c[column_name]
+            # MySQL cannot index a TEXT/BLOB column without specifying mysql_length
+            if isinstance(column.type, (BLOB, MEDIUMBLOB, Text)):
+                kwds.setdefault('mysql_length', 200)
+            index = Index(index_name, column, **kwds)
             index.create()
         else:
             log.debug("Index '%s' on column '%s' in table '%s' already exists.", index_name, column_name, table)
@@ -145,8 +152,11 @@ def add_index(index_name, table, column_name, metadata=None):
         log.exception("Adding index '%s' on column '%s' to table '%s' failed.", index_name, column_name, table)
 
 
-def drop_index(index_name, table, column_name, metadata=None):
+def drop_index(index, table, column_name=None, metadata=None):
     """
+    :param index: Index to drop
+    :type index: :class:`Index` or str
+
     :param table: Table to drop the index from
     :type table: :class:`Table` or str
 
@@ -154,13 +164,15 @@ def drop_index(index_name, table, column_name, metadata=None):
     :type metadata: :class:`Metadata`
     """
     try:
-        if not isinstance(table, Table):
-            assert metadata is not None
-            table = Table(table, metadata, autoload=True)
-        if index_name in [ix.name for ix in table.indexes]:
-            index = Index(index_name, table.c[column_name])
-            index.drop()
-        else:
-            log.debug("Index '%s' in table '%s' does not exist.", index_name, table)
+        if not isinstance(index, Index):
+            if not isinstance(table, Table):
+                assert metadata is not None
+                table = Table(table, metadata, autoload=True)
+            if index in [ix.name for ix in table.indexes]:
+                index = Index(index, table.c[column_name])
+            else:
+                log.debug("Index '%s' in table '%s' does not exist.", index, table)
+                return
+        index.drop()
     except Exception:
-        log.exception("Dropping index '%s' from table '%s' failed", index_name, table)
+        log.exception("Dropping index '%s' from table '%s' failed", index, table)

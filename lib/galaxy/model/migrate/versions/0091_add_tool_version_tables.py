@@ -11,6 +11,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
+    Index,
     Integer,
     MetaData,
     String,
@@ -87,7 +88,8 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
 
-    ToolIdGuidMap_table = Table("tool_id_guid_map", metadata,
+    ToolIdGuidMap_table = Table(
+        "tool_id_guid_map", metadata,
         Column("id", Integer, primary_key=True),
         Column("create_time", DateTime, default=now),
         Column("update_time", DateTime, default=now, onupdate=now),
@@ -96,7 +98,9 @@ def downgrade(migrate_engine):
         Column("tool_shed", TrimmedString(255)),
         Column("repository_owner", TrimmedString(255)),
         Column("repository_name", TrimmedString(255)),
-        Column("guid", TEXT, index=True, unique=True))
+        Column("guid", TEXT),
+        Index('ix_tool_id_guid_map_guid', 'guid', unique=True, mysql_length=200),
+    )
 
     metadata.reflect()
     try:

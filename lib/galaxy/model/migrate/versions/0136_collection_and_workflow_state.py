@@ -39,10 +39,10 @@ workflow_invocation_output_dataset_association_table = Table(
 workflow_invocation_output_dataset_collection_association_table = Table(
     "workflow_invocation_output_dataset_collection_association", metadata,
     Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
-    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True),
-    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id")),
+    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", name='fk_wiodca_wii'), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wiodca_wsi')),
+    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wiodca_dci'), index=True),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name='fk_wiodca_woi')),
 )
 
 workflow_invocation_step_output_dataset_association_table = Table(
@@ -56,9 +56,9 @@ workflow_invocation_step_output_dataset_association_table = Table(
 workflow_invocation_step_output_dataset_collection_association_table = Table(
     "workflow_invocation_step_output_dataset_collection_association", metadata,
     Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id"), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
-    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True),
+    Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id", name='fk_wisodca_wisi'), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wisodca_wsi')),
+    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wisodca_dci'), index=True),
     Column("output_name", String(255), nullable=True),
 )
 
@@ -70,8 +70,8 @@ implicit_collection_jobs_table = Table(
 
 implicit_collection_jobs_job_association_table = Table(
     "implicit_collection_jobs_job_association", metadata,
-    Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True),
     Column("id", Integer, primary_key=True),
+    Column("implicit_collection_jobs_id", Integer, ForeignKey("implicit_collection_jobs.id"), index=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),  # Consider making this nullable...
     Column("order_index", Integer, nullable=False),
 )

@@ -10,10 +10,6 @@ new association tables:
 1) library_info_association
 2) library_folder_info_association
 3) library_dataset_dataset_info_association
-
-If using mysql, this script will throw an (OperationalError) exception due to a long index name on
-the library_dataset_dataset_info_association table, which is OK because the script creates an index
-with a shortened name.
 """
 from __future__ import print_function
 
@@ -22,7 +18,6 @@ import logging
 from sqlalchemy import (
     Column,
     ForeignKey,
-    Index,
     Integer,
     MetaData,
     Table
@@ -91,16 +86,6 @@ def upgrade(migrate_engine):
     # Create all new tables above
     for table in NEW_TABLES:
         create_table(table)
-
-    # Fix index on LibraryDatasetDatasetInfoAssociation_table for mysql
-    if migrate_engine.name == 'mysql':
-        # Load existing tables
-        metadata.reflect()
-        i = Index("ix_lddaia_ldda_id", LibraryDatasetDatasetInfoAssociation_table.c.library_dataset_dataset_association_id)
-        try:
-            i.create()
-        except Exception:
-            log.exception("Adding index 'ix_lddaia_ldda_id' to table 'library_dataset_dataset_info_association' table failed.")
 
 
 def downgrade(migrate_engine):
