@@ -36,6 +36,7 @@ from galaxy.tools.wrappers import (
 )
 from galaxy.util import (
     find_instance_nested,
+    safe_makedirs,
     unicodify,
 )
 from galaxy.util.bunch import Bunch
@@ -525,7 +526,9 @@ class ToolEvaluator(object):
         for name, filename, content in self.tool.config_files:
             config_text, is_template = self.__build_config_file_text(content)
             # If a particular filename was forced by the config use it
-            directory = self.local_working_directory
+            directory = os.path.join(self.local_working_directory, "configs")
+            if not os.path.exists(directory):
+                os.makedirs(directory)
             if filename is not None:
                 config_filename = os.path.join(directory, filename)
             else:
@@ -601,6 +604,9 @@ class ToolEvaluator(object):
         return json.dumps(wrapped_json.json_wrap(self.tool.inputs, self.param_dict, handle_files=handle_files)), False
 
     def __write_workdir_file(self, config_filename, content, context, is_template=True, strip=False):
+        parent_dir = os.path.dirname(config_filename)
+        if not os.path.exists(parent_dir):
+            safe_makedirs(parent_dir)
         if is_template:
             value = fill_template(content, context=context, python_template_version=self.tool.python_template_version)
         else:

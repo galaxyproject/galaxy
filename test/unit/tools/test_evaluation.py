@@ -126,7 +126,7 @@ class ToolEvaluatorTestCase(TestCase, UsesApp):
         config_filename = extra_filenames[0]
         config_basename = os.path.basename(config_filename)
         # Verify config file written into working directory.
-        self.assertEqual(os.path.join(self.test_directory, config_basename), config_filename)
+        self.assertEqual(os.path.join(self.test_directory, "configs", config_basename), config_filename)
         # Verify config file contents are evaluated against parameters.
         assert open(config_filename, "r").read() == "4"
         self.assertEqual(command_line, "prog1 %s" % config_filename)
