@@ -210,8 +210,11 @@ var BaseOutputTerminalView = TerminalView.extend({
         const terminal = this.terminalForOutput(output);
         this.setupMappingView(terminal);
         this.el.terminal = terminal;
+        this.$el.attr("aria-label", `connect node ${name}`);
         this.$el.attr("output-name", name);
         this.$el.attr("id", id);
+        this.$el.attr("tabindex", "0");
+        this.$el.attr("aria-grabbed", "false");
         this.$el.append($("<icon/>"));
         terminal.node = node;
         terminal.name = name;
@@ -221,7 +224,117 @@ var BaseOutputTerminalView = TerminalView.extend({
     events: {
         drag: "onDrag",
         dragstart: "onDragStart",
-        dragend: "onDragEnd"
+        dragend: "onDragEnd",
+        keydown: "keyDown"
+    },
+
+    keyDown: function(e) {
+        console.log("keydown");
+        const inputChoiceKeyDown = (e) => {
+            e.stopPropagation();
+            const currentItem = e.currentTarget;
+            const previousItem = currentItem.previousSibling;
+            const nextItem = currentItem.nextSibling;
+            const inputTerminal = currentItem.input.context.terminal;
+
+            const switchActiveItem = (currentActive, newActive ) => {
+                newActive.classList.add("active");
+                newActive.focus();
+                currentActive.classList.remove("active");
+            }
+
+            const removeMenu = () => {
+                $(currentItem.parentNode).remove();
+                this.$el.removeAttr('aria-owns');
+                this.$el.attr('aria-grabbed', 'false');
+                this.$el.focus();
+            }
+
+            switch (e.keyCode)
+            {
+                case 40 : // Down arrow
+                    if (nextItem) {
+                        switchActiveItem(currentItem, nextItem);
+                    }
+                    else {
+                        switchActiveItem(currentItem, currentItem.parentNode.firstChild);
+                    }
+                    break;
+                case 38 : // Up arrow
+                    if (previousItem) {
+                        switchActiveItem(currentItem, previousItem);
+                    }
+                    else {
+                        switchActiveItem(currentItem, currentItem.parentNode.lastChild);
+                    }
+                    break;
+                case 13 : // Enter
+                case 32 : // Space
+                    removeMenu();
+                    new Connector(this.el.terminal, inputTerminal).redraw();
+
+                    if (inputTerminal.connectors.length > 0) {
+                        const t = $("<div/>")
+                            .addClass("delete-terminal")
+                            .attr("tabindex", "0")
+                            .keydown( e => {
+                                console.log("kkkkk");
+                                if (e.keyCode === 32) { //Space
+                                    console.log("keycodespace");
+                                    $.each(inputTerminal.connectors, (_, x) => {
+                                        if (x) {
+                                            x.destroy();
+                                        }
+                                    });
+                                    t.remove();
+                                }
+                            });
+                        $(currentItem.input)
+                            .parent()
+                            .append(t);
+                    }
+                    break;
+                case 27 : // Escape
+                case 9  : // Tab
+                    $(currentItem.parentNode).remove();
+                    removeMenu();
+                    break;
+            }
+        };
+
+        if (e.keyCode === 32) { //Space
+            const inputChoicesMenu = document.createElement("ul");
+            inputChoicesMenu.id = "input-choices-menu";
+            inputChoicesMenu.className = "list-group";
+            inputChoicesMenu.setAttribute('role', 'menu');
+            this.$el.attr('aria-grabbed', 'true');
+            this.$el.attr('aria-owns', 'input-choices-menu');
+
+            $('.input-terminal').each((i, el) => {
+                const input = $(el);
+                const inputTerminal = input.context.terminal;
+                const connectionAcceptable = inputTerminal.canAccept(this.el.terminal);
+                if (connectionAcceptable.canAccept) {
+                    const inputChoiceItem = document.createElement('li');
+                    inputChoiceItem.appendChild(document.createTextNode(inputTerminal.label));
+                    inputChoiceItem.tabIndex = -1;
+                    inputChoiceItem.input= input;
+                    inputChoiceItem.onkeydown = inputChoiceKeyDown;
+                    inputChoiceItem.className = "list-group-item";
+                    inputChoiceItem.setAttribute('role', 'menuitem');
+                    inputChoicesMenu.appendChild(inputChoiceItem);
+                }
+
+            });
+            if (inputChoicesMenu.firstChild) {
+                this.$el.append(inputChoicesMenu);
+                inputChoicesMenu.firstChild.classList.add("active");
+                inputChoicesMenu.firstChild.focus();
+            }
+            else {
+                //alert user that there are no available inputs to connect to for this output
+            }
+        }
     },
     onDrag: function(e, d) {
         var onmove = () => {

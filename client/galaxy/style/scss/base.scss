@@ -1762,10 +1762,16 @@ div.toolSectionWrapper {
     min-height: 50px;
 }
 
+#input-choices-menu {
+
+    color: black;
+}
+
 /* For Vue */
 [v-cloak] {
     display: none;
 }
+
 
 /* Toolshed, reports custom styles from mako templates */
 body.toolshed,

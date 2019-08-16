@@ -879,8 +879,8 @@ export default Backbone.View.extend({
 
     prebuildNode: function(type, title_text, content_id) {
         var self = this;
-        var $f = $(`<div class='toolForm toolFormInCanvas' tabindex = '0' aria-label='Node ${title_text}'/>`);
-        var $title = $(`<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</div></div>`);
+        var $f = $(`<div class='toolForm toolFormInCanvas'/>`);
+        var $title = $(`<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</span><span class="sr-only">&nbspNode</span></div>`);
         add_node_icon($title.find(".nodeTitle"), type);
         $f.append($title);
         $f.css("left", $(window).scrollLeft() + 20);
@@ -931,7 +931,7 @@ export default Backbone.View.extend({
             left: -o.left + p.width() / 2 - width / 2,
             top: -o.top + p.height() / 2 - height / 2
         });
-        buttons.prependTo($f.find(".toolFormTitle"));
+        buttons.appendTo($f.find(".toolFormTitle"));
         width += buttons.width() + 10;
         $f.css("width", width);
         $f.bind("dragstart", () => {
