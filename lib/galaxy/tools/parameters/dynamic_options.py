@@ -179,6 +179,9 @@ class DataMetaFilter(Filter):
         if not isinstance(ref, HistoryDatasetAssociation) and not is_data_or_data_list:
             return []  # not a valid dataset
 
+        # get the metadata value. for lists (of data sets) and collections
+        # the meta data value of all elements is determined if its the same
+        # for all, if different are found the filter returns an empty list
         if is_data_list:
             meta_value = None
             for single_ref in ref:
@@ -193,6 +196,8 @@ class DataMetaFilter(Filter):
         else:
             meta_value = ref.metadata.get(self.key, None)
 
+        # if no meta data value could be determined just return a copy
+        # of the original options
         if meta_value is None:
             return [(disp_name, optval, selected) for disp_name, optval, selected in options]
 
