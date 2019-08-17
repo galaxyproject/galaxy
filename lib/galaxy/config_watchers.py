@@ -58,7 +58,7 @@ class ConfigWatchers(object):
                 callback=partial(reload_job_rules, self.app),
                 recursive=True,
                 ignore_extensions=('.pyc', '.pyo', '.pyd'))
-        if self.app.config.config_file is not None:
+        if self.app.config_file:
             self.core_config_watcher.watch_file(
                 self.app.config.config_file,
                 callback=partial(reload_config_options, self.app.config)

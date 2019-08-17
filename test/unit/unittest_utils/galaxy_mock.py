@@ -84,6 +84,7 @@ class MockApp(object):
         def url_for(*args, **kwds):
             return "/mock/url"
         self.url_for = url_for
+        self.config_file = None
 
     def init_datatypes(self):
         datatypes_registry = registry.Registry()
