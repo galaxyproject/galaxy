@@ -234,7 +234,7 @@ if [ -n "$VIRTUAL_ENV" ]; then
 elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
     if ! in_conda_env "$(command -v node)"; then
         echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
-        $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name "$CONDA_DEFAULT_ENV" node="$NODE_VERSION"
+        $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name "$CONDA_DEFAULT_ENV" nodejs="$NODE_VERSION"
     fi
 fi
 
