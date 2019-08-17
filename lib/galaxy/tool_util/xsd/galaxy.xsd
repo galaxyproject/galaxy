@@ -1605,7 +1605,7 @@ module.
       </xs:element>
       <xs:element name="has_n_lines" type="xs:anyType">
         <xs:annotation>
-          <xs:documentation><![CDATA[Asserts a file matching the specified n (``lines``) in the output (e.g. ``<has_n_lines n="3" />``).]]>
+          <xs:documentation><![CDATA[Asserts that an output contains ``n`` lines, e.g. ``<has_n_lines n="3" />``.]]>
           </xs:documentation>
         </xs:annotation>
       </xs:element>
