@@ -1,6 +1,7 @@
 from functools import partial
 from os.path import dirname
 
+from galaxy.config import reload_config_options
 from galaxy.queue_worker import (
     job_rule_modules,
     reload_data_managers,
@@ -14,6 +15,7 @@ from galaxy.tools.toolbox.watcher import (
 )
 from galaxy.util.watcher import (
     get_watcher,
+    SimpleFileModifiedEventHandler,
 )
 
 
@@ -37,6 +39,12 @@ class ConfigWatchers(object):
             self.job_rule_watcher = get_watcher(app.config, 'watch_job_rules', monitor_what_str='job rules')
         else:
             self.job_rule_watcher = get_watcher(app.config, '__invalid__')
+        self.core_config_watcher = get_watcher(
+            app.config,
+            'watch_config',
+            monitor_what_str='core config file',
+            event_handler_class=SimpleFileModifiedEventHandler
+        )
         if start_thread:
             self.start()
 
@@ -50,12 +58,18 @@ class ConfigWatchers(object):
                 callback=partial(reload_job_rules, self.app),
                 recursive=True,
                 ignore_extensions=('.pyc', '.pyo', '.pyd'))
+        if self.app.config.config_file is not None:
+            self.core_config_watcher.watch_file(
+                self.app.config.config_file,
+                callback=partial(reload_config_options, self.app.config)
+            )
 
     def shutdown(self):
         self.tool_config_watcher.shutdown()
         self.data_manager_config_watcher.shutdown()
         self.tool_data_watcher.shutdown()
         self.tool_watcher.shutdown()
+        self.core_config_watcher.shutdown()
 
     def update_watch_data_table_paths(self):
         if hasattr(self.tool_data_watcher, 'monitored_dirs'):
