@@ -21,7 +21,7 @@ def assert_has_line(output, line):
 
 
 def assert_has_n_lines(output, n):
-    """ Asserts the specified output if the number of lines match the given number."""
+    """Asserts the specified output contains ``n`` lines."""
     for counter, line in enumerate(output.split('\n')):
         pass
     assert counter == int(n), "Expected number of lines (%s) do not match with obtained number ('%s')" % (n, counter)
