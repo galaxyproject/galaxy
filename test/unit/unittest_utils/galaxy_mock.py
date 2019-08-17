@@ -84,7 +84,6 @@ class MockApp(object):
         def url_for(*args, **kwds):
             return "/mock/url"
         self.url_for = url_for
-        self.config_file = None
 
     def init_datatypes(self):
         datatypes_registry = registry.Registry()
@@ -154,6 +153,8 @@ class MockAppConfig(Bunch):
 
         # set by MockDir
         self.root = root
+
+        self.config_file = None
 
     @property
     def config_dict(self):
