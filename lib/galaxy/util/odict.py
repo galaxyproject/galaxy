@@ -1,12 +1,11 @@
 """
 Ordered dictionary implementation with `insert` functionality.
 
-This is only used in two specific places in the codebase:
+This is only used in one specific place in the codebase:
     galaxy.tools.toolbox.panel
-    galaxy.model.metadata
 
-Whenever possible the stdlib collections.odict should be used instead of this
-custom implementation.
+Whenever possible the stdlib `collections.OrderedDict` should be used instead of
+this custom implementation.
 """
 
 from six.moves import UserDict
