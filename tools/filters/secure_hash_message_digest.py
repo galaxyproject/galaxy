@@ -5,8 +5,7 @@ A script for calculating secure hashes / message digests.
 """
 import hashlib
 import optparse
-
-from galaxy.util.odict import odict
+from collections import OrderedDict
 
 HASH_ALGORITHMS = ['md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512']
 CHUNK_SIZE = 2 ** 20  # 1mb
@@ -20,7 +19,7 @@ def __main__():
     parser.add_option('-o', '--output', dest='output', action='store', type="string", help='Output filename')
     (options, args) = parser.parse_args()
 
-    algorithms = odict()
+    algorithms = OrderedDict()
     for algorithm in options.algorithms:
         assert algorithm in HASH_ALGORITHMS, "Invalid algorithm specified: %s" % (algorithm)
         assert algorithm not in algorithms, "Specify each algorithm only once."

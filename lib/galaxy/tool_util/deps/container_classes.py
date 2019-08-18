@@ -36,8 +36,8 @@ import tarfile
 t = tarfile.TarFile("${cached_image_file}")
 meta_str = t.extractfile('repositories').read()
 meta = json.loads(meta_str)
-tag, tag_value = meta.items()[0]
-rev, rev_value = tag_value.items()[0]
+tag, tag_value = next(iter(meta.items()))
+rev, rev_value = next(iter(tag_value.items()))
 cmd = "${images_cmd}"
 proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 stdo, stde = proc.communicate()

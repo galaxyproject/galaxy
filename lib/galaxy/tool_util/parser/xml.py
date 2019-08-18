@@ -3,13 +3,13 @@ import re
 import sys
 import traceback
 import uuid
+from collections import OrderedDict
 from math import isinf
 
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
-from galaxy.util.odict import odict
 from .error_level import StdioErrorLevel
 from .interface import (
     InputSource,
@@ -261,12 +261,12 @@ class XmlToolSource(ToolSource):
 
     def parse_outputs(self, tool):
         out_elem = self.root.find("outputs")
-        outputs = odict()
-        output_collections = odict()
+        outputs = OrderedDict()
+        output_collections = OrderedDict()
         if out_elem is None:
             return outputs, output_collections
 
-        data_dict = odict()
+        data_dict = OrderedDict()
 
         def _parse(data_elem, **kwds):
             output_def = self._parse_output(data_elem, tool, **kwds)
