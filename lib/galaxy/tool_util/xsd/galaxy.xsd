@@ -3496,7 +3496,7 @@ is the ``none`` preset.</xs:documentation>
   <xs:complexType name="Filter">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Optionally contained within an
-``<options>`` tag set - filter out values obtained from a locally stored file (e.g.
+``<options>`` tag set - modify (e.g. remove, add, sort, ...) the list of values obtained from a locally stored file (e.g.
 a tool data table) or a dataset in the current history.
 
 ### Examples
@@ -3599,31 +3599,38 @@ demonstrates splitting up strings into multiple values.
     <xs:attribute name="type" type="FilterType" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-Currently defined values are: 
+Currently the following filters are defined:
 
-* ``data_meta``,
-* ``param_value``: keep/remove options for for which the entry in a given column is equal to the value of another input (``ref``),  
-* ``static_value``: keep/remove options for which the entry in a given column is equal to ``value``, 
-* ``regexp`` keep/remove options for which the entry in a given column matches the regular expression given by ``value``, 
-* ``unique_value``: remove options that have duplicate entries in the given column, 
-* ``multiple_splitter``:,
-* ``attribute_value_splitter``:, 
-* ``add_value``: add an option with a given ``name`` and ``value`` to the options, 
-* ``remove_value``: 
+* ``static_value`` filter options for which the entry in a given ``column`` of the referenced file based on equality to the ``value`` attribute of the filter. 
+* ``regexp`` similar to the ``static_value`` filter, but checks if the regular expression given by ``value`` matches the entry.
+* ``param_value`` filter options for which the entry in a given ``column`` of the referenced file based on properties of another input parameter specified by ``ref``. This property is by default the value of the parameter, but also the values of another attribute (``ref_attribute``) of the parameter can be used, e.g. the extension of a data input.
+* ``data_meta`` If a ``column`` is given options are filtered for which the entry in this column ``column`` is equal to metadata of another input parameter specified by ``ref``. 
+If no ``column`` is given the metadata value of the referenced input is added to the options list (in this case the corresponding ``options`` tag must not have the ``from_data_table`` or ``from_dataset`` attributes). 
+In both cases the desired metadata is selected by ``key``.
+
+The filter can be inverted in all these cases by setting ``keep`` to true.
+
+* ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default the new option is appended, with ``index`` the insertion position can be specified.
+* ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specifified with ``ref``, or the metatdata ``key`` of another input ``meta_ref``.
+* ``unique_value``: remove options that have duplicate entries in the given ``column``
+
 * ``sort_by``: sort options by the entries of a given column.
+
+* ``multiple_splitter``: split the entries of the referenced of specified ``column``(s) using a ``separator``.
+* ``attribute_value_splitter``: 
+
+Note that filters that are applyed after one of the latter two filters must not refer to 
 
 These values are defined in the module
 [/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py)
 in the ``filter_types`` dictionary
-
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="column" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Column targeted by this filter - this
-attribute is unused and invalid if ``type`` is ``add_value`` or ``remove_value``.
-This can be a column index or a column name.</xs:documentation>
+        <xs:documentation xml:lang="en">Column targeted by this filter given as column index or a column name. Invalid if ``type`` is ``add_value`` or ``remove_value``.
+</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="name" type="xs:string">
@@ -3665,7 +3672,7 @@ only used if ``multiple`` is set to ``true``.]]></xs:documentation>
       <xs:annotation>
         <xs:documentation xml:lang="en">If ``true``, keep columns matching the
 value, if ``false`` discard columns matching the value. Used when ``type`` is
-either ``static_value`` or ``param_value``.</xs:documentation>
+either ``static_value``, ``regexp`` or ``param_value``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
@@ -3673,7 +3680,7 @@ either ``static_value`` or ``param_value``.</xs:documentation>
         <xs:documentation xml:lang="en">Target value of the operations - has
 slightly different meanings depending on ``type``. For instance when ``type`` is
 ``add_value`` it is the value to add to the list and when ``type`` is
-``static_value`` it is the value compared against.</xs:documentation>
+``static_value`` or ``regexp`` it is the value compared against.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="ref_attribute" type="xs:string">
@@ -5450,6 +5457,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="data_meta"/>
       <xs:enumeration value="param_value"/>
       <xs:enumeration value="static_value"/>
+      <xs:enumeration value="regexp"/>
       <xs:enumeration value="unique_value"/>
       <xs:enumeration value="multiple_splitter"/>
       <xs:enumeration value="add_value"/>
