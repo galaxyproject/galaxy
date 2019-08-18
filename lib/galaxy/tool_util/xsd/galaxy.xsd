@@ -3608,22 +3608,22 @@ Currently the following filters are defined:
 If no ``column`` is given the metadata value of the referenced input is added to the options list (in this case the corresponding ``options`` tag must not have the ``from_data_table`` or ``from_dataset`` attributes). 
 In both cases the desired metadata is selected by ``key``.
 
-The filter can be inverted in all these cases by setting ``keep`` to true.
+The above filters can be inverted by setting ``keep`` to true.
 
 * ``add_value``: add an option with a given ``name`` and ``value`` to the options. By default the new option is appended, with ``index`` the insertion position can be specified.
 * ``remove_value``: remove a value from the options. Either specified explicitly with ``value``, the value of another input specifified with ``ref``, or the metatdata ``key`` of another input ``meta_ref``.
-* ``unique_value``: remove options that have duplicate entries in the given ``column``
-
-* ``sort_by``: sort options by the entries of a given column.
-
-* ``multiple_splitter``: split the entries of the referenced of specified ``column``(s) using a ``separator``.
-* ``attribute_value_splitter``: 
+* ``unique_value``: remove options that have duplicate entries in the given ``column``.
+* ``sort_by``: sort options by the entries of a given ``column``.
+* ``multiple_splitter``: split the entries of the specified ``column``(s) in the referenced file using a ``separator``. Thereby the number of columns is increased. 
 
 Note that filters that are applyed after one of the latter two filters must not refer to 
 
 These values are defined in the module
 [/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py)
-in the ``filter_types`` dictionary
+in the ``filter_types`` dictionary. 
+
+
+* ``attribute_value_splitter``: 
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
