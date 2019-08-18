@@ -127,7 +127,7 @@ class EventHandler(FileSystemEventHandler):
         # look at dest if it exists else use src.
         path = getattr(event, 'dest_path', None) or event.src_path
         path = os.path.abspath(path)
-        callback = self.watcher.file_callbacks.get(path, None)
+        callback = self.watcher.file_callbacks.get(path)
         if os.path.basename(path).startswith('.'):
             return
         if callback:
@@ -161,7 +161,7 @@ class SimpleFileModifiedEventHandler(FileSystemEventHandler):
 
     def on_modified(self, event):
         path = os.path.abspath(event.src_path)
-        callback = self.watcher.file_callbacks.get(path, None)
+        callback = self.watcher.file_callbacks.get(path)
         if callback:
             callback()
 

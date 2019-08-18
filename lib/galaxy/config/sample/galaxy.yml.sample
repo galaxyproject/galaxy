@@ -312,12 +312,12 @@ galaxy:
   # as the 'watch_tools' option.
   #watch_job_rules: 'false'
 
-  # Set to True to enable monitoring of a subset of options in the core
+  # Set to true to enable monitoring of a subset of options in the core
   # configuration file (See RELOADABLE_CONFIG_OPTIONS in
-  # lib/galaxy/config/__init__.py).  If changes are found, modified
-  # options are automatically reloaded. Takes the same  values as the
+  # lib/galaxy/config/__init__.py). If changes are found, modified
+  # options are automatically reloaded. Takes the same values as the
   # 'watch_tools' option.
-  #watch_config: 'false'
+  #watch_core_config: 'false'
 
   # As of 18.09, Galaxy defaults to setting up the object store
   # configuration for output datasets during the job queue step in job

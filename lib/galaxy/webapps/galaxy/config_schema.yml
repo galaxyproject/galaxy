@@ -370,14 +370,14 @@ mapping:
           found, rules are automatically reloaded. Takes the same values as the
           'watch_tools' option.
 
-      watch_config:
+      watch_core_config:
         type: str
         default: 'false'
         required: false
         desc: |
-          Set to True to enable monitoring of a subset of options in the core
-          configuration file (See RELOADABLE_CONFIG_OPTIONS in lib/galaxy/config/__init__.py). 
-          If changes are found, modified options are automatically reloaded. Takes the same 
+          Set to true to enable monitoring of a subset of options in the core
+          configuration file (See RELOADABLE_CONFIG_OPTIONS in lib/galaxy/config/__init__.py).
+          If changes are found, modified options are automatically reloaded. Takes the same
           values as the 'watch_tools' option.
 
       legacy_eager_objectstore_initialization:

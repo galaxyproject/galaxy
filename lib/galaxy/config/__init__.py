@@ -97,18 +97,15 @@ LOGGING_CONFIG_DEFAULT = {
 
 
 # These are core config options that can be safely reloaded without a restart.
-# To enable dynamic reloading, set watch_config in galaxy.yml.
+# To enable dynamic reloading, set watch_core_config in galaxy.yml.
 # (key: property name; value: default value)
-# To add foo to these options:
+# To add a new option foo:
 #   1. Update tests in test/unit/config/test_reloadable_properties.py
 #   2. Add a key/value pair to this dictionary: 'foo': [default value]
-#   3. Add a method to set the property:
-#      - The method's name and signature must follow this template: _set_foo(self, value)
-#      - The body of the method must contain: self.foo = value
-#      - Do not override self.foo: otherwise it will be impossible to determine when
-#        the property needs to be reloaded at runtime. If foo needs to be further processed,
-#        use a different variable (see admin_users and admin_users_list)
-#      - This method should be the ONLY place where the property is set.
+#   3. If setting foo requires additional processing (like admin_users),
+#      self.foo must contain the initially loaded value. Otherwise it
+#      will be impossible to determine at runtime whether foo has been
+#      modified and needs to be reloaded.
 RELOADABLE_CONFIG_OPTIONS = {
     'message_box_content': None,
     'welcome_url': '/static/welcome.html',
@@ -554,7 +551,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.watch_tools = kwargs.get('watch_tools', 'false')
         self.watch_tool_data_dir = kwargs.get('watch_tool_data_dir', 'false')
         self.watch_job_rules = kwargs.get('watch_job_rules', 'false')
-        self.watch_config = kwargs.get('watch_config', 'false')
+        self.watch_core_config = kwargs.get('watch_core_config', 'false')
         # On can mildly speed up Galaxy startup time by disabling index of help,
         # not needed on production systems but useful if running many functional tests.
         self.index_tool_help = string_as_bool(kwargs.get("index_tool_help", True))
@@ -825,61 +822,21 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
     def _set_reloadable_properties(self, kwargs):
         for key, default_value in RELOADABLE_CONFIG_OPTIONS.items():
-            method = self._get_property_set_method(key)
             value = kwargs.get(key) or default_value
-            method(value)
+            setattr(self, key, value)
 
     def update_reloadable_property(self, key, value):
         if key in RELOADABLE_CONFIG_OPTIONS:  # check again because this is critical
-            method = self._get_property_set_method(key)
-            method(value)
+            setattr(self, key, value)
 
-    def _get_property_set_method(self, key):
-        method_name = '_set_' + key
-        return getattr(self, method_name)
+    @property
+    def admin_users(self):
+        return self._admin_users
 
-    def _set_message_box_content(self, value):
-        self.message_box_content = value
-
-    def _set_welcome_url(self, value):
-        self.welcome_url = value
-
-    def _set_tool_name_boost(self, value):
-        self.tool_name_boost = value
-
-    def _set_tool_section_boost(self, value):
-        self.tool_section_boost = value
-
-    def _set_tool_description_boost(self, value):
-        self.tool_description_boost = value
-
-    def _set_tool_label_boost(self, value):
-        self.tool_label_boost = value
-
-    def _set_tool_stub_boost(self, value):
-        self.tool_stub_boost = value
-
-    def _set_tool_help_boost(self, value):
-        self.tool_help_boost = value
-
-    def _set_tool_search_limit(self, value):
-        self.tool_search_limit = value
-
-    def _set_tool_enable_ngram_search(self, value):
-        self.tool_enable_ngram_search = value
-
-    def _set_tool_ngram_minsize(self, value):
-        self.tool_ngram_minsize = value
-
-    def _set_tool_ngram_maxsize(self, value):
-        self.tool_ngram_maxsize = value
-
-    def _set_admin_users(self, value):
-        self.admin_users = value
-        self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
-
-    def _set_cleanup_job(self, value):
-        self.cleanup_job = value
+    @admin_users.setter
+    def admin_users(self, value):
+        self._admin_users = value
+        self.admin_users_list = [u.strip() for u in value.split(',') if u]
 
     @property
     def sentry_dsn_public(self):

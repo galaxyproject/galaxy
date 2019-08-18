@@ -41,7 +41,7 @@ class ConfigWatchers(object):
             self.job_rule_watcher = get_watcher(app.config, '__invalid__')
         self.core_config_watcher = get_watcher(
             app.config,
-            'watch_config',
+            'watch_core_config',
             monitor_what_str='core config file',
             event_handler_class=SimpleFileModifiedEventHandler
         )

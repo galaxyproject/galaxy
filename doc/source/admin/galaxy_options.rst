@@ -477,15 +477,15 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~
-``watch_config``
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+``watch_core_config``
+~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set to True to enable monitoring of a subset of options in the
+    Set to true to enable monitoring of a subset of options in the
     core configuration file (See RELOADABLE_CONFIG_OPTIONS in
-    lib/galaxy/config/__init__.py).  If changes are found, modified
-    options are automatically reloaded. Takes the same  values as the
+    lib/galaxy/config/__init__.py). If changes are found, modified
+    options are automatically reloaded. Takes the same values as the
     'watch_tools' option.
 :Default: ``false``
 :Type: str
