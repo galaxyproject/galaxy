@@ -335,6 +335,8 @@ class AttributeValueSplitterFilter(Filter):
     """
     Filters a list of attribute-value pairs to be unique attribute names.
 
+    DEPRECATED: just replace with 2 rounds of MultipleSplitterFilter
+
     Type: attribute_value_splitter
 
     Required Attributes:

@@ -3622,8 +3622,9 @@ These values are defined in the module
 [/lib/galaxy/tools/parameters/dynamic_options.py](https://github.com/galaxyproject/galaxy/blob/master/lib/galaxy/tools/parameters/dynamic_options.py)
 in the ``filter_types`` dictionary. 
 
+Deprecated filter types:
 
-* ``attribute_value_splitter``: 
+* ``attribute_value_splitter`` 
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
