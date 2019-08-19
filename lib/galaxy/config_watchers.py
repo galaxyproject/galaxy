@@ -15,7 +15,7 @@ from galaxy.tools.toolbox.watcher import (
 )
 from galaxy.util.watcher import (
     get_watcher,
-    SimpleFileModifiedEventHandler,
+    EventHandler,
 )
 
 
@@ -43,7 +43,7 @@ class ConfigWatchers(object):
             app.config,
             'watch_core_config',
             monitor_what_str='core config file',
-            event_handler_class=SimpleFileModifiedEventHandler
+            event_handler_class=EventHandler
         )
         if start_thread:
             self.start()

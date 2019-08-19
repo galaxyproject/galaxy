@@ -296,9 +296,9 @@ galaxy:
   # not exist).
   #tool_sheds_config_file: config/tool_sheds_conf.xml
 
-  # Set to true to enable monitoring of tools and tool directories
-  # listed in any tool config file specified in tool_config_file option.
-  # If changes are found, tools are automatically reloaded.  Watchdog (
+  # Monitor the tools and tool directories listed in any tool config
+  # file specified in tool_config_file option.  If changes are found,
+  # tools are automatically reloaded. Watchdog (
   # https://pypi.org/project/watchdog/ ) must be installed and available
   # to Galaxy to use this option. Other options include 'auto' which
   # will attempt to watch tools if the watchdog library is available but
@@ -307,16 +307,15 @@ galaxy:
   # scenarios than the watchdog default.
   #watch_tools: 'false'
 
-  # Set to true to enable monitoring of dynamic job rules. If changes
-  # are found, rules are automatically reloaded. Takes the same values
-  # as the 'watch_tools' option.
+  # Monitor dynamic job rules. If changes are found, rules are
+  # automatically reloaded. Takes the same values as the 'watch_tools'
+  # option.
   #watch_job_rules: 'false'
 
-  # Set to true to enable monitoring of a subset of options in the core
-  # configuration file (See RELOADABLE_CONFIG_OPTIONS in
-  # lib/galaxy/config/__init__.py). If changes are found, modified
-  # options are automatically reloaded. Takes the same values as the
-  # 'watch_tools' option.
+  # Monitor a subset of options in the core configuration file (See
+  # RELOADABLE_CONFIG_OPTIONS in lib/galaxy/config/__init__.py).  If
+  # changes are found, modified options are automatically reloaded.
+  # Takes the same values as the 'watch_tools' option.
   #watch_core_config: 'false'
 
   # As of 18.09, Galaxy defaults to setting up the object store
@@ -407,10 +406,9 @@ galaxy:
   # installed from a ToolShed. Defaults to tool_data_path.
   #shed_tool_data_path: tool-data
 
-  # Set to true to enable monitoring of the tool_data and
-  # shed_tool_data_path directories. If changes in tool data table files
-  # are found, the tool data tables for that data manager are
-  # automatically reloaded. Watchdog (
+  # Monitor the tool_data and shed_tool_data_path directories. If
+  # changes in tool data table files are found, the tool data tables for
+  # that data manager are automatically reloaded. Watchdog (
   # https://pypi.org/project/watchdog/ ) must be installed and available
   # to Galaxy to use this option. Other options include 'auto' which
   # will attempt to use the watchdog library if it is available but

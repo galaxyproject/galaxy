@@ -154,18 +154,6 @@ class EventHandler(FileSystemEventHandler):
                 callback(path=path)
 
 
-class SimpleFileModifiedEventHandler(FileSystemEventHandler):
-    """ Minimalist event handler; when all we need is callback() on file modified """
-    def __init__(self, watcher):
-        self.watcher = watcher
-
-    def on_modified(self, event):
-        path = os.path.abspath(event.src_path)
-        callback = self.watcher.file_callbacks.get(path)
-        if callback:
-            callback()
-
-
 class NullWatcher(object):
 
     def start(self):

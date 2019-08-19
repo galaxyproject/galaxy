@@ -452,11 +452,11 @@
 ~~~~~~~~~~~~~~~
 
 :Description:
-    Set to true to enable monitoring of tools and tool directories
-    listed in any tool config file specified in tool_config_file
-    option. If changes are found, tools are automatically reloaded.
-    Watchdog ( https://pypi.org/project/watchdog/ ) must be installed
-    and available to Galaxy to use this option. Other options include
+    Monitor the tools and tool directories listed in any tool config
+    file specified in tool_config_file option.  If changes are found,
+    tools are automatically reloaded. Watchdog (
+    https://pypi.org/project/watchdog/ ) must be installed and
+    available to Galaxy to use this option. Other options include
     'auto' which will attempt to watch tools if the watchdog library
     is available but won't fail to load Galaxy if it is not and
     'polling' which will use a less efficient monitoring scheme that
@@ -470,9 +470,9 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set to true to enable monitoring of dynamic job rules. If changes
-    are found, rules are automatically reloaded. Takes the same values
-    as the 'watch_tools' option.
+    Monitor dynamic job rules. If changes are found, rules are
+    automatically reloaded. Takes the same values as the 'watch_tools'
+    option.
 :Default: ``false``
 :Type: str
 
@@ -482,11 +482,10 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set to true to enable monitoring of a subset of options in the
-    core configuration file (See RELOADABLE_CONFIG_OPTIONS in
-    lib/galaxy/config/__init__.py). If changes are found, modified
-    options are automatically reloaded. Takes the same values as the
-    'watch_tools' option.
+    Monitor a subset of options in the core configuration file (See
+    RELOADABLE_CONFIG_OPTIONS in lib/galaxy/config/__init__.py).  If
+    changes are found, modified options are automatically reloaded.
+    Takes the same values as the 'watch_tools' option.
 :Default: ``false``
 :Type: str
 
@@ -675,10 +674,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set to true to enable monitoring of the tool_data and
-    shed_tool_data_path directories. If changes in tool data table
-    files are found, the tool data tables for that data manager are
-    automatically reloaded. Watchdog (
+    Monitor the tool_data and shed_tool_data_path directories. If
+    changes in tool data table files are found, the tool data tables
+    for that data manager are automatically reloaded. Watchdog (
     https://pypi.org/project/watchdog/ ) must be installed and
     available to Galaxy to use this option. Other options include
     'auto' which will attempt to use the watchdog library if it is

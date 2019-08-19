@@ -1016,7 +1016,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 Configuration = GalaxyAppConfiguration
 
 
-def reload_config_options(current_config):
+def reload_config_options(current_config, path=None):
     """ Reload modified reloadable config options """
     modified_config = read_properties_from_file(current_config.config_file)
     for option in RELOADABLE_CONFIG_OPTIONS:
