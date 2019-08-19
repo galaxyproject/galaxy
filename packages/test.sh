@@ -22,8 +22,10 @@ PACKAGE_DIRS=(
     objectstore
     job_metrics
     containers
-    tool_util
     data
+    test_tools
+    model_tools
+    tool_util
     job_execution
     auth
     authnz
