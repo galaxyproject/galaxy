@@ -197,7 +197,7 @@ export class TracksterUI extends Backbone.Model {
             .appendTo(new_bookmark);
 
         //position_link
-        $("<a href=''/>")
+        $("<a href='javascript:void(0)'/>")
             .text(position)
             .appendTo(position_div)
             .click(() => {
@@ -223,7 +223,7 @@ export class TracksterUI extends Backbone.Model {
                 });
 
             // delete_icon
-            $("<a href=''/>")
+            $("<a href='javascript:void(0)'/>")
                 .addClass("icon-button delete")
                 .appendTo(delete_icon_container);
 
