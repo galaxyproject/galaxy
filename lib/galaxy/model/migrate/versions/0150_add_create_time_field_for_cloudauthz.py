@@ -21,7 +21,7 @@ def upgrade(migrate_engine):
 
     cloudauthz_table = Table("cloudauthz", metadata, autoload=True)
     create_time_column = Column('create_time', DateTime)
-    add_column(create_time_column, cloudauthz_table)
+    add_column(create_time_column, cloudauthz_table, metadata)
 
 
 def downgrade(migrate_engine):

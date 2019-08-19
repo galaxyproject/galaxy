@@ -11,12 +11,13 @@ from sqlalchemy import (
     TEXT,
 )
 
-from galaxy.model.migrate.versions.util import add_column, drop_column
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    drop_column
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
-
-from_path_column = Column("from_path", TEXT, nullable=True)
 
 
 def upgrade(migrate_engine):
@@ -24,6 +25,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
+    from_path_column = Column("from_path", TEXT)
     add_column(from_path_column, "stored_workflow", metadata)
 
 
