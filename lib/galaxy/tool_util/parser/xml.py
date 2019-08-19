@@ -10,7 +10,6 @@ import packaging.version
 
 from galaxy.tool_util.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
-from .error_level import StdioErrorLevel
 from .interface import (
     InputSource,
     PageSource,
@@ -18,8 +17,6 @@ from .interface import (
     TestCollectionDef,
     TestCollectionOutputDef,
     ToolSource,
-    ToolStdioExitCode,
-    ToolStdioRegex,
 )
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_elem
@@ -29,9 +26,12 @@ from .output_objects import (
     ToolOutputCollection,
     ToolOutputCollectionStructure
 )
-from .util import (
+from .stdio import (
     aggressive_error_checks,
     error_on_exit_code,
+    StdioErrorLevel,
+    ToolStdioExitCode,
+    ToolStdioRegex,
 )
 
 
