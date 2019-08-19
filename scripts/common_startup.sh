@@ -164,14 +164,8 @@ fi
 # activate virtualenv or conda env, sets $GALAXY_VIRTUAL_ENV and $GALAXY_CONDA_ENV
 setup_python
 
-if [ $SET_VENV -eq 1 ] && [ -z "$VIRTUAL_ENV" ] && [ -z "$CONDA_DEFAULT_ENV" ]; then
+if [ $SET_VENV -eq 1 ] && [ -z "$VIRTUAL_ENV" ]; then
     echo "ERROR: A virtualenv cannot be found. Please create a virtualenv in $GALAXY_VIRTUAL_ENV, or activate one."
-    exit 1
-fi
-
-# this shouldn't happen, but check just in case
-if [ -z "$VIRTUAL_ENV" ] && [ "$CONDA_DEFAULT_ENV" = "base" ] || [ "$CONDA_DEFAULT_ENV" = "root" ]; then
-    echo "ERROR: Conda is in 'base' environment, refusing to continue"
     exit 1
 fi
 
