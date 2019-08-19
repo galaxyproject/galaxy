@@ -3,8 +3,8 @@ import os
 import tempfile
 from collections import OrderedDict
 
+from galaxy.model_tools.imp_exp import JobExportHistoryArchiveWrapper
 from galaxy.tools.actions import ToolAction
-from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper
 
 log = logging.getLogger(__name__)
 

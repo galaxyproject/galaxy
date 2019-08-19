@@ -7,8 +7,8 @@ from tempfile import mkdtemp
 
 from galaxy import model
 from galaxy.exceptions import MalformedContents
-from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper, JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
-from galaxy.tools.imp_exp.export_history import create_archive
+from galaxy.model_tools.imp_exp import JobExportHistoryArchiveWrapper, JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
+from galaxy.model_tools.imp_exp.export_history import create_archive
 from ..test_objectstore import TestConfig
 from ..unittest_utils.galaxy_mock import MockApp
 
@@ -630,7 +630,7 @@ def _import_export(app, h, dest_export=None):
     wrapper = JobExportHistoryArchiveWrapper(app, 1)
     wrapper.setup_job(jeha)
 
-    from galaxy.tools.imp_exp import export_history
+    from galaxy.model_tools.imp_exp import export_history
     ret = export_history.main(["--gzip", jeha.temp_directory, dest_export])
     assert ret == 0, ret
 

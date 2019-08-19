@@ -23,12 +23,13 @@ import tool_shed.util.repository_util as repository_util
 import tool_shed.util.shed_util_common
 from galaxy import (
     exceptions,
-    model
+    model,
 )
 from galaxy.job_execution import output_collect
 from galaxy.managers.jobs import JobSearch
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.model_tools import MODEL_TOOLS_PATH
 from galaxy.tool_util.deps import (
     CachedDependencyManager,
 )
@@ -107,7 +108,6 @@ REQUIRES_JS_RUNTIME_MESSAGE = ("The tool [%s] requires a nodejs runtime to execu
                                "but node or nodejs could not be found. Please contact the Galaxy adminstrator")
 
 HELP_UNINITIALIZED = threading.Lock()
-MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
 # Tools that require Galaxy's Python environment to be preserved.
 GALAXY_LIB_TOOLS_UNVERSIONED = [
     "upload1",

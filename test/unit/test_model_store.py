@@ -6,7 +6,7 @@ from tempfile import mkdtemp, NamedTemporaryFile
 from galaxy import model
 from galaxy.model import store
 from galaxy.model.metadata import MetadataTempFile
-from galaxy.tools.imp_exp import unpack_tar_gz_archive
+from galaxy.model_tools.imp_exp import unpack_tar_gz_archive
 from .tools.test_history_imp_exp import _create_datasets, _mock_app, Dummy
 
 

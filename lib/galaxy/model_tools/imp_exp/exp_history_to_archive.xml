@@ -8,7 +8,7 @@
     <param name="__EXPORT_HISTORY_COMMAND_INPUTS_OPTIONS__" type="hidden"/>
   </inputs>
   <configfiles>
-    <configfile name="export_history">from galaxy.tools.imp_exp.export_history import main; main()</configfile>
+    <configfile name="export_history">from galaxy.model_tools.imp_exp.export_history import main; main()</configfile>
   </configfiles>
   <outputs>
     <data format="gzip" name="output_file"/>

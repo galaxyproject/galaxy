@@ -76,6 +76,8 @@ else:
 
 test_requirements = [
     # TODO: put package test requirements here
+    'model_tools',
+    'test_tools',
 ]
 
 

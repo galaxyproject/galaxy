@@ -1,0 +1,3 @@
+include *.rst LICENSE
+include galaxy/model_tools/*
+include galaxy/model_tools/imp_exp/*
