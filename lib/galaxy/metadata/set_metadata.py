@@ -32,6 +32,18 @@ log = logging.getLogger(__name__)
 galaxy.model.Job()  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
 
 
+def set_validated_state(dataset_instance):
+    from galaxy.datatypes.data import validate
+    datatype_validation = validate(dataset_instance)
+
+    dataset_instance.validated_state = datatype_validation.state
+    dataset_instance.validated_state_message = datatype_validation.message
+
+    # Set special metadata property that will reload this on server side.
+    setattr(dataset_instance.metadata, "__validated_state__", datatype_validation.state)
+    setattr(dataset_instance.metadata, "__validated_state_message__", datatype_validation.message)
+
+
 def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size):
     # This method is somewhat odd, in that we set the metadata attributes from tool,
     # then call set_meta, then set metadata attributes from tool again.
@@ -119,6 +131,8 @@ def set_metadata_portable():
                 if galaxy.datatypes.metadata.MetadataTempFile.is_JSONified_value(metadata_file_override):
                     metadata_file_override = galaxy.datatypes.metadata.MetadataTempFile.from_JSON(metadata_file_override)
                 setattr(dataset.metadata, metadata_name, metadata_file_override)
+            if output_dict.get("validate", False):
+                set_validated_state(dataset)
             set_meta(dataset, file_dict)
             dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
             json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded

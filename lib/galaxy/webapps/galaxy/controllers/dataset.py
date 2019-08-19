@@ -458,7 +458,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 return self.message_exception(trans, 'Changing datatype "%s" is not allowed.' % (data.extension))
         elif operation == 'autodetect':
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
-            # prevent modifying metadata when dataset is queued or running as input/output
             try:
                 self.hda_manager.set_metadata(trans, data, overwrite=True)
             except MessageException as e:

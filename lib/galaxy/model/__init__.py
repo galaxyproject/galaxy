@@ -2428,10 +2428,15 @@ class DatasetInstance(object):
     states = Dataset.states
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
+    validated_states = Bunch(
+        UNKNOWN='unknown',
+        INVALID='invalid',
+        OK='ok',
+    )
 
     def __init__(self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
                  dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                 parent_id=None, validation_errors=None, visible=True, create_dataset=False, sa_session=None,
+                 parent_id=None, validated_state='unknown', validated_state_message=None, visible=True, create_dataset=False, sa_session=None,
                  extended_metadata=None, flush=True):
         self.name = name or "Unnamed dataset"
         self.id = id
@@ -2449,6 +2454,8 @@ class DatasetInstance(object):
             self._metadata['dbkey'] = dbkey
         self.deleted = deleted
         self.visible = visible
+        self.validated_state = validated_state
+        self.validated_state_message = validated_state_message
         # Relationships
         if not dataset and create_dataset:
             # Had to pass the sqlalchemy session in order to create a new dataset
@@ -2458,7 +2465,6 @@ class DatasetInstance(object):
                 sa_session.flush()
         self.dataset = dataset
         self.parent_id = parent_id
-        self.validation_errors = validation_errors
 
     @property
     def peek(self):
@@ -3179,6 +3185,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     update_time=hda.update_time.isoformat(),
                     data_type=hda.datatype.__class__.__module__ + '.' + hda.datatype.__class__.__name__,
                     genome_build=hda.dbkey,
+                    validated_state=hda.validated_state,
+                    validated_state_message=hda.validated_state_message,
                     misc_info=hda.info.strip() if isinstance(hda.info, string_types) else hda.info,
                     misc_blurb=hda.blurb)
 
