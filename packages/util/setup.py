@@ -35,6 +35,7 @@ PACKAGES = [
     'galaxy.util',
     'galaxy.util.logging',
     'galaxy.util.path',
+    'galaxy.util.tool_shed',
 ]
 ENTRY_POINTS = '''
         [console_scripts]
