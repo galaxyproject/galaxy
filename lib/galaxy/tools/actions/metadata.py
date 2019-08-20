@@ -1,10 +1,10 @@
 import logging
 import os
+from collections import OrderedDict
 from json import dumps
 
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
-from galaxy.util.odict import odict
 from . import ToolAction
 
 log = logging.getLogger(__name__)
@@ -118,4 +118,4 @@ class SetMetadataToolAction(ToolAction):
         # clear e.g. converted files
         dataset.datatype.before_setting_metadata(dataset)
 
-        return job, odict()
+        return job, OrderedDict()

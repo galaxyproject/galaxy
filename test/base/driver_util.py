@@ -147,7 +147,8 @@ def setup_galaxy_config(
     prefer_template_database=False,
     log_format=None,
     conda_auto_init=False,
-    conda_auto_install=False
+    conda_auto_install=False,
+    use_shared_connection_for_amqp=False,
 ):
     """Setup environment and build config for test Galaxy instance."""
     # For certain docker operations this needs to be evaluated out - e.g. for cwltool.
@@ -250,6 +251,9 @@ def setup_galaxy_config(
         monitor_thread_join_timeout=5,
         object_store_store_by="uuid",
     )
+    if not use_shared_connection_for_amqp:
+        config["amqp_internal_connection"] = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(tmpdir, "control.sqlite")
+
     config.update(database_conf(tmpdir, prefer_template_database=prefer_template_database))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
     if asbool(os.environ.get("GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE")):
@@ -804,7 +808,8 @@ def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, con
         kwargs['global_conf'],
         app=app,
         use_translogger=False,
-        static_enabled=True
+        static_enabled=True,
+        register_shutdown_at_exit=False
     )
     server, port = serve_webapp(
         webapp,
@@ -956,6 +961,7 @@ class GalaxyTestDriver(TestDriver):
                         log_format=self.log_format,
                         conda_auto_init=getattr(config_object, "conda_auto_init", False),
                         conda_auto_install=getattr(config_object, "conda_auto_install", False),
+                        use_shared_connection_for_amqp=getattr(config_object, "use_shared_connection_for_amqp", False)
                     )
                     galaxy_config = setup_galaxy_config(
                         galaxy_db_path,

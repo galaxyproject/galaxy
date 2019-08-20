@@ -15,6 +15,7 @@ from sqlalchemy import (
     false,
     ForeignKey,
     func,
+    Index,
     Integer,
     MetaData,
     not_,
@@ -198,8 +199,10 @@ model.History.table = Table(
     Column("importing", Boolean, index=True, default=False),
     Column("genome_build", TrimmedString(40)),
     Column("importable", Boolean, default=False),
-    Column("slug", TEXT, index=True),
-    Column("published", Boolean, index=True, default=False))
+    Column("slug", TEXT),
+    Column("published", Boolean, index=True, default=False),
+    Index('ix_history_slug', 'slug', mysql_length=200),
+)
 
 model.HistoryUserShareAssociation.table = Table(
     "history_user_share_association", metadata,
@@ -549,13 +552,15 @@ model.LibraryFolder.table = Table(
     Column("parent_id", Integer, ForeignKey("library_folder.id"), nullable=True, index=True),
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, default=now, onupdate=now),
-    Column("name", TEXT, index=True),
+    Column("name", TEXT),
     Column("description", TEXT),
     Column("order_id", Integer),  # not currently being used, but for possible future use
     Column("item_count", Integer),
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False),
-    Column("genome_build", TrimmedString(40)))
+    Column("genome_build", TrimmedString(40)),
+    Index('ix_library_folder_name', 'name', mysql_length=200),
+)
 
 model.LibraryInfoAssociation.table = Table(
     "library_info_association", metadata,
@@ -967,9 +972,11 @@ model.StoredWorkflow.table = Table(
     Column("name", TEXT),
     Column("deleted", Boolean, default=False),
     Column("importable", Boolean, default=False),
-    Column("slug", TEXT, index=True),
-    Column("from_path", TEXT, index=True),
-    Column("published", Boolean, index=True, default=False))
+    Column("slug", TEXT),
+    Column("from_path", TEXT),
+    Column("published", Boolean, index=True, default=False),
+    Index('ix_stored_workflow_slug', 'slug', mysql_length=200),
+)
 
 model.Workflow.table = Table(
     "workflow", metadata,
@@ -1017,7 +1024,7 @@ model.WorkflowStepInput.table = Table(
     Column("default_value", JSONType),
     Column("default_value_set", Boolean, default=False),
     Column("runtime_value", Boolean, default=False),
-    UniqueConstraint("workflow_step_id", "name"),
+    Index('ix_workflow_step_input_workflow_step_id_name_unique', "workflow_step_id", "name", unique=True, mysql_length={'name': 200}),
 )
 
 
@@ -1108,18 +1115,18 @@ model.WorkflowInvocationOutputDatasetAssociation.table = Table(
     "workflow_invocation_output_dataset_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
     Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id")),
 )
 
 model.WorkflowInvocationOutputDatasetCollectionAssociation.table = Table(
     "workflow_invocation_output_dataset_collection_association", metadata,
     Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
-    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True),
-    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id"), index=True),
+    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", name='fk_wiodca_wii'), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wiodca_wsi')),
+    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wiodca_dci'), index=True),
+    Column("workflow_output_id", Integer, ForeignKey("workflow_output.id", name='fk_wiodca_woi')),
 )
 
 model.WorkflowInvocationStepOutputDatasetAssociation.table = Table(
@@ -1133,18 +1140,18 @@ model.WorkflowInvocationStepOutputDatasetAssociation.table = Table(
 model.WorkflowInvocationStepOutputDatasetCollectionAssociation.table = Table(
     "workflow_invocation_step_output_dataset_collection_association", metadata,
     Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id"), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
-    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True),
+    Column("workflow_invocation_step_id", Integer, ForeignKey("workflow_invocation_step.id", name='fk_wisodca_wisi'), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wisodca_wsi')),
+    Column("dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id", name='fk_wisodca_dci'), index=True),
     Column("output_name", String(255), nullable=True),
 )
 
 model.WorkflowInvocationToSubworkflowInvocationAssociation.table = Table(
     "workflow_invocation_to_subworkflow_invocation_association", metadata,
     Column("id", Integer, primary_key=True),
-    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
-    Column("subworkflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
-    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id")),
+    Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", name='fk_wfi_swi_wfi'), index=True),
+    Column("subworkflow_invocation_id", Integer, ForeignKey("workflow_invocation.id", name='fk_wfi_swi_swi'), index=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id", name='fk_wfi_swi_ws')),
 )
 
 model.StoredWorkflowUserShareAssociation.table = Table(
@@ -1188,8 +1195,7 @@ model.FormDefinition.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("name", TrimmedString(255), nullable=False),
     Column("desc", TEXT),
-    Column("form_definition_current_id", Integer,
-        ForeignKey("form_definition_current.id", name='for_def_form_def_current_id_fk', use_alter=True), index=True),
+    Column("form_definition_current_id", Integer, ForeignKey("form_definition_current.id", use_alter=True), index=True, nullable=False),
     Column("fields", JSONType()),
     Column("type", TrimmedString(255), index=True),
     Column("layout", JSONType()))
@@ -1213,8 +1219,10 @@ model.Page.table = Table(
     Column("title", TEXT),
     Column("deleted", Boolean, index=True, default=False),
     Column("importable", Boolean, index=True, default=False),
-    Column("slug", TEXT, unique=True, index=True),
-    Column("published", Boolean, index=True, default=False))
+    Column("slug", TEXT),
+    Column("published", Boolean, index=True, default=False),
+    Index('ix_page_slug', 'slug', mysql_length=200),
+)
 
 model.PageRevision.table = Table(
     "page_revision", metadata,
@@ -1241,11 +1249,14 @@ model.Visualization.table = Table(
         ForeignKey("visualization_revision.id", use_alter=True, name='visualization_latest_revision_id_fk'), index=True),
     Column("title", TEXT),
     Column("type", TEXT),
-    Column("dbkey", TEXT, index=True),
+    Column("dbkey", TEXT),
     Column("deleted", Boolean, default=False, index=True),
     Column("importable", Boolean, default=False, index=True),
-    Column("slug", TEXT, index=True),
-    Column("published", Boolean, default=False, index=True))
+    Column("slug", TEXT),
+    Column("published", Boolean, default=False, index=True),
+    Index('ix_visualization_dbkey', 'dbkey', mysql_length=200),
+    Index('ix_visualization_slug', 'slug', mysql_length=200),
+)
 
 model.VisualizationRevision.table = Table(
     "visualization_revision", metadata,
@@ -1254,8 +1265,10 @@ model.VisualizationRevision.table = Table(
     Column("update_time", DateTime, default=now, onupdate=now),
     Column("visualization_id", Integer, ForeignKey("visualization.id"), index=True, nullable=False),
     Column("title", TEXT),
-    Column("dbkey", TEXT, index=True),
-    Column("config", JSONType))
+    Column("dbkey", TEXT),
+    Column("config", JSONType),
+    Index('ix_visualization_revision_dbkey', 'dbkey', mysql_length=200),
+)
 
 model.VisualizationUserShareAssociation.table = Table(
     "visualization_user_share_association", metadata,
@@ -1278,7 +1291,9 @@ model.DataManagerJobAssociation.table = Table(
     Column("create_time", DateTime, default=now),
     Column("update_time", DateTime, index=True, default=now, onupdate=now),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
-    Column("data_manager_id", TEXT, index=True))
+    Column("data_manager_id", TEXT),
+    Index('ix_data_manager_job_association_data_manager_id', 'data_manager_id', mysql_length=200),
+)
 
 # Tagging tables.
 model.Tag.table = Table(
@@ -1408,7 +1423,9 @@ model.HistoryAnnotationAssociation.table = Table(
     Column("id", Integer, primary_key=True),
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("annotation", TEXT, index=True))
+    Column("annotation", TEXT),
+    Index('ix_history_anno_assoc_annotation', 'annotation', mysql_length=200),
+)
 
 model.HistoryDatasetAssociationAnnotationAssociation.table = Table(
     "history_dataset_association_annotation_association", metadata,
@@ -1416,35 +1433,45 @@ model.HistoryDatasetAssociationAnnotationAssociation.table = Table(
     Column("history_dataset_association_id", Integer,
         ForeignKey("history_dataset_association.id"), index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("annotation", TEXT, index=True))
+    Column("annotation", TEXT),
+    Index('ix_history_dataset_anno_assoc_annotation', 'annotation', mysql_length=200),
+)
 
 model.StoredWorkflowAnnotationAssociation.table = Table(
     "stored_workflow_annotation_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("stored_workflow_id", Integer, ForeignKey("stored_workflow.id"), index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("annotation", TEXT, index=True))
+    Column("annotation", TEXT),
+    Index('ix_stored_workflow_ann_assoc_annotation', 'annotation', mysql_length=200),
+)
 
 model.WorkflowStepAnnotationAssociation.table = Table(
     "workflow_step_annotation_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("annotation", TEXT, index=True))
+    Column("annotation", TEXT),
+    Index('ix_workflow_step_ann_assoc_annotation', 'annotation', mysql_length=200),
+)
 
 model.PageAnnotationAssociation.table = Table(
     "page_annotation_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("page_id", Integer, ForeignKey("page.id"), index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("annotation", TEXT, index=True))
+    Column("annotation", TEXT),
+    Index('ix_page_annotation_association_annotation', 'annotation', mysql_length=200),
+)
 
 model.VisualizationAnnotationAssociation.table = Table(
     "visualization_annotation_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("visualization_id", Integer, ForeignKey("visualization.id"), index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("annotation", TEXT, index=True))
+    Column("annotation", TEXT),
+    Index('ix_visualization_annotation_association_annotation', 'annotation', mysql_length=200),
+)
 
 model.HistoryDatasetCollectionAssociationAnnotationAssociation.table = Table(
     "history_dataset_collection_annotation_association", metadata,
@@ -1452,7 +1479,8 @@ model.HistoryDatasetCollectionAssociationAnnotationAssociation.table = Table(
     Column("history_dataset_collection_id", Integer,
         ForeignKey("history_dataset_collection_association.id"), index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("annotation", TEXT, index=True))
+    Column("annotation", TEXT),
+)
 
 model.LibraryDatasetCollectionAnnotationAssociation.table = Table(
     "library_dataset_collection_annotation_association", metadata,
@@ -1460,7 +1488,8 @@ model.LibraryDatasetCollectionAnnotationAssociation.table = Table(
     Column("library_dataset_collection_id", Integer,
         ForeignKey("library_dataset_collection_association.id"), index=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("annotation", TEXT, index=True))
+    Column("annotation", TEXT),
+)
 
 # Ratings tables.
 model.HistoryRatingAssociation.table = Table("history_rating_association", metadata,

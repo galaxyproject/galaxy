@@ -4,7 +4,6 @@ from json import loads
 import paste.httpexceptions
 from six import string_types
 
-import galaxy.queue_worker
 from galaxy import web
 from galaxy.util import nice_size, unicodify
 from galaxy.webapps.base.controller import BaseUIController
@@ -174,9 +173,11 @@ class DataManager(BaseUIController):
             table_name = table_name.split(",")
         # Reload the tool data tables
         table_names = self.app.tool_data_tables.reload_tables(table_names=table_name)
-        galaxy.queue_worker.send_control_task(trans.app, 'reload_tool_data_tables',
-                                              noop_self=True,
-                                              kwargs={'table_name': table_name})
+        trans.app.queue_worker.send_control_task(
+            'reload_tool_data_tables',
+            noop_self=True,
+            kwargs={'table_name': table_name}
+        )
         data = None
         if table_names:
             message = "Reloaded data table%s '%s'." % ('s'[len(table_names) == 1:],

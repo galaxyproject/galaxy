@@ -2,12 +2,12 @@ import errno
 import json
 import logging
 import os
+from collections import OrderedDict
 
 from routes import url_for
 from six.moves.urllib.parse import urljoin
 
 from galaxy import util
-from galaxy.util.odict import odict
 from galaxy.util.tool_shed import encoding_util, xml_util
 
 log = logging.getLogger(__name__)
@@ -35,16 +35,16 @@ def check_for_missing_tools(app, tool_panel_configs, latest_tool_migration_scrip
                                                        'migrate', 'scripts',
                                                        '%04d_tools.xml' % latest_tool_migration_script_number))
     # Parse the XML and load the file attributes for later checking against the proprietary tool_panel_config.
-    migrated_tool_configs_dict = odict()
+    migrated_tool_configs_dict = OrderedDict()
     tree, error_message = xml_util.parse_xml(tools_xml_file_path)
     if tree is None:
-        return False, odict()
+        return False, OrderedDict()
     root = tree.getroot()
     tool_shed = root.get('name')
     tool_shed_url = get_tool_shed_url_from_tool_shed_registry(app, tool_shed)
     # The default behavior is that the tool shed is down.
     tool_shed_accessible = False
-    missing_tool_configs_dict = odict()
+    missing_tool_configs_dict = OrderedDict()
     if tool_shed_url:
         for elem in root:
             if elem.tag == 'repository':

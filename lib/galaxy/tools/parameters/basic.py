@@ -84,6 +84,12 @@ class ToolParameter(Dictifiable):
     Describes a parameter accepted by a tool. This is just a simple stub at the
     moment but in the future should encapsulate more complex parameters (lists
     of valid choices, validation logic, ...)
+
+    >>> from galaxy.util.bunch import Bunch
+    >>> trans = Bunch(app=None)
+    >>> p = ToolParameter(None, XML('<param argument="--parameter-name" type="text" value="default" />'))
+    >>> assert p.name == 'parameter_name'
+    >>> assert sorted(p.to_dict(trans).items()) == [('argument', '--parameter-name'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ToolParameter'), ('name', 'parameter_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', None)]
     """
     dict_collection_visible_keys = ['name', 'argument', 'type', 'label', 'help', 'refresh_on_change']
 
@@ -233,27 +239,21 @@ class ToolParameter(Dictifiable):
         return tool_dict
 
     @classmethod
-    def build(cls, tool, param):
+    def build(cls, tool, input_source):
         """Factory method to create parameter of correct type"""
-        param_name = cls.parse_name(param)
-        param_type = param.get('type')
+        input_source = ensure_input_source(input_source)
+        param_name = cls.parse_name(input_source)
+        param_type = input_source.get('type')
         if not param_type:
             raise ValueError("parameter '%s' requires a 'type'" % (param_name))
         elif param_type not in parameter_types:
             raise ValueError("parameter '%s' uses an unknown type '%s'" % (param_name, param_type))
         else:
-            return parameter_types[param_type](tool, param)
+            return parameter_types[param_type](tool, input_source)
 
     @staticmethod
     def parse_name(input_source):
-        name = input_source.get('name')
-        if name is None:
-            argument = input_source.get('argument')
-            if argument:
-                name = argument.lstrip('-')
-            else:
-                raise ValueError("parameter must specify a name.")
-        return name
+        return input_source.parse_name()
 
 
 class TextToolParameter(ToolParameter):

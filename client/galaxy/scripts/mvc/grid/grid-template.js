@@ -403,7 +403,7 @@ export default {
 
         // show advanced search link in standard display
         if (show_advanced_search_link) {
-            tmpl += '<a href="" class="advanced-search-toggle">Advanced Search</a>';
+            tmpl += '<a href="javascript:void(0)" class="advanced-search-toggle">Advanced Search</a>';
         }
 
         // finalize standard search display
@@ -412,7 +412,7 @@ export default {
         //
         // advanced search
         //
-        tmpl += `<div id="advanced-search" style="display: ${advanced_search_display}; margin-top: 5px;"><table><tr><td style="text-align: left" colspan="100"><a href="" class="advanced-search-toggle">Close Advanced Search</a></td></tr>`;
+        tmpl += `<div id="advanced-search" style="display: ${advanced_search_display}; margin-top: 5px;"><table><tr><td style="text-align: left" colspan="100"><a href="javascript:void(0)" class="advanced-search-toggle">Close Advanced Search</a></td></tr>`;
 
         // add advanced filters
         for (const column of options.columns) {

@@ -45,7 +45,7 @@
 
       <ul class="nav navbar-nav">
         <li class="dropdown hidden">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Load file<b class="caret"></b></a>
+          <a href="javascript:void(0)" role="button" class="dropdown-toggle" data-toggle="dropdown">Load file<b class="caret"></b></a>
           <ul class="dropdown-menu">
             <li><input type="file" id="json_file"></li>
           </ul>

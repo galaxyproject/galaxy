@@ -4,18 +4,25 @@ Adds created_from_basename to dataset.
 import datetime
 import logging
 
-from sqlalchemy import Column, MetaData, TEXT
+from sqlalchemy import (
+    Column,
+    MetaData,
+    TEXT
+)
 
-from galaxy.model.migrate.versions.util import add_column, drop_column
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    drop_column
+)
 
-now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
+now = datetime.datetime.utcnow
 metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     created_from_basename_column = Column("created_from_basename", TEXT, default=None)
