@@ -4,7 +4,9 @@ Modules used in building workflows
 import json
 import logging
 import re
+import copy
 from collections import OrderedDict
+from collections import defaultdict
 from xml.etree.ElementTree import (
     Element,
     XML
