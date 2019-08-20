@@ -753,7 +753,7 @@ class InputParameterModule(WorkflowModule):
                 for label, value, selected in list(set(intxn_opts)):
                     d[value].append(label)
                 intxn_input = copy(input_data)
-                intxn_input.static_options = [(', '.join(set(label)), value, False) for value, label in list(d.items())]
+                intxn_input.static_options = [(', '.join(label), value, False) for value, label in d.items()]
                 intxn_input.legal_values = intxn_vals
                 input.options = intxn_input
                 input.display = input_data.display
