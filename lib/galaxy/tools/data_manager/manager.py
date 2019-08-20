@@ -341,9 +341,9 @@ class DataManager(object):
                     output_ref_values[data_table_column] = output_ref_dataset
 
             if not isinstance(data_table_values, list):
-                data_table_values = [data_table_values]
+                data_table_values = [data_table_values] if data_table_values else []
             if not isinstance(data_table_remove_values, list):
-                data_table_remove_values = [data_table_remove_values]
+                data_table_remove_values = [data_table_remove_values] if data_table_remove_values else []
             for data_table_row in data_table_values:
                 data_table_value = dict(**data_table_row)  # keep original values here
                 for name, value in data_table_row.items():  # FIXME: need to loop through here based upon order listed in data_manager config
