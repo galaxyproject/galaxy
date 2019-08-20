@@ -3,7 +3,6 @@ import os
 from collections import OrderedDict
 from json import dumps, loads
 
-import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.tools import global_tool_errors
@@ -220,7 +219,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         GET /api/tools/{tool_id}/reload
         Reload specified tool.
         """
-        galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': id})
+        trans.app.queue_worker.send_control_task('reload_tool', noop_self=True, kwargs={'tool_id': id})
         message, status = trans.app.toolbox.reload_tool_by_id(id)
         if status == 'error':
             raise exceptions.MessageException(message)
