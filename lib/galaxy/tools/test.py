@@ -6,8 +6,11 @@ from six import string_types
 
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
-from galaxy.tools.verify.interactor import ToolTestDescription
-from galaxy.util import string_as_bool
+from galaxy.tool_util.verify.interactor import ToolTestDescription
+from galaxy.util import (
+    string_as_bool,
+    unicodify,
+)
 
 try:
     from nose.tools import nottest
@@ -63,7 +66,7 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
             "test_index": test_index,
             "inputs": {},
             "error": True,
-            "exception": str(e),
+            "exception": unicodify(e),
         }
 
     return ToolTestDescription(processed_test_dict)

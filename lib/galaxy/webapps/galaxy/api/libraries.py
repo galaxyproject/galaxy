@@ -16,7 +16,7 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous,
 )
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 

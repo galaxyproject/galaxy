@@ -47,6 +47,7 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="macros" type="Macros" minOccurs="0"/>
         <xs:element name="edam_topics" type="EdamTopics" minOccurs="0"/>
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
+        <xs:element name="xrefs" type="xrefs" minOccurs="0" />
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
         <xs:element name="description" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="tool-descriptions">
@@ -186,7 +187,7 @@ automatically if profile is set to any version newer than ``16.01``, such as
         <xs:annotation>
           <xs:documentation xml:lang="en">This string specifies the minimum Python
 version that is able to fill the Cheetah sections of the tool. If unset defaults
-to 2.7 if the profile is older than 19.01, otherwise defaults to 3.5. Galaxy will 
+to 2.7 if the profile is older than 19.01, otherwise defaults to 3.5. Galaxy will
 attempt to convert Python statements in Cheetah sections using [future](http://python-future.org/)
 if Galaxy is run on Python 3 and ``python_template_version`` is below 3.</xs:documentation>
         </xs:annotation>
@@ -1566,7 +1567,7 @@ many of the default assertion tags that come with Galaxy and examples of each
 can be found below.
 
 The implementation of these tags are simply Python functions defined in the
-[/lib/galaxy/tools/verify/asserts](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tools/verify/asserts)
+[/lib/galaxy/tool_util/verify/asserts](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tool_util/verify/asserts)
 module.
 ]]>
       </xs:documentation>
@@ -1787,7 +1788,7 @@ statement. A good example tool that demonstrates many conditional parameters is
     </param>
     <when value="tsv">
         <param name="input_table" type="data" format="tabular" label="Tabular File" argument="--input-fp"/>
-        <param name="process_obs_metadata" type="select" label="Process metadata associated with observations when converting" argument="--process-obs-metadata">
+        <param argument="--process-obs-metadata" type="select" label="Process metadata associated with observations when converting">
             <option value="" selected="true">Do Not process metadata</option>
             <option value="taxonomy">taxonomy</option>
             <option value="naive">naive</option>
@@ -2352,9 +2353,10 @@ rendered as a one line text box (if ``false``, the default) or a multi-line text
 
 If the parameter reflects just one command line argument of a certain tool, this
 tag should be set to that particular argument. It is rendered in parenthesis
-after the help section, and it will create the name attribute from the argument
-attribute by stripping the dashes (e.g. if ``argument="--sensitive"`` then
-``name="sensitive"`` is implicit).
+after the help section, and it will create the name attribute (if not given explicitly)
+from the argument attribute by stripping leading dashes and replacing all remaining
+dashes by underscores (e.g. if ``argument="--long-parameter"`` then
+``name="long_parameter"`` is implicit).
 
 ]]></xs:documentation>
           </xs:annotation>
@@ -3216,7 +3218,7 @@ validators is in the ``validator_types`` dictionary in
 [/lib/galaxy/tools/parameters/validation.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/validation.py).
 Valid values include: ``expression``, ``regex``, ``in_range``, ``length``,
 ``metadata``, ``unspecified_build``, ``no_options``, ``empty_field``,
-``dataset_metadata_in_file``, 
+``dataset_metadata_in_file``,
 ``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``,
 ``value_in_data_table``, ``value_not_in_data_table``,
 ``dataset_ok_validator``, ``dataset_metadata_in_range``]]></xs:documentation>
@@ -4582,6 +4584,11 @@ variable instead of shell variable.
 define.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="strip" type="PermissiveBoolean" default="false">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Whether to strip leading and trailing whitespace from the calculated value before exporting the environment variable.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
@@ -5581,14 +5588,60 @@ A tool can have any number of EDAM operation references.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-        <xs:element name="edam_operation" minOccurs="0" maxOccurs="unbounded">
-          <xs:simpleType>
-            <xs:restriction base="xs:string">
-              <xs:pattern value="operation_[0-9]{4}"></xs:pattern>
-            </xs:restriction>
-          </xs:simpleType>
-        </xs:element>
-      </xs:sequence>
-    </xs:complexType>
+      <xs:element name="edam_operation" minOccurs="0" maxOccurs="unbounded">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:pattern value="operation_[0-9]{4}"></xs:pattern>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="xrefs">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Container tag set for the ``<xref>`` tags.
+A tool can refer multiple reference IDs.
+	
+```xml
+   <!-- Example: this tool is seqtk -->
+   <xrefs>
+	<xref type="bio.tools">seqtk</xref>
+   </xrefs>
+   <!-- https://bio.tools/seqtk -->
+```
+
+]]></xs:documentation>
+    </xs:annotation>
+      <xs:sequence>
+        <xs:element name="xref" type="xref" minOccurs="0" maxOccurs="unbounded">
+      </xs:element>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="xref">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">The ``xref`` element specifies reference
+information according to a catalog.</xs:documentation>
+    </xs:annotation>
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="type" type="xrefType" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``
+is the only supported options.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:simpleType name="xrefType">
+    <xs:annotation>
+      <xs:documentation xml:lang="en">Type of Reference.</xs:documentation>
+    </xs:annotation>
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="bio.tools"/>
+      <!--xs:enumeration value="whatelse"/-->
+    </xs:restriction>
+  </xs:simpleType>
 
 </xs:schema>

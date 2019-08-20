@@ -50,11 +50,11 @@ export function make_popupmenu(button_element, initial_options) {
                     menu_element.append(
                         $("<div/>")
                             .addClass("dropdown-item head")
-                            .append($("<a href='#'></a>").html(k))
+                            .append($("<a href='javascript:void(0)' role='button'></a>").html(k))
                     );
                 }
             });
-            var wrapper = $("<div class='popmenu-wrapper' style='position: absolute;left: 0; top: -1000;'></div>")
+            var wrapper = $("<div class='popmenu-wrapper' style='position: absolute;left: 0;'></div>")
                 .append(menu_element)
                 .appendTo("body");
 

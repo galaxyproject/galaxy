@@ -1576,7 +1576,7 @@ class SetupVirtualEnv(Download, RecipeStep):
         # This class is not currently used during stage 1 of the installation process, so filter_actions
         # are not affected, and dir is not set.  Enhancements can easily be made to this function if this
         # class is needed in stage 1.
-        venv_src_directory = os.path.abspath(os.path.join(self.app.config.tool_dependency_dir, '__virtualenv_src'))
+        venv_src_directory = os.path.abspath(os.path.join(self.app.tool_dependency_dir, '__virtualenv_src'))
         if not self.install_virtualenv(install_environment, venv_src_directory):
             log.debug('Unable to install virtualenv')
             return tool_dependency, None, None

@@ -30,7 +30,7 @@ from galaxy.web import (
     expose_api_raw,
     expose_api_raw_anonymous
 )
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     UsesLibraryMixin,
     UsesLibraryMixinItems,
@@ -295,7 +295,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         except Exception as e:
             log.exception("Error in API while creating dataset collection archive")
             trans.response.status = 500
-            return {'error': str(e)}
+            return {'error': util.unicodify(e)}
 
     def __stream_dataset_collection(self, trans, dataset_collection_instance):
         archive_type_string = 'w|gz'

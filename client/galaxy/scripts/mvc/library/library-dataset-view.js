@@ -671,7 +671,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 <% if (item.get("is_unrestricted")) { %>
                     <div>
                         This dataset is unrestricted so everybody with the link can access it.
-                        Just share <span class="copy-link-to-clipboard"><a href=""a>this page</a></span>.
+                        Just share <span class="copy-link-to-clipboard"><a href="javascript:void(0)">this page</a></span>.
                     </div>
                 <% } %>
 
@@ -701,6 +701,12 @@ var LibraryDatasetView = Backbone.View.extend({
                             <tr>
                                 <th scope="row">Size</th>
                                 <td><%= _.escape(item.get("file_size")) %></td>
+                            </tr>
+                        <% } %>
+                        <% if (item.get("update_time")) { %>
+                            <tr>
+                                <th scope="row">Date last updated (UTC)</th>
+                                <td><%= _.escape(item.get("update_time")) %></td>
                             </tr>
                         <% } %>
                         <% if (item.get("date_uploaded")) { %>
@@ -741,7 +747,7 @@ var LibraryDatasetView = Backbone.View.extend({
                         <% } %>
                         <% if (item.get("message")) { %>
                             <tr>
-                                <th scope="row">Message</th>
+                                <th scope="row">Description</th>
                                 <td scope="row"><%= _.escape(item.get("message")) %></td>
                             </tr>
                         <% } %>
@@ -880,6 +886,12 @@ var LibraryDatasetView = Backbone.View.extend({
                                 <td><%= _.escape(ldda.get("file_size")) %></td>
                             </tr>
                         <% } %>
+                        <% if (ldda.get("update_time")) { %>
+                            <tr>
+                                <th scope="row">Date last updated (UTC)</th>
+                                <td><%= _.escape(ldda.get("update_time")) %></td>
+                            </tr>
+                        <% } %>
                         <% if (ldda.get("date_uploaded")) { %>
                             <tr>
                                 <th scope="row">Date uploaded (UTC)</th>
@@ -1005,6 +1017,10 @@ var LibraryDatasetView = Backbone.View.extend({
                         <tr>
                             <th scope="row">Size</th>
                             <td><%= _.escape(item.get("file_size")) %></td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Date last updated (UTC)</th>
+                            <td><%= _.escape(item.get("update_time")) %></td>
                         </tr>
                         <tr>
                             <th scope="row">Date uploaded (UTC)</th>
@@ -1143,12 +1159,12 @@ var LibraryDatasetView = Backbone.View.extend({
                     <% if (!item.get("is_unrestricted")) { %>
                         <p>
                             You can <span class="remove-restrictions">
-                            <a href="">remove all access restrictions</a></span> on this dataset.
+                            <a href="javascript:void(0)">remove all access restrictions</a></span> on this dataset.
                         </p>
                     <% } else { %>
                         <p>
                             You can <span class="make-private">
-                            <a href="">make this dataset private</a></span> to you.</p>
+                            <a href="javascript:void(0)">make this dataset private</a></span> to you.</p>
                     <% } %>
                     <h4>Roles that can access the dataset</h4>
                     <div id="access_perm" class="access_perm roles-selection"></div>

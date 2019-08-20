@@ -74,7 +74,7 @@ class ScrollPanel {
 }
 
 // Zoom levels to use for zooming the workflow canvas
-const zoomLevels = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
+const zoomLevels = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4];
 
 // Default zoome level (1)
 const defaultZoomLevel = 7;
@@ -97,7 +97,7 @@ class CanvasManager {
         this.init_copy_paste();
     }
     setZoom(zoomLevel) {
-        this.zoomLevel = Math.min(Math.max(0, zoomLevel), zoomLevels.length);
+        this.zoomLevel = Math.min(Math.max(0, zoomLevel), zoomLevels.length - 1);
         this.canvasZoom = zoomLevels[this.zoomLevel];
         // Set CSS transform to appropriate zoom level
         this.cv.css("transform-origin", "top left");
@@ -109,16 +109,35 @@ class CanvasManager {
         this.app.workflow.fit_canvas_to_nodes();
     }
     initZoomControls() {
-        var zoomControl = $('<div class="btn-group-vertical"/>').css({
+        var zoomControl = $('<div class="btn-group-horizontal"/>').css({
             position: "absolute",
             left: "1rem",
-            bottom: "1rem"
+            bottom: "1rem",
+            cursor: "pointer"
         });
+        const zoomButton = $(
+            `<a class="btn btn-light" title="Reset Zoom Level">${zoomLevels[defaultZoomLevel] * 100}%</a>`
+        ).css({
+            width: "4rem"
+        });
+
         zoomControl.append(
-            $('<div class="btn btn-secondary fa fa-plus"/>').click(() => this.setZoom(this.zoomLevel + 1))
+            $('<a class="btn btn-secondary fa fa-minus"/>').click(() => {
+                this.setZoom(this.zoomLevel - 1);
+                zoomButton.text(Math.floor(zoomLevels[this.zoomLevel] * 100) + "%");
+            })
         );
         zoomControl.append(
-            $('<div class="btn btn-secondary fa fa-minus"/>').click(() => this.setZoom(this.zoomLevel - 1))
+            zoomButton.click(() => {
+                this.setZoom(defaultZoomLevel);
+                zoomButton.text(Math.floor(zoomLevels[this.zoomLevel] * 100) + "%");
+            })
+        );
+        zoomControl.append(
+            $('<a class="btn btn-secondary fa fa-plus"/>').click(() => {
+                this.setZoom(this.zoomLevel + 1);
+                zoomButton.text(Math.floor(zoomLevels[this.zoomLevel] * 100) + "%");
+            })
         );
         this.cv.closest("#workflow-canvas-body").append(zoomControl);
     }

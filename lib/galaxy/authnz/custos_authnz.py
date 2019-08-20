@@ -122,7 +122,7 @@ class CustosAuthnz(IdentityProvider):
             trans.sa_session.flush()
             return True, "", disconnect_redirect_url
         except Exception as e:
-            return False, "Failed to disconnect provider {}: {}".format(provider, str(e)), None
+            return False, "Failed to disconnect provider {}: {}".format(provider, util.unicodify(e)), None
 
     def _create_oauth2_session(self, state=None, scope=None):
         client_id = self.config['client_id']

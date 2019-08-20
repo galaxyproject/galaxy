@@ -11,5 +11,6 @@ Subpackages
 
 .. toctree::
 
+    galaxy_ext.expressions
     galaxy_ext.metadata
 

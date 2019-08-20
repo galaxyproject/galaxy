@@ -1,6 +1,6 @@
 
 .. image:: https://badge.fury.io/py/galaxy-tool-util.svg
-   :target: https://pypi.python.org/pypi/galaxy-tool-util/
+   :target: https://pypi.org/project/galaxy-tool-util/
 
 
 Overview

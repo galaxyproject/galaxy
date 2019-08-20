@@ -33,6 +33,7 @@ from galaxy.containers.docker_model import (
     IMAGE_CONSTRAINT
 )
 from galaxy.exceptions import ContainerRunError
+from galaxy.util import unicodify
 from galaxy.util.json import safe_dumps_formatted
 
 log = logging.getLogger(__name__)
@@ -124,7 +125,7 @@ class DockerSwarmInterface(DockerInterface):
                 subprocess.check_call(['python', SWARM_MANAGER_PATH, '--containers-config-file',
                                       self.containers_config_file, '--swarm', self.key])
             except subprocess.CalledProcessError as exc:
-                log.error('Failed to launch swarm manager: %s', str(exc))
+                log.error('Failed to launch swarm manager: %s', unicodify(exc))
 
     def _get_image(self, image):
         """Get the image string, either from the argument, or from the

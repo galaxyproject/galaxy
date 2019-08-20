@@ -9,6 +9,17 @@ scripts/scramble/archives
 .venv
 .venv3
 
+# Python build artifacts
+build
+dist
+lib/galaxy.egg-info
+.eggs
+
+# Generated static content
+lib/galaxy/web/framework/static/maps
+lib/galaxy/web/framework/static/scripts
+lib/galaxy/web/framework/static/style
+
 # Database stuff
 database/beaker_sessions
 database/citations
@@ -18,6 +29,7 @@ database/files
 database/jobs_directory
 database/job_working_directory
 database/pbs
+database/shed_tools
 database/test_errors
 database/tmp
 database/*.sqlite

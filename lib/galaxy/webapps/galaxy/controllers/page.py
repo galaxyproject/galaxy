@@ -31,15 +31,15 @@ from galaxy.web import (
     error,
     url_for
 )
-from galaxy.web.base.controller import (
+from galaxy.web.framework.helpers import (
+    grids,
+    time_ago
+)
+from galaxy.webapps.base.controller import (
     BaseUIController,
     SharableMixin,
     UsesStoredWorkflowMixin,
     UsesVisualizationMixin
-)
-from galaxy.web.framework.helpers import (
-    grids,
-    time_ago
 )
 
 
@@ -339,7 +339,7 @@ class PageController(BaseUIController, SharableMixin,
             try:
                 page = self.page_manager.create(trans, payload)
             except exceptions.MessageException as e:
-                return self.message_exception(trans, str(e))
+                return self.message_exception(trans, unicodify(e))
             return {'message': 'Page \'%s\' successfully created.' % page.title, 'status': 'success'}
 
     @web.legacy_expose_api

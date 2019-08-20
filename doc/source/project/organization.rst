@@ -43,6 +43,7 @@ Members
 
 - Enis Afgan (@afgane)
 - Dannon Baker (@dannon)
+- Matthias Bernt (@bernt-matthias)
 - Daniel Blankenberg (@blankenberg)
 - Dave Bouvier (@davebx)
 - Martin Čech (@martenson)

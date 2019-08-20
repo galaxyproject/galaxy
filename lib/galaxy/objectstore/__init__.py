@@ -11,6 +11,7 @@ import random
 import shutil
 import threading
 import time
+from collections import OrderedDict
 from xml.etree import ElementTree
 
 import yaml
@@ -26,7 +27,6 @@ from galaxy.util import (
     umask_fix_perms,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.odict import odict
 from galaxy.util.path import (
     safe_makedirs,
     safe_relpath,
@@ -804,7 +804,7 @@ class HierarchicalObjectStore(NestedObjectStore):
         """The default contructor. Extends `NestedObjectStore`."""
         super(HierarchicalObjectStore, self).__init__(config, config_dict)
 
-        backends = odict()
+        backends = OrderedDict()
         for order, backend_def in enumerate(config_dict["backends"]):
             backends[order] = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
 

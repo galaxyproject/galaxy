@@ -9,11 +9,22 @@ from __future__ import print_function
 import logging
 from json import dumps, loads
 
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
-from sqlalchemy.exc import NoSuchTableError
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table
+)
 
 from galaxy.model.custom_types import JSONType
-from galaxy.model.migrate.versions.util import localtimestamp, nextval
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    drop_column,
+    engine_false,
+    localtimestamp,
+    nextval
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -28,17 +39,6 @@ def get_latest_id(migrate_engine, table):
         raise Exception('Unable to get the latest id in the %s table.' % table)
 
 
-def boolean(migrate_engine, value):
-    if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:
-        return value
-    elif migrate_engine.name == 'sqlite':
-        if value in ['True', 'true']:
-            return 1
-        return 0
-    else:
-        raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
-
-
 def create_sequencer_form_definition(migrate_engine):
     '''
     Create a new form_definition containing 5 fields (host, username, password,
@@ -46,12 +46,12 @@ def create_sequencer_form_definition(migrate_engine):
     dict in the request_type table
     '''
     # create new form_definition_current in the db
-    cmd = "INSERT INTO form_definition_current VALUES ( %s, %s, %s, %s, %s )"
-    cmd = cmd % (nextval(migrate_engine, 'form_definition_current'),
-                 localtimestamp(migrate_engine),
-                 localtimestamp(migrate_engine),
-                 'NULL',
-                 boolean(migrate_engine, 'false'))
+    cmd = "INSERT INTO form_definition_current VALUES ( %s, %s, %s, %s, %s )" % (
+        nextval(migrate_engine, 'form_definition_current'),
+        localtimestamp(migrate_engine),
+        localtimestamp(migrate_engine),
+        'NULL',
+        engine_false(migrate_engine))
     migrate_engine.execute(cmd)
     # get this form_definition_current id
     form_definition_current_id = get_latest_id(migrate_engine, 'form_definition_current')
@@ -149,17 +149,17 @@ def add_sequencer(migrate_engine, sequencer_index, sequencer_form_definition_id,
     desc = ''
     version = ''
     sequencer_type_id = 'simple_unknown_sequencer'
-    cmd = "INSERT INTO sequencer VALUES ( %s, %s, %s, '%s', '%s', '%s', '%s', %s, %s, %s )"
-    cmd = cmd % (nextval(migrate_engine, 'sequencer'),
-                 localtimestamp(migrate_engine),
-                 localtimestamp(migrate_engine),
-                 name,
-                 desc,
-                 sequencer_type_id,
-                 version,
-                 sequencer_form_definition_id,
-                 sequencer_form_values_id,
-                 boolean(migrate_engine, 'false'))
+    cmd = "INSERT INTO sequencer VALUES ( %s, %s, %s, '%s', '%s', '%s', '%s', %s, %s, %s )" % (
+        nextval(migrate_engine, 'sequencer'),
+        localtimestamp(migrate_engine),
+        localtimestamp(migrate_engine),
+        name,
+        desc,
+        sequencer_type_id,
+        version,
+        sequencer_form_definition_id,
+        sequencer_form_values_id,
+        engine_false(migrate_engine))
     migrate_engine.execute(cmd)
     return get_latest_id(migrate_engine, 'sequencer')
 
@@ -175,28 +175,10 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    try:
-        RequestType_table = Table("request_type", metadata, autoload=True)
-    except NoSuchTableError:
-        RequestType_table = None
-        log.debug("Failed loading table 'request_type'")
-    if RequestType_table is None:
-        return
-    # load the sequencer table
-    try:
-        Sequencer_table = Table("sequencer", metadata, autoload=True)
-    except NoSuchTableError:
-        Sequencer_table = None
-        log.debug("Failed loading table 'sequencer'")
-    if Sequencer_table is None:
-        return
+    RequestType_table = Table("request_type", metadata, autoload=True)
     # create foreign key field to the sequencer table in the request_type table
-    try:
-        col = Column("sequencer_id", Integer, ForeignKey("sequencer.id"), nullable=True)
-        col.create(RequestType_table)
-        assert col is RequestType_table.c.sequencer_id
-    except Exception:
-        log.exception("Creating column 'sequencer_id' in the 'request_type' table failed.")
+    col = Column("sequencer_id", Integer, ForeignKey("sequencer.id"), nullable=True)
+    add_column(col, RequestType_table, metadata)
     # copy the sequencer information contained in the 'datatx_info' column
     # of the request_type table to the form values referenced in the sequencer table
     cmd = "SELECT id, name, datatx_info FROM request_type ORDER BY id ASC"
@@ -231,50 +213,35 @@ def upgrade(migrate_engine):
                 sequencer_index = sequencer_index + 1
 
     # Finally delete the 'datatx_info' column from the request_type table
-    try:
-        RequestType_table.c.datatx_info.drop()
-    except Exception:
-        log.exception("Deleting column 'datatx_info' in the 'request_type' table failed.")
+    drop_column('datatx_info', RequestType_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    try:
-        RequestType_table = Table("request_type", metadata, autoload=True)
-    except NoSuchTableError:
-        RequestType_table = None
-        log.debug("Failed loading table 'request_type'")
-    if RequestType_table is not None:
-        # create the 'datatx_info' column
-        try:
-            col = Column("datatx_info", JSONType())
-            col.create(RequestType_table)
-            assert col is RequestType_table.c.datatx_info
-        except Exception:
-            log.exception("Creating column 'datatx_info' in the 'request_type' table failed.")
-        # restore the datatx_info column data in the request_type table with data from
-        # the sequencer and the form_values table
-        cmd = "SELECT request_type.id, form_values.content "\
-              + " FROM request_type, sequencer, form_values "\
-              + " WHERE request_type.sequencer_id=sequencer.id AND sequencer.form_values_id=form_values.id "\
-              + " ORDER  BY request_type.id ASC"
-        result = migrate_engine.execute(cmd)
-        for row in result:
-            request_type_id = row[0]
-            seq_values = loads(str(row[1]))
-            # create the datatx_info json dict
-            datatx_info = dumps(dict(host=seq_values.get('field_0', ''),
-                                     username=seq_values.get('field_1', ''),
-                                     password=seq_values.get('field_2', ''),
-                                     data_dir=seq_values.get('field_3', ''),
-                                     rename_dataset=seq_values.get('field_4', '')))
-            # update the column
-            cmd = "UPDATE request_type SET datatx_info='%s' WHERE id=%i" % (datatx_info, request_type_id)
-            migrate_engine.execute(cmd)
-        # delete foreign key field to the sequencer table in the request_type table
-        try:
-            RequestType_table.c.sequencer_id.drop()
-        except Exception:
-            log.exception("Deleting column 'sequencer_id' in the 'request_type' table failed.")
+    RequestType_table = Table("request_type", metadata, autoload=True)
+    # create the 'datatx_info' column
+    col = Column("datatx_info", JSONType())
+    add_column(col, RequestType_table, metadata)
+    # restore the datatx_info column data in the request_type table with data from
+    # the sequencer and the form_values table
+    cmd = "SELECT request_type.id, form_values.content "\
+          + " FROM request_type, sequencer, form_values "\
+          + " WHERE request_type.sequencer_id=sequencer.id AND sequencer.form_values_id=form_values.id "\
+          + " ORDER  BY request_type.id ASC"
+    result = migrate_engine.execute(cmd)
+    for row in result:
+        request_type_id = row[0]
+        seq_values = loads(str(row[1]))
+        # create the datatx_info json dict
+        datatx_info = dumps(dict(host=seq_values.get('field_0', ''),
+                                 username=seq_values.get('field_1', ''),
+                                 password=seq_values.get('field_2', ''),
+                                 data_dir=seq_values.get('field_3', ''),
+                                 rename_dataset=seq_values.get('field_4', '')))
+        # update the column
+        cmd = "UPDATE request_type SET datatx_info='%s' WHERE id=%i" % (datatx_info, request_type_id)
+        migrate_engine.execute(cmd)
+    # delete foreign key field to the sequencer table in the request_type table
+    drop_column('sequencer_id', RequestType_table)

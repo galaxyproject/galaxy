@@ -10,7 +10,7 @@ from galaxy import (
 from galaxy.tools.parameters import params_to_strings
 from galaxy.tools.repositories import ValidationContext
 from galaxy.web import expose_api_raw_anonymous_and_sessionless
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 from galaxy.webapps.tool_shed.search.tool_search import ToolSearch
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.tools import tool_validator

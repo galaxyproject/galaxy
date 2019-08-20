@@ -88,14 +88,10 @@ const AdminPanel = Backbone.View.extend({
                 title: _l("Tool Management"),
                 items: [
                     {
-                        title: _l("Install new tools"),
-                        url: "admin_toolshed/browse_tool_sheds",
+                        title: _l("Install or Uninstall"),
+                        url: "admin/toolshed",
+                        target: "__use_router__",
                         enabled: this.settings.is_tool_shed_installed
-                    },
-                    {
-                        title: "Install new tools (Beta)",
-                        url: "admin_toolshed/browse_toolsheds",
-                        enabled: this.settings.is_tool_shed_installed && this.config.enable_beta_ts_api_install
                     },
                     {
                         title: _l("Monitor installation"),
@@ -175,7 +171,7 @@ const AdminPanel = Backbone.View.extend({
 
     _templateSection: function(options) {
         return `<div class="toolSectionWrapper">
-                    <div class="toolSectionTitle">${_l(options.title)}</div>
+                    <div class="toolSectionTitle px-3">${_l(options.title)}</div>
                     <div class="toolSectionBody"/>
                 </div>`;
     },

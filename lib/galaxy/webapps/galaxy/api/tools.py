@@ -1,21 +1,20 @@
 import logging
 import os
+from collections import OrderedDict
 from json import dumps, loads
 
-import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.tools import global_tool_errors
 from galaxy.util.json import safe_dumps
-from galaxy.util.odict import odict
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
 )
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesVisualizationMixin
+from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import UsesVisualizationMixin
 from ._fetch_util import validate_and_normalize_targets
 
 log = logging.getLogger(__name__)
@@ -201,9 +200,9 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool_version = kwd.get('tool_version', None)
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
 
-        # Encode in this method to handle odict objects in tool representation.
+        # Encode in this method to handle OrderedDict objects in tool representation.
         def json_encodeify(obj):
-            if isinstance(obj, odict):
+            if isinstance(obj, OrderedDict):
                 return dict(obj)
             elif isinstance(obj, map):
                 return list(obj)
@@ -220,7 +219,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         GET /api/tools/{tool_id}/reload
         Reload specified tool.
         """
-        galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': id})
+        trans.app.queue_worker.send_control_task('reload_tool', noop_self=True, kwargs={'tool_id': id})
         message, status = trans.app.toolbox.reload_tool_by_id(id)
         if status == 'error':
             raise exceptions.MessageException(message)
@@ -402,6 +401,11 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         for citation in tool.citations:
             rval.append(citation.to_dict('bibtex'))
         return rval
+
+    @expose_api_anonymous_and_sessionless
+    def xrefs(self, trans, id, **kwds):
+        tool = self._get_tool(id, user=trans.user)
+        return tool.xrefs
 
     @web.legacy_expose_api_raw
     @web.require_admin

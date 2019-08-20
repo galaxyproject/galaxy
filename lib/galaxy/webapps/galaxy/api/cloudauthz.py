@@ -18,10 +18,11 @@ from galaxy.exceptions import (
     RequestParameterMissingException
 )
 from galaxy.managers import cloudauthzs
+from galaxy.util import unicodify
 from galaxy.web import (
     expose_api
 )
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
@@ -151,7 +152,7 @@ class CloudAuthzController(BaseAPIController):
         except Exception as e:
             log.exception(msg_template.format("exception while creating the new cloudauthz record"))
             raise InternalServerError('An unexpected error has occurred while responding to the create request of the '
-                                      'cloudauthz API.' + str(e))
+                                      'cloudauthz API.' + unicodify(e))
 
     @expose_api
     def delete(self, trans, encoded_authz_id, **kwargs):
@@ -188,7 +189,7 @@ class CloudAuthzController(BaseAPIController):
             log.exception(msg_template.format("exception while deleting the cloudauthz record with "
                                               "ID: `{}`.".format(encoded_authz_id)))
             raise InternalServerError('An unexpected error has occurred while responding to the DELETE request of the '
-                                      'cloudauthz API.' + str(e))
+                                      'cloudauthz API.' + unicodify(e))
 
     @expose_api
     def update(self, trans, encoded_authz_id, payload, **kwargs):
@@ -249,4 +250,4 @@ class CloudAuthzController(BaseAPIController):
             log.exception(msg_template.format("exception while updating the cloudauthz record with "
                                               "ID: `{}`.".format(encoded_authz_id)))
             raise InternalServerError('An unexpected error has occurred while responding to the PUT request of the '
-                                      'cloudauthz API.' + str(e))
+                                      'cloudauthz API.' + unicodify(e))

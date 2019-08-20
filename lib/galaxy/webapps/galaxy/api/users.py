@@ -4,6 +4,7 @@ API operations on User objects.
 import json
 import logging
 import re
+from collections import OrderedDict
 
 import six
 from markupsafe import escape
@@ -30,19 +31,18 @@ from galaxy.util import (
     docstring_trim,
     listify
 )
-from galaxy.util.odict import odict
 from galaxy.web import (
     expose_api,
     expose_api_anonymous
 )
-from galaxy.web.base.controller import (
+from galaxy.web.form_builder import AddressField
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     BaseUIController,
     CreatesApiKeysMixin,
     UsesFormDefinitionsMixin,
     UsesTagsMixin
 )
-from galaxy.web.form_builder import AddressField
 
 
 log = logging.getLogger(__name__)
@@ -689,9 +689,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             inputs.append({'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs})
 
     def _get_filter_types(self, trans):
-        return odict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
-                      ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
-                      ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
+        return OrderedDict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
+                            ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
+                            ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
 
     @expose_api
     def api_key(self, trans, id, payload={}, **kwd):

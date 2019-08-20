@@ -15,7 +15,7 @@ class AuthManager(object):
     def __init__(self, app):
         self.__app = app
         self.redact_username_in_logs = app.config.redact_username_in_logs
-        self.authenticators = get_authenticators(app.config.auth_config_file)
+        self.authenticators = get_authenticators(app.config.auth_config_file, app.config.auth_config_file_set)
 
     def check_registration_allowed(self, email, username, password):
         """Checks if the provided email/username is allowed to register."""
@@ -64,8 +64,9 @@ class AuthManager(object):
                 if auth_results[0] is True:
                     try:
                         auth_return = parse_auth_results(trans, auth_results, options)
-                    except Conflict:
-                        break
+                    except Conflict as conflict:
+                        log.exception(conflict)
+                        raise
                     return auth_return
                 elif auth_results[0] is None:
                     auto_email = str(auth_results[1]).lower()

@@ -30,7 +30,7 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
 )
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     SharableMixin,
     url_for,
@@ -466,7 +466,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(self.decode_id(workflow_id))
         except Exception as e:
             trans.response.status = 400
-            return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str(e))
+            return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, util.unicodify(e))
 
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin:
@@ -552,7 +552,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     if (trans.security.decode_id(id) in entries):
                         trans.get_user().stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
             # set tags
-            trans.app.tag_handler.set_tags_from_list(user=trans.user, item=stored_workflow, new_tags_list=workflow_dict.get('tags', []))
+            if 'tags' in workflow_dict:
+                trans.app.tag_handler.set_tags_from_list(user=trans.user, item=stored_workflow, new_tags_list=workflow_dict['tags'])
 
             if 'steps' in workflow_dict:
                 try:
@@ -565,9 +566,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                     )
                 except workflows.MissingToolsException:
                     raise exceptions.MessageException("This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed.")
-            else:
-                # We only adjusted tags and menu entry
-                return payload
         else:
             message = "Updating workflow requires dictionary containing 'workflow' attribute with new JSON description."
             raise exceptions.RequestParameterInvalidException(message)

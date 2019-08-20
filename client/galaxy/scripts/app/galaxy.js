@@ -136,7 +136,6 @@ GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
 
 /** set up the metrics logger (utils/metrics-logger) and pass loggerOptions */
 GalaxyApp.prototype._initLogger = function _initLogger(loggerOptions) {
-
     // default to console logging at the debug level if the debug flag is set
     if (this.config.debug) {
         loggerOptions.consoleLogger = loggerOptions.consoleLogger || console;

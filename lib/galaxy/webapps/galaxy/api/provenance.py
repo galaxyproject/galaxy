@@ -12,7 +12,7 @@ from galaxy import (
     managers,
     web
 )
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 

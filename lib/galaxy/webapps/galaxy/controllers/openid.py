@@ -7,8 +7,9 @@ import logging
 from galaxy import web
 from galaxy.openid.openid_manager import OpenIDManager
 from galaxy.openid.providers import OpenIDProviders
+from galaxy.util import unicodify
 from galaxy.web import url_for
-from galaxy.web.base.controller import BaseUIController
+from galaxy.webapps.base.controller import BaseUIController
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +42,7 @@ class OpenID(BaseUIController):
             if request is None:
                 return trans.show_error_message("No OpenID services are available at %s." % openid_provider_obj.op_endpoint_url)
         except Exception as e:
-            return trans.show_error_message("Failed to begin OpenID authentication: %s." % str(e))
+            return trans.show_error_message("Failed to begin OpenID authentication: %s." % unicodify(e))
         if request is not None:
             self.openid_manager.add_sreg(trans, request, required=openid_provider_obj.sreg_required, optional=openid_provider_obj.sreg_optional)
             if request.shouldSendRedirect():
