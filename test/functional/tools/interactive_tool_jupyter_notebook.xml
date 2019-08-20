@@ -20,7 +20,7 @@
                     #break
                 #end for
             #end if
-        </environment_variable>
+        </environment_variable> <!-- FIXME: We should have a better way to get user's API key -->
     </environment_variables>
     <command detect_errors="aggressive"><![CDATA[
         #import re
