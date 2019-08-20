@@ -269,6 +269,11 @@ to provide access to graphical tools in real-time.
             <xs:documentation xml:lang="en">This value defines the name of the entry point.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="requires_domain" type="PermissiveBoolean" default="false">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">This value declares if domain-based proxying is required. Default is False. Currently only works when True.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
   </xs:complexType>
   <xs:complexType name="EntryPointPort" mixed="true">
     <xs:annotation>
