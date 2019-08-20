@@ -6,6 +6,7 @@ class StdioErrorLevel(object):
     """
     NO_ERROR = 0
     LOG = 1
+    QC = 1.1
     WARNING = 2
     FATAL = 3
     FATAL_OOM = 4
@@ -13,6 +14,7 @@ class StdioErrorLevel(object):
     descs = {
         NO_ERROR: 'No error',
         LOG: 'Log',
+        QC: 'QC',
         WARNING: 'Warning',
         FATAL: 'Fatal error',
         FATAL_OOM: 'Out of memory error',
