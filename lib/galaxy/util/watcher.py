@@ -143,7 +143,7 @@ class EventHandler(FileSystemEventHandler):
         # look at dest if it exists else use src.
         path = getattr(event, 'dest_path', None) or event.src_path
         path = os.path.abspath(path)
-        callback = self.watcher.file_callbacks.get(path)
+        callback = self.watcher.file_callbacks.get(path, None)
         if os.path.basename(path).startswith('.'):
             return
         if callback:
