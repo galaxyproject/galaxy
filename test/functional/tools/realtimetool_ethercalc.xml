@@ -3,7 +3,7 @@
         <container type="docker">shiltemann/ethercalc-galaxy-ie:17.05</container>
     </requirements>
     <entry_points>
-        <entry_point name="ethercalc">
+        <entry_point name="ethercalc" requires_domain="True">
             <port>8000</port>
         </entry_point>
     </entry_points>

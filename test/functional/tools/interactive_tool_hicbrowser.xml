@@ -3,7 +3,7 @@
         <container type="docker">bgruening/hicbrowser</container>
     </requirements>
     <entry_points>
-        <entry_point name="HiCBrowser on $infile.display_name">
+        <entry_point name="HiCBrowser on $infile.display_name" requires_domain="True">
             <port>80</port>
         </entry_point>
     </entry_points>

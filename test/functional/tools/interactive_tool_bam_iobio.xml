@@ -3,7 +3,7 @@
         <container type="docker">qiaoy/iobio-bundle.bam-iobio:1.0-ondemand</container>
     </requirements>
     <entry_points>
-        <entry_point name="BAM io.bio visualisation of $infile.display_name">
+        <entry_point name="BAM io.bio visualisation of $infile.display_name" requires_domain="True">
             <port>80</port>
             <url><![CDATA[/?bam=http://localhost/tmp/bamfile.bam&region=1]]></url>
         </entry_point>

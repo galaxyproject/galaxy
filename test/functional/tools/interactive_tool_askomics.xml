@@ -4,7 +4,7 @@
         <container type="docker">quay.io/askomics/askomics-ie:17.12_g19.09</container>
     </requirements>
     <entry_points>
-        <entry_point name="AskOmics instance on $infile.display_name">
+        <entry_point name="AskOmics instance on $infile.display_name" requires_domain="True">
             <port>6543</port>
             <url>/login_api_gie?key=abcd</url>
         </entry_point>

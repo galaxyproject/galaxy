@@ -3,7 +3,7 @@
         <container type="docker">quay.io/sanbi-sa/neo_ie:3.1.9</container>
     </requirements>
     <entry_points>
-        <entry_point name="Neo4j on $infile.display_name">
+        <entry_point name="Neo4j on $infile.display_name" requires_domain="True">
             <port>80</port>
         </entry_point>
         <!-- I get some web-socket error that 7687 is not reachable. 

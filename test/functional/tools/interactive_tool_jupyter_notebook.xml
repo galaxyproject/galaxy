@@ -3,7 +3,7 @@
         <container type="docker">quay.io/bgruening/docker-jupyter-notebook:ie2</container>
     </requirements>
     <entry_points>
-        <entry_point name="Jupyter Interactive Tool">
+        <entry_point name="Jupyter Interactive Tool" requires_domain="True">
             <port>8888</port>
             <url>ipython/tree</url>
         </entry_point>
