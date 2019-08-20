@@ -793,7 +793,7 @@ model.GenomeIndexToolData.table = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
 
 model.RealTimeToolEntryPoint.table = Table(
-    "realtimetool_entry_point", metadata,
+    "interactivetool_entry_point", metadata,
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("name", TEXT),

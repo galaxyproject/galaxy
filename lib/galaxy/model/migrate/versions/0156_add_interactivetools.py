@@ -1,5 +1,5 @@
 """
-Migration script to add new tables for RealTimeTools.
+Migration script to add new tables for InteractiveTools.
 """
 from __future__ import print_function
 
@@ -13,8 +13,8 @@ from galaxy.model.orm.now import now
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
-realtimetool_entry_point = Table(
-    "realtimetool_entry_point", metadata,
+interactivetool_entry_point = Table(
+    "interactivetool_entry_point", metadata,
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("name", TEXT),
@@ -52,9 +52,9 @@ def upgrade(migrate_engine):
         log.exception("Failed to create job_container_association table")
 
     try:
-        realtimetool_entry_point.create()
+        interactivetool_entry_point.create()
     except Exception:
-        log.exception("Failed to create realtimetool_entry_point table")
+        log.exception("Failed to create interactivetool_entry_point table")
 
 
 def downgrade(migrate_engine):
@@ -67,6 +67,6 @@ def downgrade(migrate_engine):
         log.exception("Failed to drop job_container_association table")
 
     try:
-        realtimetool_entry_point.drop()
+        interactivetool_entry_point.drop()
     except Exception:
-        log.exception("Failed to drop realtimetool_entry_point table")
+        log.exception("Failed to drop interactivetool_entry_point table")
