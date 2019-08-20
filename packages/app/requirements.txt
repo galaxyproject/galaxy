@@ -1,4 +1,5 @@
 galaxy-auth
 galaxy-job-execution
+galaxy-model-tools
 galaxy-web-framework
 galaxy-web-stack

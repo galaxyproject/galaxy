@@ -55,7 +55,6 @@ PACKAGES = [
     'galaxy.tools.error_reports',
     'galaxy.tools.expressions',
     'galaxy.tools.filters',
-    'galaxy.model_tools.imp_exp',
     'galaxy.tools.parameters',
     'galaxy.tools.search',
     'galaxy.tools.toolbox',
