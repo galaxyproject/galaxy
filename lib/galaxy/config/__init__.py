@@ -42,12 +42,12 @@ from galaxy.util.properties import (
     read_properties_from_file,
     running_from_source,
 )
-from galaxy.webapps.config_manage import GALAXY_APP
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.web_stack import (
     get_stack_facts,
     register_postfork_function
 )
+from galaxy.webapps.config_manage import GALAXY_APP
 from ..version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
