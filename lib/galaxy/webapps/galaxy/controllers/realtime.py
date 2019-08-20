@@ -63,6 +63,8 @@ class RealTime(BaseUIController):
     @web.expose_api_anonymous
     def list(self, trans, **kwargs):
         """List all available realtimetools"""
+        if not trans.app.config.interactivetools_enable:
+            raise web.httpexceptions.HTTPNotFound()
         operation = kwargs.get('operation', None)
         message = None
         status = None

@@ -737,6 +737,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.dynamic_proxy_golang_api_key = kwargs.get("dynamic_proxy_golang_api_key", None)
 
         self.realtime_prefix = kwargs.get("realtime_prefix", "realtime")
+        self.interactivetools_enable = string_as_bool(kwargs.get('interactivetools_enable', False))
 
         # Default chunk size for chunkable datatypes -- 64k
         self.display_chunk_size = int(kwargs.get('display_chunk_size', 65536))

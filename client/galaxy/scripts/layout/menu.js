@@ -299,11 +299,6 @@ const Collection = Backbone.Collection.extend({
                         title: _l("Pages"),
                         url: "pages/list",
                         target: "__use_router__"
-                    },
-                    {
-                        title: _l("Active InteractiveTools"),
-                        url: "realtime_entry_points/list",
-                        target: "__use_router__"
                     }
                 ]
             };
@@ -311,6 +306,14 @@ const Collection = Backbone.Collection.extend({
                 userTab.menu.push({
                     title: _l("Visualizations"),
                     url: "visualizations/list",
+                    target: "__use_router__"
+                });
+            }
+            if (Galaxy.config.interactivetools_enable) {
+                userTab.menu[userTab.menu.length - 1].divider = true;
+                userTab.menu.push({
+                    title: _l("Active InteractiveTools"),
+                    url: "realtime_entry_points/list",
                     target: "__use_router__"
                 });
             }

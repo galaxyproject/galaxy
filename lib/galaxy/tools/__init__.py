@@ -2449,6 +2449,10 @@ class RealTimeTool(Tool):
     tool_type = 'interactive'
     produces_entry_points = True
 
+    def __init__(self, config_file, tool_source, app, **kwd):
+        assert app.config.interactivetools_enable, ValueError('Trying to load an InteractiveTool, but InteractiveTools are not enabled.')
+        super(RealTimeTool, self).__init__(config_file, tool_source, app, **kwd)
+
     def __remove_realtime_by_job(self, job):
         if job:
             eps = job.realtimetool_entry_points
