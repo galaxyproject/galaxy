@@ -931,6 +931,7 @@ mapping:
         type: str
         default: ''
         required: false
+        reloadable: true
         desc: |
           Show a message box under the masthead.
 
@@ -1013,6 +1014,7 @@ mapping:
         type: str
         default: /static/welcome.html
         required: false
+        reloadable: true
         desc: |
           The URL of the page to display in Galaxy's middle pane when loaded.  This can
           be an absolute or relative URL.
@@ -1745,6 +1747,7 @@ mapping:
         type: float
         default: 9.0
         required: false
+        reloadable: true
         desc: |
           Boosts are used to customize this instance's toolbox search.
           The higher the boost, the more importance the scoring algorithm gives to the
@@ -1755,6 +1758,7 @@ mapping:
         type: float
         default: 3.0
         required: false
+        reloadable: true
         desc: |
           Boosts are used to customize this instance's toolbox search.
           The higher the boost, the more importance the scoring algorithm gives to the
@@ -1765,6 +1769,7 @@ mapping:
         type: float
         default: 2.0
         required: false
+        reloadable: true
         desc: |
           Boosts are used to customize this instance's toolbox search.
           The higher the boost, the more importance the scoring algorithm gives to the
@@ -1775,6 +1780,7 @@ mapping:
         type: float
         default: 1.0
         required: false
+        reloadable: true
         desc: |
           Boosts are used to customize this instance's toolbox search.
           The higher the boost, the more importance the scoring algorithm gives to the
@@ -1785,6 +1791,7 @@ mapping:
         type: float
         default: 5.0
         required: false
+        reloadable: true
         desc: |
           Boosts are used to customize this instance's toolbox search.
           The higher the boost, the more importance the scoring algorithm gives to the
@@ -1795,6 +1802,7 @@ mapping:
         type: float
         default: 0.5
         required: false
+        reloadable: true
         desc: |
           Boosts are used to customize this instance's toolbox search.
           The higher the boost, the more importance the scoring algorithm gives to the
@@ -1805,6 +1813,7 @@ mapping:
         type: int
         default: 20
         required: false
+        reloadable: true
         desc: |
           Limits the number of results in toolbox search.  Can be used to tweak how many
           results will appear.
@@ -1813,6 +1822,7 @@ mapping:
         type: bool
         default: false
         required: false
+        reloadable: true
         desc: |
           Enable/ disable Ngram-search for tools. It makes tool
           search results tolerant for spelling mistakes in the query
@@ -1823,6 +1833,7 @@ mapping:
         type: int
         default: 3
         required: false
+        reloadable: true
         desc: |
           Set minimum size of ngrams
 
@@ -1830,6 +1841,7 @@ mapping:
         type: int
         default: 4
         required: false
+        reloadable: true
         desc: |
           Set maximum size of ngrams
 
@@ -1930,6 +1942,7 @@ mapping:
         type: str
         default: ''
         required: false
+        reloadable: true
         desc: |
           Administrative users - set this to a comma-separated list of valid Galaxy
           users (email addresses).  These users will have access to the Admin section
@@ -2524,6 +2537,7 @@ mapping:
         type: str
         default: always
         required: false
+        reloadable: true
         desc: |
           Clean up various bits of jobs left on the filesystem after completion.  These
           bits include the job working directory, external metadata temporary files,
