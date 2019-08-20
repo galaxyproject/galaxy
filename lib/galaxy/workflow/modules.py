@@ -2,12 +2,11 @@
 Modules used in building workflows
 """
 import json
-import logging
 import copy
+import logging
 import re
 from collections import defaultdict
 from collections import OrderedDict
-
 from xml.etree.ElementTree import (
     Element,
     XML
