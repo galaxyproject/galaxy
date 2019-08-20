@@ -6,7 +6,7 @@ from time import time
 import uwsgi
 
 
-realtime_db_file = uwsgi.opt["realtime_map"]
+realtime_db_file = uwsgi.opt["interactivetools_map"]
 db_conn = sqlite3.connect(realtime_db_file)
 
 
