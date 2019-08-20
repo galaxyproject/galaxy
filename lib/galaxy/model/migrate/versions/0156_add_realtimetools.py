@@ -1,5 +1,5 @@
 """
-Migration script to add a new tables for RealTimeTools.
+Migration script to add new tables for RealTimeTools.
 """
 from __future__ import print_function
 
