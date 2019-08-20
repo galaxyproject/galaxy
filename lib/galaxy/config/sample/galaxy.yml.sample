@@ -98,6 +98,17 @@ uwsgi:
 
 galaxy:
 
+  # The directory that will be prepended to relative paths in options
+  # specifying other Galaxy config files (e.g. datatypes_config_file).
+  # Defaults to the directory in which galaxy.yml is located.
+  #config_dir: false
+
+  # The directory that will be prepended to relative paths in options
+  # specifying Galaxy data/cache directories and files (such as the
+  # default SQLite database, file_path, etc.). Defaults to `database/`
+  # if running Galaxy from source or `<config_dir>/data` otherwise.
+  #data_dir: false
+
   # By default, Galaxy uses a SQLite database at
   # 'database/universe.sqlite'.  You may use a SQLAlchemy connection
   # string to specify an external database instead.  This string takes

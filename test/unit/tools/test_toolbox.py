@@ -64,7 +64,7 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         self.app.reindex_tool_search = self.__reindex
         itp_config = os.path.join(self.test_directory, "integrated_tool_panel.xml")
         self.app.config.integrated_tool_panel_config = itp_config
-        self.app.watchers = ConfigWatchers(self.app, start_thread=False)
+        self.app.watchers = ConfigWatchers(self.app)
         self._toolbox = None
         self.config_files = []
 

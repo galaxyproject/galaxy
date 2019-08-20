@@ -2,6 +2,7 @@
 histories.
 """
 import logging
+from collections import OrderedDict
 
 from galaxy import exceptions, model
 from galaxy.tool_util.parser import ToolOutputCollectionPart
@@ -14,7 +15,6 @@ from galaxy.tools.parameters.grouping import (
     Repeat,
     Section
 )
-from galaxy.util.odict import odict
 from .steps import (
     attach_ordered_steps,
     order_workflow_steps_with_levels
@@ -199,7 +199,7 @@ class WorkflowSummary(object):
             history = trans.get_history()
         self.history = history
         self.warnings = set()
-        self.jobs = odict()
+        self.jobs = OrderedDict()
         self.job_id2representative_job = {}  # map a non-fake job id to its representative job
         self.implicit_map_jobs = []
         self.collection_types = {}

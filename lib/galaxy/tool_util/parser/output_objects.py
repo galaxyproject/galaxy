@@ -1,5 +1,6 @@
+from collections import OrderedDict
+
 from galaxy.util.dictifiable import Dictifiable
-from galaxy.util.odict import odict
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
 
@@ -152,7 +153,7 @@ class ToolOutputCollection(ToolOutputBase):
         self.collection = True
         self.default_format = default_format
         self.structure = structure
-        self.outputs = odict()
+        self.outputs = OrderedDict()
 
         self.inherit_format = inherit_format
         self.inherit_metadata = inherit_metadata

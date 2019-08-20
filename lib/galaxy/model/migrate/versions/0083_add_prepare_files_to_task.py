@@ -20,10 +20,10 @@ def upgrade(migrate_engine):
 
     task_table = Table("task", metadata, autoload=True)
     c = Column("prepare_input_files_cmd", TEXT, nullable=True)
-    add_column(c, task_table)
+    add_column(c, task_table, metadata)
 
     c = Column("working_directory", String(1024), nullable=True)
-    add_column(c, task_table)
+    add_column(c, task_table, metadata)
 
     # remove the 'part_file' column - nobody used tasks before this, so no data needs to be migrated
     drop_column('part_file', task_table)
@@ -35,7 +35,7 @@ def downgrade(migrate_engine):
 
     task_table = Table("task", metadata, autoload=True)
     c = Column("part_file", String(1024), nullable=True)
-    add_column(c, task_table)
+    add_column(c, task_table, metadata)
 
     drop_column('working_directory', task_table)
     drop_column('prepare_input_files_cmd', task_table)

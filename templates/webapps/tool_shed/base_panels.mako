@@ -53,8 +53,8 @@
     <nav id="masthead" class="navbar navbar-expand fixed-top justify-content-center navbar-dark">
 
       ## Logo, layered over tabs to be clickable
-      <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}" class="navbar-brand">
-          <img class="navbar-brand-image" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
+      <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}" aria-label="homepage" class="navbar-brand">
+          <img alt="logo" class="navbar-brand-image" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
           <span class="navbar-brand-title">
           Galaxy Tool Shed
           %if app.config.brand:
@@ -103,7 +103,7 @@
                                         <div class="dropdown-divider"></div>
                                     %else:
                                         %if len ( menu_item ) == 1:
-                                            <a class="dropdown-item" href="#">
+                                            <a class="dropdown-item" href="javascript:void(0)" role="button">
                                                 ${menu_item[0]}
                                             </a>
                                         %elif len ( menu_item ) == 2:

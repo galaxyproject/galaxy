@@ -5,16 +5,32 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table, TEXT
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Index,
+    Integer,
+    MetaData,
+    Table,
+    TEXT
+)
+
+from galaxy.model.migrate.versions.util import (
+    create_table,
+    drop_table
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
-PageAnnotationAssociation_table = Table("page_annotation_association", metadata,
-                                        Column("id", Integer, primary_key=True),
-                                        Column("page_id", Integer, ForeignKey("page.id"), index=True),
-                                        Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-                                        Column("annotation", TEXT, index=True))
+PageAnnotationAssociation_table = Table(
+    "page_annotation_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("page_id", Integer, ForeignKey("page.id"), index=True),
+    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column("annotation", TEXT),
+    Index('ix_page_annotation_association_annotation', 'annotation', mysql_length=200),
+)
 
 
 def upgrade(migrate_engine):
@@ -22,19 +38,11 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Create history_annotation_association table.
-    try:
-        PageAnnotationAssociation_table.create()
-    except Exception:
-        log.exception("Creating page_annotation_association table failed.")
+    create_table(PageAnnotationAssociation_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Drop page_annotation_association table.
-    try:
-        PageAnnotationAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping page_annotation_association table failed.")
+    drop_table(PageAnnotationAssociation_table)

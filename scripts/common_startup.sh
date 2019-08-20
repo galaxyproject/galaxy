@@ -164,14 +164,8 @@ fi
 # activate virtualenv or conda env, sets $GALAXY_VIRTUAL_ENV and $GALAXY_CONDA_ENV
 setup_python
 
-if [ $SET_VENV -eq 1 ] && [ -z "$VIRTUAL_ENV" ] && [ -z "$CONDA_DEFAULT_ENV" ]; then
+if [ $SET_VENV -eq 1 ] && [ -z "$VIRTUAL_ENV" ]; then
     echo "ERROR: A virtualenv cannot be found. Please create a virtualenv in $GALAXY_VIRTUAL_ENV, or activate one."
-    exit 1
-fi
-
-# this shouldn't happen, but check just in case
-if [ -z "$VIRTUAL_ENV" ] && [ "$CONDA_DEFAULT_ENV" = "base" ] || [ "$CONDA_DEFAULT_ENV" = "root" ]; then
-    echo "ERROR: Conda is in 'base' environment, refusing to continue"
     exit 1
 fi
 
@@ -234,7 +228,7 @@ if [ -n "$VIRTUAL_ENV" ]; then
 elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
     if ! in_conda_env "$(command -v node)"; then
         echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
-        $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name "$CONDA_DEFAULT_ENV" node="$NODE_VERSION"
+        $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name "$CONDA_DEFAULT_ENV" nodejs="$NODE_VERSION"
     fi
 fi
 

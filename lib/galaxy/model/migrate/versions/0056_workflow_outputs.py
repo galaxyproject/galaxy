@@ -5,11 +5,21 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table
+)
 
-logging.basicConfig(level=logging.DEBUG)
+from galaxy.model.migrate.versions.util import (
+    create_table,
+    drop_table
+)
+
 log = logging.getLogger(__name__)
-
 metadata = MetaData()
 
 WorkflowOutput_table = Table("workflow_output", metadata,
@@ -17,22 +27,15 @@ WorkflowOutput_table = Table("workflow_output", metadata,
                              Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True, nullable=False),
                              Column("output_name", String(255), nullable=True))
 
-tables = [WorkflowOutput_table]
-
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
-    for table in tables:
-        try:
-            table.create()
-        except Exception:
-            log.warning("Failed to create table '%s', ignoring (might result in wrong schema)" % table.name)
+    create_table(WorkflowOutput_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    for table in tables:
-        table.drop()
+    drop_table(WorkflowOutput_table)
