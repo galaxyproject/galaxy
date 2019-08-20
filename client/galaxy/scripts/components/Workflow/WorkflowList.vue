@@ -54,7 +54,7 @@
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
+import { Services } from "./services.js";
 import WorkflowDropdown from "./WorkflowDropdown.vue";
 
 export default {
@@ -95,30 +95,24 @@ export default {
         }
     },
     created() {
-        let url = `${getAppRoot()}api/workflows`;
-        this.loading = true;
-        this.filter = "";
-        axios
-            .get(url)
-            .then(response => {
-                this.workflows = response.data;
-                this.nWorkflows = this.workflows.length;
-                for (workflow of this.workflows) {
-                    workflow.create_time = workflow.create_time.substring(0, 10);
-                    if (workflow.annotations && workflow.annotations.length > 0) {
-                        workflow.annotations = workflow.annotations[0].trim();
-                    }
-                    if (!workflow.annotations) {
-                        workflow.annotations = "Not available.";
-                    }
-                }
-                this.loading = false;
-            })
-            .catch(e => {
-                this.error = this._errorMessage(e);
-            });
+        this.services = new Services({ root: getAppRoot() });
+        this.load();
     },
     methods: {
+        load() {
+            this.loading = true;
+            this.filter = "";
+            this.services
+                .getWorkflows()
+                .then(workflows => {
+                    this.workflows = workflows;
+                    this.nWorkflows = workflows.length;
+                    this.loading = false;
+                })
+                .catch(error => {
+                    this.error = error;
+                });
+        },
         filtered: function(items) {
             this.nWorkflows = items.length;
         },
@@ -130,10 +124,6 @@ export default {
         },
         executeWorkflow: function(workflow) {
             window.location = `${getAppRoot()}workflows/run?id=${workflow.id}`;
-        },
-        _errorMessage: function(e) {
-            const message = e && e.response && e.response.data && e.response.data.err_msg;
-            return message || "Request failed for an unknown reason.";
         }
     }
 };
