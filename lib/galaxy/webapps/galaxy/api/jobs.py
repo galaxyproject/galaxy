@@ -181,7 +181,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         has_duplicate_inputs = False
         for job_input_assoc in job.input_datasets:
             input_dataset_instance = job_input_assoc.dataset
-            if input_dataset_instance is None:
+            if not input_dataset_instance:
                 continue
             if input_dataset_instance.get_total_size() == 0:
                 has_empty_inputs = True
