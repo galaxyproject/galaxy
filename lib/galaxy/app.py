@@ -74,9 +74,9 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_whitelist(explicit='sanitize_whitelist_file' in kwargs)
         self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
-        # control_worker *can* be initialized with a queue, but here we don't
+        # queue_worker *can* be initialized with a queue, but here we don't
         # want to and we'll allow postfork to bind and start it.
-        self.control_worker = GalaxyQueueWorker(self)
+        self.queue_worker = GalaxyQueueWorker(self)
 
         self._configure_tool_shed_registry()
         self._configure_object_store(fsmon=True)
@@ -231,6 +231,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.database_heartbeat = DatabaseHeartbeat(
             application_stack=self.application_stack
         )
+        self.database_heartbeat.add_change_callback(self.watchers.change_state)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
         # Start web stack message handling
@@ -248,6 +249,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
     def shutdown(self):
         log.debug('Shutting down')
         exception = None
+        try:
+            self.queue_worker.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown control worker cleanly")
         try:
             self.watchers.shutdown()
         except Exception as e:
@@ -284,12 +290,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         except Exception as e:
             exception = exception or e
             log.exception("Failed to shutdown update repository manager cleanly")
-
-        try:
-            self.control_worker.shutdown()
-        except Exception as e:
-            exception = exception or e
-            log.exception("Failed to shutdown control worker cleanly")
 
         try:
             self.model.engine.dispose()

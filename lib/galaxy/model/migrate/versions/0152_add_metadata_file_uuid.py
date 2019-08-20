@@ -6,10 +6,16 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, MetaData
+from sqlalchemy import (
+    Column,
+    MetaData
+)
 
 from galaxy.model.custom_types import UUIDType
-from galaxy.model.migrate.versions.util import add_column, drop_column
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    drop_column
+)
 
 log = logging.getLogger(__name__)
 

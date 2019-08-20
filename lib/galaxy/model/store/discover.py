@@ -8,7 +8,10 @@ corresponding to files in other contexts.
 import abc
 import logging
 import os
-from collections import namedtuple
+from collections import (
+    namedtuple,
+    OrderedDict
+)
 
 import six
 
@@ -19,8 +22,7 @@ from galaxy.exceptions import (
 )
 from galaxy.model.dataset_collections import builder
 from galaxy.util import (
-    ExecutionTimer,
-    odict
+    ExecutionTimer
 )
 from galaxy.util.hash_util import HASH_NAME_MAP
 
@@ -436,7 +438,7 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
 
 
 def persist_elements_to_hdca(model_persistence_context, elements, hdca, collector=None):
-    filenames = odict.odict()
+    filenames = OrderedDict()
 
     def add_to_discovered_files(elements, parent_identifiers=[]):
         for element in elements:

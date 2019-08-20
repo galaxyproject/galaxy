@@ -3,7 +3,7 @@ Fencepost-simple graph structure implementation.
 """
 # Currently (2013.7.12) only used in easing the parsing of graph datatype data.
 
-from galaxy.util.odict import odict
+from collections import OrderedDict
 
 
 class SimpleGraphNode(object):
@@ -58,7 +58,7 @@ class SimpleGraph(object):
 
     def __init__(self, nodes=None, edges=None):
         # use an odict so that edge indeces actually match the final node list indeces
-        self.nodes = nodes or odict()
+        self.nodes = nodes or OrderedDict()
         self.edges = edges or []
 
     def add_node(self, node_id, **data):

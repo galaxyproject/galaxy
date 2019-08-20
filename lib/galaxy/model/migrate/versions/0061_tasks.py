@@ -6,11 +6,25 @@ from __future__ import print_function
 import datetime
 import logging
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table, TEXT
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    TEXT
+)
+
+from galaxy.model.migrate.versions.util import (
+    create_table,
+    drop_table
+)
 
 log = logging.getLogger(__name__)
-metadata = MetaData()
 now = datetime.datetime.utcnow
+metadata = MetaData()
 
 Task_table = Table("task", metadata,
                    Column("id", Integer, primary_key=True),
@@ -29,22 +43,17 @@ Task_table = Table("task", metadata,
                    Column("task_runner_name", String(255)),
                    Column("task_runner_external_id", String(255)))
 
-tables = [Task_table]
-
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
-    for table in tables:
-        try:
-            table.create()
-        except Exception:
-            log.warning("Failed to create table '%s', ignoring (might result in wrong schema)" % table.name)
+
+    create_table(Task_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    for table in tables:
-        table.drop()
+
+    drop_table(Task_table)

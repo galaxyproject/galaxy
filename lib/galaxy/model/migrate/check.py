@@ -62,16 +62,16 @@ def create_or_verify_database(url, galaxy_config_file, engine_options={}, app=No
         migrate_to_current_version(engine, db_schema)
 
     meta = MetaData(bind=engine)
-    if new_database and app:
+    if new_database:
         log.info("Creating new database from scratch, skipping migrations")
         current_version = migrate_repository.version().version
-        mapping.init(file_path=app.config.file_path, url=url, map_install_models=map_install_models, create_tables=True)
+        mapping.init(file_path='/tmp', url=url, map_install_models=map_install_models, create_tables=True)
         schema.ControlledSchema.create(engine, migrate_repository, version=current_version)
         db_schema = schema.ControlledSchema(engine, migrate_repository)
         assert db_schema.version == current_version
         migrate()
         return
-    elif getattr(app.config, 'database_auto_migrate', False):
+    elif app and getattr(app.config, 'database_auto_migrate', False):
         migrate()
         return
 

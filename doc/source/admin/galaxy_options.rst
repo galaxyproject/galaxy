@@ -1,3 +1,28 @@
+~~~~~~~~~~~~~~
+``config_dir``
+~~~~~~~~~~~~~~
+
+:Description:
+    The directory that will be prepended to relative paths in options
+    specifying other Galaxy config files (e.g. datatypes_config_file).
+    Defaults to the directory in which galaxy.yml is located.
+:Default: ``false``
+:Type: str
+
+
+~~~~~~~~~~~~
+``data_dir``
+~~~~~~~~~~~~
+
+:Description:
+    The directory that will be prepended to relative paths in options
+    specifying Galaxy data/cache directories and files (such as the
+    default SQLite database, file_path, etc.). Defaults to `database/`
+    if running Galaxy from source or `<config_dir>/data` otherwise.
+:Default: ``false``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -1207,6 +1232,16 @@
     that appears to reference the Galaxy server, but contains a
     redirect to a third-party server, tricking a Galaxy user to access
     said site.
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``visualizations_visible``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Show visualization tab and list in masthead.
 :Default: ``true``
 :Type: bool
 
@@ -3502,6 +3537,17 @@
     mappings via these files could be implemented but haven't yet -
     for instance using workflow tags to do the mapping).
 :Default: ``config/workflow_resource_mapper_conf.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_schedulers_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optional configuration file similar to `job_config_file` to
+    specify which Galaxy processes should schedule workflows.
+:Default: ``config/workflow_schedulers_conf.xml``
 :Type: str
 
 

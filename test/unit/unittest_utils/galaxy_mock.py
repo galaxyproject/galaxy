@@ -149,6 +149,8 @@ class MockAppConfig(Bunch):
         self.enable_beta_gdpr = False
         self.legacy_eager_objectstore_initialization = True
 
+        self.version_major = "19.09"
+
         # set by MockDir
         self.root = root
 

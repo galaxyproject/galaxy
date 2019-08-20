@@ -26,6 +26,25 @@ mapping:
     required: true
     mapping:
 
+      config_dir:
+        type: str
+        default: false
+        required: false
+        desc: |
+          The directory that will be prepended to relative paths in options specifying
+          other Galaxy config files (e.g. datatypes_config_file). Defaults to the
+          directory in which galaxy.yml is located.
+
+      data_dir:
+        type: str
+        default: false
+        required: false
+        desc: |
+          The directory that will be prepended to relative paths in options specifying
+          Galaxy data/cache directories and files (such as the default SQLite database,
+          file_path, etc.). Defaults to `database/` if running Galaxy from source or
+          `<config_dir>/data` otherwise.
+
       database_connection:
         type: str
         default: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
@@ -908,6 +927,13 @@ mapping:
           where a malicious party could provide a link that appears to reference the
           Galaxy server, but contains a redirect to a third-party server, tricking a
           Galaxy user to access said site.
+
+      visualizations_visible:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Show visualization tab and list in masthead.
 
       message_box_visible:
         type: bool
@@ -2611,6 +2637,14 @@ mapping:
           it is expected to an XML or YAML file describing how to map group names to parameter
           descriptions (additional types of mappings via these files could be implemented but
           haven't yet - for instance using workflow tags to do the mapping).
+
+      workflow_schedulers_config_file:
+        type: str
+        default: config/workflow_schedulers_conf.xml
+        required: false
+        desc: |
+          Optional configuration file similar to `job_config_file` to specify
+          which Galaxy processes should schedule workflows.
 
       cache_user_job_count:
         type: bool

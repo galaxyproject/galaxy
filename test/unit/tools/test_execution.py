@@ -1,5 +1,6 @@
 """ Test Tool execution and state handling logic.
 """
+from collections import OrderedDict
 from unittest import TestCase
 
 import webob.exc
@@ -7,7 +8,6 @@ import webob.exc
 import galaxy.model
 from galaxy.tools.parameters import params_to_incoming
 from galaxy.util.bunch import Bunch
-from galaxy.util.odict import odict
 from .. import tools_support
 
 BASE_REPEAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
@@ -185,7 +185,7 @@ class MockAction(object):
             if num_calls > self.error_message_after_excution:
                 return None, "Test Error Message"
 
-        return galaxy.model.Job(), odict(dict(out1="1"))
+        return galaxy.model.Job(), OrderedDict(out1="1")
 
     def raise_exception(self, after_execution=0):
         self.exception_after_exection = after_execution
