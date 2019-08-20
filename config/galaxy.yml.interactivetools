@@ -14,10 +14,10 @@ uwsgi:
 
   interactivetools_map: database/interactivetools_map.sqlite
   python-raw: scripts/interactivetools/key_type_token_mapping.py
-  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(realtime\.localhost:8080)$ goto:realtime
+  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.localhost:8080)$ goto:interactivetool
   route-run: goto:endendend
-  route-label: realtime
-  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(realtime\.localhost:8080)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $2 $1 $3 $4 $0 5
+  route-label: interactivetool
+  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(interactivetool\.localhost:8080)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $2 $1 $3 $4 $0 5
   route-if-not: empty:${TARGET_HOST} httpdumb:${TARGET_HOST}
   route: .* break:404 Not Found
   route-label: endendend
@@ -28,7 +28,7 @@ galaxy:
   # outputs_to_working_directory will provide you with a better level of isolation. It is highly recommended to set
   # this parameter with InteractiveTools.
   outputs_to_working_directory: true
-  interactivetools_prefix: realtime
+  interactivetools_prefix: interactivetool
   interactivetools_map: database/interactivetools_map.sqlite
   # If you develop InteractiveTools locally and do not have a full FQDN you can
   # use an arbritrary one, e.g. 'my-hostname' here, if you set this hostname in your

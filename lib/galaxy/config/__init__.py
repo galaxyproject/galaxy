@@ -737,7 +737,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
         # InteractiveTools propagator mapping file
         self.realtime_map = self.resolve_path(kwargs.get("interactivetools_map", "database/interactivetools_map.sqlite"))
-        self.realtime_prefix = kwargs.get("interactivetools_prefix", "realtime")
+        self.realtime_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
         self.interactivetools_enable = string_as_bool(kwargs.get('interactivetools_enable', False))
 
         # Default chunk size for chunkable datatypes -- 64k
