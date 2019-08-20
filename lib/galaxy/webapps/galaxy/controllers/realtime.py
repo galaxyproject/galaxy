@@ -32,7 +32,7 @@ class RealTimeToolEntryPointListGrid(grids.Grid):
 
     use_panels = True
     title = "Available InteractiveTools"
-    model_class = model.RealTimeToolEntryPoint
+    model_class = model.InteractiveToolEntryPoint
     default_filter = {"name": "All"}
     default_sort_key = "-update_time"
     columns = [
@@ -76,7 +76,7 @@ class RealTime(BaseUIController):
                     ids = [ids]
                 for entry_point_id in ids:
                     entry_point_id = self.decode_id(entry_point_id)
-                    entry_point = trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).get(entry_point_id)
+                    entry_point = trans.sa_session.query(trans.app.model.InteractiveToolEntryPoint).get(entry_point_id)
                     if trans.app.realtime_manager.can_access_entry_point(trans, entry_point):
                         eps.append(entry_point)
             if eps:

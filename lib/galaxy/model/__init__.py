@@ -1490,7 +1490,7 @@ class JobContainerAssociation(RepresentById):
         self.container_info = container_info or {}
 
 
-class RealTimeToolEntryPoint(Dictifiable, RepresentById):
+class InteractiveToolEntryPoint(Dictifiable, RepresentById):
     dict_collection_visible_keys = ['id', 'name', 'active']
     dict_element_visible_keys = ['id', 'name', 'active']
 

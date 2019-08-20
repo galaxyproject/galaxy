@@ -792,7 +792,7 @@ model.GenomeIndexToolData.table = Table(
     Column("indexer", String(64)),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
 
-model.RealTimeToolEntryPoint.table = Table(
+model.InteractiveToolEntryPoint.table = Table(
     "interactivetool_entry_point", metadata,
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
@@ -2263,7 +2263,7 @@ mapper(model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=di
     transfer=relation(model.TransferJob, backref='transfer_job')
 ))
 
-mapper(model.RealTimeToolEntryPoint, model.RealTimeToolEntryPoint.table, properties=dict(
+mapper(model.InteractiveToolEntryPoint, model.InteractiveToolEntryPoint.table, properties=dict(
     job=relation(model.Job, backref=backref('realtimetool_entry_points', uselist=True), uselist=False)
 ))
 

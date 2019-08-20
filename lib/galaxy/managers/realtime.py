@@ -158,7 +158,7 @@ class RealTimeManager(object):
     def create_entry_points(self, job, tool, entry_points=None, flush=True):
         entry_points = entry_points or tool.ports
         for entry in entry_points:
-            ep = self.model.RealTimeToolEntryPoint(job=job, tool_port=entry['port'], entry_url=entry['url'], name=entry['name'])
+            ep = self.model.InteractiveToolEntryPoint(job=job, tool_port=entry['port'], entry_url=entry['url'], name=entry['name'])
             self.sa_session.add(ep)
         if flush:
             self.sa_session.flush()
@@ -173,7 +173,7 @@ class RealTimeManager(object):
         for ep in job.realtimetool_entry_points:
             port_dict = ports_dict.get(str(ep.tool_port), None)
             if port_dict is None:
-                log.error("Did not find port to assign to RealTimeToolEntryPoint by tool port: %s.", ep.tool_port)
+                log.error("Did not find port to assign to InteractiveToolEntryPoint by tool port: %s.", ep.tool_port)
                 not_configured.append(ep)
             else:
                 ep.host = port_dict['host']
@@ -217,7 +217,7 @@ class RealTimeManager(object):
                     query = query.filter(or_(*t))
             return query
         jobs = build_and_apply_filters(jobs, trans.app.model.Job.non_ready_states, lambda s: trans.app.model.Job.state == s)
-        return trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).filter(trans.app.model.RealTimeToolEntryPoint.job_id.in_([job.id for job in jobs]))
+        return trans.sa_session.query(trans.app.model.InteractiveToolEntryPoint).filter(trans.app.model.InteractiveToolEntryPoint.job_id.in_([job.id for job in jobs]))
 
     def can_access_job(self, trans, job):
         if job:
@@ -247,14 +247,14 @@ class RealTimeManager(object):
             self.remove_entry_point(entry_point)
             job = entry_point.job
             if not job.finished:
-                log.debug('Stopping Job: %s for RealTimeToolEntryPoint: %s', job, entry_point)
+                log.debug('Stopping Job: %s for InteractiveToolEntryPoint: %s', job, entry_point)
                 job.mark_deleted(trans.app.config.track_jobs_in_database)
                 # This self.job_manager.stop(job) does nothing without changing job.state, manually or e.g. with .mark_deleted()
                 self.job_manager.stop(job)
                 trans.sa_session.add(job)
                 trans.sa_session.flush()
         except Exception as e:
-            log.debug('Unable to stop job for RealTimeToolEntryPoint (%s): %s', entry_point, e)
+            log.debug('Unable to stop job for InteractiveToolEntryPoint (%s): %s', entry_point, e)
             return False
         return True
 
@@ -284,7 +284,7 @@ class RealTimeManager(object):
             return rval
 
     def access_entry_point_target(self, trans, entry_point_id):
-        entry_point = trans.sa_session.query(model.RealTimeToolEntryPoint).get(entry_point_id)
+        entry_point = trans.sa_session.query(model.InteractiveToolEntryPoint).get(entry_point_id)
         if self.app.realtime_manager.can_access_entry_point(trans, entry_point):
             if entry_point.active:
                 return self.target_if_active(entry_point)
