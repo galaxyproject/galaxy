@@ -174,11 +174,12 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
 # Tools that needed galaxy on the PATH in the past but no longer do along
 # with the version at which they were fixed.
 GALAXY_LIB_TOOLS_VERSIONED = {
-    "sam_to_bam": packaging.version.parse("1.1.3"),
-    "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
-    "fetchflank": packaging.version.parse("1.0.1"),
     "Extract genomic DNA 1": packaging.version.parse("3.0.0"),
+    "fetchflank": packaging.version.parse("1.0.1"),
+    "gops_intersect_1": packaging.version.parse("1.0.0"),
     "lastz_wrapper_2": packaging.version.parse("1.3"),
+    "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
+    "sam_to_bam": packaging.version.parse("1.1.3"),
 }
 
 
