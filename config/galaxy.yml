@@ -21,7 +21,7 @@ uwsgi:
   # The address and port on which to listen.  By default, only listen to
   # localhost (galaxy will not be accessible over the network).  Use
   # ':8080' to listen on all available network interfaces.
-  http: 127.0.0.1:8080
+  http: :8300
 
   # By default uWSGI allocates a very small buffer (4096 bytes) for the
   # headers of each request. If you start receiving "invalid request
@@ -1104,7 +1104,7 @@ galaxy:
 
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.
-  #library_import_dir: ''
+  library_import_dir: ${AMPPD_FILE_ROOT:/tmp/amppd/}
 
   # Add an option to the library upload form which allows authorized
   # non-administrators to upload a directory of files.  The configured
@@ -1142,7 +1142,7 @@ galaxy:
   # to True to enable.  Please note the security implication that this
   # will give Galaxy Admins access to anything your Galaxy user has
   # access to.
-  #allow_path_paste: false
+  allow_path_paste: true
 
   # Users may choose to download multiple files from a library in an
   # archive.  By default, Galaxy allows users to select from a few
@@ -1278,8 +1278,8 @@ galaxy:
   # Admin section of the server, and will have access to create users,
   # groups, roles, libraries, and more.  For more information, see:
   # https://galaxyproject.org/admin/
-  admin_users: user@example.com
-
+  admin_users: amppd@iu.edu
+  
   # Force everyone to log in (disable anonymous access).
   #require_login: false
 
