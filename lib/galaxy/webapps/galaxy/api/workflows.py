@@ -163,7 +163,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 desc(model.StoredWorkflow.update_time)).all():
             item = wf_sa.stored_workflow.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
-            item['annotations'] = [x.annotation for x in wf_sa.annotations]
+            item['annotations'] = [x.annotation for x in wf_sa.stored_workflow.annotations]
             item['url'] = url_for('workflow', id=encoded_id)
             item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username

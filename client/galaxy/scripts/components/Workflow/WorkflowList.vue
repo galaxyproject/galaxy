@@ -63,12 +63,6 @@ export default {
     },
     data() {
         return {
-            classChecked: "fa fa-check text-success",
-            classUnchecked: "fa fa-times text-danger",
-            workflows: [],
-            loading: true,
-            nWorkflows: 0,
-            filter: "",
             error: null,
             fields: {
                 name: {
@@ -83,7 +77,11 @@ export default {
                 execute: {
                     label: ""
                 }
-            }
+            },
+            filter: "",
+            loading: true,
+            nWorkflows: 0,
+            workflows: []
         };
     },
     computed: {
