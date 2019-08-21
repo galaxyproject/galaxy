@@ -6,11 +6,20 @@ from __future__ import print_function
 import datetime
 import logging
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table
+)
 
-from galaxy.model.migrate.versions.util import create_table, drop_table
+from galaxy.model.migrate.versions.util import (
+    create_table,
+    drop_table
+)
 
-logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 now = datetime.datetime.utcnow
 metadata = MetaData()

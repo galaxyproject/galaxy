@@ -27,7 +27,7 @@ def queue_worker_factory(request, database_app):
 
     def app_factory():
         app = setup_queue_worker_test(database_app())
-        request.addfinalizer(app.control_worker.shutdown)
+        request.addfinalizer(app.queue_worker.shutdown)
         request.addfinalizer(app.database_heartbeat.shutdown)
         return app
 
@@ -46,8 +46,8 @@ def setup_queue_worker_test(app):
     app.database_heartbeat = DatabaseHeartbeat(application_stack=app.application_stack, heartbeat_interval=10)
     app.database_heartbeat.start()
     time.sleep(0.2)
-    app.control_worker = GalaxyQueueWorker(app=app, task_mapping=control_message_to_task)
-    app.control_worker.bind_and_start()
+    app.queue_worker = GalaxyQueueWorker(app=app, task_mapping=control_message_to_task)
+    app.queue_worker.bind_and_start()
     time.sleep(0.5)
     return app
 

@@ -156,34 +156,34 @@ class BaseAppConfiguration(object):
         return os.path.join(self.sample_config_dir, path)
 
     def _parse_config_file_options(self, defaults, listify_defaults, config_kwargs):
-        for var, defaults in defaults.items():
+        for var, values in defaults.items():
             if config_kwargs.get(var, None) is not None:
                 path = config_kwargs.get(var)
                 setattr(self, var + '_set', True)
             else:
-                for default in defaults:
-                    if os.path.exists(resolve_path(default, self.root)):
-                        path = default
+                for value in values:
+                    if os.path.exists(resolve_path(value, self.root)):
+                        path = value
                         break
                 else:
-                    path = defaults[-1]
+                    path = values[-1]
                 setattr(self, var + '_set', False)
             setattr(self, var, resolve_path(path, self.root))
 
-        for var, defaults in listify_defaults.items():
+        for var, values in listify_defaults.items():
             paths = []
             if config_kwargs.get(var, None) is not None:
                 paths = listify(config_kwargs.get(var))
             else:
-                for default in defaults:
-                    for path in listify(default):
+                for value in values:
+                    for path in listify(value):
                         if not os.path.exists(resolve_path(path, self.root)):
                             break
                     else:
-                        paths = listify(default)
+                        paths = listify(value)
                         break
                 else:
-                    paths = listify(defaults[-1])
+                    paths = listify(values[-1])
             setattr(self, var, [resolve_path(x, self.root) for x in paths])
 
 
@@ -489,6 +489,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.brand = kwargs.get('brand', None)
         self.welcome_url = kwargs.get('welcome_url', '/static/welcome.html')
         self.show_welcome_with_login = string_as_bool(kwargs.get("show_welcome_with_login", "False"))
+        self.visualizations_visible = string_as_bool(kwargs.get('visualizations_visible', True))
         # Configuration for the message box directly below the masthead.
         self.message_box_visible = string_as_bool(kwargs.get('message_box_visible', False))
         self.message_box_content = kwargs.get('message_box_content', None)

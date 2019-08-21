@@ -172,8 +172,8 @@ const View = Backbone.View.extend({
             `<div id="everything">
                 <div id="background"/>
                 <div id="masthead"/>
-                <div id="messagebox"/>
-                <div id="inactivebox" class="panel-warning-message" />
+                <div id="messagebox" class="full-message"/>
+                <div id="inactivebox" class="full-message panel-warning-message" />
                 <div id="columns">
                     <div id="left" class="unified-panel"/>
                     <div id="center" />

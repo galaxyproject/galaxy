@@ -1,4 +1,5 @@
 import logging
+from collections import OrderedDict
 
 from markupsafe import escape
 from six import string_types
@@ -15,7 +16,6 @@ from galaxy.model.item_attrs import (
     UsesItemRatings
 )
 from galaxy.util import listify, Params, parse_int, sanitize_text
-from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import grids, iff, time_ago
 from galaxy.webapps.base.controller import (
@@ -501,7 +501,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         items = []
         # First go through and group hdas by job, if there is no job they get
         # added directly to items
-        jobs = odict()
+        jobs = OrderedDict()
         for hda in history.active_datasets:
             if hda.visible is False:
                 continue
@@ -525,7 +525,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 else:
                     jobs[job] = [(hda, None)]
         # Second, go through the jobs and connect to workflows
-        wf_invocations = odict()
+        wf_invocations = OrderedDict()
         for job, hdas in jobs.items():
             # Job is attached to a workflow step, follow it to the
             # workflow_invocation and group

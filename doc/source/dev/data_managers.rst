@@ -41,8 +41,201 @@ Pay attention to the following when creating a new Data Manager:
 A Galaxy Data Manager's config file consists of a subset of the following XML tag sets - each of these is described in detail in the following sections.
 
 Details of XML tag sets
-~~~~~~~~~~~~~~~~~~~~~~~
-See `this page <https://galaxyproject.org/admin/tools/data-managers/data-manager-xml-syntax/#details-of-xml-tag-sets>`_ for right now.
+=======================
+
+``<data_managers>`` tag set
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The outer-most tag set. It contains no attributes. Any number of ``<data_manager>`` tags can be included within it.
+
+``<data_manager>`` tag set
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+This tag defines a particular Data Manager. Any number of <data_table> tags can be included within it.
+
+
++---------------+------------+-----------+--------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| attribute     | values     | required  | example                                          | details                                                                                                                                                                                                                                                               |
++===============+============+===========+==================================================+=======================================================================================================================================================================================================================================================================+
+| ``tool_file`` | A string*  | yes       | ``tool_file="data_manager/twobit_builder.xml"``  | This is the filename of the Data Manager Tool's XML file, relative to the Galaxy Root. Multiple Data Managers can use the same Tool, but doing so would require "id" to be declared.                                                                                  |
++---------------+------------+-----------+--------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``id``        | A string*  | no        | ``id="twobit_builder"``                          | Must be unique across all Data Managers; should be lowercase and contain only letters, numbers, and underscores. While technically optional, it is a best-practice to specify this value. When not specified, it will use the id of the underlying Data Manager Tool. |
++---------------+------------+-----------+--------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+The following is an example that contains all of the attributes described above.
+
+.. code-block:: xml
+
+    <data_manager tool_file="data_manager/twobit_builder.xml" id="twobit_builder">
+
+``<data_table>`` tag set
+~~~~~~~~~~~~~~~~~~~~~~~~~
+This tag defines a Tool Data Table to add entries to. Any number of ``<data_table>`` tags can be used. Each ``<data_table>`` tag will contain an ``<output>`` tagset.
+
++---------------+------------+-----------+-------------------+------------------------------------------+
+| attribute     | values     | required  | example           | details                                  |
++===============+============+===========+===================+==========================================+
+| ``name``      | A string*  | yes       | ``name="twobit"`` | This is the name of the Tool Data Table. |
++---------------+------------+-----------+-------------------+------------------------------------------+
+
+The following is an example that contains all of the attributes described above.
+
+.. code-block:: xml
+
+    <data_table name="twobit">
+
+``<output>`` tag set
+~~~~~~~~~~~~~~~~~~~~
+
+This tag defines how to handle the output of the Data Manager Tool. It has no attributes, but contains one or more ``<column>`` tag sets.
+
+The following is an example that contains all of the attributes described above.
+
+.. code-block:: xml
+
+    <output>
+
+``<column>`` tag set
+~~~~~~~~~~~~~~~~~~~~
+
+This tag defines a particular Tool Data Table column that will be set. Any number of ``<column>`` tags can be used. Each ``<column>`` tag may contain ``<move>`` and / or ``<value_translation>`` tagsets, which are optional.
+
++----------------+------------+-----------+---------------------------+-------------------------------------------------------------------------------------------------+
+| attribute      | values     | required  | example                   | details                                                                                         |
++================+============+===========+===========================+=================================================================================================+
+| ``name``       | A string*  | yes       | ``name="value"``          | This is the name of Tool Data Table column.                                                     |
++----------------+------------+-----------+---------------------------+-------------------------------------------------------------------------------------------------+
+| ``output_ref`` | A string*  | no        | ``output_ref="out_file"`` | Name of the Data Manager Tool's output file to use for additional processing within e.g. a tag. |
++----------------+------------+-----------+---------------------------+-------------------------------------------------------------------------------------------------+
+
+The following is an example that contains all of the attributes described above.
+
+.. code-block:: xml
+
+    <column name="path" output_ref="out_file" >
+
+``<move>`` tag set
+~~~~~~~~~~~~~~~~~~
+
+This tag defines how to handle moving files from within the Data Manager Tool output's extra_files_path into the final storage location used for the Tool Data Table entry. Individual files or the entire directory contents can be moved. Move tag sets contain a ``<source>`` and a ``<target>`` tag set.
+
++-------------------------+----------------+-----------+--------------------------------+------------------------------------------------------------------------------------------------+
+| attribute               | values         | required  | example                        | details                                                                                        |
++=========================+================+===========+================================+================================================================================================+
+| ``type``                | A string*      | no        | ``<move type="file">``         | This can be either 'file' or 'directory'. Default is 'directory'.                              |
++-------------------------+----------------+-----------+--------------------------------+------------------------------------------------------------------------------------------------+
+| ``relativize_symlinks`` | True or False  | no        | ``relativize_symlinks="True"`` | Whether or not to relativize created existing symlinks in moved target. Default is False.      |
++-------------------------+----------------+-----------+--------------------------------+------------------------------------------------------------------------------------------------+
+
+The following is an example that contains all of the attributes described above.
+
+.. code-block:: xml
+
+    <move type="file" relativize_symlinks="False">
+
+``<source>`` tag set
+~~~~~~~~~~~~~~~~~~~~
+
+This tag defines the source location within a ``<move>`` tag set. When not specified, it defaults to the entire extra_files_path of the output reference dataset. Both the base attribute and the text of the ``<source>`` tag are treated as `Cheetah <https://pythonhosted.org/Cheetah/>`_ templates, with the columns names specified in the ``<column>`` tagsets available as variables (with values taken from the corresponding data table entries. The strings produced for the base attribute and the tag text should resolve to a single line.
+
++------------+-------------------+-----------+------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| attribute  | values            | required  | example                      | details                                                                                                                 |
++============+===================+===========+==============================+=========================================================================================================================+
+| ``base``   | A string Template | no        | ``<source base="">``         | The base/root path to use for the source. When not provided, it defaults to the extra_files_path of the output dataset. |
++------------+-------------------+-----------+------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+| ``TEXT``   | A string Template | no        | ``<source>${path}</source>`` | This defines the value of the source, relative to the *base*                                                            |
++------------+-------------------+-----------+------------------------------+-------------------------------------------------------------------------------------------------------------------------+
+
+The following is an example that contains the most common usage, where the value provided by the Data Manager Tool, relative to the extra_files_path, is used as the source.
+
+.. code-block:: xml
+
+    <source>${path}</source>
+
+
+``<target>`` tag set
+~~~~~~~~~~~~~~~~~~~~
+
+This tag defines the target location within a <move> tag set. When not specified, it defaults to the *galaxy_data_manager_data_path* configuration value. The values of the base and the tag text are treated as templates as with the ``<source>`` tag. In addition the variables from the ``<column>`` tagset the value of ``galaxy_data_manager_data_path`` configuration value is available using the ``${GALAXY_DATA_MANAGER_DATA_PATH}`` variable.
+
++------------+-------------------+-----------+-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------+
+| attribute  | values            | required  | example                                                                           | details                                                                                                                                 |
++============+===================+===========+===================================================================================+=========================================================================================================================================+
+| ``base``   | A string Template | no        | ``<source base="${GALAXY_DATA_MANAGER_DATA_PATH}">``                              | The base/root path to use for the target. When not specified, it defaults to the ``galaxy_data_manager_data_path`` configuration value. |
++------------+-------------------+-----------+-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------+
+| ``TEXT``   | A string Template | no        | ``<target base="${GALAXY_DATA_MANAGER_DATA_PATH}">${dbkey}/seq/${path}</target>`` | This defines the value of the target (destination), relative to the *base*                                                              |
++------------+-------------------+-----------+-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------+
+
+The following is an example that contains a common usage, where a target value is constructed using several of the values provided by the Data Manager Tool, relative to the ``galaxy_data_manager_data_path``, is used as the source.
+
+.. code-block:: xml
+
+    <target base="${GALAXY_DATA_MANAGER_DATA_PATH}">${dbkey}/seq/${path}</target>
+
+``<value_translation>`` tag set
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This tag allows using templating to modify the value provided by the Data Manager Tool into the actual value that should be stored within the Tool Data Table. There can be any number of value translations provided for an output. The value translations are performed in the order presented in the XML. It is important to note that a move will occur before the value translations are performed.
+
++---------------+----------+-----------+---------------------+----------------------------------------------------------------------------------------------+
+| attribute     | values   | required  | example             | details                                                                                      |
++===============+==========+===========+=====================+==============================================================================================+
+| ``type``      | A string | no        | ``type="template"`` | The type of value translation to perform. Currently "template" and "function" are supported. |
++---------------+----------+-----------+---------------------+----------------------------------------------------------------------------------------------+
+
+The following is an example that contains a common usage, where a value is constructed using several of the values provided by the Data Manager Tool and that value is then turned into an absolute path. If ``<value_translation>`` is a string (not a function) it is treated as a template, much like ``<source>`` and ``<target>``, and must return a single line string.
+
+.. code-block:: xml
+
+    <value_translation>${GALAXY_DATA_MANAGER_DATA_PATH}/${value}/seq/${path}</value_translation>
+    <value_translation type="function">abspath</value_translation>
+
+
+Bringing it all Together, an example
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Assume that we have a Data Manager Tool that provides the following named values:
+
++------------+--------------+
+| name       | value        |
++============+==============+
+| ``value``  | sacCer2      |
++------------+--------------+
+| ``path``   | sacCer2.2bit |
++------------+--------------+
+
+and creates an output named "out_file", with an ``extra_files_path`` containing a file 'sacCer2.2bit'. (The primary dataset file contains JSON that provides the above values)
+
+and has a Data Manager configuration defined as:
+
+.. code-block:: json
+
+    <data_managers>
+        <data_manager tool_file="data_manager/twobit_builder.xml" id="twobit_builder">
+            <data_table name="twobit">
+                <output>
+                    <column name="value" />
+                    <column name="path" output_ref="out_file" >
+                        <move type="file">
+                            <source>${path}</source>
+                            <target base="${GALAXY_DATA_MANAGER_DATA_PATH}">${value}/seq/${path}</target>
+                        </move>
+                        <value_translation>${GALAXY_DATA_MANAGER_DATA_PATH}/${value}/seq/${path}</value_translation>
+                        <value_translation type="function">abspath</value_translation>
+                    </column>
+                </output>
+            </data_table>
+        </data_manager>
+    <data_managers>
+
+The result is:
+
++------------+-------------------------------------------------------------------------------------------+
+| name       | value                                                                                     |
++============+===========================================================================================+
+| ``value``  | sacCer2                                                                                   |
++------------+-------------------------------------------------------------------------------------------+
+| ``path``   | ``${ABSOLUTE_PATH_OF_CONFIGURED_GALAXY_DATA_MANAGER_DATA_PATH}/sacCer2/seq/sacCer2.2bit`` |
++------------+-------------------------------------------------------------------------------------------+
+
+and the "sacCer2.2bit" file has been moved into the location specified by path.
 
 Data Manager JSON Syntax
 ========================

@@ -11,13 +11,13 @@ import logging
 import os
 import pickle
 from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
 
 import six
 
 from galaxy.exceptions import MessageException
 from galaxy.util import listify, safe_makedirs
 from galaxy.util.bunch import Bunch
-from galaxy.util.odict import odict
 from .cwltool_deps import (
     ensure_cwltool_available,
     pathmapper,
@@ -1091,7 +1091,7 @@ class ConditionalInstance(object):
             name=self.name,
             type=INPUT_TYPE.CONDITIONAL,
             test=self.case.to_dict(),
-            when=odict(),
+            when=OrderedDict(),
         )
         for value, block in self.whens:
             as_dict["when"][value] = [i.to_dict() for i in block]

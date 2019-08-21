@@ -21,10 +21,10 @@ def upgrade(migrate_engine):
 
     Sample_table = Table("sample", metadata, autoload=True)
     c1 = Column("workflow", JSONType, nullable=True)
-    add_column(c1, Sample_table)
+    add_column(c1, Sample_table, metadata)
 
     c2 = Column("history_id", Integer, ForeignKey("history.id"), nullable=True)
-    add_column(c2, Sample_table)
+    add_column(c2, Sample_table, metadata)
 
 
 def downgrade(migrate_engine):

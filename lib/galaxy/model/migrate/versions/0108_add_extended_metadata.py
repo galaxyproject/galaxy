@@ -5,9 +5,23 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table, TEXT
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    TEXT
+)
 
 from galaxy.model.custom_types import JSONType
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    create_table,
+    drop_column,
+    drop_table
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -25,46 +39,28 @@ ExtendedMetadataIndex_table = Table("extended_metadata_index", metadata,
                                     Column("path", String(255)),
                                     Column("value", TEXT))
 
-extended_metadata_ldda_col = Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), nullable=True)
+TABLES = [
+    ExtendedMetadata_table,
+    ExtendedMetadataIndex_table
+]
 
 
 def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        ExtendedMetadata_table.create()
-    except Exception:
-        log.exception("Could not create ExtendedMetadata Table.")
-    try:
-        ExtendedMetadataIndex_table.create()
-    except Exception:
-        log.exception("Could not create ExtendedMetadataIndex Table.")
-    # Add the extended_metadata_id to the ldda table
-    try:
-        ldda_table = Table("library_dataset_dataset_association", metadata, autoload=True)
-        extended_metadata_ldda_col.create(ldda_table)
-        assert extended_metadata_ldda_col is ldda_table.c.extended_metadata_id
-    except Exception:
-        log.exception("Adding column 'extended_metadata_id' to library_dataset_dataset_association table failed.")
+
+    for table in TABLES:
+        create_table(table)
+    extended_metadata_ldda_col = Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), nullable=True)
+    add_column(extended_metadata_ldda_col, 'library_dataset_dataset_association', metadata)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    # Drop the LDDA table's extended metadata ID column.
-    try:
-        ldda_table = Table("library_dataset_dataset_association", metadata, autoload=True)
-        extended_metadata_id = ldda_table.c.extended_metadata_id
-        extended_metadata_id.drop()
-    except Exception:
-        log.exception("Dropping 'extended_metadata_id' column from library_dataset_dataset_association table failed.")
-    try:
-        ExtendedMetadataIndex_table.drop()
-    except Exception:
-        log.exception("Dropping 'extended_metadata_index' table failed.")
 
-    try:
-        ExtendedMetadata_table.drop()
-    except Exception:
-        log.exception("Dropping 'extended_metadata' table failed.")
+    # TODO: Dropping a column used in a foreign key fails in MySQL, need to remove the FK first.
+    drop_column('extended_metadata_id', 'library_dataset_dataset_association', metadata)
+    for table in reversed(TABLES):
+        drop_table(table)

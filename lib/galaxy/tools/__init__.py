@@ -91,7 +91,6 @@ from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.form_builder import SelectField
 from galaxy.util.json import safe_loads
-from galaxy.util.odict import odict
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.version import VERSION_MAJOR
@@ -422,7 +421,7 @@ class Tool(Dictifiable):
         self.repository_id = repository_id
         self._allow_code_files = allow_code_files
         # setup initial attribute values
-        self.inputs = odict()
+        self.inputs = OrderedDict()
         self.stdio_exit_codes = list()
         self.stdio_regexes = list()
         self.inputs_by_page = list()
@@ -1084,7 +1083,7 @@ class Tool(Dictifiable):
         groups (repeat, conditional) or param elements. Groups will be parsed
         recursively.
         """
-        rval = odict()
+        rval = OrderedDict()
         context = ExpressionContext(rval, context)
         for input_source in page_source.parse_input_sources():
             # Repeat group
@@ -1125,7 +1124,7 @@ class Tool(Dictifiable):
                             page_source = XmlPageSource(ElementTree.XML("<when>%s</when>" % case_inputs))
                             case.inputs = self.parse_input_elem(page_source, enctypes, context)
                         else:
-                            case.inputs = odict()
+                            case.inputs = OrderedDict()
                         group.cases.append(case)
                 else:
                     # Should have one child "input" which determines the case
@@ -1153,7 +1152,7 @@ class Tool(Dictifiable):
                                     (self.id, group.name, group.test_param.name, unspecified_case))
                         case = ConditionalWhen()
                         case.value = unspecified_case
-                        case.inputs = odict()
+                        case.inputs = OrderedDict()
                         group.cases.append(case)
                 rval[group.name] = group
             elif input_type == "section":
@@ -1240,6 +1239,13 @@ class Tool(Dictifiable):
         if self.__help_by_page is HELP_UNINITIALIZED:
             self.__ensure_help()
         return self.__help_by_page
+
+    @property
+    def raw_help(self):
+        # may return rst (or Markdown in the future)
+        tool_source = self.__help_source
+        help_text = tool_source.parse_help()
+        return help_text
 
     def __ensure_help(self):
         with HELP_UNINITIALIZED:
@@ -1487,7 +1493,7 @@ class Tool(Dictifiable):
             log.exception('Exception caught while attempting tool execution:')
             message = 'Error executing tool: %s' % unicodify(e)
             return False, message
-        if isinstance(out_data, odict):
+        if isinstance(out_data, OrderedDict):
             return job, list(out_data.items())
         else:
             if isinstance(out_data, string_types):
@@ -2560,7 +2566,7 @@ class DatabaseOperationTool(Tool):
         return self._outputs_dict()
 
     def _outputs_dict(self):
-        return odict()
+        return OrderedDict()
 
 
 class UnzipCollectionTool(DatabaseOperationTool):
@@ -2592,7 +2598,7 @@ class ZipCollectionTool(DatabaseOperationTool):
         reverse_o = incoming["input_reverse"]
 
         forward, reverse = forward_o.copy(), reverse_o.copy()
-        new_elements = odict()
+        new_elements = OrderedDict()
         new_elements["forward"] = forward
         new_elements["reverse"] = reverse
         self._add_datasets_to_history(history, [forward, reverse])
@@ -2605,7 +2611,7 @@ class BuildListCollectionTool(DatabaseOperationTool):
     tool_type = 'build_list'
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None):
-        new_elements = odict()
+        new_elements = OrderedDict()
 
         for i, incoming_repeat in enumerate(incoming["datasets"]):
             new_dataset = incoming_repeat["input"].copy(copy_tags=tags)
@@ -2665,7 +2671,7 @@ class MergeCollectionTool(DatabaseOperationTool):
             if dupl_actions in ['suffix_conflict', 'suffix_every', 'suffix_conflict_rest']:
                 suffix_pattern = advanced['conflict']['suffix_pattern']
 
-        new_element_structure = odict()
+        new_element_structure = OrderedDict()
 
         # Which inputs does the identifier appear in.
         identifiers_map = {}
@@ -2717,7 +2723,7 @@ class MergeCollectionTool(DatabaseOperationTool):
                     new_element_structure[effective_identifer] = element
 
         # Don't copy until we know everything is fine and we have the structure of the list ready to go.
-        new_elements = odict()
+        new_elements = OrderedDict()
         for key, value in new_element_structure.items():
             if getattr(value, "history_content_type", None) == "dataset":
                 copied_value = value.copy(force_flush=False)
@@ -2734,7 +2740,7 @@ class MergeCollectionTool(DatabaseOperationTool):
 class FilterDatasetsTool(DatabaseOperationTool):
 
     def _get_new_elements(self, history, elements_to_copy):
-        new_elements = odict()
+        new_elements = OrderedDict()
         for dce in elements_to_copy:
             element_identifier = dce.element_identifier
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
@@ -2802,7 +2808,7 @@ class FlattenTool(DatabaseOperationTool):
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         join_identifier = incoming["join_identifier"]
-        new_elements = odict()
+        new_elements = OrderedDict()
         copied_datasets = []
 
         def add_elements(collection, prefix=""):
@@ -2830,7 +2836,7 @@ class SortTool(DatabaseOperationTool):
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         sorttype = incoming["sort_type"]["sort_type"]
-        new_elements = odict()
+        new_elements = OrderedDict()
         elements = hdca.collection.elements
         presort_elements = []
         if sorttype == 'alpha':
@@ -2875,7 +2881,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
         how_type = incoming["how"]["how_select"]
         new_labels_dataset_assoc = incoming["how"]["labels"]
         strict = string_as_bool(incoming["how"]["strict"])
-        new_elements = odict()
+        new_elements = OrderedDict()
 
         def add_copied_value_to_new_elements(new_label, dce_object):
             new_label = new_label.strip()
@@ -2947,7 +2953,7 @@ class TagFromFileTool(DatabaseOperationTool):
         hdca = incoming["input"]
         how = incoming['how']
         new_tags_dataset_assoc = incoming["tags"]
-        new_elements = odict()
+        new_elements = OrderedDict()
         tags_manager = GalaxyTagHandler(trans.app.model.context)
         new_datasets = []
 
@@ -3008,8 +3014,8 @@ class FilterFromFileTool(DatabaseOperationTool):
         hdca = incoming["input"]
         how_filter = incoming["how"]["how_filter"]
         filter_dataset_assoc = incoming["how"]["filter_source"]
-        filtered_elements = odict()
-        discarded_elements = odict()
+        filtered_elements = OrderedDict()
+        discarded_elements = OrderedDict()
 
         filtered_path = filter_dataset_assoc.file_name
         filtered_identifiers_raw = open(filtered_path, "r").readlines(1024 * 1000000)

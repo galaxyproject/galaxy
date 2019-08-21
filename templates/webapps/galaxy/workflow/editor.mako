@@ -80,9 +80,9 @@
                 %if "[[" in tool.description and "]]" in tool.description:
                     ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="workflow_globals.app.add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
                 %elif tool.name:
-                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${markupsafe.escape( tool.name ) | h}' )" style="text-decoration: none; display: block;"><span style="text-decoration: underline">${tool.name | h}</span> ${tool.description}</a>
+                    <a id="link-${tool.id}" role="button" href="javascript:void(0)" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${markupsafe.escape( tool.name ) | h}' )" style="text-decoration: none; display: block;"><span style="text-decoration: underline">${tool.name | h}</span> ${tool.description}</a>
                 %else:
-                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${markupsafe.escape( tool.name ) | h}' )">${tool.description}</a>
+                    <a id="link-${tool.id}" role="button" href="javascript:void(0)" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${markupsafe.escape( tool.name ) | h}' )">${tool.description}</a>
                 %endif
             </div>
         %else:
@@ -119,14 +119,14 @@
 
 
 <%def name="render_module_section(module_section)">
-    <div class="toolSectionTitle" id="title___workflow__${module_section['name']}__">
+    <div class="toolSectionTitle" role="button" id="title___workflow__${module_section['name']}__">
         <span>${module_section["title"]}</span>
     </div>
     <div id="__workflow__${module_section['name']}__" class="toolSectionBody">
         <div class="toolSectionBg">
             %for module in module_section["modules"]:
                 <div class="toolTitle">
-                    <a href="#" id="tool-menu-${module_section['name']}-${module['name']}" onclick="workflow_globals.app.add_node_for_module( '${module['name']}', '${module['title']}' )">
+                    <a role="button" href="javascript:void(0)" id="tool-menu-${module_section['name']}-${module['name']}" onclick="workflow_globals.app.add_node_for_module( '${module['name']}', '${module['title']}' )">
                         ${module['description']}
                     </a>
                 </div>
@@ -150,7 +150,7 @@
     <div class="unified-panel-controls">
         <div id="tool-search" class="search-input">
             <input id="tool-search-query" class="search-query parent-width" name="query" placeholder="search tools" autocomplete="off" type="text">
-            <span id="search-clear-btn" class="search-clear fa fa-times-circle" title="" data-original-title="clear search (esc)" />
+            <span id="search-clear-btn" aria-label="clear search" role="button" class="search-clear fa fa-times-circle" title="" data-original-title="clear search (esc)" />
             <span id="search-spinner" class="search-loading fa fa-spinner fa-spin" />
         </div>
     </div>
@@ -173,7 +173,7 @@
                             ${render_tool( val, False )}
                         %elif isinstance( val, ToolSection ) and val.elems:
                         <% section = val %>
-                            <div class="toolSectionTitle" id="title_${section.id}">
+                            <div class="toolSectionTitle" role="button" id="title_${section.id}">
                                 <span>${section.name}</span>
                             </div>
                             <div id="${section.id}" class="toolSectionBody">
@@ -196,7 +196,7 @@
                     %if trans.user_is_admin and trans.app.data_managers.data_managers:
                        <div>&nbsp;</div>
                        <div class="toolSectionWrapper">
-                           <div class="toolSectionTitle" id="title___DATA_MANAGER_TOOLS__">
+                           <div class="toolSectionTitle" role="button" id="title___DATA_MANAGER_TOOLS__">
                                <span>Data Manager Tools</span>
                            </div>
                            <div id="__DATA_MANAGER_TOOLS__" class="toolSectionBody">
@@ -232,13 +232,13 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div class="panel-header-buttons">
-                <a id="workflow-run-button" class="panel-header-button" href="#" title="Run" style="display: inline-block;" aria-label="Run">
+                <a id="workflow-run-button" class="panel-header-button" href="javascript:void(0)" role="button" title="Run" style="display: inline-block;" aria-label="Run">
                     <span class="fa fa-play"></span>
                 </a>
-                <a id="workflow-save-button" class="panel-header-button" href="#" title="Save" style="display: inline-block;" aria-label="Save">
+                <a id="workflow-save-button" class="panel-header-button" href="javascript:void(0)" role="button" title="Save" style="display: inline-block;" aria-label="Save">
                     <span class="fa fa-floppy-o"></span>
                 </a>
-                <a id="workflow-options-button" class="panel-header-button" href="#" title="Workflow options" style="display: inline-block;" aria-label="Workflow options">
+                <a id="workflow-options-button" class="panel-header-button" href="javascript:void(0)" role="button" title="Workflow options" style="display: inline-block;" aria-label="Workflow options">
                     <span class="fa fa-cog"></span>
                 </a>
             </div>
@@ -287,7 +287,7 @@
             <div id="workflow-version-area" class="form-row">
                 <label>Version:</label>
             </div>
-            <select id="workflow-version-switch" href="#">Select version</select>
+            <select id="workflow-version-switch">Select version</select>
             ## Workflow tags.
             <%namespace file="/tagging_common.mako" import="render_individual_tagging_element" />
             <div class="form-row">

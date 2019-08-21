@@ -51,7 +51,6 @@ function TagModel(props = {}) {
         get: function() {
             if (!this.text.length) return false;
             return this.text != "name:";
-
         }
     });
 }

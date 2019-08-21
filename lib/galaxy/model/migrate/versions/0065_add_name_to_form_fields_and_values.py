@@ -6,41 +6,36 @@ table, the 'content' column is now a JSON dict instead of a list.
 from __future__ import print_function
 
 import logging
-import sys
-from json import dumps, loads
+from json import (
+    dumps,
+    loads
+)
 
-from sqlalchemy import MetaData, Table
+from sqlalchemy import (
+    MetaData,
+    Table
+)
 
 from galaxy.model.custom_types import _sniffnfix_pg9_hex
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter(format)
-handler.setFormatter(formatter)
-log.addHandler(handler)
 metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        Table("form_definition", metadata, autoload=True)
-    except Exception:
-        log.exception("Loading 'form_definition' table failed.")
-    try:
-        Table("form_values", metadata, autoload=True)
-    except Exception:
-        log.exception("Loading 'form_values' table failed.")
+
+    Table("form_definition", metadata, autoload=True)
+    Table("form_values", metadata, autoload=True)
 
     def get_value(lst, index):
         try:
             return str(lst[index]).replace("'", "''")
         except IndexError:
             return ''
+
     # Go through the entire table and add a 'name' attribute for each field
     # in the list of fields for each form definition
     cmd = "SELECT f.id, f.fields FROM form_definition AS f"
@@ -89,14 +84,9 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        Table("form_definition", metadata, autoload=True)
-    except Exception:
-        log.exception("Loading 'form_definition' table failed.")
-    try:
-        Table("form_values", metadata, autoload=True)
-    except Exception:
-        log.exception("Loading 'form_values' table failed.")
+
+    Table("form_definition", metadata, autoload=True)
+    Table("form_values", metadata, autoload=True)
     # remove the name attribute in the content column JSON dict in the form_values table
     # and restore it to a list of values
     cmd = "SELECT form_values.id, form_values.content, form_definition.fields" \

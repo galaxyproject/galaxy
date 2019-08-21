@@ -1,5 +1,6 @@
 import logging
 import tempfile
+from collections import OrderedDict
 from functools import total_ordering
 
 from six import string_types, text_type
@@ -7,7 +8,6 @@ from six.moves import shlex_quote
 
 from galaxy import exceptions
 from galaxy.model.none_like import NoneDataset
-from galaxy.util import odict
 from galaxy.util.object_wrapper import wrap_with_safe_string
 
 log = logging.getLogger(__name__)
@@ -419,7 +419,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self.collection = collection
 
         elements = collection.elements
-        element_instances = odict.odict()
+        element_instances = OrderedDict()
 
         element_instance_list = []
         for dataset_collection_element in elements:

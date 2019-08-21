@@ -6,6 +6,13 @@ galaxy.webapps.tool\_shed.model.migrate package
     :undoc-members:
     :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+    galaxy.webapps.tool_shed.model.migrate.versions
+
 Submodules
 ----------
 
