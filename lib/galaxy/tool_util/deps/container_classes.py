@@ -68,7 +68,7 @@ class Container(object):
         self.destination_info = destination_info
         self.job_info = job_info
         self.container_description = container_description
-        self.container_name = container_name or uuid4().get_hex()
+        self.container_name = container_name or uuid4().hex
         self.container_info = {}
 
     def prop(self, name, default):

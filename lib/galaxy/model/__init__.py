@@ -1499,7 +1499,7 @@ class InteractiveToolEntryPoint(Dictifiable, RepresentById):
         self.job = job
         self.name = name
         if not token:
-            token = uuid4().get_hex()
+            token = uuid4().hex
         self.token = token
         self.tool_port = tool_port
         self.host = host
