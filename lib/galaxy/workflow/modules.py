@@ -747,9 +747,9 @@ class InputParameterModule(WorkflowModule):
                 static_options.append(input_data.get_options(self.trans, {}))  # Aggregation input select options from several connections
             if static_options:
                 # Intersection based on values.
-                intxn_vals = set.intersection(*[set([option[1] for option in options]) for options in static_options])
-                intxn_opts = [option for options in static_options for option in options if option[1] in intxn_vals]
-                d = defaultdict(list)  # Collapse labels with same values
+                intxn_vals = set.intersection(*({option[1] for option in options}) for options in static_options))
+                intxn_opts = {option for options in static_options for option in options if option[1] in intxn_vals}
+                d = defaultdict(set)  # Collapse labels with same values
                 for label, value, selected in intxn_opts:
                     d[value].add(label)
                 intxn_input = copy(input_data)
