@@ -740,18 +740,18 @@ class InputParameterModule(WorkflowModule):
                             break
                     param = tool_inputs.data[param_name]
                     if param.type == "conditional":
-                        sel_case = [case for case in param.cases if case_name in list(case.inputs.data.keys())][0]
+                        sel_case = [case for case in param.cases if case_name in case.inputs.data][0]
                         input_data = sel_case.inputs.data[case_name]
                 else:
                     input_data = tool_inputs.data[connection.input_name]
-                static_options.append(input_data.get_options(self.trans, None))  # Aggregation input select options from several connections
-            if static_options != []:
+                static_options.append(input_data.get_options(self.trans, {}))  # Aggregation input select options from several connections
+            if static_options:
                 # Intersection based on values.
                 intxn_vals = set.intersection(*[set([option[1] for option in options]) for options in static_options])
                 intxn_opts = [option for options in static_options for option in options if option[1] in intxn_vals]
                 d = defaultdict(list)  # Collapse labels with same values
-                for label, value, selected in list(set(intxn_opts)):
-                    d[value].append(label)
+                for label, value, selected in intxn_opts:
+                    d[value].add(label)
                 intxn_input = copy(input_data)
                 intxn_input.static_options = [(', '.join(label), value, False) for value, label in d.items()]
                 intxn_input.legal_values = intxn_vals
