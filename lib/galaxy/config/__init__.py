@@ -97,18 +97,6 @@ LOGGING_CONFIG_DEFAULT = {
 """Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
 
-# These are core config options that can be safely reloaded without a restart.
-# To enable dynamic reloading, set watch_core_config in galaxy.yml.
-# To make option foo reloadable:
-#   1. Update tests in test/unit/config/test_reloadable_properties.py
-#   2. Add 'reloadable: true' to foo in config_schema.yml
-#   3. If setting foo requires additional processing (like admin_users),
-#      self.foo must contain the initially loaded value. Otherwise it
-#      will be impossible to determine at runtime whether foo has been
-#      modified and needs to be reloaded.
-RELOADABLE_CONFIG_OPTIONS = GALAXY_APP.schema.get_reloadable_option_defaults()
-
-
 def resolve_path(path, root):
     """If 'path' is relative make absolute by prepending 'root'"""
     if not os.path.isabs(path):
@@ -806,13 +794,15 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             }
 
     def _set_reloadable_properties(self, kwargs):
-        for key, default_value in RELOADABLE_CONFIG_OPTIONS.items():
+        reloadable_config_options = get_reloadable_config_options()
+        for key, default_value in reloadable_config_options.items():
             value = kwargs.get(key) or default_value
             setattr(self, key, value)
 
     def update_reloadable_property(self, key, value):
-        if key in RELOADABLE_CONFIG_OPTIONS:  # check again because this is critical
-            setattr(self, key, value)
+        # TODO: after config_schema.yml is read only once at startup, add this:
+        # "if key in reloadable_config_options" (just a safety measure)
+        setattr(self, key, value)
 
     @property
     def admin_users(self):
@@ -1004,11 +994,16 @@ Configuration = GalaxyAppConfiguration
 def reload_config_options(current_config, path=None):
     """ Reload modified reloadable config options """
     modified_config = read_properties_from_file(current_config.config_file)
-    for option in RELOADABLE_CONFIG_OPTIONS:
+    reloadable_config_options = get_reloadable_config_options()
+    for option in reloadable_config_options:
         if option in modified_config:
             if getattr(current_config, option) != modified_config[option]:
                 current_config.update_reloadable_property(option, modified_config[option])
                 log.info('Reloaded %s' % option)
+
+
+def get_reloadable_config_options():
+    return GALAXY_APP.schema.get_reloadable_option_defaults()
 
 
 def get_database_engine_options(kwargs, model_prefix=''):

@@ -3,7 +3,6 @@ from galaxy.config import reload_config_options
 
 
 R1, R2, N1, N2 = 'reloadable1', 'reloadable2', 'nonrelodable1', 'nonreloadable2'  # config options
-MOCK_RELOADABLE_CONFIG_OPTIONS = {R1: None, R2: None}
 
 
 class MockGalaxyAppConfiguration():
@@ -25,7 +24,10 @@ def test_update_property(monkeypatch):
     def mock_read_properties_from_file(values):
         return {R1: 1, R2: 42, N1: 99}  # edits: R2, N1 modified
 
-    monkeypatch.setattr(config, 'RELOADABLE_CONFIG_OPTIONS', MOCK_RELOADABLE_CONFIG_OPTIONS)
+    def mock_get_reloadable_config_options():
+        return {R1: None, R2: None}
+
+    monkeypatch.setattr(config, 'get_reloadable_config_options', mock_get_reloadable_config_options)
     monkeypatch.setattr(config, 'read_properties_from_file', mock_read_properties_from_file)
 
     assert getattr(appconfig, R1) == 1
@@ -48,7 +50,10 @@ def test_cant_delete_property(monkeypatch):
     def mock_read_properties_from_file(values):
         return {R1: 1, N1: 3}  # edits: R2, N2 deleted
 
-    monkeypatch.setattr(config, 'RELOADABLE_CONFIG_OPTIONS', MOCK_RELOADABLE_CONFIG_OPTIONS)
+    def mock_get_reloadable_config_options():
+        return {R1: None, R2: None}
+
+    monkeypatch.setattr(config, 'get_reloadable_config_options', mock_get_reloadable_config_options)
     monkeypatch.setattr(config, 'read_properties_from_file', mock_read_properties_from_file)
 
     assert getattr(appconfig, R1) == 1
