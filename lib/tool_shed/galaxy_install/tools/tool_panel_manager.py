@@ -409,7 +409,7 @@ class ToolPanelManager(object):
                         # Keep a list of all empty section elements so they can be removed.
                         config_elems_to_remove.append(config_elem)
                 elif config_elem.tag == 'tool':
-                    if (tool_elem.get('guid'), tool_elem.get('file')) in guid_paths_to_remove:
+                    if (config_elem.get('guid'), config_elem.get('file')) in guid_paths_to_remove:
                         config_elems_to_remove.append(config_elem)
             for config_elem in config_elems_to_remove:
                 config_elems.remove(config_elem)
