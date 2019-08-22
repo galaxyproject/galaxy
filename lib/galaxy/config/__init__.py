@@ -676,12 +676,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         else:
             self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path("control.sqlite", self.data_dir)
         self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
-        self.user_preferences_extra_config_file = kwargs.get('user_preferences_extra_conf_path', 'config/user_preferences_extra_conf.yml')
         try:
-            with open(self.user_preferences_extra_config_file, 'r') as stream:
+            with open(self.user_preferences_extra_conf_path, 'r') as stream:
                 self.user_preferences_extra = yaml.safe_load(stream)
         except Exception:
-            log.warning('Config file (%s) could not be found or is malformed.' % self.user_preferences_extra_config_file)
+            if self.user_preferences_extra_conf_path_set:
+                log.warning('Config file (%s) could not be found or is malformed.' % self.user_preferences_extra_conf_path)
             self.user_preferences_extra = {'preferences': {}}
 
         self.default_locale = kwargs.get('default_locale', None)
@@ -836,12 +836,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             migrated_tools_config=[self._in_config_dir('migrated_tools_conf.xml')],
             modules_mapping_files=[self._in_config_dir('environment_modules_mapping.yml')],
             object_store_config_file=[self._in_config_dir('object_store_conf.xml')],
-            oidc_backends_config_file=[self._in_config_dir('config/oidc_backends_config.yml')],
+            oidc_backends_config_file=[self._in_config_dir('oidc_backends_config.yml')],
             oidc_config_file=[self._in_config_dir('oidc_config.yml')],
             shed_data_manager_config_file=[self._in_mutable_config_dir('shed_data_manager_conf.xml')],
             shed_tool_data_table_config=[self._in_mutable_config_dir('shed_tool_data_table_conf.xml')],
-            tool_destinations_config_file=[self._in_config_dir('config/tool_destinations.yml')],
+            tool_destinations_config_file=[self._in_config_dir('tool_destinations.yml')],
             tool_sheds_config_file=[self._in_config_dir('tool_sheds_conf.xml')],
+            user_preferences_extra_conf_path=[self._in_config_dir('user_preferences_extra_conf.yml')],
             workflow_resource_params_file=[self._in_config_dir('workflow_resource_params_conf.xml')],
             workflow_schedulers_config_file=[self._in_config_dir('config/workflow_schedulers_conf.xml')],
         )
