@@ -37,12 +37,17 @@ from galaxy.util import (
 )
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.util.logging import LOGLV_TRACE
-from galaxy.util.properties import find_config_file, running_from_source
+from galaxy.util.properties import (
+    find_config_file,
+    read_properties_from_file,
+    running_from_source,
+)
 from galaxy.web.formatting import expand_pretty_datetime_format
 from galaxy.web_stack import (
     get_stack_facts,
     register_postfork_function
 )
+from galaxy.webapps.config_manage import GALAXY_APP
 from ..version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
@@ -196,6 +201,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.root = find_root(kwargs)
 
         self._set_config_base(kwargs)
+        self._set_reloadable_properties(kwargs)
 
         # Configs no longer read from samples
         self.migrated_tools_config = resolve_path(kwargs.get('migrated_tools_conf', 'migrated_tools_conf.xml'), self.mutable_config_dir)
@@ -360,7 +366,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         default_jobs_directory = kwargs.get("job_working_directory", "jobs_directory")
         self.jobs_directory = resolve_path(kwargs.get("jobs_directory", default_jobs_directory), self.data_dir)
         self.default_job_shell = kwargs.get("default_job_shell", "/bin/bash")
-        self.cleanup_job = kwargs.get("cleanup_job", "always")
         preserve_python_environment = kwargs.get("preserve_python_environment", "legacy_only")
         if preserve_python_environment not in ["legacy_only", "legacy_and_local", "always"]:
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
@@ -376,8 +381,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
         self.retry_job_output_collection = int(kwargs.get('retry_job_output_collection', 0))
         self.check_job_script_integrity = string_as_bool(kwargs.get("check_job_script_integrity", True))
-        self.admin_users = kwargs.get("admin_users", "")
-        self.admin_users_list = [u.strip() for u in self.admin_users.split(',') if u]
         self.mailing_join_addr = kwargs.get('mailing_join_addr', 'galaxy-announce-join@bx.psu.edu')
         self.error_email_to = kwargs.get('error_email_to', None)
         # activation_email was used until release_15.03
@@ -487,12 +490,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.trust_jupyter_notebook_conversion = trust_jupyter_notebook_conversion
         self.enable_old_display_applications = string_as_bool(kwargs.get("enable_old_display_applications", "True"))
         self.brand = kwargs.get('brand', None)
-        self.welcome_url = kwargs.get('welcome_url', '/static/welcome.html')
         self.show_welcome_with_login = string_as_bool(kwargs.get("show_welcome_with_login", "False"))
         self.visualizations_visible = string_as_bool(kwargs.get('visualizations_visible', True))
         # Configuration for the message box directly below the masthead.
         self.message_box_visible = string_as_bool(kwargs.get('message_box_visible', False))
-        self.message_box_content = kwargs.get('message_box_content', None)
         self.message_box_class = kwargs.get('message_box_class', 'info')
         self.support_url = kwargs.get('support_url', 'https://galaxyproject.org/support')
         self.citation_url = kwargs.get('citation_url', 'https://galaxyproject.org/citing-galaxy')
@@ -523,19 +524,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.watch_tools = kwargs.get('watch_tools', 'false')
         self.watch_tool_data_dir = kwargs.get('watch_tool_data_dir', 'false')
         self.watch_job_rules = kwargs.get('watch_job_rules', 'false')
+        self.watch_core_config = kwargs.get('watch_core_config', 'false')
         # On can mildly speed up Galaxy startup time by disabling index of help,
         # not needed on production systems but useful if running many functional tests.
         self.index_tool_help = string_as_bool(kwargs.get("index_tool_help", True))
-        self.tool_name_boost = kwargs.get("tool_name_boost", 9)
-        self.tool_section_boost = kwargs.get("tool_section_boost", 3)
-        self.tool_description_boost = kwargs.get("tool_description_boost", 2)
         self.tool_labels_boost = kwargs.get("tool_labels_boost", 1)
-        self.tool_stub_boost = kwargs.get("tool_stub_boost", 5)
-        self.tool_help_boost = kwargs.get("tool_help_boost", 0.5)
-        self.tool_search_limit = kwargs.get("tool_search_limit", 20)
-        self.tool_enable_ngram_search = kwargs.get("tool_enable_ngram_search", False)
-        self.tool_ngram_minsize = kwargs.get("tool_ngram_minsize", 3)
-        self.tool_ngram_maxsize = kwargs.get("tool_ngram_maxsize", 4)
         default_tool_test_data_directories = os.environ.get("GALAXY_TEST_FILE_DIR", resolve_path("test-data", self.root))
         self.tool_test_data_directories = kwargs.get("tool_test_data_directories", default_tool_test_data_directories)
         # Deployers may either specify a complete list of mapping files or get the default for free and just
@@ -806,6 +799,26 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 'filters': ['stack']
             }
 
+    def _set_reloadable_properties(self, kwargs):
+        reloadable_config_options = get_reloadable_config_options()
+        for key, default_value in reloadable_config_options.items():
+            value = kwargs.get(key) or default_value
+            setattr(self, key, value)
+
+    def update_reloadable_property(self, key, value):
+        # TODO: after config_schema.yml is read only once at startup, add this:
+        # "if key in reloadable_config_options" (just a safety measure)
+        setattr(self, key, value)
+
+    @property
+    def admin_users(self):
+        return self._admin_users
+
+    @admin_users.setter
+    def admin_users(self, value):
+        self._admin_users = value
+        self.admin_users_list = [u.strip() for u in value.split(',') if u]
+
     @property
     def sentry_dsn_public(self):
         """
@@ -954,8 +967,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         NOTE: This is temporary, admin users will likely be specified in the
               database in the future.
         """
-        admin_users = [x.strip() for x in self.get("admin_users", "").split(",")]
-        return user is not None and user.email in admin_users
+        return user is not None and user.email in self.admin_users_list
 
     def resolve_path(self, path):
         """ Resolve a path relative to Galaxy's root.
@@ -984,6 +996,21 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
 # legacy naming
 Configuration = GalaxyAppConfiguration
+
+
+def reload_config_options(current_config, path=None):
+    """ Reload modified reloadable config options """
+    modified_config = read_properties_from_file(current_config.config_file)
+    reloadable_config_options = get_reloadable_config_options()
+    for option in reloadable_config_options:
+        if option in modified_config:
+            if getattr(current_config, option) != modified_config[option]:
+                current_config.update_reloadable_property(option, modified_config[option])
+                log.info('Reloaded %s' % option)
+
+
+def get_reloadable_config_options():
+    return GALAXY_APP.schema.get_reloadable_option_defaults()
 
 
 def get_database_engine_options(kwargs, model_prefix=''):

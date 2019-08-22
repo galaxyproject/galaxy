@@ -154,6 +154,8 @@ class MockAppConfig(Bunch):
         # set by MockDir
         self.root = root
 
+        self.config_file = None
+
     @property
     def config_dict(self):
         return self.dict()
