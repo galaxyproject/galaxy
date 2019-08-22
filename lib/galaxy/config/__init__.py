@@ -47,7 +47,7 @@ from galaxy.web_stack import (
     get_stack_facts,
     register_postfork_function
 )
-from galaxy.webapps.config_manage import GALAXY_APP
+from .config_manage import GALAXY_APP
 from ..version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
