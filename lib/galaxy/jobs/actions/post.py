@@ -70,7 +70,7 @@ class EmailAction(DefaultJobAction):
 
 class ValidateOutputsAction(DefaultJobAction):
     """
-    This action sends an email to the galaxy user responsible for a job.
+    This action validates the produced outputs against the expected datatype.
     """
     name = "ValidateOutputsAction"
     verbose_name = "Validate Tool Outputs"

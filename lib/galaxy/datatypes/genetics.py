@@ -20,7 +20,10 @@ from markupsafe import escape
 from six.moves.urllib.parse import quote_plus
 
 from galaxy.datatypes import metadata
-from galaxy.datatypes.data import DatatypeValidation, Text
+from galaxy.datatypes.data import (
+    DatatypeValidation,
+    Text,
+)
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.datatypes.tabular import Tabular

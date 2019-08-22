@@ -286,7 +286,7 @@ class Interval(Tabular):
                 try:
                     next(reader)
                 except ParseError as e:
-                    return DatatypeValidation.invalid(str(e))
+                    return DatatypeValidation.invalid(unicodify(e))
                 except StopIteration:
                     return DatatypeValidation.valid()
 
