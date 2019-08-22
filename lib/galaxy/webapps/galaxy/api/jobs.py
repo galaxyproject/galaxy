@@ -472,12 +472,14 @@ class JobController(BaseAPIController, UsesVisualizationMixin):
                 decoded_job_id = self.decode_id(job_id)
             except Exception:
                 raise exceptions.MalformedId()
-            return self.job_manager.get_accessible_job(trans, decoded_job_id)
+            job = self.job_manager.get_accessible_job(trans, decoded_job_id)
         else:
             hda_ldda = kwd.get("hda_ldda", "hda")
             # Following checks dataset accessible
             dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
-            return dataset_instance.creating_job
+            job = dataset_instance.creating_job
+        trans.sa_session.refresh(job)
+        return job
 
     @expose_api
     def create(self, trans, payload, **kwd):
