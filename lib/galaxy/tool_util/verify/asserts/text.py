@@ -24,7 +24,7 @@ def assert_has_n_lines(output, n):
     """Asserts the specified output contains ``n`` lines."""
     n_lines_found = len(output.splitlines())
         pass
-    assert counter == int(n), "Expected number of lines (%s) do not match with obtained number ('%s')" % (n, counter)
+    assert n_lines_found == int(n), "Expected %s lines in output, found %s lines" % (n, n_lines_found)
 
 
 def assert_has_text_matching(output, expression):
