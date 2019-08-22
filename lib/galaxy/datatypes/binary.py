@@ -1953,17 +1953,14 @@ class PostgresqlArchive(CompressedArchive):
             if dataset and tarfile.is_tarfile(dataset.file_name):
                 with tarfile.open(dataset.file_name, 'r') as temptar:
                     pg_version_file = temptar.extractfile('postgresql/db/PG_VERSION')
-                    dataset.metadata.version = pg_version_file.read().strip()
+                    dataset.metadata.version = util.unicodify(pg_version_file.read()).strip()
         except Exception as e:
-            log.warning('%s, set_meta Exception: %s', self, e)
+            log.warning('%s, set_meta Exception: %s', self, util.unicodify(e))
 
     def sniff(self, filename):
         if filename and tarfile.is_tarfile(filename):
-            try:
-                with tarfile.open(filename, 'r') as temptar:
-                    return 'postgresql/db/PG_VERSION' in temptar.getnames()
-            except Exception as e:
-                log.warning('%s, sniff Exception: %s', self, e)
+            with tarfile.open(filename, 'r') as temptar:
+                return 'postgresql/db/PG_VERSION' in temptar.getnames()
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):
