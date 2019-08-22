@@ -1,7 +1,6 @@
 import imp
 import logging
 import os
-import time
 from collections import OrderedDict
 from datetime import datetime, timedelta
 from string import punctuation as PUNCTUATION
@@ -22,7 +21,6 @@ from galaxy.util import (
     sanitize_text,
     url_get
 )
-from galaxy.util.hash_util import new_secure_hash
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
