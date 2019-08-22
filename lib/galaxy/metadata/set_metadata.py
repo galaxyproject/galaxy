@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import sys
+import traceback
 
 from six.moves import cPickle
 from sqlalchemy.orm import clear_mappers
@@ -120,8 +121,8 @@ def set_metadata_portable():
             set_meta(dataset, file_dict)
             dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
             json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
-        except Exception as e:
-            json.dump((False, unicodify(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
+        except Exception:
+            json.dump((False, traceback.format_exc()), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
 
     write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
