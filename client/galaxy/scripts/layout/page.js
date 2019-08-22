@@ -27,7 +27,7 @@ var View = Backbone.View.extend({
         });
 
         // attach global objects, build mastheads
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         Galaxy.modal = this.modal = new Modal.View();
         Galaxy.router = this.router = options.Router && new options.Router(self, options);
         Galaxy.data = this.data = new Data(this);
@@ -190,7 +190,7 @@ var View = Backbone.View.extend({
 
     /** Check if the communication server is online and show the icon otherwise hide the icon */
     _checkCommunicationServerOnline: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var host = Galaxy.config.communication_server_host;
         var port = Galaxy.config.communication_server_port;
         var preferences = Galaxy.user.attributes.preferences;

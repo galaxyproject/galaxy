@@ -1,7 +1,7 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
-import mod_toastr from "libs/toastr";
+import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_folderrow_view from "mvc/library/library-folderrow-view";
 import { getGalaxyInstance } from "app";
@@ -77,15 +77,15 @@ var FolderListView = Backbone.View.extend({
                 self.render();
             },
             error: function(model, response) {
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
+                    Toast.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
                     });
                 } else {
-                    mod_toastr.error("An error occurred. Click this to go back.", "", {
+                    Toast.error("An error occurred. Click this to go back.", "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
@@ -128,7 +128,7 @@ var FolderListView = Backbone.View.extend({
             if (row) {
                 row.showDatasetDetails();
             } else {
-                mod_toastr.error("Requested dataset not found. Showing folder instead.");
+                Toast.error("Requested dataset not found. Showing folder instead.");
             }
         } else {
             if (this.options.show_page === null || this.options.show_page < 1) {
@@ -141,7 +141,7 @@ var FolderListView = Backbone.View.extend({
     },
 
     paginate: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
 
         if (this.options.show_page === null || this.options.show_page < 1) {
@@ -181,7 +181,7 @@ var FolderListView = Backbone.View.extend({
      *  be added to the view's collection.
      */
     addAll: function(models) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         _.each(models, model => {
             Galaxy.libraries.folderListView.collection.add(model, {
                 current_sort_order: false
@@ -198,7 +198,7 @@ var FolderListView = Backbone.View.extend({
      * and that event will be bound on all subviews.
      */
     postRender: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var fetched_metadata = this.folderContainer.attributes.metadata;
         fetched_metadata.contains_file_or_folder =
             typeof this.collection.findWhere({ type: "file" }) !== "undefined" ||

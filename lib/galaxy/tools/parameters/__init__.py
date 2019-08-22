@@ -7,6 +7,7 @@ from json import dumps
 
 from boltons.iterutils import remap
 
+from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import safe_loads
 from .basic import DataCollectionToolParameter, DataToolParameter, is_runtime_value, runtime_to_json, SelectToolParameter
@@ -184,7 +185,7 @@ def check_param(trans, param, incoming_value, param_values):
         value = param.from_json(value, trans, param_values)
         param.validate(value, trans)
     except ValueError as e:
-        error = str(e)
+        error = unicodify(e)
     return value, error
 
 

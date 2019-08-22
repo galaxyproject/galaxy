@@ -699,7 +699,7 @@ class Bcf(BaseBcf):
             subprocess.check_call(cmd)
             shutil.move(dataset_symlink + '.csi', index_file.file_name)
         except Exception as e:
-            raise Exception('Error setting BCF metadata: %s' % (str(e)))
+            raise Exception('Error setting BCF metadata: %s' % util.unicodify(e))
         finally:
             # Remove temp file and symlink
             os.remove(dataset_symlink)
@@ -1595,7 +1595,7 @@ class GAFASQLite(SQlite):
                 raise Exception('Multiple versions found in meta table')
             dataset.metadata.gafa_schema_version = results[0][0]
         except Exception as e:
-            log.warn("%s, set_meta Exception: %s", self, e)
+            log.warning("%s, set_meta Exception: %s", self, e)
 
     def sniff(self, filename):
         if super(GAFASQLite, self).sniff(filename):

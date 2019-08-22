@@ -8,6 +8,7 @@ module.exports = {
     rules: {
         "no-console": "off",
         "no-unused-vars": ["error", { args: "none" }],
+        "prefer-const": "error",
         // I'd love to turn on camelcase, but it's a big shift with tons of current errors.
         // camelcase: [
         //     "error",

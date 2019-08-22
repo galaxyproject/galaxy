@@ -190,12 +190,12 @@ class BaseAPIController(BaseController):
                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
         except exceptions.ItemDeletionException as e:
-            raise HTTPBadRequest(detail="Invalid %s id ( %s ) specified: %s" % (class_name, str(id), str(e)))
+            raise HTTPBadRequest(detail="Invalid %s id ( %s ) specified: %s" % (class_name, str(id), util.unicodify(e)))
         except exceptions.MessageException as e:
             raise HTTPBadRequest(detail=e.err_msg)
         except Exception as e:
             log.exception("Exception in get_object check for %s %s.", class_name, str(id))
-            raise HTTPInternalServerError(comment=str(e))
+            raise HTTPInternalServerError(comment=util.unicodify(e))
 
     def validate_in_users_and_groups(self, trans, payload):
         """
@@ -237,6 +237,12 @@ class BaseAPIController(BaseController):
         if isinstance(keys, string_types):
             keys = keys.split(',')
         return dict(view=view, keys=keys, default_view=default_view)
+
+    def _parse_order_by(self, manager, order_by_string):
+        ORDER_BY_SEP_CHAR = ','
+        if ORDER_BY_SEP_CHAR in order_by_string:
+            return [manager.parse_order_by(o) for o in order_by_string.split(ORDER_BY_SEP_CHAR)]
+        return manager.parse_order_by(order_by_string)
 
 
 class JSAppLauncher(BaseUIController):
@@ -1410,7 +1416,7 @@ class SharableMixin(object):
         item.slug = new_slug
         return item.slug == cur_slug
 
-    @web.expose_api
+    @web.legacy_expose_api
     def sharing(self, trans, id, payload=None, **kwd):
         skipped = False
         class_name = self.manager.model_class.__name__

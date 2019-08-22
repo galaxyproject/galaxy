@@ -21,7 +21,7 @@ from galaxy.util import (
     smart_str,
     unicodify
 )
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
@@ -87,7 +87,7 @@ class AuthenticationController(BaseAPIController):
             try:
                 email, password = unicodify(b64decode(smart_str(split[0]))).split(':')
             except Exception as e:
-                raise exceptions.ActionInputError(str(e))
+                raise exceptions.ActionInputError(e)
 
         # If there are only two elements, check the first and ensure it says
         # 'basic' so that we know we're about to decode the right thing. If not,

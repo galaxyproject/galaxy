@@ -250,7 +250,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             ck_size = int(ck_size)
         return data.datatype.display_data(trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd)
 
-    @web.expose_api_anonymous
+    @web.legacy_expose_api_anonymous
     def get_edit(self, trans, dataset_id=None, **kwd):
         """Produces the input definitions available to modify dataset attributes"""
         status = None
@@ -389,7 +389,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         else:
             return self.message_exception(trans, 'You do not have permission to edit this dataset\'s ( id: %s ) information.' % str(dataset_id))
 
-    @web.expose_api_anonymous
+    @web.legacy_expose_api_anonymous
     def set_edit(self, trans, payload=None, **kwd):
         """Allows user to modify parameters of an HDA."""
         def __ok_to_edit_metadata(dataset_id):
@@ -483,7 +483,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 try:
                     message = data.datatype.convert_dataset(trans, data, target_type)
                 except Exception as e:
-                    return self.message_exception(trans, str(e))
+                    return self.message_exception(trans, util.unicodify(e))
         elif operation == 'permission':
             if not trans.user:
                 return self.message_exception(trans, 'You must be logged in if you want to change permissions.')
@@ -830,7 +830,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             action_param = display_link.get_param_name_by_url(action_param)
                         except ValueError as e:
                             log.debug(e)
-                            return paste.httpexceptions.HTTPNotFound(str(e))
+                            return paste.httpexceptions.HTTPNotFound(util.unicodify(e))
                         value = display_link.get_param_value(action_param)
                         assert value, "An invalid parameter name was provided: %s" % action_param
                         assert value.parameter.viewable, "This parameter is not viewable."

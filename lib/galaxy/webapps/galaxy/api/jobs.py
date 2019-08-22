@@ -14,8 +14,10 @@ from galaxy import model
 from galaxy import util
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.jobs import JobSearch
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import (
+    expose_api,
+    expose_api_anonymous,
+)
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesLibraryMixinItems
 from galaxy.work.context import WorkRequestContext
@@ -168,6 +170,32 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         return job_dict
 
     @expose_api
+    def common_problems(self, trans, id, **kwd):
+        """
+        * GET /api/jobs/{id}/common_problems
+            check inputs and job for common potential problems to aid in error reporting
+        """
+        job = self.__get_job(trans, id)
+        seen_ids = set()
+        has_empty_inputs = False
+        has_duplicate_inputs = False
+        for job_input_assoc in job.input_datasets:
+            input_dataset_instance = job_input_assoc.dataset
+            if input_dataset_instance is None:
+                continue
+            if input_dataset_instance.get_total_size() == 0:
+                has_empty_inputs = True
+            input_instance_id = input_dataset_instance.id
+            if input_instance_id in seen_ids:
+                has_duplicate_inputs = True
+            else:
+                seen_ids.add(input_instance_id)
+        # TODO: check percent of failing jobs around a window on job.update_time for handler - report if high.
+        # TODO: check percent of failing jobs around a window on job.update_time for destination_id - report if high.
+        # TODO: sniff inputs (add flag to allow checking files?)
+        return {"has_empty_inputs": has_empty_inputs, "has_duplicate_inputs": has_duplicate_inputs}
+
+    @expose_api
     def inputs(self, trans, id, **kwd):
         """
         show( trans, id )
@@ -296,6 +324,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             for data_assoc in job.output_datasets:
                 if not self.dataset_manager.is_accessible(data_assoc.dataset.dataset, trans.user):
                     raise exceptions.ItemAccessibilityException("You are not allowed to rerun this job.")
+        trans.sa_session.refresh(job)
         return job
 
     @expose_api

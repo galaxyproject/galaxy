@@ -15,7 +15,7 @@ import DisplayApplications from "components/admin/DisplayApplications.vue";
 import Vue from "vue";
 
 export const getAdminRouter = (Galaxy, options) => {
-    let galaxyRoot = getAppRoot();
+    const galaxyRoot = getAppRoot();
 
     return Router.extend({
         routes: {
@@ -38,7 +38,7 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         authenticate: function() {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             return Galaxy.user && Galaxy.user.id && Galaxy.user.get("is_admin");
         },
 
@@ -57,8 +57,8 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         show_users_create: function() {
-            let instance = Vue.extend(Register);
-            let vm = document.createElement("div");
+            const instance = Vue.extend(Register);
+            const vm = document.createElement("div");
             this.page.display(vm);
             new instance({
                 propsData: {
@@ -91,7 +91,7 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         _show_grid_view: function(urlSuffix) {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             this.page.display(
                 new GridView({
                     url_base: `${galaxyRoot}${urlSuffix}`,
@@ -101,8 +101,8 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         _display_vue_helper: function(component, props) {
-            let instance = Vue.extend(component);
-            let vm = document.createElement("div");
+            const instance = Vue.extend(component);
+            const vm = document.createElement("div");
             this.page.display(vm);
             new instance(props).$mount(vm);
         },
@@ -124,9 +124,9 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         show_data_manager: function(path) {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             console.log("show_data_manager");
-            let vueMount = document.createElement("div");
+            const vueMount = document.createElement("div");
             this.page.display(vueMount);
             // always set the route back to the base, i.e.
             // `${galaxyRoot}admin/data_manager`

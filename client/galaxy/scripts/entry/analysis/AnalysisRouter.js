@@ -78,13 +78,13 @@ export const getAnalysisRouter = Galaxy =>
         require_login: ["show_user", "show_user_form", "show_workflows"],
 
         authenticate: function(args, name) {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
         _display_vue_helper: function(component, props) {
-            let instance = Vue.extend(component);
-            let vm = document.createElement("div");
+            const instance = Vue.extend(component);
+            const vm = document.createElement("div");
             this.page.display(vm);
             new instance(props).$mount(vm);
         },
@@ -102,7 +102,7 @@ export const getAnalysisRouter = Galaxy =>
         },
 
         show_user_form: function(form_id) {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             var model = new UserPreferences.Model({
                 user_id: Galaxy.params.id
             });
@@ -165,14 +165,14 @@ export const getAnalysisRouter = Galaxy =>
         },
 
         show_history_structure: function() {
-            let displayStructureInstance = Vue.extend(DisplayStructure);
-            let vm = document.createElement("div");
+            const displayStructureInstance = Vue.extend(DisplayStructure);
+            const vm = document.createElement("div");
             this.page.display(vm);
             new displayStructureInstance({ propsData: { id: QueryStringParsing.get(" id: ") } }).$mount(vm);
         },
 
         show_histories: function(action_id) {
-            let view = new HistoryList.View({ action_id: action_id });
+            const view = new HistoryList.View({ action_id: action_id });
             this.page.display(view);
         },
 

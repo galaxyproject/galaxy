@@ -54,6 +54,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_job_api_version=dict(map=str, default="batch/v1"),
             k8s_supplemental_group_id=dict(map=str),
             k8s_pull_policy=dict(map=str, default="Default"),
+            k8s_run_as_user_id=dict(map=str, valid=lambda s: s == "$uid" or s.isdigit()),
+            k8s_run_as_group_id=dict(map=str, valid=lambda s: s == "$gid" or s.isdigit()),
             k8s_fs_group_id=dict(map=int),
             k8s_default_requests_cpu=dict(map=str, default=None),
             k8s_default_requests_memory=dict(map=str, default=None),
@@ -75,6 +77,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         self._galaxy_instance_id = self.__get_galaxy_instance_id()
 
+        self._run_as_user_id = self.__get_run_as_user_id()
+        self._run_as_group_id = self.__get_run_as_group_id()
         self._supplemental_group = self.__get_supplemental_group()
         self._fs_group = self.__get_fs_group()
         self._default_pull_policy = self.__get_pull_policy()
@@ -168,6 +172,24 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return self.runner_params['k8s_pull_policy']
         return None
 
+    def __get_run_as_user_id(self):
+        if "k8s_run_as_user_id" in self.runner_params:
+            run_as_user = self.runner_params["k8s_run_as_user_id"]
+            if run_as_user == "$uid":
+                return os.getuid()
+            else:
+                return int(self.runner_params["k8s_run_as_user_id"])
+        return None
+
+    def __get_run_as_group_id(self):
+        if "k8s_run_as_group_id" in self.runner_params:
+            run_as_group = self.runner_params["k8s_run_as_group_id"]
+            if run_as_group == "$gid":
+                return self.app.config.gid
+            else:
+                return int(self.runner_params["k8s_run_as_group_id"])
+        return None
+
     def __get_supplemental_group(self):
         if "k8s_supplemental_group_id" in self.runner_params:
             try:
@@ -237,16 +259,20 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         }
         # TODO include other relevant elements that people might want to use from
         # TODO http://kubernetes.io/docs/api-reference/v1/definitions/#_v1_podspec
-
-        if self._supplemental_group and self._supplemental_group > 0:
-            k8s_spec_template["spec"]["securityContext"] = dict(supplementalGroups=[self._supplemental_group])
-        if self._fs_group and self._fs_group > 0:
-            if "securityContext" in k8s_spec_template["spec"]:
-                k8s_spec_template["spec"]["securityContext"]["fsGroup"] = self._fs_group
-            else:
-                k8s_spec_template["spec"]["securityContext"] = dict(fsGroup=self._fs_group)
-
+        k8s_spec_template["spec"]["securityContext"] = self.__get_k8s_security_context()
         return k8s_spec_template
+
+    def __get_k8s_security_context(self):
+        security_context = {}
+        if self._run_as_user_id:
+            security_context["runAsUser"] = self._run_as_user_id
+        if self._run_as_group_id:
+            security_context["runAsGroup"] = self._run_as_group_id
+        if self._supplemental_group and self._supplemental_group > 0:
+            security_context["supplementalGroups"] = [self._supplemental_group]
+        if self._fs_group and self._fs_group > 0:
+            security_context["fsGroup"] = self._fs_group
+        return security_context
 
     def __get_k8s_restart_policy(self, job_wrapper):
         """The default Kubernetes restart policy for Jobs"""
@@ -468,7 +494,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         marks the job for resubmission (resubmit logic is part of destinations).
         """
 
-        pods = Pod.objects(self._pykube_api).filter(selector="app=%s" % job_state.job_id)
+        pods = Pod.objects(self._pykube_api).filter(selector="app=%s" % job_state.job_id,
+                                                    namespace=self.runner_params['k8s_namespace'])
         pod = Pod(self._pykube_api, pods.response['items'][0])
 
         if pod.obj['status']['phase'] == "Failed" and \
@@ -481,8 +508,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """Attempts to delete a dispatched job to the k8s cluster"""
         job = job_wrapper.get_job()
         try:
-            jobs = Job.objects(self._pykube_api).filter(selector="app=" +
-                                                                 self.__produce_unique_k8s_job_name(job.get_id_tag()))
+            jobs = Job.objects(self._pykube_api).filter(
+                selector="app=" + self.__produce_unique_k8s_job_name(job.get_id_tag()),
+                namespace=self.runner_params['k8s_namespace'])
             if len(jobs.response['items']) >= 0:
                 job_to_delete = Job(self._pykube_api, jobs.response['items'][0])
                 job_to_delete.scale(replicas=0)

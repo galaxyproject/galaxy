@@ -1,4 +1,3 @@
-import json
 import logging
 import uuid
 
@@ -353,10 +352,16 @@ class WorkflowProgress(object):
         try:
             replacement = step_outputs[output_name]
         except KeyError:
-            # Must resolve.
-            template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
-            message = template % (output_name, step_outputs)
-            raise Exception(message)
+            replacement = self.inputs_by_step_id.get(output_step_id)
+            if connection.output_step.type == 'parameter_input' and output_step_id is not None:
+                # FIXME: parameter_input step outputs should be properly recorded as step outputs, but for now we can
+                # short-circuit and just pick the input value
+                pass
+            else:
+                # Must resolve.
+                template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
+                message = template % (output_name, step_outputs)
+                raise Exception(message)
         if isinstance(replacement, model.HistoryDatasetCollectionAssociation):
             if not replacement.collection.populated:
                 if not replacement.collection.waiting_for_elements:
@@ -369,15 +374,24 @@ class WorkflowProgress(object):
                 delayed_why = "dependent collection [%s] not yet populated with datasets" % replacement.id
                 raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
-        is_hda = isinstance(replacement, model.HistoryDatasetAssociation)
-        if not is_data and is_hda:
-            if replacement.is_ok:
-                with open(replacement.file_name, 'r') as f:
-                    replacement = json.load(f)
-            elif replacement.is_pending:
-                raise modules.DelayedWorkflowEvaluation()
+        data_inputs = (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation, model.DatasetCollection)
+        if not is_data and isinstance(replacement, data_inputs):
+            if isinstance(replacement, model.HistoryDatasetAssociation):
+                if replacement.is_pending:
+                    raise modules.DelayedWorkflowEvaluation()
+                if not replacement.is_ok:
+                    raise modules.CancelWorkflowEvaluation()
             else:
-                raise modules.CancelWorkflowEvaluation()
+                if not replacement.collection.populated:
+                    raise modules.DelayedWorkflowEvaluation()
+                pending = False
+                for dataset_instance in replacement.dataset_instances:
+                    if dataset_instance.is_pending:
+                        pending = True
+                    elif not dataset_instance.is_ok:
+                        raise modules.CancelWorkflowEvaluation()
+                if pending:
+                    raise modules.DelayedWorkflowEvaluation()
 
         return replacement
 
@@ -391,7 +405,7 @@ class WorkflowProgress(object):
         else:
             return step_outputs[output_name]
 
-    def set_outputs_for_input(self, invocation_step, outputs=None):
+    def set_outputs_for_input(self, invocation_step, outputs=None, already_persisted=False):
         step = invocation_step.workflow_step
 
         if outputs is None:
@@ -406,7 +420,7 @@ class WorkflowProgress(object):
             elif step_id in self.inputs_by_step_id:
                 outputs['output'] = self.inputs_by_step_id[step_id]
 
-        self.set_step_outputs(invocation_step, outputs)
+        self.set_step_outputs(invocation_step, outputs, already_persisted=already_persisted)
 
     def set_step_outputs(self, invocation_step, outputs, already_persisted=False):
         step = invocation_step.workflow_step

@@ -1,4 +1,4 @@
-<display id="ucsc_interval_as_bed" version="1.0.0" name="display at UCSC" inherit="True">
+<display id="ucsc_interval_as_bed" version="1.0.0" name="display at UCSC">
     <!-- Load links from file: one line to one link -->
     <dynamic_links site_type="ucsc" skip_startswith="#" id="0" name="0">
         <!-- Define parameters by column from file, allow splitting on builds -->

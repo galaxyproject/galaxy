@@ -27,7 +27,7 @@ from galaxy import model, util
 from galaxy.datatypes import sniff
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
-from galaxy.jobs.mapper import JobRunnerMapper
+from galaxy.jobs.mapper import JobMappingException, JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner, JobState
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
@@ -141,7 +141,7 @@ class JobConfiguration(ConfiguresHandlers):
         self.default_handler_id = None
         self.handler_assignment_methods = None
         self.handler_assignment_methods_configured = False
-        self.handler_max_grab = 1
+        self.handler_max_grab = None
         self.destinations = {}
         self.destination_tags = {}
         self.default_destination_id = None
@@ -994,6 +994,17 @@ class JobWrapper(HasResourceParameters):
         """
         job = self.get_job()
         self.sa_session.refresh(job)
+
+        # If this fail method is being called because a dynamic rule raised JobMappingException, the call to
+        # self.get_destination_configuration() below accesses self.job_destination and will just cause
+        # JobMappingException to be raised again.
+        try:
+            self.job_destination
+        except JobMappingException as exc:
+            log.debug("(%s) fail(): Job destination raised JobMappingException('%s'), caching fake '__fail__' "
+                      "destination for completion of fail method", self.get_id_tag(), unicodify(exc.failure_message))
+            self.job_runner_mapper.cached_job_destination = JobDestination(id='__fail__')
+
         # if the job was deleted, don't fail it
         if not job.state == job.states.DELETED:
             # Check if the failure is due to an exception
@@ -1010,9 +1021,9 @@ class JobWrapper(HasResourceParameters):
                 for dataset_path in self.get_output_fnames():
                     try:
                         shutil.move(dataset_path.false_path, dataset_path.real_path)
-                        log.debug("fail(): Moved %s to %s" % (dataset_path.false_path, dataset_path.real_path))
+                        log.debug("fail(): Moved %s to %s", dataset_path.false_path, dataset_path.real_path)
                     except (IOError, OSError) as e:
-                        log.error("fail(): Missing output file in working directory: %s" % e)
+                        log.error("fail(): Missing output file in working directory: %s", unicodify(e))
             for dataset_assoc in job.output_datasets + job.output_library_datasets:
                 dataset = dataset_assoc.dataset
                 self.sa_session.refresh(dataset)
@@ -1220,6 +1231,7 @@ class JobWrapper(HasResourceParameters):
         job_stderr=None,
         check_output_detected_state=None,
         remote_metadata_directory=None,
+        job_metrics_directory=None,
     ):
         """
         Called to indicate that the associated command has been run. Updates
@@ -1274,7 +1286,8 @@ class JobWrapper(HasResourceParameters):
             if not os.path.exists(version_filename):
                 version_filename = self.get_version_string_path_legacy()
             if os.path.exists(version_filename):
-                self.version_string = open(version_filename).read()
+                with open(version_filename, 'rb') as fh:
+                    self.version_string = galaxy.util.shrink_and_unicodify(fh.read())
                 os.unlink(version_filename)
 
         outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
@@ -1296,6 +1309,7 @@ class JobWrapper(HasResourceParameters):
                         return self.fail("Job %s's output dataset(s) could not be read" % job.id)
 
         job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
+        implicit_collection_jobs = job.implicit_collection_jobs_association
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context(job_context, dataset_assoc)
             # should this also be checking library associations? - can a library item be added from a history before the job has ended? -
@@ -1313,7 +1327,7 @@ class JobWrapper(HasResourceParameters):
                             trynum = self.app.config.retry_job_output_collection
                         except (OSError, ObjectNotFound) as e:
                             trynum += 1
-                            log.warning('Error accessing dataset with ID %i, will retry: %s', dataset.dataset.id, e)
+                            log.warning('Error accessing dataset with ID %i, will retry: %s', dataset.dataset.id, unicodify(e))
                             time.sleep(2)
                 if getattr(dataset, "hidden_beneath_collection_instance", None):
                     dataset.visible = False
@@ -1336,16 +1350,18 @@ class JobWrapper(HasResourceParameters):
                 # Handle composite datatypes of auto_primary_file type
                 if dataset.datatype.composite_type == 'auto_primary_file' and not dataset.has_data():
                     try:
-                        with NamedTemporaryFile() as temp_fh:
+                        with NamedTemporaryFile(mode='w') as temp_fh:
                             temp_fh.write(dataset.datatype.generate_primary_file(dataset))
                             temp_fh.flush()
                             self.object_store.update_from_file(dataset.dataset, file_name=temp_fh.name, create=True)
                             dataset.set_size()
                     except Exception as e:
-                        log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, e)
+                        log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, unicodify(e))
                 if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
-                    dataset.mark_unhidden()
+                    if not implicit_collection_jobs:
+                        # Only unhide dataset outputs that are not part of a implicit collection
+                        dataset.mark_unhidden()
                 elif not purged:
                     # If the tool was expected to set the extension, attempt to retrieve it
                     if dataset.ext == 'auto':
@@ -1456,7 +1472,7 @@ class JobWrapper(HasResourceParameters):
         job.set_final_state(final_job_state)
         if not job.tasks:
             # If job was composed of tasks, don't attempt to recollect statisitcs
-            self._collect_metrics(job)
+            self._collect_metrics(job, job_metrics_directory)
         self.sa_session.flush()
         log.debug('job %d ended (finish() executed in %s)' % (self.job_id, finish_timer))
         if job.state == job.states.ERROR:
@@ -1519,7 +1535,10 @@ class JobWrapper(HasResourceParameters):
             log.exception("Unable to cleanup job %d", self.job_id)
 
     def _collect_extra_files(self, dataset, job_working_directory):
-        temp_file_path = os.path.join(job_working_directory, "dataset_%s_files" % (dataset.id))
+        object_store = self.app.object_store
+        store_by = getattr(object_store, "store_by", "id")
+        file_name = "dataset_%s_files" % getattr(dataset, store_by)
+        temp_file_path = os.path.join(job_working_directory, file_name)
         extra_dir = None
         try:
             # This skips creation of directories - object store
@@ -1538,13 +1557,14 @@ class JobWrapper(HasResourceParameters):
                         preserve_symlinks=True
                     )
         except Exception as e:
-            log.debug("Error in collect_associated_files: %s" % (e))
+            log.debug("Error in collect_associated_files: %s", unicodify(e))
 
-    def _collect_metrics(self, has_metrics):
+    def _collect_metrics(self, has_metrics, job_metrics_directory=None):
         job = has_metrics.get_job()
-        per_plugin_properties = self.app.job_metrics.collect_properties(job.destination_id, self.job_id, self.working_directory)
+        job_metrics_directory = job_metrics_directory or self.working_directory
+        per_plugin_properties = self.app.job_metrics.collect_properties(job.destination_id, self.job_id, job_metrics_directory)
         if per_plugin_properties:
-            log.info("Collecting metrics for %s %s" % (type(has_metrics).__name__, getattr(has_metrics, 'id', None)))
+            log.info("Collecting metrics for %s %s in %s" % (type(has_metrics).__name__, getattr(has_metrics, 'id', None), job_metrics_directory))
         for plugin, properties in per_plugin_properties.items():
             for metric_name, metric_value in properties.items():
                 if metric_value is not None:

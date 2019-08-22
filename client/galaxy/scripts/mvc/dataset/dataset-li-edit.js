@@ -63,7 +63,7 @@ var DatasetListItemEdit = _super.extend(
                 faIcon: "fa-pencil",
                 classes: "edit-btn",
                 onclick: function(ev) {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/edit", {
@@ -164,7 +164,7 @@ var DatasetListItemEdit = _super.extend(
                     });
             };
 
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             if (Galaxy.user.id === null) {
                 return null;
             }
@@ -226,7 +226,7 @@ var DatasetListItemEdit = _super.extend(
                 classes: "report-error-btn",
                 faIcon: "fa-bug",
                 onclick: function(ev) {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/error", {
@@ -248,7 +248,7 @@ var DatasetListItemEdit = _super.extend(
                     target: this.linkTarget,
                     faIcon: "fa-refresh",
                     onclick: function(ev) {
-                        let Galaxy = getGalaxyInstance();
+                        const Galaxy = getGalaxyInstance();
                         if (Galaxy.router) {
                             ev.preventDefault();
                             Galaxy.router.push("/", {
@@ -273,15 +273,15 @@ var DatasetListItemEdit = _super.extend(
             }
 
             if (visualizations.length >= 1) {
-                let dsid = this.model.get("id");
-                let url = getAppRoot() + "visualizations?dataset_id=" + dsid;
+                const dsid = this.model.get("id");
+                const url = getAppRoot() + "visualizations?dataset_id=" + dsid;
                 return faIconButton({
                     title: _l("Visualize this data"),
                     href: url,
                     classes: "visualization-link",
                     faIcon: "fa-bar-chart-o",
                     onclick: ev => {
-                        let Galaxy = getGalaxyInstance();
+                        const Galaxy = getGalaxyInstance();
                         if (Galaxy.frame && Galaxy.frame.active) {
                             ev.preventDefault();
                             Galaxy.frame.add({ url: url, title: "Visualization" });
@@ -303,24 +303,24 @@ var DatasetListItemEdit = _super.extend(
                 return;
             }
 
-            let el = $where.find(".tags-display")[0];
+            const el = $where.find(".tags-display")[0];
 
-            let propsData = {
+            const propsData = {
                 model: this.model,
                 disabled: false,
                 context: "dataset-li-edit"
             };
 
-            let vm = mountModelTags(propsData, el);
+            const vm = mountModelTags(propsData, el);
 
             // tag icon button open/closes
-            let activator = faIconButton({
+            const activator = faIconButton({
                 title: _l("Edit dataset tags"),
                 classes: "tag-btn",
                 faIcon: "fa-tags"
             }).appendTo($where.find(".actions .right"));
 
-            let toggleEditor = () => {
+            const toggleEditor = () => {
                 $(vm.$el).toggleClass("active");
                 this.tagsEditorShown = $(vm.$el).hasClass("active");
             };
@@ -328,7 +328,7 @@ var DatasetListItemEdit = _super.extend(
             activator.on("click", toggleEditor);
 
             if (this.tagsEditorShown) {
-                let editorIsOpen = $(vm.$el).hasClass("active");
+                const editorIsOpen = $(vm.$el).hasClass("active");
                 if (!editorIsOpen) {
                     toggleEditor();
                 }

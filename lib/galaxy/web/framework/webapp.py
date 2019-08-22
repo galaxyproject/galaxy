@@ -125,7 +125,7 @@ class WebApplication(base.WebApplication):
                 try:
                     module = import_module(module_name)
                 except ControllerUnavailable as exc:
-                    log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
+                    log.debug("%s could not be loaded: %s", module_name, unicodify(exc))
                     continue
                 # Look for a controller inside the modules
                 for key in dir(module):
@@ -150,7 +150,7 @@ class WebApplication(base.WebApplication):
                 try:
                     module = import_module(module_name)
                 except ControllerUnavailable as exc:
-                    log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
+                    log.debug("%s could not be loaded: %s", module_name, unicodify(exc))
                     continue
                 for key in dir(module):
                     T = getattr(module, key)
@@ -620,12 +620,16 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             # self.log_event( "Automatically created account '%s'", user.email )
         return user
 
+    @property
+    def cookie_path(self):
+        return self.app.config.cookie_path or url_for('/')
+
     def __update_session_cookie(self, name='galaxysession'):
         """
         Update the session cookie to match the current session.
         """
         self.set_cookie(self.security.encode_guid(self.galaxy_session.session_key),
-                        name=name, path=self.app.config.cookie_path)
+                        name=name, path=self.cookie_path)
 
     def check_user_library_import_dir(self, user):
         if getattr(self.app.config, "user_library_import_dir_auto_creation", False):
@@ -633,7 +637,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             try:
                 safe_makedirs(os.path.join(self.app.config.user_library_import_dir, user.email))
             except ConfigurationError as e:
-                self.log_event(str(e))
+                self.log_event(unicodify(e))
 
     def user_checks(self, user):
         """
@@ -646,24 +650,27 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         Associate the user's last accessed history (if exists) with their new session
         """
         history = None
+        set_permissions = False
         try:
             users_last_session = user.galaxy_sessions[0]
-            last_accessed = True
         except Exception:
             users_last_session = None
-            last_accessed = False
         if (prev_galaxy_session and
                 prev_galaxy_session.current_history and not
                 prev_galaxy_session.current_history.deleted and
-                prev_galaxy_session.current_history.datasets):
-            if prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user:
-                # If the previous galaxy session had a history, associate it with the new
-                # session, but only if it didn't belong to a different user.
-                history = prev_galaxy_session.current_history
-                if prev_galaxy_session.user is None:
-                    # Increase the user's disk usage by the amount of the previous history's datasets if they didn't already own it.
-                    for hda in history.datasets:
-                        user.adjust_total_disk_usage(hda.quota_amount(user))
+                prev_galaxy_session.current_history.datasets and
+                (prev_galaxy_session.current_history.user is None or
+                 prev_galaxy_session.current_history.user == user)):
+            # If the previous galaxy session had a history, associate it with the new session, but only if it didn't
+            # belong to a different user.
+            history = prev_galaxy_session.current_history
+            if prev_galaxy_session.user is None:
+                # Increase the user's disk usage by the amount of the previous history's datasets if they didn't already
+                # own it.
+                for hda in history.datasets:
+                    user.adjust_total_disk_usage(hda.quota_amount(user))
+                # Only set default history permissions if the history is from the previous session and anonymous
+                set_permissions = True
         elif self.galaxy_session.current_history:
             history = self.galaxy_session.current_history
         if (not history and users_last_session and
@@ -677,8 +684,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         if history.user is None:
             history.user = user
         self.galaxy_session.current_history = history
-        if not last_accessed:
-            # Only set default history permissions if current history is not from a previous session
+        if set_permissions:
             self.app.security_agent.history_set_default_permissions(history, dataset=True, bypass_manage_permission=True)
         self.sa_session.add_all((prev_galaxy_session, self.galaxy_session, history))
 

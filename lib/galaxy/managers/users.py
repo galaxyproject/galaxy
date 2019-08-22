@@ -51,7 +51,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         self.model_class = app.model.User
         super(UserManager, self).__init__(app)
 
-    def register(self, trans, email=None, username=None, password=None, confirm=None, subscribe=False, **kwd):
+    def register(self, trans, email=None, username=None, password=None, confirm=None, subscribe=False):
         """
         Register a new user.
         """
@@ -408,7 +408,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                     trans.log_event('User reset password: %s' % email)
                 except Exception as e:
                     log.debug(body)
-                    return "Failed to submit email. Please contact the administrator: %s" % str(e)
+                    return "Failed to submit email. Please contact the administrator: %s" % util.unicodify(e)
             else:
                 return "Failed to produce password reset token. User not found."
 

@@ -47,7 +47,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         self.handlers = {}
         self.handler_assignment_methods_configured = False
         self.handler_assignment_methods = None
-        self.handler_max_grab = 1
+        self.handler_max_grab = None
         self.default_handler_id = None
 
         self.__plugin_classes = self.__plugins_dict()
@@ -207,7 +207,8 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
                 self.__init_handlers(config_element)
 
                 # Determine the default handler(s)
-                self.default_handler_id = self._get_default(self.app.config, config_element, list(self.handlers.keys()))
+                self.default_handler_id = self._get_default(
+                    self.app.config, config_element, list(self.handlers.keys()), required=False)
             else:
                 plugin_type = config_element_tag
                 plugin_element = config_element

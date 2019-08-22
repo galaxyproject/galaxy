@@ -216,6 +216,11 @@ def populate_api_routes(webapp, app):
                            name_prefix='history_',
                            path_prefix='/api/histories/{history_id}',
                            parent_resources=dict(member_name='history', collection_name='histories'))
+    webapp.mapper.connect("history_contents_batch_update",
+                          "/api/histories/{history_id}/contents",
+                          controller="history_contents",
+                          action="update_batch",
+                          conditions=dict(method=["PUT"]))
     webapp.mapper.connect("history_contents_display",
                           "/api/histories/{history_id}/contents/{history_content_id}/display",
                           controller="datasets",
@@ -314,6 +319,12 @@ def populate_api_routes(webapp, app):
                           action='delete',
                           controller='cloudauthz',
                           conditions=dict(method=["DELETE"]))
+
+    webapp.mapper.connect('upload_cloudauthz_item',
+                          '/api/cloud/authz/{encoded_authz_id}',
+                          action='update',
+                          controller="cloudauthz",
+                          conditions=dict(method=["PUT"]))
 
     webapp.mapper.connect('get_custom_builds_metadata',
                           '/api/histories/{id}/custom_builds_metadata',
@@ -877,6 +888,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('build_for_rerun', '/api/jobs/{id}/build_for_rerun', controller='jobs', action='build_for_rerun', conditions=dict(method=['GET']))
     webapp.mapper.connect('resume', '/api/jobs/{id}/resume', controller='jobs', action='resume', conditions=dict(method=['PUT']))
     webapp.mapper.connect('job_error', '/api/jobs/{id}/error', controller='jobs', action='error', conditions=dict(method=['POST']))
+    webapp.mapper.connect('common_problems', '/api/jobs/{id}/common_problems', controller='jobs', action='common_problems', conditions=dict(method=['GET']))
 
     # Job files controllers. Only for consumption by remote job runners.
     webapp.mapper.resource('file',
@@ -1141,7 +1153,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                                           args=(conf,),
                                           kwargs=dict(templating_formatters=build_template_error_formatters()))
         except MiddlewareWrapUnsupported as exc:
-            log.warning(str(exc))
+            log.warning(util.unicodify(exc))
             import galaxy.web.framework.middleware.error
             app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
     else:

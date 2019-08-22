@@ -89,7 +89,7 @@ tool_shed:
   # string to specify an external database instead.  This string takes
   # many options which are explained in detail in the config file
   # documentation.
-  #database_connection: 'sqlite:///./database/community.sqlite?isolation_level=IMMEDIATE'
+  #database_connection: sqlite:///./database/community.sqlite?isolation_level=IMMEDIATE
 
   # Where the hgweb.config file is stored. The default is the Galaxy
   # installation directory.
@@ -253,7 +253,7 @@ tool_shed:
   #smtp_ssl: false
 
   # The URL linked by the "Support" link in the "Help" menu.
-  #support_url: 'https://galaxyproject.org/support/'
+  #support_url: https://galaxyproject.org/support/
 
   # Address to join mailing list
   #mailing_join_addr: galaxy-announce-join@bx.psu.edu
@@ -350,13 +350,6 @@ tool_shed:
   # following parameters can be used to control the caching used to
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
-
-  # When running multiple Tool Shed instances under separate URL
-  # prefixes on a single hostname, you will want to set this to the same
-  # path as the prefix set in the uWSGI "mount" configuration option
-  # above. This value becomes the "path" attribute set in the cookie so
-  # the cookies from one instance will not clobber those from another.
-  #cookie_path: null
 
   # Turn on logging of user actions to the database.  Actions currently
   # logged are grid views, tool searches, and use of "recently" used

@@ -54,7 +54,7 @@ class AdminToolshed(AdminGalaxy):
             message = 'The <b>%s</b> repository has been activated.' % escape(repository.name)
             status = 'done'
         except Exception as e:
-            error_message = "Error activating repository %s: %s" % (escape(repository.name), str(e))
+            error_message = "Error activating repository %s: %s" % (escape(repository.name), unicodify(e))
             log.exception(error_message)
             message = '%s.<br/>You may be able to resolve this by uninstalling and then reinstalling the repository.  Click <a href="%s">here</a> to uninstall the repository.' \
                 % (error_message, web.url_for(controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id(repository.id)))
@@ -76,7 +76,7 @@ class AdminToolshed(AdminGalaxy):
                                    message=message,
                                    status=status)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def browse_repositories(self, trans, **kwd):
         message = kwd.get('message', '')
@@ -577,7 +577,7 @@ class AdminToolshed(AdminGalaxy):
             tsr_ids_for_monitoring = [trans.security.encode_id(tsr.id) for tsr in tool_shed_repositories]
             return json.dumps(tsr_ids_for_monitoring)
         except install_manager.RepositoriesInstalledException as e:
-            return self.message_exception(trans, str(e))
+            return self.message_exception(trans, unicodify(e))
 
     @web.expose
     @web.require_admin
@@ -880,7 +880,7 @@ class AdminToolshed(AdminGalaxy):
                     message = 'The updates available for the repository <b>%s</b> ' % escape(str(repository.name))
                     message += 'include newly defined repository or tool dependency definitions, and attempting '
                     message += 'to update the repository resulted in the following error.  Contact the Tool Shed '
-                    message += 'administrator if necessary.<br/>%s' % str(e)
+                    message += 'administrator if necessary.<br/>%s' % unicodify(e)
                     return trans.show_error_message(message)
                 changeset_revisions = updating_to_changeset_revision
             else:

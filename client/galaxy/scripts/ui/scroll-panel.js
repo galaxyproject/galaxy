@@ -43,24 +43,24 @@ $.ui.plugin.add("draggable", "scrollPanel", {
 
         // Move it
         if (panel_pos.left < p_max_x && mouse_x - close_dist < min_vis_x) {
-            let t = Math.min(nudge, p_max_x - panel_pos.left);
+            const t = Math.min(nudge, p_max_x - panel_pos.left);
             panel.css("left", panel_pos.left + t);
             moved = true;
             instance.offset.parent.left += t;
             ui.position.left -= t;
         }
         if (!moved && panel_pos.left > p_min_x && mouse_x + close_dist > max_vis_x) {
-            let t = Math.min(nudge, panel_pos.left - p_min_x);
+            const t = Math.min(nudge, panel_pos.left - p_min_x);
             panel.css("left", panel_pos.left - t);
             moved = true;
             instance.offset.parent.left -= t;
             ui.position.left += t;
         }
         if (!moved && panel_pos.top < p_max_y && mouse_y - close_dist < min_vis_y) {
-            let t = Math.min(nudge, p_max_y - panel_pos.top);
+            const t = Math.min(nudge, p_max_y - panel_pos.top);
             panel.css("top", panel_pos.top + t);
             // Firefox sometimes moves by less, so we need to check. Yuck.
-            let amount_moved = panel.position().top - panel_pos.top;
+            const amount_moved = panel.position().top - panel_pos.top;
             instance.offset.parent.top += amount_moved;
             ui.position.top -= amount_moved;
             moved = true;
@@ -69,7 +69,7 @@ $.ui.plugin.add("draggable", "scrollPanel", {
             var t = Math.min(nudge, panel_pos.top - p_min_x);
             panel.css("top", `${panel_pos.top - t}px`);
             // Firefox sometimes moves by less, so we need to check. Yuck.
-            let amount_moved = panel_pos.top - panel.position().top;
+            const amount_moved = panel_pos.top - panel.position().top;
             instance.offset.parent.top -= amount_moved;
             ui.position.top += amount_moved;
             moved = true;

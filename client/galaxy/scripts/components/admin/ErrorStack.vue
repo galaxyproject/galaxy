@@ -40,7 +40,7 @@ export default {
                 this.errorStackLoaded = true;
             })
             .catch(e => {
-                let message = e && e.response && e.response.data && e.response.data.err_msg;
+                const message = e && e.response && e.response.data && e.response.data.err_msg;
                 this.messageText = message || "Request failed for an unknown reason.";
             });
     }

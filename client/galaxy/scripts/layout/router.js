@@ -14,7 +14,7 @@ var Router = Backbone.Router.extend({
     },
 
     executeUseRouter: function(url) {
-        let prefix = getAppRoot();
+        const prefix = getAppRoot();
         if (url.startsWith(prefix)) {
             url = url.replace(prefix, "/");
         }
@@ -28,9 +28,9 @@ var Router = Backbone.Router.extend({
             .toString(36)
             .substr(2);
         url += url.indexOf("?") == -1 ? "?" : "&";
-        let bustParam = $.param(data, true);
+        const bustParam = $.param(data, true);
         url += bustParam;
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         Galaxy.params = data;
         this.navigate(url, { trigger: true });
         window.history.replaceState(window.history.state, "", window.location.pathname.replace(bustParam, ""));
@@ -38,7 +38,7 @@ var Router = Backbone.Router.extend({
 
     /** override to parse query string into obj and send to each route */
     execute: function(callback, args, name) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         Galaxy.debug("router execute:", callback, args, name);
         var queryObj = QUERY_STRING.parse(args.pop());
         args.push(queryObj);

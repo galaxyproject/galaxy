@@ -7,39 +7,27 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, Index, Integer, MetaData, Table
+from sqlalchemy import MetaData
 
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrate.versions.util import (
+    add_index,
+    drop_index
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
-HistoryDatasetAssociationTagAssociation_table = Table("history_dataset_association_tag_association", metadata,
-                                                      Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
-                                                      Column("tag_id", Integer, ForeignKey("tag.id"), index=True),
-                                                      Column("user_tname", TrimmedString(255), index=True),
-                                                      Column("value", TrimmedString(255), index=True),
-                                                      Column("user_value", TrimmedString(255), index=True))
-
-
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
-    i = Index("ix_hda_ta_history_dataset_association_id", HistoryDatasetAssociationTagAssociation_table.c.history_dataset_association_id)
-    try:
-        i.create()
-    except Exception:
-        log.exception("Adding index 'ix_hdata_history_dataset_association_id' to table 'history_dataset_association_tag_association' table failed.")
+
+    add_index('ix_hda_ta_history_dataset_association_id', 'history_dataset_association_tag_association', 'history_dataset_association_id', metadata)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    i = Index("ix_hda_ta_history_dataset_association_id", HistoryDatasetAssociationTagAssociation_table.c.history_dataset_association_id)
-    try:
-        i.drop()
-    except Exception:
-        log.exception("Removing index 'ix_hdata_history_dataset_association_id' to table 'history_dataset_association_tag_association' table failed.")
+
+    drop_index('ix_hda_ta_history_dataset_association_id', 'history_dataset_association_tag_association', 'history_dataset_association_id', metadata)

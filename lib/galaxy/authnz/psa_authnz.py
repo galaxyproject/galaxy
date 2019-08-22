@@ -19,12 +19,14 @@ DEFAULTS = {
 
 BACKENDS = {
     'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
-    "globus": "social_core.backends.globus.GlobusOpenIdConnect"
+    "globus": "social_core.backends.globus.GlobusOpenIdConnect",
+    'elixir': 'social_core.backends.elixir.ElixirOpenIdConnect'
 }
 
 BACKENDS_NAME = {
     'google': 'google-openidconnect',
-    "globus": "globus"
+    "globus": "globus",
+    'elixir': 'elixir'
 }
 
 AUTH_PIPELINE = (
@@ -84,7 +86,7 @@ DISCONNECT_PIPELINE = (
 class PSAAuthnz(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config):
         self.config = {'provider': provider.lower()}
-        for key, value in oidc_config.iteritems():
+        for key, value in oidc_config.items():
             self.config[setting_name(key)] = value
 
         self.config[setting_name('USER_MODEL')] = 'models.User'

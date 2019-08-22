@@ -164,7 +164,7 @@ class LibraryActions(object):
                 if os.path.isfile(path):
                     files.append(path)
         except Exception as e:
-            message = "Unable to get file list for configured %s, error: %s" % (import_dir_desc, str(e))
+            message = "Unable to get file list for configured %s, error: %s" % (import_dir_desc, util.unicodify(e))
             response_code = 500
             return None, response_code, message
         if not files:

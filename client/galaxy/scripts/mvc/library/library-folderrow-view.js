@@ -3,7 +3,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import mod_toastr from "libs/toastr";
+import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_dataset_view from "mvc/library/library-dataset-view";
 
@@ -36,7 +36,7 @@ var FolderRowView = Backbone.View.extend({
         this.options = _.extend(this.options, options);
         var folder_item = this.options.model;
         var template = null;
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         if (folder_item.get("type") === "folder" || folder_item.get("model_class") === "LibraryFolder") {
             this.options.type = "folder";
@@ -105,14 +105,14 @@ var FolderRowView = Backbone.View.extend({
 
     /* Show the page with dataset details. */
     showDatasetDetails: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({ id: this.id });
     },
 
     /* Undelete the dataset on server and render the row again. */
     undeleteDataset: function(event) {
         $(".tooltip").hide();
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var that = this;
         var dataset_id = $(event.target)
             .closest("tr")
@@ -125,7 +125,7 @@ var FolderRowView = Backbone.View.extend({
                 var updated_dataset = new mod_library_model.Item(response);
                 Galaxy.libraries.folderListView.collection.add(updated_dataset);
                 Galaxy.libraries.folderListView.collection.sortFolder("name", "asc");
-                mod_toastr.success("Dataset undeleted. Click this to see it.", "", {
+                Toast.success("Dataset undeleted. Click this to see it.", "", {
                     onclick: function() {
                         var folder_id = that.model.get("folder_id");
                         window.location = `${getAppRoot()}library/list#folders/${folder_id}/datasets/${that.id}`;
@@ -134,9 +134,9 @@ var FolderRowView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(`Dataset was not undeleted. ${response.responseJSON.err_msg}`);
+                    Toast.error(`Dataset was not undeleted. ${response.responseJSON.err_msg}`);
                 } else {
-                    mod_toastr.error("An error occurred! Dataset was not undeleted. Please try again.");
+                    Toast.error("An error occurred! Dataset was not undeleted. Please try again.");
                 }
             }
         });
@@ -144,7 +144,7 @@ var FolderRowView = Backbone.View.extend({
 
     /* Undelete the folder on server and render the row again. */
     undeleteFolder: function(event) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         $(".tooltip").hide();
         var folder_id = $(event.target)
             .closest("tr")
@@ -157,13 +157,13 @@ var FolderRowView = Backbone.View.extend({
                 var updated_folder = new mod_library_model.FolderAsModel(response);
                 Galaxy.libraries.folderListView.collection.add(updated_folder);
                 Galaxy.libraries.folderListView.collection.sortFolder("name", "asc");
-                mod_toastr.success("Folder undeleted.");
+                Toast.success("Folder undeleted.");
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    mod_toastr.error(`Folder was not undeleted. ${response.responseJSON.err_msg}`);
+                    Toast.error(`Folder was not undeleted. ${response.responseJSON.err_msg}`);
                 } else {
-                    mod_toastr.error("An error occurred! Folder was not undeleted. Please try again.");
+                    Toast.error("An error occurred! Folder was not undeleted. Please try again.");
                 }
             }
         });
@@ -182,7 +182,7 @@ var FolderRowView = Backbone.View.extend({
     },
 
     saveModifications: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var folder = Galaxy.libraries.folderListView.collection.get(this.$el.data("id"));
         var is_changed = false;
         var new_name = this.$el.find(".input_folder_name").val();
@@ -191,7 +191,7 @@ var FolderRowView = Backbone.View.extend({
                 folder.set("name", new_name);
                 is_changed = true;
             } else {
-                mod_toastr.warning("Folder name has to be at least 3 characters long.");
+                Toast.warning("Folder name has to be at least 3 characters long.");
                 return;
             }
         }
@@ -207,20 +207,20 @@ var FolderRowView = Backbone.View.extend({
                 success: function(folder) {
                     row_view.options.edit_mode = false;
                     row_view.repaint(folder);
-                    mod_toastr.success("Changes to folder saved.");
+                    Toast.success("Changes to folder saved.");
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        mod_toastr.error(response.responseJSON.err_msg);
+                        Toast.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occurred while attempting to update the folder.");
+                        Toast.error("An error occurred while attempting to update the folder.");
                     }
                 }
             });
         } else {
             this.options.edit_mode = false;
             this.repaint(folder);
-            mod_toastr.info("Nothing has changed.");
+            Toast.info("Nothing has changed.");
         }
     },
 

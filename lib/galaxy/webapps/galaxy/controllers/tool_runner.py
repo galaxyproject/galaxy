@@ -77,7 +77,7 @@ class ToolRunner(BaseUIController):
         try:
             vars = tool.handle_input(trans, params.__dict__, history=history)
         except Exception as e:
-            error(str(e))
+            error(galaxy.util.unicodify(e))
         if len(params) > 0:
             trans.log_event('Tool params: %s' % (str(params)), tool_id=tool_id)
         return trans.fill_template('root/tool_runner.mako', **vars)

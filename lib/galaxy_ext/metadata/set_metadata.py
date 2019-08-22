@@ -23,7 +23,10 @@ from sqlalchemy.orm import clear_mappers
 
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
 from galaxy.model.custom_types import total_size
-from galaxy.util import stringify_dictionary_keys
+from galaxy.util import (
+    stringify_dictionary_keys,
+    unicodify,
+)
 from ._provided_metadata import parse_tool_provided_metadata
 
 # ensure supported version
@@ -77,7 +80,8 @@ def set_metadata():
 
 def set_metadata_portable():
     import galaxy.model
-    galaxy.model.metadata.MetadataTempFile.tmp_dir = tool_job_working_directory = os.path.abspath(os.getcwd())
+    tool_job_working_directory = os.path.abspath(os.getcwd())
+    galaxy.model.metadata.MetadataTempFile.tmp_dir = os.path.join(tool_job_working_directory, "metadata")
 
     metadata_params_path = os.path.join("metadata", "params.json")
     try:
@@ -109,7 +113,9 @@ def set_metadata_portable():
         try:
             dataset = cPickle.load(open(filename_in, 'rb'))  # load DatasetInstance
             dataset.dataset.external_filename = dataset_filename_override
-            files_path = os.path.abspath(os.path.join(tool_job_working_directory, "dataset_%s_files" % (dataset.dataset.id)))
+            store_by = metadata_params.get("object_store_store_by", "id")
+            extra_files_dir_name = "dataset_%s_files" % getattr(dataset.dataset, store_by)
+            files_path = os.path.abspath(os.path.join(tool_job_working_directory, extra_files_dir_name))
             dataset.dataset.external_extra_files_path = files_path
             file_dict = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id)
             if 'ext' in file_dict:
@@ -124,7 +130,7 @@ def set_metadata_portable():
             dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
             json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
         except Exception as e:
-            json.dump((False, str(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
+            json.dump((False, unicodify(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
 
     write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
@@ -180,7 +186,7 @@ def set_metadata_legacy():
             dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
             json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
         except Exception as e:
-            json.dump((False, str(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
+            json.dump((False, unicodify(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
 
     write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
@@ -189,7 +195,11 @@ def validate_and_load_datatypes_config(datatypes_config):
     galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
 
     if not os.path.exists(datatypes_config):
-        print("Metadata setting failed because registry.xml could not be found. You may retry setting metadata.")
+        # Hack for Pulsar on usegalaxy.org, drop ASAP.
+        datatypes_config = "configs/registry.xml"
+
+    if not os.path.exists(datatypes_config):
+        print("Metadata setting failed because registry.xml [%s] could not be found. You may retry setting metadata." % datatypes_config)
         sys.exit(1)
     import galaxy.datatypes.registry
     datatypes_registry = galaxy.datatypes.registry.Registry()

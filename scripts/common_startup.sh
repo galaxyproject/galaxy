@@ -107,9 +107,8 @@ fi
 
 if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
     if [ ! -d "$GALAXY_VIRTUAL_ENV" ]; then
-        # Locate `conda` and set $CONDA_EXE (if needed). If `python` is Conda Python and $GALAXY_VIRTUAL_ENV does not
-        # exist, virtualenv will not be used. setup_python calls this as well but in this case we need it done
-        # beforehand.
+        # Locate `conda` and set $CONDA_EXE (if needed). setup_python calls this
+        # as well, but in this case we need it done beforehand.
         set_conda_exe
         if [ -n "$CONDA_EXE" ]; then
             echo "Found Conda, will set up a virtualenv using conda."

@@ -5,8 +5,12 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Index, MetaData, Table
-from sqlalchemy.engine import reflection
+from sqlalchemy import MetaData
+
+from galaxy.model.migrate.versions.util import (
+    add_index,
+    drop_index
+)
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -54,28 +58,14 @@ def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
-    insp = reflection.Inspector.from_engine(migrate_engine)
-    # Create missing indexes
+
     for ix, table, col in indexes:
-        try:
-            log.debug("Creating index '%s' on column '%s' in table '%s'" % (ix, col, table))
-            t = Table(table, metadata, autoload=True)
-            if ix not in [ins_ix.get('name', None) for ins_ix in insp.get_indexes(table)]:
-                Index(ix, t.c[col]).create()
-            else:
-                pass  # Index already exists, don't recreate.
-        except Exception:
-            log.exception("Unable to create index '%s'.", ix)
+        add_index(ix, table, col, metadata)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # Drop indexes
     for ix, table, col in indexes:
-        try:
-            t = Table(table, metadata, autoload=True)
-            Index(ix, t.c[col]).drop()
-        except Exception:
-            log.exception("Unable to drop index '%s'.", ix)
+        drop_index(ix, table, col, metadata)

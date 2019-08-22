@@ -51,7 +51,7 @@ class ConfigSerializer(base.ModelSerializer):
             'helpsite_url'                      : _defaults_to(self.app.config.helpsite_url),
             'lims_doc_url'                      : _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),
             'default_locale'                    : _defaults_to(self.app.config.default_locale),
-
+            'enable_openid'                     : _defaults_to(False),
             'enable_beta_ts_api_install'        : _defaults_to(False),
             'enable_communication_server'       : _defaults_to(False),
             'communication_server_port'         : _defaults_to(None),
@@ -61,6 +61,7 @@ class ConfigSerializer(base.ModelSerializer):
             'allow_user_creation'               : _defaults_to(False),
             'use_remote_user'                   : _defaults_to(None),
             'enable_oidc'                       : _defaults_to(False),
+            'oidc'                              : _defaults_to(self.app.config.oidc),
             'enable_quotas'                     : _defaults_to(False),
             'remote_user_logout_href'           : _defaults_to(''),
             'datatypes_disable_auto'            : _defaults_to(False),

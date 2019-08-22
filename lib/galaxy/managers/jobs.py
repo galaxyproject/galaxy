@@ -293,7 +293,7 @@ def fetch_job_states(app, sa_session, job_source_ids, job_source_types):
 
 
 def summarize_jobs_to_dict(sa_session, jobs_source):
-    """Proudce a summary of jobs for job summary endpoints.
+    """Produce a summary of jobs for job summary endpoints.
 
     :type   jobs_source: a Job or ImplicitCollectionJobs or None
     :param  jobs_source: the object to summarize

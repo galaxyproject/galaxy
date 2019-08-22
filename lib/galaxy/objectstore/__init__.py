@@ -237,7 +237,12 @@ class ObjectStore(object):
         }
 
     def _get_object_id(self, obj):
-        return getattr(obj, self.store_by)
+        if hasattr(obj, self.store_by):
+            return getattr(obj, self.store_by)
+        else:
+            # job's don't have uuids, so always use ID in this case when creating
+            # job working directories.
+            return obj.id
 
 
 class DiskObjectStore(ObjectStore):
@@ -462,7 +467,10 @@ class DiskObjectStore(ObjectStore):
             # construct and return hashed path
             if os.path.exists(path):
                 return path
-        return self._construct_path(obj, **kwargs)
+        path = self._construct_path(obj, **kwargs)
+        if not os.path.exists(path):
+            raise ObjectNotFound
+        return path
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
         """`create` parameter is not used in this implementation."""

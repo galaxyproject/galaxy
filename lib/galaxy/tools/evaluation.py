@@ -351,7 +351,9 @@ class ToolEvaluator(object):
                 param_dict[name] = DatasetFilenameWrapper(hda)
             # Provide access to a path to store additional files
             # TODO: path munging for cluster/dataset server relocatability
-            param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, "dataset_%s_files" % (hda.dataset.id)))
+            store_by = getattr(hda.dataset.object_store, "store_by", "id")
+            file_name = "dataset_%s_files" % getattr(hda.dataset, store_by)
+            param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, file_name))
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
                 # Assume the reason we lack this output is because a filter
@@ -467,7 +469,7 @@ class ToolEvaluator(object):
             return
         try:
             # Substituting parameters into the command
-            command_line = fill_template(command, context=param_dict)
+            command_line = fill_template(command, context=param_dict, python_template_version=self.tool.python_template_version)
             cleaned_command_line = []
             # Remove leading and trailing whitespace from each line for readability.
             for line in command_line.split('\n'):
@@ -519,7 +521,8 @@ class ToolEvaluator(object):
             os.close(fd)
             self.__write_workdir_file(config_filename, environment_variable_template, param_dict)
             config_file_basename = os.path.basename(config_filename)
-            environment_variable["value"] = "`cat %s`" % config_file_basename
+            # environment setup in job file template happens before `cd $working_directory`
+            environment_variable["value"] = '`cat "$_GALAXY_JOB_DIR/%s"`' % config_file_basename
             environment_variable["raw"] = True
             environment_variables.append(environment_variable)
 
@@ -573,7 +576,7 @@ class ToolEvaluator(object):
 
     def __write_workdir_file(self, config_filename, content, context, is_template=True):
         if is_template:
-            value = fill_template(content, context=context)
+            value = fill_template(content, context=context, python_template_version=self.tool.python_template_version)
         else:
             value = unicodify(content)
         with io.open(config_filename, "w", encoding='utf-8') as f:

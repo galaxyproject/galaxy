@@ -8,6 +8,7 @@ from six import string_types
 from galaxy import model
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
+from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
@@ -158,8 +159,10 @@ class DefaultToolAction(object):
                     return
 
                 collection = None
+                child_collection = False
                 if hasattr(value, 'child_collection'):
                     # if we are mapping a collection over a tool, we only require the child_collection
+                    child_collection = True
                     collection = value.child_collection
                 else:
                     # else the tool takes a collection as input so we need everything
@@ -171,11 +174,27 @@ class DefaultToolAction(object):
                 for action, role_id in action_tuples:
                     record_permission(action, role_id)
 
+                replace_collection = False
+                processed_dataset_dict = {}
                 for i, v in enumerate(collection.dataset_instances):
-                    # Skipping implicit conversion stuff for now, revisit at
-                    # some point and figure out if implicitly converting a
-                    # dataset collection makes senese.
-                    input_datasets[prefix + input.name + str(i + 1)] = v
+                    processed_dataset = process_dataset(v)
+                    if processed_dataset is not v:
+                        replace_collection = True
+                        processed_dataset_dict[v] = processed_dataset
+                    input_datasets[prefix + input.name + str(i + 1)] = processed_dataset
+
+                if replace_collection:
+                    collection_type_description = trans.app.dataset_collections_service.collection_type_descriptions.for_collection_type(collection.collection_type)
+                    collection_builder = CollectionBuilder(collection_type_description)
+                    collection_builder.replace_elements_in_collection(
+                        template_collection=collection,
+                        replacement_dict=processed_dataset_dict,
+                    )
+                    new_collection = collection_builder.build()
+                    if child_collection:
+                        value.child_collection = new_collection
+                    else:
+                        value.collection = new_collection
 
         tool.visit_inputs(param_values, visitor)
         return input_datasets, all_permissions
@@ -241,7 +260,6 @@ class DefaultToolAction(object):
         for data in inp_data.values():
             if not data:
                 continue
-
             for tag in data.auto_propagated_tags:
                 preserved_tags[tag.value] = tag
 
@@ -359,7 +377,8 @@ class DefaultToolAction(object):
                     wrapped_params.params,
                     inp_data,
                     inp_dataset_collections,
-                    input_ext
+                    input_ext,
+                    python_template_version=tool.python_template_version,
                 )
                 create_datasets = True
                 dataset = None
@@ -597,6 +616,7 @@ class DefaultToolAction(object):
                         self.__remap_parameters(job_to_remap, jtid, jtod, out_data)
                         trans.sa_session.add(job_to_remap)
                         trans.sa_session.add(jtid)
+                        job_to_remap.resume()
                 jtod.dataset.visible = False
                 trans.sa_session.add(jtod)
             for jtodc in old_job.output_dataset_collection_instances:
@@ -620,12 +640,6 @@ class DefaultToolAction(object):
         return remapped_hdas
 
     def __remap_parameters(self, job_to_remap, jtid, jtod, out_data):
-        if job_to_remap.state == job_to_remap.states.PAUSED:
-            job_to_remap.state = job_to_remap.states.NEW
-        for hda in [dep_jtod.dataset for dep_jtod in job_to_remap.output_datasets]:
-            if hda.state == hda.states.PAUSED:
-                hda.state = hda.states.NEW
-                hda.info = None
         input_values = dict([(p.name, json.loads(p.value)) for p in job_to_remap.parameters])
         old_dataset_id = jtod.dataset_id
         new_dataset_id = out_data[jtod.name].id
@@ -731,7 +745,7 @@ class DefaultToolAction(object):
         if output.label:
             params['tool'] = tool
             params['on_string'] = on_text
-            return fill_template(output.label, context=params)
+            return fill_template(output.label, context=params, python_template_version=tool.python_template_version)
         else:
             return self._get_default_data_name(dataset, tool, on_text=on_text, trans=trans, incoming=incoming, history=history, params=params, job_params=job_params)
 
@@ -748,7 +762,7 @@ class DefaultToolAction(object):
         if output.actions:
             for action in output.actions.actions:
                 if action.tag == "metadata" and action.default:
-                    metadata_new_value = fill_template(action.default, context=params).split(",")
+                    metadata_new_value = fill_template(action.default, context=params, python_template_version=tool.python_template_version).split(",")
                     dataset.metadata.__setattr__(str(action.name), metadata_new_value)
 
     def _get_default_data_name(self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd):
@@ -901,7 +915,17 @@ def filter_output(output, incoming):
     return False
 
 
-def determine_output_format(output, parameter_context, input_datasets, input_dataset_collections, random_input_ext):
+def get_ext_or_implicit_ext(hda):
+    if hda.implicitly_converted_parent_datasets:
+        # implicitly_converted_parent_datasets is a list of ImplicitlyConvertedDatasetAssociation
+        # objects, and their type is the target_ext, so this should be correct even if there
+        # are multiple ImplicitlyConvertedDatasetAssociation objects (meaning 2 datasets had been converted
+        # to produce a dataset with the required datatype)
+        return hda.implicitly_converted_parent_datasets[0].type
+    return hda.ext
+
+
+def determine_output_format(output, parameter_context, input_datasets, input_dataset_collections, random_input_ext, python_template_version='3'):
     """ Determines the output format for a dataset based on an abstract
     description of the output (galaxy.tools.parser.ToolOutput), the parameter
     wrappers, a map of the input datasets (name => HDA), and the last input
@@ -918,11 +942,12 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
     if format_source is not None and format_source in input_datasets:
         try:
             input_dataset = input_datasets[output.format_source]
-            input_extension = input_dataset.ext
-            ext = input_extension
+            ext = get_ext_or_implicit_ext(input_dataset)
         except Exception:
             pass
     elif format_source is not None:
+        element_index = None
+        collection_name = format_source
         if re.match(r"^[^\[\]]*\[[^\[\]]*\]$", format_source):
             collection_name, element_index = format_source[0:-1].split("[")
             # Treat as json to interpret "forward" vs 0 with type
@@ -930,10 +955,14 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
             element_index = element_index.replace("'", '"')
             element_index = json.loads(element_index)
 
-            if collection_name in input_dataset_collections:
-                try:
-                    input_collection = input_dataset_collections[collection_name][0][0]
-                    input_collection_collection = input_collection.collection
+        if collection_name in input_dataset_collections:
+            try:
+                input_collection = input_dataset_collections[collection_name][0][0]
+                input_collection_collection = input_collection.collection
+                if element_index is None:
+                    # just pick the first HDA
+                    input_dataset = input_collection_collection.dataset_instances[0]
+                else:
                     try:
                         input_element = input_collection_collection[element_index]
                     except KeyError:
@@ -942,11 +971,10 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
                                 input_element = element
                                 break
                     input_dataset = input_element.element_object
-                    input_extension = input_dataset.ext
-                    ext = input_extension
-                except Exception as e:
-                    log.debug("Exception while trying to determine format_source: %s", e)
-                    pass
+                ext = get_ext_or_implicit_ext(input_dataset)
+            except Exception as e:
+                log.debug("Exception while trying to determine format_source: %s", e)
+                pass
 
     # process change_format tags
     if output.change_format is not None:
@@ -959,7 +987,7 @@ def determine_output_format(output, parameter_context, input_datasets, input_dat
                         if '$' not in check:
                             # allow a simple name or more complex specifications
                             check = '${%s}' % check
-                        if str(fill_template(check, context=parameter_context)) == when_elem.get('value', None):
+                        if fill_template(check, context=parameter_context, python_template_version=python_template_version) == when_elem.get('value', None):
                             ext = when_elem.get('format', ext)
                     except Exception:  # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
                         continue

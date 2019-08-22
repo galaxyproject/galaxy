@@ -80,7 +80,7 @@ class FormsGrid(grids.Grid):
 class Forms(BaseUIController):
     forms_grid = FormsGrid()
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def forms_list(self, trans, payload=None, **kwd):
         message = kwd.get('message', '')
@@ -100,7 +100,7 @@ class Forms(BaseUIController):
             kwd['status'] = status
         return self.forms_grid(trans, **kwd)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def create_form(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
@@ -151,7 +151,7 @@ class Forms(BaseUIController):
             message = 'The form \'%s\' has been created%s.' % (payload.get('name'), imported)
             return {'message': util.sanitize_text(message)}
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def edit_form(self, trans, payload=None, **kwd):
         id = kwd.get('id')
