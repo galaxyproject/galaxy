@@ -15,10 +15,10 @@ from galaxy.datatypes import registry
 from galaxy.jobs.manager import NoopManager
 from galaxy.model import mapping, tags
 from galaxy.security import idencoding
-from galaxy.tools.deps.containers import NullContainerFinder
+from galaxy.tool_util.deps.containers import NullContainerFinder
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
-from galaxy.web.stack import ApplicationStack
+from galaxy.web_stack import ApplicationStack
 
 
 # =============================================================================
@@ -113,6 +113,7 @@ class MockAppConfig(Bunch):
         self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
         self.database_connection = kwargs.get('database_connection', "sqlite:///:memory:")
         self.use_remote_user = kwargs.get('use_remote_user', False)
+        self.data_dir = '/tmp'
         self.file_path = '/tmp'
         self.jobs_directory = '/tmp'
         self.new_file_path = '/tmp'
@@ -148,8 +149,20 @@ class MockAppConfig(Bunch):
         self.enable_beta_gdpr = False
         self.legacy_eager_objectstore_initialization = True
 
+        self.version_major = "19.09"
+
         # set by MockDir
         self.root = root
+
+    @property
+    def config_dict(self):
+        return self.dict()
+
+    def __getattr__(self, name):
+        # Handle the automatic config file _set options
+        if name.endswith('_file_set'):
+            return False
+        return super(MockAppConfig, self).__getattr__(name)
 
 
 class MockWebapp(object):

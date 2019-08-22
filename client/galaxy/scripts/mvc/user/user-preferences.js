@@ -10,7 +10,7 @@ import Ui from "mvc/ui/ui-misc";
 import QueryStringParsing from "utils/query-string-parsing";
 
 /** Contains descriptive dictionaries describing user forms */
-var Model = Backbone.Model.extend({
+const Model = Backbone.Model.extend({
     initialize: function(options) {
         const Galaxy = getGalaxyInstance();
         options = options || {};
@@ -19,7 +19,7 @@ var Model = Backbone.Model.extend({
             user_id: options.user_id,
             information: {
                 title: _l("Manage information"),
-                description: "Edit your email, addresses and custom parameters or change your username.",
+                description: "Edit your email, addresses and custom parameters or change your public name.",
                 url: `api/users/${options.user_id}/information/inputs`,
                 icon: "fa-user",
                 redirect: "user"
@@ -90,6 +90,15 @@ var Model = Backbone.Model.extend({
                 submit_title: "Create a new key",
                 submit_icon: "fa-check"
             },
+            cloud_auth: {
+                title: _l("Manage Cloud Authorization"),
+                description: _l(
+                    "Add or modify the configuration that grants Galaxy to access your cloud-based resources."
+                ),
+                icon: "fa-cloud",
+                submit_title: "Create a new key",
+                submit_icon: "fa-check"
+            },
             toolbox_filters: {
                 title: _l("Manage Toolbox filters"),
                 description: _l("Customize your Toolbox by displaying or omitting sets of Tools."),
@@ -140,7 +149,7 @@ var Model = Backbone.Model.extend({
 });
 
 /** View of the main user preference panel with links to individual user forms */
-var View = Backbone.View.extend({
+const View = Backbone.View.extend({
     title: _l("User Preferences"),
     active_tab: "user",
     initialize: function() {
@@ -150,48 +159,48 @@ var View = Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
         const Galaxy = getGalaxyInstance();
-        var config = Galaxy.config;
+        const config = Galaxy.config;
         $.getJSON(`${getAppRoot()}api/users/${Galaxy.user.id}`, data => {
-            self.$preferences = $("<div/>")
+            this.$preferences = $("<div/>")
                 .append($("<h2/>").append("User preferences"))
                 .append($("<p/>").append(`You are logged in as <strong>${_.escape(data.email)}</strong>.`))
-                .append((self.$table = $("<table/>")));
-            var message = QueryStringParsing.get("message");
-            var status = QueryStringParsing.get("status");
+                .append((this.$table = $("<table/>")));
+            const message = QueryStringParsing.get("message");
+            const status = QueryStringParsing.get("status");
             if (message && status) {
-                self.$preferences.prepend(new Ui.Message({ message: message, status: status }).$el);
+                this.$preferences.prepend(new Ui.Message({ message: message, status: status }).$el);
             }
             if (!config.use_remote_user) {
-                self._addLink("information");
-                self._addLink("password");
+                this._addLink("information");
+                this._addLink("password");
             }
             if (config.enable_communication_server) {
-                self._addLink("communication");
+                this._addLink("communication");
             }
-            self._addLink("custom_builds");
-            self._addLink("permissions");
-            self._addLink("make_data_private");
-            self._addLink("api_key");
+            this._addLink("custom_builds");
+            this._addLink("permissions");
+            this._addLink("make_data_private");
+            this._addLink("api_key");
+            this._addLink("cloud_auth");
             if (config.enable_openid) {
-                self._addLink("genomespace");
+                this._addLink("genomespace");
             }
             if (config.has_user_tool_filters) {
-                self._addLink("toolbox_filters");
+                this._addLink("toolbox_filters");
             }
             if (Galaxy.session_csrf_token) {
-                self._addLink("logout");
+                this._addLink("logout");
             }
-            self.$preferences.append(self._templateFooter(data));
-            self.$el.empty().append(self.$preferences);
+            this.$preferences.append(this._templateFooter(data));
+            this.$el.empty().append(this.$preferences);
         });
     },
 
     _addLink: function(action) {
-        var options = this.model.get(action);
-        var $row = $(this._templateLink(options));
-        var $a = $row.find("a");
+        const options = this.model.get(action);
+        const $row = $(this._templateLink(options));
+        const $a = $row.find("a");
         if (options.onclick) {
             $a.on("click", () => {
                 options.onclick();

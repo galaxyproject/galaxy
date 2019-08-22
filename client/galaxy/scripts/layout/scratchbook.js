@@ -72,11 +72,11 @@ export default Backbone.View.extend({
 
     /** Add a dataset to the frames */
     addDataset: function(dataset_id) {
-        var self = this;
-        var current_dataset = null;
+        const self = this;
+        let current_dataset = null;
         const Galaxy = getGalaxyInstance();
         if (Galaxy && Galaxy.currHistoryPanel) {
-            var history_id = Galaxy.currHistoryPanel.collection.historyId;
+            const history_id = Galaxy.currHistoryPanel.collection.historyId;
             this.history_cache[history_id] = {
                 name: Galaxy.currHistoryPanel.model.get("name"),
                 dataset_ids: []
@@ -87,20 +87,20 @@ export default Backbone.View.extend({
                 }
             });
         }
-        var _findDataset = (dataset, offset) => {
+        const _findDataset = (dataset, offset) => {
             if (dataset) {
-                var history_details = self.history_cache[dataset.get("history_id")];
+                const history_details = self.history_cache[dataset.get("history_id")];
                 if (history_details && history_details.dataset_ids) {
-                    var dataset_list = history_details.dataset_ids;
-                    var pos = dataset_list.indexOf(dataset.get("id"));
+                    const dataset_list = history_details.dataset_ids;
+                    const pos = dataset_list.indexOf(dataset.get("id"));
                     if (pos !== -1 && pos + offset >= 0 && pos + offset < dataset_list.length) {
                         return dataset_list[pos + offset];
                     }
                 }
             }
         };
-        var _loadDatasetOffset = (dataset, offset, frame) => {
-            var new_dataset_id = _findDataset(dataset, offset);
+        const _loadDatasetOffset = (dataset, offset, frame) => {
+            const new_dataset_id = _findDataset(dataset, offset);
             if (new_dataset_id) {
                 self._loadDataset(new_dataset_id, (new_dataset, config) => {
                     current_dataset = new_dataset;
@@ -145,15 +145,15 @@ export default Backbone.View.extend({
     },
 
     _loadDataset: function(dataset_id, callback) {
-        var self = this;
-        var dataset = new Dataset({ id: dataset_id });
+        const self = this;
+        const dataset = new Dataset({ id: dataset_id });
         $.when(dataset.fetch()).then(() => {
-            var is_tabular = _.find(
+            const is_tabular = _.find(
                 ["tabular", "interval"],
                 data_type => dataset.get("data_type").indexOf(data_type) !== -1
             );
-            var title = dataset.get("name");
-            var history_details = self.history_cache[dataset.get("history_id")];
+            let title = dataset.get("name");
+            const history_details = self.history_cache[dataset.get("history_id")];
             if (history_details) {
                 title = `${history_details.name}: ${title}`;
             }
@@ -180,18 +180,18 @@ export default Backbone.View.extend({
 
     /** Add a trackster visualization to the frames. */
     addTrackster: function(viz_id) {
-        var self = this;
-        var viz = new visualization.Visualization({ id: viz_id });
+        const self = this;
+        const viz = new visualization.Visualization({ id: viz_id });
         $.when(viz.fetch()).then(() => {
-            var ui = new TracksterUI(getAppRoot());
+            const ui = new TracksterUI(getAppRoot());
 
             // Construct frame config based on dataset's type.
-            var frame_config = {
+            const frame_config = {
                 title: viz.get("name"),
                 type: "other",
                 content: function(parent_elt) {
                     // Create view config.
-                    var view_config = {
+                    const view_config = {
                         container: parent_elt,
                         name: viz.get("title"),
                         id: viz.id,
@@ -200,8 +200,8 @@ export default Backbone.View.extend({
                         stand_alone: false
                     };
 
-                    var latest_revision = viz.get("latest_revision");
-                    var drawables = latest_revision.config.view.drawables;
+                    const latest_revision = viz.get("latest_revision");
+                    const drawables = latest_revision.config.view.drawables;
 
                     // Set up datasets in drawables.
                     _.each(drawables, d => {
@@ -230,7 +230,7 @@ export default Backbone.View.extend({
         } else if (options.target == "_top" || options.target == "_parent" || options.target == "_self") {
             window.location = options.url;
         } else if (!this.active || options.noscratchbook) {
-            var $galaxy_main = $(window.parent.document).find("#galaxy_main");
+            const $galaxy_main = $(window.parent.document).find("#galaxy_main");
             if (options.target == "galaxy_main" || options.target == "center") {
                 if ($galaxy_main.length === 0) {
                     window.location = this._build_url(options.url, { use_panels: true });

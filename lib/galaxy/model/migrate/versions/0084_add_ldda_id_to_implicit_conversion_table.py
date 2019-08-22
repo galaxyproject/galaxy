@@ -26,11 +26,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    # SQLAlchemy Migrate has a bug when adding a column with both a ForeignKey and a index in SQLite
-    if migrate_engine.name != 'sqlite':
-        c = Column("ldda_id", Integer, ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True)
-    else:
-        c = Column("ldda_id", Integer, index=True, nullable=True)
+    c = Column("ldda_id", Integer, ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True)
     add_column(c, 'implicitly_converted_dataset_association', metadata, index_name='ix_implicitly_converted_ds_assoc_ldda_id')
 
 

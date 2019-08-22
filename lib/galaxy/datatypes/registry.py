@@ -6,7 +6,7 @@ from __future__ import absolute_import
 import imp
 import logging
 import os
-from collections import OrderedDict as odict
+from collections import OrderedDict
 from string import Template
 from xml.etree.ElementTree import Element
 
@@ -42,7 +42,7 @@ class Registry(object):
         self.config = config
         self.datatypes_by_extension = {}
         self.mimetypes_by_extension = {}
-        self.datatype_converters = odict()
+        self.datatype_converters = OrderedDict()
         # Converters defined in local datatypes_conf.xml
         self.converters = []
         # Converters defined in datatypes_conf.xml included in installed tool shed repositories.
@@ -58,7 +58,7 @@ class Registry(object):
         # tool shed repositories that contain display applications.
         self.proprietary_display_app_containers = []
         # Map a display application id to a display application
-        self.display_applications = odict()
+        self.display_applications = OrderedDict()
         # The following 2 attributes are used in the to_xml_file()
         # method to persist the current state into an xml file.
         self.display_path_attr = None
@@ -82,7 +82,7 @@ class Registry(object):
         self.display_sites = {}
         self.legacy_build_sites = {}
 
-    def load_datatypes(self, root_dir=None, config=None, deactivate=False, override=True):
+    def load_datatypes(self, root_dir=None, config=None, deactivate=False, override=True, use_converters=True, use_display_applications=True, use_build_sites=True):
         """
         Parse a datatypes XML file located at root_dir/config (if processing the Galaxy distributed config) or contained within
         an installed Tool Shed repository.  If deactivate is True, an installed Tool Shed repository that includes custom datatypes
@@ -119,14 +119,28 @@ class Registry(object):
                 root = config
             registration = root.find('registration')
             # Set default paths defined in local datatypes_conf.xml.
-            if not self.converters_path:
-                self.converters_path_attr = registration.get('converters_path', 'lib/galaxy/datatypes/converters')
-                self.converters_path = os.path.join(root_dir, self.converters_path_attr)
-                if not os.path.isdir(self.converters_path):
-                    raise ConfigurationError("Directory does not exist: %s" % self.converters_path)
-            if not self.display_applications_path:
-                self.display_path_attr = registration.get('display_path', 'display_applications')
-                self.display_applications_path = os.path.join(root_dir, self.display_path_attr)
+            if use_converters:
+                if not self.converters_path:
+                    self.converters_path_attr = registration.get('converters_path', 'lib/galaxy/datatypes/converters')
+                    self.converters_path = os.path.join(root_dir, self.converters_path_attr)
+                    if self.converters_path_attr == 'lib/galaxy/datatypes/converters' \
+                            and not os.path.isdir(self.converters_path):
+                        # Deal with the old default of this path being set in
+                        # datatypes_conf.xml.sample (this path is not useful in an
+                        # "installed Galaxy" world)
+                        self.converters_path_attr = os.path.abspath(os.path.join(os.path.dirname(__file__), 'converters'))
+                        self.converters_path = self.converters_path_attr
+                    if not os.path.isdir(self.converters_path):
+                        raise ConfigurationError("Directory does not exist: %s" % self.converters_path)
+            if use_display_applications:
+                if not self.display_applications_path:
+                    self.display_path_attr = registration.get('display_path', 'display_applications')
+                    self.display_applications_path = os.path.join(root_dir, self.display_path_attr)
+                    if self.display_path_attr == 'display_applications' \
+                            and not os.path.isdir('display_applications'):
+                        # Ditto as with converters_path
+                        self.display_path_attr = os.path.abspath(os.path.join(os.path.dirname(__file__), 'display_applications', 'configs'))
+                        self.display_applications_path = self.display_path_attr
             # Proprietary datatype's <registration> tag may have special attributes, proprietary_converter_path and proprietary_display_path.
             proprietary_converter_path = registration.get('proprietary_converter_path', None)
             proprietary_display_path = registration.get('proprietary_display_path', None)
@@ -367,7 +381,8 @@ class Registry(object):
                                         compressed_sniffers=compressed_sniffers)
             self.upload_file_formats.sort()
             # Load build sites
-            self._load_build_sites(root)
+            if use_build_sites:
+                self._load_build_sites(root)
         self.set_default_values()
 
         def append_to_sniff_order():
@@ -621,7 +636,7 @@ class Registry(object):
                 else:
                     toolbox.register_tool(converter)
                     if source_datatype not in self.datatype_converters:
-                        self.datatype_converters[source_datatype] = odict()
+                        self.datatype_converters[source_datatype] = OrderedDict()
                     self.datatype_converters[source_datatype][target_datatype] = converter
                     if not hasattr(toolbox.app, 'tool_cache') or converter.id in toolbox.app.tool_cache._new_tool_ids:
                         self.log.debug("Loaded converter: %s", converter.id)
@@ -731,7 +746,7 @@ class Registry(object):
         # We need to be able to add a job to the queue to set metadata. The queue will currently only accept jobs with an associated
         # tool.  We'll load a special tool to be used for Auto-Detecting metadata; this is less than ideal, but effective
         # Properly building a tool without relying on parsing an XML file is near difficult...so we bundle with Galaxy.
-        set_meta_tool = toolbox.load_hidden_lib_tool("galaxy/datatypes/set_metadata_tool.xml")
+        set_meta_tool = toolbox.load_hidden_lib_tool(os.path.abspath(os.path.join(os.path.dirname(__file__), "set_metadata_tool.xml")))
         self.set_external_metadata_tool = set_meta_tool
         self.log.debug("Loaded external metadata tool: %s", self.set_external_metadata_tool.id)
 
@@ -859,7 +874,7 @@ class Registry(object):
     def get_converters_by_datatype(self, ext):
         """Returns available converters by source type"""
         if ext not in self._converters_by_datatype:
-            converters = odict()
+            converters = OrderedDict()
             source_datatype = type(self.get_datatype_by_extension(ext))
             for ext2, converters_dict in self.datatype_converters.items():
                 converter_datatype = type(self.get_datatype_by_extension(ext2))
@@ -978,7 +993,7 @@ class Registry(object):
 
 def example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True):
     galaxy_dir = galaxy.util.galaxy_directory()
-    sample_conf = os.path.join(galaxy_dir, "config", "datatypes_conf.xml.sample")
+    sample_conf = os.path.join(galaxy_dir, "lib", "galaxy", "config", "sample", "datatypes_conf.xml.sample")
     config = Bunch(sniff_compressed_dynamic_datatypes_default=sniff_compressed_dynamic_datatypes_default)
     datatypes_registry = Registry(config)
     datatypes_registry.load_datatypes(root_dir=galaxy_dir, config=sample_conf)

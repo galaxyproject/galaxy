@@ -8,7 +8,6 @@ import sys
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 import galaxy.config
-from galaxy.model.util import pgcalc
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import nice_size
 from galaxy.util.script import app_properties_from_args, populate_config_args
@@ -41,16 +40,15 @@ def quotacheck(sa_session, users, engine):
     sa_session.refresh(user)
     current = user.get_disk_usage()
     print(user.username, '<' + user.email + '>:', end=' ')
-    if engine not in ('postgres', 'postgresql'):
-        new = user.calculate_disk_usage()
-        sa_session.refresh(user)
-        # usage changed while calculating, do it again
-        if user.get_disk_usage() != current:
-            print('usage changed while calculating, trying again...')
-            return quotacheck(sa_session, user, engine)
+
+    if not args.dryrun:
+        # Apply new disk usage
+        user.calculate_and_set_disk_usage()
+        # And fetch
+        new = user.get_disk_usage()
     else:
-        new = pgcalc(sa_session, user.id, dryrun=args.dryrun)
-    # yes, still a small race condition between here and the flush
+        new = user.calculate_disk_usage()
+
     print('old usage:', nice_size(current), 'change:', end=' ')
     if new in (current, None):
         print('none')
@@ -59,10 +57,6 @@ def quotacheck(sa_session, users, engine):
             print('+%s' % (nice_size(new - current)))
         else:
             print('-%s' % (nice_size(current - new)))
-        if not args.dryrun and engine not in ('postgres', 'postgresql'):
-            user.set_disk_usage(new)
-            sa_session.add(user)
-            sa_session.flush()
 
 
 if __name__ == '__main__':

@@ -18,8 +18,8 @@ export default class Data {
             root: galaxy.root,
             host: host
         });
-        var instance = Vue.extend(DataDialog);
-        var vm = document.createElement("div");
+        const instance = Vue.extend(DataDialog);
+        const vm = document.createElement("div");
         $("body").append(vm);
         new instance({
             propsData: options

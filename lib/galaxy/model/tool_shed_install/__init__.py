@@ -4,7 +4,7 @@ import os
 from galaxy.util import asbool
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
-from tool_shed.util import common_util
+from galaxy.util.tool_shed import common_util
 
 log = logging.getLogger(__name__)
 
@@ -555,14 +555,14 @@ class ToolDependency(object):
 
     def installation_directory(self, app):
         if self.type == 'package':
-            return os.path.join(app.config.tool_dependency_dir,
+            return os.path.join(app.tool_dependency_dir,
                                 self.name,
                                 self.version,
                                 self.tool_shed_repository.owner,
                                 self.tool_shed_repository.name,
                                 self.tool_shed_repository.installed_changeset_revision)
         if self.type == 'set_environment':
-            return os.path.join(app.config.tool_dependency_dir,
+            return os.path.join(app.tool_dependency_dir,
                                 'environment_settings',
                                 self.name,
                                 self.tool_shed_repository.owner,

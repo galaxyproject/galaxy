@@ -25,19 +25,31 @@ from galaxy import (
     exceptions,
     model
 )
+from galaxy.job_execution import output_collect
 from galaxy.managers.jobs import JobSearch
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.queue_worker import send_control_task
+from galaxy.tool_util.deps import (
+    CachedDependencyManager,
+)
+from galaxy.tool_util.fetcher import ToolLocationFetcher
+from galaxy.tool_util.loader import (
+    imported_macro_paths,
+    raw_tool_xml_tree,
+    template_macro_params
+)
+from galaxy.tool_util.parser import (
+    get_tool_source,
+    get_tool_source_from_representation,
+    ToolOutputCollectionPart
+)
+from galaxy.tool_util.parser.xml import XmlPageSource
+from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.tools import expressions
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
-from galaxy.tools.deps import (
-    CachedDependencyManager,
-)
-from galaxy.tools.fetcher import ToolLocationFetcher
 from galaxy.tools.parameters import (
     check_param,
     params_from_strings,
@@ -46,7 +58,6 @@ from galaxy.tools.parameters import (
     populate_state,
     visit_input_values
 )
-from galaxy.tools.parameters import output_collect
 from galaxy.tools.parameters.basic import (
     BaseURLToolParameter,
     DataCollectionToolParameter,
@@ -64,12 +75,6 @@ from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repea
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.tools.parameters.wrapped_json import json_wrap
-from galaxy.tools.parser import (
-    get_tool_source,
-    get_tool_source_from_representation,
-    ToolOutputCollectionPart
-)
-from galaxy.tools.parser.xml import XmlPageSource
 from galaxy.tools.test import parse_tests
 from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
@@ -86,7 +91,6 @@ from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.form_builder import SelectField
 from galaxy.util.json import safe_loads
-from galaxy.util.odict import odict
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.version import VERSION_MAJOR
@@ -96,12 +100,6 @@ from .execute import (
     execute as execute_job,
     MappingParameters,
 )
-from .loader import (
-    imported_macro_paths,
-    raw_tool_xml_tree,
-    template_macro_params
-)
-from .provided_metadata import parse_tool_provided_metadata
 
 log = logging.getLogger(__name__)
 
@@ -236,21 +234,16 @@ class ToolBox(BaseGalaxyToolBox):
     def __init__(self, config_filenames, tool_root_dir, app):
         self._reload_count = 0
         self.tool_location_fetcher = ToolLocationFetcher()
+        # This is here to deal with the old default value, which doesn't make
+        # sense in an "installed Galaxy" world.
+        # FIXME: ./
+        if tool_root_dir == './tools':
+            tool_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'bundled'))
         super(ToolBox, self).__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
             app=app,
         )
-
-    def handle_panel_update(self, section_dict):
-        """
-        Sends a panel update to all threads/processes.
-        """
-        send_control_task(self.app, 'create_panel_section', kwargs=section_dict)
-        # The following local call to self.create_section should be unnecessary
-        # but occasionally the local ToolPanelElements instance appears to not
-        # get updated.
-        self.create_section(section_dict)
 
     def has_reloaded(self, other_toolbox):
         return self._reload_count != other_toolbox._reload_count
@@ -411,6 +404,7 @@ class Tool(Dictifiable):
 
     tool_type = 'default'
     requires_setting_metadata = True
+    produces_entry_points = False
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
 
@@ -428,7 +422,7 @@ class Tool(Dictifiable):
         self.repository_id = repository_id
         self._allow_code_files = allow_code_files
         # setup initial attribute values
-        self.inputs = odict()
+        self.inputs = OrderedDict()
         self.stdio_exit_codes = list()
         self.stdio_regexes = list()
         self.inputs_by_page = list()
@@ -543,7 +537,9 @@ class Tool(Dictifiable):
         """Indicates this tool's runtime requires Galaxy's Python environment."""
         # All special tool types (data source, history import/export, etc...)
         # seem to require Galaxy's Python.
-        if self.tool_type not in ["default", "manage_data"]:
+        # FIXME: the (instantiated) tool class should emit this behavior, and not
+        #        use inspection by string check
+        if self.tool_type not in ["default", "manage_data", "interactive"]:
             return True
 
         if self.tool_type == "manage_data" and self.profile < 18.09:
@@ -812,12 +808,14 @@ class Tool(Dictifiable):
         self.containers = containers
 
         self.citations = self._parse_citations(tool_source)
+        self.xrefs = tool_source.parse_xrefs()
 
         # Determine if this tool can be used in workflows
         self.is_workflow_compatible = self.check_workflow_compatible(tool_source)
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths()
+        self.ports = tool_source.parse_realtime()
 
     def __parse_legacy_features(self, tool_source):
         self.code_namespace = dict()
@@ -1078,7 +1076,7 @@ class Tool(Dictifiable):
             if citation_elem.tag != "citation":
                 pass
             if hasattr(self.app, 'citations_manager'):
-                citation = self.app.citations_manager.parse_citation(citation_elem, self.tool_dir)
+                citation = self.app.citations_manager.parse_citation(citation_elem)
                 if citation:
                     citations.append(citation)
         return citations
@@ -1089,7 +1087,7 @@ class Tool(Dictifiable):
         groups (repeat, conditional) or param elements. Groups will be parsed
         recursively.
         """
-        rval = odict()
+        rval = OrderedDict()
         context = ExpressionContext(rval, context)
         for input_source in page_source.parse_input_sources():
             # Repeat group
@@ -1130,7 +1128,7 @@ class Tool(Dictifiable):
                             page_source = XmlPageSource(ElementTree.XML("<when>%s</when>" % case_inputs))
                             case.inputs = self.parse_input_elem(page_source, enctypes, context)
                         else:
-                            case.inputs = odict()
+                            case.inputs = OrderedDict()
                         group.cases.append(case)
                 else:
                     # Should have one child "input" which determines the case
@@ -1158,7 +1156,7 @@ class Tool(Dictifiable):
                                     (self.id, group.name, group.test_param.name, unspecified_case))
                         case = ConditionalWhen()
                         case.value = unspecified_case
-                        case.inputs = odict()
+                        case.inputs = OrderedDict()
                         group.cases.append(case)
                 rval[group.name] = group
             elif input_type == "section":
@@ -1499,7 +1497,7 @@ class Tool(Dictifiable):
             log.exception('Exception caught while attempting tool execution:')
             message = 'Error executing tool: %s' % unicodify(e)
             return False, message
-        if isinstance(out_data, odict):
+        if isinstance(out_data, OrderedDict):
             return job, list(out_data.items())
         else:
             if isinstance(out_data, string_types):
@@ -1748,6 +1746,8 @@ class Tool(Dictifiable):
         Find any additional datasets generated by a tool and attach (for
         cases where number of outputs is not known in advance).
         """
+        # given the job_execution import is the only one, probably makes sense to refactor this out
+        # into job_wrapper.
         tool = self
         permission_provider = output_collect.PermissionProvider(inp_data, tool.app.security_agent, job)
         metadata_source_provider = output_collect.MetadataSourceProvider(inp_data)
@@ -1885,6 +1885,7 @@ class Tool(Dictifiable):
 
         tool_dict["edam_operations"] = self.edam_operations
         tool_dict["edam_topics"] = self.edam_topics
+        tool_dict["xrefs"] = self.xrefs
 
         # Fill in ToolShedRepository info
         if hasattr(self, 'tool_shed') and self.tool_shed:
@@ -1921,7 +1922,8 @@ class Tool(Dictifiable):
         tool_dict['panel_section_id'], tool_dict['panel_section_name'] = self.get_panel_section()
 
         tool_class = self.__class__
-        regular_form = tool_class == Tool or isinstance(self, DatabaseOperationTool)
+        # FIXME: the Tool class should declare directly, instead of ad hoc inspection
+        regular_form = tool_class == Tool or isinstance(self, (DatabaseOperationTool, RealTimeTool))
         tool_dict["form_style"] = "regular" if regular_form else "special"
 
         return tool_dict
@@ -2403,7 +2405,7 @@ class SetMetadataTool(Tool):
             job, base_dir='job_work', dir_only=True, obj_dir=True
         )
         for name, dataset in inp_data.items():
-            external_metadata = get_metadata_compute_strategy(app, job.id)
+            external_metadata = get_metadata_compute_strategy(app.config, job.id)
             sa_session = app.model.context
             if external_metadata.external_metadata_set_successfully(dataset, name, sa_session, working_directory=working_directory):
                 external_metadata.load_metadata(dataset, name, sa_session, working_directory=working_directory)
@@ -2441,6 +2443,35 @@ class ExportHistoryTool(Tool):
 
 class ImportHistoryTool(Tool):
     tool_type = 'import_history'
+
+
+class RealTimeTool(Tool):
+    tool_type = 'interactive'
+    produces_entry_points = True
+
+    def __init__(self, config_file, tool_source, app, **kwd):
+        assert app.config.interactivetools_enable, ValueError('Trying to load an InteractiveTool, but InteractiveTools are not enabled.')
+        super(RealTimeTool, self).__init__(config_file, tool_source, app, **kwd)
+        for port in self.ports:
+            assert port.get('requires_domain', None), ValueError('InteractiveTools currently only work when requires_domain is True for each entry_point.')
+
+    def __remove_realtime_by_job(self, job):
+        if job:
+            eps = job.realtimetool_entry_points
+            log.debug('__remove_realtime_by_job: %s', eps)
+            self.app.realtime_manager.remove_entry_points(eps)
+        else:
+            log.warning("Could not determine job to stop InteractiveTool: %s", job)
+
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+        # run original exec_after_process
+        super(RealTimeTool, self).exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+        self.__remove_realtime_by_job(job)
+
+    def job_failed(self, job_wrapper, message, exception=False):
+        super(RealTimeTool, self).job_failed(job_wrapper, message, exception=exception)
+        job = job_wrapper.sa_session.query(model.Job).get(job_wrapper.job_id)
+        self.__remove_realtime_by_job(job)
 
 
 class DataManagerTool(OutputParameterJSONTool):
@@ -2569,7 +2600,7 @@ class DatabaseOperationTool(Tool):
         return self._outputs_dict()
 
     def _outputs_dict(self):
-        return odict()
+        return OrderedDict()
 
 
 class UnzipCollectionTool(DatabaseOperationTool):
@@ -2601,7 +2632,7 @@ class ZipCollectionTool(DatabaseOperationTool):
         reverse_o = incoming["input_reverse"]
 
         forward, reverse = forward_o.copy(), reverse_o.copy()
-        new_elements = odict()
+        new_elements = OrderedDict()
         new_elements["forward"] = forward
         new_elements["reverse"] = reverse
         self._add_datasets_to_history(history, [forward, reverse])
@@ -2614,7 +2645,7 @@ class BuildListCollectionTool(DatabaseOperationTool):
     tool_type = 'build_list'
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None):
-        new_elements = odict()
+        new_elements = OrderedDict()
 
         for i, incoming_repeat in enumerate(incoming["datasets"]):
             new_dataset = incoming_repeat["input"].copy(copy_tags=tags)
@@ -2674,7 +2705,7 @@ class MergeCollectionTool(DatabaseOperationTool):
             if dupl_actions in ['suffix_conflict', 'suffix_every', 'suffix_conflict_rest']:
                 suffix_pattern = advanced['conflict']['suffix_pattern']
 
-        new_element_structure = odict()
+        new_element_structure = OrderedDict()
 
         # Which inputs does the identifier appear in.
         identifiers_map = {}
@@ -2726,7 +2757,7 @@ class MergeCollectionTool(DatabaseOperationTool):
                     new_element_structure[effective_identifer] = element
 
         # Don't copy until we know everything is fine and we have the structure of the list ready to go.
-        new_elements = odict()
+        new_elements = OrderedDict()
         for key, value in new_element_structure.items():
             if getattr(value, "history_content_type", None) == "dataset":
                 copied_value = value.copy(force_flush=False)
@@ -2743,7 +2774,7 @@ class MergeCollectionTool(DatabaseOperationTool):
 class FilterDatasetsTool(DatabaseOperationTool):
 
     def _get_new_elements(self, history, elements_to_copy):
-        new_elements = odict()
+        new_elements = OrderedDict()
         for dce in elements_to_copy:
             element_identifier = dce.element_identifier
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
@@ -2811,7 +2842,7 @@ class FlattenTool(DatabaseOperationTool):
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         join_identifier = incoming["join_identifier"]
-        new_elements = odict()
+        new_elements = OrderedDict()
         copied_datasets = []
 
         def add_elements(collection, prefix=""):
@@ -2839,7 +2870,7 @@ class SortTool(DatabaseOperationTool):
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hdca = incoming["input"]
         sorttype = incoming["sort_type"]["sort_type"]
-        new_elements = odict()
+        new_elements = OrderedDict()
         elements = hdca.collection.elements
         presort_elements = []
         if sorttype == 'alpha':
@@ -2884,7 +2915,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
         how_type = incoming["how"]["how_select"]
         new_labels_dataset_assoc = incoming["how"]["labels"]
         strict = string_as_bool(incoming["how"]["strict"])
-        new_elements = odict()
+        new_elements = OrderedDict()
 
         def add_copied_value_to_new_elements(new_label, dce_object):
             new_label = new_label.strip()
@@ -2956,7 +2987,7 @@ class TagFromFileTool(DatabaseOperationTool):
         hdca = incoming["input"]
         how = incoming['how']
         new_tags_dataset_assoc = incoming["tags"]
-        new_elements = odict()
+        new_elements = OrderedDict()
         tags_manager = GalaxyTagHandler(trans.app.model.context)
         new_datasets = []
 
@@ -3017,8 +3048,8 @@ class FilterFromFileTool(DatabaseOperationTool):
         hdca = incoming["input"]
         how_filter = incoming["how"]["how_filter"]
         filter_dataset_assoc = incoming["how"]["filter_source"]
-        filtered_elements = odict()
-        discarded_elements = odict()
+        filtered_elements = OrderedDict()
+        discarded_elements = OrderedDict()
 
         filtered_path = filter_dataset_assoc.file_name
         filtered_identifiers_raw = open(filtered_path, "r").readlines(1024 * 1000000)
@@ -3053,7 +3084,7 @@ class FilterFromFileTool(DatabaseOperationTool):
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool,
+for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool, RealTimeTool,
                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
                    BuildListCollectionTool, ExtractDatasetCollectionTool,

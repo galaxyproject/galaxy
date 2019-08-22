@@ -32,7 +32,7 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous,
 )
-from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
+from galaxy.webapps.base.controller import BaseAPIController, UsesVisualizationMixin
 log = logging.getLogger(__name__)
 
 
@@ -619,6 +619,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 path += ldda.name
                 while path in seen:
                     path += '_'
+                path = "{path}.{extension}".format(path=path, extension=ldda.extension)
                 seen.append(path)
                 zpath = os.path.split(path)[-1]  # comes as base_name/fname
                 outfname, zpathext = os.path.splitext(zpath)
@@ -702,7 +703,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 fStat = os.stat(dataset.file_name)
                 trans.response.set_content_type(ldda.get_mime())
                 trans.response.headers['Content-Length'] = int(fStat.st_size)
-                fname = ldda.name
+                fname = "{path}.{extension}".format(path=ldda.name, extension=ldda.extension)
                 fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
                 try:

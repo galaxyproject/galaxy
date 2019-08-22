@@ -47,26 +47,17 @@ class Node(dictobj.DictionaryObject):
     For example, users may want to pass "attr" or some other valid jsTree options.
 
     Example:
-      >>> import jstree
-      >>> node = jstree.Node('a', None)
-      >>> print(node)
-      Node({'text': 'a', 'children': MutableDictionaryObject({})})
-      >>> print(node.jsonData())
-      {'text': 'a'}
+      >>> node = Node('a', None)
+      >>> assert node._items == {'text': 'a', 'children': dictobj.MutableDictionaryObject({})}
+      >>> assert node.jsonData() == {'text': 'a'}
 
-      >>> import jstree
-      >>> node = jstree.Node('a', 1)
-      >>> print(node)
-      Node({'text': 'a', 'children': MutableDictionaryObject({}), 'li_attr': DictionaryObject({'id': 1}), 'id': 1})
-      >>> print(node.jsonData())
-      {'text': 'a', 'id': 1, 'li_attr': {'id': 1}}
+      >>> node = Node('a', 1)
+      >>> assert node._items == {'text': 'a', 'children': dictobj.MutableDictionaryObject({}), 'li_attr': dictobj.DictionaryObject({'id': 1}), 'id': 1}
+      >>> assert node.jsonData() == {'text': 'a', 'id': 1, 'li_attr': {'id': 1}}
 
-      >>> import jstree
-      >>> node = jstree.Node('a', 5, icon="folder", state = {'opened': True})
-      >>> print(node)
-      Node({'text': 'a', 'id': 5, 'state': DictionaryObject({'opened': True}), 'children': MutableDictionaryObject({}), 'li_attr': DictionaryObject({'id': 5}), 'icon': 'folder'})
-      >>> print(node.jsonData())
-      {'text': 'a', 'state': {'opened': True}, 'id': 5, 'li_attr': {'id': 5}, 'icon': 'folder'}
+      >>> node = Node('a', 5, icon="folder", state = {'opened': True})
+      >>> assert node._items == {'text': 'a', 'id': 5, 'state': dictobj.DictionaryObject({'opened': True}), 'children': dictobj.MutableDictionaryObject({}), 'li_attr': dictobj.DictionaryObject({'id': 5}), 'icon': 'folder'}
+      >>> assert node.jsonData() == {'text': 'a', 'state': {'opened': True}, 'id': 5, 'li_attr': {'id': 5}, 'icon': 'folder'}
     """
     super(Node, self).__init__()
 

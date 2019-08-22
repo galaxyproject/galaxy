@@ -865,8 +865,7 @@ const applyRules = function(data, sources, columns, rules, headersPerRule = []) 
     const colHeadersPerRule = Array.from(headersPerRule);
     let hasRuleError = false;
     for (var ruleIndex in rules) {
-        const ruleHeaders = colHeadersFor(data, columns);
-        colHeadersPerRule[ruleIndex] = ruleHeaders;
+        colHeadersPerRule[ruleIndex] = colHeadersFor(data, columns);
         const rule = rules[ruleIndex];
         rule.error = null;
         rule.warn = null;

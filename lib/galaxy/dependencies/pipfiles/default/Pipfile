@@ -15,6 +15,7 @@ mock = "*"
 NoseHTML = "*"
 pygithub3 = {version = "*", markers = "python_version < '3'"}
 pytest = "*"
+pytest-cov = "*"
 pytest-html = "*"
 pytest-pythonpath = "*"
 pytest-postgresql = "*"
@@ -67,7 +68,7 @@ bioblend = "*"
 boto = "*"
 kombu = "*"
 psutil = "*"
-pulsar-galaxy-lib = "*"
+pulsar-galaxy-lib = "==0.12.1"
 sqlalchemy-migrate = "*"
 sqlparse = "*"
 svgwrite = "*"
@@ -75,8 +76,8 @@ pyparsing = "*"
 "Fabric3" = "*"
 paramiko = "*"
 python-genomespaceclient = "<2.0"
-social_auth_core = {version = "==3.1.0", extras = ['openidconnect']}
-cloudauthz = "<=0.2.0"
+social_auth_core = {version = "==3.1.0+gx0", extras = ['openidconnect']}
+cloudauthz = "==0.6.0"
 gxformat2 = "*"
 
 [requires]

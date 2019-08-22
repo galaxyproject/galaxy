@@ -8,8 +8,13 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
 
 from galaxy import model
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    ItemAccessibilityException,
+    ObjectNotFound,
+    RequestParameterInvalidException,
+)
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.util import (
@@ -37,6 +42,28 @@ def get_path_key(path_tuple):
         else:
             path_key = p
     return path_key
+
+
+class JobManager(object):
+
+    def __init__(self, app):
+        self.app = app
+        self.dataset_manager = DatasetManager(app)
+
+    def get_accessible_job(self, trans, decoded_job_id):
+        job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
+        if job is None:
+            raise ObjectNotFound()
+        belongs_to_user = (job.user == trans.user) if job.user else (job.session_id == trans.get_galaxy_session().id)
+        if not trans.user_is_admin and not belongs_to_user:
+            # Check access granted via output datasets.
+            if not job.output_datasets:
+                raise ItemAccessibilityException("Job has no output datasets.")
+            for data_assoc in job.output_datasets:
+                if not self.dataset_manager.is_accessible(data_assoc.dataset.dataset, trans.user):
+                    raise ItemAccessibilityException("You are not allowed to rerun this job.")
+        trans.sa_session.refresh(job)
+        return job
 
 
 class JobSearch(object):

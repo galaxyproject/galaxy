@@ -9,12 +9,12 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 import galaxy
 import galaxy.app
 import galaxy.config
+from galaxy.managers.pages import PageContentProcessor, placeholderRenderForSave
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.script import app_properties_from_args, populate_config_args
-from galaxy.webapps.galaxy.controllers.page import _PageContentProcessor, _placeholderRenderForSave
 
 
 def main(argv):
@@ -37,7 +37,7 @@ def main(argv):
     mock_trans = Bunch(app=Bunch(security=security_helper), model=model, user_is_admin=lambda: True, sa_session=session)
     for p in pagerevs:
         try:
-            processor = _PageContentProcessor(mock_trans, _placeholderRenderForSave)
+            processor = PageContentProcessor(mock_trans, placeholderRenderForSave)
             processor.feed(p.content)
             newcontent = unicodify(processor.output(), 'utf-8')
             if p.content != newcontent:

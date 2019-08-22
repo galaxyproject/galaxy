@@ -1,8 +1,12 @@
+import errno
 import logging
 import os
 import string
 import time
-from collections import namedtuple
+from collections import (
+    namedtuple,
+    OrderedDict
+)
 from errno import ENOENT
 from xml.etree.ElementTree import ParseError
 
@@ -11,8 +15,8 @@ from six import iteritems
 from six.moves.urllib.parse import urlparse
 
 from galaxy.exceptions import MessageException, ObjectNotFound
-from galaxy.tools.deps import build_dependency_manager
-from galaxy.tools.loader_directory import looks_like_a_tool
+from galaxy.tool_util.deps import build_dependency_manager
+from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.util import (
     ExecutionTimer,
     listify,
@@ -22,7 +26,6 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
-from galaxy.util.odict import odict
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
@@ -36,6 +39,11 @@ from .parser import ensure_tool_conf_item, get_toolbox_parser
 from .tags import tool_tag_manager
 
 log = logging.getLogger(__name__)
+
+SHED_TOOL_CONF_XML = """<?xml version="1.0"?>
+<toolbox tool_path="{shed_tools_dir}">
+</toolbox>
+"""
 
 # A fake ToolShedRepository constructed from a shed tool conf
 ToolConfRepository = namedtuple(
@@ -76,7 +84,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         # In-memory dictionary that defines the layout of the tool panel.
         self._tool_panel = ToolPanelElements()
         self._index = 0
-        self.data_manager_tools = odict()
+        self.data_manager_tools = OrderedDict()
         self._lineage_map = LineageMap(app)
         # Sets self._integrated_tool_panel and self._integrated_tool_panel_config_has_contents
         self._init_integrated_tool_panel(app.config)
@@ -98,13 +106,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             # Load self._tool_panel based on the order in self._integrated_tool_panel.
             self._load_tool_panel()
         self._save_integrated_tool_panel()
-
-    def handle_panel_update(self, section_dict):
-        """Extension-point for Galaxy-app specific reload logic.
-
-        This abstract representation of the toolbox shouldn't have details about
-        interacting with the rest of the Galaxy app or message queues, etc....
-        """
 
     def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds):
         raise NotImplementedError()
@@ -161,7 +162,21 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
         """
         log.info("Parsing the tool configuration %s" % config_filename)
-        tool_conf_source = get_toolbox_parser(config_filename)
+        try:
+            tool_conf_source = get_toolbox_parser(config_filename)
+        except (OSError, IOError) as exc:
+            for opt in ('shed_tool_conf', 'migrated_tools_config'):
+                if (config_filename == getattr(self.app.config, opt) and not
+                        getattr(self.app.config, opt + '_set') and
+                        exc.errno == errno.ENOENT):
+                    log.debug("Skipping loading missing default config file: %s", config_filename)
+                    stcd = dict(config_filename=config_filename,
+                                tool_path=self.app.config.shed_tools_dir,
+                                config_elems=[],
+                                create=SHED_TOOL_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir))
+                    self._dynamic_tool_confs.append(stcd)
+                    return
+            raise
         tool_path = tool_conf_source.parse_tool_path()
         parsing_shed_tool_conf = tool_conf_source.is_shed_tool_conf()
         if parsing_shed_tool_conf:
@@ -268,7 +283,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 'id': section_id,
                 'version': '',
             }
-            self.handle_panel_update(section_dict)
+            self.create_section(section_dict)
             tool_section = self._tool_panel[tool_panel_section_key]
             self._save_integrated_tool_panel()
         else:
@@ -1143,7 +1158,11 @@ class BaseGalaxyToolBox(AbstractToolBox):
         return looks_like_a_tool(path, enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False))
 
     def _init_dependency_manager(self):
-        self.dependency_manager = build_dependency_manager(self.app.config)
+        app_config_dict = self.app.config.config_dict
+        conf_file = app_config_dict.get("dependency_resolvers_config_file")
+        default_tool_dependency_dir = os.path.join(self.app.config.data_dir, "dependencies")
+        self.dependency_manager = build_dependency_manager(app_config_dict=app_config_dict, conf_file=conf_file,
+                                                           default_tool_dependency_dir=default_tool_dependency_dir)
 
     def reload_dependency_manager(self):
         self._init_dependency_manager()

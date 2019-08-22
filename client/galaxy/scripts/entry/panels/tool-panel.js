@@ -9,23 +9,23 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import Buttons from "mvc/ui/ui-buttons";
 
-var ToolPanel = Backbone.View.extend({
+const ToolPanel = Backbone.View.extend({
     initialize: function(page, options) {
         const Galaxy = getGalaxyInstance();
         const appRoot = getAppRoot();
 
         // access configuration options
-        var config = options.config;
+        const config = options.config;
         this.root = options.root;
 
         /** @type {Object[]} descriptions of user's workflows to be shown in the tool menu */
         this.stored_workflow_menu_entries = config.stored_workflow_menu_entries || [];
 
         // create tool search, tool panel, and tool panel view.
-        var tool_search = new Tools.ToolSearch({
+        const tool_search = new Tools.ToolSearch({
             hidden: false
         });
-        var tools = new Tools.ToolCollection(config.toolbox);
+        const tools = new Tools.ToolCollection(config.toolbox);
         this.tool_panel = new Tools.ToolPanel({
             tool_search: tool_search,
             tools: tools,
@@ -52,9 +52,17 @@ var ToolPanel = Backbone.View.extend({
                 title: _l("Show favorites"),
                 icon: "fa fa-star-o",
                 onclick: e => {
-                    $("#tool-search-query")
-                        .val("#favorites")
-                        .trigger("change");
+                    const $search_query = $("#tool-search-query");
+                    const $header_btn = $(".panel-header-button");
+                    $header_btn.find(".fa").toggleClass("fa-star-o fa-star");
+                    $header_btn.tooltip("hide");
+                    if ($search_query.val().indexOf("#favorites") != -1) {
+                        $search_query.val("");
+                        $search_query.keyup();
+                        $header_btn.attr("title", "");
+                    } else {
+                        $search_query.val("#favorites").trigger("change");
+                    }
                 }
             });
             panel_buttons.push(this.favorite_button);
@@ -74,22 +82,21 @@ var ToolPanel = Backbone.View.extend({
 
     render: function() {
         // if there are tools, render panel and display everything
-        var self = this;
         if (this.tool_panel.get("layout").size() > 0) {
             this.$el.find(".toolMenu").replaceWith(this.tool_panel_view.$el);
             this.tool_panel_view.render();
         }
         // build the dom for the workflow portion of the tool menu
         // add internal workflow list
-        self.$("#internal-workflows").append(
-            self._templateAllWorkflow({
+        this.$("#internal-workflows").append(
+            this._templateAllWorkflow({
                 title: _l("All workflows"),
                 href: "workflows/list"
             })
         );
         _.each(this.stored_workflow_menu_entries, menu_entry => {
-            self.$("#internal-workflows").append(
-                self._templateWorkflowLink({
+            this.$("#internal-workflows").append(
+                this._templateWorkflowLink({
                     title: menu_entry.stored_workflow.name,
                     href: `workflows/run?id=${menu_entry.encoded_stored_workflow_id}`
                 })
@@ -142,9 +149,9 @@ var ToolPanel = Backbone.View.extend({
                     <div class="toolSectionPad"/>
                     <div class="toolSectionPad"/>
                     <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
-                        <span>
+                        <a>
                             ${_l("Workflows")}
-                        </span>
+                        </a>
                     </div>
                         <div id="internal-workflows" class="toolSectionBody">
                             <div class="toolSectionBg"/>

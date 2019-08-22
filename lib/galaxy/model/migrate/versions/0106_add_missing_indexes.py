@@ -13,7 +13,6 @@ from galaxy.model.migrate.versions.util import (
 )
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 metadata = MetaData()
 
 indexes = (
@@ -67,5 +66,6 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
+    # TODO: Dropping a column used in a foreign key fails in MySQL, need to remove the FK first.
     for ix, table, col in indexes:
         drop_index(ix, table, col, metadata)

@@ -308,10 +308,14 @@ class AuthnzManager(object):
             ca = CloudAuthz()
             log.info("Requesting credentials using CloudAuthz with config id `{}` on be half of user `{}`.".format(
                 cloudauthz.id, user_id))
-            return ca.authorize(cloudauthz.provider, config)
+            credentials = ca.authorize(cloudauthz.provider, config)
+            return credentials
         except CloudAuthzBaseException as e:
             log.info(e)
             raise exceptions.AuthenticationFailed(e)
+        except NotImplementedError as e:
+            log.info(e)
+            raise exceptions.RequestParameterInvalidException(e)
 
     def get_cloud_access_credentials_in_file(self, new_file_path, cloudauthz, sa_session, user_id, request=None):
         """

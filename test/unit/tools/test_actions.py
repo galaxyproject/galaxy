@@ -4,12 +4,12 @@ from xml.etree.ElementTree import XML
 
 from galaxy import model
 from galaxy.exceptions import UserActivationRequiredException
+from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
     on_text_for_names
 )
-from galaxy.tools.parser.output_objects import ToolOutput
 from .. import tools_support
 
 

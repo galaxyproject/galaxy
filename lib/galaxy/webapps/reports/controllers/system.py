@@ -8,7 +8,7 @@ from sqlalchemy import and_, desc, false, null, true
 from sqlalchemy.orm import eagerload
 
 from galaxy import model, util
-from galaxy.web.base.controller import BaseUIController, web
+from galaxy.webapps.base.controller import BaseUIController, web
 
 log = logging.getLogger(__name__)
 

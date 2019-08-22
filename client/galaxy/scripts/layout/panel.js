@@ -3,11 +3,11 @@ import _ from "underscore";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
 
-var MIN_PANEL_WIDTH = 160;
-var MAX_PANEL_WIDTH = 800;
+const MIN_PANEL_WIDTH = 160;
+const MAX_PANEL_WIDTH = 800;
 
 /** View for left/right panels used by Page view */
-var SidePanel = Backbone.View.extend({
+const SidePanel = Backbone.View.extend({
     initialize: function(options) {
         this.view = options.view;
         this.hidden = false;
@@ -24,9 +24,9 @@ var SidePanel = Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
-        var panel = this.view;
-        var components = this.view.model.attributes || {};
+        const self = this;
+        const panel = this.view;
+        const components = this.view.model.attributes || {};
         this.$el.html(this._templatePanel(this.id));
         _.each(components.buttons, button => {
             self.$(".panel-header-buttons").append(button.$el);
@@ -76,16 +76,16 @@ var SidePanel = Backbone.View.extend({
     },
 
     _mousedownDragHandler: function(ev) {
-        var self = this;
-        var draggingLeft = this.id === "left";
+        const self = this;
+        const draggingLeft = this.id === "left";
         // Save the mouse position and width of the element (panel) when the
         // drag interaction is first started
-        var initialX = ev.pageX;
-        var initialWidth = self.$el.width();
+        const initialX = ev.pageX;
+        const initialWidth = self.$el.width();
 
         function move(e) {
-            var delta = e.pageX - initialX;
-            var newWidth = draggingLeft ? initialWidth + delta : initialWidth - delta;
+            const delta = e.pageX - initialX;
+            let newWidth = draggingLeft ? initialWidth + delta : initialWidth - delta;
             // Limit range
             newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth));
             self.resize(newWidth);
@@ -113,36 +113,36 @@ var SidePanel = Backbone.View.extend({
     },
 
     show: function() {
-        if (!this.hidden) {
-            return;
+        if (this.hidden && !this.motionQueue) {
+            this.motionQueue = 2;
+            const animation = {};
+            const whichSide = this.id;
+            animation[whichSide] = 0;
+            this.$el
+                .css(whichSide, -this.saved_size)
+                .css("width", this.saved_size)
+                .animate(animation, "fast", () => this.motionQueue--);
+            animation[whichSide] = this.saved_size;
+            this.$center().animate(animation, "fast", () => this.motionQueue--);
+            this.hidden = false;
+            this.$toggleButton().removeClass("hidden");
         }
-        var self = this;
-        var animation = {};
-        var whichSide = this.id;
-        animation[whichSide] = 0;
-        self.$el
-            .css(whichSide, -this.saved_size)
-            .show()
-            .animate(animation, "fast", () => {
-                self.resize(self.saved_size);
-            });
-        self.hidden = false;
-        self.$toggleButton().removeClass("hidden");
         return this;
     },
 
     hide: function() {
-        if (this.hidden) {
-            return;
+        if (!this.hidden && !this.motionQueue) {
+            this.motionQueue = 2;
+            const animation = {};
+            const whichSide = this.id;
+            this.saved_size = this.$el.width();
+            animation[whichSide] = -this.saved_size;
+            this.$el.animate(animation, "fast", () => this.motionQueue--);
+            animation[whichSide] = 0;
+            this.$center().animate(animation, "fast", () => this.motionQueue--);
+            this.hidden = true;
+            this.$toggleButton().addClass("hidden");
         }
-        var animation = {};
-        var whichSide = this.id;
-        this.saved_size = this.$el.width();
-        animation[whichSide] = -this.saved_size;
-        this.$el.animate(animation, "fast");
-        this.$center().css(whichSide, 0);
-        this.hidden = true;
-        this.$toggleButton().addClass("hidden");
         return this;
     },
 
@@ -156,7 +156,7 @@ var SidePanel = Backbone.View.extend({
     //TODO: only used in message.mako?
     /**   */
     handle_minwidth_hint: function(hint) {
-        var space = this.$center().width() - (this.hidden ? this.saved_size : 0);
+        const space = this.$center().width() - (this.hidden ? this.saved_size : 0);
         if (space < hint) {
             if (!this.hidden) {
                 this.toggle();
@@ -189,16 +189,16 @@ var SidePanel = Backbone.View.extend({
 
 // ----------------------------------------------------------------------------
 // TODO: side should be defined by page - not here
-var LeftPanel = SidePanel.extend({
+const LeftPanel = SidePanel.extend({
     id: "left"
 });
 
-var RightPanel = SidePanel.extend({
+const RightPanel = SidePanel.extend({
     id: "right"
 });
 
 /** Center panel with the ability to switch between iframe and view */
-var CenterPanel = Backbone.View.extend({
+const CenterPanel = Backbone.View.extend({
     initialize: function(options) {
         this.setElement($(this.template()));
         this.$frame = this.$(".center-frame");
@@ -208,9 +208,9 @@ var CenterPanel = Backbone.View.extend({
 
     /** Display iframe if its target url changes, hide center panel */
     _iframeChangeHandler: function(ev) {
-        var iframe = ev.currentTarget;
-        var location = iframe.contentWindow && iframe.contentWindow.location;
-        var Galaxy = getGalaxyInstance();
+        const iframe = ev.currentTarget;
+        const location = iframe.contentWindow && iframe.contentWindow.location;
+        const Galaxy = getGalaxyInstance();
         // Adding try/catch to manage a CORS error in toolshed. Accessing
         // location.host is a CORS no-no
         try {

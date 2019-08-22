@@ -7,20 +7,26 @@ $brand-warning: #fe7f02;
 $brand-danger: #e31a1e;
 $brand-light: #f8f9fa;
 $brand-dark: #2c3143;
-$brand-white: #fff;
 $brand-toggle: gold;
 
-// Grays from Bootstrap 4 _variables.scss
-$white: $brand-white;
+// Text colors
+$text-color: $brand-dark;
+$text-muted: lighten($text-color, 10%);
+$border-color: lighten($text-color, 60%);
+
+// Light grays for backgrounds
+$white: lighten($brand-light, 15%); // body background
 $gray-100: $brand-light;
-$gray-200: darken($gray-100, 5%); // welcome background
-$gray-300: darken($gray-100, 10%);
-$gray-400: darken($gray-100, 20%); // input borders
-$gray-500: darken($gray-100, 40%);
-$gray-600: darken($gray-100, 60%); // text-muted
-$gray-700: darken($gray-100, 70%);
-$gray-800: darken($gray-100, 80%);
-$gray-900: darken($gray-100, 90%); // text-regular
+$gray-200: darken($brand-light, 5%); // welcome background
+$gray-300: darken($brand-light, 10%);
+
+// Dark grays for foregrounds
+$gray-900: $text-color;
+$gray-800: $text-muted;
+$gray-700: $text-muted;
+$gray-600: $text-muted;
+$gray-500: $text-muted;
+$gray-400: $border-color;
 $black: $brand-dark;
 
 // These variables don't actually determine the colors in Bootstrap 4, instead
@@ -71,7 +77,7 @@ $font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 $font-family-monospace: Monaco, Menlo, Consolas, "Courier New", monospace;
 $font-family-base: $font-family-sans-serif;
-$font-size-base: 0.8rem; // default 1rem
+$font-size-base: 0.85rem; // default 1rem
 
 // Header font sizes
 $h1-font-size: $font-size-base * 2; // default 2.5
@@ -84,19 +90,22 @@ $h6-font-size: $font-size-base * 0.85; // default 1
 // Increase contrast of dropdown items
 $dropdown-link-hover-color: $brand-light;
 $dropdown-link-hover-bg: $brand-primary;
-$dropdown-link-active-color: $brand-toggle;
+
+// Color of input elements
+$input-color: $text-color;
+$input-color-placeholder: $text-muted;
 
 // Galaxy Variables (not used by bootstrap)
 $body-bg: $white;
-$text-color: $gray-900;
 
 // Masthead
 $masthead-height: 3rem;
 
 // Side panels
-$panel-bg-color: $gray-100;
+$panel-bg-color: $brand-light;
 $panel-text-color: $text-color;
 $panel-header-text-color: $text-color;
+$panel-bg-header-color: $panel-bg-color;
 $panel-footer-bg-color: $panel-bg-color;
 $panel-message-height: 2.5rem;
 $panel-width: 18rem;
@@ -114,12 +123,13 @@ $layout-border: none;
 // Borders
 $border-radius-base: 0.1875rem;
 $border-radius-large: 0.3125rem;
-$border-default-color: $gray-400;
+$border-radius-extralarge: 1rem;
+$border-default: 1px solid $border-color;
 
 // Buttons
 $btn-default-color: $text-color;
 $btn-default-bg: $gray-200;
-$btn-default-border: $border-default-color;
+$btn-default-border: $border-color;
 
 // Forms
 $form-heading-bg: $panel-bg-color;
@@ -128,17 +138,17 @@ $form-border: darken($form-heading-bg, 20%);
 // Table
 $table-heading-bg: $panel-bg-color;
 $table-bg-accent: darken($panel-bg-color, 5%);
-$table-border-color: darken($table-heading-bg, 20%);
+$table-border-color: $border-color;
 
 // Additional state colors
 $state-default-bg: $gray-200;
-$state-default-border: $border-default-color;
+$state-default-border: $border-color;
 $state-paused-bg: lighten($brand-info, 50%);
 $state-running-bg: lighten($brand-warning, 40%);
-$state-running-border: $border-default-color;
+$state-running-border: $border-color;
 
 // Workflow editor
-$workflow-editor-bg: $brand-white;
+$workflow-editor-bg: $white;
 $workflow-overview-bg: $gray-200;
 
 // Margins

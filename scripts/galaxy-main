@@ -47,14 +47,18 @@ log = logging.getLogger(__name__)
 
 real_file = os.path.realpath(__file__)
 GALAXY_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(real_file), os.pardir))
-GALAXY_LIB_DIR = os.path.join(GALAXY_ROOT_DIR, "lib")
-try:
-    sys.path.insert(1, GALAXY_LIB_DIR)
-except Exception:
-    log.exception("Failed to add Galaxy to sys.path")
-    raise
+if not os.path.exists(os.path.join(GALAXY_ROOT_DIR, 'run.sh')):
+    # Galaxy is installed
+    GALAXY_ROOT_DIR = None
+else:
+    GALAXY_LIB_DIR = os.path.join(GALAXY_ROOT_DIR, "lib")
+    try:
+        sys.path.insert(1, GALAXY_LIB_DIR)
+    except Exception:
+        log.exception("Failed to add Galaxy to sys.path")
+        raise
 from galaxy.util import unicodify
-from galaxy.web.stack import get_app_kwds
+from galaxy.web_stack import get_app_kwds
 
 REQUIRES_DAEMONIZE_MESSAGE = "Attempted to use Galaxy in daemon mode, but daemonize is unavailable."
 
@@ -130,9 +134,10 @@ def register_signals():
 def app_loop(args, log):
     try:
         config_builder = GalaxyConfigBuilder(args)
+        config_env = GALAXY_ROOT_DIR is not None
         galaxy_app = load_galaxy_app(
             config_builder,
-            config_env=True,
+            config_env=config_env,
             log=log,
             attach_to_pools=args.attach_to_pool,
         )
@@ -161,6 +166,9 @@ def absolute_config_path(path, galaxy_root):
 def find_config(supplied_config, galaxy_root):
     if supplied_config:
         return supplied_config
+
+    if galaxy_root is None:
+        return os.path.abspath('galaxy.yml')
 
     # If not explicitly supplied an config, check galaxy.ini and then
     # just resort to sample if that has not been configured.
@@ -202,7 +210,7 @@ class GalaxyConfigBuilder(object):
         arg_parser.add_argument("-c", "--config-file", default=None, help="Galaxy config file (defaults to config/galaxy.ini)")
         arg_parser.add_argument("--ini-path", default=None, help="DEPRECATED: use -c/--config-file")
         arg_parser.add_argument("--app", default=None, help="app section in config file (defaults to 'galaxy' for YAML/JSON, 'main' (w/ 'app:' prepended) for INI")
-        arg_parser.add_argument("-d", "--daemonize", default=False, help="Daemonzie process", action="store_true")
+        arg_parser.add_argument("-d", "--daemonize", default=False, help="Daemonize process", action="store_true")
         arg_parser.add_argument("--daemon-log-file", default=None, help="log file for daemon script ")
         arg_parser.add_argument("--log-file", default=None, help="Galaxy log file (overrides log configuration in config_file if set)")
         arg_parser.add_argument("--pid-file", default=DEFAULT_PID, help="pid file (default is %s)" % DEFAULT_PID)

@@ -11,6 +11,7 @@ import random
 import shutil
 import threading
 import time
+from collections import OrderedDict
 from xml.etree import ElementTree
 
 import yaml
@@ -25,7 +26,7 @@ from galaxy.util import (
     force_symlink,
     umask_fix_perms,
 )
-from galaxy.util.odict import odict
+from galaxy.util.bunch import Bunch
 from galaxy.util.path import (
     safe_makedirs,
     safe_relpath,
@@ -803,7 +804,7 @@ class HierarchicalObjectStore(NestedObjectStore):
         """The default contructor. Extends `NestedObjectStore`."""
         super(HierarchicalObjectStore, self).__init__(config, config_dict)
 
-        backends = odict()
+        backends = OrderedDict()
         for order, backend_def in enumerate(config_dict["backends"]):
             backends[order] = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
 
@@ -891,6 +892,12 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None, config_
     'hierarchical', 'irods', and 'pulsar' are supported values.
     """
     from_object = 'xml'
+
+    if config is None and config_dict is not None and 'config' in config_dict:
+        # Build a config object from to_dict of an ObjectStore.
+        config = Bunch(**config_dict["config"])
+    elif config is None:
+        raise Exception("build_object_store_from_config sent None as config parameter and one cannot be recovered from config_dict")
 
     if config_xml is None and config_dict is None:
         config_file = config.object_store_config_file

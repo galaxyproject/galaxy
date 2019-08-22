@@ -74,13 +74,10 @@ class UsesItemRatings(object):
         item_rating_assoc_class = '%sRatingAssociation' % item.__class__.__name__
         return getattr(webapp_model, item_rating_assoc_class, None)
 
-    def _get_item_id_filter_str(self, item, item_rating_assoc_class, webapp_model=None):
+    def _get_item_id_filter_str(self, item, item_rating_assoc_class):
         # Get foreign key in item-rating association table that references item table.
-        if webapp_model is None:
-            webapp_model = galaxy.model
         item_fk = get_foreign_key(item_rating_assoc_class, item)
-        # TODO: can we provide a better filter than a raw string?
-        return "%s=%i" % (item_fk.parent.name, item.id)
+        return item_fk.parent == item.id
 
 
 class UsesAnnotations(object):
@@ -122,7 +119,6 @@ def get_item_annotation_obj(db_session, user, item):
     # Get annotation association object.
     annotation_assoc = db_session.query(annotation_assoc_class).filter_by(user=user)
 
-    # TODO: use filtering like that in _get_item_id_filter_str()
     if item.__class__ == galaxy.model.History:
         annotation_assoc = annotation_assoc.filter_by(history=item)
     elif item.__class__ == galaxy.model.HistoryDatasetAssociation:

@@ -8,11 +8,13 @@ from six.moves.urllib.parse import (
 )
 
 from galaxy import (
+    exceptions,
     util,
     web
 )
+from galaxy.exceptions import MessageException
 from galaxy.web import expose_api
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 from tool_shed.util import (
     common_util,
     repository_util,
@@ -167,14 +169,17 @@ class ToolShedController(BaseAPIController):
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
         url = util.build_url(tool_shed_url, pathspec=['api', 'categories'])
         categories = []
-        for category in json.loads(util.url_get(url)):
-            api_url = web.url_for(controller='api/tool_shed',
-                                  action='category',
-                                  tool_shed_url=urlquote(tool_shed_url),
-                                  category_id=category['id'],
-                                  qualified=True)
-            category['url'] = api_url
-            categories.append(category)
+        try:
+            for category in json.loads(util.url_get(url)):
+                api_url = web.url_for(controller='api/tool_shed',
+                                      action='category',
+                                      tool_shed_url=urlquote(tool_shed_url),
+                                      category_id=category['id'],
+                                      qualified=True)
+                category['url'] = api_url
+                categories.append(category)
+        except Exception:
+            raise exceptions.ObjectNotFound("Tool Shed %s is not responding." % tool_shed_url)
         return categories
 
     @expose_api
@@ -310,3 +315,26 @@ class ToolShedController(BaseAPIController):
             return {}
         response = json.loads(util.url_get(tool_shed_url, params=dict(q=q), pathspec=['api', 'repositories']))
         return response
+
+    @expose_api
+    @web.require_admin
+    def request(self, trans, **params):
+        """
+        GET /api/tool_shed/request
+        """
+        tool_shed_url = params.pop("tool_shed_url")
+        controller = params.pop("controller")
+        if controller is None:
+            raise MessageException("Please provide a toolshed controller name.")
+        tool_shed_registry = trans.app.tool_shed_registry
+        if tool_shed_registry is None:
+            raise MessageException("Toolshed registry not available.")
+        if tool_shed_url in tool_shed_registry.tool_sheds.values():
+            pathspec = ["api", controller]
+            if "id" in params:
+                pathspec.append(params.pop("id"))
+            if "action" in params:
+                pathspec.append(params.pop("action"))
+            return json.loads(util.url_get(tool_shed_url, params=dict(params), pathspec=pathspec))
+        else:
+            raise MessageException("Invalid toolshed url.")

@@ -1,5 +1,5 @@
 from galaxy.model import tool_shed_install
-from galaxy.tools.deps import (
+from galaxy.tool_util.deps import (
     dependencies,
     requirements
 )
