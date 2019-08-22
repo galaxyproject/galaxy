@@ -114,15 +114,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """Mark the given user deleted."""
         if not self.app.config.allow_user_deletion:
             raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete users.')
-        # Check first if it is already deleted. If so, say so and do nothing.
-        # Unsure if we should add username to the log.debug or if that breaks the GDPR support
-        if user.deleted:
-            log.debug("User already deleted, but setting delete flag just in case.")
-        if user.purged:
-            log.debug("Cannot delete purged user, but setting delete flag just in case.")
-        user.deleted = True
-        self.session().add(user)
-        self.session().flush()
+        super(UserManager, self).delete(user)
 
     def undelete(self, user):
         """Remove the deleted flag for the given user."""
@@ -130,11 +122,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to undelete users.')
         if user.purged:
             raise exceptions.ItemDeletionException('Purged user cannot be undeleted.')
-        if not user.deleted:
-            log.debug('User \'%s\' has not been deleted, so it cannot be undeleted.' % user.email)
-        user.deleted = False
-        self.session().add(user)
-        self.session().flush()
+        super(UserManager, self).undelete(user)
 
     def purge(self, user):
         """Purge the given user. They must have the deleted flag already."""
@@ -162,8 +150,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Delete UserAddresses
         for address in user.addresses:
             self.session().delete(address)
-        # Purge the user
-        user.purged = True
         compliance_log = logging.getLogger('COMPLIANCE')
         compliance_log.info('delete-user-event: %s' % user.username)
         # Maybe there is some case in the future where an admin needs
@@ -197,7 +183,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.app.config.redact_user_address_during_deletion:
             user_addresses = self.session().query(self.app.model.UserAddress) \
                 .filter(self.app.model.UserAddress.user_id == user.id).all()
-
             for addr in user_addresses:
                 addr.desc = new_secure_hash(addr.desc + pseudorandom_value)
                 addr.name = new_secure_hash(addr.name + pseudorandom_value)
@@ -209,9 +194,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 addr.country = new_secure_hash(addr.country + pseudorandom_value)
                 addr.phone = new_secure_hash(addr.phone + pseudorandom_value)
                 self.session().add(addr)
-
-        self.session().add(user)
-        self.session().flush()
+        # Purge the user
+        super(UserManager, self).purge(user)
 
     def _error_on_duplicate_email(self, email):
         """
