@@ -1017,20 +1017,20 @@ class Biom2(H5):
             f = h5py.File(dataset.file_name)
             attributes = dict(f.attrs.items())
 
-            dataset.metadata.id = attributes['id']
-            dataset.metadata.format_url = attributes['format-url']
+            dataset.metadata.id = util.unicodify(attributes['id'])
+            dataset.metadata.format_url = util.unicodify(attributes['format-url'])
             if 'format-version' in attributes:  # biom 2.1
-                dataset.metadata.format_version = '.'.join(map(str, list(attributes['format-version'])))
+                dataset.metadata.format_version = '.'.join((util.unicodify(_) for _ in list(attributes['format-version'])))
             elif 'format' in attributes:  # biom 2.0
-                dataset.metadata.format = attributes['format']
-            dataset.metadata.type = attributes['type']
+                dataset.metadata.format = util.unicodify(attributes['format'])
+            dataset.metadata.type = util.unicodify(attributes['type'])
             dataset.metadata.shape = tuple(attributes['shape'])
-            dataset.metadata.generated_by = attributes['generated-by']
-            dataset.metadata.creation_date = attributes['creation-date']
+            dataset.metadata.generated_by = util.unicodify(attributes['generated-by'])
+            dataset.metadata.creation_date = util.unicodify(attributes['creation-date'])
             dataset.metadata.nnz = int(attributes['nnz'])
 
         except Exception as e:
-            log.warning('%s, set_meta Exception: %s', self, e)
+            log.warning('%s, set_meta Exception: %s', self, util.unicodify(e))
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -1038,9 +1038,9 @@ class Biom2(H5):
             try:
                 f = h5py.File(dataset.file_name)
                 for k, v in dict(f.attrs).items():
-                    lines.append('%s:  %s' % (k, v))
+                    lines.append('%s:  %s' % (k, util.unicodify(v)))
             except Exception as e:
-                log.warning('%s, set_peek Exception: %s', self, e)
+                log.warning('%s, set_peek Exception: %s', self, util.unicodify(e))
             dataset.peek = '\n'.join(lines)
             dataset.blurb = nice_size(dataset.get_size())
         else:
