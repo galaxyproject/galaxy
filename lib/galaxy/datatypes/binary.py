@@ -835,12 +835,12 @@ class Loom(H5):
         super(Loom, self).set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name) as loom_file:
-                dataset.metadata.title = loom_file.attrs.get('title', None)
-                dataset.metadata.description = loom_file.attrs.get('description', None)
-                dataset.metadata.url = loom_file.attrs.get('url', None)
-                dataset.metadata.doi = loom_file.attrs.get('doi', None)
-                dataset.metadata.loom_spec_version = loom_file.attrs.get('LOOM_SPEC_VERSION', None)
-                dataset.creation_date = loom_file.attrs.get('creation_date', None)
+                dataset.metadata.title = util.unicodify(loom_file.attrs.get('title', None))
+                dataset.metadata.description = util.unicodify(loom_file.attrs.get('description', None))
+                dataset.metadata.url = util.unicodify(loom_file.attrs.get('url', None))
+                dataset.metadata.doi = util.unicodify(loom_file.attrs.get('doi', None))
+                dataset.metadata.loom_spec_version = util.unicodify(loom_file.attrs.get('LOOM_SPEC_VERSION', None))
+                dataset.creation_date = util.unicodify(loom_file.attrs.get('creation_date', None))
                 dataset.metadata.shape = tuple(loom_file['matrix'].shape)
 
                 tmp = list(loom_file['layers'].keys())
