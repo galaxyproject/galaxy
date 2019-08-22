@@ -187,7 +187,10 @@ class CustosAuthnz(IdentityProvider):
     def _get_well_known_uri_for_provider_and_realm(self, provider, realm):
         # TODO: Look up this URL from a Python library
         if provider == 'custos':
-            return "{}/realms/{}/.well-known/openid-configuration".format(self.config["url"], realm)
+            base_url = self.config["url"]
+            # Remove potential trailing slash to avoid "//realms"
+            base_url = base_url if base_url[-1] != "/" else base_url[:-1]
+            return "{}/realms/{}/.well-known/openid-configuration".format(base_url, realm)
         else:
             raise Exception("Unknown Custos provider name: {}".format(provider))
 
