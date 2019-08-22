@@ -161,12 +161,9 @@ class WAV(Binary):
         False
         """
 
-        try:
-            fp = wave.open(filename, 'rb')
-            fp.close()
-            return True
-        except wave.Error:
-            return False
+        fp = wave.open(filename, 'rb')
+        fp.close()
+        return True
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         """Set the metadata for this dataset from the file contents
