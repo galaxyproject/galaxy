@@ -22,6 +22,7 @@ import UserPreferences from "mvc/user/user-preferences";
 import CustomBuilds from "mvc/user/user-custom-builds";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
+import EntryPointGridView from "mvc/entrypoints/view";
 import GridShared from "mvc/grid/grid-shared";
 import Workflows from "mvc/workflow/workflow";
 import WorkflowImport from "components/WorkflowImport.vue";
@@ -74,7 +75,8 @@ export const getAnalysisRouter = Galaxy =>
             "(/)datasets(/)list(/)": "show_datasets",
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
-            "(/)datasets/error": "show_dataset_error"
+            "(/)datasets/error": "show_dataset_error",
+            "(/)realtime_entry_points(/)list": "show_realtime_list"
         },
 
         require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth"],
@@ -109,6 +111,15 @@ export const getAnalysisRouter = Galaxy =>
                 user_id: Galaxy.params.id
             });
             this.page.display(new FormWrapper.View(_.extend(model.get(form_id), { active_tab: "user" })));
+        },
+
+        show_realtime_list: function() {
+            this.page.display(
+                new EntryPointGridView({
+                    url_base: `${getAppRoot()}realtime/list`,
+                    active_tab: "analysis"
+                })
+            );
         },
 
         show_cloud_auth: function() {

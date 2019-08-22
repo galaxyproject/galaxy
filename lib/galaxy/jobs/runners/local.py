@@ -108,6 +108,8 @@ class LocalJobRunner(BaseJobRunner):
                 job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
                 job_wrapper.change_state(model.Job.states.RUNNING)
 
+                self._handle_container(job_wrapper, proc)
+
                 terminated = self.__poll_if_needed(proc, job_wrapper, job_id)
                 if terminated:
                     return
@@ -219,6 +221,16 @@ class LocalJobRunner(BaseJobRunner):
         if proc.poll() is None:
             os.killpg(proc.pid, 9)
         return proc.wait()  # reap
+
+    def _handle_container(self, job_wrapper, proc):
+        if not job_wrapper.tool.produces_entry_points:
+            return
+
+        while proc.poll() is None:
+            if job_wrapper.check_for_entry_points(check_already_configured=False):
+                return
+
+            sleep(0.5)
 
     def __poll_if_needed(self, proc, job_wrapper, job_id):
         # Only poll if needed (i.e. job limits are set)

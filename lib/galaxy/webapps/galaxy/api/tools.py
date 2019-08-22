@@ -530,7 +530,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])
         rval = {'outputs': [], 'output_collections': [], 'jobs': [], 'implicit_collections': []}
-
+        rval['produces_entry_points'] = tool.produces_entry_points
         job_errors = vars.get('job_errors', [])
         if job_errors:
             # If we are here - some jobs were successfully executed but some failed.

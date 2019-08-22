@@ -49,6 +49,7 @@ A ``data_source`` tool contains a few more relevant attributes.
         <xs:element name="edam_operations" type="EdamOperations" minOccurs="0"/>
         <xs:element name="xrefs" type="xrefs" minOccurs="0" />
         <xs:element name="requirements" type="Requirements" minOccurs="0"/>
+        <xs:element name="entry_points" type="EntryPoints" minOccurs="0" maxOccurs="1" />
         <xs:element name="description" type="xs:string" minOccurs="0">
           <xs:annotation gxdocs:best_practices="tool-descriptions">
             <xs:documentation xml:lang="en"><![CDATA[The value is displayed in
@@ -223,6 +224,74 @@ For more information, see https://planemo.readthedocs.io/en/latest/writing_advan
       <xs:element name="token" type="xs:anyType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="xml" type="xs:anyType" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="EntryPoints">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This is a container tag set for the ``entry_point`` tag that contains ``port`` and ``url`` tags
+described in greater detail below. ``entry_point``s describe InteractiveTool entry points
+to a tool.
+
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="entry_point" type="EntryPoint" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="EntryPoint" mixed="true">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the ``<entry_point>`` tag set. Access to entry point
+ports and urls are included in this tag set. These are used by InteractiveTools
+to provide access to graphical tools in real-time.
+
+```xml
+<entry_points>
+  <entry_point name="Example name">
+    <port>80</port>
+    <url>landing/${template_enabled}/index.html</url>
+  </entry_point>
+</entry_points>
+```
+
+]]></xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element name="port" type="EntryPointPort" minOccurs="1" maxOccurs="1"/>
+      <xs:element name="url" type="EntryPointURL" minOccurs="0" maxOccurs="1"/>
+    </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">This value defines the name of the entry point.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="requires_domain" type="PermissiveBoolean" default="false">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">This value declares if domain-based proxying is required. Default is False. Currently only works when True.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="EntryPointPort" mixed="true">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the ``<entry_point>`` tag set. It contains the entry port.
+
+]]></xs:documentation>
+    </xs:annotation>
+  </xs:complexType>
+  <xs:complexType name="EntryPointURL" mixed="true">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+
+This tag set is contained within the ``<entry_point>`` tag set. It contains the entry URL.
+
+]]></xs:documentation>
+    </xs:annotation>
   </xs:complexType>
 
   <xs:complexType name="ToolAction">
@@ -5359,6 +5428,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="data_source"/>
       <xs:enumeration value="manage_data"/>
+      <xs:enumeration value="interactive"/>
       <xs:enumeration value="expression"/>
     </xs:restriction>
   </xs:simpleType>

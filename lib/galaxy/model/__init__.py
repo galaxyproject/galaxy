@@ -942,6 +942,14 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     def add_post_job_action(self, pja):
         self.post_job_actions.append(PostJobActionAssociation(pja, self))
 
+    @property
+    def all_entry_points_configured(self):
+        # consider an actual DB attribute for this.
+        all_configured = True
+        for ep in self.realtimetool_entry_points:
+            all_configured = ep.configured and all_configured
+        return all_configured
+
     def set_state(self, state):
         """
         Save state history
@@ -1472,6 +1480,42 @@ class JobImportHistoryArchive(RepresentById):
         self.job = job
         self.history = history
         self.archive_dir = archive_dir
+
+
+class JobContainerAssociation(RepresentById):
+    def __init__(self, job=None, container_type=None, container_name=None, container_info=None):
+        self.job = job
+        self.container_type = container_type
+        self.container_name = container_name
+        self.container_info = container_info or {}
+
+
+class InteractiveToolEntryPoint(Dictifiable, RepresentById):
+    dict_collection_visible_keys = ['id', 'name', 'active']
+    dict_element_visible_keys = ['id', 'name', 'active']
+
+    def __init__(self, job=None, name=None, token=None, tool_port=None, host=None, port=None, protocol=None,
+                 entry_url=None, info=None, configured=False, deleted=False):
+        self.job = job
+        self.name = name
+        if not token:
+            token = uuid4().hex
+        self.token = token
+        self.tool_port = tool_port
+        self.host = host
+        self.port = port
+        self.protocol = protocol
+        self.entry_url = entry_url
+        self.info = info or {}
+        self.configured = configured
+        self.deleted = deleted
+
+    @property
+    def active(self):
+        if self.configured and not self.deleted:
+            # FIXME: don't included queued?
+            return not self.job.finished
+        return False
 
 
 class GenomeIndexToolData(RepresentById):

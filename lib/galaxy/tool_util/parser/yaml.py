@@ -172,6 +172,9 @@ class YamlToolSource(ToolSource):
     def parse_profile(self):
         return self.root_dict.get("profile", "16.04")
 
+    def parse_realtime(self):
+        return self.root_dict.get("entry_points", [])
+
     def parse_python_template_version(self):
         python_template_version = self.root_dict.get("python_template_version", None)
         if python_template_version is not None:

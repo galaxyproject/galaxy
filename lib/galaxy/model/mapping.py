@@ -792,6 +792,33 @@ model.GenomeIndexToolData.table = Table(
     Column("indexer", String(64)),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
 
+model.InteractiveToolEntryPoint.table = Table(
+    "interactivetool_entry_point", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("job_id", Integer, ForeignKey("job.id"), index=True),
+    Column("name", TEXT),
+    Column("token", TEXT),
+    Column("tool_port", Integer),
+    Column("host", TEXT),
+    Column("port", Integer),
+    Column("protocol", TEXT),
+    Column("entry_url", TEXT),
+    Column("info", JSONType, nullable=True),
+    Column("configured", Boolean, default=False),
+    Column("deleted", Boolean, default=False),
+    Column("created_time", DateTime, default=now),
+    Column("modified_time", DateTime, default=now, onupdate=now))
+
+model.JobContainerAssociation.table = Table(
+    "job_container_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("job_id", Integer, ForeignKey("job.id"), index=True),
+    Column("container_type", TEXT),
+    Column("container_name", TEXT),
+    Column("container_info", JSONType, nullable=True),
+    Column("created_time", DateTime, default=now),
+    Column("modified_time", DateTime, default=now, onupdate=now))
+
 model.Task.table = Table(
     "task", metadata,
     Column("id", Integer, primary_key=True),
@@ -2234,6 +2261,14 @@ mapper(model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=di
     user=relation(model.User),
     deferred=relation(model.DeferredJob, backref='deferred_job'),
     transfer=relation(model.TransferJob, backref='transfer_job')
+))
+
+mapper(model.InteractiveToolEntryPoint, model.InteractiveToolEntryPoint.table, properties=dict(
+    job=relation(model.Job, backref=backref('realtimetool_entry_points', uselist=True), uselist=False)
+))
+
+mapper(model.JobContainerAssociation, model.JobContainerAssociation.table, properties=dict(
+    job=relation(model.Job, backref=backref('container', uselist=False), uselist=False)
 ))
 
 mapper(model.PostJobAction, model.PostJobAction.table, properties=dict(

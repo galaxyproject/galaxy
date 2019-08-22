@@ -4,6 +4,7 @@ Support for running a tool in Galaxy via an internal job management system
 import copy
 import datetime
 import errno
+import json
 import logging
 import os
 import pwd
@@ -1054,6 +1055,7 @@ class JobWrapper(HasResourceParameters):
         # if the server was stopped and restarted before the job finished
         job.command_line = unicodify(self.command_line)
         job.dependencies = self.tool.dependencies
+        self.realtimetools = getattr(tool_evaluator, 'realtimetools', None)
         self.sa_session.add(job)
         self.sa_session.flush()
         # Return list of all extra files
@@ -1963,6 +1965,54 @@ class JobWrapper(HasResourceParameters):
                     command = "%s; %s" % (dependency_shell_commands, command)
         return command
 
+    def check_for_entry_points(self, check_already_configured=True):
+        if not self.tool.produces_entry_points:
+            return True
+
+        job = self.get_job()
+        if check_already_configured and job.all_entry_points_configured:
+            return True
+
+        working_directory = self.working_directory
+        container_runtime_path = os.path.join(working_directory, "container_runtime.json")
+        if os.path.exists(container_runtime_path):
+            with open(container_runtime_path, "r") as f:
+                try:
+                    container_runtime = json.load(f)
+                except ValueError:
+                    # File exists, but is not fully populated yet
+                    return False
+            log.debug("found container runtime %s" % container_runtime)
+            self.app.realtime_manager.configure_entry_points(job, container_runtime)
+            return True
+
+    def container_monitor_command(self, container, **kwds):
+        if not container or not self.tool.produces_entry_points:
+            return None
+
+        from os.path import abspath
+        from os import getcwd
+        exec_dir = kwds.get('exec_dir', abspath(getcwd()))
+        work_dir = self.working_directory
+        container_config = os.path.join(work_dir, "container_config.json")
+
+        # TODO: implement callback via URL callback for configuring ports instead
+        #       of fs polling.
+        # if self.app.config.galaxy_infrastructure_url_set:
+        #    # TODO: settable from job destination...
+        #    infrastructure_url = self.app.config.galaxy_infrastructure_url
+        # else:
+        #    infrastructure_url = "host.docker.internal"
+
+        with open(container_config, "w") as f:
+            json.dump({
+                "container_name": container.container_name,
+                "container_type": container.container_type,
+                "connection_configuration": container.connection_configuration,
+            }, f)
+
+        return "(python '%s'/lib/galaxy_ext/container_monitor/monitor.py &) " % exec_dir
+
     @property
     def user(self):
         job = self.get_job()
@@ -2076,6 +2126,12 @@ class JobWrapper(HasResourceParameters):
         tool = self.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
         for dataset in job.output_datasets:
             self.app.error_reports.default_error_plugin.submit_report(dataset, job, tool, user_submission=False)
+
+    def set_container(self, container):
+        if container:
+            cont = model.JobContainerAssociation(job=self.get_job(), container_type=container.container_type, container_name=container.container_name, container_info=container.container_info)
+            self.sa_session.add(cont)
+            self.sa_session.flush()
 
 
 class TaskWrapper(JobWrapper):

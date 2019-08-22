@@ -423,6 +423,9 @@ galaxy:
   # scenarios than the watchdog default.
   #watch_tool_data_dir: 'false'
 
+  # Enable InteractiveTools by setting to true
+  #interactivetools_enable: false
+
   # File containing old-style genome builds
   #builds_file_path: tool-data/shared/ucsc/builds.txt
 

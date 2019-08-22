@@ -708,6 +708,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.fluent_log = string_as_bool(kwargs.get('fluent_log', False))
         self.fluent_host = kwargs.get('fluent_host', 'localhost')
         self.fluent_port = int(kwargs.get('fluent_port', 24224))
+
         # directory where the visualization registry searches for plugins
         self.visualization_plugins_directory = kwargs.get(
             'visualization_plugins_directory', 'config/plugins/visualizations')
@@ -733,6 +734,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.dynamic_proxy_golang_clean_interval = kwargs.get("dynamic_proxy_golang_clean_interval", 10)
         self.dynamic_proxy_golang_docker_address = kwargs.get("dynamic_proxy_golang_docker_address", "unix:///var/run/docker.sock")
         self.dynamic_proxy_golang_api_key = kwargs.get("dynamic_proxy_golang_api_key", None)
+
+        # InteractiveTools propagator mapping file
+        self.realtime_map = self.resolve_path(kwargs.get("interactivetools_map", "database/interactivetools_map.sqlite"))
+        self.realtime_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
+        self.interactivetools_enable = string_as_bool(kwargs.get('interactivetools_enable', False))
 
         # Default chunk size for chunkable datatypes -- 64k
         self.display_chunk_size = int(kwargs.get('display_chunk_size', 65536))

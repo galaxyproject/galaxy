@@ -404,6 +404,7 @@ class Tool(Dictifiable):
 
     tool_type = 'default'
     requires_setting_metadata = True
+    produces_entry_points = False
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
 
@@ -536,7 +537,9 @@ class Tool(Dictifiable):
         """Indicates this tool's runtime requires Galaxy's Python environment."""
         # All special tool types (data source, history import/export, etc...)
         # seem to require Galaxy's Python.
-        if self.tool_type not in ["default", "manage_data"]:
+        # FIXME: the (instantiated) tool class should emit this behavior, and not
+        #        use inspection by string check
+        if self.tool_type not in ["default", "manage_data", "interactive"]:
             return True
 
         if self.tool_type == "manage_data" and self.profile < 18.09:
@@ -812,6 +815,7 @@ class Tool(Dictifiable):
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths()
+        self.ports = tool_source.parse_realtime()
 
     def __parse_legacy_features(self, tool_source):
         self.code_namespace = dict()
@@ -1918,7 +1922,8 @@ class Tool(Dictifiable):
         tool_dict['panel_section_id'], tool_dict['panel_section_name'] = self.get_panel_section()
 
         tool_class = self.__class__
-        regular_form = tool_class == Tool or isinstance(self, DatabaseOperationTool)
+        # FIXME: the Tool class should declare directly, instead of ad hoc inspection
+        regular_form = tool_class == Tool or isinstance(self, (DatabaseOperationTool, RealTimeTool))
         tool_dict["form_style"] = "regular" if regular_form else "special"
 
         return tool_dict
@@ -2438,6 +2443,35 @@ class ExportHistoryTool(Tool):
 
 class ImportHistoryTool(Tool):
     tool_type = 'import_history'
+
+
+class RealTimeTool(Tool):
+    tool_type = 'interactive'
+    produces_entry_points = True
+
+    def __init__(self, config_file, tool_source, app, **kwd):
+        assert app.config.interactivetools_enable, ValueError('Trying to load an InteractiveTool, but InteractiveTools are not enabled.')
+        super(RealTimeTool, self).__init__(config_file, tool_source, app, **kwd)
+        for port in self.ports:
+            assert port.get('requires_domain', None), ValueError('InteractiveTools currently only work when requires_domain is True for each entry_point.')
+
+    def __remove_realtime_by_job(self, job):
+        if job:
+            eps = job.realtimetool_entry_points
+            log.debug('__remove_realtime_by_job: %s', eps)
+            self.app.realtime_manager.remove_entry_points(eps)
+        else:
+            log.warning("Could not determine job to stop InteractiveTool: %s", job)
+
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+        # run original exec_after_process
+        super(RealTimeTool, self).exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+        self.__remove_realtime_by_job(job)
+
+    def job_failed(self, job_wrapper, message, exception=False):
+        super(RealTimeTool, self).job_failed(job_wrapper, message, exception=exception)
+        job = job_wrapper.sa_session.query(model.Job).get(job_wrapper.job_id)
+        self.__remove_realtime_by_job(job)
 
 
 class DataManagerTool(OutputParameterJSONTool):
@@ -3050,7 +3084,7 @@ class FilterFromFileTool(DatabaseOperationTool):
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool,
+for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool, RealTimeTool,
                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
                    BuildListCollectionTool, ExtractDatasetCollectionTool,

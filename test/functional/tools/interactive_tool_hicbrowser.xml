@@ -1,0 +1,33 @@
+<tool id="interactive_tool_hicbrowser" tool_type="interactive" name="HiCBrowser" version="0.1">
+    <requirements>
+        <container type="docker">bgruening/hicbrowser</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="HiCBrowser on $infile.display_name" requires_domain="True">
+            <port>80</port>
+        </entry_point>
+    </entry_points>
+    <command><![CDATA[
+        #set $PROXY_PREFIX = ""
+        sed -i "s|PROXY_PREFIX|${PROXY_PREFIX}|" /etc/nginx/conf.d/nginx.conf &&
+        rm /data/* -rf &&
+        cp '$infile' /data/data_pack.zip &&
+        cd /data &&
+        unzip data_pack.zip &&
+        supervisord &&
+        tail -f /var/log/supervisor/*
+
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="zip" label="HiCExplorer archive"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+        Visualising HiC data with HiCBrowser.
+    </help>
+</tool>
