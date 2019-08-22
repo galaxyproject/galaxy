@@ -15,8 +15,11 @@ from . import unicodify
 
 # Skip libpasteurize fixers, which make sure code is py2 and py3 compatible.
 # This is not needed, we only translate code on py3.
-myfixes = [f for f in myfixes if not f.startswith('libpasteurize')]
-refactoring_tool = RefactoringTool(myfixes, {'print_function': True})
+if sys.version_info.major > 2:
+    myfixes = [f for f in myfixes if not f.startswith('libpasteurize')]
+    refactoring_tool = RefactoringTool(myfixes, {'print_function': True})
+else:
+    myfixes = refactoring_tool = None
 
 
 class FixedModuleCodeCompiler(Compiler):
@@ -65,7 +68,7 @@ def fill_template(template_text,
     except NotFound as e:
         if first_exception is None:
             first_exception = e
-        if sys.version_info.major > 2 and python_template_version.release[0] < 3 and retry > 0:
+        if refactoring_tool and python_template_version.release[0] < 3 and retry > 0:
             tb = e.__traceback__
             last_stack = traceback.extract_tb(tb)[-1]
             if last_stack.name == '<listcomp>':

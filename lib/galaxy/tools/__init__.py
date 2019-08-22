@@ -84,7 +84,7 @@ from galaxy.util import (
     Params,
     rst_to_html,
     string_as_bool,
-    unicodify
+    unicodify,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
@@ -92,7 +92,10 @@ from galaxy.util.expressions import ExpressionContext
 from galaxy.util.form_builder import SelectField
 from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet
-from galaxy.util.template import fill_template
+from galaxy.util.template import (
+    fill_template,
+    refactoring_tool,
+)
 from galaxy.version import VERSION_MAJOR
 from galaxy.work.context import WorkRequestContext
 from tool_shed.util import common_util
@@ -644,9 +647,9 @@ class Tool(Dictifiable):
         if self.python_template_version is None:
             # If python_template_version not specified we assume tools with profile versions >= 19.05 are python 3 ready
             if self.profile >= 19.05:
-                self.python_template_version = '3.5'
+                self.python_template_version = packaging.version.parse('3.5')
             else:
-                self.python_template_version = '2.7'
+                self.python_template_version = packaging.version.parse('2.7')
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
@@ -837,10 +840,20 @@ class Tool(Dictifiable):
                     self.hook_map[key] = value
             file_name = code_elem.get("file")
             code_path = os.path.join(self.tool_dir, file_name)
-            with open(code_path) as f:
-                compiled_code = compile(f.read(), code_path, 'exec')
             if self._allow_code_files:
-                exec(compiled_code, self.code_namespace)
+                with open(code_path) as f:
+                    code_string = f.read()
+                try:
+                    compiled_code = compile(code_string, code_path, 'exec')
+                    exec(compiled_code, self.code_namespace)
+                except Exception:
+                    if refactoring_tool and self.python_template_version.release[0] < 3:
+                        # Could be a code file that uses python 2 syntax
+                        translated_code = str(refactoring_tool.refactor_string(code_string, name='auto_translated_code_file'))
+                        compiled_code = compile(translated_code, "futurized_%s" % code_path, 'exec')
+                        exec(compiled_code, self.code_namespace)
+                    else:
+                        raise
 
         # User interface hints
         uihints_elem = root.find("uihints")
