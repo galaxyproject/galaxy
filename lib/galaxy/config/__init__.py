@@ -728,7 +728,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.dynamic_proxy_golang_api_key = kwargs.get("dynamic_proxy_golang_api_key", None)
 
         # InteractiveTools propagator mapping file
-        self.realtime_map = self.resolve_path(kwargs.get("interactivetools_map", "database/interactivetools_map.sqlite"))
+        self.realtime_map = self.resolve_path(kwargs.get("interactivetools_map", os.path.join(self.data_dir, "interactivetools_map.sqlite")))
         self.realtime_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
         self.interactivetools_enable = string_as_bool(kwargs.get('interactivetools_enable', False))
 
