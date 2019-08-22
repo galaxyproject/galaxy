@@ -632,7 +632,7 @@ class ExpectationsTestCase(BaseLoaderTestCase):
 
 
 class QcStdioTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/qc_stdout.xml")
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/qc_stdout.xml")
     source_contents = None
 
     def test_tests(self):

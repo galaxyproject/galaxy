@@ -25,6 +25,7 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes.data import (
     DatatypeValidation,
     get_file_peek,
+)
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
 from galaxy.util import nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip

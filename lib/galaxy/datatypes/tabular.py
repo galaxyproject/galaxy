@@ -732,12 +732,6 @@ class BaseVcf(Tabular):
             raise Exception("Error merging VCF files: %s" % stderr)
 
     def validate(self, dataset, **kwd):
-        # with tempfile.NamedTemporaryFile() as t:
-        #    try:
-        #        pysam.tabix_index(dataset.file_name, index=t.name, preset='vcf', force=False, keep_original=True)
-        #    except Exception as e:
-        #        data.DatatypeValidation.invalid("Failed to generate index [%s]" % e)
-        # return data.DatatypeValidation.validated()
         def validate_row(row):
             if len(row) < 8:
                 raise Exception("Not enough columns in row %s" % row.join("\t"))

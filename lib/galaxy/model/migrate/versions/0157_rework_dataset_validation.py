@@ -39,10 +39,10 @@ def upgrade(migrate_engine):
     library_dataset_dataset_association_table = Table("library_dataset_dataset_association", metadata, autoload=True)
     for dataset_instance_table in [history_dataset_association_table, library_dataset_dataset_association_table]:
         validated_state_column = Column('validated_state', TrimmedString(64), default='unknown', server_default="unknown", nullable=False)
-        add_column(validated_state_column, dataset_instance_table)
+        add_column(validated_state_column, dataset_instance_table, metadata)
 
         validated_state_message_column = Column('validated_state_message', TEXT)
-        add_column(validated_state_message_column, dataset_instance_table)
+        add_column(validated_state_message_column, dataset_instance_table, metadata)
 
 
 def downgrade(migrate_engine):
@@ -54,5 +54,5 @@ def downgrade(migrate_engine):
     history_dataset_association_table = Table("history_dataset_association", metadata, autoload=True)
     library_dataset_dataset_association_table = Table("library_dataset_dataset_association", metadata, autoload=True)
     for dataset_instance_table in [history_dataset_association_table, library_dataset_dataset_association_table]:
-        drop_column('validated_state', dataset_instance_table)
-        drop_column('validated_state_message', dataset_instance_table)
+        drop_column('validated_state', dataset_instance_table, metadata)
+        drop_column('validated_state_message', dataset_instance_table, metadata)
