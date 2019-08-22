@@ -29,8 +29,6 @@ from galaxy.util import (
 logging.basicConfig()
 log = logging.getLogger(__name__)
 
-galaxy.model.Job()  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
-
 
 def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size):
     # This method is somewhat odd, in that we set the metadata attributes from tool,
