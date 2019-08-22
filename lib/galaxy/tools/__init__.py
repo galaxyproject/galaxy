@@ -1135,7 +1135,7 @@ class Tool(Dictifiable):
                     test_param_input_source = input_source.parse_test_input_source()
                     group.test_param = self.parse_param_elem(test_param_input_source, enctypes, context)
                     if group.test_param.optional:
-                        log.warning("Tool with id %s declares a conditional test parameter as optional, this is invalid and will be ignored." % self.id)
+                        log.debug("Tool with id %s declares a conditional test parameter as optional, this is invalid and will be ignored." % self.id)
                         group.test_param.optional = False
                     possible_cases = list(group.test_param.legal_values)  # store possible cases, undefined whens will have no inputs
                     # Must refresh when test_param changes
@@ -1149,8 +1149,8 @@ class Tool(Dictifiable):
                         try:
                             possible_cases.remove(case.value)
                         except Exception:
-                            log.warning("Tool %s: a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." %
-                                        (self.id, group.name, group.test_param.name, case.value))
+                            log.debug("Tool %s: a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." %
+                                      (self.id, group.name, group.test_param.name, case.value))
                     for unspecified_case in possible_cases:
                         log.warning("Tool %s: a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs." %
                                     (self.id, group.name, group.test_param.name, unspecified_case))
