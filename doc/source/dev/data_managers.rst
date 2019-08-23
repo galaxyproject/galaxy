@@ -28,7 +28,7 @@ Graphical Overview of Interplay between Built-in Data and Galaxy Tools
 .. image:: data_managers_schematic_overview.png
 
 Galaxy Data Manager XML File
-============================
+----------------------------
 The XML File for a Galaxy Data Manager, generally referred to as the "data manager config file", serves a number of purposes. It defines the availability of Data Managers to a Galaxy instance. It does this by specifying the id of the Data Manager and the Data Manager tool that is associated with it. It also contains a listing of the Tool Data Tables that can be added to by the Data Manager. It also specifies how to manipulate the raw column values provided by the Data Manager Tool and under what directory structure to place the finalized data values.
 
 Pay attention to the following when creating a new Data Manager:
@@ -41,7 +41,7 @@ Pay attention to the following when creating a new Data Manager:
 A Galaxy Data Manager's config file consists of a subset of the following XML tag sets - each of these is described in detail in the following sections.
 
 Details of XML tag sets
-=======================
+-----------------------
 
 ``<data_managers>`` tag set
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -238,7 +238,7 @@ The result is:
 and the "sacCer2.2bit" file has been moved into the location specified by path.
 
 Data Manager JSON Syntax
-========================
+------------------------
 Data Manager Tools are required to use JSON to communicate the new Tool Data Table values back to the Data Manager. JSON can also optionally be used to provide the input parameter values to the Data Manager Tool, but this is not required.
 
 Returning Values to the Data Manager
@@ -353,12 +353,12 @@ Example JSON input to tool
     }
 
 Running Data Manager Tools using the API
-========================================
+----------------------------------------
 
 See `scripts/api/data_manager_example_execute.py <https://github.com/galaxyproject/galaxy/blob/master/scripts/api/data_manager_example_execute.py>`_ for an example script.
 
 Writing Data Manager Tests
-==========================
+--------------------------
 Writing a Data Manager test is similar to writing a test for any other `Galaxy Tool <https://galaxyproject.org/admin/tools/Writing%20Tests/>`_. For an example, please see at `http://testtoolshed.g2.bx.psu.edu/view/blankenberg/data_manager_example_blastdb_ncbi_update_blastdb <http://testtoolshed.g2.bx.psu.edu/view/blankenberg/data_manager_example_blastdb_ncbi_update_blastdb>`_.
 
 Running Data Manager Tests
@@ -374,7 +374,7 @@ Testing in the ToolShed
 All Data Managers deposited within the ToolShed are tested using the nightly testing framework.
 
 Defining Data Managers
-======================
+----------------------
 
 Data Manager Components
 ~~~~~~~~~~~~~~~~~~~~~~~
