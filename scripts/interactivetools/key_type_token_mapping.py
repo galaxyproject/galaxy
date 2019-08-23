@@ -72,7 +72,7 @@ def key_type_token_mapper(key, key_type, token, route_extra, url):
         for i in range(2):
             # Order by rowid gives us the last row added
             try:
-                row = db_conn.execute("select host, port from %s where key=? and key_type=? and token=? order by rowid desc limit 1" % (DATABASE_TABLE_NAME), (key, key_type, token)).fetchone()
+                row = db_conn.execute("SELECT host, port FROM %s WHERE key=? AND key_type=? AND token=? ORDER BY rowid DESC LIMIT 1" % (DATABASE_TABLE_NAME), (key, key_type, token)).fetchone()
                 if row:
                     rval = '%s:%s' % (tuple(row))
                     return rval.encode()
