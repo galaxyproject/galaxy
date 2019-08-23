@@ -3115,8 +3115,10 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
         # other model classes.
+        log.debug("Getting HDA summary - start")
         original_rval = super(HistoryDatasetAssociation, self).to_dict(view=view)
         hda = self
+        log.debug("Getting HDA summary - end")
         rval = dict(id=hda.id,
                     hda_ldda='hda',
                     uuid=(lambda uuid: str(uuid) if uuid else None)(hda.dataset.uuid),
@@ -3137,7 +3139,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     genome_build=hda.dbkey,
                     misc_info=hda.info.strip() if isinstance(hda.info, string_types) else hda.info,
                     misc_blurb=hda.blurb)
-
         rval.update(original_rval)
 
         if hda.copied_from_library_dataset_dataset_association is not None:
@@ -3160,6 +3161,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             elif val is None and hasattr(hda.datatype, name):
                 val = getattr(hda.datatype, name)
             rval['metadata_' + name] = val
+        log.debug("Augmenting HDA summary - end")
         return rval
 
     def unpause_dependent_jobs(self, jobs=None):

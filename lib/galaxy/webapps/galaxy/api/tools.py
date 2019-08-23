@@ -525,7 +525,9 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # I think it should be a top-level parameter, but because the selector is implemented
         # as a regular tool parameter we accept both.
         use_cached_job = payload.get('use_cached_job', False) or util.string_as_bool(inputs.get('use_cached_job', 'false'))
+        log.debug("Before handle input")
         vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job)
+        log.debug("After handle input")
 
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])
@@ -538,6 +540,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         outputs = rval['outputs']
         # TODO:?? poss. only return ids?
+        log.debug("Before summarizing output")
         for output_name, output in output_datasets:
             output_dict = output.to_dict()
             # add the output name back into the output data structure
@@ -546,9 +549,10 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             output_dict['output_name'] = output_name
             outputs.append(trans.security.encode_dict_ids(output_dict, skip_startswith="metadata_"))
 
+        log.debug("After summarizing output")
         for job in vars.get('jobs', []):
             rval['jobs'].append(self.encode_all_ids(trans, job.to_dict(view='collection'), recursive=True))
-
+        log.debug("After summarizing jobs")
         for output_name, collection_instance in vars.get('output_collections', []):
             history = target_history or trans.history
             output_dict = dictify_dataset_collection_instance(collection_instance, security=trans.security, parent=history)
@@ -560,7 +564,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             output_dict = dictify_dataset_collection_instance(collection_instance, security=trans.security, parent=history)
             output_dict['output_name'] = output_name
             rval['implicit_collections'].append(output_dict)
-
+        log.debug("Sending back return value")
         return rval
 
     def _patch_library_inputs(self, trans, inputs, target_history):
