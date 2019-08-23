@@ -9,6 +9,8 @@ import uwsgi
 realtime_db_file = uwsgi.opt["interactivetools_map"]
 db_conn = sqlite3.connect(realtime_db_file)
 
+DATABASE_TABLE_NAME = 'gxitproxy'
+
 
 class CacheEntry():
     def __init__(self, key, value, ttl=20):
@@ -70,7 +72,7 @@ def key_type_token_mapper(key, key_type, token, route_extra, url):
         for i in range(2):
             # Order by rowid gives us the last row added
             try:
-                row = db_conn.execute("select host, port from gxrtproxy where key=? and key_type=? and token=? order by rowid desc limit 1", (key, key_type, token)).fetchone()
+                row = db_conn.execute("select host, port from %s where key=? and key_type=? and token=? order by rowid desc limit 1" % (DATABASE_TABLE_NAME), (key, key_type, token)).fetchone()
                 if row:
                     rval = '%s:%s' % (tuple(row))
                     return rval.encode()
