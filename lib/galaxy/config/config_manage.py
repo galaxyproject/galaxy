@@ -25,8 +25,15 @@ except ImportError:
 if __name__ == '__main__':
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
+from galaxy.config.schema import AppSchema, Schema
 from galaxy.util import safe_makedirs
 from galaxy.util.properties import nice_config_parser
+from galaxy.util.yaml_util import (
+    ordered_dump,
+    ordered_load,
+    OPTION_DEFAULTS,
+)
+
 
 DESCRIPTION = "Convert configuration files."
 
@@ -311,63 +318,6 @@ App.schema = property(_schema)
 OptionValue = namedtuple("OptionValue", ["name", "value", "option"])
 
 
-UNKNOWN_OPTION = {
-    "type": "str",
-    "required": False,
-    "unknown_option": True,
-    "desc": "Unknown option, may want to remove or report to Galaxy team."
-}
-
-OPTION_DEFAULTS = {
-    "type": "str",
-    "unknown_option": False,
-    "default": None,
-    "desc": None,
-}
-
-
-class Schema(object):
-
-    def __init__(self, mapping):
-        self.app_schema = mapping
-
-    def get_app_option(self, name):
-        try:
-            raw_option = self.app_schema[name]
-        except KeyError:
-            raw_option = UNKNOWN_OPTION
-        option = OPTION_DEFAULTS.copy()
-        option.update(raw_option)
-        return option
-
-
-class AppSchema(Schema):
-
-    def __init__(self, app_desc):
-        schema_path = app_desc.schema_path
-        app_name = app_desc.app_name
-        with open(schema_path, "r") as f:
-            config_all = _ordered_load(f)
-        self.raw_schema = config_all
-        app_schema = config_all["mapping"][app_name]
-        super(AppSchema, self).__init__(app_schema["mapping"])
-        self.description = config_all.get("desc", None)
-        self.reloadable_options = self._load_reloadable_options(app_schema["mapping"])
-
-    def get_reloadable_option_defaults(self):
-        option_dict = {}
-        for key in self.reloadable_options:
-            option_dict[key] = self.get_app_option(key)["default"]
-        return option_dict
-
-    def _load_reloadable_options(self, mapping):
-        reloadable_options = []
-        for key, option in mapping.items():
-            if option.get("reloadable", False):
-                reloadable_options.append(key)
-        return reloadable_options
-
-
 GALAXY_APP = App(
     ["universe_wsgi.ini", "config/galaxy.ini"],
     "8080",
@@ -490,7 +440,7 @@ def _build_uwsgi_schema(args, app_desc):
         "mapping": options
     }
     path = os.path.join(args.galaxy_root, UWSGI_SCHEMA_PATH)
-    contents = _ordered_dump(schema)
+    contents = ordered_dump(schema)
     _write_to_file(args, contents, path)
 
 
@@ -553,12 +503,12 @@ def _validate(args, app_desc):
     if raw_config.get(app_desc.app_name, None) is None:
         raw_config[app_desc.app_name] = {}
         config_p = tempfile.NamedTemporaryFile(delete=False, suffix=".yml")
-        _ordered_dump(raw_config, config_p)
+        ordered_dump(raw_config, config_p)
         config_p.flush()
         path = config_p.name
 
     fp = tempfile.NamedTemporaryFile(delete=False, suffix=".yml")
-    _ordered_dump(app_desc.schema.raw_schema, fp)
+    ordered_dump(app_desc.schema.raw_schema, fp)
     fp.flush()
     name = fp.name
     if Core is None:
@@ -734,7 +684,7 @@ def _order_load_path(path):
     """Load (with ``_ordered_load``) on specified path (a YAML file)."""
     with open(path, "r") as f:
         # Allow empty mapping (not allowed by pykawlify)
-        raw_config = _ordered_load(f)
+        raw_config = ordered_load(f)
         return raw_config
 
 
@@ -827,43 +777,6 @@ def _server_paste_to_uwsgi(app_desc, server_config, applied_filters):
 
 def _warn(message):
     print("WARNING: %s" % message)
-
-
-def _ordered_load(stream):
-
-    class OrderedLoader(yaml.Loader):
-
-        def __init__(self, stream):
-            self._root = os.path.split(stream.name)[0]
-            super(OrderedLoader, self).__init__(stream)
-
-        def include(self, node):
-            filename = os.path.join(self._root, self.construct_scalar(node))
-            with open(filename, 'r') as f:
-                return yaml.load(f, OrderedLoader)
-
-    def construct_mapping(loader, node):
-        loader.flatten_mapping(node)
-        return OrderedDict(loader.construct_pairs(node))
-
-    OrderedLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        construct_mapping)
-    OrderedLoader.add_constructor('!include', OrderedLoader.include)
-
-    return yaml.load(stream, OrderedLoader)
-
-
-def _ordered_dump(data, stream=None, Dumper=yaml.Dumper, **kwds):
-    class OrderedDumper(Dumper):
-        pass
-
-    def _dict_representer(dumper, data):
-        return dumper.represent_mapping(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-            list(data.items()))
-    OrderedDumper.add_representer(OrderedDict, _dict_representer)
-    return yaml.dump(data, stream, OrderedDumper, **kwds)
 
 
 ACTIONS = {
