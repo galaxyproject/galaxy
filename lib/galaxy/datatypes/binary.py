@@ -1003,16 +1003,15 @@ class Biom2(H5):
         """
         if super(Biom2, self).sniff(filename):
             with h5py.File(filename, 'r') as f:
-                attributes = list(dict(f.attrs.items()))
-                required_fields = ['id', 'format-url', 'type', 'generated-by', 'creation-date', 'nnz', 'shape']
-                return set(required_fields).issubset(attributes)
+                required_fields = {'id', 'format-url', 'type', 'generated-by', 'creation-date', 'nnz', 'shape'}
+                return required_fields.issubset(f.attrs.keys())
         return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super(Biom2, self).set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, 'r') as f:
-                attributes = dict(f.attrs.items())
+                attributes = f.attrs
 
                 dataset.metadata.id = util.unicodify(attributes['id'])
                 dataset.metadata.format_url = util.unicodify(attributes['format-url'])
@@ -1033,7 +1032,7 @@ class Biom2(H5):
             lines = ['Biom2 (HDF5) file']
             try:
                 with h5py.File(dataset.file_name) as f:
-                    for k, v in dict(f.attrs).items():
+                    for k, v in f.attrs.items():
                         lines.append('%s:  %s' % (k, util.unicodify(v)))
             except Exception as e:
                 log.warning('%s, set_peek Exception: %s', self, util.unicodify(e))
