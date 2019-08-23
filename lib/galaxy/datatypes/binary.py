@@ -811,7 +811,7 @@ class Loom(H5):
     def sniff(self, filename):
         if super(Loom, self).sniff(filename):
             try:
-                with h5py.File(filename) as loom_file:
+                with h5py.File(filename, 'r') as loom_file:
                     return bool(loom_file.attrs.get('LOOM_SPEC_VERSION', False))
             except Exception:
                 return False
@@ -834,13 +834,13 @@ class Loom(H5):
     def set_meta(self, dataset, overwrite=True, **kwd):
         super(Loom, self).set_meta(dataset, overwrite=overwrite, **kwd)
         try:
-            with h5py.File(dataset.file_name) as loom_file:
-                dataset.metadata.title = util.unicodify(loom_file.attrs.get('title', None))
-                dataset.metadata.description = util.unicodify(loom_file.attrs.get('description', None))
-                dataset.metadata.url = util.unicodify(loom_file.attrs.get('url', None))
-                dataset.metadata.doi = util.unicodify(loom_file.attrs.get('doi', None))
-                dataset.metadata.loom_spec_version = util.unicodify(loom_file.attrs.get('LOOM_SPEC_VERSION', None))
-                dataset.creation_date = util.unicodify(loom_file.attrs.get('creation_date', None))
+            with h5py.File(dataset.file_name, 'r') as loom_file:
+                dataset.metadata.title = util.unicodify(loom_file.attrs.get('title'))
+                dataset.metadata.description = util.unicodify(loom_file.attrs.get('description'))
+                dataset.metadata.url = util.unicodify(loom_file.attrs.get('url'))
+                dataset.metadata.doi = util.unicodify(loom_file.attrs.get('doi'))
+                dataset.metadata.loom_spec_version = util.unicodify(loom_file.attrs.get('LOOM_SPEC_VERSION'))
+                dataset.creation_date = util.unicodify(loom_file.attrs.get('creation_date'))
                 dataset.metadata.shape = tuple(loom_file['matrix'].shape)
 
                 tmp = list(loom_file['layers'].keys())
@@ -880,7 +880,7 @@ class Anndata(H5):
     def sniff(self, filename):
         if super(Anndata, self).sniff(filename):
             try:
-                with h5py.File(filename) as f:
+                with h5py.File(filename, 'r') as f:
                     return all(attr in f for attr in ['X', 'obs', 'var'])
             except Exception:
                 return False
@@ -1002,43 +1002,36 @@ class Biom2(H5):
         False
         """
         if super(Biom2, self).sniff(filename):
-            try:
-                f = h5py.File(filename)
+            with h5py.File(filename, 'r') as f:
                 attributes = list(dict(f.attrs.items()))
                 required_fields = ['id', 'format-url', 'type', 'generated-by', 'creation-date', 'nnz', 'shape']
                 return set(required_fields).issubset(attributes)
-            except Exception:
-                return False
         return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super(Biom2, self).set_meta(dataset, overwrite=overwrite, **kwd)
-        try:
-            f = h5py.File(dataset.file_name)
+        with h5py.File(dataset.file_name, 'r') as f:
             attributes = dict(f.attrs.items())
 
             dataset.metadata.id = util.unicodify(attributes['id'])
             dataset.metadata.format_url = util.unicodify(attributes['format-url'])
             if 'format-version' in attributes:  # biom 2.1
-                dataset.metadata.format_version = '.'.join((util.unicodify(_) for _ in list(attributes['format-version'])))
+                dataset.metadata.format_version = '.'.join((str(_) for _ in list(attributes['format-version'])))
             elif 'format' in attributes:  # biom 2.0
                 dataset.metadata.format = util.unicodify(attributes['format'])
             dataset.metadata.type = util.unicodify(attributes['type'])
-            dataset.metadata.shape = tuple((util.unicodify(_) for _ in attributes['shape']))
+            dataset.metadata.shape = tuple((int(_) for _ in attributes['shape']))
             dataset.metadata.generated_by = util.unicodify(attributes['generated-by'])
             dataset.metadata.creation_date = util.unicodify(attributes['creation-date'])
             dataset.metadata.nnz = int(attributes['nnz'])
-
-        except Exception as e:
-            log.warning('%s, set_meta Exception: %s', self, util.unicodify(e))
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             lines = ['Biom2 (HDF5) file']
             try:
-                f = h5py.File(dataset.file_name)
-                for k, v in dict(f.attrs).items():
-                    lines.append('%s:  %s' % (k, util.unicodify(v)))
+                with h5py.File(dataset.file_name) as f:
+                    for k, v in dict(f.attrs).items():
+                        lines.append('%s:  %s' % (k, util.unicodify(v)))
             except Exception as e:
                 log.warning('%s, set_peek Exception: %s', self, util.unicodify(e))
             dataset.peek = '\n'.join(lines)
@@ -1084,8 +1077,8 @@ class Cool(H5):
         if super(Cool, self).sniff(filename):
             keys = ['chroms', 'bins', 'pixels', 'indexes']
             with h5py.File(filename, 'r') as handle:
-                fmt = handle.attrs.get('format', None)
-                url = handle.attrs.get('format-url', None)
+                fmt = handle.attrs.get('format')
+                url = handle.attrs.get('format-url')
                 if fmt == MAGIC or url == URL:
                     if not all(name in handle.keys() for name in keys):
                         return False
@@ -1144,8 +1137,8 @@ class MCool(H5):
                     return False
                 res0 = list(handle['resolutions'].keys())[0]
                 keys = ['chroms', 'bins', 'pixels', 'indexes']
-                fmt = handle['resolutions'][res0].attrs.get('format', None)
-                url = handle['resolutions'][res0].attrs.get('format-url', None)
+                fmt = handle['resolutions'][res0].attrs.get('format')
+                url = handle['resolutions'][res0].attrs.get('format-url')
                 if fmt == MAGIC or url == URL:
                     if not all(name in handle['resolutions'][res0].keys() for name in keys):
                         return False
