@@ -5,7 +5,7 @@ import tempfile
 
 import yaml
 
-from galaxy.webapps.config_manage import main
+from galaxy.config.config_manage import main
 
 THIS_DIR = os.path.dirname(__file__)
 

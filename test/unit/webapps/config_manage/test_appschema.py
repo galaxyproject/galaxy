@@ -1,4 +1,4 @@
-from galaxy.webapps.config_manage import AppSchema
+from galaxy.config.config_manage import AppSchema
 
 
 def test_get_reloadable_option_defaults(monkeypatch):
