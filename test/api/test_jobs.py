@@ -251,16 +251,10 @@ class JobsApiTestCase(api.ApiTestCase):
     def test_deleting_output_keep_running_until_all_deleted(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 120)
 
-        self._hack_to_skip_test_if_state_ok(job_state)
-
         # Delete one of the two outputs and make sure the job is still running.
         self._raw_update_history_item(history_id, outputs[0]["id"], {"deleted": True})
 
-        self._hack_to_skip_test_if_state_ok(job_state)
-
         time.sleep(1)
-
-        self._hack_to_skip_test_if_state_ok(job_state)
 
         state = job_state().json()["state"]
         assert state == "running", state
@@ -286,16 +280,12 @@ class JobsApiTestCase(api.ApiTestCase):
             output_dataset_paths = []
             output_dataset_paths_exist = False
 
-        self._hack_to_skip_test_if_state_ok(job_state)
-
         current_state = job_state().json()["state"]
         assert current_state == "running", current_state
 
         # Purge one of the two outputs and make sure the job is still running.
         self._raw_update_history_item(history_id, outputs[0]["id"], {"purged": True})
         time.sleep(1)
-
-        self._hack_to_skip_test_if_state_ok(job_state)
 
         current_state = job_state().json()["state"]
         assert current_state == "running", current_state
@@ -342,12 +332,6 @@ class JobsApiTestCase(api.ApiTestCase):
             # Make sure the non-purged dataset is on disk and the purged one is not.
             assert os.path.exists(output_dataset_paths[1])
             assert not os.path.exists(output_dataset_paths[0])
-
-    def _hack_to_skip_test_if_state_ok(self, job_state):
-        from nose.plugins.skip import SkipTest
-        if job_state().json()["state"] == "ok":
-            message = "Job state switch from running to ok too quickly - the rest of the test requires the job to be in a running state. Skipping test."
-            raise SkipTest(message)
 
     def _setup_running_two_output_job(self, history_id, sleep_time):
         payload = self.dataset_populator.run_tool_payload(
