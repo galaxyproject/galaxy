@@ -1016,7 +1016,7 @@ class Biom2(H5):
             dataset.metadata.id = util.unicodify(attributes['id'])
             dataset.metadata.format_url = util.unicodify(attributes['format-url'])
             if 'format-version' in attributes:  # biom 2.1
-                dataset.metadata.format_version = '.'.join((str(_) for _ in list(attributes['format-version'])))
+                dataset.metadata.format_version = '.'.join(str(_) for _ in attributes['format-version'])
             elif 'format' in attributes:  # biom 2.0
                 dataset.metadata.format = util.unicodify(attributes['format'])
             dataset.metadata.type = util.unicodify(attributes['type'])
