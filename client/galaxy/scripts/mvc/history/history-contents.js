@@ -64,22 +64,8 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
 
     trackJobStates: function() {
         this.each(historyContent => {
-            if (historyContent.has("job_states_summary")) {
-                return;
-            }
-
-            if (historyContent.attributes.history_content_type === "dataset_collection") {
-                var jobSourceType = historyContent.attributes.job_source_type;
-                var jobSourceId = historyContent.attributes.job_source_id;
-                if (jobSourceType && this.jobStateSummariesCollection) {
-                    this.jobStateSummariesCollection.add({
-                        id: jobSourceId,
-                        model: jobSourceType,
-                        history_id: this.history_id,
-                        collection_id: historyContent.attributes.id
-                    });
-                    historyContent.jobStatesSummary = this.jobStateSummariesCollection.get(jobSourceId);
-                }
+            if (this.jobStateSummariesCollection) {
+                this.jobStateSummariesCollection.trackModel(historyContent);
             }
         });
     },

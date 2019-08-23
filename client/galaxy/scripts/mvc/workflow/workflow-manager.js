@@ -2,6 +2,25 @@ import $ from "jquery";
 import Connector from "mvc/workflow/workflow-connector";
 import { Toast } from "ui/toast";
 
+import Vue from "vue";
+import MarkdownEditor from "components/Markdown/MarkdownEditor";
+
+const DEFAULT_INVOCATION_REPORT = `
+# Workflow Execution Report
+
+## Workflow Inputs
+::: invocation_inputs
+:::
+
+## Workflow Outputs
+::: invocation_outputs
+:::
+
+## Workflow
+::: workflow_display
+:::
+`;
+
 class Workflow {
     constructor(app, canvas_container) {
         this.app = app;
@@ -202,7 +221,8 @@ class Workflow {
             };
             nodes[node.id] = node_data;
         });
-        return { steps: nodes };
+        const report = this.report;
+        return { steps: nodes, report: report };
     }
     from_simple(data, initialImport_) {
         var initialImport = initialImport_ === undefined ? true : initialImport_;
@@ -217,6 +237,17 @@ class Workflow {
         // First pass, nodes
         var using_workflow_outputs = false;
         wf.workflow_version = data.version;
+        wf.report = data.report;
+        const markdownEditorInstance = Vue.extend(MarkdownEditor);
+        new markdownEditorInstance({
+            propsData: {
+                onupdate: markdown => {
+                    this.report_changed(markdown);
+                },
+                initialMarkdown: (data.report && data.report.markdown) || DEFAULT_INVOCATION_REPORT
+            },
+            el: "#workflow-report-editor"
+        });
         $.each(data.steps, (id, step) => {
             var node = wf.app.prebuildNode(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let
@@ -326,6 +357,10 @@ class Workflow {
             this.app.showForm(node.config_form, node);
         }
         this.app.showWorkflowParameters();
+    }
+    report_changed(report_markdown) {
+        this.has_changes = true;
+        this.report.markdown = report_markdown;
     }
     layout() {
         this.check_changes_in_active_form();
