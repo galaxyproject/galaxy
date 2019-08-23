@@ -1010,20 +1010,23 @@ class Biom2(H5):
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super(Biom2, self).set_meta(dataset, overwrite=overwrite, **kwd)
-        with h5py.File(dataset.file_name, 'r') as f:
-            attributes = dict(f.attrs.items())
+        try:
+            with h5py.File(dataset.file_name, 'r') as f:
+                attributes = dict(f.attrs.items())
 
-            dataset.metadata.id = util.unicodify(attributes['id'])
-            dataset.metadata.format_url = util.unicodify(attributes['format-url'])
-            if 'format-version' in attributes:  # biom 2.1
-                dataset.metadata.format_version = '.'.join(str(_) for _ in attributes['format-version'])
-            elif 'format' in attributes:  # biom 2.0
-                dataset.metadata.format = util.unicodify(attributes['format'])
-            dataset.metadata.type = util.unicodify(attributes['type'])
-            dataset.metadata.shape = tuple((int(_) for _ in attributes['shape']))
-            dataset.metadata.generated_by = util.unicodify(attributes['generated-by'])
-            dataset.metadata.creation_date = util.unicodify(attributes['creation-date'])
-            dataset.metadata.nnz = int(attributes['nnz'])
+                dataset.metadata.id = util.unicodify(attributes['id'])
+                dataset.metadata.format_url = util.unicodify(attributes['format-url'])
+                if 'format-version' in attributes:  # biom 2.1
+                    dataset.metadata.format_version = '.'.join(str(_) for _ in attributes['format-version'])
+                elif 'format' in attributes:  # biom 2.0
+                    dataset.metadata.format = util.unicodify(attributes['format'])
+                dataset.metadata.type = util.unicodify(attributes['type'])
+                dataset.metadata.shape = tuple((int(_) for _ in attributes['shape']))
+                dataset.metadata.generated_by = util.unicodify(attributes['generated-by'])
+                dataset.metadata.creation_date = util.unicodify(attributes['creation-date'])
+                dataset.metadata.nnz = int(attributes['nnz'])
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, util.unicodify(e))
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
