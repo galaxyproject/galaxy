@@ -4,7 +4,7 @@ Data managers
 What are Data Managers?
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Data Managers are a special class of Galaxy tool which allows for the download and/or creation of data that is stored within `Tool Data Tables <https://galaxyproject.org/admin/tools/data-tables/>`_ and their underlying flat (e.g. .loc) files. These tools handle e.g. the creation of indexes and the addition of entries/lines to the data table / .loc file via the Galaxy admin interface.
+Data Managers are a special class of Galaxy tool which allows for the download and/or creation of data that is stored within `Tool Data Tables <https://galaxyproject.org/admin/tools/data-tables/>`_ and their underlying flat (e.g. ``.loc``) files. These tools handle e.g. the creation of indexes and the addition of entries/lines to the data table / ``.loc`` file via the Galaxy admin interface.
 
 Data Managers can be defined locally or installed through the Tool Shed.
 
@@ -49,7 +49,7 @@ The outer-most tag set. It contains no attributes. Any number of ``<data_manager
 
 ``<data_manager>`` tag set
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-This tag defines a particular Data Manager. Any number of <data_table> tags can be included within it.
+This tag defines a particular Data Manager. Any number of ``<data_table>`` tags can be included within it.
 
 
 +---------------+------------+-----------+--------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -115,7 +115,7 @@ The following is an example that contains all of the attributes described above.
 ``<move>`` tag set
 ~~~~~~~~~~~~~~~~~~
 
-This tag defines how to handle moving files from within the Data Manager Tool output's extra_files_path into the final storage location used for the Tool Data Table entry. Individual files or the entire directory contents can be moved. Move tag sets contain a ``<source>`` and a ``<target>`` tag set.
+This tag defines how to handle moving files from within the Data Manager Tool output's ``extra_files_path`` into the final storage location used for the Tool Data Table entry. Individual files or the entire directory contents can be moved. Move tag sets contain a ``<source>`` and a ``<target>`` tag set.
 
 +-------------------------+----------------+-----------+--------------------------------+------------------------------------------------------------------------------------------------+
 | attribute               | values         | required  | example                        | details                                                                                        |
@@ -134,7 +134,7 @@ The following is an example that contains all of the attributes described above.
 ``<source>`` tag set
 ~~~~~~~~~~~~~~~~~~~~
 
-This tag defines the source location within a ``<move>`` tag set. When not specified, it defaults to the entire extra_files_path of the output reference dataset. Both the base attribute and the text of the ``<source>`` tag are treated as `Cheetah <https://pythonhosted.org/Cheetah/>`_ templates, with the columns names specified in the ``<column>`` tagsets available as variables (with values taken from the corresponding data table entries. The strings produced for the base attribute and the tag text should resolve to a single line.
+This tag defines the source location within a ``<move>`` tag set. When not specified, it defaults to the entire ``extra_files_path`` of the output reference dataset. Both the base attribute and the text of the ``<source>`` tag are treated as `Cheetah <https://pythonhosted.org/Cheetah/>`_ templates, with the columns names specified in the ``<column>`` tagsets available as variables (with values taken from the corresponding data table entries. The strings produced for the base attribute and the tag text should resolve to a single line.
 
 +------------+-------------------+-----------+------------------------------+-------------------------------------------------------------------------------------------------------------------------+
 | attribute  | values            | required  | example                      | details                                                                                                                 |
@@ -144,7 +144,7 @@ This tag defines the source location within a ``<move>`` tag set. When not speci
 | ``TEXT``   | A string Template | no        | ``<source>${path}</source>`` | This defines the value of the source, relative to the *base*                                                            |
 +------------+-------------------+-----------+------------------------------+-------------------------------------------------------------------------------------------------------------------------+
 
-The following is an example that contains the most common usage, where the value provided by the Data Manager Tool, relative to the extra_files_path, is used as the source.
+The following is an example that contains the most common usage, where the value provided by the Data Manager Tool, relative to the ``extra_files_path``, is used as the source.
 
 .. code-block:: xml
 
@@ -154,7 +154,7 @@ The following is an example that contains the most common usage, where the value
 ``<target>`` tag set
 ~~~~~~~~~~~~~~~~~~~~
 
-This tag defines the target location within a <move> tag set. When not specified, it defaults to the *galaxy_data_manager_data_path* configuration value. The values of the base and the tag text are treated as templates as with the ``<source>`` tag. In addition the variables from the ``<column>`` tagset the value of ``galaxy_data_manager_data_path`` configuration value is available using the ``${GALAXY_DATA_MANAGER_DATA_PATH}`` variable.
+This tag defines the target location within a ``<move>`` tag set. When not specified, it defaults to the *galaxy_data_manager_data_path* configuration value. The values of the base and the tag text are treated as templates as with the ``<source>`` tag. In addition the variables from the ``<column>`` tagset the value of ``galaxy_data_manager_data_path`` configuration value is available using the ``${GALAXY_DATA_MANAGER_DATA_PATH}`` variable.
 
 +------------+-------------------+-----------+-----------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------+
 | attribute  | values            | required  | example                                                                           | details                                                                                                                                 |
@@ -205,7 +205,7 @@ and creates an output named "out_file", with an ``extra_files_path`` containing 
 
 and has a Data Manager configuration defined as:
 
-.. code-block:: json
+.. code-block:: xml
 
     <data_managers>
         <data_manager tool_file="data_manager/twobit_builder.xml" id="twobit_builder">
@@ -246,13 +246,14 @@ Returning Values to the Data Manager
 
 A Data Manager Tool must provide the new values for the Tool Data Table Entries via a JSON dictionary.
 
-1. A single dictionary, with the key data_tables is required to be present within the root JSON dictionary.
-2. The data_tables dictionary is keyed by the name of the Tool Data Table receiving new entries. Any number of named tables can be specified.
+1. A single dictionary, with the key ``data_tables`` is required to be present within the root JSON dictionary.
+2. The ``data_tables`` dictionary is keyed by the name of the Tool Data Table receiving new entries. Any number of named tables can be specified.
 3. The value for the named Tool Data Table is a list of dictionaries or has ``add`` and ``remove`` as keys each with a list of dictionaries.
 4. Each of these dictionaries contains the values that will be provided to the Data Manager and modified as per the configuration defined within the Data Manager XML Syntax
 
 Example 1 JSON Output from Data Manager Tool to Galaxy
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. code-block:: json
 
     {
@@ -269,8 +270,10 @@ Example 1 JSON Output from Data Manager Tool to Galaxy
     }
 
 This creates a new entry in the Tool Data Table:
-    #<unique_build_id>    <dbkey>        <display_name>    <file_path>
 
+.. code-block::
+
+    #<unique_build_id>    <dbkey>        <display_name>    <file_path>
     sacCer2    sacCer2    S. cerevisiae June 2008 (SGD/sacCer2) (sacCer2)    /Users/dan/galaxy-central/tool-data/sacCer2/seq/sacCer2.fa
 
 Example 2 JSON Output from Data Manager Tool to Galaxy
@@ -385,21 +388,22 @@ Data Managers are composed of two components:
 
 Data Manager Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
-The Data Manager Configuration (e.g. data_manager_conf.xml) defines the set of available Data Managers using an XML description. Each Data Manager can add entries to one or more Tool Data Tables. For each Tool Data Table under consideration, the expected output entry columns, and how to handle the Data Manager Tool results, are defined.
+The Data Manager Configuration (e.g. *data_manager_conf.xml*) defines the set of available Data Managers using an XML description. Each Data Manager can add entries to one or more Tool Data Tables. For each Tool Data Table under consideration, the expected output entry columns, and how to handle the Data Manager Tool results, are defined.
 
 Data Manager Tool
 ~~~~~~~~~~~~~~~~~
 
-A Data Manager Tool is a special class of Galaxy Tool. Data Manager Tools do not appear in the standard Tool Panel and can only be accessed by a Galaxy Administrator. Additionally, the initial content of a Data Manager's output file contains a JSON dictionary with a listing of the Tool parameters and Job settings (i.e. they are a type of OutputParameterJSONTool, this is also available for DataSourceTools). There is no requirement for the underlying Data Manager tool to make use of these contents, but they are provided as a handy way to transfer all of the tool and job parameters without requiring a different command-line argument for each necessary piece of information.
+A Data Manager Tool is a special class of Galaxy Tool. Data Manager Tools do not appear in the standard Tool Panel and can only be accessed by a Galaxy Administrator. Additionally, the initial content of a Data Manager's output file contains a JSON dictionary with a listing of the Tool parameters and Job settings (i.e. they are a type of ``OutputParameterJSONTool``, this is also available for ``DataSourceTools``). There is no requirement for the underlying Data Manager tool to make use of these contents, but they are provided as a handy way to transfer all of the tool and job parameters without requiring a different command-line argument for each necessary piece of information.
 
-The primary difference between a standard Galaxy Tool and a Data Manager Tool is that the primary output dataset of a Data Manager Tool must be a file containing a JSON description of the new entries to add to a Tool Data Table. The on-disk content to be referenced by the Data Manager Tool, if any, is stored within the extra_files_path of the output dataset created by the tool.
+The primary difference between a standard Galaxy Tool and a Data Manager Tool is that the primary output dataset of a Data Manager Tool must be a file containing a JSON description of the new entries to add to a Tool Data Table. The on-disk content to be referenced by the Data Manager Tool, if any, is stored within the ``extra_files_path`` of the output dataset created by the tool.
 
-A data manager tool can use a ``conda`` environment if the target Galaxy is version 18.09 or above (specified in tool.xml)/
+A data manager tool can use a ``conda`` environment if the target Galaxy is version 18.09 or above (specified in the tool's XML file). 
 
 Data Manager Server Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In your ``galaxy.yml`` ensure these settings are set:
+
 .. code-block:: yaml
 
     # Data manager configuration options
@@ -408,16 +412,17 @@ In your ``galaxy.yml`` ensure these settings are set:
     shed_data_manager_config_file: shed_data_manager_conf.xml
     galaxy_data_manager_data_path: tool-data
 
-Where enable_data_manager_user_view allows non-admin users to view the available data that has been managed.
+Where ``enable_data_manager_user_view`` allows non-admin users to view the available data that has been managed.
 
-Where data_manager_config_file defines the local xml file to use for loading the configurations of locally defined data managers.
+Where ``data_manager_config_file`` defines the local XML file to use for loading the configurations of locally defined data managers.
 
-Where shed_data_manager_config_file defines the local xml file to use for saving and loading the configurations of locally defined data managers.
+Where ``shed_data_manager_config_file`` defines the local XML file to use for saving and loading the configurations of locally defined data managers.
 
-Where galaxy_data_manager_data_path defines the location to use for storing the files created by Data Managers. When not configured it defaults to the value of tool_data_path.
+Where ``galaxy_data_manager_data_path`` defines the location to use for storing the files created by Data Managers. When not configured it defaults to the value of ``tool_data_path``.
 
-An example single entry data_manager_config_file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+An example single entry ``data_manager_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 .. code-block:: xml
 
     <?xml version="1.0"?>
@@ -441,11 +446,12 @@ An example single entry data_manager_config_file
         </data_manager>
     </data_managers>
 
-An example data_manager/fetch_genome_all_fasta.xml
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This Tool Config calls a python script data_manager_fetch_genome_all_fasta.py and provides a single file out_file and the description from the dbkey dropdown menu for input.
+An example ``data_manager/fetch_genome_all_fasta.xml``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The starting contents of out_file contain information from Galaxy about the tool, including input parameter values, in the JSON format. Data Manager tools are expected to be able to parse this file. The Data Manager tool will also put the return output values for its results in this file; additional files to be moved can be placed in the extra_files_path of out_file.
+This Tool Config calls a python script ``data_manager_fetch_genome_all_fasta.py`` and provides a single file ``out_file`` and the description from the dbkey dropdown menu for input.
+
+The starting contents of ``out_file`` contain information from Galaxy about the tool, including input parameter values, in the JSON format. Data Manager tools are expected to be able to parse this file. The Data Manager tool will also put the return output values for its results in this file; additional files to be moved can be placed in the ``extra_files_path`` of ``out_file``.
 
 .. code-block:: xml
 
@@ -509,8 +515,8 @@ The starting contents of out_file contain information from Galaxy about the tool
         </help>
     </tool>
 
-An example data_manager_fetch_genome_all_fasta.py
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+An example ``data_manager_fetch_genome_all_fasta.py``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. code-block:: python
 
@@ -731,6 +737,8 @@ Example JSON Output from tool to galaxy, dbkey is sacCer2
 
 New Entry in Data Table, dbkey is sacCer2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block::
 
     #<unique_build_id>    <dbkey>        <display_name>    <file_path>
     sacCer2    sacCer2    S. cerevisiae June 2008 (SGD/sacCer2) (sacCer2)    /Users/dan/galaxy-central/tool-data/sacCer2/seq/sacCer2.fa
