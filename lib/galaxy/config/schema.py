@@ -1,6 +1,6 @@
 from galaxy.util.yaml_util import (
-    ordered_load,
     OPTION_DEFAULTS,
+    ordered_load,
 )
 
 

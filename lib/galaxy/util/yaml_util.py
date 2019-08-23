@@ -1,6 +1,7 @@
 import os
-import yaml
 from collections import OrderedDict
+
+import yaml
 
 
 OPTION_DEFAULTS = {
