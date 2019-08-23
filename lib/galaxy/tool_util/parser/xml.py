@@ -201,6 +201,25 @@ class XmlToolSource(ToolSource):
             return ParallelismInfo(parallelism)
         return parallelism_info
 
+    def parse_realtime(self):
+        realtimetool_el = self.root.find("entry_points")
+        rtt = []
+        if realtimetool_el is None:
+            return rtt
+        for ep_el in realtimetool_el.findall("entry_point"):
+            port = ep_el.find("port")
+            assert port is not None, ValueError('A port is required for InteractiveTools')
+            port = port.text.strip()
+            url = ep_el.find("url")
+            if url is not None:
+                url = url.text.strip()
+            name = ep_el.get('name', None)
+            if name:
+                name = name.strip()
+            requires_domain = string_as_bool(ep_el.attrib.get("requires_domain", False))
+            rtt.append(dict(port=port, url=url, name=name, requires_domain=requires_domain))
+        return rtt
+
     def parse_hidden(self):
         hidden = xml_text(self.root, "hidden")
         if hidden:
@@ -221,7 +240,6 @@ class XmlToolSource(ToolSource):
         for option_elem in root.findall("options"):
             if key in option_elem.attrib:
                 return string_as_bool(option_elem.get(key))
-
         return default
 
     @property

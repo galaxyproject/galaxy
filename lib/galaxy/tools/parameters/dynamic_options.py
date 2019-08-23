@@ -4,6 +4,7 @@ on the values of other parameters or other aspects of the current state)
 """
 import logging
 import os
+import re
 
 from six import StringIO
 
@@ -74,7 +75,44 @@ class StaticValueFilter(Filter):
         except Exception:
             pass
         for fields in options:
-            if (self.keep and fields[self.column] == filter_value) or (not self.keep and fields[self.column] != filter_value):
+            if self.keep == (filter_value == fields[self.column]):
+                rval.append(fields)
+        return rval
+
+
+class RegexpFilter(Filter):
+    """
+    Filters a list of options on a column by a regular expression.
+
+    Type: regexp
+
+    Required Attributes:
+        value: regular expression to compare to
+        column: column in options to compare with
+    Optional Attributes:
+        keep: Keep columns matching the regexp (True)
+              Discard columns matching the regexp (False)
+    """
+
+    def __init__(self, d_option, elem):
+        Filter.__init__(self, d_option, elem)
+        self.value = elem.get("value", None)
+        assert self.value is not None, "Required 'value' attribute missing from filter"
+        column = elem.get("column", None)
+        assert column is not None, "Required 'column' attribute missing from filter, when loading from file"
+        self.column = d_option.column_spec_to_index(column)
+        self.keep = string_as_bool(elem.get("keep", 'True'))
+
+    def filter_options(self, options, trans, other_values):
+        rval = []
+        filter_value = self.value
+        try:
+            filter_value = User.expand_user_properties(trans.user, filter_value)
+        except Exception:
+            pass
+        filter_pattern = re.compile(filter_value)
+        for fields in options:
+            if self.keep == (not filter_pattern.match(fields[self.column]) is None):
                 rval.append(fields)
         return rval
 
@@ -141,6 +179,9 @@ class DataMetaFilter(Filter):
         if not isinstance(ref, HistoryDatasetAssociation) and not is_data_or_data_list:
             return []  # not a valid dataset
 
+        # get the metadata value. for lists (of data sets) and collections
+        # the meta data value of all elements is determined if its the same
+        # for all, if different are found the filter returns an empty list
         if is_data_list:
             meta_value = None
             for single_ref in ref:
@@ -155,6 +196,8 @@ class DataMetaFilter(Filter):
         else:
             meta_value = ref.metadata.get(self.key, None)
 
+        # if no meta data value could be determined just return a copy
+        # of the original options
         if meta_value is None:
             return [(disp_name, optval, selected) for disp_name, optval, selected in options]
 
@@ -226,7 +269,7 @@ class ParamValueFilter(Filter):
         ref = str(ref)
         rval = []
         for fields in options:
-            if (self.keep and fields[self.column] == ref) or (not self.keep and fields[self.column] != ref):
+            if self.keep == (fields[self.column] == ref):
                 rval.append(fields)
         return rval
 
@@ -291,6 +334,8 @@ class MultipleSplitterFilter(Filter):
 class AttributeValueSplitterFilter(Filter):
     """
     Filters a list of attribute-value pairs to be unique attribute names.
+
+    DEPRECATED: just replace with 2 rounds of MultipleSplitterFilter
 
     Type: attribute_value_splitter
 
@@ -442,20 +487,13 @@ class SortByColumnFilter(Filter):
         self.column = d_option.column_spec_to_index(column)
 
     def filter_options(self, options, trans, other_values):
-        rval = []
-        for fields in options:
-            for j in range(0, len(rval)):
-                if fields[self.column] < rval[j][self.column]:
-                    rval.insert(j, fields)
-                    break
-            else:
-                rval.append(fields)
-        return rval
+        return sorted(options, key=lambda x: x[self.column])
 
 
 filter_types = dict(data_meta=DataMetaFilter,
                     param_value=ParamValueFilter,
                     static_value=StaticValueFilter,
+                    regexp=RegexpFilter,
                     unique_value=UniqueValueFilter,
                     multiple_splitter=MultipleSplitterFilter,
                     attribute_value_splitter=AttributeValueSplitterFilter,

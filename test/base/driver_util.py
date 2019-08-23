@@ -19,6 +19,7 @@ import nose.config
 import nose.core
 import nose.loader
 import nose.plugins.manager
+import yaml
 from paste import httpserver
 from six.moves import (
     http_client,
@@ -59,6 +60,17 @@ MIGRATED_TOOL_PANEL_CONFIG = 'config/migrated_tools_conf.xml'
 INSTALLED_TOOL_PANEL_CONFIGS = [
     os.environ.get('GALAXY_TEST_SHED_TOOL_CONF', 'config/shed_tool_conf.xml')
 ]
+REALTIME_PROXY_TEMPLATE = string.Template(r"""
+uwsgi:
+  realtime_map: $tempdir/realtime_map.sqlite
+  python-raw: scripts/realtime/key_type_token_mapping.py
+  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(realtime\.$test_host:$test_port)$ goto:realtime
+  route-run: goto:endendend
+  route-label: realtime
+  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(realtime\.$test_host:$test_port)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $2 $1 $3 $4 $0 5
+  route-if-not: empty:${TARGET_HOST} httpdumb:${TARGET_HOST}
+  route-label: endendend
+""")
 
 DEFAULT_LOCALES = "en"
 
@@ -717,10 +729,26 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
     config = {}
     config["galaxy"] = kwargs.copy()
 
+    enable_realtime_mapping = getattr(config_object, "enable_realtime_mapping", False)
+    if enable_realtime_mapping:
+        config["galaxy"]["realtime_prefix"] = "realtime"
+        config["galaxy"]["realtime_map"] = os.path.join(tempdir, "realtime_map.sqlite")
+
     yaml_config_path = os.path.join(tempdir, "galaxy.yml")
     with open(yaml_config_path, "w") as f:
-        import yaml
         yaml.dump(config, f)
+
+    if enable_realtime_mapping:
+        # Avoid YAML.dump configuration since uwsgi doesn't like real YAML :( -
+        # though maybe it would work?
+        with open(yaml_config_path, "r") as f:
+            old_contents = f.read()
+        with open(yaml_config_path, "w") as f:
+            test_port = str(port) if port else r"[0-9]+"
+            test_host = host or "localhost"
+            uwsgi_section = REALTIME_PROXY_TEMPLATE.safe_substitute(test_host=test_host, test_port=test_port, tempdir=tempdir)
+            f.write(uwsgi_section)
+            f.write(old_contents)
 
     def attempt_port_bind(port):
         uwsgi_command = [

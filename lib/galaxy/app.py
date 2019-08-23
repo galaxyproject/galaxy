@@ -17,6 +17,7 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.libraries import LibraryManager
+from galaxy.managers.realtime import RealTimeManager
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
@@ -221,6 +222,8 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
                 self.config.containers_config_file,
                 containers_conf=self.config.containers_conf
             )
+
+        self.realtime_manager = RealTimeManager(self)
 
         # Configure handling of signals
         handlers = {}

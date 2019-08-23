@@ -34,6 +34,7 @@
   <tool file="empty_datasets.xml" />
   <tool file="inputs_as_json.xml" />
   <tool file="inputs_as_json_with_paths.xml" />
+  <tool file="filter_static_regexp.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_output_action.xml" />
@@ -163,6 +164,9 @@
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
+
+  <tool file="realtimetool_simple.xml" />
+  <tool file="realtimetool_two_entry_points.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
 

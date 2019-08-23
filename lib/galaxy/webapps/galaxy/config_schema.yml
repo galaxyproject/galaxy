@@ -370,24 +370,30 @@ mapping:
         default: 'false'
         required: false
         desc: |
-          Set to true to enable monitoring of tools and tool directories
-          listed in any tool config file specified in tool_config_file option.
-          If changes are found, tools are automatically reloaded.  Watchdog (
-          https://pypi.org/project/watchdog/ ) must be installed and
-          available to Galaxy to use this option. Other options include 'auto'
-          which will attempt to watch tools if the watchdog library is available
-          but won't fail to load Galaxy if it is not and 'polling' which will use
-          a less efficient monitoring scheme that may work in wider range of scenarios
-          than the watchdog default.
+          Monitor the tools and tool directories listed in any tool config file specified in
+          tool_config_file option.  If changes are found, tools are automatically reloaded.
+          Watchdog ( https://pypi.org/project/watchdog/ ) must be installed and available to Galaxy
+          to use this option. Other options include 'auto' which will attempt to watch tools if the
+          watchdog library is available but won't fail to load Galaxy if it is not and 'polling'
+          which will use a less efficient monitoring scheme that may work in wider range of
+          scenarios than the watchdog default.
 
       watch_job_rules:
         type: str
         default: 'false'
         required: false
         desc: |
-          Set to true to enable monitoring of dynamic job rules. If changes are
-          found, rules are automatically reloaded. Takes the same values as the
-          'watch_tools' option.
+          Monitor dynamic job rules. If changes are found, rules are automatically reloaded. Takes
+          the same values as the 'watch_tools' option.  
+
+      watch_core_config:
+        type: str
+        default: 'false'
+        required: false
+        desc: |
+          Monitor a subset of options in the core configuration file (See RELOADABLE_CONFIG_OPTIONS
+          in lib/galaxy/config/__init__.py).  If changes are found, modified options are
+          automatically reloaded. Takes the same values as the 'watch_tools' option.
 
       legacy_eager_objectstore_initialization:
         type: bool
@@ -524,15 +530,13 @@ mapping:
         default: 'false'
         required: false
         desc: |
-          Set to true to enable monitoring of the tool_data and shed_tool_data_path
-          directories. If changes in tool data table files are found, the tool data
-          tables for that data manager are automatically reloaded.
-          Watchdog ( https://pypi.org/project/watchdog/ ) must be installed and
-          available to Galaxy to use this option. Other options include 'auto'
-          which will attempt to use the watchdog library if it is available but won't
-          fail to load Galaxy if it is not and 'polling' which will use a less
-          efficient monitoring scheme that may work in wider range of scenarios
-          than the watchdog default.
+          Monitor the tool_data and shed_tool_data_path directories. If changes in tool data table
+          files are found, the tool data tables for that data manager are automatically reloaded.
+          Watchdog ( https://pypi.org/project/watchdog/ ) must be installed and available to Galaxy
+          to use this option. Other options include 'auto' which will attempt to use the watchdog
+          library if it is available but won't fail to load Galaxy if it is not and 'polling' which
+          will use a less efficient monitoring scheme that may work in wider range of scenarios than
+          the watchdog default.
 
       builds_file_path:
         type: str
@@ -928,6 +932,13 @@ mapping:
           Galaxy server, but contains a redirect to a third-party server, tricking a
           Galaxy user to access said site.
 
+      interactivetools_enable:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable InteractiveTools.
+
       visualizations_visible:
         type: bool
         default: true
@@ -946,6 +957,7 @@ mapping:
         type: str
         default: ''
         required: false
+        reloadable: true
         desc: |
           Show a message box under the masthead.
 
@@ -1028,6 +1040,7 @@ mapping:
         type: str
         default: /static/welcome.html
         required: false
+        reloadable: true
         desc: |
           The URL of the page to display in Galaxy's middle pane when loaded.  This can
           be an absolute or relative URL.
@@ -1760,6 +1773,7 @@ mapping:
         type: float
         default: 9.0
         required: false
+        reloadable: true
         desc: |
           Boosts are used to customize this instance's toolbox search.
           The higher the boost, the more importance the scoring algorithm gives to the
@@ -1770,6 +1784,7 @@ mapping:
         type: float
         default: 3.0
         required: false
+        reloadable: true
         desc: |
           Boosts are used to customize this instance's toolbox search.
           The higher the boost, the more importance the scoring algorithm gives to the
@@ -1780,6 +1795,7 @@ mapping:
         type: float
         default: 2.0
         required: false
+        reloadable: true
         desc: |
           Boosts are used to customize this instance's toolbox search.
           The higher the boost, the more importance the scoring algorithm gives to the
@@ -1790,6 +1806,7 @@ mapping:
         type: float
         default: 1.0
         required: false
+        reloadable: true
         desc: |
           Boosts are used to customize this instance's toolbox search.
           The higher the boost, the more importance the scoring algorithm gives to the
@@ -1800,6 +1817,7 @@ mapping:
         type: float
         default: 5.0
         required: false
+        reloadable: true
         desc: |
           Boosts are used to customize this instance's toolbox search.
           The higher the boost, the more importance the scoring algorithm gives to the
@@ -1810,6 +1828,7 @@ mapping:
         type: float
         default: 0.5
         required: false
+        reloadable: true
         desc: |
           Boosts are used to customize this instance's toolbox search.
           The higher the boost, the more importance the scoring algorithm gives to the
@@ -1820,6 +1839,7 @@ mapping:
         type: int
         default: 20
         required: false
+        reloadable: true
         desc: |
           Limits the number of results in toolbox search.  Can be used to tweak how many
           results will appear.
@@ -1828,6 +1848,7 @@ mapping:
         type: bool
         default: false
         required: false
+        reloadable: true
         desc: |
           Enable/ disable Ngram-search for tools. It makes tool
           search results tolerant for spelling mistakes in the query
@@ -1838,6 +1859,7 @@ mapping:
         type: int
         default: 3
         required: false
+        reloadable: true
         desc: |
           Set minimum size of ngrams
 
@@ -1845,6 +1867,7 @@ mapping:
         type: int
         default: 4
         required: false
+        reloadable: true
         desc: |
           Set maximum size of ngrams
 
@@ -1945,6 +1968,7 @@ mapping:
         type: str
         default: ''
         required: false
+        reloadable: true
         desc: |
           Administrative users - set this to a comma-separated list of valid Galaxy
           users (email addresses).  These users will have access to the Admin section
@@ -2539,6 +2563,7 @@ mapping:
         type: str
         default: always
         required: false
+        reloadable: true
         desc: |
           Clean up various bits of jobs left on the filesystem after completion.  These
           bits include the job working directory, external metadata temporary files,

@@ -103,6 +103,10 @@ def build_command(
         # xref https://github.com/galaxyproject/galaxy/issues/3289
         commands_builder.prepend_command("rm -rf working; mkdir -p working; cd working")
 
+    container_monitor_command = job_wrapper.container_monitor_command(container)
+    if container_monitor_command:
+        commands_builder.prepend_command(container_monitor_command)
+
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 

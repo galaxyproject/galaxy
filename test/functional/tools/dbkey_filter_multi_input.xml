@@ -1,5 +1,5 @@
 <tool id="dbkey_filter_multi_input" name="dbkey_filter_multi_input" version="0.1.0">
-    <description>Filter select on dbkey of multiple inputs</description>
+    <description>Filter select on dbkey of multiple inputs and use of named column</description>
     <command><![CDATA[
         #for $input in $inputs#
         cat $input >> $output;
@@ -10,7 +10,7 @@
         <param format="txt" name="inputs" type="data" label="Inputs" multiple="true" help="" />
         <param name="index" type="select" label="Using reference genome">
           <options from_data_table="test_fasta_indexes">
-            <filter type="data_meta" ref="inputs" key="dbkey" column="1" />
+            <filter type="data_meta" ref="inputs" key="dbkey" column="dbkey" />
             <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
           </options>
         </param>

@@ -84,7 +84,7 @@ from galaxy.util import (
     Params,
     rst_to_html,
     string_as_bool,
-    unicodify
+    unicodify,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
@@ -92,7 +92,10 @@ from galaxy.util.expressions import ExpressionContext
 from galaxy.util.form_builder import SelectField
 from galaxy.util.json import safe_loads
 from galaxy.util.rules_dsl import RuleSet
-from galaxy.util.template import fill_template
+from galaxy.util.template import (
+    fill_template,
+    refactoring_tool,
+)
 from galaxy.version import VERSION_MAJOR
 from galaxy.work.context import WorkRequestContext
 from tool_shed.util import common_util
@@ -404,6 +407,7 @@ class Tool(Dictifiable):
 
     tool_type = 'default'
     requires_setting_metadata = True
+    produces_entry_points = False
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
 
@@ -536,7 +540,9 @@ class Tool(Dictifiable):
         """Indicates this tool's runtime requires Galaxy's Python environment."""
         # All special tool types (data source, history import/export, etc...)
         # seem to require Galaxy's Python.
-        if self.tool_type not in ["default", "manage_data"]:
+        # FIXME: the (instantiated) tool class should emit this behavior, and not
+        #        use inspection by string check
+        if self.tool_type not in ["default", "manage_data", "interactive"]:
             return True
 
         if self.tool_type == "manage_data" and self.profile < 18.09:
@@ -641,9 +647,9 @@ class Tool(Dictifiable):
         if self.python_template_version is None:
             # If python_template_version not specified we assume tools with profile versions >= 19.05 are python 3 ready
             if self.profile >= 19.05:
-                self.python_template_version = '3.5'
+                self.python_template_version = packaging.version.parse('3.5')
             else:
-                self.python_template_version = '2.7'
+                self.python_template_version = packaging.version.parse('2.7')
 
         # Get the (user visible) name of the tool
         self.name = tool_source.parse_name()
@@ -812,6 +818,7 @@ class Tool(Dictifiable):
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths()
+        self.ports = tool_source.parse_realtime()
 
     def __parse_legacy_features(self, tool_source):
         self.code_namespace = dict()
@@ -833,10 +840,20 @@ class Tool(Dictifiable):
                     self.hook_map[key] = value
             file_name = code_elem.get("file")
             code_path = os.path.join(self.tool_dir, file_name)
-            with open(code_path) as f:
-                compiled_code = compile(f.read(), code_path, 'exec')
             if self._allow_code_files:
-                exec(compiled_code, self.code_namespace)
+                with open(code_path) as f:
+                    code_string = f.read()
+                try:
+                    compiled_code = compile(code_string, code_path, 'exec')
+                    exec(compiled_code, self.code_namespace)
+                except Exception:
+                    if refactoring_tool and self.python_template_version.release[0] < 3:
+                        # Could be a code file that uses python 2 syntax
+                        translated_code = str(refactoring_tool.refactor_string(code_string, name='auto_translated_code_file'))
+                        compiled_code = compile(translated_code, "futurized_%s" % code_path, 'exec')
+                        exec(compiled_code, self.code_namespace)
+                    else:
+                        raise
 
         # User interface hints
         uihints_elem = root.find("uihints")
@@ -1131,7 +1148,7 @@ class Tool(Dictifiable):
                     test_param_input_source = input_source.parse_test_input_source()
                     group.test_param = self.parse_param_elem(test_param_input_source, enctypes, context)
                     if group.test_param.optional:
-                        log.warning("Tool with id %s declares a conditional test parameter as optional, this is invalid and will be ignored." % self.id)
+                        log.debug("Tool with id %s declares a conditional test parameter as optional, this is invalid and will be ignored." % self.id)
                         group.test_param.optional = False
                     possible_cases = list(group.test_param.legal_values)  # store possible cases, undefined whens will have no inputs
                     # Must refresh when test_param changes
@@ -1145,8 +1162,8 @@ class Tool(Dictifiable):
                         try:
                             possible_cases.remove(case.value)
                         except Exception:
-                            log.warning("Tool %s: a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." %
-                                        (self.id, group.name, group.test_param.name, case.value))
+                            log.debug("Tool %s: a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." %
+                                      (self.id, group.name, group.test_param.name, case.value))
                     for unspecified_case in possible_cases:
                         log.warning("Tool %s: a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs." %
                                     (self.id, group.name, group.test_param.name, unspecified_case))
@@ -1918,7 +1935,8 @@ class Tool(Dictifiable):
         tool_dict['panel_section_id'], tool_dict['panel_section_name'] = self.get_panel_section()
 
         tool_class = self.__class__
-        regular_form = tool_class == Tool or isinstance(self, DatabaseOperationTool)
+        # FIXME: the Tool class should declare directly, instead of ad hoc inspection
+        regular_form = tool_class == Tool or isinstance(self, (DatabaseOperationTool, RealTimeTool))
         tool_dict["form_style"] = "regular" if regular_form else "special"
 
         return tool_dict
@@ -2438,6 +2456,35 @@ class ExportHistoryTool(Tool):
 
 class ImportHistoryTool(Tool):
     tool_type = 'import_history'
+
+
+class RealTimeTool(Tool):
+    tool_type = 'interactive'
+    produces_entry_points = True
+
+    def __init__(self, config_file, tool_source, app, **kwd):
+        assert app.config.interactivetools_enable, ValueError('Trying to load an InteractiveTool, but InteractiveTools are not enabled.')
+        super(RealTimeTool, self).__init__(config_file, tool_source, app, **kwd)
+        for port in self.ports:
+            assert port.get('requires_domain', None), ValueError('InteractiveTools currently only work when requires_domain is True for each entry_point.')
+
+    def __remove_realtime_by_job(self, job):
+        if job:
+            eps = job.realtimetool_entry_points
+            log.debug('__remove_realtime_by_job: %s', eps)
+            self.app.realtime_manager.remove_entry_points(eps)
+        else:
+            log.warning("Could not determine job to stop InteractiveTool: %s", job)
+
+    def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
+        # run original exec_after_process
+        super(RealTimeTool, self).exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+        self.__remove_realtime_by_job(job)
+
+    def job_failed(self, job_wrapper, message, exception=False):
+        super(RealTimeTool, self).job_failed(job_wrapper, message, exception=exception)
+        job = job_wrapper.sa_session.query(model.Job).get(job_wrapper.job_id)
+        self.__remove_realtime_by_job(job)
 
 
 class DataManagerTool(OutputParameterJSONTool):
@@ -3050,7 +3097,7 @@ class FilterFromFileTool(DatabaseOperationTool):
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool,
+for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool, RealTimeTool,
                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
                    BuildListCollectionTool, ExtractDatasetCollectionTool,

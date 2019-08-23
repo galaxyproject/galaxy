@@ -122,6 +122,11 @@ class ToolSource(object):
         adjacent to the tool).
         """
 
+    @abstractmethod
+    def parse_realtime(self):
+        """ Return RealTimeTool entry point templates to expose.
+        """
+
     def parse_redirect_url_params_elem(self):
         """ Return an XML element describing redirect_url_params.
 

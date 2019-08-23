@@ -79,6 +79,7 @@ class ConfigSerializer(base.ModelSerializer):
             'require_login'                     : _defaults_to(None),
             'inactivity_box_content'            : _defaults_to(None),
             'visualizations_visible'            : _defaults_to(True),
+            'interactivetools_enable'           : _defaults_to(False),
             'message_box_content'               : _defaults_to(None),
             'message_box_visible'               : _defaults_to(False),
             'message_box_class'                 : _defaults_to('info'),

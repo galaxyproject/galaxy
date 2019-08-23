@@ -151,6 +151,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/workflows/run')
     webapp.add_client_route('/workflows/import')
     webapp.add_client_route('/custom_builds')
+    webapp.add_client_route('/realtime_entry_points/list')
 
     # ==== Done
     # Indicate that all configuration settings have been provided
@@ -361,6 +362,9 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{id:.+?}', action='show', controller="tools")
     webapp.mapper.resource('tool', 'tools', path_prefix='/api')
     webapp.mapper.resource('dynamic_tools', 'dynamic_tools', path_prefix='/api')
+
+    webapp.mapper.connect('/api/entry_points', action='index', controller="tool_entry_points")
+    webapp.mapper.connect('/api/entry_points/{id:.+?}/access', action='access_entry_point', controller="tool_entry_points")
 
     webapp.mapper.connect('/api/dependency_resolvers/clean', action="clean", controller="tool_dependencies", conditions=dict(method=["POST"]))
     webapp.mapper.connect('/api/dependency_resolvers/dependency', action="manager_dependency", controller="tool_dependencies", conditions=dict(method=["GET"]))

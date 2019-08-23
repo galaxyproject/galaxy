@@ -71,7 +71,7 @@ class DatabaseHeartbeat(object):
 
     @property
     def worker_process(self):
-        return self.sa_session.query(WorkerProcess).filter_by(
+        return self.sa_session.query(WorkerProcess).with_for_update(of=WorkerProcess).filter_by(
             server_name=self.server_name,
             hostname=self.hostname,
         ).first()
