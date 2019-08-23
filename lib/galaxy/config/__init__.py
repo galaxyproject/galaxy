@@ -359,8 +359,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
         self.template_cache = resolve_path(kwargs.get("template_cache_path", "compiled_templates"), self.data_dir)
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
-        self.cluster_files_directory = os.path.abspath(kwargs.get("cluster_files_directory", "database/pbs"))
-        self.cluster_files_directory = os.path.abspath(resolve_path(kwargs.get("cluster_files_directory", "pbs"), self.data_dir))
+        self.cluster_files_directory = self.resolve_path(kwargs.get("cluster_files_directory", os.path.join(self.data_dir, "pbs")))
 
         # Fall back to legacy job_working_directory config variable if set.
         default_jobs_directory = kwargs.get("job_working_directory", "jobs_directory")
@@ -376,7 +375,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # should probably drop the backward compatiblity to save the path check.
         self.container_image_cache_path = resolve_path(kwargs.get("container_image_cache_path", "container_images"), self.data_dir)
         if not os.path.exists(self.container_image_cache_path):
-            self.container_image_cache_path = self.resolve_path(kwargs.get("container_image_cache_path", "database/container_cache"))
+            self.container_image_cache_path = self.resolve_path(kwargs.get("container_image_cache_path", os.path.join(self.data_dir, "container_cache")))
         self.outputs_to_working_directory = string_as_bool(kwargs.get('outputs_to_working_directory', False))
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
         self.retry_job_output_collection = int(kwargs.get('retry_job_output_collection', 0))
@@ -580,7 +579,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self.nginx_upload_store = os.path.abspath(self.nginx_upload_store)
         self.object_store = kwargs.get('object_store', 'disk')
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
-        self.object_store_cache_path = resolve_path(kwargs.get("object_store_cache_path", "database/object_store_cache"), self.data_dir)
+        self.object_store_cache_path = self.resolve_path(kwargs.get("object_store_cache_path", os.path.join(self.data_dir, "object_store_cache")))
         self.object_store_store_by = kwargs.get("object_store_store_by", "id")
 
         # Handle AWS-specific config options for backward compatibility
@@ -729,7 +728,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.dynamic_proxy_golang_api_key = kwargs.get("dynamic_proxy_golang_api_key", None)
 
         # InteractiveTools propagator mapping file
-        self.realtime_map = self.resolve_path(kwargs.get("interactivetools_map", "database/interactivetools_map.sqlite"))
+        self.realtime_map = self.resolve_path(kwargs.get("interactivetools_map", os.path.join(self.data_dir, "interactivetools_map.sqlite")))
         self.realtime_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
         self.interactivetools_enable = string_as_bool(kwargs.get('interactivetools_enable', False))
 
