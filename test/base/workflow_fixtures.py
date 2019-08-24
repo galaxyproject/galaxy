@@ -499,23 +499,21 @@ report:
     The next two sections demonstrate the auto generated inputs and outputs sections
     in the default workflow invocation report template.
 
-    ```
-    ## Workflow Inputs
-    ::: invocation_inputs
-    :::
+        ## Workflow Inputs
+        ```{galaxy_invocation_inputs}
+        ```
 
-    ## Workflow Outputs
-    ::: invocation_outputs
-    :::
-    ```
+        ## Workflow Outputs
+        ```{galaxy_invocation_outputs}
+        ```
 
     ## Workflow Inputs
-    ::: invocation_inputs
-    :::
+    ```{galaxy_invocation_inputs}
+    ```
 
     ## Workflow Outputs
-    ::: invocation_outputs
-    :::
+    ```{galaxy_invocation_outputs}
+    ```
 
     The auto-generated sections could be hand-crafted from workflow markdown also,
     listing out each input and output explicitly. The auto generated sections are merely
@@ -532,129 +530,107 @@ report:
 
     Once can reference an output and embed a display of it as follows:
 
-    ```
-    ::: history_dataset_display output=output_1
-    :::
-    ```
+        ```{galaxy_history_dataset_display output=output_1}
+        ```
 
-    ::: history_dataset_display output=output_1
-    :::
+    ```{galaxy_history_dataset_display output=output_1}
+    ```
 
     Inputs can be referenced and displayed the same way:
 
-    ```
-    ::: history_dataset_display input=input_1
-    :::
-    ```
+        ```{galaxy_history_dataset_display input=input_1}
+        ```
 
-    ::: history_dataset_display input=input_1
-    :::
+    ```{galaxy_history_dataset_display input=input_1}
+    ```
 
     ---
 
     Images can be embedded directly into the report as follows:
 
-    ```
-    ::: history_dataset_as_image output=output_image
-    :::
-    ```
+        ```{galaxy_history_dataset_as_image output=output_image}
+        ```
 
-    ::: history_dataset_as_image output=output_image
-    :::
+    ```{galaxy_history_dataset_as_image output=output_image}
+    ```
 
     ---
 
     Dataset peek content can be displayed to quickly provided an embedded
     summary of an input or output:
 
-    ```
-    ::: history_dataset_peek output=output_1
-    :::
-    ```
+        ```{galaxy_history_dataset_peek output=output_1}
+        ```
 
-    ::: history_dataset_peek output=output_1
-    :::
+    ```{galaxy_history_dataset_peek output=output_1}
+    ```
 
     ---
 
     Dataset "info" content can be displayed as well:
 
-    ```
-    ::: history_dataset_info input=input_1
-    :::
-    ```
+        ```{galaxy_history_dataset_info input=input_1}
+        ```
 
-    ::: history_dataset_info input=input_1
-    :::
+    ```{galaxy_history_dataset_info input=input_1}
+    ```
 
     ---
 
     Collections can be displayed:
 
-    ```
-    ::: history_dataset_collection_display input=input_list
-    :::
-    ```
+        ```{galaxy_history_dataset_collection_display input=input_list}
+        ```
 
-    ::: history_dataset_collection_display input=input_list
-    :::
+    ```{galaxy_history_dataset_collection_display input=input_list}
+    ```
 
     ---
 
     The whole workflow can be embedded to provide some context and display
     annotations and steps.
 
-    ```
-    ::: workflow_display
-    :::
-    ```
+        ```{galaxy_workflow_display}
+        ```
 
-    ::: workflow_display
-    :::
+    ```{galaxy_workflow_display}
+    ```
 
     ---
 
     Job parameters can be summarized:
 
-    ```
-    ::: job_parameters step=qc_step
-    :::
-    ```
+        ```{galaxy_job_parameters step=qc_step}
+        ```
 
-    ::: job_parameters step=qc_step
-    :::
+    ```{galaxy_job_parameters step=qc_step}
+    ```
 
     ---
 
     Job metrics can be summarized as well:
 
-    ```
-    ::: job_metrics step=image_cat
-    :::
-    ```
+        ```{galaxy_job_metrics step=image_cat}
+        ```
 
-    ::: job_metrics step=image_cat
-    :::
+    ```{galaxy_job_metrics step=image_cat}
+    ```
 
     ---
 
     Tool standard out and error are also available for steps.
 
-    ```
-    ::: tool_stdout step=qc_step
-    :::
+        ```{galaxy_tool_stdout step=qc_step}
+        ```
+
+    ```{galaxy_tool_stdout step=qc_step}
     ```
 
-    ::: tool_stdout step=qc_step
-    :::
+        ```{galaxy_tool_stderr step=qc_step}
+        ```
 
+    ```{galaxy_tool_stderr step=qc_step}
     ```
-    ::: tool_stderr step=qc_step
-    :::
-    ```
-
-    ::: tool_stderr step=qc_step
-    :::
 
     ---
 

@@ -1285,7 +1285,7 @@ steps:
             assert report_json["render_format"] == "markdown"
             markdown_content = report_json["markdown"]
             assert "## Workflow Outputs" in markdown_content
-            assert "\n::: history_dataset_display history_dataset_id=" in markdown_content
+            assert "\n```{galaxy_history_dataset_display history_dataset_id=" in markdown_content
             assert "## Workflow Inputs" in markdown_content
             assert "## About This Report" in markdown_content
 

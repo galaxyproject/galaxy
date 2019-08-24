@@ -41,7 +41,7 @@ GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = "(%s)" % "|".join(GALAXY_FLAVORED_MAR
 INVOCATION_SECTION_MARKDOWN_CONTAINER_REGEX = "(%s)" % "|".join(INVOCATION_SECTIONS)
 
 BLOCK_FENCE_START = re.compile(r'```.*')
-BLOCK_FENCE_END = re.compile(r'```[\w]*')
+BLOCK_FENCE_END = re.compile(r'```[\s]*')
 
 OUTPUT_LABEL_PATTERN = re.compile(r'output=([\w_\-]+)')
 INPUT_LABEL_PATTERN = re.compile(r'input=([\w_\-]+)')
@@ -49,13 +49,16 @@ INPUT_LABEL_PATTERN = re.compile(r'input=([\w_\-]+)')
 STEP_LABEL_PATTERN = re.compile(r'step=([\w_\-]+)')
 ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id)=([\d]+)')
 GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
-    r":::\s+%s.*\n" % GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX
+    r"```\s*\{galaxy_%s.*\}\s*" % GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX
+)
+FENCED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
+    r"```\s*\{.*"
 )
 INVOCATION_SECTION_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
-    r":::\s+%s.*\n" % INVOCATION_SECTION_MARKDOWN_CONTAINER_REGEX
+    r"```\s*\{galaxy_%s.*\}\s*" % INVOCATION_SECTION_MARKDOWN_CONTAINER_REGEX
 )
-VALID_CONTAINER_START_PATTERN = re.compile(r"^:::\s+[\w]+.*$")
-VALID_CONTAINER_END_PATTERN = re.compile(r"^:::\s*$")
+VALID_CONTAINER_START_PATTERN = re.compile(r"^```\s+[\w]+.*$")
+VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
 WHITE_SPACE_ONLY_PATTERN = re.compile(r"^[\s]+$")
 
 
@@ -84,13 +87,13 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
 
         def remap_with_fenced_output(output, default):
             if output:
-                remap_lines.append("```\n")
                 for line in output.splitlines(True):
                     if not line.endswith("\n"):
                         line += "\n"
                     remap_lines.append(line)
-                remap_lines.append("```\n")
             else:
+                # TODO: handle this better... shouldn't be part of code block
+                # ideally.
                 remap_lines.append("%s\n" % default)
 
         if container == "history_dataset_display":
@@ -168,13 +171,13 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
 
                 if output_assoc.history_content_type == "dataset":
                     section_markdown += """#### Output Dataset: %s
-::: history_dataset_display output=%s
-:::
+```{galaxy_history_dataset_display output=%s}
+```
 """ % (output_assoc.workflow_output.label, output_assoc.workflow_output.label)
                 else:
                     section_markdown += """#### Output Dataset Collection: %s
-::: history_dataset_collection_display output=%s
-:::
+```{galaxy_history_dataset_collection_display output=%s}
+```
 """ % (output_assoc.workflow_output.label)
         elif container == "invocation_inputs":
             for input_assoc in invocation.input_associations:
@@ -183,13 +186,13 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
 
                 if input_assoc.history_content_type == "dataset":
                     section_markdown += """#### Input Dataset: %s
-::: history_dataset_display input=%s
-:::
+```{galaxy_history_dataset_display input=%s}
+```
 """ % (input_assoc.workflow_step.label, input_assoc.workflow_step.label)
                 else:
                     section_markdown += """#### Input Dataset Collection: %s
-::: history_dataset_collection_display input=%s
-:::
+```{galaxy_history_dataset_collection_display input=%s}
+```
 """ % (input_assoc.workflow_step.label, input_assoc.workflow_step.label)
         return section_markdown
 
@@ -197,7 +200,7 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
         if container == "workflow_display":
             # TODO: this really should be workflow id not stored workflow id but the API
             # it consumes wants the stored id.
-            return "::: workflow_display workflow_id=%s\n" % invocation.workflow.stored_workflow.id
+            return "```{galaxy_workflow_display workflow_id=%s}\n" % invocation.workflow.stored_workflow.id
         ref_object_type = None
         output_match = re.search(OUTPUT_LABEL_PATTERN, line)
         input_match = re.search(INPUT_LABEL_PATTERN, line)
@@ -241,9 +244,9 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
 
 def validate_galaxy_markdown(galaxy_markdown, internal=True):
     expecting_container_close_for = None
-    for (line, fenced, line_no) in _split_markdown_lines(galaxy_markdown):
-        if fenced:
-            continue
+    last_line_no = 0
+    for (line, fenced, open_fence, line_no) in _split_markdown_lines(galaxy_markdown):
+        last_line_no = line_no
 
         def invalid_line(template, **kwd):
             if "line" in kwd:
@@ -251,41 +254,41 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
             raise Exception("Invalid line %d: %s" % (line_no + 1, template.format(**kwd)))
 
         expecting_container_close = expecting_container_close_for is not None
-        if line.startswith(":::"):
+        if not fenced and expecting_container_close:
+            invalid_line("[{line}] is not expected close line for [{expected_for}]", line=line, expected_for=expecting_container_close_for)
+            continue
+        elif not fenced:
+            continue
+        elif fenced and expecting_container_close and BLOCK_FENCE_END.match(line):
+            expecting_container_close_for = None
+        elif open_fence and FENCED_MARKDOWN_CONTAINER_LINE_PATTERN.match(line):
             if expecting_container_close:
                 if not VALID_CONTAINER_END_PATTERN.match(line):
-                    invalid_line("Invalid container close line [{line}] for [{expected_for}]", line=line, expected_for=expecting_container_close_for)
+                    invalid_line("Invalid command close line [{line}] for [{expected_for}]", line=line, expected_for=expecting_container_close_for)
                 # else closing container and we're done
                 expecting_container_close_for = None
                 continue
 
-            if VALID_CONTAINER_END_PATTERN.match(line):
-                invalid_line("Found container close without matching opening [{line}]", line=line)
-
             if not GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN.match(line):
-                invalid_line("Invalid markdown container line [{line}]", line=line)
-
+                invalid_line("Invalid markdown command line [{line}]", line=line)
             # TODO: check IDs and attributes and stuff...
             expecting_container_close_for = line
-            continue
-        elif expecting_container_close:
-            invalid_line("[{line}] is not expected close line for [{expected_for}]", line=line, expected_for=expecting_container_close_for)
             continue
 
         # Markdown unrelated to Galaxy object containers.
         continue
 
+    if expecting_container_close_for:
+        raise Exception("Invalid line %d: %s" % (last_line_no, "close of block for [{expected_for}] expected".format(expected_for=expecting_container_close_for)))
+
 
 def _remap_galaxy_markdown_containers(func, markdown, container_pattern=GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN, replace_whole_container=False):
     remapped_lines = []
     replaced_container = False
-    for (line, fenced, _) in _split_markdown_lines(markdown):
-        if fenced:
-            remapped_lines.append(line)
-            continue
+    for (line, fenced, open_fence, _) in _split_markdown_lines(markdown):
         if replaced_container:
             # Replaced whole container, no need to keep container close.
-            assert line.startswith(":::")
+            assert line.startswith("```")
             replaced_container = False
             continue
         container_match = container_pattern.match(line)
@@ -316,7 +319,7 @@ def _split_markdown_lines(markdown):
             if BLOCK_FENCE_START.match(line):
                 open_fence_this_iteration = True
                 block_fenced = True
-        yield (line, block_fenced or indent_fenced, line_number)
+        yield (line, block_fenced or indent_fenced, open_fence_this_iteration, line_number)
         if not open_fence_this_iteration and BLOCK_FENCE_END.match(line):
             block_fenced = False
 
