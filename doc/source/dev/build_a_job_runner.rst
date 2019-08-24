@@ -46,7 +46,7 @@ these methods are invoked, we will see about the implementation of
 parent class and process lifecycle of the runner.
 
 Implementation of parent class (``galaxy.jobs.runners.__init__.py``)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  .. rubric:: Class Inheritance structure
       :name: class-inheritance-structure
@@ -71,7 +71,7 @@ Input params:
 
 1. ``app``
 
-2. ``nworkers`` (Number of threads specified in ``job_conf``)
+2. ``nworkers`` (Number of threads specified in ``job_conf.xml``)
 
 3. ``**kwargs`` (Variable length argument)
 
@@ -132,8 +132,8 @@ D: The assigned values can be accessed in runner in the following way.
 
 .. code-block:: python
 
-    print self.runner_params["user"] 
-    print self.runner_params["key"]
+    print(self.runner_params["user"])
+    print(self.runner_params["key"])
 
 The output will be:
 

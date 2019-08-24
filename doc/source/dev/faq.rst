@@ -16,7 +16,7 @@ This can be done with either IPython or a plain Python console, depending on you
 ... build Galaxy Javascript frontend client?
 --------------------------------------------
 
-We've added a makefile which will let you do this. You can simply run:
+We have added a Makefile which will let you do this. You can simply run:
 
 .. code-block:: bash
 
