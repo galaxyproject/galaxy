@@ -11,7 +11,7 @@ and their underlying flat (e.g. ``.loc``) files. These tools handle
 e.g. the creation of indexes and the addition of entries/lines to the
 data table / ``.loc`` file via the Galaxy admin interface.
 
-Data Managers can be defined locally or installed through the ToolShed.
+Data Managers can be defined locally or installed through the Tool Shed.
 
 A Video Introduction
 ~~~~~~~~~~~~~~~~~~~~
@@ -22,7 +22,7 @@ For a video overview on Data Managers, see this
 Tutorial
 ~~~~~~~~
 The most up-to-date methods, including how to use Data Manager
-repositories in the `ToolShed <https://galaxyproject.org/toolshed/>`_:
+repositories in the `Tool Shed <https://galaxyproject.org/toolshed/>`_:
 `GCC2014 TrainingDay <https://galaxyproject.org/events/gcc2014/training-day/#tool-development-from-bright-idea-to-toolshed-data-managers>`_
 
 
