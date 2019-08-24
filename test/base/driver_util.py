@@ -220,6 +220,7 @@ def setup_galaxy_config(
         conda_auto_init=conda_auto_init,
         conda_auto_install=conda_auto_install,
         cleanup_job=cleanup_job,
+        retry_metadata_internally=False,
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
         expose_dataset_path=True,

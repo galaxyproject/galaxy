@@ -242,7 +242,9 @@ class MutationList(MutationObj, list):
         self.changed()
 
     def extend(self, values):
-        list.extend(self, (MutationObj.coerce(self._key, v) for v in values))
+        if hasattr(self, '_key'):
+            values = (MutationObj.coerce(self._key, value) for value in values)
+        list.extend(self, values)
         self.changed()
 
     def pop(self, *args, **kw):
