@@ -30,26 +30,28 @@ import <stdio>
 printf('hello')
 ```
 """)
-    # assert no container close at bad location
-    assert_markdown_invalid("""
-hello ``world``
-
-:::
-""", at_line=3)
     # assert valid container is fine.
     assert_markdown_valid("""
-::: job_metrics job_id=THISFAKEID
-:::
+```{galaxy_job_metrics job_id=THISFAKEID}
+```
 """)
     # assert valid container is fine.
     assert_markdown_valid("""
-::: job_metrics job_id=THISFAKEID
-:::""")
+```{galaxy_job_metrics job_id=THISFAKEID}
+```""")
     # assert valid containers require container close
     assert_markdown_invalid("""
-::: job_metrics job_id=THISFAKEID
+```{galaxy_job_metrics job_id=THISFAKEID}
 foo
-""", at_line=2)
+""", at_line=1)
     # assert valid containers require container close, even at end...
     assert_markdown_invalid("""
-::: job_metrics job_id=THISFAKEID""")
+```{galaxy_job_metrics job_id=THISFAKEID""")
+
+    # assert valid containers require container close, even at end...
+    assert_markdown_invalid("""
+```{galaxy_not_a_command}
+```""")
+    assert_markdown_invalid("""
+```{not_a_command}
+```""")
