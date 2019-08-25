@@ -1,12 +1,12 @@
 """
 Modules used in building workflows
 """
-import copy
 import json
 import logging
 import re
 from collections import defaultdict
 from collections import OrderedDict
+from copy import copy
 from xml.etree.ElementTree import (
     Element,
     XML
@@ -709,22 +709,22 @@ class InputParameterModule(WorkflowModule):
                 # Account for select options within conditionals
                 if connection.input_name not in tool_inputs and "|" in connection.input_name:
                     param_name, case_name = connection.input_name.split("|", 1)
-                    if param_name in tool_inputs.data:
-                        param = tool_inputs.data[param_name]
-                    elif re.match('.+_\\d+', param_name):  # check for repeat label
+                    if param_name in tool_inputs:
+                        param = tool_inputs[param_name]
+                    elif re.match('.+_\d+', param_name):  # check for repeat label
                         param_name, param_idx = param_name.rsplit('_', 1)
-                        param = tool_inputs.data[param_name]
+                        param = tool_inputs[param_name]
                     while param.type in ("conditional", "repeat"):
                         if "|" in case_name:
                             param_name, case_name = case_name.split("|", 1)
                             if param.type == "conditional":
-                                sel_cases = [case for case in param.cases if param_name in case.inputs.data]
+                                sel_cases = [case for case in param.cases if param_name in case.inputs]
                                 if sel_cases:
                                     sel_case = sel_cases[0]
-                                elif re.match('.+_\\d+', param_name):  # check for repeat label
+                                elif re.match('.+_\d+', param_name):  # check for repeat label
                                     param_name, param_idx = param_name.rsplit('_', 1)
-                                    sel_case = [case for case in param.cases if param_name in case.inputs.data][0]
-                                param = sel_case.inputs.data[param_name]
+                                    sel_case = [case for case in param.cases if param_name in case.inputs][0]
+                                param = sel_case.inputs[param_name]
                             elif param.type == "repeat":
                                 if param_name in param.inputs:
                                     param = param.inputs[param_name]
@@ -733,21 +733,17 @@ class InputParameterModule(WorkflowModule):
                                     param = param.inputs[param_name]
                         else:
                             if param.type == "conditional":
-                                sel_case = [case for case in param.cases if case_name in case.inputs.data][0]
-                                input_data = sel_case.inputs.data[case_name]
+                                sel_case = [case for case in param.cases if case_name in case.inputs][0]
+                                input_data = sel_case.inputs[case_name]
                             elif param.type == "repeat":
                                 input_data = param.inputs[case_name]
                             break
-                    param = tool_inputs.data[param_name]
-                    if param.type == "conditional":
-                        sel_case = [case for case in param.cases if case_name in case.inputs.data][0]
-                        input_data = sel_case.inputs.data[case_name]
                 else:
-                    input_data = tool_inputs.data[connection.input_name]
+                    input_data = tool_inputs[connection.input_name]
                 static_options.append(input_data.get_options(self.trans, {}))  # Aggregation input select options from several connections
             if static_options:
                 # Intersection based on values.
-                intxn_vals = set.intersection(*({option[1] for option in options}) for options in static_options))
+                intxn_vals = set.intersection(*({option[1] for option in options} for options in static_options))
                 intxn_opts = {option for options in static_options for option in options if option[1] in intxn_vals}
                 d = defaultdict(set)  # Collapse labels with same values
                 for label, value, selected in intxn_opts:
