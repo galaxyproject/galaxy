@@ -119,7 +119,7 @@ class ExpressionValidator(Validator):
         try:
             evalresult = eval(self.expression, dict(value=value))
         except Exception:
-            log.error("Validator %s could not be evaluated on %s" % (self.expression, str(value)))
+            log.debug("Validator %s could not be evaluated on %s" % (self.expression, str(value)), exc_info=True)
             raise ValueError(message)
         if not(evalresult):
             raise ValueError(message)
