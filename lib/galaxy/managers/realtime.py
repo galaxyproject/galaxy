@@ -15,7 +15,7 @@ from galaxy.util.filelock import FileLock
 
 log = logging.getLogger(__name__)
 
-DATABASE_TABLE_NAME = 'gxrtproxy'
+DATABASE_TABLE_NAME = 'gxitproxy'
 
 
 class RealtimeSqlite(object):
@@ -126,20 +126,6 @@ class RealtimeSqlite(object):
         """Convenience method to easily remove an entry_point.
         """
         return self.remove(key=self.encode_id(entry_point.id), key_type=entry_point.__class__.__name__.lower())
-
-    def remove_entry_points0(self, entry_points):
-        """Convenience method to easily remove entry_points.
-        """
-        rval = []
-        for entry_point in entry_points:
-            rval.append(self.remove_entry_point(entry_point))
-        return rval
-
-    def remove_realtime0(self, rtt):
-        """Convenience method to easily remove a RealTimeTool.
-        """
-        for ep in rtt.entry_points:
-            self.remove_entry_point(ep)
 
 
 class RealTimeManager(object):
@@ -257,9 +243,6 @@ class RealTimeManager(object):
             log.debug('Unable to stop job for InteractiveToolEntryPoint (%s): %s', entry_point, e)
             return False
         return True
-
-    def remove_realtime0(self, realtime):
-        return self.propagator.remove_realtime(realtime)
 
     def remove_entry_points(self, entry_points):
         if entry_points:
