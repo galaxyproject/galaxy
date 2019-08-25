@@ -711,7 +711,7 @@ class InputParameterModule(WorkflowModule):
                     param_name, case_name = connection.input_name.split("|", 1)
                     if param_name in tool_inputs:
                         param = tool_inputs[param_name]
-                    elif re.match('.+_\d+', param_name):  # check for repeat label
+                    elif re.match('.+_\\d+', param_name):  # check for repeat label
                         param_name, param_idx = param_name.rsplit('_', 1)
                         param = tool_inputs[param_name]
                     while param.type in ("conditional", "repeat"):
@@ -721,7 +721,7 @@ class InputParameterModule(WorkflowModule):
                                 sel_cases = [case for case in param.cases if param_name in case.inputs]
                                 if sel_cases:
                                     sel_case = sel_cases[0]
-                                elif re.match('.+_\d+', param_name):  # check for repeat label
+                                elif re.match('.+_\\d+', param_name):  # check for repeat label
                                     param_name, param_idx = param_name.rsplit('_', 1)
                                     sel_case = [case for case in param.cases if param_name in case.inputs][0]
                                 param = sel_case.inputs[param_name]
