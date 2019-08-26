@@ -86,9 +86,11 @@ class UsersApiTestCase(api.ApiTestCase):
     def test_purge_user(self):
         """Delete user and then purge them."""
         user = self._setup_user(TEST_USER_EMAIL_PURGE)
-        self._delete("users/%s" % user["id"], admin=True)
+        response = self._delete("users/%s" % user["id"], admin=True)
+        self._assert_status_code_is(response, 200)
         data = dict(purge="True")
-        self._delete("users/%s" % user["id"], data=data, admin=True)
+        response = self._delete("users/%s" % user["id"], data=data, admin=True)
+        self._assert_status_code_is(response, 200)
         payload = {'deleted': "True"}
         purged_user = self._get("users/%s" % user['id'], payload, admin=True).json()
         assert purged_user['deleted'] is True, purged_user

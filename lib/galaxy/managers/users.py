@@ -195,7 +195,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 addr.phone = new_secure_hash(addr.phone + pseudorandom_value)
                 self.session().add(addr)
         # Purge the user
-        super(UserManager, self).purge(user)
+        user.purged = True
+        self.session().add(user)
+        self.session().flush()
 
     def _error_on_duplicate_email(self, email):
         """
