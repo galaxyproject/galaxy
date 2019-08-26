@@ -38,6 +38,7 @@
                             :workflow="row.item"
                             @onAdd="onAdd"
                             @onRemove="onRemove"
+                            @onUpdate="onUpdate"
                             @onSuccess="onSuccess"
                             @onError="onError"
                         />
@@ -139,6 +140,11 @@ export default {
         onRemove: function(id) {
             this.workflows = this.workflows.filter(item => item.id !== id);
             this.nWorkflows = this.workflows.length;
+        },
+        onUpdate: function(id, data) {
+            let workflow = this.workflows.find(item => item.id === id);
+            Object.assign(workflow, data);
+            this.workflows = [...this.workflows];
         },
         onSuccess: function(message) {
             this.message = message;

@@ -649,6 +649,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # api encoded, id
         encoded_id = trans.security.encode_id(workflow_id)
         item = workflow.to_dict(value_mapper={'id': trans.security.encode_id})
+        item['annotations'] = [x.annotation for x in workflow.annotations]
         item['url'] = url_for('workflow', id=encoded_id)
         item['owner'] = workflow.user.username
         item['number_of_steps'] = len(workflow.latest_workflow.steps)
