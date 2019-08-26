@@ -679,14 +679,15 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         update( self, trans, history_id, id, payload, **kwd )
         * PUT /api/histories/{history_id}/contents/{id}/validate
             updates the values for the history content item with the given ``id``
+            this does so with an external set metadata Galaxy job asynchronously
+            so the results are not available immediately.
 
         :type   history_id: str
         :param  history_id: encoded id string of the items's History
         :type   id:         str
         :param  id:         the encoded id of the history item to validate
 
-        :rtype:     dict
-        :returns:   TODO
+        :returns: Nothing currently.
         """
         decoded_id = self.decode_id(history_content_id)
         history = self.history_manager.get_owned(self.decode_id(history_id), trans.user,
@@ -694,7 +695,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         hda = self.hda_manager.get_owned_ids([decoded_id], history=history)[0]
         if hda:
             self.hda_manager.set_metadata(trans, hda, overwrite=True, validate=True)
-        return {}
+        return None
 
     def __update_dataset(self, trans, history_id, id, payload, **kwd):
         # anon user: ensure that history ids match up and the history is the current,
