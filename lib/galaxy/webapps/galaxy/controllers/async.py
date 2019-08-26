@@ -147,10 +147,11 @@ class ASync(BaseUIController):
             data.info = GALAXY_INFO
             trans.sa_session.add(data)  # Need to add data to session before setting state (setting state requires that the data object is in the session, but this may change)
             data.state = data.states.NEW
-            open(data.file_name, 'wb').close()  # create the file
             trans.history.add_dataset(data, genome_build=GALAXY_BUILD)
             trans.sa_session.add(trans.history)
             trans.sa_session.flush()
+            # Need to explicitly create the file
+            data.dataset.object_store.create(data)
             trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id), tool_id=tool_id)
 
             try:
