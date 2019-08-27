@@ -157,7 +157,9 @@ export default {
         },
         setupRepository: function(details) {
             this.selectedChangeset = details.changeset_revision;
-            this.selectedRequiresPanel = details.includes_tools_for_display_in_tool_panel || details.repository.type == "repository_suite_definition";
+            this.selectedRequiresPanel =
+                details.includes_tools_for_display_in_tool_panel ||
+                details.repository.type == "repository_suite_definition";
             this.showSettings = true;
         },
         uninstallRepository: function(details) {

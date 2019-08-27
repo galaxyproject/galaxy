@@ -106,9 +106,9 @@
 
     <div class="outer-frame">
       <div class="tab">
-        <a class="button" href="#" data-rel="treeview-wrapper">Treeview</a>
-        <a class="button" href="#" data-rel="sunburst-wrapper">Sunburst</a>
-        <a class="button" href="#" data-rel="treemap-wrapper">Treemap</a>
+        <a class="button" href="javascript:void(0)" data-rel="treeview-wrapper">Treeview</a>
+        <a class="button" href="javascript:void(0)" data-rel="sunburst-wrapper">Sunburst</a>
+        <a class="button" href="javascript:void(0)" data-rel="treemap-wrapper">Treemap</a>
       </div>
 
       <div class="inner-frame">

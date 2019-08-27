@@ -14,6 +14,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.exceptions import Conflict
 from galaxy.managers import users
 from galaxy.queue_worker import send_local_control_task
 from galaxy.security.validate_user_input import (
@@ -82,7 +83,10 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         """
         Does the autoregistration if enabled. Returns a message
         """
-        autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
+        try:
+            autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
+        except Conflict as conflict:
+            return "Auto-registration failed, {}".format(conflict), None
         user = None
         if autoreg["auto_reg"]:
             email = autoreg["email"]

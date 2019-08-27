@@ -2,12 +2,12 @@
 Provides utilities for working with GFF files.
 """
 import copy
+from collections import OrderedDict
 
 from bx.intervals.io import GenomicInterval, GenomicIntervalReader, MissingFieldError, NiceReaderWrapper, ParseError
 from bx.tabular.io import Comment, Header
 
 from galaxy.util import unicodify
-from galaxy.util.odict import odict
 
 FASTA_DIRECTIVE = '##FASTA'
 
@@ -427,7 +427,7 @@ def read_unordered_gtf(iterator, strict=False):
             return fields[0] + '_' + get_transcript_id(fields)
 
     # Aggregate intervals by transcript_id and collect comments.
-    feature_intervals = odict()
+    feature_intervals = OrderedDict()
     comments = []
     for count, line in enumerate(iterator):
         if line.startswith('#'):

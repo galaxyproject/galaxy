@@ -25,6 +25,7 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
     """Test data manager installation and table reload through the API"""
 
     framework_tool_and_types = True
+    use_shared_connection_for_amqp = True
 
     def setUp(self):
         super(DataManagerIntegrationTestCase, self).setUp()

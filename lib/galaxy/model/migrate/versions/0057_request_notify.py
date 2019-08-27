@@ -33,7 +33,7 @@ def upgrade(migrate_engine):
 
     # create the column again as JSONType
     col = Column("notification", JSONType())
-    add_column(col, Request_table)
+    add_column(col, Request_table, metadata)
 
     cmd = "SELECT id, user_id, notify FROM request"
     result = migrate_engine.execute(cmd)
@@ -55,6 +55,6 @@ def downgrade(migrate_engine):
     Request_table = Table("request", metadata, autoload=True)
     if migrate_engine.name != 'sqlite':
         c = Column("notify", Boolean, default=False)
-        add_column(c, Request_table)
+        add_column(c, Request_table, metadata)
 
     drop_column('notification', Request_table)

@@ -5,21 +5,20 @@ from __future__ import print_function
 
 import datetime
 import logging
-import sys
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table
+)
 
 from galaxy.model.custom_types import TrimmedString
 
-now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter(format)
-handler.setFormatter(formatter)
-log.addHandler(handler)
-
+now = datetime.datetime.utcnow
 metadata = MetaData()
 
 # New table to log cleanup events
@@ -84,8 +83,8 @@ CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table = Table("clea
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         CleanupEvent_table.create()

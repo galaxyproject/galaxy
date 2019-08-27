@@ -4,21 +4,22 @@ Migration script to add status and error_message columns to the tool_dependency 
 from __future__ import print_function
 
 import logging
-import sys
 
-from sqlalchemy import Boolean, Column, MetaData, Table, TEXT
+from sqlalchemy import (
+    Boolean,
+    Column,
+    MetaData,
+    Table,
+    TEXT
+)
 
 from galaxy.model.custom_types import TrimmedString
-from galaxy.model.migrate.versions.util import add_column, drop_column
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    drop_column
+)
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter(format)
-handler.setFormatter(formatter)
-log.addHandler(handler)
-
 metadata = MetaData()
 
 
@@ -32,10 +33,10 @@ def upgrade(migrate_engine):
         col = Column("status", TrimmedString(255))
     else:
         col = Column("status", TrimmedString(255), nullable=False)
-    add_column(col, ToolDependency_table)
+    add_column(col, ToolDependency_table, metadata)
 
     col = Column("error_message", TEXT)
-    add_column(col, ToolDependency_table)
+    add_column(col, ToolDependency_table, metadata)
 
     # SQLAlchemy Migrate has a bug when dropping a boolean column in SQLite
     # TODO move to alembic.
@@ -50,7 +51,7 @@ def downgrade(migrate_engine):
     ToolDependency_table = Table("tool_dependency", metadata, autoload=True)
     if migrate_engine.name != 'sqlite':
         col = Column("uninstalled", Boolean, default=False)
-        add_column(col, ToolDependency_table)
+        add_column(col, ToolDependency_table, metadata)
 
     drop_column('error_message', ToolDependency_table)
     drop_column('status', ToolDependency_table)

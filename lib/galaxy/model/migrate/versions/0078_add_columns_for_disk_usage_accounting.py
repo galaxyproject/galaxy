@@ -25,7 +25,7 @@ def upgrade(migrate_engine):
 
     HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
     c = Column("purged", Boolean, index=True, default=False)
-    add_column(c, HistoryDatasetAssociation_table, index_name="ix_history_dataset_association_purged")
+    add_column(c, HistoryDatasetAssociation_table, metadata, index_name="ix_history_dataset_association_purged")
     try:
         migrate_engine.execute(HistoryDatasetAssociation_table.update().values(purged=False))
     except Exception:

@@ -3,13 +3,20 @@ import time
 
 import pytest
 
-from galaxy.model.database_heartbeat import DatabaseHeartbeat
-from galaxy.web_stack import application_stack_instance
+import galaxy.model.database_heartbeat as heartbeat
+import galaxy.web_stack as stack
 
 
 @pytest.fixture
 def heartbeat_app(database_app):
+
+    class QueueWorker(object):
+
+        def send_control_task(self, *args, **kwargs):
+            return
+
     with setup_heartbeat_app(database_app()) as heartbeat_app:
+        heartbeat_app.queue_worker = QueueWorker()
         yield heartbeat_app
 
 
@@ -17,8 +24,8 @@ def heartbeat_app(database_app):
 def setup_heartbeat_app(app):
     app.config.server_name = 'test_heartbeat'
     app.config.attach_to_pools = False
-    app.application_stack = application_stack_instance(app=app)
-    app.database_heartbeat = DatabaseHeartbeat(application_stack=app.application_stack, heartbeat_interval=0.1)
+    app.application_stack = stack.application_stack_instance(app=app)
+    app.database_heartbeat = heartbeat.DatabaseHeartbeat(application_stack=app.application_stack, heartbeat_interval=0.1)
     yield app
     app.database_heartbeat.shutdown()
 
@@ -46,9 +53,8 @@ def test_database_heartbeat(heartbeat_app):
     wait_for_assertion(process_updated)
 
     heartbeat_app.database_heartbeat.shutdown()
-    time.sleep(0.5)
-    assert len(heartbeat_app.database_heartbeat.get_active_processes(last_seen_seconds=5)) == 1
-    assert len(heartbeat_app.database_heartbeat.get_active_processes(last_seen_seconds=0.4)) == 0
+    # shutdown() remove the worker process from the database, so no active process will be found
+    assert len(heartbeat_app.database_heartbeat.get_active_processes(last_seen_seconds=5)) == 0
 
 
 def wait_for_assertion(assert_f):

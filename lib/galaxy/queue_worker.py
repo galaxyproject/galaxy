@@ -29,20 +29,22 @@ logging.getLogger('kombu').setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
-def send_local_control_task(app, task, kwargs={}):
+def send_local_control_task(app, task, kwargs=None):
     """
     This sends a message to the process-local control worker, which is useful
     for one-time asynchronous tasks like recalculating user disk usage.
     """
+    if kwargs is None:
+        kwargs = {}
     log.info("Queuing async task %s for %s." % (task, app.config.server_name))
     payload = {'task': task,
                'kwargs': kwargs}
     routing_key = 'control.%s@%s' % (app.config.server_name, socket.gethostname())
-    control_task = ControlTask(app.control_worker)
+    control_task = ControlTask(app.queue_worker)
     control_task.send_task(payload, routing_key, local=True, get_response=False)
 
 
-def send_control_task(app, task, noop_self=False, get_response=False, routing_key='control.*', kwargs={}):
+def send_control_task(app, task, noop_self=False, get_response=False, routing_key='control.*', kwargs=None):
     """
     This sends a control task out to all processes, useful for things like
     reloading a data table, which needs to happen individually in all
@@ -51,19 +53,21 @@ def send_control_task(app, task, noop_self=False, get_response=False, routing_ke
     Set get_response to True to wait for and return the task results
     as a list.
     """
+    if kwargs is None:
+        kwargs = {}
     log.info("Sending %s control task." % task)
     payload = {'task': task,
                'kwargs': kwargs}
     if noop_self:
         payload['noop'] = app.config.server_name
-    control_task = ControlTask(app.control_worker)
+    control_task = ControlTask(app.queue_worker)
     return control_task.send_task(payload=payload, routing_key=routing_key, get_response=get_response)
 
 
 class ControlTask(object):
 
-    def __init__(self, control_worker):
-        self.control_worker = control_worker
+    def __init__(self, queue_worker):
+        self.queue_worker = queue_worker
         self.correlation_id = None
         self.callback_queue = Queue(uuid(), exclusive=True, auto_delete=True)
         self.response = object()
@@ -73,20 +77,20 @@ class ControlTask(object):
     @property
     def connection(self):
         if self._connection is None:
-            self._connection = self.control_worker.connection.clone()
+            self._connection = self.queue_worker.connection.clone()
         return self._connection
 
     @property
     def control_queues(self):
-        return self.control_worker.control_queues
+        return self.queue_worker.control_queues
 
     @property
     def exchange(self):
-        return self.control_worker.exchange_queue.exchange
+        return self.queue_worker.exchange_queue.exchange
 
     @property
     def declare_queues(self):
-        return self.control_worker.declare_queues
+        return self.queue_worker.declare_queues
 
     def on_response(self, message):
         if message.properties['correlation_id'] == self.correlation_id:
@@ -129,6 +133,10 @@ class ControlTask(object):
 # just an example method.  Ideally this gets pushed into atomic tasks, whether
 # where they're currently invoked, or elsewhere.  (potentially using a dispatch
 # decorator).
+
+def reconfigure_watcher(app, **kwargs):
+    app.database_heartbeat.update_watcher_designation()
+
 
 def create_panel_section(app, **kwargs):
     """
@@ -225,10 +233,12 @@ def recalculate_user_disk_usage(app, **kwargs):
 
 
 def reload_tool_data_tables(app, **kwargs):
-    params = util.Params(kwargs)
-    log.debug("Executing tool data table reload for %s" % params.get('table_names', 'all tables'))
-    table_names = app.tool_data_tables.reload_tables(table_names=params.get('table_name', None))
-    log.debug("Finished data table reload for %s" % table_names)
+    path = kwargs.get('path')
+    table_name = kwargs.get('table_name')
+    table_names = path or table_name or 'all tables'
+    log.debug("Executing tool data table reload for %s", table_names)
+    table_names = app.tool_data_tables.reload_tables(table_names=table_name, path=path)
+    log.debug("Finished data table reload for %s", table_names)
 
 
 def rebuild_toolbox_search_index(app, **kwargs):
@@ -283,17 +293,20 @@ def admin_job_lock(app, **kwargs):
              % (job_lock, "not" if job_lock else "now"))
 
 
-control_message_to_task = {'create_panel_section': create_panel_section,
-                           'reload_tool': reload_tool,
-                           'reload_toolbox': reload_toolbox,
-                           'reload_data_managers': reload_data_managers,
-                           'reload_display_application': reload_display_application,
-                           'reload_tool_data_tables': reload_tool_data_tables,
-                           'reload_job_rules': reload_job_rules,
-                           'admin_job_lock': admin_job_lock,
-                           'reload_sanitize_whitelist': reload_sanitize_whitelist,
-                           'recalculate_user_disk_usage': recalculate_user_disk_usage,
-                           'rebuild_toolbox_search_index': rebuild_toolbox_search_index}
+control_message_to_task = {
+    'create_panel_section': create_panel_section,
+    'reload_tool': reload_tool,
+    'reload_toolbox': reload_toolbox,
+    'reload_data_managers': reload_data_managers,
+    'reload_display_application': reload_display_application,
+    'reload_tool_data_tables': reload_tool_data_tables,
+    'reload_job_rules': reload_job_rules,
+    'admin_job_lock': admin_job_lock,
+    'reload_sanitize_whitelist': reload_sanitize_whitelist,
+    'recalculate_user_disk_usage': recalculate_user_disk_usage,
+    'rebuild_toolbox_search_index': rebuild_toolbox_search_index,
+    'reconfigure_watcher': reconfigure_watcher,
+}
 
 
 class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
@@ -303,7 +316,7 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
     tasks.
     """
 
-    def __init__(self, app, task_mapping=control_message_to_task):
+    def __init__(self, app, task_mapping=None):
         super(GalaxyQueueWorker, self).__init__()
         log.info("Initializing %s Galaxy Queue Worker on %s", app.config.server_name, util.mask_password_from_url(app.config.amqp_internal_connection))
         self.daemon = True
@@ -313,10 +326,16 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         self.connection.connect()
         self.connection.release()
         self.app = app
-        self.task_mapping = task_mapping
+        self.task_mapping = task_mapping or control_message_to_task
         self.exchange_queue = None
         self.direct_queue = None
         self.control_queues = []
+
+    def send_control_task(self, task, noop_self=False, get_response=False, routing_key='control.*', kwargs=None):
+        return send_control_task(app=self.app, task=task, noop_self=noop_self, get_response=get_response, routing_key=routing_key, kwargs=kwargs)
+
+    def send_local_control_task(self, task, kwargs=None):
+        return send_local_control_task(app=self.app, task=task, kwargs=kwargs)
 
     @property
     def declare_queues(self):

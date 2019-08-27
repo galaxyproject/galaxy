@@ -4,6 +4,7 @@ Modules used in building workflows
 import json
 import logging
 import re
+from collections import OrderedDict
 from xml.etree.ElementTree import (
     Element,
     XML
@@ -50,7 +51,6 @@ from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
-from galaxy.util.odict import odict
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from tool_shed.util import common_util
@@ -594,7 +594,7 @@ class InputModule(WorkflowModule):
         progress.set_outputs_for_input(invocation_step, step_outputs)
 
     def recover_mapping(self, invocation_step, progress):
-        progress.set_outputs_for_input(invocation_step)
+        progress.set_outputs_for_input(invocation_step, already_persisted=True)
 
 
 class InputDataModule(InputModule):
@@ -681,8 +681,8 @@ class InputParameterModule(WorkflowModule):
                 # item 0 is option description, item 1 is value, item 2 is "selected"
                 option[2] = True
                 input_parameter_type.static_options[i] = tuple(option)
-        return odict([("parameter_type", input_parameter_type),
-                      ("optional", BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", value=optional)))])
+        return OrderedDict([("parameter_type", input_parameter_type),
+                            ("optional", BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", value=optional)))])
 
     def get_runtime_inputs(self, **kwds):
         parameter_type = self.state.inputs.get("parameter_type", self.default_parameter_type)
@@ -1304,17 +1304,6 @@ class ToolModule(WorkflowModule):
             raise Exception(message)
 
         return complete
-
-    def recover_mapping(self, invocation_step, progress):
-        outputs = {}
-
-        for output_dataset_assoc in invocation_step.output_datasets:
-            outputs[output_dataset_assoc.output_name] = output_dataset_assoc.dataset
-
-        for output_dataset_collection_assoc in invocation_step.output_dataset_collections:
-            outputs[output_dataset_collection_assoc.output_name] = output_dataset_collection_assoc.dataset_collection
-
-        progress.set_step_outputs(invocation_step, outputs)
 
     def _effective_post_job_actions(self, step):
         effective_post_job_actions = step.post_job_actions[:]

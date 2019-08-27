@@ -1,32 +1,42 @@
 """
 """
+from __future__ import print_function
+
 import datetime
 import logging
-import sys
 
 from migrate import ForeignKeyConstraint
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, MetaData, String, Table, TEXT
-from sqlalchemy.exc import NoSuchTableError
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    TEXT
+)
 
-from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString
+from galaxy.model.custom_types import (
+    JSONType,
+    MetadataType,
+    TrimmedString
+)
 from galaxy.model.migrate.versions.util import (
     add_column,
     add_index,
+    drop_column,
     drop_index,
+    drop_table,
     engine_false,
     localtimestamp,
     nextval
 )
 
-now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter(format)
-handler.setFormatter(formatter)
-log.addHandler(handler)
-
+now = datetime.datetime.utcnow
 metadata = MetaData()
 
 # New tables as of changeset 2341:5498ac35eedd
@@ -314,108 +324,57 @@ Index("ix_jeom_library_dataset_dataset_association_id", JobExternalOutputMetadat
 
 
 def upgrade(migrate_engine):
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
 
     # Add 2 new columns to the galaxy_user table
-    try:
-        User_table = Table("galaxy_user", metadata, autoload=True)
-    except NoSuchTableError:
-        User_table = None
-        log.debug("Failed loading table galaxy_user")
-    if User_table is not None:
-        col = Column('deleted', Boolean, index=True, default=False)
-        add_column(col, User_table, index_name='ix_galaxy_user_deleted')
-        col = Column('purged', Boolean, index=True, default=False)
-        add_column(col, User_table, index_name='ix_galaxy_user_purged')
+    User_table = Table("galaxy_user", metadata, autoload=True)
+    col = Column('deleted', Boolean, index=True, default=False)
+    add_column(col, User_table, metadata, index_name='ix_galaxy_user_deleted')
+    col = Column('purged', Boolean, index=True, default=False)
+    add_column(col, User_table, metadata, index_name='ix_galaxy_user_purged')
     # Add 1 new column to the history_dataset_association table
-    try:
-        HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
-    except NoSuchTableError:
-        HistoryDatasetAssociation_table = None
-        log.debug("Failed loading table history_dataset_association")
-    if HistoryDatasetAssociation_table is not None:
-        try:
-            col = Column('copied_from_library_dataset_dataset_association_id', Integer, nullable=True)
-            col.create(HistoryDatasetAssociation_table)
-            assert col is HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id
-        except Exception:
-            log.exception("Adding column 'copied_from_library_dataset_dataset_association_id' to history_dataset_association table failed.")
+    HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
+    col = Column('copied_from_library_dataset_dataset_association_id', Integer, nullable=True)
+    add_column(col, HistoryDatasetAssociation_table, metadata)
     # Add 1 new column to the metadata_file table
-    try:
-        MetadataFile_table = Table("metadata_file", metadata, autoload=True)
-    except NoSuchTableError:
-        MetadataFile_table = None
-        log.debug("Failed loading table metadata_file")
-    if MetadataFile_table is not None:
-        try:
-            col = Column('lda_id', Integer, index=True, nullable=True)
-            col.create(MetadataFile_table, index_name='ix_metadata_file_lda_id')
-            assert col is MetadataFile_table.c.lda_id
-        except Exception:
-            log.exception("Adding column 'lda_id' to metadata_file table failed.")
+    MetadataFile_table = Table("metadata_file", metadata, autoload=True)
+    col = Column('lda_id', Integer, index=True, nullable=True)
+    add_column(col, MetadataFile_table, metadata, index_name='ix_metadata_file_lda_id')
     # Add 1 new column to the stored_workflow table - changeset 2328
-    try:
-        StoredWorkflow_table = Table("stored_workflow", metadata,
-            Column("latest_workflow_id", Integer,
-                ForeignKey("workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk'), index=True),
-            autoload=True, extend_existing=True)
-    except NoSuchTableError:
-        StoredWorkflow_table = None
-        log.debug("Failed loading table stored_workflow")
-    if StoredWorkflow_table is not None:
-        try:
-            col = Column('importable', Boolean, default=False)
-            col.create(StoredWorkflow_table)
-            assert col is StoredWorkflow_table.c.importable
-        except Exception:
-            log.exception("Adding column 'importable' to stored_workflow table failed.")
+    StoredWorkflow_table = Table("stored_workflow", metadata,
+        Column("latest_workflow_id", Integer,
+            ForeignKey("workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk'), index=True),
+        autoload=True, extend_existing=True)
+    col = Column('importable', Boolean, default=False)
+    add_column(col, StoredWorkflow_table, metadata)
     # Create an index on the Job.state column - changeset 2192
     add_index('ix_job_state', 'job', 'state', metadata)
     # Add all of the new tables above
     metadata.create_all()
     # Add 1 foreign key constraint to the history_dataset_association table
+    LibraryDatasetDatasetAssociation_table = Table("library_dataset_dataset_association", metadata, autoload=True)
     try:
-        HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
-    except NoSuchTableError:
-        HistoryDatasetAssociation_table = None
-        log.debug("Failed loading table history_dataset_association")
-    try:
-        LibraryDatasetDatasetAssociation_table = Table("library_dataset_dataset_association", metadata, autoload=True)
-    except NoSuchTableError:
-        LibraryDatasetDatasetAssociation_table = None
-        log.debug("Failed loading table library_dataset_dataset_association")
-    if HistoryDatasetAssociation_table is not None and LibraryDatasetDatasetAssociation_table is not None:
+        cons = ForeignKeyConstraint([HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id],
+                                    [LibraryDatasetDatasetAssociation_table.c.id],
+                                    name='history_dataset_association_copied_from_library_dataset_da_fkey')
+        # Create the constraint
+        cons.create()
+    except Exception:
+        log.exception("Adding foreign key constraint 'history_dataset_association_copied_from_library_dataset_da_fkey' to table 'history_dataset_association' failed.")
+    # Add 1 foreign key constraint to the metadata_file table
+    LibraryDatasetDatasetAssociation_table = Table("library_dataset_dataset_association", metadata, autoload=True)
+    if migrate_engine.name != 'sqlite':
+        # Sqlite can't alter table add foreign key.
         try:
-            cons = ForeignKeyConstraint([HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id],
+            cons = ForeignKeyConstraint([MetadataFile_table.c.lda_id],
                                         [LibraryDatasetDatasetAssociation_table.c.id],
-                                        name='history_dataset_association_copied_from_library_dataset_da_fkey')
+                                        name='metadata_file_lda_id_fkey')
             # Create the constraint
             cons.create()
         except Exception:
-            log.exception("Adding foreign key constraint 'history_dataset_association_copied_from_library_dataset_da_fkey' to table 'history_dataset_association' failed.")
-    # Add 1 foreign key constraint to the metadata_file table
-    try:
-        MetadataFile_table = Table("metadata_file", metadata, autoload=True)
-    except NoSuchTableError:
-        MetadataFile_table = None
-        log.debug("Failed loading table metadata_file")
-    try:
-        LibraryDatasetDatasetAssociation_table = Table("library_dataset_dataset_association", metadata, autoload=True)
-    except NoSuchTableError:
-        LibraryDatasetDatasetAssociation_table = None
-        log.debug("Failed loading table library_dataset_dataset_association")
-    if migrate_engine.name != 'sqlite':
-        # Sqlite can't alter table add foreign key.
-        if MetadataFile_table is not None and LibraryDatasetDatasetAssociation_table is not None:
-            try:
-                cons = ForeignKeyConstraint([MetadataFile_table.c.lda_id],
-                                            [LibraryDatasetDatasetAssociation_table.c.id],
-                                            name='metadata_file_lda_id_fkey')
-                # Create the constraint
-                cons.create()
-            except Exception:
-                log.exception("Adding foreign key constraint 'metadata_file_lda_id_fkey' to table 'metadata_file' failed.")
+            log.exception("Adding foreign key constraint 'metadata_file_lda_id_fkey' to table 'metadata_file' failed.")
     # Make sure we have at least 1 user
     cmd = "SELECT * FROM galaxy_user;"
     users = migrate_engine.execute(cmd).fetchall()
@@ -505,222 +464,72 @@ def downgrade(migrate_engine):
 
     # NOTE: all new data added in the upgrade method is eliminated here via table drops
     # Drop 1 foreign key constraint from the metadata_file table
+    MetadataFile_table = Table("metadata_file", metadata, autoload=True)
+    LibraryDatasetDatasetAssociation_table = Table("library_dataset_dataset_association", metadata, autoload=True)
     try:
-        MetadataFile_table = Table("metadata_file", metadata, autoload=True)
-    except NoSuchTableError:
-        MetadataFile_table = None
-        log.debug("Failed loading table metadata_file")
-    try:
-        LibraryDatasetDatasetAssociation_table = Table("library_dataset_dataset_association", metadata, autoload=True)
-    except NoSuchTableError:
-        LibraryDatasetDatasetAssociation_table = None
-        log.debug("Failed loading table library_dataset_dataset_association")
-    if MetadataFile_table is not None and LibraryDatasetDatasetAssociation_table is not None:
-        try:
-            cons = ForeignKeyConstraint([MetadataFile_table.c.lda_id],
-                                        [LibraryDatasetDatasetAssociation_table.c.id],
-                                        name='metadata_file_lda_id_fkey')
-            # Drop the constraint
-            cons.drop()
-        except Exception:
-            log.exception("Dropping foreign key constraint 'metadata_file_lda_id_fkey' from table 'metadata_file' failed.")
+        cons = ForeignKeyConstraint([MetadataFile_table.c.lda_id],
+                                    [LibraryDatasetDatasetAssociation_table.c.id],
+                                    name='metadata_file_lda_id_fkey')
+        # Drop the constraint
+        cons.drop()
+    except Exception:
+        log.exception("Dropping foreign key constraint 'metadata_file_lda_id_fkey' from table 'metadata_file' failed.")
     # Drop 1 foreign key constraint from the history_dataset_association table
+    HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
+    LibraryDatasetDatasetAssociation_table = Table("library_dataset_dataset_association", metadata, autoload=True)
     try:
-        HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
-    except NoSuchTableError:
-        HistoryDatasetAssociation_table = None
-        log.debug("Failed loading table history_dataset_association")
-    try:
-        LibraryDatasetDatasetAssociation_table = Table("library_dataset_dataset_association", metadata, autoload=True)
-    except NoSuchTableError:
-        LibraryDatasetDatasetAssociation_table = None
-        log.debug("Failed loading table library_dataset_dataset_association")
-    if HistoryDatasetAssociation_table is not None and LibraryDatasetDatasetAssociation_table is not None:
-        try:
-            cons = ForeignKeyConstraint([HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id],
-                                        [LibraryDatasetDatasetAssociation_table.c.id],
-                                        name='history_dataset_association_copied_from_library_dataset_da_fkey')
-            # Drop the constraint
-            cons.drop()
-        except Exception:
-            log.exception("Dropping foreign key constraint 'history_dataset_association_copied_from_library_dataset_da_fkey' from table 'history_dataset_association' failed.")
+        cons = ForeignKeyConstraint([HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id],
+                                    [LibraryDatasetDatasetAssociation_table.c.id],
+                                    name='history_dataset_association_copied_from_library_dataset_da_fkey')
+        # Drop the constraint
+        cons.drop()
+    except Exception:
+        log.exception("Dropping foreign key constraint 'history_dataset_association_copied_from_library_dataset_da_fkey' from table 'history_dataset_association' failed.")
     # Drop all of the new tables above
-    try:
-        UserGroupAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping user_group_association table failed.")
-    try:
-        UserRoleAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping user_role_association table failed.")
-    try:
-        GroupRoleAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping group_role_association table failed.")
-    try:
-        Group_table.drop()
-    except Exception:
-        log.exception("Dropping galaxy_group table failed.")
-    try:
-        DatasetPermissions_table.drop()
-    except Exception:
-        log.exception("Dropping dataset_permissions table failed.")
-    try:
-        LibraryPermissions_table.drop()
-    except Exception:
-        log.exception("Dropping library_permissions table failed.")
-    try:
-        LibraryFolderPermissions_table.drop()
-    except Exception:
-        log.exception("Dropping library_folder_permissions table failed.")
-    try:
-        LibraryDatasetPermissions_table.drop()
-    except Exception:
-        log.exception("Dropping library_dataset_permissions table failed.")
-    try:
-        LibraryDatasetDatasetAssociationPermissions_table.drop()
-    except Exception:
-        log.exception("Dropping library_dataset_dataset_association_permissions table failed.")
-    try:
-        LibraryItemInfoPermissions_table.drop()
-    except Exception:
-        log.exception("Dropping library_item_info_permissions table failed.")
-    try:
-        LibraryItemInfoTemplatePermissions_table.drop()
-    except Exception:
-        log.exception("Dropping library_item_info_template_permissions table failed.")
-    try:
-        DefaultUserPermissions_table.drop()
-    except Exception:
-        log.exception("Dropping default_user_permissions table failed.")
-    try:
-        DefaultHistoryPermissions_table.drop()
-    except Exception:
-        log.exception("Dropping default_history_permissions table failed.")
-    try:
-        Role_table.drop()
-    except Exception:
-        log.exception("Dropping role table failed.")
-    try:
-        LibraryDatasetDatasetInfoAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping library_dataset_dataset_info_association table failed.")
-    try:
-        LibraryDataset_table.drop()
-    except Exception:
-        log.exception("Dropping library_dataset table failed.")
-    try:
-        LibraryDatasetDatasetAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping library_dataset_dataset_association table failed.")
-    try:
-        LibraryDatasetDatasetInfoTemplateAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping library_dataset_dataset_info_template_association table failed.")
-    try:
-        JobExternalOutputMetadata_table.drop()
-    except Exception:
-        log.exception("Dropping job_external_output_metadata table failed.")
-    try:
-        Library_table.drop()
-    except Exception:
-        log.exception("Dropping library table failed.")
-    try:
-        LibraryFolder_table.drop()
-    except Exception:
-        log.exception("Dropping library_folder table failed.")
-    try:
-        LibraryItemInfoTemplateElement_table.drop()
-    except Exception:
-        log.exception("Dropping library_item_info_template_element table failed.")
-    try:
-        LibraryInfoTemplateAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping library_info_template_association table failed.")
-    try:
-        LibraryFolderInfoTemplateAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping library_folder_info_template_association table failed.")
-    try:
-        LibraryDatasetInfoTemplateAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping library_dataset_info_template_association table failed.")
-    try:
-        LibraryInfoAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping library_info_association table failed.")
-    try:
-        LibraryFolderInfoAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping library_folder_info_association table failed.")
-    try:
-        LibraryDatasetInfoAssociation_table.drop()
-    except Exception:
-        log.exception("Dropping library_dataset_info_association table failed.")
-    try:
-        LibraryItemInfoElement_table.drop()
-    except Exception:
-        log.exception("Dropping library_item_info_element table failed.")
-    try:
-        LibraryItemInfo_table.drop()
-    except Exception:
-        log.exception("Dropping library_item_info table failed.")
-    try:
-        LibraryItemInfoTemplate_table.drop()
-    except Exception:
-        log.exception("Dropping library_item_info_template table failed.")
+    TABLES = [
+        UserGroupAssociation_table,
+        UserRoleAssociation_table,
+        GroupRoleAssociation_table,
+        Group_table,
+        DatasetPermissions_table,
+        LibraryPermissions_table,
+        LibraryFolderPermissions_table,
+        LibraryDatasetPermissions_table,
+        LibraryDatasetDatasetAssociationPermissions_table,
+        LibraryItemInfoPermissions_table,
+        LibraryItemInfoTemplatePermissions_table,
+        DefaultUserPermissions_table,
+        DefaultHistoryPermissions_table,
+        Role_table,
+        LibraryDatasetDatasetInfoAssociation_table,
+        LibraryDataset_table,
+        LibraryDatasetDatasetAssociation_table,
+        LibraryDatasetDatasetInfoTemplateAssociation_table,
+        JobExternalOutputMetadata_table,
+        Library_table,
+        LibraryFolder_table,
+        LibraryItemInfoTemplateElement_table,
+        LibraryInfoTemplateAssociation_table,
+        LibraryFolderInfoTemplateAssociation_table,
+        LibraryDatasetInfoTemplateAssociation_table,
+        LibraryInfoAssociation_table,
+        LibraryFolderInfoAssociation_table,
+        LibraryDatasetInfoAssociation_table,
+        LibraryItemInfoElement_table,
+        LibraryItemInfo_table,
+        LibraryItemInfoTemplate_table,
+    ]
+    for table in TABLES:
+        drop_table(table)
     # Drop the index on the Job.state column - changeset 2192
     drop_index('ix_job_state', 'job', 'state', metadata)
     # Drop 1 column from the stored_workflow table - changeset 2328
-    try:
-        StoredWorkflow_table = Table("stored_workflow", metadata, autoload=True)
-    except NoSuchTableError:
-        StoredWorkflow_table = None
-        log.debug("Failed loading table stored_workflow")
-    if StoredWorkflow_table is not None:
-        try:
-            col = StoredWorkflow_table.c.importable
-            col.drop()
-        except Exception:
-            log.exception("Dropping column 'importable' from stored_workflow table failed.")
+    drop_column('importable', 'stored_workflow', metadata)
     # Drop 1 column from the metadata_file table
-    try:
-        MetadataFile_table = Table("metadata_file", metadata, autoload=True)
-    except NoSuchTableError:
-        MetadataFile_table = None
-        log.debug("Failed loading table metadata_file")
-    if MetadataFile_table is not None:
-        try:
-            col = MetadataFile_table.c.lda_id
-            col.drop()
-        except Exception:
-            log.exception("Dropping column 'lda_id' from metadata_file table failed.")
+    drop_column('lda_id', 'metadata_file', metadata)
     # Drop 1 column from the history_dataset_association table
-    try:
-        HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
-    except NoSuchTableError:
-        HistoryDatasetAssociation_table = None
-        log.debug("Failed loading table history_dataset_association")
-    if HistoryDatasetAssociation_table is not None:
-        try:
-            col = HistoryDatasetAssociation_table.c.copied_from_library_dataset_dataset_association_id
-            col.drop()
-        except Exception:
-            log.exception("Dropping column 'copied_from_library_dataset_dataset_association_id' from history_dataset_association table failed.")
+    drop_column('copied_from_library_dataset_dataset_association_id', HistoryDatasetAssociation_table)
     # Drop 2 columns from the galaxy_user table
-    try:
-        User_table = Table("galaxy_user", metadata, autoload=True)
-    except NoSuchTableError:
-        User_table = None
-        log.debug("Failed loading table galaxy_user")
-    if User_table is not None:
-        try:
-            col = User_table.c.deleted
-            col.drop()
-        except Exception:
-            log.exception("Dropping column 'deleted' from galaxy_user table failed.")
-        try:
-            col = User_table.c.purged
-            col.drop()
-        except Exception:
-            log.exception("Dropping column 'purged' from galaxy_user table failed.")
+    User_table = Table("galaxy_user", metadata, autoload=True)
+    drop_column('deleted', User_table)
+    drop_column('purged', User_table)

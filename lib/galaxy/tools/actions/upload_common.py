@@ -5,6 +5,7 @@ import shlex
 import socket
 import subprocess
 import tempfile
+from collections import OrderedDict
 from json import dump, dumps
 
 from six import StringIO
@@ -16,7 +17,6 @@ from galaxy import datatypes, util
 from galaxy.exceptions import ConfigDoesNotAllowException, ObjectInvalid
 from galaxy.model import tags
 from galaxy.util import unicodify
-from galaxy.util.odict import odict
 
 log = logging.getLogger(__name__)
 
@@ -385,6 +385,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     Create the upload job.
     """
     job = trans.app.model.Job()
+    job.galaxy_version = trans.app.config.version_major
     galaxy_session = trans.get_galaxy_session()
     if type(galaxy_session) == trans.model.GalaxySession:
         job.session_id = galaxy_session.id
@@ -441,7 +442,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     # Queue the job for execution
     trans.app.job_manager.enqueue(job, tool=tool)
     trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
-    output = odict()
+    output = OrderedDict()
     for i, v in enumerate(outputs):
         if not hasattr(output_object, "collection_type"):
             output['output%i' % i] = v

@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import sys
+import traceback
 
 from six.moves import cPickle
 from sqlalchemy.orm import clear_mappers
@@ -28,8 +29,6 @@ from galaxy.util import (
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
-
-galaxy.model.Job()  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
 
 
 def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size):
@@ -122,8 +121,8 @@ def set_metadata_portable():
             set_meta(dataset, file_dict)
             dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
             json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
-        except Exception as e:
-            json.dump((False, unicodify(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
+        except Exception:
+            json.dump((False, traceback.format_exc()), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
 
     write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 

@@ -4,6 +4,7 @@ import os
 import shutil
 import tarfile
 import tempfile
+from collections import OrderedDict
 from time import gmtime, strftime
 
 import requests
@@ -12,7 +13,6 @@ from sqlalchemy import and_, false
 import tool_shed.repository_types.util as rt_util
 from galaxy import web
 from galaxy.util import asbool, build_url, CHUNK_SIZE
-from galaxy.util.odict import odict
 from galaxy.util.path import safe_relpath
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.dependencies.repository.relation_builder import RelationBuilder
@@ -115,7 +115,7 @@ class ExportRepositoryManager(object):
         return repositories_archive, error_messages
 
     def generate_export_elem(self):
-        sub_elements = odict()
+        sub_elements = OrderedDict()
         sub_elements['export_time'] = strftime('%a, %d %b %Y %H:%M:%S +0000', gmtime())
         sub_elements['tool_shed'] = str(self.tool_shed_url.rstrip('/'))
         sub_elements['repository_name'] = str(self.repository.name)
@@ -261,8 +261,8 @@ class ExportRepositoryManager(object):
         generated attributes will be contained within the <repository> tag, while the sub_elements
         will be tag sets contained within the <repository> tag set.
         """
-        attributes = odict()
-        sub_elements = odict()
+        attributes = OrderedDict()
+        sub_elements = OrderedDict()
         attributes['name'] = str(repository.name)
         attributes['type'] = str(repository.type)
         # We have to associate the public username since the user_id will be different between tool sheds.

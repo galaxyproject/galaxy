@@ -14,54 +14,63 @@ import SidePanel from '../../components/SidePanel.vue';
 import { mountVueComponent } from "../../utils/mountVueComponent";
 
 const ToolPanel = Backbone.View.extend({
-  initialize: function(page, options) {
-    const Galaxy = getGalaxyInstance();
-    const appRoot = getAppRoot();
 
-    // access configuration options
-    const config = options.config;
-    this.root = options.root;
+    initialize: function(page, options) {
+        const Galaxy = getGalaxyInstance();
+        const appRoot = getAppRoot();
 
-    /** @type {Object[]} descriptions of user's workflows to be shown in the tool menu */
-    this.stored_workflow_menu_entries = config.stored_workflow_menu_entries || [];
+        // access configuration options
+        const config = options.config;
+        this.root = options.root;
 
-    // create tool search, tool panel, and tool panel view.
-    const tool_search = new Tools.ToolSearch({
-      hidden: false
-    });
-    const tools = new Tools.ToolCollection(config.toolbox);
-    this.tool_panel = new Tools.ToolPanel({
-      tool_search: tool_search,
-      tools: tools,
-      layout: config.toolbox_in_panel
-    });
-    this.tool_panel_view = new Tools.ToolPanelView({
-      model: this.tool_panel
-    });
+        /** @type {Object[]} descriptions of user's workflows to be shown in the tool menu */
+        this.stored_workflow_menu_entries = config.stored_workflow_menu_entries || [];
 
-    // add upload modal
-    this.upload_button = new Upload({
-      upload_path: config.nginx_upload_path || `${appRoot}api/tools`,
-      chunk_upload_size: config.chunk_upload_size,
-      ftp_upload_site: config.ftp_upload_site,
-      default_genome: config.default_genome,
-      default_extension: config.default_extension
-    });
-    const panel_buttons = [this.upload_button];
+        // create tool search, tool panel, and tool panel view.
+        const tool_search = new Tools.ToolSearch({
+            hidden: false
+        });
+        const tools = new Tools.ToolCollection(config.toolbox);
+        this.tool_panel = new Tools.ToolPanel({
+            tool_search: tool_search,
+            tools: tools,
+            layout: config.toolbox_in_panel
+        });
+        this.tool_panel_view = new Tools.ToolPanelView({
+            model: this.tool_panel
+        });
 
-    // add favorite filter button
-    if (Galaxy.user && Galaxy.user.id) {
-      this.favorite_button = new Buttons.ButtonLink({
-        cls: "panel-header-button",
-        title: _l("Show favorites"),
-        icon: "fa fa-star-o",
-        onclick: e => {
-          const toolSearchQueryNode = document.querySelector('.tool-search-query');
-          toolSearchQueryNode.value = "#favorites";
-          toolSearchQueryNode.dispatchEvent(new Event("input"));
-        }
-      });
-      panel_buttons.push(this.favorite_button);
+        // add upload modal
+        this.upload_button = new Upload({
+            upload_path: config.nginx_upload_path || `${appRoot}api/tools`,
+            chunk_upload_size: config.chunk_upload_size,
+            ftp_upload_site: config.ftp_upload_site,
+            default_genome: config.default_genome,
+            default_extension: config.default_extension
+        });
+        const panel_buttons = [this.upload_button];
+
+        // add favorite filter button
+        if (Galaxy.user && Galaxy.user.id) {
+            this.favorite_button = new Buttons.ButtonLink({
+                cls: "panel-header-button",
+                title: _l("Show favorites"),
+                icon: "fa fa-star-o",
+                onclick: e => {
+                    const $search_query = $("#tool-search-query");
+                    const $header_btn = $(".panel-header-button");
+                    $header_btn.find(".fa").toggleClass("fa-star-o fa-star");
+                    $header_btn.tooltip("hide");
+                    if ($search_query.val().indexOf("#favorites") != -1) {
+                        $search_query.val("");
+                        $search_query.keyup();
+                        $header_btn.attr("title", "");
+                    } else {
+                        $search_query.val("#favorites").trigger("change");
+                    }
+                }
+            });
+            panel_buttons.push(this.favorite_button);
     }
     // add uploader button to Galaxy object
     Galaxy.upload = this.upload_button;
