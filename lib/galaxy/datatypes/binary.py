@@ -22,7 +22,10 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes.data import get_file_peek
+from galaxy.datatypes.data import (
+    DatatypeValidation,
+    get_file_peek,
+)
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
 from galaxy.util import nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
@@ -284,6 +287,10 @@ class BamNative(CompressedArchive):
         Binary.init_meta(self, dataset, copy_from=copy_from)
 
     def sniff(self, filename):
+        return BamNative.is_bam(filename)
+
+    @classmethod
+    def is_bam(cls, filename):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
         try:
@@ -422,6 +429,13 @@ class BamNative(CompressedArchive):
                                        column_number=column_number,
                                        column_names=column_names,
                                        column_types=column_types)
+
+    def validate(self, dataset, **kwd):
+        if not BamNative.is_bam(dataset.file_name):
+            return DatatypeValidation.invalid("This dataset does not appear to a BAM file.")
+        elif self.dataset_content_needs_grooming(dataset.file_name):
+            return DatatypeValidation.invalid("This BAM file does not appear to have the correct sorting for declared datatype.")
+        return DatatypeValidation.validated()
 
 
 @dataproviders.decorators.has_dataproviders

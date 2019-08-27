@@ -5596,6 +5596,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="fatal"/>
       <xs:enumeration value="warning"/>
       <xs:enumeration value="log"/>
+      <xs:enumeration value="qc"/>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="RangeType">

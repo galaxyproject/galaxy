@@ -193,6 +193,10 @@ class MetadataCollection(object):
             dataset._metadata[name] = value
         if '__extension__' in JSONified_dict:
             dataset.extension = JSONified_dict['__extension__']
+        if '__validated_state__' in JSONified_dict:
+            dataset.validated_state = JSONified_dict['__validated_state__']
+        if '__validated_state_message__' in JSONified_dict:
+            dataset.validated_state_message = JSONified_dict['__validated_state_message__']
 
     def to_JSON_dict(self, filename=None):
         # galaxy.model.customtypes.json_encoder.encode()
@@ -203,6 +207,10 @@ class MetadataCollection(object):
                 meta_dict[name] = spec.param.to_external_value(dataset_meta_dict[name])
         if '__extension__' in dataset_meta_dict:
             meta_dict['__extension__'] = dataset_meta_dict['__extension__']
+        if '__validated_state__' in dataset_meta_dict:
+            meta_dict['__validated_state__'] = dataset_meta_dict['__validated_state__']
+        if '__validated_state_message__' in dataset_meta_dict:
+            meta_dict['__validated_state_message__'] = dataset_meta_dict['__validated_state_message__']
         if filename is None:
             return json.dumps(meta_dict)
         json.dump(meta_dict, open(filename, 'wt+'))

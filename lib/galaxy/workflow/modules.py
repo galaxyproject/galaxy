@@ -1265,6 +1265,12 @@ class ToolModule(WorkflowModule):
         try:
             mapping_params = MappingParameters(tool_state.inputs, param_combinations)
             max_num_jobs = progress.maximum_jobs_to_schedule_or_none
+
+            validate_outputs = False
+            for pja in step.post_job_actions:
+                if pja.action_type == "ValidateOutputsAction":
+                    validate_outputs = True
+
             execution_tracker = execute(
                 trans=self.trans,
                 tool=tool,
@@ -1274,6 +1280,7 @@ class ToolModule(WorkflowModule):
                 workflow_invocation_uuid=invocation.uuid.hex,
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
+                validate_outputs=validate_outputs,
                 job_callback=lambda job: self._handle_post_job_actions(step, job, invocation.replacement_dict),
                 completed_jobs=completed_jobs,
                 workflow_resource_parameters=resource_parameters

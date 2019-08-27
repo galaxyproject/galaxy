@@ -295,6 +295,9 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             'display_types',
             'visualizations',
 
+            'validated_state',
+            'validated_state_message',
+
             # 'url',
             'download_url',
 
