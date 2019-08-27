@@ -19,6 +19,7 @@
                         v-for="category in toolsLayout"
                         :category="category"
                         :isFiltered="isFiltered"
+                        :key="category.id"
                     ></tool-section>
                 </div>
                 <div class="toolSectionPad"></div>
@@ -30,7 +31,7 @@
                 <div id="internal-workflows" class="toolSectionBody">
                     <div class="toolSectionBg"></div>
 
-                    <div class="toolTitle" v-for="workflow in workflows">
+                    <div class="toolTitle" v-for="workflow in workflows" :key="workflow.id">
                         <a :href="workflow.href">
                             {{ workflow.title }}
                         </a>
@@ -46,6 +47,7 @@ import ToolSection from "./ToolSection";
 import ToolSearch from "./ToolSearch";
 import UploadButton from "./UploadButton";
 import FavoritesButton from "./FavoritesButton";
+import _ from "underscore";
 
 export default {
     name: "ToolBox",

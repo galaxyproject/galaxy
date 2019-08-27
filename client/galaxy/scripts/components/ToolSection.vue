@@ -11,8 +11,8 @@
             <transition name="slide">
                 <div v-if="opened">
                     <template v-for="tool in category.elems">
-                        <tool v-if="tool.model_class.endsWith('Tool')" :tool="tool"></tool>
-                        <div v-else-if="tool.model_class === 'ToolSectionLabel'" class="toolPanelLabel">
+                        <tool v-if="tool.model_class.endsWith('Tool')" :tool="tool" :key="tool.id"></tool>
+                        <div v-else-if="tool.model_class === 'ToolSectionLabel'" class="toolPanelLabel" :key="tool.id">
                             <span>
                                 {{ tool.text }}
                             </span>

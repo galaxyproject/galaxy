@@ -130,12 +130,14 @@ const ToolPanel = Backbone.View.extend({
             workflows: [
                 {
                     title: _l("All workflows"),
-                    href: `${appRoot}workflows/list`
+                    href: `${appRoot}workflows/list`,
+                    id: 'list',
                 },
                 ...this.stored_workflow_menu_entries.map(menuEntry => {
                     return {
                         title: menuEntry["stored_workflow"]["name"],
-                        href: `${appRoot}workflows/run?id=${menuEntry["encoded_stored_workflow_id"]}`
+                        href: `${appRoot}workflows/run?id=${menuEntry["encoded_stored_workflow_id"]}`,
+                        id: menuEntry["encoded_stored_workflow_id"],
                     };
                 })
             ]
