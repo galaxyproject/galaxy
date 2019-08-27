@@ -43,6 +43,12 @@
                             @onError="onError"
                         />
                     </template>
+                    <template slot="create_time" slot-scope="data">
+                        <span class="text-nowrap">{{ data.value }}</span>
+                    </template>
+                    <template slot="bookmark" slot-scope="row">
+                        <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
+                    </template>
                     <template slot="execute" slot-scope="row">
                         <b-button class="btn-sm btn-primary fa fa-play" @click.stop="executeWorkflow(row.item)" />
                     </template>
@@ -74,12 +80,17 @@ export default {
                 name: {
                     sortable: true
                 },
-                description: {},
-                create_time: {
-                    label: "Created"
+                description: {
+                    sortable: true
                 },
+                create_time: {
+                    label: "Created",
+                    sortable: true
+                },
+                bookmark: {},
                 execute: {
-                    label: ""
+                    label: "",
+                    sortable: false
                 }
             },
             filter: "",
@@ -132,6 +143,21 @@ export default {
         },
         executeWorkflow: function(workflow) {
             window.location = `${this.root}workflows/run?id=${workflow.id}`;
+        },
+        bookmarkWorkflow: function(workflow) {
+            // This reloads the whole page, so that the workflow appears in the tool panel.
+            // Ideally we would notify only the tool panel of a change
+            const id = workflow.id;
+            const show_in_tool_panel = workflow.show_in_tool_panel;
+            const data = { show_in_tool_panel: !show_in_tool_panel };
+            this.services
+                .updateWorkflow(id, data)
+                .then(() => {
+                    window.location = `${getAppRoot()}workflows/list`;
+                })
+                .catch(error => {
+                    this.onError(error);
+                });
         },
         onAdd: function(workflow) {
             this.workflows.unshift(workflow);
