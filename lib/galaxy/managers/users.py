@@ -110,21 +110,21 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             self.app.security_agent.user_set_default_permissions(user, default_access_private=permissions)
         return user
 
-    def delete(self, user):
+    def delete(self, user, flush=True):
         """Mark the given user deleted."""
         if not self.app.config.allow_user_deletion:
             raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete users.')
-        super(UserManager, self).delete(user)
+        super(UserManager, self).delete(user, flush=flush)
 
-    def undelete(self, user):
+    def undelete(self, user, flush=True):
         """Remove the deleted flag for the given user."""
         if not self.app.config.allow_user_deletion:
             raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to undelete users.')
         if user.purged:
             raise exceptions.ItemDeletionException('Purged user cannot be undeleted.')
-        super(UserManager, self).undelete(user)
+        super(UserManager, self).undelete(user, flush=flush)
 
-    def purge(self, user):
+    def purge(self, user, flush=True):
         """Purge the given user. They must have the deleted flag already."""
         if not self.app.config.allow_user_deletion:
             raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete or purge users.')
@@ -195,9 +195,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 addr.phone = new_secure_hash(addr.phone + pseudorandom_value)
                 self.session().add(addr)
         # Purge the user
-        user.purged = True
-        self.session().add(user)
-        self.session().flush()
+        super(UserManager, self).purge(user, flush=flush)
 
     def _error_on_duplicate_email(self, email):
         """
