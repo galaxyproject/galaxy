@@ -5,6 +5,7 @@ import datetime
 import errno
 import logging
 import os
+import signal
 import subprocess
 import tempfile
 import threading
@@ -165,7 +166,7 @@ class LocalJobRunner(BaseJobRunner):
         if not self._check_pid(pid):
             log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.id, pid))
             return
-        for sig in [15, 9]:
+        for sig in [signal.SIGTERM, signal.SIGKILL]:
             try:
                 os.killpg(pid, sig)
             except OSError as e:
@@ -220,10 +221,10 @@ class LocalJobRunner(BaseJobRunner):
             return False
 
     def _terminate(self, proc):
-        os.killpg(proc.pid, 15)
+        os.killpg(proc.pid, signal.SIGTERM)
         sleep(1)
         if proc.poll() is None:
-            os.killpg(proc.pid, 9)
+            os.killpg(proc.pid, signal.SIGKILL)
         return proc.wait()  # reap
 
     def _handle_container(self, job_wrapper, proc):
