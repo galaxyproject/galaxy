@@ -10,6 +10,9 @@ from base import api  # noqa: I100,I202
 from base.populators import skip_without_tool
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
+TEST_USER_EMAIL_DELETE = "user_for_delete_test@bx.psu.edu"
+TEST_USER_EMAIL_PURGE = "user_for_purge_test@bx.psu.edu"
+TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
 
 
 class UsersApiTestCase(api.ApiTestCase):
@@ -73,6 +76,36 @@ class UsersApiTestCase(api.ApiTestCase):
         self._assert_status_code_is(update_response, 200)
         update_json = update_response.json()
         self.assertEqual(update_json['username'], new_name)
+
+    def test_delete_user(self):
+        user = self._setup_user(TEST_USER_EMAIL_DELETE)
+        self._delete("users/%s" % user["id"], admin=True)
+        updated_user = self._get("users/deleted/%s" % user['id'], admin=True).json()
+        assert updated_user['deleted'] is True, updated_user
+
+    def test_purge_user(self):
+        """Delete user and then purge them."""
+        user = self._setup_user(TEST_USER_EMAIL_PURGE)
+        response = self._delete("users/%s" % user["id"], admin=True)
+        self._assert_status_code_is_ok(response)
+        data = dict(purge="True")
+        response = self._delete("users/%s" % user["id"], data=data, admin=True)
+        self._assert_status_code_is_ok(response)
+        payload = {'deleted': "True"}
+        purged_user = self._get("users/%s" % user['id'], payload, admin=True).json()
+        assert purged_user['deleted'] is True, purged_user
+        assert purged_user['purged'] is True, purged_user
+
+    def test_undelete_user(self):
+        """Delete user and then undelete them."""
+        user = self._setup_user(TEST_USER_EMAIL_UNDELETE)
+        self._delete("users/%s" % user["id"], admin=True)
+        payload = {'deleted': "True"}
+        deleted_user = self._get("users/%s" % user['id'], payload, admin=True).json()
+        assert deleted_user['deleted'] is True, deleted_user
+        self._post("users/deleted/%s/undelete" % user["id"], admin=True)
+        undeleted_user = self._get("users/%s" % user['id'], admin=True).json()
+        assert undeleted_user['deleted'] is False, undeleted_user
 
     def test_information(self):
         user = self._setup_user(TEST_USER_EMAIL)
