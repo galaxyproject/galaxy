@@ -33,76 +33,78 @@
 </template>
 
 <script>
-    import Tool from './Tool.vue';
+import Tool from "./Tool.vue";
 
-    export default {
-        name: "ToolSection",
-        components: {
-            Tool
+export default {
+    name: "ToolSection",
+    components: {
+        Tool
+    },
+    props: {
+        category: {
+            type: Object
         },
-        props: {
-            category: {
-                type: Object,
-            },
-            isFiltered: {
-                type: Boolean
-            }
-        },
-        methods: {},
-        data() {
-            return {
-                opened: false
-            }
-        },
-        watch: {
-            isFiltered(newVal) {
-                if (newVal) {
-                    this.opened = true;
-                } else {
-                    this.opened = false;
-                }
-            }
-        },
-        mounted() {
-            if (this.isFiltered) {
+        isFiltered: {
+            type: Boolean
+        }
+    },
+    methods: {},
+    data() {
+        return {
+            opened: false
+        };
+    },
+    watch: {
+        isFiltered(newVal) {
+            if (newVal) {
                 this.opened = true;
             } else {
                 this.opened = false;
             }
         }
-    };
+    },
+    mounted() {
+        if (this.isFiltered) {
+            this.opened = true;
+        } else {
+            this.opened = false;
+        }
+    }
+};
 </script>
 
 <style scoped>
-    .slide-enter-active {
-        -moz-transition-duration: 0.2s;
-        -webkit-transition-duration: 0.2s;
-        -o-transition-duration: 0.2s;
-        transition-duration: 0.2s;
-        -moz-transition-timing-function: ease-in;
-        -webkit-transition-timing-function: ease-in;
-        -o-transition-timing-function: ease-in;
-        transition-timing-function: ease-in;
-    }
+.slide-enter-active {
+    -moz-transition-duration: 0.2s;
+    -webkit-transition-duration: 0.2s;
+    -o-transition-duration: 0.2s;
+    transition-duration: 0.2s;
+    -moz-transition-timing-function: ease-in;
+    -webkit-transition-timing-function: ease-in;
+    -o-transition-timing-function: ease-in;
+    transition-timing-function: ease-in;
+}
 
-    .slide-leave-active {
-        -moz-transition-duration: 0.2s;
-        -webkit-transition-duration: 0.2s;
-        -o-transition-duration: 0.2s;
-        transition-duration: 0.2s;
-        -moz-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
-        -webkit-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
-        -o-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
-        transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
-    }
+.slide-leave-active {
+    -moz-transition-duration: 0.2s;
+    -webkit-transition-duration: 0.2s;
+    -o-transition-duration: 0.2s;
+    transition-duration: 0.2s;
+    -moz-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+    -webkit-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+    -o-transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+    transition-timing-function: cubic-bezier(0, 1, 0.5, 1);
+}
 
-    .slide-enter-to, .slide-leave {
-        max-height: 100px;
-        overflow: hidden;
-    }
+.slide-enter-to,
+.slide-leave {
+    max-height: 100px;
+    overflow: hidden;
+}
 
-    .slide-enter, .slide-leave-to {
-        overflow: hidden;
-        max-height: 0;
-    }
+.slide-enter,
+.slide-leave-to {
+    overflow: hidden;
+    max-height: 0;
+}
 </style>

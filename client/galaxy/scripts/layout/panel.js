@@ -28,7 +28,7 @@ const SidePanel = Backbone.View.extend({
         const panel = this.view;
         const components = this.view.model.attributes || {};
 
-        if (this.id === 'left' && this.view && this.view.isVueWrapper) {
+        if (this.id === "left" && this.view && this.view.isVueWrapper) {
             const node = document.createElement("div");
             this.$el.replaceWith(node);
 

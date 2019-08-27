@@ -10,11 +10,10 @@ import { getAppRoot } from "onload";
 import Buttons from "mvc/ui/ui-buttons";
 import Vue from "vue";
 import ToolBox from "../../components/ToolBox.vue";
-import SidePanel from '../../components/SidePanel.vue';
+import SidePanel from "../../components/SidePanel.vue";
 import { mountVueComponent } from "../../utils/mountVueComponent";
 
 const ToolPanel = Backbone.View.extend({
-
     initialize: function(page, options) {
         const Galaxy = getGalaxyInstance();
         const appRoot = getAppRoot();
@@ -71,83 +70,87 @@ const ToolPanel = Backbone.View.extend({
                 }
             });
             panel_buttons.push(this.favorite_button);
-    }
-    // add uploader button to Galaxy object
-    Galaxy.upload = this.upload_button;
-
-    // components for panel definition
-    this.model = new Backbone.Model({
-      title: _l("Tools"),
-      buttons: panel_buttons
-    });
-
-    // build body template
-    this.setElement(this._template());
-  },
-
-  isVueWrapper: true,
-
-  mountVueComponent: function(el) {
-    return mountVueComponent(SidePanel)({
-      side: 'left',
-      currentPanel:  ToolBox,
-      currentPanelProperties: this.getProperties()
-    }, el);
-  },
-
-  getVueComponent: function() {
-    const SidePanelClass = Vue.extend(SidePanel);
-
-    return new SidePanelClass({
-      propsData: {
-        side: 'left',
-        currentPanel:  ToolBox,
-        currentPanelProperties: this.getProperties()
-      }
-    });
-  },
-
-  getProperties: function() {
-    const Galaxy = getGalaxyInstance();
-    const appRoot = getAppRoot();
-    return {
-      appRoot: getAppRoot(),
-      toolsTitle: _l("Tools"),
-      layout: _.map(this.tool_panel.get('layout').toJSON(), (category) => {
-        return {...category,
-          elems: _.map(category.elems, el => {
-            return el.toJSON();
-          })
         }
-      }),
+        // add uploader button to Galaxy object
+        Galaxy.upload = this.upload_button;
 
-      isUser: !!(Galaxy.user && Galaxy.user.id),
+        // components for panel definition
+        this.model = new Backbone.Model({
+            title: _l("Tools"),
+            buttons: panel_buttons
+        });
 
-      workflowsTitle: _l("Workflows"),
-      workflows: [{
-        title: _l("All workflows"),
-        href: `${appRoot}workflows/list`
-      }, ...this.stored_workflow_menu_entries.map(menuEntry => {
+        // build body template
+        this.setElement(this._template());
+    },
+
+    isVueWrapper: true,
+
+    mountVueComponent: function(el) {
+        return mountVueComponent(SidePanel)(
+            {
+                side: "left",
+                currentPanel: ToolBox,
+                currentPanelProperties: this.getProperties()
+            },
+            el
+        );
+    },
+
+    getVueComponent: function() {
+        const SidePanelClass = Vue.extend(SidePanel);
+
+        return new SidePanelClass({
+            propsData: {
+                side: "left",
+                currentPanel: ToolBox,
+                currentPanelProperties: this.getProperties()
+            }
+        });
+    },
+
+    getProperties: function() {
+        const Galaxy = getGalaxyInstance();
+        const appRoot = getAppRoot();
         return {
-          title: menuEntry['stored_workflow']['name'],
-          href: `${appRoot}workflows/run?id=${menuEntry['encoded_stored_workflow_id']}`
-        }
-      })],
-    }
-  },
+            appRoot: getAppRoot(),
+            toolsTitle: _l("Tools"),
+            layout: _.map(this.tool_panel.get("layout").toJSON(), category => {
+                return {
+                    ...category,
+                    elems: _.map(category.elems, el => {
+                        return el.toJSON();
+                    })
+                };
+            }),
 
-  render: function() {
-    // if there are tools, render panel and display everything
-    // if (this.tool_panel.get("layout").size() > 0) {
-      // this.$el.find(".toolMenu").replaceWith(this.tool_panel_view.$el);
-      // this.tool_panel_view.render();
+            isUser: !!(Galaxy.user && Galaxy.user.id),
 
-    // }
+            workflowsTitle: _l("Workflows"),
+            workflows: [
+                {
+                    title: _l("All workflows"),
+                    href: `${appRoot}workflows/list`
+                },
+                ...this.stored_workflow_menu_entries.map(menuEntry => {
+                    return {
+                        title: menuEntry["stored_workflow"]["name"],
+                        href: `${appRoot}workflows/run?id=${menuEntry["encoded_stored_workflow_id"]}`
+                    };
+                })
+            ]
+        };
+    },
 
-
-    // build the dom for the workflow portion of the tool menu
-    // add internal workflow list
-    /*this.$("#internal-workflows").append(
+    render: function() {
+        // if there are tools, render panel and display everything
+        // if (this.tool_panel.get("layout").size() > 0) {
+        // this.$el.find(".toolMenu").replaceWith(this.tool_panel_view.$el);
+        // this.tool_panel_view.render();
+        // }
+        // build the dom for the workflow portion of the tool menu
+        // add internal workflow list
+        /*this.$("#internal-workflows").append(
       this._templateAllWorkflow({
         title: _l("All workflows"),
         href: "workflows/list"
@@ -161,41 +164,41 @@ const ToolPanel = Backbone.View.extend({
         })
       );
     });*/
-  },
+    },
 
-  /** build a link to one tool */
-  _templateTool: function(tool) {
-    const appRoot = getAppRoot();
-    return `<div class="toolTitle">
+    /** build a link to one tool */
+    _templateTool: function(tool) {
+        const appRoot = getAppRoot();
+        return `<div class="toolTitle">
                     <a href="${appRoot}${tool.href}" target="galaxy_main">
                         ${tool.title}
                     </a>
                 </div>`;
-  },
+    },
 
-  /** build a link to 'All Workflows' */
-  _templateAllWorkflow: function(tool) {
-    const appRoot = getAppRoot();
-    return `<div class="toolTitle">
+    /** build a link to 'All Workflows' */
+    _templateAllWorkflow: function(tool) {
+        const appRoot = getAppRoot();
+        return `<div class="toolTitle">
                     <a href="${appRoot}${tool.href}">
                         ${tool.title}
                     </a>
                 </div>`;
-  },
+    },
 
-  /** build links to workflows in toolpanel */
-  _templateWorkflowLink: function(wf) {
-    const appRoot = getAppRoot();
-    return `<div class="toolTitle">
+    /** build links to workflows in toolpanel */
+    _templateWorkflowLink: function(wf) {
+        const appRoot = getAppRoot();
+        return `<div class="toolTitle">
                     <a class="${wf.cls}" href="${appRoot}${wf.href}">
                         ${_.escape(wf.title)}
                     </a>
                 </div>`;
-  },
+    },
 
-  /** override to include inital menu dom and workflow section */
-  _template: function() {
-    return `<div class="toolMenuContainer">
+    /** override to include inital menu dom and workflow section */
+    _template: function() {
+        return `<div class="toolMenuContainer">
                     <div class="toolMenu" style="display: none">
                         <div id="search-no-results" style="display: none; padding-top: 5px">
                             <em>
@@ -216,11 +219,11 @@ const ToolPanel = Backbone.View.extend({
                             <div class="toolSectionBg"/>
                         </div>
                 </div>`;
-  },
+    },
 
-  toString: function() {
-    return "toolPanel";
-  }
+    toString: function() {
+        return "toolPanel";
+    }
 });
 
 export default ToolPanel;
