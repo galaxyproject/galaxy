@@ -92,6 +92,10 @@ class LocalJobRunner(BaseJobRunner):
             stdout_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stdout', dir=job_wrapper.working_directory)
             stderr_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stderr', dir=job_wrapper.working_directory)
             log.debug('(%s) executing job script: %s' % (job_id, command_line))
+            # The preexec_fn argument of Popen() is used to call os.setpgrp() in
+            # the child process just before the child is executed. This will set
+            # the PGID of the child process to its PID (i.e. ensures that it is
+            # the root of its own process group instead of Galaxy's one).
             proc = subprocess.Popen(args=command_line,
                                     shell=True,
                                     cwd=job_wrapper.working_directory,
