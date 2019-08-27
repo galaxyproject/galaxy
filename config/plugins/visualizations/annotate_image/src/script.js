@@ -1,6 +1,8 @@
-import paper from "../node_modules/paper/dist/paper-core.js";
 import $ from "jquery";
+import "jquery-contextmenu";
+import "jquery.ui.position";
 import _ from "underscore";
+import paper from "../node_modules/paper/dist/paper-core.js";
 
 //import "../node_modules/annotate_image/build/jquery.contextMenu.css";
 
