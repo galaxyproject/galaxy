@@ -8,11 +8,9 @@ from time import sleep
 
 import six
 
-from ..shell import BaseShellExec
-from ....util import (
-    Bunch,
-    kill_pid
-)
+from galaxy.util.bunch import Bunch
+from . import BaseShellExec
+from ....util import kill_pid
 
 log = getLogger(__name__)
 
