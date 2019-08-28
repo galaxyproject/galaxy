@@ -6,6 +6,7 @@ import { getGalaxyInstance } from "app";
 import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_dataset_view from "mvc/library/library-dataset-view";
+import { mountNametags } from "components/Nametags";
 
 var FolderRowView = Backbone.View.extend({
     events: {
@@ -69,7 +70,19 @@ var FolderRowView = Backbone.View.extend({
             })
         );
         this.$el.show();
+
+        this._mountNametags("initialize");
+
         return this;
+    },
+
+    _mountNametags(context) {
+        const container = this.$el.find(".nametags")[0];
+        if (container) {
+            const { id, model_class, tags } = this.model.attributes;
+            const storeKey = `${model_class}-${id}`;
+            mountNametags({ storeKey, tags }, container);
+        }
     },
 
     /**
@@ -326,7 +339,7 @@ var FolderRowView = Backbone.View.extend({
                     <a>
                 </td>
                 <td><%- content_item.get("message") %></td>
-                <td><%= _.escape(content_item.get("tags")) %></td>
+                <td><div class="nametags"><!-- Nametags mount here --></div></td>
                 <td><%= _.escape(content_item.get("file_ext")) %></td>
                 <td><%= _.escape(content_item.get("file_size")) %></td>
                 <td><%= _.escape(content_item.get("update_time")) %></td>
@@ -376,7 +389,7 @@ var FolderRowView = Backbone.View.extend({
                     <%- content_item.get("message") %>
                 </td>
                 <td>
-                    <%= _.escape(content_item.get("tags")) %>
+                    <div class="nametags"><!-- Nametags mount here --></div>
                 </td>
                 <td>
                     <%= _.escape(content_item.get("file_ext")) %>

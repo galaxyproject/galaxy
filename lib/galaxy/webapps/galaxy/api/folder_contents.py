@@ -114,7 +114,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 encoded_ldda_id = trans.security.encode_id(content_item.library_dataset_dataset_association.id)
 
                 tag_manager = tags.GalaxyTagHandler(trans.sa_session)
-                ldda_tags = tag_manager.get_tags_str(content_item.library_dataset_dataset_association.tags)
+                ldda_tags = tag_manager.get_tags_str(content_item.library_dataset_dataset_association.tags).split(', ')
 
                 return_item.update(dict(file_ext=library_dataset_dict['file_ext'],
                                         date_uploaded=library_dataset_dict['date_uploaded'],
