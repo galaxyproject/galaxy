@@ -74,7 +74,7 @@ class Foobar( Tabular ):
     """Tab delimited data in foo format"""
     file_ext = "foo"
 
-    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True )
+    MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True)
 
 
     def __init__ (self, **kwd):
