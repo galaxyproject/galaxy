@@ -24,6 +24,7 @@ import yaml
 from six import string_types
 from six.moves import configparser
 
+from galaxy.config.schema import AppSchema
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.model import mapping
@@ -47,11 +48,12 @@ from galaxy.web_stack import (
     get_stack_facts,
     register_postfork_function
 )
-from .config_manage import GALAXY_APP
 from ..version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
 
+GALAXY_APP_NAME = 'galaxy'
+GALAXY_CONFIG_SCHEMA_PATH = 'lib/galaxy/webapps/galaxy/config_schema.yml'
 LOGGING_CONFIG_DEFAULT = {
     'version': 1,
     'root': {
@@ -1009,7 +1011,8 @@ def reload_config_options(current_config, path=None):
 
 
 def get_reloadable_config_options():
-    return GALAXY_APP.schema.get_reloadable_option_defaults()
+    schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
+    return schema.get_reloadable_option_defaults()
 
 
 def get_database_engine_options(kwargs, model_prefix=''):

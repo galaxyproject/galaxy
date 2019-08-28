@@ -29,10 +29,10 @@ class Schema(object):
 
 class AppSchema(Schema):
 
-    def __init__(self, app_desc):
-        self.raw_schema = self._read_schema(app_desc.schema_path)
+    def __init__(self, schema_path, app_name):
+        self.raw_schema = self._read_schema(schema_path)
         self.description = self.raw_schema.get("desc", None)
-        app_schema = self.raw_schema['mapping'][app_desc.app_name]['mapping']
+        app_schema = self.raw_schema['mapping'][app_name]['mapping']
         super(AppSchema, self).__init__(app_schema)
         self.reloadable_options = self._load_reloadable_options(app_schema)  # TODO redo
 
