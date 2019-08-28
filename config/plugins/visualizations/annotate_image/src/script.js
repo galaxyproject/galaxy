@@ -3,7 +3,6 @@ import paper from "../node_modules/paper/dist/paper-full.min.js";
 import "jquery-contextmenu";
 import "jquery.ui.position";
 import _ from "underscore";
-//import paper from "../node_modules/paper/dist/paper-core.js";
 
 import "../node_modules/jquery-contextmenu/dist/jquery.contextMenu.css";
 
@@ -289,6 +288,97 @@ _.extend(window.bundleEntries || {}, {
             }
             
             
+            this.downloadCanvas = function (canvas, filename) {
+ 
+                /// create an "off-screen" anchor tag
+                var lnk = document.createElement('a'),
+                    e;
+ 
+                /// the key here is to set the download attribute of the a tag
+                lnk.download = filename;
+ 
+                /// convert canvas content to data-uri for link. When download
+                /// attribute is set the content pointed to by link will be
+                /// pushed as "download" in HTML5 capable browsers
+                lnk.href = canvas.toDataURL();
+ 
+                /// create a "fake" click-event to trigger the download
+                if (document.createEvent) {
+                    e = document.createEvent("MouseEvents");
+                    e.initMouseEvent("click", true, true, window,
+                                     0, 0, 0, 0, 0, false, false, false,
+                                     false, 0, null);
+                    lnk.dispatchEvent(e);
+                }
+                else if (lnk.fireEvent) {
+                    lnk.fireEvent("onclick");
+                }
+            }
+ 
+            this.download = function () {
+                var canvas = paper.project.activeLayer.view.element,
+                    img = $(canvas)[0];
+                var mergeCanvas = $('<canvas>')
+                .attr({
+                    width: img.width,
+                    height: img.height
+                });
+                var mergedContext = mergeCanvas[0].getContext('2d');
+                mergedContext.clearRect(0, 0, img.width, img.height);
+                mergedContext.drawImage(img, 0, 0);
+                mergedContext.drawImage(canvas, 0, 0);
+                self.downloadCanvas(mergeCanvas[0], "only-annotations.png");
+            
+                // create canvas for original and annotations
+                var annotated_img = $(canvas).parent().find('img')[0];
+                var wt = $(annotated_img).width();
+                var ht = $(annotated_img).height();
+                var mergeCanvasAnnotated = $('<canvas>')
+                    .attr({
+                    width: $(annotated_img).width(),
+                    height: $(annotated_img).height()
+                });
+                var mergedContextAnnotated = mergeCanvasAnnotated[0].getContext('2d');
+                mergedContextAnnotated.clearRect(0, 0, $(annotated_img).width(), $(annotated_img).height());
+                mergedContextAnnotated.drawImage(annotated_img, 0, 0);
+                mergedContextAnnotated.drawImage(canvas, 0, 0);
+                self.downloadCanvas(mergeCanvasAnnotated[0], "original-with-annotations.png");
+            }
+            
+            this.setText = function () {
+                var uid = generateUUID();
+                var pos = contextPoint;
+                CommandManager.execute({
+                    execute: function () {
+                        var TXT_DBL_CLICK = "<<double click to edit>>";
+                        var txt = TXT_DBL_CLICK;
+                        var text = new paper.PointText(pos);
+                        text.content = txt;
+                        text.fillColor = settings.color;
+                        text.fontSize = 18;
+                        text.fontFamily = 'Verdana';
+                        text.data.uid = uid;
+                        text.opacity = settings.opacity;
+ 
+                        text.onDoubleClick = function (event) {
+                            if (this.className == 'PointText') {
+                                var txt = prompt("Type in your text", this.content.replace(TXT_DBL_CLICK, ''));
+                                if (txt.length > 0)
+                                    this.content = txt;
+                            }
+                        }
+                    },
+                    unexecute: function () {
+                        $(paper.project.activeLayer.children).each(function (index, item) {
+                            if (item.data && item.data.uid) {
+                                if (item.data.uid == uid) {
+                                    item.remove();
+                                }
+                            }
+                        });
+                    }
+                });
+            }
             
             this.setPenColor = function (color) {
                 self.setOptions({ color: color });
@@ -358,6 +448,24 @@ _.extend(window.bundleEntries || {}, {
                 }
             });
             
+            /*let $menuList = $(".context-menu-list");
+            $menuList.find(".context-menu-icon-text").attr("background-image", "url(/static/plugins/visualizations/annotate_image/static/images/text.png)");
+            $menuList.find(".context-menu-icon-blackpen").attr("background-image", "url(/static/plugins/visualizations/annotate_image/static/images/blackpen.png)");
+            $menuList.find(".context-menu-icon-redpen").attr("background-image", "url(/static/plugins/visualizations/annotate_image/static/images/redpen.png)");
+            $menuList.find(".context-menu-icon-greenpen").attr("background-image", "url(/static/plugins/visualizations/annotate_image/static/images/greenpen.png)");
+            $menuList.find(".context-menu-icon-bluepen").attr("background-image", "url(/static/plugins/visualizations/annotate_image/static/images/bluepen.png)");
+            $menuList.find(".context-menu-icon-yellowpen").attr("background-image", "url(/static/plugins/visualizations/annotate_image/static/images/yellowpen.png)");
+            
+            /// context-menu-list context-menu-root
+            
+            .context-menu-item.context-menu-icon-text { background-image: url(/static/plugins/visualizations/annotate_image/static/images/text.png); }
+            .context-menu-item.context-menu-icon-blackpen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/blackpen.png); }
+            .context-menu-item.context-menu-icon-redpen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/redpen.png); }
+            .context-menu-item.context-menu-icon-greenpen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/greenpen.png); }
+            .context-menu-item.context-menu-icon-bluepen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/bluepen.png); }
+            .context-menu-item.context-menu-icon-yellowpen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/yellowpen.png); }
+            
+            */
         }
 
         $.ajax({
@@ -365,8 +473,9 @@ _.extend(window.bundleEntries || {}, {
             success: function(content) {
                 //console.log(opt);
                 let $chartViewer = $("#" + opt.targets[0]);
-                $("#" + opt.targets[0]).html("<img id='image-annotate' src='" + dataset.download_url + "' />");
-                let $image = $("#" + opt.targets[0] + " img");
+                $chartViewer.attr("position", "relative");
+                $chartViewer.html("<img id='image-annotate' src='" + dataset.download_url + "' />");
+                let $image = $chartViewer.find("img"); //$("#" + opt.targets[0] + " img");
                 console.log($image);
                 $image.on("load", function() {
                     let width = $(this).width();
