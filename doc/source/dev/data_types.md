@@ -530,6 +530,8 @@ To prevent this from occurring, set `allow_datatype_change` to `False`. The data
 
 ## Galaxy Tool Shed - Data Types
 
+**Note:** These are deprecated and shouldn't be used.
+
 ### Including custom data types that subclass from Galaxy data types in the distribution
 
 If your repository includes tools that require data types that are not defined in the Galaxy distribution, you can include the required data types in the repository along with your tools, or you can create a separate repository to contain them. The repository must include a file named `datatypes_conf.xml`, which is modeled after the file named `datatypes_conf.xml.sample` in the Galaxy distribution. This section describes support for including data types that subclass from data types in the Galaxy distribution. Refer to the next section for details about data types that use your own custom class modules included in your repository. An example of this is the `datatypes_conf.xml` file in the [emboss_datatypes repository](http://toolshed.g2.bx.psu.edu/repository/browse_categories?sort=name&id=3ac79d5752c6d938&f-deleted=False&webapp=community&f-free-text-search=emboss&operation=view_or_manage_repository) in the main Galaxy tool shed, shown below.
