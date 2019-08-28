@@ -95,7 +95,7 @@ class Foobar(Tabular):
 
 
     def sniff( self, filename ):
-        headers = get_headers( filename, '\t' )   
+        headers = get_headers(filename, '\t')   
         try:
             if len(headers) < 2:
                 return False
