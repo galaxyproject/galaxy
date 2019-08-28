@@ -152,7 +152,7 @@ class BasicComposite(Text):
 These files can be specified on the command line in the following fashion:
 
 ```xml
-<command>someTool.sh $input1 ${os.path.join( input1.extra_files_path, 'results.txt' )} 
+<command>someTool.sh '$input1' '${os.path.join(input1.extra_files_path, 'results.txt')}'
 '${os.path.join(input1.extra_files_path, 'results.dat')}' '$output1'</command>
 ```
 
