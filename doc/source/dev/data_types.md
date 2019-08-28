@@ -153,7 +153,7 @@ These files can be specified on the command line in the following fashion:
 
 ```xml
 <command>someTool.sh $input1 ${os.path.join( input1.extra_files_path, 'results.txt' )} 
-${os.path.join( input1.extra_files_path, 'results.dat' )} $output1</command>
+'${os.path.join(input1.extra_files_path, 'results.dat')}' '$output1'</command>
 ```
 
 If a tool is aware of the file names for a datatype, then only `input1.extra_files_path` needs to be provided.
