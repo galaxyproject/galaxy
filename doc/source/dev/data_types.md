@@ -88,7 +88,7 @@ class Foobar(Tabular):
         Tabular.init_meta(self, dataset, copy_from=copy_from)
         if elems_len == 8:
             try:
-                map( int, [hdr[6], hdr[7]] )
+                map(int, [hdr[6], hdr[7]])
                 proceed = True
             except:
                 pass
