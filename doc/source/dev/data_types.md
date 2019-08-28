@@ -100,7 +100,7 @@ class Foobar(Tabular):
             if len(headers) < 2:
                 return False
             for hdr in headers:
-                if len( hdr ) > 1 and hdr[0] and not hdr[0].startswith( '#' ):
+                if len(hdr) > 1 and hdr[0] and not hdr[0].startswith('#'):
                     if len(hdr) != 8:
                         return False
                     try:
