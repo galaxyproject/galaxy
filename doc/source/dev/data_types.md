@@ -104,7 +104,7 @@ class Foobar(Tabular):
                     if len(hdr) != 8:
                         return False
                     try:
-                        map( int, [hdr[6], hdr[7]] )
+                        map(int, [hdr[6], hdr[7]])
                     except:
                         return False
                 # Do other necessary checking here...
