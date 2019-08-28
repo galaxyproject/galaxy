@@ -146,7 +146,7 @@ class BasicComposite(Text):
     def __init__ ( self, **kwd ):
         Text. __init__ ( self, **kwd )
         self.add_composite_file('results.txt')
-        self.add_composite_file( 'results.dat', is_binary = True, optional = True )
+        self.add_composite_file('results.dat', is_binary = True, optional = True)
 ```
 
 These files can be specified on the command line in the following fashion:
