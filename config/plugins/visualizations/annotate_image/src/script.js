@@ -4,8 +4,6 @@ import "jquery-contextmenu";
 import "jquery.ui.position";
 import _ from "underscore";
 
-import "../node_modules/jquery-contextmenu/dist/jquery.contextMenu.css";
-
 
 var CommandManager = (function() {
     function CommandManager() {}
