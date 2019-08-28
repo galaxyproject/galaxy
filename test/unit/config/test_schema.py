@@ -18,11 +18,6 @@ MOCK_YAML = '''
     '''
 
 
-class MockGalaxyApp():
-    app_name = 'mockgalaxy'
-    schema_path = None
-
-
 def test_schema_is_loaded(monkeypatch):
 
     def mock_read_schema(self, path):
@@ -34,7 +29,7 @@ def test_schema_is_loaded(monkeypatch):
     monkeypatch.setattr(AppSchema, '_read_schema', mock_read_schema)
     monkeypatch.setattr(OrderedLoader, '__init__', mock_init)
 
-    loaded_schema = AppSchema(MockGalaxyApp())
+    loaded_schema = AppSchema('no path', 'mockgalaxy')
     data = ordered_load(MOCK_YAML)
 
     assert loaded_schema.description == data['desc']
