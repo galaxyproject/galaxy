@@ -70,7 +70,7 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.tabular import Tabular
 
 
-class Foobar( Tabular ):
+class Foobar(Tabular):
     """Tab delimited data in foo format"""
     file_ext = "foo"
 
