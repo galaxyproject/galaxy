@@ -115,6 +115,7 @@ var LibraryDatasetView = Backbone.View.extend({
     _mountNametags(context) {
         const container = this.$el.find(".nametags")[0];
         if (container) {
+            this.model.set({ tags: this.model.get("tags").split(', ') });
             const { id, model_class, tags } = this.model.attributes;
             const storeKey = `${model_class}-${id}`;
             mountNametags({ storeKey, tags }, container);

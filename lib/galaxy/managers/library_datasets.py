@@ -238,7 +238,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         rval['update_time'] = ldda.update_time.strftime("%Y-%m-%d %I:%M %p")
         rval['can_user_modify'] = trans.user_is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, ld)
         rval['is_unrestricted'] = trans.app.security_agent.dataset_is_public(ldda.dataset)
-        rval['tags'] = self.tag_handler.get_tags_str(ldda.tags).split(', ')
+        rval['tags'] = self.tag_handler.get_tags_str(ldda.tags)
 
         #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
         rval['can_user_manage'] = trans.user_is_admin or trans.app.security_agent.can_manage_dataset(current_user_roles, ldda.dataset)
