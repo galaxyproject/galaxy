@@ -1248,12 +1248,12 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``interactivetools_enable``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set this to true to enable InteractiveTools.
+    Enable InteractiveTools.
 :Default: ``false``
 :Type: bool
 
