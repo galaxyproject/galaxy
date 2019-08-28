@@ -663,7 +663,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
         pulsar_version = packaging.version.parse(remote_job_config.get('pulsar_version', "0.6.0"))
         needed_version = packaging.version.parse("0.0.0")
         log.info("pulsar_version is %s" % pulsar_version)
-        for feature in list(check_features.keys()) + ['_default_']:
+        for feature, needed in list(check_features.items()) + [('_default_', True)]:
+            if not needed:
+                continue
             if pulsar_version < MINIMUM_PULSAR_VERSIONS[feature]:
                 needed_version = max(needed_version, MINIMUM_PULSAR_VERSIONS[feature])
         if pulsar_version < needed_version:
