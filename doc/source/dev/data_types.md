@@ -143,7 +143,7 @@ class BasicComposite(Text):
     composite_type = 'basic'
 
 
-    def __init__ ( self, **kwd ):
+    def __init__ (self, **kwd):
         Text. __init__ (self, **kwd)
         self.add_composite_file('results.txt')
         self.add_composite_file('results.dat', is_binary = True, optional = True)
