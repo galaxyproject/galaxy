@@ -1,0 +1,2 @@
+include *.rst LICENSE
+include galaxy/selenium/*yml

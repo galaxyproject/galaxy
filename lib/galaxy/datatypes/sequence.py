@@ -19,6 +19,7 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import (
     Binary
 )
+from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.metadata import DictParameter, MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -795,15 +796,35 @@ class BaseFastq(Sequence):
     @classmethod
     def check_first_block(cls, file_prefix):
         # check that first block looks like a fastq block
-        headers = get_headers(file_prefix, sep='\n', count=4)
-        if len(headers) == 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
+        block = get_headers(file_prefix, sep='\n', count=4)
+        return cls.check_block(block)
+
+    @classmethod
+    def check_block(cls, block):
+        if len(block) == 4 and block[0][0] and block[0][0][0] == "@" and block[2][0] and block[2][0][0] == "+" and block[1][0]:
             # Check the sequence line, make sure it contains only G/C/A/T/N
-            match = cls.bases_regexp.match(headers[1][0])
+            match = cls.bases_regexp.match(block[1][0])
             if match:
                 start, end = match.span()
-                if (end - start) == len(headers[1][0]):
+                if (end - start) == len(block[1][0]):
                     return True
         return False
+
+    def validate(self, dataset, **kwd):
+        headers = iter_headers(dataset.file_name, sep='\n', count=-1)
+        # check to see if the base qualities match
+        if not self.quality_check(headers):
+            return DatatypeValidation.invalid("Invalid quality score(s) found for this fastq datatype.")
+
+        headers = iter_headers(dataset.file_name, sep='\n', count=-1)
+        while True:
+            block = list(islice(headers, 4))
+            if len(block) == 0:
+                break
+            if not self.check_block(block):
+                return DatatypeValidation.invalid("Invalid FASTQ structure found.")
+
+        return DatatypeValidation.validated()
 
 
 class Fastq(BaseFastq):

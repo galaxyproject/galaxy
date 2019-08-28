@@ -5,6 +5,7 @@ import datetime
 import errno
 import logging
 import os
+import signal
 import subprocess
 import tempfile
 import threading
@@ -92,6 +93,10 @@ class LocalJobRunner(BaseJobRunner):
             stdout_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stdout', dir=job_wrapper.working_directory)
             stderr_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stderr', dir=job_wrapper.working_directory)
             log.debug('(%s) executing job script: %s' % (job_id, command_line))
+            # The preexec_fn argument of Popen() is used to call os.setpgrp() in
+            # the child process just before the child is executed. This will set
+            # the PGID of the child process to its PID (i.e. ensures that it is
+            # the root of its own process group instead of Galaxy's one).
             proc = subprocess.Popen(args=command_line,
                                     shell=True,
                                     cwd=job_wrapper.working_directory,
@@ -107,6 +112,8 @@ class LocalJobRunner(BaseJobRunner):
             try:
                 job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
                 job_wrapper.change_state(model.Job.states.RUNNING)
+
+                self._handle_container(job_wrapper, proc)
 
                 terminated = self.__poll_if_needed(proc, job_wrapper, job_id)
                 if terminated:
@@ -159,7 +166,7 @@ class LocalJobRunner(BaseJobRunner):
         if not self._check_pid(pid):
             log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.id, pid))
             return
-        for sig in [15, 9]:
+        for sig in [signal.SIGTERM, signal.SIGKILL]:
             try:
                 os.killpg(pid, sig)
             except OSError as e:
@@ -214,11 +221,21 @@ class LocalJobRunner(BaseJobRunner):
             return False
 
     def _terminate(self, proc):
-        os.killpg(proc.pid, 15)
+        os.killpg(proc.pid, signal.SIGTERM)
         sleep(1)
         if proc.poll() is None:
-            os.killpg(proc.pid, 9)
+            os.killpg(proc.pid, signal.SIGKILL)
         return proc.wait()  # reap
+
+    def _handle_container(self, job_wrapper, proc):
+        if not job_wrapper.tool.produces_entry_points:
+            return
+
+        while proc.poll() is None:
+            if job_wrapper.check_for_entry_points(check_already_configured=False):
+                return
+
+            sleep(0.5)
 
     def __poll_if_needed(self, proc, job_wrapper, job_id):
         # Only poll if needed (i.e. job limits are set)

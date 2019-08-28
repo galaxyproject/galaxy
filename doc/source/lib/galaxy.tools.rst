@@ -18,12 +18,10 @@ Subpackages
     galaxy.tools.expressions
     galaxy.tools.filters
     galaxy.tools.imp_exp
-    galaxy.tools.linters
     galaxy.tools.parameters
     galaxy.tools.search
     galaxy.tools.toolbox
     galaxy.tools.util
-    galaxy.tools.verify
 
 Submodules
 ----------
@@ -72,22 +70,6 @@ galaxy.tools.execute module
 ---------------------------
 
 .. automodule:: galaxy.tools.execute
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy.tools.lint module
-------------------------
-
-.. automodule:: galaxy.tools.lint
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy.tools.lint\_util module
-------------------------------
-
-.. automodule:: galaxy.tools.lint_util
     :members:
     :undoc-members:
     :show-inheritance:

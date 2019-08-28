@@ -4,6 +4,7 @@ API operations on User objects.
 import json
 import logging
 import re
+from collections import OrderedDict
 
 import six
 from markupsafe import escape
@@ -30,7 +31,6 @@ from galaxy.util import (
     docstring_trim,
     listify
 )
-from galaxy.util.odict import odict
 from galaxy.web import (
     expose_api,
     expose_api_anonymous
@@ -168,6 +168,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             if not trans.user_is_admin:
                 assert trans.user == user
                 assert not user.deleted
+        except exceptions.ItemDeletionException:
+            raise
         except Exception:
             raise exceptions.RequestParameterInvalidException('Invalid user id specified', id=id)
         return self.user_serializer.serialize_to_view(user, view='detailed')
@@ -240,19 +242,28 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         :param purge: (optional) if True, purge the user
         :type  purge: bool
         """
-        if not trans.app.config.allow_user_deletion:
-            raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to delete users.')
+        user = self.get_user(trans, id)
         purge = util.string_as_bool(kwd.get('purge', False))
         if purge:
-            raise exceptions.NotImplemented('Purge option has not been implemented yet')
-        user = self.get_user(trans, id)
-        self.user_manager.delete(user)
+            log.debug("Purging user %s" % user)
+            self.user_manager.purge(user)
+        else:
+            self.user_manager.delete(user)
         return self.user_serializer.serialize_to_view(user, view='detailed')
 
     @expose_api
     @web.require_admin
-    def undelete(self, trans, **kwd):
-        raise exceptions.NotImplemented()
+    def undelete(self, trans, id, **kwd):
+        """
+        POST /api/users/deleted/{id}/undelete
+        Undelete the user with the given ``id``
+
+        :param id: the encoded id of the user to be undeleted
+        :type  id: str
+        """
+        user = self.get_user(trans, id)
+        self.user_manager.undelete(user)
+        return self.user_serializer.serialize_to_view(user, view='detailed')
 
     # TODO: move to more basal, common resource than this
     def anon_user_api_value(self, trans):
@@ -689,9 +700,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             inputs.append({'type': 'section', 'title': filter_title, 'name': filter_type, 'expanded': True, 'inputs': filter_inputs})
 
     def _get_filter_types(self, trans):
-        return odict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
-                      ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
-                      ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
+        return OrderedDict([('toolbox_tool_filters', {'title': 'Tools', 'config': trans.app.config.user_tool_filters}),
+                            ('toolbox_section_filters', {'title': 'Sections', 'config': trans.app.config.user_tool_section_filters}),
+                            ('toolbox_label_filters', {'title': 'Labels', 'config': trans.app.config.user_tool_label_filters})])
 
     @expose_api
     def api_key(self, trans, id, payload={}, **kwd):

@@ -343,6 +343,20 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
         # Make sure the positions have been updated.
         map(tweak_step, updated_workflow_content['steps'].items())
 
+    def test_update_tags(self):
+        workflow_object = self.workflow_populator.load_workflow(name="test_import")
+        upload_response = self.__test_upload(workflow=workflow_object)
+        workflow = upload_response.json()
+        workflow['tags'] = ['a_tag', 'b_tag']
+        update_response = self._update_workflow(workflow['id'], workflow).json()
+        assert update_response['tags'] == ['a_tag', 'b_tag']
+        del workflow['tags']
+        update_response = self._update_workflow(workflow['id'], workflow).json()
+        assert update_response['tags'] == ['a_tag', 'b_tag']
+        workflow['tags'] = []
+        update_response = self._update_workflow(workflow['id'], workflow).json()
+        assert update_response['tags'] == []
+
     def test_update_no_tool_id(self):
         workflow_object = self.workflow_populator.load_workflow(name="test_import")
         upload_response = self.__test_upload(workflow=workflow_object)
@@ -3133,6 +3147,69 @@ steps:
             # assert hda3["deleted"]
             print(hda3["deleted"])
             assert not hda4["deleted"]
+
+    @skip_without_tool("cat1")
+    def test_validated_post_job_action_validated(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+    post_job_actions:
+      ValidateOutputsAction:
+        action_type: ValidateOutputsAction
+""", test_data={"input1": {"type": "File", "file_type": "fastqsanger", "value": "1.fastqsanger"}}, history_id=history_id)
+            hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
+            assert hda2["validated_state"] == "ok"
+
+    @skip_without_tool("cat1")
+    def test_validated_post_job_action_unvalidated_default(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+""", test_data={"input1": {"type": "File", "file_type": "fastqsanger", "value": "1.fastqsanger"}}, history_id=history_id)
+            hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
+            assert hda2["validated_state"] == "unknown"
+
+    @skip_without_tool("cat1")
+    def test_validated_post_job_action_invalid(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+    post_job_actions:
+      ValidateOutputsAction:
+        action_type: ValidateOutputsAction
+""", test_data={"input1": {"type": "File", "file_type": "fastqcssanger", "value": "1.fastqsanger"}}, history_id=history_id)
+            hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
+            assert hda2["validated_state"] == "invalid"
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):

@@ -1,14 +1,13 @@
 import imp
 import logging
 import os
-import time
+from collections import OrderedDict
 from datetime import datetime, timedelta
 from string import punctuation as PUNCTUATION
 
 import six
 from sqlalchemy import and_, false, or_
 
-import galaxy.queue_worker
 from galaxy import (
     model,
     util,
@@ -22,8 +21,6 @@ from galaxy.util import (
     sanitize_text,
     url_get
 )
-from galaxy.util.hash_util import new_secure_hash
-from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
@@ -38,7 +35,6 @@ from tool_shed.util.web_util import escape
 
 
 log = logging.getLogger(__name__)
-compliance_log = logging.getLogger('COMPLIANCE')
 
 
 class UserListGrid(grids.Grid):
@@ -161,8 +157,8 @@ class UserListGrid(grids.Grid):
         grids.GridOperation("Generate New API Key",
                             allow_multiple=False,
                             async_compatible=True)
-
     ]
+
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
         grids.GridColumnFilter("Deleted", args=dict(deleted=True, purged=False)),
@@ -461,6 +457,7 @@ class QuotaListGrid(grids.Grid):
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
         grids.GridColumnFilter("Deleted", args=dict(deleted=True)),
+        grids.GridColumnFilter("Purged", args=dict(purged=True)),
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
@@ -528,12 +525,13 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     group_list_grid = GroupListGrid()
     quota_list_grid = QuotaListGrid()
     tool_version_list_grid = ToolVersionListGrid()
-    delete_operation = grids.GridOperation("Delete", condition=(lambda item: not item.deleted), allow_multiple=True)
+    delete_operation = grids.GridOperation("Delete", condition=(lambda item: not item.deleted and not item.purged), allow_multiple=True)
     undelete_operation = grids.GridOperation("Undelete", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True)
     purge_operation = grids.GridOperation("Purge", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True)
     impersonate_operation = grids.GridOperation(
         "Impersonate",
         url_args=dict(controller="admin", action="impersonate"),
+        condition=(lambda item: not item.deleted and not item.purged),
         allow_multiple=False
     )
 
@@ -886,7 +884,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     def review_tool_migration_stages(self, trans, **kwd):
         message = escape(util.restore_text(kwd.get('message', '')))
         status = util.restore_text(kwd.get('status', 'done'))
-        migration_stages_dict = odict()
+        migration_stages_dict = OrderedDict()
         # FIXME: this isn't valid in an installed context
         migration_scripts_dir = os.path.abspath(os.path.join(trans.app.config.root, 'lib', 'tool_shed', 'galaxy_install', 'migrate', 'versions'))
         modules = os.listdir(migration_scripts_dir)
@@ -1412,61 +1410,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         message = 'Deleted %d users: ' % len(ids)
         for user_id in ids:
             user = get_user(trans, user_id)
-            user.deleted = True
-
-            compliance_log.info('delete-user-event: %s' % user_id)
-
-            # Maybe there is some case in the future where an admin needs
-            # to prove that a user was using a server for some reason (e.g.
-            # a court case.) So we make this painfully hard to recover (and
-            # not immediately reversable) in line with GDPR, but still
-            # leave open the possibility to prove someone was part of the
-            # server just in case. By knowing the exact email + approximate
-            # time of deletion, one could run through hashes for every
-            # second of the surrounding days/weeks.
-            pseudorandom_value = str(int(time.time()))
-            # Replace email + username with a (theoretically) unreversable
-            # hash. If provided with the username we can probably re-hash
-            # to identify if it is needed for some reason.
-            #
-            # Deleting multiple times will re-hash the username/email
-            email_hash = new_secure_hash(user.email + pseudorandom_value)
-            uname_hash = new_secure_hash(user.username + pseudorandom_value)
-
-            # We must also redact username
-            for role in user.all_roles():
-                if self.app.config.redact_username_during_deletion:
-                    role.name = role.name.replace(user.username, uname_hash)
-                    role.description = role.description.replace(user.username, uname_hash)
-
-                if self.app.config.redact_email_during_deletion:
-                    role.name = role.name.replace(user.email, email_hash)
-                    role.description = role.description.replace(user.email, email_hash)
-
-            if self.app.config.redact_email_during_deletion:
-                user.email = email_hash
-            if self.app.config.redact_username_during_deletion:
-                user.username = uname_hash
-
-            # Redact user addresses as well
-            if self.app.config.redact_user_address_during_deletion:
-                user_addresses = trans.sa_session.query(trans.app.model.UserAddress) \
-                    .filter(trans.app.model.UserAddress.user_id == user.id).all()
-
-                for addr in user_addresses:
-                    addr.desc = new_secure_hash(addr.desc + pseudorandom_value)
-                    addr.name = new_secure_hash(addr.name + pseudorandom_value)
-                    addr.institution = new_secure_hash(addr.institution + pseudorandom_value)
-                    addr.address = new_secure_hash(addr.address + pseudorandom_value)
-                    addr.city = new_secure_hash(addr.city + pseudorandom_value)
-                    addr.state = new_secure_hash(addr.state + pseudorandom_value)
-                    addr.postal_code = new_secure_hash(addr.postal_code + pseudorandom_value)
-                    addr.country = new_secure_hash(addr.country + pseudorandom_value)
-                    addr.phone = new_secure_hash(addr.phone + pseudorandom_value)
-                    trans.sa_session.add(addr)
-
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
+            # Actually do the delete
+            self.user_manager.delete(user)
+            # Accumulate messages for the return message
             message += ' %s ' % user.email
         return (message, 'done')
 
@@ -1475,12 +1421,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         undeleted_users = ""
         for user_id in ids:
             user = get_user(trans, user_id)
-            if not user.deleted:
-                message = 'User \'%s\' has not been deleted, so it cannot be undeleted.' % user.email
-                return (message, 'error')
-            user.deleted = False
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
+            # Actually do the undelete
+            self.user_manager.undelete(user)
+            # Count and accumulate messages to return to the admin panel
             count += 1
             undeleted_users += ' %s' % user.email
         message = 'Undeleted %d users: %s' % (count, undeleted_users)
@@ -1501,33 +1444,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         message = 'Purged %d users: ' % len(ids)
         for user_id in ids:
             user = get_user(trans, user_id)
-            if not user.deleted:
-                return ('User \'%s\' has not been deleted, so it cannot be purged.' % user.email, 'error')
-            private_role = trans.app.security_agent.get_private_user_role(user)
-            # Delete History
-            for h in user.active_histories:
-                trans.sa_session.refresh(h)
-                for hda in h.active_datasets:
-                    # Delete HistoryDatasetAssociation
-                    hda.deleted = True
-                    trans.sa_session.add(hda)
-                h.deleted = True
-                trans.sa_session.add(h)
-            # Delete UserGroupAssociations
-            for uga in user.groups:
-                trans.sa_session.delete(uga)
-            # Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE
-            for ura in user.roles:
-                if ura.role_id != private_role.id:
-                    trans.sa_session.delete(ura)
-            # Delete UserAddresses
-            for address in user.addresses:
-                trans.sa_session.delete(address)
-            # Purge the user
-            user.purged = True
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
-            message += '%s ' % user.email
+            self.user_manager.purge(user)
+            message += '\t%s\n ' % user.email
         return (message, 'done')
 
     def _recalculate_user(self, trans, user_id):
@@ -1609,7 +1527,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     def jobs_control(self, trans, job_lock=None, **kwd):
         if job_lock is not None:
             job_lock = True if job_lock == 'true' else False
-            galaxy.queue_worker.send_control_task(trans.app, 'admin_job_lock', kwargs={'job_lock': job_lock}, get_response=True)
+            trans.app.queue_worker.send_control_task('admin_job_lock', kwargs={'job_lock': job_lock}, get_response=True)
         job_lock = trans.app.job_manager.job_lock
         return {'job_lock': job_lock}
 
@@ -1757,7 +1675,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
                 f.write("\n".join(new_whitelist))
             trans.app.config.sanitize_whitelist = new_whitelist
-            galaxy.queue_worker.send_control_task(trans.app, 'reload_sanitize_whitelist', noop_self=True)
+            trans.app.queue_worker.send_control_task('reload_sanitize_whitelist', noop_self=True)
             # dispatch a message to reload list for other processes
         return trans.fill_template('/webapps/galaxy/admin/sanitize_whitelist.mako',
                                    sanitize_all=trans.app.config.sanitize_all_html,

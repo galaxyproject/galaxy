@@ -11,7 +11,6 @@ Subpackages
 
 .. toctree::
 
-    galaxy.web.base
     galaxy.web.framework
     galaxy.web.proxy
 

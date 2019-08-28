@@ -1,6 +1,7 @@
 """ This script parses Galaxy or Tool Shed config file for database connection
 and then delegates to sqlalchemy_migrate shell main function in
 migrate.versioning.shell. """
+import logging
 import os.path
 import sys
 
@@ -10,10 +11,13 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 from galaxy.model.orm.scripts import get_config
 
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
+
 
 def invoke_migrate_main():
     # Migrate has its own args, so cannot use argparse
-    config = get_config(sys.argv, use_argparse=False)
+    config = get_config(sys.argv, use_argparse=False, cwd=os.getcwd())
     db_url = config['db_url']
     repo = config['repo']
 

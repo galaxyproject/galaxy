@@ -8,5 +8,6 @@ Development Documentation
   interactive_environments
   build_a_job_runner
   finding_and_improving_slow_code
+  data_managers
   data-types
   faq

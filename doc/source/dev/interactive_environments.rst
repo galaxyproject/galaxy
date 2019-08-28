@@ -33,7 +33,7 @@ should match ``[a-z]+``, like ``jupyter`` or ``rstudio``. Here you can see the
 configuration, ``allowed_images.yml.sample`` specifies acceptable images,
 and then ``{gie}.xml`` which outlines that it is a GIE.
 
-The static directory can hold resources such as javascript and css files. If
+The static directory can hold resources such as JavaScript and CSS files. If
 you are actively developing a GIE, you'll need to restart Galaxy after adding
 any resources to that file, before they can be accessed in the browser.
 

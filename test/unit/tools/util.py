@@ -1,22 +1,23 @@
-from contextlib import contextmanager
-from os import environ
+from unittest import TestCase
+from xml.etree.ElementTree import XML
+
+from galaxy import model
+from galaxy.tools.parameters import basic
+from galaxy.util import bunch
+from ..tools_support import UsesApp
 
 
-@contextmanager
-def modify_environ(values, keys_to_remove=None):
-    """
-    Modify the environment for a test, adding/updating values in dict `values` and
-    removing any environment variables mentioned in list `keys_to_remove`.
-    """
-    old_environ = environ.copy()
-    try:
-        if values:
-            environ.update(values)
-        if keys_to_remove:
-            for key in keys_to_remove:
-                if key in environ:
-                    del environ[key]
-        yield
-    finally:
-        environ.clear()
-        environ.update(old_environ)
+class BaseParameterTestCase(TestCase, UsesApp):
+
+    def setUp(self):
+        self.setup_app()
+        self.mock_tool = bunch.Bunch(
+            app=self.app,
+            tool_type="default",
+            valid_input_states=model.Dataset.valid_input_states,
+        )
+
+    def _parameter_for(self, **kwds):
+        content = kwds["xml"]
+        param_xml = XML(content)
+        return basic.ToolParameter.build(self.mock_tool, param_xml)

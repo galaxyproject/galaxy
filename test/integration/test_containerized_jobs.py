@@ -31,6 +31,15 @@ class MulledJobTestCases(object):
         assert "0.7.15-r1140" in output
 
 
+class ContainerizedIntegrationTestCase(integration_util.IntegrationTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        if not which(cls.container_type):
+            raise unittest.SkipTest("Executable '%s' not found on PATH" % cls.container_type)
+        super(ContainerizedIntegrationTestCase, cls).setUpClass()
+
+
 class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, RunsEnvironmentJobs, MulledJobTestCases):
 
     framework_tool_and_types = True

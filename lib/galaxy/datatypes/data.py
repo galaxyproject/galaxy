@@ -8,6 +8,7 @@ import shutil
 import string
 import tempfile
 import zipfile
+from collections import OrderedDict
 from inspect import isclass
 
 import six
@@ -25,7 +26,6 @@ from galaxy.util import (
     unicodify
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from . import (
     dataproviders,
@@ -46,6 +46,36 @@ valid_strand = ['+', '-', '.']
 
 DOWNLOAD_FILENAME_PATTERN_DATASET = "Galaxy${hid}-[${name}].${ext}"
 DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}__${element_identifier}].${ext}"
+
+
+class DatatypeValidation(object):
+
+    def __init__(self, state, message):
+        self.state = state
+        self.message = message
+
+    @staticmethod
+    def validated():
+        return DatatypeValidation("ok", "Dataset validated by datatype validator.")
+
+    @staticmethod
+    def invalid(message):
+        return DatatypeValidation("invalid", message)
+
+    @staticmethod
+    def unvalidated():
+        return DatatypeValidation("unknown", "Dataset validation unimplemented for this datatype.")
+
+    def __repr__(self):
+        return "DatatypeValidation[state=%s,message=%s]" % (self.state, self.message)
+
+
+def validate(dataset_instance):
+    try:
+        datatype_validation = dataset_instance.datatype.validate(dataset_instance)
+    except Exception as e:
+        datatype_validation = DatatypeValidation.invalid("Problem running datatype validation method [%s]" % str(e))
+    return datatype_validation
 
 
 class DataMeta(abc.ABCMeta):
@@ -100,7 +130,7 @@ class Data(object):
     allow_datatype_change = True
     # Composite datatypes
     composite_type = None
-    composite_files = odict()
+    composite_files = OrderedDict()
     primary_file_name = 'index'
     # A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
     _max_optional_metadata_filesize = None
@@ -116,7 +146,7 @@ class Data(object):
         object.__init__(self, **kwd)
         self.supported_display_apps = self.supported_display_apps.copy()
         self.composite_files = self.composite_files.copy()
-        self.display_applications = odict()
+        self.display_applications = OrderedDict()
 
     def get_raw_data(self, dataset):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
@@ -503,10 +533,6 @@ class Data(object):
         except Exception:
             return "info unavailable"
 
-    def validate(self, dataset):
-        """Unimplemented validate, return no exceptions"""
-        return list()
-
     def repair_methods(self, dataset):
         """Unimplemented method, returns dict with method/option for repairing errors"""
         return None
@@ -546,7 +572,7 @@ class Data(object):
         return self.display_applications.get(key, default)
 
     def get_display_applications_by_dataset(self, dataset, trans):
-        rval = odict()
+        rval = OrderedDict()
         for key, value in self.display_applications.items():
             value = value.filter_by_dataset(dataset, trans)
             if value.links:
@@ -666,7 +692,7 @@ class Data(object):
 
     @property
     def writable_files(self, dataset=None):
-        files = odict()
+        files = OrderedDict()
         if self.composite_type != 'auto_primary_file':
             files[self.primary_file_name] = self.__new_composite_file(self.primary_file_name)
         for key, value in self.get_composite_files(dataset=dataset).items():
@@ -682,7 +708,7 @@ class Data(object):
                     meta_value = self.metadata_spec[composite_file.substitute_name_with_metadata].default
                 return key % meta_value
             return key
-        files = odict()
+        files = OrderedDict()
         for key, value in self.composite_files.items():
             files[substitute_composite_key(key, value)] = value
         return files
@@ -742,6 +768,9 @@ class Data(object):
         if self.has_dataprovider(data_format):
             return self.dataproviders[data_format](self, dataset, **settings)
         raise dataproviders.exceptions.NoProviderAvailable(self, data_format)
+
+    def validate(self, dataset, **kwd):
+        return DatatypeValidation.unvalidated()
 
     @dataproviders.decorators.dataprovider_factory('base')
     def base_dataprovider(self, dataset, **settings):

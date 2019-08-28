@@ -35,6 +35,7 @@ class BaseGitPlugin(ErrorPlugin):
     ts_repo_cache = {}
     git_project_cache = {}
     label_cache = {}
+    git_username_id_cache = {}
 
     # Git variables
     git_default_repo_owner = False

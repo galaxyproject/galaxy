@@ -1612,7 +1612,8 @@ class AdminToolshed(AdminGalaxy):
                                                               tool_shed=tool_shed_url,
                                                               name=name,
                                                               owner=owner,
-                                                              changeset_revision=changeset_revision)
+                                                              changeset_revision=changeset_revision,
+                                                              refresh=True)
         original_metadata_dict = repository.metadata
         original_repository_dependencies_dict = original_metadata_dict.get('repository_dependencies', {})
         original_repository_dependencies = original_repository_dependencies_dict.get('repository_dependencies', [])

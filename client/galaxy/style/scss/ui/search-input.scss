@@ -1,5 +1,8 @@
 .search-input {
     @extend .mb-2;
+    ::placeholder {
+        color: $text-muted;
+    }
     .search-clear,
     .search-loading {
         @extend .mr-2;
@@ -8,7 +11,7 @@
         float: right;
         margin-top: -25px;
         font-size: 1.4em;
-        color: $gray-500;
+        color: $text-muted;
     }
     .search-clear:hover {
         color: $brand-info;
@@ -28,7 +31,7 @@
         border: $border-default;
         @include border-radius($border-radius-extralarge);
         max-width: auto;
-        background: $brand-white;
+        background: $white;
     }
     .search-query:focus {
         border-color: $brand-info;

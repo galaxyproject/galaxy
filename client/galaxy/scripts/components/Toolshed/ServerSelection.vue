@@ -10,7 +10,8 @@
                     v-for="url in toolshedUrls"
                     :key="url"
                     class="dropdown-item"
-                    href="#"
+                    href="javascript:void(0)"
+                    role="button"
                     @click.prevent="onToolshed(url)"
                     >{{ url }}</a
                 >

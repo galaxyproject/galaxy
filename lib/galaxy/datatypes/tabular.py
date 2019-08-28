@@ -24,7 +24,8 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     get_headers,
-    iter_headers
+    iter_headers,
+    validate_tabular,
 )
 from galaxy.util import compression_utils
 from . import dataproviders
@@ -729,6 +730,13 @@ class BaseVcf(Tabular):
         # Did merge succeed?
         if exit_code != 0:
             raise Exception("Error merging VCF files: %s" % stderr)
+
+    def validate(self, dataset, **kwd):
+        def validate_row(row):
+            if len(row) < 8:
+                raise Exception("Not enough columns in row %s" % row.join("\t"))
+        validate_tabular(dataset.file_name, sep='\t', validate_row=validate_row, comment_designator="#")
+        return data.DatatypeValidation.validated()
 
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory('genomic-region',

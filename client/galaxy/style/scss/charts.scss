@@ -1,4 +1,5 @@
 .charts-client {
+    background: $body-bg;
     .charts-buttons {
         @extend .float-right;
         position: absolute;
@@ -7,7 +8,7 @@
         width: 170px;
         top: 4px;
         .btn {
-            background: white;
+            background: $body-bg;
             color: $panel-header-text-color;
             border: none;
             .icon {
@@ -60,8 +61,8 @@
         float: left;
         width: 30%;
         height: 100vh;
-        padding-bottom: 32px;
-        padding-top: 32px;
+        padding-bottom: 40px;
+        padding-top: 40px;
         overflow: hidden;
         display: flex;
         flex-direction: column;

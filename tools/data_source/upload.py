@@ -288,6 +288,7 @@ def output_adjacent_tmpdir(output_path):
 
 
 def __main__():
+    print("main!\n")
 
     if len(sys.argv) < 4:
         print('usage: upload.py <root> <datatypes_conf> <json paramfile> <output spec> ...', file=sys.stderr)
@@ -302,6 +303,8 @@ def __main__():
         datasets = __read_paramfile(sys.argv[3])
     except (ValueError, AssertionError):
         datasets = __read_old_paramfile(sys.argv[3])
+
+    print("Starting loop for upload.py")
 
     metadata = []
     for dataset in datasets:

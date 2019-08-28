@@ -436,14 +436,14 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             # Decode the cookie value to get the session_key
             try:
                 session_key = self.security.decode_guid(secure_id)
+                if session_key:
+                    # Retrieve the galaxy_session id via the unique session_key
+                    galaxy_session = self.sa_session.query(self.app.model.GalaxySession) \
+                                                    .filter(and_(self.app.model.GalaxySession.table.c.session_key == session_key,
+                                                                 self.app.model.GalaxySession.table.c.is_valid == true())).options(joinedload("user")).first()
             except Exception:
                 # We'll end up creating a new galaxy_session
                 session_key = None
-            if session_key:
-                # Retrieve the galaxy_session id via the unique session_key
-                galaxy_session = self.sa_session.query(self.app.model.GalaxySession) \
-                                                .filter(and_(self.app.model.GalaxySession.table.c.session_key == session_key,
-                                                             self.app.model.GalaxySession.table.c.is_valid == true())).options(joinedload("user")).first()
         # If remote user is in use it can invalidate the session and in some
         # cases won't have a cookie set above, so we need to to check some
         # things now.

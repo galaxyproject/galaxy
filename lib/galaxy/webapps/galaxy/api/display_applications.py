@@ -3,7 +3,6 @@ API operations on annotations.
 """
 import logging
 
-from galaxy import queue_worker
 from galaxy.web import legacy_expose_api, require_admin
 from galaxy.webapps.base.controller import BaseAPIController
 
@@ -45,10 +44,11 @@ class DisplayApplicationsController(BaseAPIController):
         :type   ids:  list
         """
         ids = payload.get('ids')
-        queue_worker.send_control_task(trans.app,
+        trans.app.queue_worker.send_control_task(
             'reload_display_application',
             noop_self=True,
-            kwargs={'display_application_ids': ids})
+            kwargs={'display_application_ids': ids}
+        )
         reloaded, failed = trans.app.datatypes_registry.reload_display_applications(ids)
         if not reloaded and failed:
             message = 'Unable to reload any of the %i requested display applications ("%s").' % (len(failed), '", "'.join(failed))

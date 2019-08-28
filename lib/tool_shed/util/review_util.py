@@ -1,8 +1,8 @@
 import logging
+from collections import OrderedDict
 
 from sqlalchemy import and_
 
-from galaxy.util.odict import odict
 from tool_shed.util import hg_util
 
 log = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ def get_previous_repository_reviews(app, repository, changeset_revision):
     """
     repo = hg_util.get_repo_for_repository(app, repository=repository)
     reviewed_revision_hashes = [review.changeset_revision for review in repository.reviews]
-    previous_reviews_dict = odict()
+    previous_reviews_dict = OrderedDict()
     for changeset in hg_util.reversed_upper_bounded_changelog(repo, changeset_revision):
         previous_changeset_revision = str(repo.changectx(changeset))
         if previous_changeset_revision in reviewed_revision_hashes:
