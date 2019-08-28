@@ -19,7 +19,7 @@ var CommandManager = (function() {
     };
 
     CommandManager.undo = function undo() {
-        var cmd1 = CommandManager.executed.pop();
+        let cmd1 = CommandManager.executed.pop();
         if (cmd1 !== undefined) {
             if (cmd1.unexecute !== undefined) {
                 cmd1.unexecute();
@@ -29,7 +29,7 @@ var CommandManager = (function() {
     };
 
     CommandManager.redo = function redo() {
-        var cmd2 = CommandManager.unexecuted.pop();
+        let cmd2 = CommandManager.unexecuted.pop();
 
         if (cmd2 === undefined) {
             cmd2 = CommandManager.executed.pop();
@@ -47,9 +47,9 @@ var CommandManager = (function() {
 })();
 
 var generateUUID = function() {
-    var d = new Date().getTime();
-    var uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
-        var r = (d + Math.random() * 16) % 16 | 0;
+    let d = new Date().getTime();
+    let uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+        let r = (d + Math.random() * 16) % 16 | 0;
         d = Math.floor(d / 16);
         return (c == "x" ? r : (r & 0x7) | 0x8).toString(16);
     });
@@ -62,7 +62,6 @@ _.extend(window.bundleEntries || {}, {
         let dataset = opt.dataset;
         let defaults = {color: "red", width: 4, opacity: 0.5};
         $.fn.createCanvas = function(options) {
-            console.log(options);
             let settings = $.extend({}, defaults, options || {});
             let self = this;
 
@@ -73,9 +72,9 @@ _.extend(window.bundleEntries || {}, {
             $(document).ready(function() {
                 $(self).each(function(eachIndex, eachItem) {
                     self.paths = [];
-                    var img = eachItem;
+                    let img = eachItem;
                     // Get a reference to the canvas object
-                    var canvas = $("<canvas>")
+                    let canvas = $("<canvas>")
                         .attr({
                             width: options.img_width + "px",
                             height: options.img_height + "px"
@@ -92,13 +91,12 @@ _.extend(window.bundleEntries || {}, {
                     paper.setup(canvas[0]);
                     canvas[0].width = options.img_width;
                     canvas[0].height = options.img_height;
-                    console.log(paper);
                     
                     $(canvas).mouseenter(function() {
                         paper.projects[eachIndex].activate();
                     });
                     // Create a simple drawing tool:
-                    var tool = new paper.Tool();
+                    let tool = new paper.Tool();
                     
                     tool.onMouseMove = function(event) {
                         if (!$(".context-menu-list").is(":visible")) {
@@ -168,8 +166,8 @@ _.extend(window.bundleEntries || {}, {
                             case 0:
                                 if (selectedItem) {
                                     if (mouseDownPoint) {
-                                        var selectedItemId = selectedItem.id;
-                                        var draggingStartPoint = { x: mouseDownPoint.x, y: mouseDownPoint.y };
+                                        let selectedItemId = selectedItem.id;
+                                        let draggingStartPoint = { x: mouseDownPoint.x, y: mouseDownPoint.y };
                                         CommandManager.execute({
                                             execute: function() {
                                                 //item was already moved, so do nothing
@@ -178,7 +176,7 @@ _.extend(window.bundleEntries || {}, {
                                                 $(paper.project.activeLayer.children).each(function(index, item) {
                                                     if (item.id == selectedItemId) {
                                                         if (item.segments) {
-                                                            var middlePoint = new paper.Point(
+                                                            let middlePoint = new paper.Point(
                                                                 (item.segments[item.segments.length - 1].point.x -
                                                                     item.segments[0].point.x) /
                                                                     2,
@@ -204,8 +202,8 @@ _.extend(window.bundleEntries || {}, {
                                     // When the mouse is released, simplify it:
                                     path.simplify();
                                     path.remove();
-                                    var strPath = path.exportJSON({ asString: true });
-                                    var uid = generateUUID();
+                                    let strPath = path.exportJSON({ asString: true });
+                                    let uid = generateUUID();
                                     CommandManager.execute({
                                         execute: function() {
                                             path = new paper.Path();
@@ -250,19 +248,21 @@ _.extend(window.bundleEntries || {}, {
             });
             
             
-            var path;
-            var position;
-            var contextPoint;
-            var contextSelectedItemId;
-            var selectedItem;
-            var mouseDownPoint;
- 
-            this.erase = function () {
-                var strPathArray = new Array();
+            let path;
+            let position;
+            let contextPoint;
+            let contextSelectedItemId;
+            let selectedItem;
+            let mouseDownPoint;
+
+            // TODO: to make it work
+
+            /*this.erase = function () {
+                let strPathArray = new Array();
                 $(paper.project.activeLayer.children).each(function (index, item) {
                     if (contextSelectedItemId) {
                         if (contextSelectedItemId.length == 0 || item.data.id == contextSelectedItemId) {
-                            var strPath = item.exportJSON({ asString: true });
+                            let strPath = item.exportJSON({ asString: true });
                             strPathArray.push(strPath);
                         }
                     }
@@ -285,13 +285,13 @@ _.extend(window.bundleEntries || {}, {
                         });
                     }
                 });
-            }
+            }*/
             
             
             this.downloadCanvas = function (canvas, filename) {
  
                 /// create an "off-screen" anchor tag
-                var lnk = document.createElement('a'),
+                let lnk = document.createElement('a'),
                     e;
  
                 /// the key here is to set the download attribute of the a tag
@@ -316,29 +316,29 @@ _.extend(window.bundleEntries || {}, {
             }
  
             this.download = function () {
-                var canvas = paper.project.activeLayer.view.element,
+                let canvas = paper.project.activeLayer.view.element,
                     img = $(canvas)[0];
-                var mergeCanvas = $('<canvas>')
+                let mergeCanvas = $('<canvas>')
                 .attr({
                     width: img.width,
                     height: img.height
                 });
-                var mergedContext = mergeCanvas[0].getContext('2d');
+                let mergedContext = mergeCanvas[0].getContext('2d');
                 mergedContext.clearRect(0, 0, img.width, img.height);
                 mergedContext.drawImage(img, 0, 0);
                 mergedContext.drawImage(canvas, 0, 0);
                 self.downloadCanvas(mergeCanvas[0], "only-annotations.png");
             
                 // create canvas for original and annotations
-                var annotated_img = $(canvas).parent().find('img')[0];
-                var wt = $(annotated_img).width();
-                var ht = $(annotated_img).height();
-                var mergeCanvasAnnotated = $('<canvas>')
+                let annotated_img = $(canvas).parent().find('img')[0];
+                let wt = $(annotated_img).width();
+                let ht = $(annotated_img).height();
+                let mergeCanvasAnnotated = $('<canvas>')
                     .attr({
                     width: $(annotated_img).width(),
                     height: $(annotated_img).height()
                 });
-                var mergedContextAnnotated = mergeCanvasAnnotated[0].getContext('2d');
+                let mergedContextAnnotated = mergeCanvasAnnotated[0].getContext('2d');
                 mergedContextAnnotated.clearRect(0, 0, $(annotated_img).width(), $(annotated_img).height());
                 mergedContextAnnotated.drawImage(annotated_img, 0, 0);
                 mergedContextAnnotated.drawImage(canvas, 0, 0);
@@ -346,23 +346,22 @@ _.extend(window.bundleEntries || {}, {
             }
             
             this.setText = function () {
-                var uid = generateUUID();
-                var pos = contextPoint;
+                let uid = generateUUID();
+                let pos = contextPoint;
                 CommandManager.execute({
                     execute: function () {
-                        var TXT_DBL_CLICK = "<<double click to edit>>";
-                        var txt = TXT_DBL_CLICK;
-                        var text = new paper.PointText(pos);
+                        let TXT_DBL_CLICK = "<<double click to edit>>";
+                        let txt = TXT_DBL_CLICK;
+                        let text = new paper.PointText(pos);
                         text.content = txt;
                         text.fillColor = settings.color;
-                        text.fontSize = 18;
-                        text.fontFamily = 'Verdana';
+                        text.fontSize = 14;
+                        text.fontFamily = 'sans-serif';
                         text.data.uid = uid;
                         text.opacity = settings.opacity;
- 
                         text.onDoubleClick = function (event) {
                             if (this.className == 'PointText') {
-                                var txt = prompt("Type in your text", this.content.replace(TXT_DBL_CLICK, ''));
+                                let txt = prompt("Type in your text", this.content.replace(TXT_DBL_CLICK, ''));
                                 if (txt.length > 0)
                                     this.content = txt;
                             }
@@ -435,7 +434,6 @@ _.extend(window.bundleEntries || {}, {
                 items: {
                     "undo": { name: "Undo", icon: "undo" },
                     "redo": { name: "Redo", icon: "redo" },
-                    "erase": { name: "Erase", icon: "erase" },
                     "download": { name: "Download", icon: "download" },
                     "sep1": "---------",
                     "text": { name: "Text", icon: "text" },
@@ -448,35 +446,54 @@ _.extend(window.bundleEntries || {}, {
                 }
             });
             
-            /*let $menuList = $(".context-menu-list");
-            $menuList.find(".context-menu-icon-text").attr("background-image", "url(/static/plugins/visualizations/annotate_image/static/images/text.png)");
-            $menuList.find(".context-menu-icon-blackpen").attr("background-image", "url(/static/plugins/visualizations/annotate_image/static/images/blackpen.png)");
-            $menuList.find(".context-menu-icon-redpen").attr("background-image", "url(/static/plugins/visualizations/annotate_image/static/images/redpen.png)");
-            $menuList.find(".context-menu-icon-greenpen").attr("background-image", "url(/static/plugins/visualizations/annotate_image/static/images/greenpen.png)");
-            $menuList.find(".context-menu-icon-bluepen").attr("background-image", "url(/static/plugins/visualizations/annotate_image/static/images/bluepen.png)");
-            $menuList.find(".context-menu-icon-yellowpen").attr("background-image", "url(/static/plugins/visualizations/annotate_image/static/images/yellowpen.png)");
-            
-            /// context-menu-list context-menu-root
-            
-            .context-menu-item.context-menu-icon-text { background-image: url(/static/plugins/visualizations/annotate_image/static/images/text.png); }
-            .context-menu-item.context-menu-icon-blackpen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/blackpen.png); }
-            .context-menu-item.context-menu-icon-redpen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/redpen.png); }
-            .context-menu-item.context-menu-icon-greenpen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/greenpen.png); }
-            .context-menu-item.context-menu-icon-bluepen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/bluepen.png); }
-            .context-menu-item.context-menu-icon-yellowpen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/yellowpen.png); }
-            
-            */
+            let $menuList = $(".context-menu-list");
+            $menuList.find(".context-menu-icon-text")
+                .css({
+                    "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/text.png)",
+                    "background-repeat": "no-repeat",
+                    "background-position": "right 96% bottom 45%"
+                    
+                });
+            $menuList.find(".context-menu-icon-blackpen")
+                .css({
+                    "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/blackpen.png)",
+                    "background-repeat": "no-repeat",
+                    "background-position": "right 97% bottom 48%"
+                });
+            $menuList.find(".context-menu-icon-redpen")
+                .css({
+                    "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/redpen.png)",
+                    "background-repeat": "no-repeat",
+                    "background-position": "right 97% bottom 48%"
+                });
+            $menuList.find(".context-menu-icon-greenpen")
+                .css({
+                    "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/greenpen.png)",
+                    "background-repeat": "no-repeat",
+                    "background-position": "right 97% bottom 48%"
+                });
+            $menuList.find(".context-menu-icon-bluepen")
+                .css({
+                    "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/bluepen.png)",
+                    "background-repeat": "no-repeat",
+                    "background-position": "right 97% bottom 48%"
+                });
+            $menuList.find(".context-menu-icon-yellowpen")
+                .css({
+                    "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/yellowpen.png)",
+                    "background-repeat": "no-repeat",
+                    "background-position": "right 97% bottom 48%"
+                });
         }
 
         $.ajax({
             url: dataset.download_url,
             success: function(content) {
-                //console.log(opt);
                 let $chartViewer = $("#" + opt.targets[0]);
-                $chartViewer.attr("position", "relative");
                 $chartViewer.html("<img id='image-annotate' src='" + dataset.download_url + "' />");
-                let $image = $chartViewer.find("img"); //$("#" + opt.targets[0] + " img");
-                console.log($image);
+                $chartViewer.css("overflow", "auto");
+                $chartViewer.css("position", "relative");
+                let $image = $chartViewer.find("img");
                 $image.on("load", function() {
                     let width = $(this).width();
                     let height = $(this).height();
