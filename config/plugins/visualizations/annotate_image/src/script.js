@@ -301,7 +301,7 @@ _.extend(window.bundleEntries || {}, {
                 /// attribute is set the content pointed to by link will be
                 /// pushed as "download" in HTML5 capable browsers
                 lnk.href = canvas.toDataURL();
- 
+
                 /// create a "fake" click-event to trigger the download
                 if (document.createEvent) {
                     e = document.createEvent("MouseEvents");
