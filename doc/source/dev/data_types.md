@@ -84,7 +84,7 @@ class Foobar(Tabular):
         self.do_something_else()
 
 
-    def init_meta( self, dataset, copy_from=None ):
+    def init_meta(self, dataset, copy_from=None):
         Tabular.init_meta( self, dataset, copy_from=copy_from )
         if elems_len == 8:
             try:
