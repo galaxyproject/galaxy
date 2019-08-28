@@ -174,6 +174,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             :type  file_ext:        str
             :param genome_build:    new ld's genome build
             :type  genome_build:    str
+            :param tags:            list of dataset tags
+            :type  tags:            list
         :type   payload: dict
 
         :returns:   detailed library dataset information

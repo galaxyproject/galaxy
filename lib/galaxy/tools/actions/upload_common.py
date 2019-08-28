@@ -223,6 +223,12 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
         tag_manager = tags.GalaxyTagHandler(trans.sa_session)
         tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag_from_filename)
 
+    tags_list = uploaded_dataset.get('tags', False)
+    if tags_list:
+        tag_manager = tags.GalaxyTagHandler(trans.sa_session)
+        for tag in tags_list:
+            tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
+
     trans.sa_session.add(ldda)
     if state:
         ldda.state = state

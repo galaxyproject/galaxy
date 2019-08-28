@@ -270,6 +270,7 @@ var FolderRowView = Backbone.View.extend({
                         <textarea rows="4" class="form-control input_folder_description" placeholder="description" ><%- content_item.get("description") %></textarea>
                     </td>
                 <% } %>
+                <td></td>
                 <td>folder</td>
                 <td></td>
                 <td>
@@ -325,6 +326,7 @@ var FolderRowView = Backbone.View.extend({
                     <a>
                 </td>
                 <td><%- content_item.get("message") %></td>
+                <td><%= _.escape(content_item.get("tags")) %></td>
                 <td><%= _.escape(content_item.get("file_ext")) %></td>
                 <td><%= _.escape(content_item.get("file_size")) %></td>
                 <td><%= _.escape(content_item.get("update_time")) %></td>
@@ -372,6 +374,9 @@ var FolderRowView = Backbone.View.extend({
                 </td>
                 <td>
                     <%- content_item.get("message") %>
+                </td>
+                <td>
+                    <%= _.escape(content_item.get("tags")) %>
                 </td>
                 <td>
                     <%= _.escape(content_item.get("file_ext")) %>
@@ -422,6 +427,7 @@ var FolderRowView = Backbone.View.extend({
                 <% } else { %>
                     <td></td>
                 <% } %>
+                <td></td>
                 <td>
                     folder
                 </td>
