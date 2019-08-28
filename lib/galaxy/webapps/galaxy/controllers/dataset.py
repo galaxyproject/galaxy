@@ -834,6 +834,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         else:
                             rval = str(value)
                             content_length = len(rval)
+                        # Set Access-Control-Allow-Origin as specified in GEDA
+                        if value.parameter.allow_cors:
+                            trans.set_cors_origin()
                         trans.response.set_content_type(value.mime_type(action_param_extra=action_param_extra))
                         trans.response.headers['Content-Length'] = content_length
                         return rval

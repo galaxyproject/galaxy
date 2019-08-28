@@ -276,6 +276,15 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         t = Translations.load(dirname='locale', locales=locales, domain='ginga')
         self.template_context.update(dict(_=t.ugettext, n_=t.ugettext, N_=t.ungettext))
 
+    def set_cors_origin(self, origin=None):
+        if origin is None:
+            origin = self.request.headers.get("Origin", None)
+        if origin:
+            self.response.headers['Access-Control-Allow-Origin'] = origin
+        elif 'Access-Control-Allow-Origin' in self.response.headers:
+            log.debug(str(dir(self.response.headers)))
+            del self.response.headers['Access-Control-Allow-Origin']
+
     def set_cors_headers(self):
         """Allow CORS requests if configured to do so by echoing back the request's
         'Origin' header (if any) as the response header 'Access-Control-Allow-Origin'
@@ -313,7 +322,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         origin = urlparse(origin_header).hostname
         # check against the list of allowed strings/regexp hostnames, echo original if cleared
         if is_allowed_origin(origin):
-            self.response.headers['Access-Control-Allow-Origin'] = origin_header
+            self.set_cors_origin(origin=origin_header)
             # TODO: see the to do on ALLOWED_METHODS above
             # self.response.headers[ 'Access-Control-Allow-Methods' ] = ', '.join( ALLOWED_METHODS )
 
