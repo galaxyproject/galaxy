@@ -214,7 +214,7 @@ much more detail and might link to other sub-issues, projects, or PRs.
 
 This ``roadmap`` project is subject to periodic review every release.
 
-Current roadmap project is `here <https://github.com/galaxyproject/galaxy/projects/8>`__.
+The current roadmap project is `here <https://github.com/galaxyproject/galaxy/projects/8>`__.
 
 Voting
 ======
