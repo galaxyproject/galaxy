@@ -43,12 +43,12 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api
     def index(self, trans, library_id, **kwd):
         """
-        index( self, trans, library_id, **kwd )
-        * GET /api/libraries/{library_id}/contents:
-            Returns a list of library files and folders.
+        GET /api/libraries/{library_id}/contents:
 
-        .. note:: May be slow! Returns all content traversing recursively through all folders.
-        .. seealso:: :class:`galaxy.webapps.galaxy.api.FolderContentsController.index` for a non-recursive solution
+        Return a list of library files and folders.
+
+        .. note:: This endpoint is slow for large libraries. Returns all content traversing recursively through all folders.
+        .. seealso:: :class:`galaxy.webapps.galaxy.api.FolderContentsController.index` for a faster non-recursive solution
 
         :param  library_id: the encoded id of the library
         :type   library_id: str
@@ -123,9 +123,9 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api
     def show(self, trans, id, library_id, **kwd):
         """
-        show( self, trans, id, library_id, **kwd )
-        * GET /api/libraries/{library_id}/contents/{id}
-            Returns information about library file or folder.
+        GET /api/libraries/{library_id}/contents/{id}
+
+        Returns information about library file or folder.
 
         :param  id:         the encoded id of the library item to return
         :type   id:         str
@@ -160,9 +160,9 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api
     def create(self, trans, library_id, payload, **kwd):
         """
-        create( self, trans, library_id, payload, **kwd )
-        * POST /api/libraries/{library_id}/contents:
-            create a new library file or folder
+        POST /api/libraries/{library_id}/contents:
+
+        Create a new library file or folder.
 
         To copy an HDA into a library send ``create_type`` of 'file' and
         the HDA's encoded id in ``from_hda_id`` (and optionally ``ldda_message``).
@@ -374,9 +374,10 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api
     def update(self, trans, id, library_id, payload, **kwd):
         """
-        update( self, trans, id, library_id, payload, **kwd )
-        * PUT /api/libraries/{library_id}/contents/{id}
-            create a ImplicitlyConvertedDatasetAssociation
+        PUT /api/libraries/{library_id}/contents/{id}
+
+        Create an ImplicitlyConvertedDatasetAssociation.
+
         .. seealso:: :class:`galaxy.model.ImplicitlyConvertedDatasetAssociation`
 
         :type   id:         str
@@ -412,9 +413,9 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     @expose_api
     def delete(self, trans, library_id, id, **kwd):
         """
-        delete( self, trans, library_id, id, **kwd )
-        * DELETE /api/libraries/{library_id}/contents/{id}
-            delete the LibraryDataset with the given ``id``
+        DELETE /api/libraries/{library_id}/contents/{id}
+
+        Delete the LibraryDataset with the given ``id``.
 
         :type   id:     str
         :param  id:     the encoded id of the library dataset to delete
@@ -430,7 +431,6 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             * deleted:    if the library dataset was marked as deleted,
             * purged:     if the library dataset was purged
         """
-        # a request body is optional here
         purge = False
         if kwd.get('payload', None):
             purge = util.string_as_bool(kwd['payload'].get('purge', False))

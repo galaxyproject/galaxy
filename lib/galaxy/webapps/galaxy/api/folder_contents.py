@@ -251,8 +251,9 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
     @expose_api
     def create(self, trans, encoded_folder_id, payload, **kwd):
         """
-        * POST /api/folders/{encoded_id}/contents
-            create a new library file from an HDA
+        POST /api/folders/{encoded_id}/contents
+
+        Create a new library file from an HDA.
 
         :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
         :type   encoded_folder_id:      an encoded id string
@@ -299,7 +300,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
 
     def __decode_library_content_id(self, trans, encoded_folder_id):
         """
-        Identifies whether the id provided is properly encoded
+        Identify whether the id provided is properly encoded
         LibraryFolder.
 
         :param  encoded_folder_id:  encoded id of Galaxy LibraryFolder
