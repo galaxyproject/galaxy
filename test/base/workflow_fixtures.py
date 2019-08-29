@@ -500,19 +500,23 @@ report:
     in the default workflow invocation report template.
 
         ## Workflow Inputs
-        ```{galaxy_invocation_inputs}
+        ```galaxy
+        invocation_inputs()
         ```
 
         ## Workflow Outputs
-        ```{galaxy_invocation_outputs}
+        ```galaxy
+        invocation_outputs()
         ```
 
     ## Workflow Inputs
-    ```{galaxy_invocation_inputs}
+    ```galaxy
+    invocation_inputs()
     ```
 
     ## Workflow Outputs
-    ```{galaxy_invocation_outputs}
+    ```galaxy
+    invocation_outputs()
     ```
 
     The auto-generated sections could be hand-crafted from workflow markdown also,
@@ -530,28 +534,34 @@ report:
 
     Once can reference an output and embed a display of it as follows:
 
-        ```{galaxy_history_dataset_display output=output_1}
+        ```galaxy
+        history_dataset_display(output=output_1)
         ```
 
-    ```{galaxy_history_dataset_display output=output_1}
+    ```galaxy
+    history_dataset_display(output=output_1)
     ```
 
     Inputs can be referenced and displayed the same way:
 
-        ```{galaxy_history_dataset_display input=input_1}
+        ```galaxy
+        history_dataset_display(input=input_1)
         ```
 
-    ```{galaxy_history_dataset_display input=input_1}
+    ```galaxy
+    history_dataset_display(input=input_1)
     ```
 
     ---
 
     Images can be embedded directly into the report as follows:
 
-        ```{galaxy_history_dataset_as_image output=output_image}
+        ```galaxy
+        history_dataset_as_image(output=output_image)
         ```
 
-    ```{galaxy_history_dataset_as_image output=output_image}
+    ```galaxy
+    history_dataset_as_image(output=output_image)
     ```
 
     ---
@@ -559,30 +569,36 @@ report:
     Dataset peek content can be displayed to quickly provided an embedded
     summary of an input or output:
 
-        ```{galaxy_history_dataset_peek output=output_1}
+        ```galaxy
+        history_dataset_peek(output=output_1)
         ```
 
-    ```{galaxy_history_dataset_peek output=output_1}
+    ```galaxy
+    history_dataset_peek(output=output_1)
     ```
 
     ---
 
     Dataset "info" content can be displayed as well:
 
-        ```{galaxy_history_dataset_info input=input_1}
+        ```galaxy
+        history_dataset_info(input=input_1)
         ```
 
-    ```{galaxy_history_dataset_info input=input_1}
+    ```galaxy
+    history_dataset_info(input=input_1)
     ```
 
     ---
 
     Collections can be displayed:
 
-        ```{galaxy_history_dataset_collection_display input=input_list}
+        ```galaxy
+        history_dataset_collection_display(input=input_list)
         ```
 
-    ```{galaxy_history_dataset_collection_display input=input_list}
+    ```galaxy
+    history_dataset_collection_display(input=input_list)
     ```
 
     ---
@@ -590,46 +606,56 @@ report:
     The whole workflow can be embedded to provide some context and display
     annotations and steps.
 
-        ```{galaxy_workflow_display}
+        ```galaxy
+        workflow_display()
         ```
 
-    ```{galaxy_workflow_display}
+    ```galaxy
+    workflow_display()
     ```
 
     ---
 
     Job parameters can be summarized:
 
-        ```{galaxy_job_parameters step=qc_step}
+        ```galaxy
+        job_parameters(step=qc_step)
         ```
 
-    ```{galaxy_job_parameters step=qc_step}
+    ```galaxy
+    job_parameters(step=qc_step)
     ```
 
     ---
 
     Job metrics can be summarized as well:
 
-        ```{galaxy_job_metrics step=image_cat}
+        ```galaxy
+        job_metrics(step=image_cat)
         ```
 
-    ```{galaxy_job_metrics step=image_cat}
+    ```galaxy
+    job_metrics(step=image_cat)
     ```
 
     ---
 
     Tool standard out and error are also available for steps.
 
-        ```{galaxy_tool_stdout step=qc_step}
+        ```galaxy
+        tool_stdout(step=qc_step)
         ```
 
-    ```{galaxy_tool_stdout step=qc_step}
+    ```galaxy
+    tool_stdout(step=qc_step)
     ```
 
-        ```{galaxy_tool_stderr step=qc_step}
+        ```galaxy
+        tool_stderr(step=qc_step)
         ```
 
-    ```{galaxy_tool_stderr step=qc_step}
+    ```galaxy
+    tool_stderr(step=qc_step)
     ```
 
     ---

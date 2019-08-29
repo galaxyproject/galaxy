@@ -9,16 +9,19 @@ const DEFAULT_INVOCATION_REPORT = `
 # Workflow Execution Report
 
 ## Workflow Inputs
-::: invocation_inputs
-:::
+\`\`\`galaxy
+invocation_inputs()
+\`\`\`
 
 ## Workflow Outputs
-::: invocation_outputs
-:::
+\`\`\`galaxy
+invocation_outputs()
+\`\`\`
 
 ## Workflow
-::: workflow_display
-:::
+\`\`\`galaxy
+workflow_display()
+\`\`\`
 `;
 
 class Workflow {

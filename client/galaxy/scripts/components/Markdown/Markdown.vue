@@ -17,15 +17,11 @@ import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import HDCAModel from "mvc/history/hdca-model";
 import HDCAListItemEdit from "mvc/history/hdca-li-edit";
 
-const galaxy_blocks = /{galaxy_(\w+)(.*)}/;
+const FUNCTION_CALL_LINE_TEMPLATE = /\s*(\w+)\s*\((\s*\w+\s*=\s*\w+\s*)\)\s*/m;
 
 const md = MarkdownIt();
 
 const default_fence = md.renderer.rules.fence;
-
-function render_fenced_div(action, args, content) {
-    return `<div><pre>${content}</pre></div><br>\n`;
-}
 
 const RENDER_FUNCTIONS = {
     history_dataset_display: (action, args, content) => {
@@ -82,10 +78,22 @@ const RENDER_FUNCTIONS = {
         const history_dataset_id = args.history_dataset_id;
         return `<img src="${getAppRoot()}dataset/display?dataset_id=${history_dataset_id}"></img>`;
     },
-    history_dataset_peek: render_fenced_div,
-    history_dataset_info: render_fenced_div,
-    tool_stdout: render_fenced_div,
-    tool_stderr: render_fenced_div,
+    history_dataset_peek: (action, args, content) => {
+        const history_dataset_id = args.history_dataset_id;
+        return `<div class='dataset-peek' history_dataset_id="${history_dataset_id}"><pre><code></code></pre></div>`;
+    },
+    history_dataset_info: (action, args, content) => {
+        const history_dataset_id = args.history_dataset_id;
+        return `<div class='dataset-info' history_dataset_id="${history_dataset_id}"><pre><code></code></pre></div>`;
+    },
+    tool_stdout: (action, args, content) => {
+        const jobId = args.job_id;
+        return `<div class="tool-stdout" job_id="${jobId}"><pre><code></code></pre></div>`;
+    },
+    tool_stderr: (action, args, content) => {
+        const jobId = args.job_id;
+        return `<div class="tool-stderr" job_id="${jobId}"><pre><code></code></pre></div>`;
+    },
     job_metrics: (action, args, content) => {
         const jobId = args.job_id;
         return `<div class="job-metrics" job_id="${jobId}"></div>`;
@@ -100,8 +108,8 @@ md.renderer.rules.fence = function(tokens, idx, options, env, slf) {
     const token = tokens[idx],
         info = token.info ? token.info.trim() : "",
         content = token.content;
-    const arr = galaxy_blocks.exec(info);
-    if (arr) {
+    if (info == "galaxy") {
+        const arr = FUNCTION_CALL_LINE_TEMPLATE.exec(content);
         const action = arr[1];
         const arguments_str = arr[2].trim();
         const args = {};
@@ -109,7 +117,7 @@ md.renderer.rules.fence = function(tokens, idx, options, env, slf) {
             const parts = arguments_str.split(/(\s+)/);
             for (const part of parts) {
                 const [key, val] = part.split("=");
-                args[key] = val;
+                args[key.trim()] = val.trim();
             }
         }
         return RENDER_FUNCTIONS[action](action, args, content);
@@ -117,6 +125,16 @@ md.renderer.rules.fence = function(tokens, idx, options, env, slf) {
         return default_fence(tokens, idx, options, env, slf);
     }
 };
+
+function render_fenced_output(tag, objects, idAttr, metadataKey) {
+    $("." + tag).each((i, el) => {
+        const objectId = $(el).attr(idAttr);
+        const meta = objects[objectId][metadataKey];
+        $(el)
+            .find("code")
+            .text(meta);
+    });
+}
 
 export default {
     props: {
@@ -129,7 +147,8 @@ export default {
             markdownRendered: "",
             historyDatasets: {},
             historyDatasetCollections: {},
-            workflows: {}
+            workflows: {},
+            jobs: {}
         };
     },
     watch: {
@@ -139,6 +158,7 @@ export default {
             this.historyDatasets = mConfig.history_datasets || {};
             this.historyDatasetCollections = mConfig.history_dataset_collections || {};
             this.workflows = mConfig.workflows || {};
+            this.jobs = mConfig.jobs || {};
 
             this.$nextTick(() => {
                 render_embedded_items();
@@ -154,6 +174,11 @@ export default {
                         $(el).text(this.workflows[workflowId]["name"]);
                     }
                 });
+
+                render_fenced_output("tool-stdout", this.jobs, "job_id", "tool_stdout");
+                render_fenced_output("tool-stderr", this.jobs, "job_id", "tool_stderr");
+                render_fenced_output("dataset-peek", this.historyDatasets, "history_dataset_id", "peek");
+                render_fenced_output("dataset-info", this.historyDatasets, "history_dataset_id", "info");
 
                 $(".dataset-collection").each((i, el) => {
                     const Galaxy = getGalaxyInstance();

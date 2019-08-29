@@ -37,8 +37,12 @@ INVOCATION_SECTIONS = [
     "invocation_inputs",
     "invocation_outputs",
 ]
-GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = "(%s)" % "|".join(GALAXY_FLAVORED_MARKDOWN_CONTAINERS)
-INVOCATION_SECTION_MARKDOWN_CONTAINER_REGEX = "(%s)" % "|".join(INVOCATION_SECTIONS)
+ALL_CONTAINER_TYPES = GALAXY_FLAVORED_MARKDOWN_CONTAINERS + INVOCATION_SECTIONS
+GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX = "(%s)" % "|".join(ALL_CONTAINER_TYPES)
+
+FUNCTION_ARG = r'\s*\w+\s*=\s*\w+\s*'
+FUNCTION_CALL_LINE_TEMPLATE = r'\s*%s\s*\((?:' + FUNCTION_ARG + r')?\)\s*'
+GALAXY_MARKDOWN_FUNCTION_CALL_LINE = re.compile(FUNCTION_CALL_LINE_TEMPLATE % GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX)
 
 BLOCK_FENCE_START = re.compile(r'```.*')
 BLOCK_FENCE_END = re.compile(r'```[\s]*')
@@ -49,14 +53,12 @@ INPUT_LABEL_PATTERN = re.compile(r'input=([\w_\-]+)')
 STEP_LABEL_PATTERN = re.compile(r'step=([\w_\-]+)')
 ID_PATTERN = re.compile(r'(workflow_id|history_dataset_id|history_dataset_collection_id|job_id)=([\d]+)')
 GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
-    r"```\s*\{galaxy_%s.*\}\s*" % GALAXY_FLAVORED_MARKDOWN_CONTAINER_REGEX
-)
-FENCED_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
-    r"```\s*\{.*"
+    r"```\s*galaxy\s*"
 )
 INVOCATION_SECTION_MARKDOWN_CONTAINER_LINE_PATTERN = re.compile(
-    r"```\s*\{galaxy_%s.*\}\s*" % INVOCATION_SECTION_MARKDOWN_CONTAINER_REGEX
+    r"```\s*galaxy\s*"
 )
+GALAXY_FENCED_BLOCK = re.compile(r'^```\s*galaxy\s*(.*?)^```', re.MULTILINE ^ re.DOTALL)
 VALID_CONTAINER_START_PATTERN = re.compile(r"^```\s+[\w]+.*$")
 VALID_CONTAINER_END_PATTERN = re.compile(r"^```\s*$")
 WHITE_SPACE_ONLY_PATTERN = re.compile(r"^[\s]+$")
@@ -75,7 +77,6 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
     extra_rendering_data = {}
 
     def _remap(container, line):
-        remap_lines = []
         id_match = re.search(ID_PATTERN, line)
         object_id = None
         encoded_id = None
@@ -83,44 +84,37 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
             object_id = int(id_match.group(2))
             encoded_id = trans.security.encode_id(object_id)
             line = line.replace(id_match.group(), "%s=%s" % (id_match.group(1), encoded_id))
-        remap_lines.append(line)
 
-        def remap_with_fenced_output(output, default):
-            if output:
-                for line in output.splitlines(True):
-                    if not line.endswith("\n"):
-                        line += "\n"
-                    remap_lines.append(line)
-            else:
-                # TODO: handle this better... shouldn't be part of code block
-                # ideally.
-                remap_lines.append("%s\n" % default)
+        def ensure_rendering_data_for(object_type, encoded_id):
+            if object_type not in extra_rendering_data:
+                extra_rendering_data[object_type] = {}
+            object_type_data = extra_rendering_data[object_type]
+            if encoded_id not in object_type_data:
+                object_type_data[encoded_id] = {}
+            return object_type_data[encoded_id]
+
+        def extend_history_dataset_rendering_data(key, val, default_val):
+            ensure_rendering_data_for("history_datasets", encoded_id)[key] = val or default_val
 
         if container == "history_dataset_display":
             assert object_id is not None
             hda = hdas_manager.get_accessible(object_id, trans.user)
             if "history_datasets" not in extra_rendering_data:
                 extra_rendering_data["history_datasets"] = {}
-            extra_rendering_data["history_datasets"][encoded_id] = {
-                "name": hda.name,
-            }
+            extend_history_dataset_rendering_data("name", hda.name, "")
         elif container == "history_dataset_peek":
             assert object_id is not None
             hda = hdas_manager.get_accessible(object_id, trans.user)
             peek = hda.peek
-            remap_with_fenced_output(peek, "*No Dataset Peek Available*")
+            extend_history_dataset_rendering_data("peek", peek, "*No Dataset Peek Available*")
         elif container == "history_dataset_info":
             hda = hdas_manager.get_accessible(object_id, trans.user)
             info = hda.info
-            remap_with_fenced_output(info, "*No Dataset Info Available*")
+            extend_history_dataset_rendering_data("info", info, "*No Dataset Peek Available*")
         elif container == "workflow_display":
             # TODO: should be workflow id...
             stored_workflow = workflows_manager.get_stored_accessible_workflow(trans, encoded_id)
-            if "workflows" not in extra_rendering_data:
-                extra_rendering_data["workflows"] = {}
-            extra_rendering_data["workflows"][encoded_id] = {
-                "name": stored_workflow.name,
-            }
+            ensure_rendering_data_for("workflows", encoded_id)["name"] = stored_workflow.name
         elif container == "history_dataset_collection_display":
             collection_manager = DatasetCollectionManager(trans.app)
             hdca = collection_manager.get_dataset_collection_instance(trans, "history", encoded_id)
@@ -130,18 +124,18 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
             )
             if "history_dataset_collections" not in extra_rendering_data:
                 extra_rendering_data["history_dataset_collections"] = {}
-            extra_rendering_data["history_dataset_collections"][encoded_id] = hdca_view
+            ensure_rendering_data_for("history_dataset_collections", encoded_id).update(hdca_view)
         elif container == "tool_stdout":
             job_manager = JobManager(trans.app)
             job = job_manager.get_accessible_job(trans, object_id)
-            remap_with_fenced_output(job.tool_stdout, "*No Standard Output Available*")
+            ensure_rendering_data_for("jobs", encoded_id)["tool_stdout"] = job.tool_stdout or "*No Standard Output Available*"
         elif container == "tool_stderr":
             job_manager = JobManager(trans.app)
             job = job_manager.get_accessible_job(trans, object_id)
-            remap_with_fenced_output(job.tool_stderr, "*No Standard Error Available*")
-        return remap_lines
+            ensure_rendering_data_for("jobs", encoded_id)["tool_stderr"] = job.tool_stderr or "*No Standard Error Available*"
+        return (line, False)
 
-    export_markdown = _remap_galaxy_markdown_containers(_remap, internal_galaxy_markdown)
+    export_markdown = _remap_galaxy_markdown_calls(_remap, internal_galaxy_markdown)
     return export_markdown, extra_rendering_data
 
 
@@ -171,12 +165,14 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
 
                 if output_assoc.history_content_type == "dataset":
                     section_markdown += """#### Output Dataset: %s
-```{galaxy_history_dataset_display output=%s}
+```galaxy
+history_dataset_display(output=%s)
 ```
 """ % (output_assoc.workflow_output.label, output_assoc.workflow_output.label)
                 else:
                     section_markdown += """#### Output Dataset Collection: %s
-```{galaxy_history_dataset_collection_display output=%s}
+```galaxy
+history_dataset_collection_display(output=%s)
 ```
 """ % (output_assoc.workflow_output.label)
         elif container == "invocation_inputs":
@@ -186,21 +182,25 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
 
                 if input_assoc.history_content_type == "dataset":
                     section_markdown += """#### Input Dataset: %s
-```{galaxy_history_dataset_display input=%s}
+```galaxy
+history_dataset_display(input=%s)
 ```
 """ % (input_assoc.workflow_step.label, input_assoc.workflow_step.label)
                 else:
                     section_markdown += """#### Input Dataset Collection: %s
-```{galaxy_history_dataset_collection_display input=%s}
+```galaxy
+history_dataset_collection_display(input=%s)
 ```
 """ % (input_assoc.workflow_step.label, input_assoc.workflow_step.label)
-        return section_markdown
+        else:
+            return line, False
+        return section_markdown, True
 
     def _remap(container, line):
         if container == "workflow_display":
             # TODO: this really should be workflow id not stored workflow id but the API
             # it consumes wants the stored id.
-            return "```{galaxy_workflow_display workflow_id=%s}\n" % invocation.workflow.stored_workflow.id
+            return ("workflow_display(workflow_id=%s)\n" % invocation.workflow.stored_workflow.id, False)
         ref_object_type = None
         output_match = re.search(OUTPUT_LABEL_PATTERN, line)
         input_match = re.search(INPUT_LABEL_PATTERN, line)
@@ -228,16 +228,14 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
                 else:
                     ref_object_type = "history_dataset_collection"
             line = line.replace(target_match.group(), "%s_id=%s" % (ref_object_type, ref_object.id))
-        return line
+        return (line, False)
 
     log.debug("workflow markdown is \n%s" % workflow_markdown)
-    workflow_markdown = _remap_galaxy_markdown_containers(
+    workflow_markdown = _remap_galaxy_markdown_calls(
         _section_remap,
         workflow_markdown,
-        container_pattern=INVOCATION_SECTION_MARKDOWN_CONTAINER_LINE_PATTERN,
-        replace_whole_container=True
     )
-    galaxy_markdown = _remap_galaxy_markdown_containers(_remap, workflow_markdown)
+    galaxy_markdown = _remap_galaxy_markdown_calls(_remap, workflow_markdown)
     log.debug("galaxy markdown is \n%s" % galaxy_markdown)
     return galaxy_markdown
 
@@ -245,6 +243,7 @@ def resolve_invocation_markdown(trans, invocation, workflow_markdown):
 def validate_galaxy_markdown(galaxy_markdown, internal=True):
     expecting_container_close_for = None
     last_line_no = 0
+    function_calls = 0
     for (line, fenced, open_fence, line_no) in _split_markdown_lines(galaxy_markdown):
         last_line_no = line_no
 
@@ -261,7 +260,7 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
             continue
         elif fenced and expecting_container_close and BLOCK_FENCE_END.match(line):
             expecting_container_close_for = None
-        elif open_fence and FENCED_MARKDOWN_CONTAINER_LINE_PATTERN.match(line):
+        elif open_fence and GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN.match(line):
             if expecting_container_close:
                 if not VALID_CONTAINER_END_PATTERN.match(line):
                     invalid_line("Invalid command close line [{line}] for [{expected_for}]", line=line, expected_for=expecting_container_close_for)
@@ -269,11 +268,16 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
                 expecting_container_close_for = None
                 continue
 
-            if not GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN.match(line):
-                invalid_line("Invalid markdown command line [{line}]", line=line)
-            # TODO: check IDs and attributes and stuff...
             expecting_container_close_for = line
             continue
+        elif fenced and line and expecting_container_close_for:
+            if GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line):
+                function_calls += 1
+                if function_calls > 1:
+                    invalid_line("Only one Galaxy directive is allowed per fenced Galaxy block (```galaxy)")
+                continue
+            else:
+                invalid_line("Invalid embedded Galaxy markup line [{line}]", line=line)
 
         # Markdown unrelated to Galaxy object containers.
         continue
@@ -282,26 +286,47 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
         raise Exception("Invalid line %d: %s" % (last_line_no, "close of block for [{expected_for}] expected".format(expected_for=expecting_container_close_for)))
 
 
-def _remap_galaxy_markdown_containers(func, markdown, container_pattern=GALAXY_FLAVORED_MARKDOWN_CONTAINER_LINE_PATTERN, replace_whole_container=False):
-    remapped_lines = []
-    replaced_container = False
-    for (line, fenced, open_fence, _) in _split_markdown_lines(markdown):
-        if replaced_container:
-            # Replaced whole container, no need to keep container close.
-            assert line.startswith("```")
-            replaced_container = False
-            continue
-        container_match = container_pattern.match(line)
-        if container_match:
-            remap_line = func(container_match.group(1), line)
-            if not isinstance(remap_line, list):
-                remap_line = [remap_line]
-            remapped_lines.extend(remap_line)
-            replaced_container = replace_whole_container
+def _remap_galaxy_markdown_containers(func, markdown):
+    new_markdown = markdown
+
+    searching_from = 0
+    while True:
+        from_markdown = new_markdown[searching_from:]
+        match = re.search(GALAXY_FENCED_BLOCK, from_markdown)
+        if match is not None:
+            (replacement, whole_block) = func(match.group(1))
+            if whole_block:
+                start_pos = match.start()
+                end_pos = match.end()
+            else:
+                start_pos = match.start(1)
+                end_pos = match.end(1)
+            start_pos = start_pos + searching_from
+            end_pos = end_pos + searching_from
+
+            new_markdown = new_markdown[:start_pos] + replacement + new_markdown[end_pos:]
+            searching_from = end_pos
         else:
-            remapped_lines.append(line)
-    rval = "".join(remapped_lines)
-    return rval
+            break
+
+    return new_markdown
+
+
+def _remap_galaxy_markdown_calls(func, markdown):
+
+    def _remap_container(container):
+        matching_line = None
+        for line in container.splitlines():
+            if GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line):
+                assert matching_line is None
+                matching_line = line
+
+        assert matching_line, "Failed to find func call line in [%s]" % container
+        match = GALAXY_MARKDOWN_FUNCTION_CALL_LINE.match(line)
+
+        return func(match.group(1), matching_line + "\n")
+
+    return _remap_galaxy_markdown_containers(_remap_container, markdown)
 
 
 def _split_markdown_lines(markdown):

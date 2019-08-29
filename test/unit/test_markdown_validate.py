@@ -32,26 +32,40 @@ printf('hello')
 """)
     # assert valid container is fine.
     assert_markdown_valid("""
-```{galaxy_job_metrics job_id=THISFAKEID}
+```galaxy
+job_metrics(job_id=THISFAKEID)
 ```
 """)
-    # assert valid container is fine.
+    # assert valid container is fine at end of document.
     assert_markdown_valid("""
-```{galaxy_job_metrics job_id=THISFAKEID}
+```galaxy
+job_metrics(job_id=THISFAKEID)
 ```""")
     # assert valid containers require container close
     assert_markdown_invalid("""
-```{galaxy_job_metrics job_id=THISFAKEID}
-foo
+```galaxy
+job_metrics(job_id=THISFAKEID)
 """, at_line=1)
     # assert valid containers require container close, even at end...
     assert_markdown_invalid("""
-```{galaxy_job_metrics job_id=THISFAKEID""")
-
-    # assert valid containers require container close, even at end...
+```galaxy
+job_metrics(job_id=THISFAKEID)""")
+    # assert only one command allowed
     assert_markdown_invalid("""
-```{galaxy_not_a_command}
-```""")
+```galaxy
+job_metrics(job_id=THISFAKEID)
+job_metrics(job_id=THISFAKEID2)
+```
+""")
+    # assert command paren is closed
     assert_markdown_invalid("""
-```{not_a_command}
-```""")
+```galaxy
+job_metrics(job_id=THISFAKEID
+```
+""")
+    # assert command arg is named.
+    assert_markdown_invalid("""
+```galaxy
+job_metrics(THISFAKEID)
+```
+""")

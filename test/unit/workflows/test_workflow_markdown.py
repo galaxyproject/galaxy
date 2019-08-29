@@ -1,5 +1,5 @@
 from galaxy import model
-from galaxy.managers.markdown_util import resolve_invocation_markdown
+from galaxy.managers.markdown_util import resolve_invocation_markdown, validate_galaxy_markdown
 from .test_workflow_progress import TEST_WORKFLOW_YAML
 from .workflow_support import MockTrans, yaml_to_model
 
@@ -7,63 +7,69 @@ from .workflow_support import MockTrans, yaml_to_model
 def test_workflow_section_expansion():
     workflow_markdown = """
 ## Workflow
-```{galaxy_workflow_display}
+```galaxy
+workflow_display()
 ```
 """
     galaxy_markdown = resolved_markdown(workflow_markdown)
     assert "## Workflow\n" in galaxy_markdown
-    assert "```{galaxy_workflow_display workflow_id=342}\n```\n" in galaxy_markdown
+    assert "```galaxy\nworkflow_display(workflow_id=342)\n```\n" in galaxy_markdown
 
 
 def test_inputs_section_expansion():
     workflow_markdown = """
 ## Workflow Inputs
-```{galaxy_invocation_inputs}
+```galaxy
+invocation_inputs()
 ```
 """
     galaxy_markdown = resolved_markdown(workflow_markdown)
     assert "## Workflow Inputs" in galaxy_markdown
-    assert "```{galaxy_history_dataset_display history_dataset_id=567}" in galaxy_markdown
+    assert "```galaxy\nhistory_dataset_display(history_dataset_id=567)\n" in galaxy_markdown
     assert len(galaxy_markdown.split("```")) == 3
 
 
 def test_outputs_section_expansion():
     workflow_markdown = """
 ## Workflow Outputs
-```{galaxy_invocation_outputs}
+```galaxy
+invocation_outputs()
 ```
 """
     galaxy_markdown = resolved_markdown(workflow_markdown)
     assert "## Workflow Outputs" in galaxy_markdown
-    assert "```{galaxy_history_dataset_display history_dataset_id=563}" in galaxy_markdown
+    assert "```galaxy\nhistory_dataset_display(history_dataset_id=563)" in galaxy_markdown
 
 
 def test_input_reference_mapping():
     workflow_markdown = """
 And outputs...
 
-```{galaxy_history_dataset_peek input=input1}
+```galaxy
+history_dataset_peek(input=input1)
 ```
 """
     galaxy_markdown = resolved_markdown(workflow_markdown)
-    assert "```{galaxy_history_dataset_peek history_dataset_id=567}\n```" in galaxy_markdown
+    assert "```galaxy\nhistory_dataset_peek(history_dataset_id=567)\n```" in galaxy_markdown
 
 
 def test_output_reference_mapping():
     workflow_markdown = """
 And outputs...
 
-```{galaxy_history_dataset_as_image output=output_label}
+```galaxy
+history_dataset_as_image(output=output_label)
 ```
 """
     galaxy_markdown = resolved_markdown(workflow_markdown)
-    assert "```{galaxy_history_dataset_as_image history_dataset_id=563}" in galaxy_markdown
+    assert "```galaxy\nhistory_dataset_as_image(history_dataset_id=563)\n```" in galaxy_markdown
 
 
 def resolved_markdown(workflow_markdown):
     # Convert workflow markdown to internal Galaxy markdown with object id references
     # and with sections expanded.
     trans = MockTrans()
+    validate_galaxy_markdown(workflow_markdown)
     galaxy_markdown = resolve_invocation_markdown(trans, example_invocation(trans), workflow_markdown)
     return galaxy_markdown
 
