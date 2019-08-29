@@ -1,5 +1,5 @@
 import $ from "jquery";
-import paper from "../node_modules/paper/dist/paper-full.min.js";
+import paper from "../node_modules/paper/dist/paper-core.js";
 import "jquery-contextmenu";
 import "jquery.ui.position";
 import _ from "underscore";
