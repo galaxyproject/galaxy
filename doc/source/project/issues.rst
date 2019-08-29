@@ -80,7 +80,8 @@ request/report to separate enhancements and new features from bugs, etc.
 Status Labels
 -------------
 
-The ``status`` of an issue or PR should be tracked using the following
+The default ``status`` of an issue or PR is ``ready for review``. If that
+is not true the state should be communicated using the following
 labels:
 
 -  ``status/planning`` - the issue planning phase, this issue may
@@ -88,15 +89,6 @@ labels:
    to a work in progress
 -  ``status/WIP`` - this issue or PR is currently being worked on and in
    the case of a PR, it should not be merged until this tag is removed
--  ``status/review`` - PR is complete and ready for review, or when
-   applied to an issue it is thought to be resolved but needs
-   verification
-
-We use the same set of status tags for PRs and issues to keep things
-simple, but not every PR or issue needs to go through every state. For
-example, it'll be common for a PR to be submitted with the label
-'status/review', and get merged without needing to go through the rest
-of the states.
 
 Note that there are no ``status/complete``, ``status/wontfix``,
 ``status/duplicate``, or other terminal status indicators. This is
@@ -178,11 +170,11 @@ special purpose.
    issue that only requires limited understanding of the larger Galaxy
    framework and ecosystem. This is useful for encouraging new
    contributors.
-   
+
 -  ``friendliness/intermediate`` can be used to indicate an advanced
    level issue that requires decent understanding of the larger Galaxy
    framework and system.
-         
+
 -  ``friendliness/unfriendly`` can be used to mark issues that require
    deep understanding of the framework and/or exquisite programming
    abilities.
@@ -198,15 +190,15 @@ special purpose.
    this should be applied to at most a couple dozen pull requests each
    release and is used to prioritize important items of note for the
    top of release notes sections.
-   
+
 -  ``merge`` tag used to indicate PR that only merges a change that has
    been previously added. Used to filter things out of release notes.
-   
+
 -  ``feature-request`` is used to indicate a request for change or feature.
 
 -  ``triage`` is a tag automatically added by a GalaxyBot to indicate that
    the issue needs to be evaluated and properly tagged.
-   
+
 -  ``hacktoberfest`` is a tag that encourages contributions to Galaxy codebase
    by including these issues in the `Hacktoberfest <https://hacktoberfest.digitalocean.com/>`__ event.
    Similar to ``friendliness/beginner`` tag in other characteristics.
