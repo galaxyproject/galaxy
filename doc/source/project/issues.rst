@@ -207,17 +207,14 @@ special purpose.
 The Roadmap
 ===========
 
-We will maintain a single ``roadmap`` tagged meta-issue which will
+We will maintain a single ``roadmap`` GitHub project which will
 describe (at a very high level) the *current* major areas of focus for
-the project. This is similar to our PRIORITIES 2014/15 cards on Trello.
-Using `Task
-Lists <https://github.com/blog/1375-task-lists-in-gfm-issues-pulls-comments>`__,
-this issue will link to sub-issues which will go into much more detail,
-might have its own checklists to even more subcomponent cards, and so
-on.
+the project. This project will link to sub-issues and PRs which will go into
+much more detail, might link to other issues, projects, or PRs.
 
-This ``roadmap`` issue will be assigned to every release milestone,
-forcing periodic review of the roadmap.
+This ``roadmap`` project is subject to periodic review every release.
+
+Current roadmap project is `here <https://github.com/galaxyproject/galaxy/projects/8>`__.
 
 Voting
 ======
