@@ -1,9 +1,9 @@
 import $ from "jquery";
-import paper from "../node_modules/paper/dist/paper-core.js";
 import "jquery-contextmenu";
 import "jquery.ui.position";
 import _ from "underscore";
-
+// Use lighter weight 'core' version of paper since we don't need paperscript
+import paper from "../node_modules/paper/dist/paper-core.js";
 
 var CommandManager = (function() {
     function CommandManager() {}
@@ -58,7 +58,7 @@ _.extend(window.bundleEntries || {}, {
     load: function(opt) {
         let chart = opt.chart;
         let dataset = opt.dataset;
-        let defaults = {color: "red", width: 4, opacity: 0.5};
+        let defaults = { color: "red", width: 4, opacity: 0.5 };
         $.fn.createCanvas = function(options) {
             let settings = $.extend({}, defaults, options || {});
             let self = this;
@@ -66,7 +66,7 @@ _.extend(window.bundleEntries || {}, {
             this.setOptions = function(options) {
                 settings = $.extend(settings, options);
             };
-            
+
             $(document).ready(function() {
                 $(self).each(function(eachIndex, eachItem) {
                     self.paths = [];
@@ -89,13 +89,13 @@ _.extend(window.bundleEntries || {}, {
                     paper.setup(canvas[0]);
                     canvas[0].width = options.img_width;
                     canvas[0].height = options.img_height;
-                    
+
                     $(canvas).mouseenter(function() {
                         paper.projects[eachIndex].activate();
                     });
                     // Create a simple drawing tool:
                     let tool = new paper.Tool();
-                    
+
                     tool.onMouseMove = function(event) {
                         if (!$(".context-menu-list").is(":visible")) {
                             position = event.point;
@@ -110,28 +110,28 @@ _.extend(window.bundleEntries || {}, {
                             }
                         }
                     };
-                    
+
                     tool.onMouseDown = function(event) {
-                    	switch (event.event.button) {
-                        // leftclick
+                        switch (event.event.button) {
+                            // leftclick
                             case 0:
-                            // If we produced a path before, deselect it:
+                                // If we produced a path before, deselect it:
                                 if (path) {
                                     path.selected = false;
                                 }
 
                                 path = new paper.Path();
-                            	path.data.id = generateUUID();
-                      		path.strokeColor = settings.color;
+                                path.data.id = generateUUID();
+                                path.strokeColor = settings.color;
                                 path.strokeWidth = settings.width;
                                 path.opacity = settings.opacity;
                                 break;
-                                // rightclick
+                            // rightclick
                             case 2:
                                 break;
                         }
                     };
-                    
+
                     tool.onMouseDrag = function(event) {
                         switch (event.event.button) {
                             // leftclick
@@ -147,17 +147,16 @@ _.extend(window.bundleEntries || {}, {
                                         selectedItem.position.x + event.delta.x,
                                         selectedItem.position.y + event.delta.y
                                     );
-                                } 
-                                else if (path) {
+                                } else if (path) {
                                     path.add(event.point);
                                 }
                                 break;
-                                // rightclick
+                            // rightclick
                             case 2:
                                 break;
                         }
                     };
-                    
+
                     tool.onMouseUp = function(event) {
                         switch (event.event.button) {
                             // leftclick
@@ -212,7 +211,7 @@ _.extend(window.bundleEntries || {}, {
                                             $(paper.project.activeLayer.children).each(function(index, item) {
                                                 if (item.data && item.data.uid) {
                                                     if (item.data.uid == uid) {
-                                                            item.remove();
+                                                        item.remove();
                                                     }
                                                 }
                                             });
@@ -227,16 +226,15 @@ _.extend(window.bundleEntries || {}, {
                                 break;
                         }
                     };
-                    
-                    tool.onKeyUp = function (event) {
+
+                    tool.onKeyUp = function(event) {
                         if (selectedItem) {
                             // When a key is released, set the content of the text item:
                             if (selectedItem.content) {
-                                if (event.key == 'backspace') selectedItem.content = selectedItem.content.slice(0, -1);
-                            }
-                            else {
-                                selectedItem.content = selectedItem.content.replace('<some text>', '');
-                                if (event.key == 'space') selectedItem.content += ' ';
+                                if (event.key == "backspace") selectedItem.content = selectedItem.content.slice(0, -1);
+                            } else {
+                                selectedItem.content = selectedItem.content.replace("<some text>", "");
+                                if (event.key == "space") selectedItem.content += " ";
                                 else if (event.key.length == 1) selectedItem.content += event.key;
                             }
                         }
@@ -244,8 +242,7 @@ _.extend(window.bundleEntries || {}, {
                     paper.view.draw();
                 });
             });
-            
-            
+
             let path;
             let position;
             let contextPoint;
@@ -284,17 +281,15 @@ _.extend(window.bundleEntries || {}, {
                     }
                 });
             }*/
-            
-            
-            this.downloadCanvas = function (canvas, filename) {
- 
+
+            this.downloadCanvas = function(canvas, filename) {
                 /// create an "off-screen" anchor tag
-                let lnk = document.createElement('a'),
+                let lnk = document.createElement("a"),
                     e;
- 
+
                 /// the key here is to set the download attribute of the a tag
                 lnk.download = filename;
- 
+
                 /// convert canvas content to data-uri for link. When download
                 /// attribute is set the content pointed to by link will be
                 /// pushed as "download" in HTML5 capable browsers
@@ -303,70 +298,66 @@ _.extend(window.bundleEntries || {}, {
                 /// create a "fake" click-event to trigger the download
                 if (document.createEvent) {
                     e = document.createEvent("MouseEvents");
-                    e.initMouseEvent("click", true, true, window,
-                                     0, 0, 0, 0, 0, false, false, false,
-                                     false, 0, null);
+                    e.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
                     lnk.dispatchEvent(e);
-                }
-                else if (lnk.fireEvent) {
+                } else if (lnk.fireEvent) {
                     lnk.fireEvent("onclick");
                 }
-            }
- 
-            this.download = function () {
+            };
+
+            this.download = function() {
                 let canvas = paper.project.activeLayer.view.element,
                     img = $(canvas)[0];
-                let mergeCanvas = $('<canvas>')
-                .attr({
+                let mergeCanvas = $("<canvas>").attr({
                     width: img.width,
                     height: img.height
                 });
-                let mergedContext = mergeCanvas[0].getContext('2d');
+                let mergedContext = mergeCanvas[0].getContext("2d");
                 mergedContext.clearRect(0, 0, img.width, img.height);
                 mergedContext.drawImage(img, 0, 0);
                 mergedContext.drawImage(canvas, 0, 0);
                 self.downloadCanvas(mergeCanvas[0], "only-annotations.png");
-            
+
                 // create canvas for original and annotations
-                let annotated_img = $(canvas).parent().find('img')[0];
+                let annotated_img = $(canvas)
+                    .parent()
+                    .find("img")[0];
                 let wt = $(annotated_img).width();
                 let ht = $(annotated_img).height();
-                let mergeCanvasAnnotated = $('<canvas>')
-                    .attr({
+                let mergeCanvasAnnotated = $("<canvas>").attr({
                     width: $(annotated_img).width(),
                     height: $(annotated_img).height()
                 });
-                let mergedContextAnnotated = mergeCanvasAnnotated[0].getContext('2d');
+                let mergedContextAnnotated = mergeCanvasAnnotated[0].getContext("2d");
                 mergedContextAnnotated.clearRect(0, 0, $(annotated_img).width(), $(annotated_img).height());
                 mergedContextAnnotated.drawImage(annotated_img, 0, 0);
                 mergedContextAnnotated.drawImage(canvas, 0, 0);
                 self.downloadCanvas(mergeCanvasAnnotated[0], "original-with-annotations.png");
-            }
-            
-            this.setText = function () {
+            };
+
+            this.setText = function() {
                 let uid = generateUUID();
                 let pos = contextPoint;
                 CommandManager.execute({
-                    execute: function () {
+                    execute: function() {
                         let TXT_DBL_CLICK = "<<double click to edit>>";
                         let txt = TXT_DBL_CLICK;
                         let text = new paper.PointText(pos);
                         text.content = txt;
                         text.fillColor = settings.color;
                         text.fontSize = 14;
-                        text.fontFamily = 'sans-serif';
+                        text.fontFamily = "sans-serif";
                         text.data.uid = uid;
                         text.opacity = settings.opacity;
-                        text.onDoubleClick = function (event) {
-                            if (this.className == 'PointText') {
-                                let txt = prompt("Type in your text", this.content.replace(TXT_DBL_CLICK, ''));
-                                if (txt.length > 0)
-                                    this.content = txt;
+                        text.onDoubleClick = function(event) {
+                            if (this.className == "PointText") {
+                                let txt = prompt("Type in your text", this.content.replace(TXT_DBL_CLICK, ""));
+                                if (txt.length > 0) this.content = txt;
                             }
-                        }
+                        };
                     },
-                    unexecute: function () {
-                        $(paper.project.activeLayer.children).each(function (index, item) {
+                    unexecute: function() {
+                        $(paper.project.activeLayer.children).each(function(index, item) {
                             if (item.data && item.data.uid) {
                                 if (item.data.uid == uid) {
                                     item.remove();
@@ -375,114 +366,116 @@ _.extend(window.bundleEntries || {}, {
                         });
                     }
                 });
-            }
-            
-            this.setPenColor = function (color) {
+            };
+
+            this.setPenColor = function(color) {
                 self.setOptions({ color: color });
-                $('.image-canvas').css('cursor', "url(/static/plugins/visualizations/annotate_image/static/images/" + color + "-pen.png) 14 50, auto");
-            }
- 
-            this.setCursorHandOpen = function () {
-                $('.image-canvas').css('cursor', "url(/static/plugins/visualizations/annotate_image/static/images/hand-open.png) 25 25, auto");
-            }
- 
-            this.setCursorHandClose = function () {
-                $('.image-canvas').css('cursor', "url(/static/plugins/visualizations/annotate_image/static/images/hand-close.png) 25 25, auto");
-            }
- 
+                $(".image-canvas").css(
+                    "cursor",
+                    "url(/static/plugins/visualizations/annotate_image/static/images/" + color + "-pen.png) 14 50, auto"
+                );
+            };
+
+            this.setCursorHandOpen = function() {
+                $(".image-canvas").css(
+                    "cursor",
+                    "url(/static/plugins/visualizations/annotate_image/static/images/hand-open.png) 25 25, auto"
+                );
+            };
+
+            this.setCursorHandClose = function() {
+                $(".image-canvas").css(
+                    "cursor",
+                    "url(/static/plugins/visualizations/annotate_image/static/images/hand-close.png) 25 25, auto"
+                );
+            };
+
             $.contextMenu({
-                selector: '.image-canvas',
-                callback: function (key, options) {
+                selector: ".image-canvas",
+                callback: function(key, options) {
                     switch (key) {
                         //COMMANDS
-                        case 'undo':
+                        case "undo":
                             CommandManager.undo();
                             break;
-                        case 'redo':
+                        case "redo":
                             CommandManager.redo();
                             break;
-                        case 'erase':
+                        case "erase":
                             self.erase();
                             break;
-                        case 'download':
+                        case "download":
                             self.download();
                             break;
-                            //TOOLS
-                        case 'text':
+                        //TOOLS
+                        case "text":
                             self.setText();
                             break;
-                            //PENS
-                        case 'blackPen':
-                            self.setPenColor('black');
+                        //PENS
+                        case "blackPen":
+                            self.setPenColor("black");
                             break;
-                        case 'redPen':
-                            self.setPenColor('red');
+                        case "redPen":
+                            self.setPenColor("red");
                             break;
-                        case 'greenPen':
-                            self.setPenColor('green');
+                        case "greenPen":
+                            self.setPenColor("green");
                             break;
-                        case 'bluePen':
-                            self.setPenColor('blue');
+                        case "bluePen":
+                            self.setPenColor("blue");
                             break;
-                        case 'yellowPen':
-                            self.setPenColor('yellow');
+                        case "yellowPen":
+                            self.setPenColor("yellow");
                             break;
                     }
                 },
                 items: {
-                    "undo": { name: "Undo", icon: "undo" },
-                    "redo": { name: "Redo", icon: "redo" },
-                    "download": { name: "Download", icon: "download" },
-                    "sep1": "---------",
-                    "text": { name: "Text", icon: "text" },
-                    "sep2": "---------",
-                    "blackPen": { name: "Black Pen", icon: "blackpen" },
-                    "redPen": { name: "Red Pen", icon: "redpen" },
-                    "greenPen": { name: "Green Pen", icon: "greenpen" },
-                    "bluePen": { name: "Blue Pen", icon: "bluepen" },
-                    "yellowPen": { name: "Yellow Pen", icon: "yellowpen" },
+                    undo: { name: "Undo", icon: "undo" },
+                    redo: { name: "Redo", icon: "redo" },
+                    download: { name: "Download", icon: "download" },
+                    sep1: "---------",
+                    text: { name: "Text", icon: "text" },
+                    sep2: "---------",
+                    blackPen: { name: "Black Pen", icon: "blackpen" },
+                    redPen: { name: "Red Pen", icon: "redpen" },
+                    greenPen: { name: "Green Pen", icon: "greenpen" },
+                    bluePen: { name: "Blue Pen", icon: "bluepen" },
+                    yellowPen: { name: "Yellow Pen", icon: "yellowpen" }
                 }
             });
-            
+
             let $menuList = $(".context-menu-list");
-            $menuList.find(".context-menu-icon-text")
-                .css({
-                    "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/text.png)",
-                    "background-repeat": "no-repeat",
-                    "background-position": "right 96% bottom 45%"
-                    
-                });
-            $menuList.find(".context-menu-icon-blackpen")
-                .css({
-                    "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/blackpen.png)",
-                    "background-repeat": "no-repeat",
-                    "background-position": "right 97% bottom 48%"
-                });
-            $menuList.find(".context-menu-icon-redpen")
-                .css({
-                    "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/redpen.png)",
-                    "background-repeat": "no-repeat",
-                    "background-position": "right 97% bottom 48%"
-                });
-            $menuList.find(".context-menu-icon-greenpen")
-                .css({
-                    "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/greenpen.png)",
-                    "background-repeat": "no-repeat",
-                    "background-position": "right 97% bottom 48%"
-                });
-            $menuList.find(".context-menu-icon-bluepen")
-                .css({
-                    "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/bluepen.png)",
-                    "background-repeat": "no-repeat",
-                    "background-position": "right 97% bottom 48%"
-                });
-            $menuList.find(".context-menu-icon-yellowpen")
-                .css({
-                    "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/yellowpen.png)",
-                    "background-repeat": "no-repeat",
-                    "background-position": "right 97% bottom 48%"
-                });
-        }
+            $menuList.find(".context-menu-icon-text").css({
+                "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/text.png)",
+                "background-repeat": "no-repeat",
+                "background-position": "right 96% bottom 45%"
+            });
+            $menuList.find(".context-menu-icon-blackpen").css({
+                "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/blackpen.png)",
+                "background-repeat": "no-repeat",
+                "background-position": "right 97% bottom 48%"
+            });
+            $menuList.find(".context-menu-icon-redpen").css({
+                "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/redpen.png)",
+                "background-repeat": "no-repeat",
+                "background-position": "right 97% bottom 48%"
+            });
+            $menuList.find(".context-menu-icon-greenpen").css({
+                "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/greenpen.png)",
+                "background-repeat": "no-repeat",
+                "background-position": "right 97% bottom 48%"
+            });
+            $menuList.find(".context-menu-icon-bluepen").css({
+                "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/bluepen.png)",
+                "background-repeat": "no-repeat",
+                "background-position": "right 97% bottom 48%"
+            });
+            $menuList.find(".context-menu-icon-yellowpen").css({
+                "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/yellowpen.png)",
+                "background-repeat": "no-repeat",
+                "background-position": "right 97% bottom 48%"
+            });
+        };
 
         $.ajax({
             url: dataset.download_url,
