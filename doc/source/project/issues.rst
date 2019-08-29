@@ -230,7 +230,7 @@ Automation
 
 For now, we will rely on a few simple automation rules:
 
--  All issues, unless tagged ``procedures`` or ``planning`` will
+-  All PRs, unless tagged ``procedures`` or ``planning`` will
    automatically be tagged ``triage``, indicating that they require
    attention.
 
