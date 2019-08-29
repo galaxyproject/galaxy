@@ -721,14 +721,14 @@ class InputParameterModule(WorkflowModule):
                                 sel_cases = [case for case in param.cases if param_name in case.inputs]
                                 if sel_cases:
                                     sel_case = sel_cases[0]
-                                elif re.match('.+_\\d+', param_name):  # check for repeat label
+                                elif re.match(r'.+_\d+', param_name):  # check for repeat label
                                     param_name, param_idx = param_name.rsplit('_', 1)
                                     sel_case = [case for case in param.cases if param_name in case.inputs][0]
                                 param = sel_case.inputs[param_name]
                             elif param.type == "repeat":
                                 if param_name in param.inputs:
                                     param = param.inputs[param_name]
-                                elif re.match('.+_\\d+', param_name):  # check for repeat label
+                                elif re.match(r'.+_\d+', param_name):  # check for repeat label
                                     param_name, param_idx = param_name.rsplit('_', 1)
                                     param = param.inputs[param_name]
                         else:
