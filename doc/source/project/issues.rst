@@ -210,7 +210,7 @@ The Roadmap
 We will maintain a single ``roadmap`` GitHub project which will
 describe (at a very high level) the *current* major areas of focus for
 the project. This project will link to sub-issues and PRs which will go into
-much more detail, might link to other issues, projects, or PRs.
+much more detail and might link to other sub-issues, projects, or PRs.
 
 This ``roadmap`` project is subject to periodic review every release.
 
