@@ -282,7 +282,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         if origin:
             self.response.headers['Access-Control-Allow-Origin'] = origin
         elif 'Access-Control-Allow-Origin' in self.response.headers:
-            log.debug(str(dir(self.response.headers)))
             del self.response.headers['Access-Control-Allow-Origin']
 
     def set_cors_headers(self):
