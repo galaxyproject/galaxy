@@ -260,8 +260,8 @@ class RealTimeManager(object):
     def target_if_active(self, trans, entry_point):
         if entry_point.active and not entry_point.deleted:
             request_host = trans.request.host
-            rval = '%s//%s.%s.%s.%s.%s/' % (trans.request.host_url.split('//', 1)[0], entry_point.__class__.__name__.lower(), trans.security.encode_id(entry_point.id),
-                    entry_point.token, self.app.config.realtime_prefix, request_host)
+            rval = '%s//%s-%s.%s.%s.%s/' % (trans.request.host_url.split('//', 1)[0], trans.security.encode_id(entry_point.id),
+                    entry_point.token, entry_point.__class__.__name__.lower(), self.app.config.realtime_prefix, request_host)
             if entry_point.entry_url:
                 rval = '%s/%s' % (rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
             return rval
