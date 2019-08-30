@@ -25,6 +25,7 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
     """Test data manager installation and table reload through the API"""
 
     framework_tool_and_types = True
+    use_shared_connection_for_amqp = True
 
     def setUp(self):
         super(DataManagerIntegrationTestCase, self).setUp()
@@ -47,7 +48,7 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
         Test that we can install data managers, create a new dbkey, and use that dbkey in a downstream data manager.
         """
         self.install_repository("devteam", "data_manager_fetch_genome_dbkeys_all_fasta", "b1bc53e9bbc5")
-        self.install_repository("devteam", "data_manager_sam_fasta_index_builder", "1865e693d8b2")
+        self.install_repository("devteam", "data_manager_sam_fasta_index_builder", "406896e00d0e", 'https://testtoolshed.g2.bx.psu.edu')
         with self._different_user(email="%s@galaxy.org" % self.username):
             with self.dataset_populator.test_history() as history_id:
                 run_response = self.dataset_populator.run_tool(tool_id=FETCH_TOOL_ID,

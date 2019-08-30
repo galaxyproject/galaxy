@@ -1,12 +1,15 @@
 import logging
 import uuid
+from collections import OrderedDict
 
 from galaxy import model
 from galaxy.util import ExecutionTimer
-from galaxy.util.odict import odict
 from galaxy.workflow import modules
-from galaxy.workflow.run_request import (workflow_run_config_to_request,
-    WorkflowRunConfig)
+from galaxy.workflow.run_request import (
+    workflow_request_to_run_config,
+    workflow_run_config_to_request,
+    WorkflowRunConfig
+)
 
 log = logging.getLogger(__name__)
 
@@ -145,6 +148,7 @@ class WorkflowInvoker(object):
                 self.workflow_invocation,
                 workflow_run_config.inputs,
                 module_injector,
+                param_map=workflow_run_config.param_map,
                 jobs_per_scheduling_iteration=getattr(trans.app.config, "maximum_workflow_jobs_per_scheduling_iteration", -1),
             )
         self.progress = progress
@@ -268,11 +272,12 @@ STEP_OUTPUT_DELAYED = object()
 
 class WorkflowProgress(object):
 
-    def __init__(self, workflow_invocation, inputs_by_step_id, module_injector, jobs_per_scheduling_iteration=-1):
-        self.outputs = odict()
+    def __init__(self, workflow_invocation, inputs_by_step_id, module_injector, param_map, jobs_per_scheduling_iteration=-1):
+        self.outputs = OrderedDict()
         self.module_injector = module_injector
         self.workflow_invocation = workflow_invocation
         self.inputs_by_step_id = inputs_by_step_id
+        self.param_map = param_map
         self.jobs_per_scheduling_iteration = jobs_per_scheduling_iteration
         self.jobs_scheduled_this_iteration = 0
 
@@ -298,7 +303,7 @@ class WorkflowProgress(object):
         for step in steps:
             step_id = step.id
             if not hasattr(step, 'module'):
-                self.module_injector.inject(step)
+                self.module_injector.inject(step, step_args=self.param_map.get(step.id, {}))
                 if step_id not in step_states:
                     template = "Workflow invocation [%s] has no step state for step id [%s]. States ids are %s."
                     message = template % (self.workflow_invocation.id, step_id, list(step_states.keys()))
@@ -313,24 +318,24 @@ class WorkflowProgress(object):
                 remaining_steps.append((step, invocation_step))
         return remaining_steps
 
-    def replacement_for_tool_input(self, step, input, prefixed_name):
-        """ For given workflow 'step' that has had input_connections_by_name
-        populated fetch the actual runtime input for the given tool 'input'.
-        """
+    def replacement_for_input(self, step, input_dict):
         replacement = modules.NO_REPLACEMENT
+        prefixed_name = input_dict["name"]
+        multiple = input_dict["multiple"]
         if prefixed_name in step.input_connections_by_name:
             connection = step.input_connections_by_name[prefixed_name]
-            if input.type == "data" and input.multiple:
+            if input_dict["input_type"] == "dataset" and multiple:
                 replacement = [self.replacement_for_connection(c) for c in connection]
                 # If replacement is just one dataset collection, replace tool
-                # input with dataset collection - tool framework will extract
+                # input_dict with dataset collection - tool framework will extract
                 # datasets properly.
                 if len(replacement) == 1:
                     if isinstance(replacement[0], model.HistoryDatasetCollectionAssociation):
                         replacement = replacement[0]
             else:
-                is_data = input.type in ["data", "data_collection"]
+                is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
                 replacement = self.replacement_for_connection(connection[0], is_data=is_data)
+
         return replacement
 
     def replacement_for_connection(self, connection, is_data=True):
@@ -347,13 +352,16 @@ class WorkflowProgress(object):
         try:
             replacement = step_outputs[output_name]
         except KeyError:
-            if is_data:
+            replacement = self.inputs_by_step_id.get(output_step_id)
+            if connection.output_step.type == 'parameter_input' and output_step_id is not None:
+                # FIXME: parameter_input step outputs should be properly recorded as step outputs, but for now we can
+                # short-circuit and just pick the input value
+                pass
+            else:
                 # Must resolve.
                 template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
                 message = template % (output_name, step_outputs)
                 raise Exception(message)
-            else:
-                replacement = modules.NO_REPLACEMENT
         if isinstance(replacement, model.HistoryDatasetCollectionAssociation):
             if not replacement.collection.populated:
                 if not replacement.collection.waiting_for_elements:
@@ -365,6 +373,26 @@ class WorkflowProgress(object):
 
                 delayed_why = "dependent collection [%s] not yet populated with datasets" % replacement.id
                 raise modules.DelayedWorkflowEvaluation(why=delayed_why)
+
+        data_inputs = (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation, model.DatasetCollection)
+        if not is_data and isinstance(replacement, data_inputs):
+            if isinstance(replacement, model.HistoryDatasetAssociation):
+                if replacement.is_pending:
+                    raise modules.DelayedWorkflowEvaluation()
+                if not replacement.is_ok:
+                    raise modules.CancelWorkflowEvaluation()
+            else:
+                if not replacement.collection.populated:
+                    raise modules.DelayedWorkflowEvaluation()
+                pending = False
+                for dataset_instance in replacement.dataset_instances:
+                    if dataset_instance.is_pending:
+                        pending = True
+                    elif not dataset_instance.is_ok:
+                        raise modules.CancelWorkflowEvaluation()
+                if pending:
+                    raise modules.DelayedWorkflowEvaluation()
+
         return replacement
 
     def get_replacement_workflow_output(self, workflow_output):
@@ -377,7 +405,7 @@ class WorkflowProgress(object):
         else:
             return step_outputs[output_name]
 
-    def set_outputs_for_input(self, invocation_step, outputs=None):
+    def set_outputs_for_input(self, invocation_step, outputs=None, already_persisted=False):
         step = invocation_step.workflow_step
 
         if outputs is None:
@@ -385,13 +413,14 @@ class WorkflowProgress(object):
 
         if self.inputs_by_step_id:
             step_id = step.id
-            if step_id not in self.inputs_by_step_id:
+            if step_id not in self.inputs_by_step_id and 'output' not in outputs:
                 template = "Step with id %s not found in inputs_step_id (%s)"
                 message = template % (step_id, self.inputs_by_step_id)
                 raise ValueError(message)
-            outputs['output'] = self.inputs_by_step_id[step_id]
+            elif step_id in self.inputs_by_step_id:
+                outputs['output'] = self.inputs_by_step_id[step_id]
 
-        self.set_step_outputs(invocation_step, outputs)
+        self.set_step_outputs(invocation_step, outputs, already_persisted=already_persisted)
 
     def set_step_outputs(self, invocation_step, outputs, already_persisted=False):
         step = invocation_step.workflow_step
@@ -442,16 +471,10 @@ class WorkflowProgress(object):
         return subworkflow_invocation
 
     def subworkflow_invoker(self, trans, step, use_cached_job=False):
-        subworkflow_progress = self.subworkflow_progress(step)
+        subworkflow_invocation = self._subworkflow_invocation(step)
+        workflow_run_config = workflow_request_to_run_config(trans, subworkflow_invocation)
+        subworkflow_progress = self.subworkflow_progress(subworkflow_invocation, step, workflow_run_config.param_map)
         subworkflow_invocation = subworkflow_progress.workflow_invocation
-        workflow_run_config = WorkflowRunConfig(
-            target_history=subworkflow_invocation.history,
-            replacement_dict={},
-            inputs={},
-            param_map={},
-            copy_inputs_to_history=False,
-            use_cached_job=use_cached_job
-        )
         return WorkflowInvoker(
             trans,
             workflow=subworkflow_invocation.workflow,
@@ -459,8 +482,7 @@ class WorkflowProgress(object):
             progress=subworkflow_progress,
         )
 
-    def subworkflow_progress(self, step):
-        subworkflow_invocation = self._subworkflow_invocation(step)
+    def subworkflow_progress(self, subworkflow_invocation, step, param_map):
         subworkflow = subworkflow_invocation.workflow
         subworkflow_inputs = {}
         for input_subworkflow_step in subworkflow.input_steps:
@@ -484,6 +506,7 @@ class WorkflowProgress(object):
             subworkflow_invocation,
             subworkflow_inputs,
             self.module_injector,
+            param_map=param_map
         )
 
     def _recover_mapping(self, step_invocation):

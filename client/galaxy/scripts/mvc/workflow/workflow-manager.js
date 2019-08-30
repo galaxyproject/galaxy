@@ -1,8 +1,6 @@
+import $ from "jquery";
 import Connector from "mvc/workflow/workflow-connector";
-import * as Toastr from "libs/toastr";
-
-/* global $ */
-/* global Galaxy */
+import { Toast } from "ui/toast";
 
 class Workflow {
     constructor(app, canvas_container) {
@@ -14,6 +12,7 @@ class Workflow {
         this.has_changes = false;
         this.active_form_has_changes = false;
         this.workflowOutputLabels = {};
+        this.workflow_version = 0;
     }
     canLabelOutputWith(label) {
         if (label) {
@@ -38,7 +37,7 @@ class Workflow {
             this.unregisterOutputLabel(fromLabel);
         }
         if (!this.canLabelOutputWith(toLabel)) {
-            Toastr.warning(
+            Toast.warning(
                 `Workflow contains duplicate workflow output labels ${toLabel}. This must be fixed before it can be saved.`
             );
         }
@@ -54,6 +53,10 @@ class Workflow {
         } else {
             return false;
         }
+    }
+    updateDatatype(node, outputName, newDatatype) {
+        node.changeOutputDatatype(outputName, newDatatype);
+        return true;
     }
     create_node(type, title_text, content_id) {
         var node = this.app.prebuildNode(type, title_text, content_id);
@@ -91,7 +94,7 @@ class Workflow {
         var using_workflow_outputs = false;
         var has_existing_pjas = false;
         $.each(this.nodes, (k, node) => {
-            if (node.workflow_outputs && node.workflow_outputs.length > 0) {
+            if (node.type === "tool" && node.workflow_outputs && node.workflow_outputs.length > 0) {
                 using_workflow_outputs = true;
             }
             $.each(node.post_job_actions, (pja_id, pja) => {
@@ -103,43 +106,41 @@ class Workflow {
         if (using_workflow_outputs !== false || has_existing_pjas !== false) {
             // Using workflow outputs, or has existing pjas.  Remove all PJAs and recreate based on outputs.
             $.each(this.nodes, (k, node) => {
-                if (node.type === "tool") {
-                    var node_changed = false;
-                    if (node.post_job_actions === null) {
-                        node.post_job_actions = {};
-                        node_changed = true;
+                var node_changed = false;
+                if (node.post_job_actions === null) {
+                    node.post_job_actions = {};
+                    node_changed = true;
+                }
+                var pjas_to_rem = [];
+                $.each(node.post_job_actions, (pja_id, pja) => {
+                    if (pja.action_type == "HideDatasetAction") {
+                        pjas_to_rem.push(pja_id);
                     }
-                    var pjas_to_rem = [];
-                    $.each(node.post_job_actions, (pja_id, pja) => {
-                        if (pja.action_type == "HideDatasetAction") {
-                            pjas_to_rem.push(pja_id);
+                });
+                if (pjas_to_rem.length > 0) {
+                    $.each(pjas_to_rem, (i, pja_name) => {
+                        node_changed = true;
+                        delete node.post_job_actions[pja_name];
+                    });
+                }
+                if (using_workflow_outputs) {
+                    $.each(node.output_terminals, (ot_id, ot) => {
+                        var create_pja = !node.isWorkflowOutput(ot.name);
+                        if (create_pja === true) {
+                            node_changed = true;
+                            var pja = {
+                                action_type: "HideDatasetAction",
+                                output_name: ot.name,
+                                action_arguments: {}
+                            };
+                            node.post_job_actions[`HideDatasetAction${ot.name}`] = null;
+                            node.post_job_actions[`HideDatasetAction${ot.name}`] = pja;
                         }
                     });
-                    if (pjas_to_rem.length > 0) {
-                        $.each(pjas_to_rem, (i, pja_name) => {
-                            node_changed = true;
-                            delete node.post_job_actions[pja_name];
-                        });
-                    }
-                    if (using_workflow_outputs) {
-                        $.each(node.output_terminals, (ot_id, ot) => {
-                            var create_pja = !node.isWorkflowOutput(ot.name);
-                            if (create_pja === true) {
-                                node_changed = true;
-                                var pja = {
-                                    action_type: "HideDatasetAction",
-                                    output_name: ot.name,
-                                    action_arguments: {}
-                                };
-                                node.post_job_actions[`HideDatasetAction${ot.name}`] = null;
-                                node.post_job_actions[`HideDatasetAction${ot.name}`] = pja;
-                            }
-                        });
-                    }
-                    // lastly, if this is the active node, and we made changes, reload the display at right.
-                    if (this.active_node == node && node_changed === true) {
-                        this.reload_active_node();
-                    }
+                }
+                // lastly, if this is the active node, and we made changes, reload the display at right.
+                if (this.active_node == node && node_changed === true) {
+                    this.reload_active_node();
                 }
             });
         }
@@ -188,7 +189,7 @@ class Workflow {
                 id: node.id,
                 type: node.type,
                 content_id: node.content_id,
-                tool_version: node.config_form.version,
+                tool_version: node.config_form ? node.config_form.version : null,
                 tool_state: node.tool_state,
                 errors: node.errors,
                 input_connections: input_connections,
@@ -215,6 +216,7 @@ class Workflow {
         var max_id = offset;
         // First pass, nodes
         var using_workflow_outputs = false;
+        wf.workflow_version = data.version;
         $.each(data.steps, (id, step) => {
             var node = wf.app.prebuildNode(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let
@@ -273,8 +275,8 @@ class Workflow {
                 $.each(node.output_terminals, (ot_id, ot) => {
                     if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
                         node.addWorkflowOutput(ot.name);
-                        var callout = $(node.element).find(`.callout.${ot.name}`);
-                        callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+                        var callout = $(node.element).find(`.callout-terminal.${ot.name.replace(/(?=[()])/g, "\\")}`);
+                        callout.find("icon").addClass("mark-terminal-active");
                         wf.has_changes = true;
                     }
                 });
@@ -436,6 +438,7 @@ class Workflow {
             return 0;
         }
         // Span of all elements
+        var canvasZoom = this.app.canvas_manager.canvasZoom;
         var bounds = this.bounds_for_all_nodes();
         var position = this.canvas_container.position();
         var parent = this.canvas_container.parent();
@@ -454,16 +457,16 @@ class Workflow {
         height = Math.max(height, -top + parent.height());
         // Grow the canvas container
         this.canvas_container.css({
-            left: left,
-            top: top,
+            left: left / canvasZoom,
+            top: top / canvasZoom,
             width: width,
             height: height
         });
         // Move elements back if needed
         this.canvas_container.children().each(function() {
             var p = $(this).position();
-            $(this).css("left", p.left + xmin_delta);
-            $(this).css("top", p.top + ymin_delta);
+            $(this).css("left", (p.left + xmin_delta) / canvasZoom);
+            $(this).css("top", (p.top + ymin_delta) / canvasZoom);
         });
     }
 }

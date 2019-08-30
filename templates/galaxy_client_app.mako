@@ -3,39 +3,74 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
 </%def>
 
 ## ============================================================================
-<%def name="bootstrap( **kwargs )">
-    ## 1) Bootstap all kwargs to json, assigning to:
-    ##      global 'bootstrapped' var
-    ##      named require module 'bootstrapped-data'
+
+<%def name="load( app=None, **kwargs )">
     <script type="text/javascript">
-        //TODO: global...
-        %for key in kwargs:
-            ( window.bootstrapped = window.bootstrapped || {} )[ '${key}' ] = (
-                ${ render_json( kwargs[ key ] ) }
-            );
-        %endfor
-        define( 'bootstrapped-data', function(){
-            return window.bootstrapped;
+        // galaxy_client_app.mako, load
+
+        var bootstrapped;
+        try {
+            bootstrapped = ${render_json(kwargs)};
+        } catch(err) {
+            console.warn("Unable to parse bootstrapped variable", err);
+            bootstrapped = {};
+        }
+
+        var options = {
+            root: '${h.url_for( "/" )}',
+            config: ${ render_json( get_config_dict() )},
+            user: ${ render_json( get_user_dict() )},
+            session_csrf_token: '${ trans.session_csrf_token }'
+        };
+
+        config.set({
+            options: options,
+            bootstrapped: bootstrapped
         });
+
+        %if app:
+            console.warn("Does app ever run? Is it ever not-named app?", '${app}');
+        %endif
+
     </script>
 </%def>
 
-<%def name="load( app=None, **kwargs )">
-    ## 1) bootstrap kwargs (as above), 2) build Galaxy global var, 3) load 'app' by AMD (optional)
-    ${ self.bootstrap( **kwargs ) }
-    <script type="text/javascript">
-        window.Galaxy = new window.bundleEntries.GalaxyApp.GalaxyApp({
-            root               : '${h.url_for( "/" )}',
-            config             : ${ render_json( get_config_dict() )},
-            user               : ${ render_json( get_user_dict() )},
-            session_csrf_token : '${ trans.session_csrf_token }'
-        }, window.bootstrapped );
+<%def name="config_sentry(app)">
+    %if app and app.config:
+        <script type="text/javascript">
 
-        %if app:
-            require([ '${app}' ]);
+            var sentry = {};
+            %if app.config.sentry_dsn:
+                sentry.sentry_dsn_public = "${app.config.sentry_dsn_public}"
+                %if trans.user:
+                    sentry.email = "${trans.user.email|h}";
+                %endif
+            %endif
+
+            config.set({
+                sentry: sentry
+            });
+
+        </script>
+    %endif
+</%def>
+
+<%def name="config_google_analytics(ga_code)">
+    <script>
+        console.log("config_google_analytics ga_code:", '${ga_code}');
+        %if ga_code:
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+            ga('create', '${ga_code}', 'auto');
+            ga('send', 'pageview');
+        %else:
+            console.warn("Missing google analytics code");
         %endif
     </script>
 </%def>
+
 
 
 ## ----------------------------------------------------------------------------
@@ -46,7 +81,7 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
         try:
             controller = trans.webapp.api_controllers.get( 'configuration', None )
             if controller:
-                config_dict = controller.get_config_dict( trans, trans.user_is_admin() )
+                config_dict = controller.get_config_dict( trans, trans.user_is_admin )
         except Exception as exc:
             pass
         return config_dict
@@ -71,7 +106,7 @@ ${ h.dumps( get_config_dict() )}
                 user_dict = trans.user.to_dict( view='element',
                     value_mapper={ 'id': trans.security.encode_id, 'total_disk_usage': float, 'gross_deleted_disk_usage': float, 'email': escape, 'username': escape } )
                 user_dict[ 'quota_percent' ] = trans.app.quota_agent.get_percent( trans=trans )
-                user_dict[ 'is_admin' ] = trans.user_is_admin()
+                user_dict[ 'is_admin' ] = trans.user_is_admin
 
                 # tags used
                 users_api_controller = trans.webapp.api_controllers[ 'users' ]

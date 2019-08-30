@@ -96,6 +96,7 @@
                     </element>
                 </collection>
             </param>
+            <param name="strict" value="true" />
             <param name="how_select" value="tabular" />
             <param name="labels" value="new_labels_2.txt" ftype="tabular" />
         </test>
@@ -145,6 +146,9 @@
         contains the new label. This file may contain less entries than items
         in the collection. In that case only matching list identifiers will be
         relabeled.
+
+        Valid identifiers must contain only characters (a-z, A-Z), numbers (0-9), 
+        dash and underscore (-, _). Punctuation or whitespace are not allowed. 
 
         This tool will create new history datasets from your collection
         but your quota usage will not increase.

@@ -9,7 +9,7 @@ from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import and_, func
 
 from galaxy import web
-from galaxy.web.base.controller import BaseUIController, UsesTagsMixin
+from galaxy.webapps.base.controller import BaseUIController, UsesTagsMixin
 
 log = logging.getLogger(__name__)
 
@@ -30,8 +30,6 @@ class TagsController(BaseUIController, UsesTagsMixin):
                                    user=trans.user,
                                    tagged_item=item,
                                    elt_context=elt_context,
-                                   in_form=False,
-                                   input_size="22",
                                    tag_click_fn="default_tag_click_fn",
                                    use_toggle_link=False)
 
@@ -44,7 +42,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         # Apply tag.
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         user = trans.user
-        self.get_tag_handler(trans).apply_item_tags(user, item, new_tag.encode('utf-8'))
+        self.get_tag_handler(trans).apply_item_tags(user, item, new_tag)
         trans.sa_session.flush()
         # Log.
         params = dict(item_id=item.id, item_class=item_class, tag=new_tag)
@@ -92,7 +90,6 @@ class TagsController(BaseUIController, UsesTagsMixin):
         user = trans.user
         item_class = self.get_class(item_class)
         q = '' if q is None else q
-        q = q.encode('utf-8')
         if q.find(":") == -1:
             return self._get_tag_autocomplete_names(trans, q, limit, timestamp, user, item, item_class)
         else:

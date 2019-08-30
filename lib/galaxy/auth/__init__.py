@@ -1,7 +1,6 @@
 """
 Contains implementations of the authentication logic.
 """
-
 import logging
 
 from galaxy.auth.util import get_authenticators, parse_auth_results
@@ -16,7 +15,7 @@ class AuthManager(object):
     def __init__(self, app):
         self.__app = app
         self.redact_username_in_logs = app.config.redact_username_in_logs
-        self.authenticators = get_authenticators(app.config.auth_config_file)
+        self.authenticators = get_authenticators(app.config.auth_config_file, app.config.auth_config_file_set)
 
     def check_registration_allowed(self, email, username, password):
         """Checks if the provided email/username is allowed to register."""
@@ -65,8 +64,9 @@ class AuthManager(object):
                 if auth_results[0] is True:
                     try:
                         auth_return = parse_auth_results(trans, auth_results, options)
-                    except Conflict:
-                        break
+                    except Conflict as conflict:
+                        log.exception(conflict)
+                        raise
                     return auth_return
                 elif auth_results[0] is None:
                     auto_email = str(auth_results[1]).lower()
@@ -99,12 +99,12 @@ class AuthManager(object):
                 auth_result = provider.authenticate_user(user, current_password, options)
                 if auth_result is True:
                     if string_as_bool(options.get("allow-password-change", False)):
-                        return (True, '')  # accept user
+                        return
                     else:
-                        return (False, 'Password change not supported.')
+                        return 'Password change not supported.'
                 elif auth_result is None:
                     break  # end authentication (skip rest)
-        return (False, 'Invalid current password.')
+        return 'Invalid current password.'
 
     def active_authenticators(self, email, username, password):
         """Yields AuthProvider instances for the provided configfile that match the

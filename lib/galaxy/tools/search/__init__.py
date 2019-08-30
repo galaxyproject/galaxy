@@ -49,7 +49,7 @@ class ToolBoxSearch(object):
         self.storage, self.index = self._index_setup()
         # We keep track of how many times the tool index has been rebuilt.
         # We start at -1, so that after the first index the count is at 0,
-        # which is the same is the toolbox reload count. This way we can skip
+        # which is the same as the toolbox reload count. This way we can skip
         # reindexing if the index count is equal to the toolbox reload count.
         self.index_count = -1
 
@@ -103,13 +103,15 @@ class ToolBoxSearch(object):
             add_doc_kwds['stub'] = to_unicode(id)
         if tool.labels:
             add_doc_kwds['labels'] = to_unicode(" ".join(tool.labels))
-        if index_help and tool.help:
-            try:
-                add_doc_kwds['help'] = to_unicode(tool.help.render(host_url="", static_path=""))
-            except Exception:
-                # Don't fail to build index just because a help message
-                # won't render.
-                pass
+        if index_help:
+            raw_help = tool.raw_help
+            if raw_help:
+                try:
+                    add_doc_kwds['help'] = to_unicode(raw_help)
+                except Exception:
+                    # Don't fail to build index just because a help message
+                    # won't render.
+                    pass
         return add_doc_kwds
 
     def search(self, q, tool_name_boost, tool_section_boost, tool_description_boost, tool_label_boost, tool_stub_boost, tool_help_boost, tool_search_limit, tool_enable_ngram_search, tool_ngram_minsize, tool_ngram_maxsize):

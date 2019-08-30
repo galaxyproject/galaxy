@@ -148,7 +148,7 @@ def determine_file_type(input_url, output_filename, metadata, json_params, sniff
     Determine the Galaxy data format for this file.
     """
     # Use genomespace metadata to map type
-    file_format = metadata.dataFormat.name if metadata.dataFormat else None
+    file_format = metadata.data_format.name if metadata.data_format else None
     file_type = get_galaxy_ext_from_genomespace_format(file_format)
 
     # If genomespace metadata has no identifiable format, attempt to sniff type

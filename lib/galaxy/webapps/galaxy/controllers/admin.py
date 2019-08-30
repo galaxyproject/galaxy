@@ -1,14 +1,13 @@
 import imp
 import logging
 import os
-import time
+from collections import OrderedDict
 from datetime import datetime, timedelta
 from string import punctuation as PUNCTUATION
 
 import six
 from sqlalchemy import and_, false, or_
 
-import galaxy.queue_worker
 from galaxy import (
     model,
     util,
@@ -17,19 +16,16 @@ from galaxy import (
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError, MessageException
 from galaxy.model import tool_shed_install as install_model
-from galaxy.tools import global_tool_errors
 from galaxy.util import (
     nice_size,
     sanitize_text,
     url_get
 )
-from galaxy.util.hash_util import new_secure_hash
-from galaxy.util.odict import odict
 from galaxy.web import url_for
-from galaxy.web.base import controller
-from galaxy.web.base.controller import UsesQuotaMixin
 from galaxy.web.framework.helpers import grids, time_ago
 from galaxy.web.params import QuotaParamParser
+from galaxy.webapps.base import controller
+from galaxy.webapps.base.controller import UsesQuotaMixin
 from tool_shed.util import (
     common_util,
     encoding_util,
@@ -39,7 +35,6 @@ from tool_shed.util.web_util import escape
 
 
 log = logging.getLogger(__name__)
-compliance_log = logging.getLogger('COMPLIANCE')
 
 
 class UserListGrid(grids.Grid):
@@ -131,7 +126,8 @@ class UserListGrid(grids.Grid):
         ActivatedColumn("Activated", attach_popup=False),
         APIKeyColumn("API Key", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
+        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
+        grids.PurgedColumn("Purged", key="purged", visible=False, filterable="advanced")
     ]
     columns.append(grids.MulticolFilterColumn("Search",
                                               cols_to_filter=[columns[0], columns[1]],
@@ -139,7 +135,7 @@ class UserListGrid(grids.Grid):
                                               visible=False,
                                               filterable="standard"))
     global_actions = [
-        grids.GridAction("Create new user", url_args=dict(webapp="galaxy", action="create_new_user"))
+        grids.GridAction("Create new user", url_args=dict(action="users/create"))
     ]
     operations = [
         grids.GridOperation("Manage Information",
@@ -161,8 +157,8 @@ class UserListGrid(grids.Grid):
         grids.GridOperation("Generate New API Key",
                             allow_multiple=False,
                             async_compatible=True)
-
     ]
+
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
         grids.GridColumnFilter("Deleted", args=dict(deleted=True, purged=False)),
@@ -171,6 +167,8 @@ class UserListGrid(grids.Grid):
     ]
     num_rows_per_page = 50
     use_paging = True
+    default_filter = dict(purged="False")
+    use_default_filter = True
 
     def get_current_item(self, trans, **kwargs):
         return trans.user
@@ -459,6 +457,7 @@ class QuotaListGrid(grids.Grid):
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
         grids.GridColumnFilter("Deleted", args=dict(deleted=True)),
+        grids.GridColumnFilter("Purged", args=dict(purged=True)),
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
@@ -526,26 +525,35 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     group_list_grid = GroupListGrid()
     quota_list_grid = QuotaListGrid()
     tool_version_list_grid = ToolVersionListGrid()
-    delete_operation = grids.GridOperation("Delete", condition=(lambda item: not item.deleted), allow_multiple=True)
+    delete_operation = grids.GridOperation("Delete", condition=(lambda item: not item.deleted and not item.purged), allow_multiple=True)
     undelete_operation = grids.GridOperation("Undelete", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True)
     purge_operation = grids.GridOperation("Purge", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True)
     impersonate_operation = grids.GridOperation(
         "Impersonate",
         url_args=dict(controller="admin", action="impersonate"),
+        condition=(lambda item: not item.deleted and not item.purged),
         allow_multiple=False
     )
 
     @web.expose
     @web.require_admin
     def index(self, trans, **kwd):
+        return self.client(trans, **kwd)
+
+    @web.expose
+    @web.require_admin
+    def client(self, trans, **kwd):
+        """
+        Endpoint for admin clientside routes.
+        """
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         settings = {
-            'is_repo_installed'          : trans.install_model.context.query(trans.install_model.ToolShedRepository).first() is not None,
-            'installing_repository_ids'  : repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=True),
-            'is_tool_shed_installed'     : bool(trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds)
+            'is_repo_installed': trans.install_model.context.query(trans.install_model.ToolShedRepository).first() is not None,
+            'installing_repository_ids': repository_util.get_ids_of_tool_shed_repositories_being_installed(trans.app, as_string=True),
+            'is_tool_shed_installed': bool(trans.app.tool_shed_registry and trans.app.tool_shed_registry.tool_sheds)
         }
-        return self.template(trans, 'admin', settings=settings, message=message, status=status)
+        return self._bootstrapped_client(trans, app_name='admin', settings=settings, message=message, status=status)
 
     @web.expose
     @web.json
@@ -559,7 +567,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         )
 
         for data_table_elem_name, data_table in sorted_data_tables:
-            for filename, file_dict in data_table.filenames.iteritems():
+            for filename, file_dict in data_table.filenames.items():
                 file_missing = ['file missing'] \
                     if not file_dict.get('found') else []
                 data.append({
@@ -572,6 +580,20 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 })
 
         return {'data': data, 'message': message, 'status': status}
+
+    @web.expose
+    @web.json
+    @web.require_admin
+    def data_types_list(self, trans, **kwd):
+        datatypes = []
+        keys = set()
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'done')
+        for dtype in sorted(trans.app.datatypes_registry.datatype_elems,
+                           key=lambda dtype: dtype.get('extension')):
+            datatypes.append(dtype.attrib)
+            keys |= set(dtype.attrib)
+        return {'keys': list(keys), 'data': datatypes, 'message': message, 'status': status}
 
     @web.expose
     @web.json
@@ -610,7 +632,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             kwd['status'] = status
         return self.user_list_grid(trans, **kwd)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def quotas_list(self, trans, payload=None, **kwargs):
         message = kwargs.get('message', '')
@@ -624,7 +646,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 try:
                     quotas.append(get_quota(trans, quota_id))
                 except MessageException as e:
-                    return self.message_exception(trans, str(e))
+                    return self.message_exception(trans, util.unicodify(e))
             operation = kwargs.pop('operation').lower()
             try:
                 if operation == 'delete':
@@ -642,7 +664,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             kwargs['status'] = status or 'done'
         return self.quota_list_grid(trans, **kwargs)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def create_quota(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
@@ -690,7 +712,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def rename_quota(self, trans, payload=None, **kwd):
         id = kwd.get('id')
@@ -716,7 +738,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def manage_users_and_groups_for_quota(self, trans, payload=None, **kwd):
         quota_id = kwd.get('id')
@@ -752,7 +774,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def edit_quota(self, trans, payload=None, **kwd):
         id = kwd.get('id')
@@ -780,7 +802,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             except ActionInputError as e:
                 return self.message_exception(trans, e.err_msg)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def set_quota_default(self, trans, payload=None, **kwd):
         id = kwd.get('id')
@@ -830,7 +852,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
     def check_for_tool_dependencies(self, trans, migration_stage):
         # Get the 000x_tools.xml file associated with migration_stage.
-        tools_xml_file_path = os.path.abspath(os.path.join(trans.app.config.root, 'scripts', 'migrate_tools', '%04d_tools.xml' % migration_stage))
+        tools_xml_file_path = os.path.abspath(os.path.join(common_util.TOOL_MIGRATION_SCRIPTS_DIR, '%04d_tools.xml' % migration_stage))
         tree = util.parse_xml(tools_xml_file_path)
         root = tree.getroot()
         tool_shed = root.get('name')
@@ -862,24 +884,19 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     def review_tool_migration_stages(self, trans, **kwd):
         message = escape(util.restore_text(kwd.get('message', '')))
         status = util.restore_text(kwd.get('status', 'done'))
-        migration_stages_dict = odict()
-        migration_modules = []
+        migration_stages_dict = OrderedDict()
+        # FIXME: this isn't valid in an installed context
         migration_scripts_dir = os.path.abspath(os.path.join(trans.app.config.root, 'lib', 'tool_shed', 'galaxy_install', 'migrate', 'versions'))
-        migration_scripts_dir_contents = os.listdir(migration_scripts_dir)
-        for item in migration_scripts_dir_contents:
-            if os.path.isfile(os.path.join(migration_scripts_dir, item)) and item.endswith('.py'):
-                module = item.replace('.py', '')
-                migration_modules.append(module)
-        if migration_modules:
-            migration_modules.sort()
-            # Remove the 0001_tools.py script since it is the seed.
-            migration_modules = migration_modules[1:]
-            # Reverse the list so viewing will be newest to oldest.
-            migration_modules.reverse()
-        for migration_module in migration_modules:
-            migration_stage = int(migration_module.replace('_tools', ''))
+        modules = os.listdir(migration_scripts_dir)
+        modules.sort()
+        modules.reverse()
+        for item in modules:
+            if not item.endswith('_tools.py') or item.startswith('0001_tools'):
+                continue
+            module = item.replace('.py', '')
+            migration_stage = int(module.replace('_tools', ''))
             repo_name_dependency_tups = self.check_for_tool_dependencies(trans, migration_stage)
-            open_file_obj, file_name, description = imp.find_module(migration_module, [migration_scripts_dir])
+            open_file_obj, file_name, description = imp.find_module(module, [migration_scripts_dir])
             imported_module = imp.load_module('upgrade', open_file_obj, file_name, description)
             migration_info = imported_module.__doc__
             open_file_obj.close()
@@ -888,41 +905,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                    migration_stages_dict=migration_stages_dict,
                                    message=message,
                                    status=status)
-
-    @web.expose
-    @web.require_admin
-    def tool_errors(self, trans, **kwd):
-        return trans.fill_template('admin/tool_errors.mako', tool_errors=global_tool_errors.error_stack)
-
-    @web.expose
-    @web.require_admin
-    def view_datatypes_registry(self, trans, **kwd):
-        message = escape(util.restore_text(kwd.get('message', '')))
-        status = util.restore_text(kwd.get('status', 'done'))
-        return trans.fill_template('admin/view_datatypes_registry.mako', message=message, status=status)
-
-    @web.expose
-    @web.require_admin
-    def display_applications(self, trans, **kwd):
-        return trans.fill_template('admin/view_display_applications.mako', display_applications=trans.app.datatypes_registry.display_applications)
-
-    @web.expose
-    @web.require_admin
-    def reload_display_application(self, trans, **kwd):
-        galaxy.queue_worker.send_control_task(trans.app,
-                                              'reload_display_application',
-                                              noop_self=True,
-                                              kwargs={'display_application_ids': kwd.get('id')})
-        reloaded, failed = trans.app.datatypes_registry.reload_display_applications(kwd.get('id'))
-        if not reloaded and failed:
-            return trans.show_error_message('Unable to reload any of the %i requested display applications ("%s").'
-                                            % (len(failed), '", "'.join(failed)))
-        if failed:
-            return trans.show_warn_message('Reloaded %i display applications ("%s"), but failed to reload %i display applications ("%s").'
-                                           % (len(reloaded), '", "'.join(reloaded), len(failed), '", "'.join(failed)))
-        if not reloaded:
-            return trans.show_warn_message('You need to request at least one display application to reload.')
-        return trans.show_ok_message('Reloaded %i requested display applications ("%s").' % (len(reloaded), '", "'.join(reloaded)))
 
     @web.expose
     @web.require_admin
@@ -937,7 +919,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                    message=message,
                                    status=status)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def tool_versions_list(self, trans, **kwd):
         return self.tool_version_list_grid(trans, **kwd)
@@ -965,7 +947,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             kwargs['status'] = status
         return self.role_list_grid(trans, **kwargs)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def create_role(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
@@ -1037,7 +1019,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     message += 'One of the groups associated with this role is the newly created group with the same name.'
                 return {'message' : message}
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def rename_role(self, trans, payload=None, **kwd):
         id = kwd.get('id')
@@ -1075,7 +1057,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         trans.sa_session.flush()
             return {'message': 'Role \'%s\' has been renamed to \'%s\'.' % (old_name, new_name)}
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def manage_users_and_groups_for_role(self, trans, payload=None, **kwd):
         role_id = kwd.get('id')
@@ -1187,7 +1169,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             message += " %s " % role.name
         return (message, "done")
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def groups_list(self, trans, **kwargs):
         message = kwargs.get('message')
@@ -1209,7 +1191,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             kwargs['status'] = status
         return self.group_list_grid(trans, **kwargs)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def rename_group(self, trans, payload=None, **kwd):
         id = kwd.get('id')
@@ -1241,7 +1223,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                         trans.sa_session.flush()
             return {'message': 'Group \'%s\' has been renamed to \'%s\'.' % (old_name, new_name)}
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def manage_users_and_roles_for_group(self, trans, payload=None, **kwd):
         group_id = kwd.get('id')
@@ -1280,7 +1262,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             trans.sa_session.refresh(group)
             return {'message' : 'Group \'%s\' has been updated with %d associated users and %d associated roles.' % (group.name, len(in_users), len(in_roles))}
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def create_group(self, trans, payload=None, **kwd):
         if trans.request.method == 'GET':
@@ -1397,7 +1379,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                                         action='create',
                                                         cntrller='admin'))
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def reset_user_password(self, trans, payload=None, **kwd):
         users = {user_id: get_user(trans, user_id) for user_id in util.listify(kwd.get('id'))}
@@ -1428,61 +1410,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         message = 'Deleted %d users: ' % len(ids)
         for user_id in ids:
             user = get_user(trans, user_id)
-            user.deleted = True
-
-            compliance_log.info('delete-user-event: %s' % user_id)
-
-            # Maybe there is some case in the future where an admin needs
-            # to prove that a user was using a server for some reason (e.g.
-            # a court case.) So we make this painfully hard to recover (and
-            # not immediately reversable) in line with GDPR, but still
-            # leave open the possibility to prove someone was part of the
-            # server just in case. By knowing the exact email + approximate
-            # time of deletion, one could run through hashes for every
-            # second of the surrounding days/weeks.
-            pseudorandom_value = str(int(time.time()))
-            # Replace email + username with a (theoretically) unreversable
-            # hash. If provided with the username we can probably re-hash
-            # to identify if it is needed for some reason.
-            #
-            # Deleting multiple times will re-hash the username/email
-            email_hash = new_secure_hash(user.email + pseudorandom_value)
-            uname_hash = new_secure_hash(user.username + pseudorandom_value)
-
-            # We must also redact username
-            for role in user.all_roles():
-                if self.app.config.redact_username_during_deletion:
-                    role.name = role.name.replace(user.username, uname_hash)
-                    role.description = role.description.replace(user.username, uname_hash)
-
-                if self.app.config.redact_email_during_deletion:
-                    role.name = role.name.replace(user.email, email_hash)
-                    role.description = role.description.replace(user.email, email_hash)
-
-            if self.app.config.redact_email_during_deletion:
-                user.email = email_hash
-            if self.app.config.redact_username_during_deletion:
-                user.username = uname_hash
-
-            # Redact user addresses as well
-            if self.app.config.redact_user_address_during_deletion:
-                user_addresses = trans.sa_session.query(trans.app.model.UserAddress) \
-                    .filter(trans.app.model.UserAddress.user_id == user.id).all()
-
-                for addr in user_addresses:
-                    addr.desc = new_secure_hash(addr.desc + pseudorandom_value)
-                    addr.name = new_secure_hash(addr.name + pseudorandom_value)
-                    addr.institution = new_secure_hash(addr.institution + pseudorandom_value)
-                    addr.address = new_secure_hash(addr.address + pseudorandom_value)
-                    addr.city = new_secure_hash(addr.city + pseudorandom_value)
-                    addr.state = new_secure_hash(addr.state + pseudorandom_value)
-                    addr.postal_code = new_secure_hash(addr.postal_code + pseudorandom_value)
-                    addr.country = new_secure_hash(addr.country + pseudorandom_value)
-                    addr.phone = new_secure_hash(addr.phone + pseudorandom_value)
-                    trans.sa_session.add(addr)
-
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
+            # Actually do the delete
+            self.user_manager.delete(user)
+            # Accumulate messages for the return message
             message += ' %s ' % user.email
         return (message, 'done')
 
@@ -1491,12 +1421,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         undeleted_users = ""
         for user_id in ids:
             user = get_user(trans, user_id)
-            if not user.deleted:
-                message = 'User \'%s\' has not been deleted, so it cannot be undeleted.' % user.email
-                return (message, 'error')
-            user.deleted = False
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
+            # Actually do the undelete
+            self.user_manager.undelete(user)
+            # Count and accumulate messages to return to the admin panel
             count += 1
             undeleted_users += ' %s' % user.email
         message = 'Undeleted %d users: %s' % (count, undeleted_users)
@@ -1510,7 +1437,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         # Purging a deleted User deletes all of the following:
         # - History where user_id = User.id
         #    - HistoryDatasetAssociation where history_id = History.id
-        #    - Dataset where HistoryDatasetAssociation.dataset_id = Dataset.id
         # - UserGroupAssociation where user_id == User.id
         # - UserRoleAssociation where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
         # - UserAddress where user_id == User.id
@@ -1518,38 +1444,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         message = 'Purged %d users: ' % len(ids)
         for user_id in ids:
             user = get_user(trans, user_id)
-            if not user.deleted:
-                return ('User \'%s\' has not been deleted, so it cannot be purged.' % user.email, 'error')
-            private_role = trans.app.security_agent.get_private_user_role(user)
-            # Delete History
-            for h in user.active_histories:
-                trans.sa_session.refresh(h)
-                for hda in h.active_datasets:
-                    # Delete HistoryDatasetAssociation
-                    d = trans.sa_session.query(trans.app.model.Dataset).get(hda.dataset_id)
-                    # Delete Dataset
-                    if not d.deleted:
-                        d.deleted = True
-                        trans.sa_session.add(d)
-                    hda.deleted = True
-                    trans.sa_session.add(hda)
-                h.deleted = True
-                trans.sa_session.add(h)
-            # Delete UserGroupAssociations
-            for uga in user.groups:
-                trans.sa_session.delete(uga)
-            # Delete UserRoleAssociations EXCEPT FOR THE PRIVATE ROLE
-            for ura in user.roles:
-                if ura.role_id != private_role.id:
-                    trans.sa_session.delete(ura)
-            # Delete UserAddresses
-            for address in user.addresses:
-                trans.sa_session.delete(address)
-            # Purge the user
-            user.purged = True
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
-            message += '%s ' % user.email
+            self.user_manager.purge(user)
+            message += '\t%s\n ' % user.email
         return (message, 'done')
 
     def _recalculate_user(self, trans, user_id):
@@ -1577,7 +1473,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         trans.sa_session.flush()
         return ("New key '%s' generated for requested user '%s'." % (new_key.key, user.email), "done")
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def manage_roles_and_groups_for_user(self, trans, payload=None, **kwd):
         user_id = kwd.get('id')
@@ -1626,15 +1522,26 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             return {'message' : 'User \'%s\' has been updated with %d associated roles and %d associated groups (private roles are not displayed).' % (user.email, len(in_roles) - 1, len(in_groups))}
 
     @web.expose
+    @web.json
     @web.require_admin
-    def jobs(self, trans, stop=[], stop_msg=None, cutoff=180, job_lock=None, ajl_submit=None, **kwd):
+    def jobs_control(self, trans, job_lock=None, **kwd):
+        if job_lock is not None:
+            job_lock = True if job_lock == 'true' else False
+            trans.app.queue_worker.send_control_task('admin_job_lock', kwargs={'job_lock': job_lock}, get_response=True)
+        job_lock = trans.app.job_manager.job_lock
+        return {'job_lock': job_lock}
+
+    @web.expose
+    @web.json
+    @web.require_admin
+    def jobs_list(self, trans, stop=[], stop_msg=None, cutoff=180, **kwd):
         deleted = []
-        msg = None
-        status = None
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'info')
         job_ids = util.listify(stop)
         if job_ids and stop_msg in [None, '']:
-            msg = 'Please enter an error message to display to the user describing why the job was terminated'
-            status = 'error'
+            message = 'Please enter an error message to display to the user describing why the job was terminated'
+            return self.message_exception(trans, message)
         elif job_ids:
             if stop_msg[-1] not in PUNCTUATION:
                 stop_msg += '.'
@@ -1643,31 +1550,21 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     % (stop_msg, self.app.config.get("support_url", "https://galaxyproject.org/support/"))
                 if trans.app.config.track_jobs_in_database:
                     job = trans.sa_session.query(trans.app.model.Job).get(job_id)
-                    job.stderr = error_msg
+                    job.job_stderr = error_msg
                     job.set_state(trans.app.model.Job.states.DELETED_NEW)
                     trans.sa_session.add(job)
                 else:
-                    trans.app.job_manager.job_stop_queue.put(job_id, error_msg=error_msg)
+                    trans.app.job_manager.stop(job, message=error_msg)
                 deleted.append(str(job_id))
         if deleted:
-            msg = 'Queued job'
+            message = 'Queued job'
             if len(deleted) > 1:
-                msg += 's'
-            msg += ' for deletion: '
-            msg += ', '.join(deleted)
+                message += 's'
+            message += ' for deletion: '
+            message += ', '.join(deleted)
             status = 'done'
             trans.sa_session.flush()
-        if ajl_submit:
-            if job_lock == 'on':
-                galaxy.queue_worker.send_control_task(trans.app, 'admin_job_lock',
-                                                      kwargs={'job_lock': True})
-                job_lock = True
-            else:
-                galaxy.queue_worker.send_control_task(trans.app, 'admin_job_lock',
-                                                      kwargs={'job_lock': False})
-                job_lock = False
-        else:
-            job_lock = trans.app.job_manager.job_lock
+        job_lock = trans.app.job_manager.job_lock
         cutoff_time = datetime.utcnow() - timedelta(seconds=int(cutoff))
         jobs = trans.sa_session.query(trans.app.model.Job) \
                                .filter(and_(trans.app.model.Job.table.c.update_time < cutoff_time,
@@ -1681,33 +1578,44 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                          or_(trans.app.model.Job.state == trans.app.model.Job.states.ERROR,
                              trans.app.model.Job.state == trans.app.model.Job.states.OK))) \
             .order_by(trans.app.model.Job.table.c.update_time.desc()).all()
-        last_updated = {}
-        for job in jobs:
-            delta = datetime.utcnow() - job.update_time
-            if delta.days > 0:
-                last_updated[job.id] = '%s hours' % (delta.days * 24 + int(delta.seconds / 60 / 60))
-            elif delta > timedelta(minutes=59):
-                last_updated[job.id] = '%s hours' % int(delta.seconds / 60 / 60)
-            else:
-                last_updated[job.id] = '%s minutes' % int(delta.seconds / 60)
-        finished = {}
-        for job in recent_jobs:
-            delta = datetime.utcnow() - job.update_time
-            if delta.days > 0:
-                finished[job.id] = '%s hours' % (delta.days * 24 + int(delta.seconds / 60 / 60))
-            elif delta > timedelta(minutes=59):
-                finished[job.id] = '%s hours' % int(delta.seconds / 60 / 60)
-            else:
-                finished[job.id] = '%s minutes' % int(delta.seconds / 60)
-        return trans.fill_template('/admin/jobs.mako',
-                                   jobs=jobs,
-                                   recent_jobs=recent_jobs,
-                                   last_updated=last_updated,
-                                   finished=finished,
-                                   cutoff=cutoff,
-                                   msg=msg,
-                                   status=status,
-                                   job_lock=job_lock)
+
+        def prepare_jobs_list(jobs):
+            res = []
+            for job in jobs:
+                delta = datetime.utcnow() - job.update_time
+                update_time = ""
+                if delta.days > 0:
+                    update_time = '%s hours ago' % (delta.days * 24 + int(delta.seconds / 60 / 60))
+                elif delta > timedelta(minutes=59):
+                    update_time = '%s hours ago' % int(delta.seconds / 60 / 60)
+                else:
+                    update_time = '%s minutes ago' % int(delta.seconds / 60)
+                inputs = ""
+                try:
+                    inputs = ", ".join(['{} {}'.format(da.dataset.id, da.dataset.state) for da in job.input_datasets])
+                except Exception:
+                    inputs = 'Unable to determine inputs'
+                res.append({
+                    'job_info': {
+                        'id': job.id,
+                        'info_url': "{}?jobid={}".format(web.url_for(controller="admin", action="job_info"), job.id)
+                    },
+                    'user': job.history.user.email if job.history and job.history.user else 'anonymous',
+                    'update_time': update_time,
+                    'tool_id': job.tool_id,
+                    'state': job.state,
+                    'input_dataset': inputs,
+                    'command_line': job.command_line,
+                    'job_runner_name': job.job_runner_name,
+                    'job_runner_external_id': job.job_runner_external_id
+                })
+            return res
+        return {'jobs': prepare_jobs_list(jobs),
+                'recent_jobs': prepare_jobs_list(recent_jobs),
+                'cutoff': cutoff,
+                'message': message,
+                'status': status,
+                'job_lock': job_lock}
 
     @web.expose
     @web.require_admin
@@ -1733,7 +1641,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
             selected_tool_ids = []
         if not selected_environments_to_uninstall:
             selected_environments_to_uninstall = []
-        tools_by_id = trans.app.toolbox.tools_by_id
+        tools_by_id = trans.app.toolbox.tools_by_id.copy()
         view = six.next(six.itervalues(trans.app.toolbox.tools_by_id))._view
         if selected_tool_ids:
             # install the dependencies for the tools in the selected_tool_ids list
@@ -1767,7 +1675,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 new_whitelist = sorted([tid for tid in tools_to_whitelist if tid in trans.app.toolbox.tools_by_id])
                 f.write("\n".join(new_whitelist))
             trans.app.config.sanitize_whitelist = new_whitelist
-            galaxy.queue_worker.send_control_task(trans.app, 'reload_sanitize_whitelist', noop_self=True)
+            trans.app.queue_worker.send_control_task('reload_sanitize_whitelist', noop_self=True)
             # dispatch a message to reload list for other processes
         return trans.fill_template('/webapps/galaxy/admin/sanitize_whitelist.mako',
                                    sanitize_all=trans.app.config.sanitize_all_html,

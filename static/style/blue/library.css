@@ -1,9 +1,3 @@
-a {
-  text-decoration: underline; }
-
-label {
-  font-weight: normal; }
-
 .library_style_container {
   width: 95%;
   margin: auto;
@@ -18,7 +12,7 @@ label {
     font-size: initial;
     margin-left: 0.6em; }
   .library_style_container .libraryRow {
-    background-color: #ebd9b2; }
+    background-color: #f8f9fa; }
   .library_style_container .datasetHighlighted {
     background-color: #f9f9f9; }
   .library_style_container .libraryItemDeleted-True {
@@ -27,7 +21,7 @@ label {
     padding: 4px 4px 2px 4px; }
   .library_style_container li.folderRow,
   .library_style_container li.datasetRow {
-    border-top: solid 1px spin(#a8afc6, 180); }
+    border-top: solid 1px #bdc6d0; }
   .library_style_container li.folderRow:hover,
   .library_style_container li.datasetRow:hover {
     background-color: #f9f9f9; }

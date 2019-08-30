@@ -39,7 +39,7 @@ class GenericXml(data.Text):
             if line is None or not line.startswith('<?'):
                 break
         # pattern match <root or <ns:root for any ns string
-        pattern = '^<(\w*:)?%s' % root
+        pattern = r'^<(\w*:)?%s' % root
         return line is not None and re.match(pattern, line) is not None
 
     def sniff_prefix(self, file_prefix):

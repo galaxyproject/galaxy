@@ -6,6 +6,7 @@ Read a maf and output a multiple block fasta file.
 from __future__ import print_function
 
 import sys
+from collections import OrderedDict
 
 from bx.align import maf
 
@@ -51,7 +52,8 @@ def __main__():
                 spec_counts[spec] = 0
             else:
                 spec_counts[spec] += 1
-            file_out.write("%s\n" % maf_utilities.get_fasta_header(component, {'block_index': block_num, 'species': spec, 'sequence_index': spec_counts[spec]}, suffix="%s_%i_%i" % (spec, block_num, spec_counts[spec])))
+            d = OrderedDict([('block_index', block_num), ('species', spec), ('sequence_index', spec_counts[spec])])
+            file_out.write("%s\n" % maf_utilities.get_fasta_header(component, d, suffix="%s_%i_%i" % (spec, block_num, spec_counts[spec])))
             file_out.write("%s\n" % component.text)
         file_out.write("\n")
     file_out.close()

@@ -1,7 +1,7 @@
+import _ from "underscore";
+import { getAppRoot } from "onload/loadConfig";
 import LIST_VIEW from "mvc/list/list-view";
-import DC_MODEL from "mvc/collection/collection-model";
 import DC_LI from "mvc/collection/collection-li";
-import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
 var logNamespace = "collections";
@@ -40,7 +40,7 @@ var CollectionView = _super.extend(
             this.parentName = attributes.parentName;
             /** foldout or drilldown */
             this.foldoutStyle = attributes.foldoutStyle || "foldout";
-            this.downloadUrl = `${Galaxy.root}api/dataset_collections/${this.model.attributes.id}/download`;
+            this.downloadUrl = `${getAppRoot()}api/dataset_collections/${this.model.attributes.id}/download`;
         },
 
         getNestedDCDCEViewClass: function() {
@@ -54,7 +54,6 @@ var CollectionView = _super.extend(
             var panel = this;
             this.handleWarning($newRender);
             panel.log("_queueNewRender:", $newRender, speed);
-
             // TODO: jquery@1.12 doesn't change display when the elem has display: flex
             // this causes display: block for those elems after the use of show/hide animations
             // animations are removed from this view for now until fixed

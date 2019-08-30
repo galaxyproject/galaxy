@@ -84,7 +84,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
         data1_val = model.HistoryDatasetAssociation()
         data1_val.dbkey = "hg18"
         self.other_values = {"data1": data1_val}
-        assert self.test_context.filter_value == "hg18"
+        assert self.test_context.filter_values == {"hg18"}
 
         # mock_hda is hg19, other is hg18 so should not be "valid hda"
         hda_match = self.test_context.hda_match(self.mock_hda)
@@ -100,6 +100,40 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
         hda_match = self.test_context.hda_match(self.mock_hda)
         assert hda_match
 
+    def test_metadata_filtered_hda_options_filter_attribute_matched_keys(self):
+        self.metadata_filtered_param = True
+        data1_val = model.HistoryDatasetAssociation()
+        self.other_values = {"data1": data1_val}
+
+        hda1 = MockHistoryDatasetAssociation()
+        hda1.metadata = MockMetadata()
+        hda1.metadata.foo = "bar"
+        hda2 = MockHistoryDatasetAssociation()
+        hda2.metadata = MockMetadata()
+        hda2.metadata.foo = "baz"
+
+        assert self.test_context.filter_values == {"baz", "bar"}
+
+        hda_match = self.test_context.hda_match(hda1)
+        assert hda_match
+
+        hda_match = self.test_context.hda_match(hda2)
+        assert hda_match
+
+    def test_metadata_filtered_hda_options_filter_attribute_unmatched_key(self):
+        self.metadata_filtered_param = True
+        data1_val = model.HistoryDatasetAssociation()
+        self.other_values = {"data1": data1_val}
+
+        hda = MockHistoryDatasetAssociation()
+        hda.metadata = MockMetadata()
+        hda.metadata.foo = "no-match"
+
+        assert self.test_context.filter_values == {"baz", "bar"}
+
+        hda_match = self.test_context.hda_match(hda)
+        assert not hda_match
+
     def setUp(self):
         self.setup_app()
         self.mock_hda = MockHistoryDatasetAssociation()
@@ -113,6 +147,7 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
 
         # Reset lazily generated stuff
         self.filtered_param = False
+        self.metadata_filtered_param = False
         self._test_context = None
         self.param = None
 
@@ -122,6 +157,12 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
             option_xml = ""
             if self.filtered_param:
                 option_xml = '''<options><filter type="data_meta" ref="data1" key="dbkey" /></options>'''
+            if self.metadata_filtered_param:
+                option_xml = '''
+                    <options options_filter_attribute="metadata.foo">
+                      <filter type="add_value" value="bar" />
+                      <filter type="add_value" value="baz" />
+                    </options>'''
             param_xml = XML('''<param name="data2" type="data" format="txt">%s</param>''' % option_xml)
             self.param = basic.DataToolParameter(
                 self.tool,
@@ -138,3 +179,8 @@ class DatasetMatcherTestCase(TestCase, UsesApp):
             )
 
         return self._test_context
+
+
+class MockMetadata(object):
+    def __init__(self):
+        self.foo = None

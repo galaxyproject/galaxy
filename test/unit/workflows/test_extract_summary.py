@@ -30,8 +30,8 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         job_dict, warnings = extract.summarize(trans=self.trans)
         assert len(job_dict) == 2
         assert not warnings
-        self.assertEquals(job_dict[hda1.job], [('out1', hda1), ('out2', hda2)])
-        self.assertEquals(job_dict[hda3.job], [('out3', hda3)])
+        self.assertEqual(job_dict[hda1.job], [('out1', hda1), ('out2', hda2)])
+        self.assertEqual(job_dict[hda3.job], [('out3', hda3)])
 
     def test_finds_original_job_if_copied(self):
         hda = MockHda()
@@ -43,7 +43,7 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         job_dict, warnings = extract.summarize(trans=self.trans)
         assert not warnings
         assert len(job_dict) == 1
-        self.assertEquals(job_dict[hda.job], [('out1', derived_hda_2)])
+        self.assertEqual(job_dict[hda.job], [('out1', derived_hda_2)])
 
     def test_fake_job_hda(self):
         """ Fakes job if creating_job_associations is empty.
@@ -53,9 +53,9 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         job_dict, warnings = extract.summarize(trans=self.trans)
         assert not warnings
         assert len(job_dict) == 1
-        fake_job = job_dict.keys()[0]
+        fake_job = next(iter(job_dict.keys()))
         assert fake_job.id.startswith("fake_")
-        datasets = job_dict.values()[0]
+        datasets = next(iter(job_dict.values()))
         assert datasets == [(None, hda)]
 
     def test_fake_job_hdca(self):
@@ -64,10 +64,10 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         job_dict, warnings = extract.summarize(trans=self.trans)
         assert not warnings
         assert len(job_dict) == 1
-        fake_job = job_dict.keys()[0]
+        fake_job = next(iter(job_dict.keys()))
         assert fake_job.id.startswith("fake_")
         assert fake_job.is_fake
-        content_instances = job_dict.values()[0]
+        content_instances = next(iter(job_dict.values()))
         assert content_instances == [(None, hdca)]
 
     def test_implicit_map_job_hdca(self):
@@ -77,7 +77,7 @@ class TestWorkflowExtractSummary(unittest.TestCase):
         job_dict, warnings = extract.summarize(trans=self.trans)
         assert not warnings
         assert len(job_dict) == 1
-        job = job_dict.keys()[0]
+        job = next(iter(job_dict.keys()))
         assert job is creating_job
 
     def test_warns_and_skips_datasets_if_not_finished(self):

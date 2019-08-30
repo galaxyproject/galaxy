@@ -5,8 +5,7 @@ A script for calculating secure hashes / message digests.
 """
 import hashlib
 import optparse
-
-from galaxy.util.odict import odict
+from collections import OrderedDict
 
 HASH_ALGORITHMS = ['md5', 'sha1', 'sha224', 'sha256', 'sha384', 'sha512']
 CHUNK_SIZE = 2 ** 20  # 1mb
@@ -20,7 +19,7 @@ def __main__():
     parser.add_option('-o', '--output', dest='output', action='store', type="string", help='Output filename')
     (options, args) = parser.parse_args()
 
-    algorithms = odict()
+    algorithms = OrderedDict()
     for algorithm in options.algorithms:
         assert algorithm in HASH_ALGORITHMS, "Invalid algorithm specified: %s" % (algorithm)
         assert algorithm not in algorithms, "Specify each algorithm only once."
@@ -29,19 +28,18 @@ def __main__():
     assert options.input, "You must provide an input filename."
     assert options.output, "You must provide an output filename."
 
-    input = open(options.input)
-    while True:
-        chunk = input.read(CHUNK_SIZE)
-        if chunk:
-            for algorithm in algorithms.values():
-                algorithm.update(chunk)
-        else:
-            break
+    with open(options.input, 'rb') as fh:
+        while True:
+            chunk = fh.read(CHUNK_SIZE)
+            if chunk:
+                for algorithm in algorithms.values():
+                    algorithm.update(chunk)
+            else:
+                break
 
-    output = open(options.output, 'wb')
-    output.write('#%s\n' % ('\t'.join(algorithms.keys())))
-    output.write('%s\n' % ('\t'.join(x.hexdigest() for x in algorithms.values())))
-    output.close()
+    with open(options.output, 'w') as output:
+        output.write('#%s\n' % ('\t'.join(algorithms.keys())))
+        output.write('%s\n' % ('\t'.join(x.hexdigest() for x in algorithms.values())))
 
 
 if __name__ == "__main__":

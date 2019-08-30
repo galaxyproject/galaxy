@@ -15,25 +15,30 @@ import logging
 import os
 import re
 import sys
-from cgi import escape
 
+from markupsafe import escape
 from six.moves.urllib.parse import quote_plus
 
 from galaxy.datatypes import metadata
-from galaxy.datatypes.data import Text
+from galaxy.datatypes.data import (
+    DatatypeValidation,
+    Text,
+)
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.text import Html
-from galaxy.util import nice_size
-from galaxy.web import url_for
+from galaxy.util import (
+    nice_size,
+    unicodify,
+)
 
 gal_Log = logging.getLogger(__name__)
 verbose = False
 
 # https://genome.ucsc.edu/goldenpath/help/hgGenomeHelp.html
-VALID_GENOME_GRAPH_MARKERS = re.compile('^(chr.*|RH.*|rs.*|SNP_.*|CN.*|A_.*)')
-VALID_GENOTYPES_LINE = re.compile('^([a-zA-Z0-9]+)(\\s([0-9]{2}|[A-Z]{2}|NC|\?\?))+\\s*$')
+VALID_GENOME_GRAPH_MARKERS = re.compile(r'^(chr.*|RH.*|rs.*|SNP_.*|CN.*|A_.*)')
+VALID_GENOTYPES_LINE = re.compile(r'^([a-zA-Z0-9]+)(\s([0-9]{2}|[A-Z]{2}|NC|\?\?))+\s*$')
 
 
 @build_sniff_from_prefix
@@ -68,7 +73,7 @@ class GenomeGraphs(Tabular):
         """
         Returns file
         """
-        return open(dataset.file_name, 'r')
+        return open(dataset.file_name, 'rb')
 
     def ucsc_links(self, dataset, type, app, base_url):
         """
@@ -94,11 +99,11 @@ class GenomeGraphs(Tabular):
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build('ucsc', dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites('ucsc'):
                     site_url = site_url.replace('/hgTracks?', '/hgGenome?')  # for genome graphs
-                    internal_url = "%s" % url_for(controller='dataset',
-                                                  dataset_id=dataset.id,
-                                                  action='display_at',
-                                                  filename='ucsc_' + site_name)
-                    display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, url_for(controller='root'), dataset.id, type)
+                    internal_url = "%s" % app.url_for(controller='dataset',
+                                                      dataset_id=dataset.id,
+                                                      action='display_at',
+                                                      filename='ucsc_' + site_name)
+                    display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (base_url, app.url_for(controller='root'), dataset.id, type)
                     display_url = quote_plus(display_url)
                     # was display_url = quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
                     # redirect_url = quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop) )
@@ -149,24 +154,17 @@ class GenomeGraphs(Tabular):
             out = "Can't create peek %s" % exc
         return out
 
-    def validate(self, dataset):
+    def validate(self, dataset, **kwd):
         """
         Validate a gg file - all numeric after header row
         """
-        errors = list()
         with open(dataset.file_name, "r") as infile:
             next(infile)  # header
             for i, row in enumerate(infile):
                 ll = row.strip().split('\t')[1:]  # first is alpha feature identifier
-                badvals = []
                 for j, x in enumerate(ll):
-                    try:
-                        x = float(x)
-                    except Exception:
-                        badvals.append('col%d:%s' % (j + 1, x))
-        if len(badvals) > 0:
-            errors.append('row %d, %s' % (' '.join(badvals)))
-            return errors
+                    x = float(x)
+        return DatatypeValidation.validated()
 
     def sniff_prefix(self, file_prefix):
         """
@@ -836,7 +834,7 @@ class RexpBase(Html):
             out.append('</table>')
             out = "\n".join(out)
         except Exception as exc:
-            out = "Can't create html table %s" % str(exc)
+            out = "Can't create html table %s" % unicodify(exc)
         return out
 
     def display_peek(self, dataset):

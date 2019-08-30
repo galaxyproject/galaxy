@@ -10,7 +10,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery-ui", "libs/jquery/jquery.dynatree" )}
+    ## ${h.js( "libs/jquery/jquery-ui", "libs/jquery/jquery.dynatree" )}
     ${browse_files(repository.name, repository.repo_files_directory(trans.app))}
 </%def>
 
@@ -20,9 +20,9 @@ ${render_galaxy_repository_actions( repository )}
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormTitle">Browse ${repository.name|h} revision ${repository.changeset_revision} files</div>
-    <div class="toolFormBody">
+<div class="card">
+    <div class="card-header">Browse ${repository.name|h} revision ${repository.changeset_revision} files</div>
+    <div class="card-body">
         <div class="form-row" >
             <label>Contents:</label>
             <div id="tree" >

@@ -1,6 +1,12 @@
 import MODAL from "mvc/ui/ui-modal";
 import ERROR_MODAL from "mvc/ui/error-modal";
 import _l from "utils/localization";
+import _ from "underscore";
+import jQuery from "jquery";
+import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload/loadConfig";
+
+var $ = jQuery;
 
 //==============================================================================
 /**
@@ -30,12 +36,12 @@ var CopyDialog = {
             '<div class="warningmessage">',
             "<%- anonWarning %>",
             _l("You can"),
-            ' <a href="/user/login">',
+            ' <a href="<%= galaxyRoot %>user/login">',
             _l("login here"),
             "</a> ",
             _l("or"),
             " ",
-            ' <a href="/user/create">',
+            ' <a href="<%= galaxyRoot %>user/create">',
             _l("register here"),
             "</a>.",
             "</div>",
@@ -89,14 +95,14 @@ var CopyDialog = {
         var deferred = jQuery.Deferred();
 
         var // TODO: getting a little byzantine here
-        defaultCopyNameFn = options.nameFn || this.defaultName;
+            defaultCopyNameFn = options.nameFn || this.defaultName;
 
         var defaultCopyName = defaultCopyNameFn({
             name: history.get("name")
         });
 
         var // TODO: these two might be simpler as one 3 state option (all,active,no-choice)
-        defaultCopyWhat = options.allDatasets ? "copy-all" : "copy-non-deleted";
+            defaultCopyWhat = options.allDatasets ? "copy-all" : "copy-non-deleted";
 
         var allowAll = !_.isUndefined(options.allowAll) ? options.allowAll : true;
 
@@ -136,11 +142,13 @@ var CopyDialog = {
         }
 
         var originalClosingCallback = options.closing_callback;
+        const Galaxy = getGalaxyInstance();
         modal.show(
             _.extend(options, {
                 title: this.title({ name: history.get("name") }),
                 body: $(
                     dialog._template({
+                        galaxyRoot: getAppRoot(),
                         name: defaultCopyName,
                         isAnon: Galaxy.user.isAnonymous(),
                         allowAll: allowAll,
@@ -223,9 +231,10 @@ var ImportDialog = _.extend({}, CopyDialog, {
  *     {String} allDatasets default initial checked radio button: 'copy-all' or 'copy-non-deleted',
  */
 var historyCopyDialog = (history, options) => {
+    const Galaxy = getGalaxyInstance();
     options = options || {};
     // create our own modal if Galaxy doesn't have one (mako tab without use_panels)
-    var modal = window.parent.Galaxy.modal || new MODAL.View({});
+    var modal = Galaxy.modal || new MODAL.View({});
     return options.useImport
         ? ImportDialog.dialog(modal, history, options)
         : CopyDialog.dialog(modal, history, options);

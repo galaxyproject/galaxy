@@ -24,7 +24,7 @@ import parse_builds  # noqa: I100,I202
 
 
 def getchrominfo(url, db):
-    tableURL = "http://genome-test.cse.ucsc.edu/cgi-bin/hgTables?"
+    tableURL = "http://genome-test.gi.ucsc.edu/cgi-bin/hgTables?"
     URL = tableURL + urlencode({
         "clade": "",
         "org": "",
@@ -37,7 +37,7 @@ def getchrominfo(url, db):
         "position": "",
         "hgta_doTopSubmit": "get info"})
     page = requests.get(URL).text
-    for line in page.split('\n'):
+    for i, line in enumerate(page.splitlines()):
         line = line.rstrip("\r\n")
         if line.startswith("#"):
             continue
@@ -45,7 +45,7 @@ def getchrominfo(url, db):
         if len(fields) > 1 and len(fields[0]) > 0 and int(fields[1]) > 0:
             yield [fields[0], fields[1]]
         else:
-            raise Exception("Problem parsing line '%s'" % line)
+            raise Exception("Problem parsing line %d '%s' in page '%s'" % (i, line, page))
 
 
 if __name__ == "__main__":
@@ -75,7 +75,7 @@ if __name__ == "__main__":
         outfile_name = dbpath + build + ".len"
         try:
             with open(outfile_name, "w") as outfile:
-                for chrominfo in getchrominfo("http://genome-test.cse.ucsc.edu/cgi-bin/hgTables?", build):
+                for chrominfo in getchrominfo("http://genome-test.gi.ucsc.edu/cgi-bin/hgTables?", build):
                     print("\t".join(chrominfo), file=outfile)
         except Exception as e:
             print("Failed to retrieve %s: %s" % (build, e))

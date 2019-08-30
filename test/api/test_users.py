@@ -1,13 +1,18 @@
 import json
 
 from requests import (
+    delete,
     get,
     put
 )
 
 from base import api  # noqa: I100,I202
+from base.populators import skip_without_tool
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
+TEST_USER_EMAIL_DELETE = "user_for_delete_test@bx.psu.edu"
+TEST_USER_EMAIL_PURGE = "user_for_purge_test@bx.psu.edu"
+TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
 
 
 class UsersApiTestCase(api.ApiTestCase):
@@ -72,6 +77,36 @@ class UsersApiTestCase(api.ApiTestCase):
         update_json = update_response.json()
         self.assertEqual(update_json['username'], new_name)
 
+    def test_delete_user(self):
+        user = self._setup_user(TEST_USER_EMAIL_DELETE)
+        self._delete("users/%s" % user["id"], admin=True)
+        updated_user = self._get("users/deleted/%s" % user['id'], admin=True).json()
+        assert updated_user['deleted'] is True, updated_user
+
+    def test_purge_user(self):
+        """Delete user and then purge them."""
+        user = self._setup_user(TEST_USER_EMAIL_PURGE)
+        response = self._delete("users/%s" % user["id"], admin=True)
+        self._assert_status_code_is_ok(response)
+        data = dict(purge="True")
+        response = self._delete("users/%s" % user["id"], data=data, admin=True)
+        self._assert_status_code_is_ok(response)
+        payload = {'deleted': "True"}
+        purged_user = self._get("users/%s" % user['id'], payload, admin=True).json()
+        assert purged_user['deleted'] is True, purged_user
+        assert purged_user['purged'] is True, purged_user
+
+    def test_undelete_user(self):
+        """Delete user and then undelete them."""
+        user = self._setup_user(TEST_USER_EMAIL_UNDELETE)
+        self._delete("users/%s" % user["id"], admin=True)
+        payload = {'deleted': "True"}
+        deleted_user = self._get("users/%s" % user['id'], payload, admin=True).json()
+        assert deleted_user['deleted'] is True, deleted_user
+        self._post("users/deleted/%s/undelete" % user["id"], admin=True)
+        undeleted_user = self._get("users/%s" % user['id'], admin=True).json()
+        assert undeleted_user['deleted'] is False, undeleted_user
+
     def test_information(self):
         user = self._setup_user(TEST_USER_EMAIL)
         url = self.__url("information/inputs", user)
@@ -90,6 +125,43 @@ class UsersApiTestCase(api.ApiTestCase):
         response = get(url).json()
         self.assertEqual(len(response["addresses"]), 1)
         self.assertEqual(response["addresses"][0]["desc"], "_desc")
+
+    @skip_without_tool("cat1")
+    def test_favorites(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        # adding a tool to favorites
+        url = self._api_url("users/%s/favorites/tools" % user["id"], params=dict(key=self.master_api_key))
+        put_response = put(url, data=json.dumps({"object_id" : "cat1"}))
+        self._assert_status_code_is_ok(put_response)
+        self.assertEqual(put_response.json()["tools"][0], "cat1")
+        # not implemented for workflows yet
+        url = self._api_url("users/%s/favorites/workflows" % user["id"], params=dict(key=self.master_api_key))
+        put_response = put(url, data=json.dumps({"object_id" : "14ds68f4sda68gf46dsag4"}))
+        self._assert_status_code_is(put_response, 400)
+        # delete existing tool favorite
+        url = self._api_url("users/%s/favorites/tools/cat1" % user["id"], params=dict(key=self.master_api_key))
+        delete_response = delete(url)
+        self._assert_status_code_is_ok(delete_response)
+        self.assertEqual(delete_response.json()["tools"], [])
+        # delete non-existing tool favorite
+        url = self._api_url("users/%s/favorites/tools/madeuptoolthatdoes/not/exist/in/favs" % user["id"], params=dict(key=self.master_api_key))
+        delete_response = delete(url)
+        self._assert_status_code_is(delete_response, 404)
+        # delete non existing workflow favorite
+        url = self._api_url("users/%s/favorites/workflows/1as5das5das56d465" % user["id"], params=dict(key=self.master_api_key))
+        delete_response = delete(url)
+        self._assert_status_code_is(delete_response, 400)
+
+    @skip_without_tool("cat1")
+    def test_search_favorites(self):
+        user, user_key = self._setup_user_get_key(TEST_USER_EMAIL)
+        url = self._api_url("users/%s/favorites/tools" % user["id"], params=dict(key=user_key))
+        fav_response = put(url, data=json.dumps({"object_id" : "cat1"}))
+        self._assert_status_code_is_ok(fav_response)
+        assert "cat1" in fav_response.json()["tools"]
+        url = self._api_url("tools", params=dict(q="#favs", key=user_key))
+        search_response = get(url).json()
+        assert "cat1" in search_response
 
     def test_communication(self):
         user = self._setup_user(TEST_USER_EMAIL)

@@ -6,9 +6,9 @@ import tempfile
 from sqlalchemy import and_
 
 from galaxy import util
+from galaxy.tool_util.loader_directory import looks_like_a_tool
+from galaxy.tool_util.parser.interface import TestCollectionDef
 from galaxy.tools.data_manager.manager import DataManager
-from galaxy.tools.loader_directory import looks_like_a_tool
-from galaxy.tools.parser.interface import TestCollectionDef
 from galaxy.tools.repositories import ValidationContext
 from galaxy.web import url_for
 from tool_shed.repository_types import util as rt_util
@@ -886,7 +886,7 @@ class MetadataGenerator(object):
                     # installation from proceeding.  Reaching here implies a bug in the Tool Shed
                     # framework.
                     error_message = 'Installation encountered an invalid repository dependency definition:\n'
-                    error_message += xml_util.xml_to_string(repository_elem, use_indent=True)
+                    error_message += util.xml_to_string(repository_elem, pretty=True)
                     log.error(error_message)
                     return repository_dependency_tup, False, error_message
         if not toolshed:

@@ -17,8 +17,12 @@ from six.moves.urllib.parse import unquote
 
 from galaxy import exceptions
 from galaxy.managers import api_keys
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.util import (
+    smart_str,
+    unicodify
+)
+from galaxy.web import expose_api_anonymous_and_sessionless
+from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
@@ -49,7 +53,7 @@ class AuthenticationController(BaseAPIController):
             raise exceptions.ObjectNotFound('The user does not exist.')
         elif len(user) > 1:
             # DB is inconsistent and we have more users with the same email.
-            raise exceptions.InconsistentDatabase('An error occured, please contact your administrator.')
+            raise exceptions.InconsistentDatabase('An error occurred, please contact your administrator.')
         else:
             user = user[0]
             is_valid_user = self.app.auth_manager.check_password(user, password)
@@ -81,9 +85,9 @@ class AuthenticationController(BaseAPIController):
         # directly.
         if len(split) == 1:
             try:
-                email, password = b64decode(split[0]).split(':')
-            except Exception:
-                raise exceptions.ActionInputError()
+                email, password = unicodify(b64decode(smart_str(split[0]))).split(':')
+            except Exception as e:
+                raise exceptions.ActionInputError(e)
 
         # If there are only two elements, check the first and ensure it says
         # 'basic' so that we know we're about to decode the right thing. If not,
@@ -91,7 +95,7 @@ class AuthenticationController(BaseAPIController):
         elif len(split) == 2:
             if split[0].strip().lower() == 'basic':
                 try:
-                    email, password = b64decode(split[1]).split(':')
+                    email, password = unicodify(b64decode(smart_str(split[1]))).split(':')
                 except Exception:
                     raise exceptions.ActionInputError()
             else:

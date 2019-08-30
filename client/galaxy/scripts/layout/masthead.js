@@ -1,15 +1,16 @@
-import * as Backbone from "backbone";
+import $ from "jquery";
+import Backbone from "backbone";
 import Menu from "layout/menu";
 import Scratchbook from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
-
-/* global Galaxy */
-/* global $ */
+import { getGalaxyInstance } from "app";
 
 /** Masthead **/
-var View = Backbone.View.extend({
+const View = Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
+        const Galaxy = getGalaxyInstance();
+
+        const self = this;
         this.options = options;
         this.setElement(this._template());
         this.$navbarBrandLink = this.$(".navbar-brand");
@@ -52,7 +53,7 @@ var View = Backbone.View.extend({
         // loop through beforeunload functions if the user attempts to unload the page
         $(window)
             .on("click", e => {
-                var $download_link = $(e.target).closest("a[download]");
+                const $download_link = $(e.target).closest("a[download]");
                 if ($download_link.length == 1) {
                     if ($("iframe[id=download]").length === 0) {
                         $("body").append(
@@ -66,9 +67,9 @@ var View = Backbone.View.extend({
                 }
             })
             .on("beforeunload", () => {
-                var text = "";
+                let text = "";
                 self.collection.each(model => {
-                    var q = model.get("onbeforeunload") && model.get("onbeforeunload")();
+                    const q = model.get("onbeforeunload") && model.get("onbeforeunload")();
                     if (q) {
                         text += `${q} `;
                     }
@@ -96,9 +97,9 @@ var View = Backbone.View.extend({
     /** body template */
     _template: function() {
         return `
-            <nav id="masthead" class="navbar navbar-expand fixed-top justify-content-center navbar-dark">
-                <a class="navbar-brand">
-                    <img class="navbar-brand-image"/>
+            <nav id="masthead" class="navbar navbar-expand justify-content-center navbar-dark">
+                <a class="navbar-brand" aria-label="homepage">
+                    <img alt="logo" class="navbar-brand-image"/>
                     <span class="navbar-brand-title"/>
                 </a>
                 <ul class="navbar-nav"/>

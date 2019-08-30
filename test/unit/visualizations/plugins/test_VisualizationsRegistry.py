@@ -5,7 +5,7 @@ import os
 import re
 import unittest
 
-from six import string_types
+from six import text_type
 
 from galaxy import model
 from galaxy.visualization.plugins import plugin
@@ -198,7 +198,7 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         # should return the (new) api key for the above user (see the template above)
         response = jupyter._render({}, trans=trans)
         response.strip()
-        self.assertIsInstance(response, string_types)
+        self.assertIsInstance(response, text_type)
         self.assertTrue('-' in response)
         ie_request, api_key = response.split('-')
 

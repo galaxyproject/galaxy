@@ -5,22 +5,26 @@ from __future__ import print_function
 
 import datetime
 import logging
-import sys
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table
+)
 
-now = datetime.datetime.utcnow
+from galaxy.model.migrate.versions.util import (
+    create_table,
+    drop_table
+)
+
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter(format)
-handler.setFormatter(formatter)
-log.addHandler(handler)
-
+now = datetime.datetime.utcnow
 metadata = MetaData()
 
-# New table in changeset TODO:TODO
 GenomeIndexToolData_table = Table("genome_index_tool_data", metadata,
                                   Column("id", Integer, primary_key=True),
                                   Column("job_id", Integer, ForeignKey("job.id"), index=True),
@@ -35,20 +39,15 @@ GenomeIndexToolData_table = Table("genome_index_tool_data", metadata,
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
-
+    metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        GenomeIndexToolData_table.create()
-    except Exception:
-        log.exception("Creating genome_index_tool_data table failed.")
+
+    create_table(GenomeIndexToolData_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        GenomeIndexToolData_table.drop()
-    except Exception:
-        log.exception("Dropping genome_index_tool_data table failed.")
+
+    drop_table(GenomeIndexToolData_table)

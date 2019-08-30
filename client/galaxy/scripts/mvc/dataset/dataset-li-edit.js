@@ -1,6 +1,10 @@
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import STATES from "mvc/dataset/states";
 import DATASET_LI from "mvc/dataset/dataset-li";
-import TAGS from "mvc/tag";
+import { mountModelTags } from "components/Tags";
 import ANNOTATIONS from "mvc/annotation";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
@@ -55,10 +59,11 @@ var DatasetListItemEdit = _super.extend(
 
             var editBtnData = {
                 title: _l("Edit attributes"),
-                href: `${Galaxy.root}datasets/edit?dataset_id=${this.model.attributes.id}`,
+                href: `${getAppRoot()}datasets/edit?dataset_id=${this.model.attributes.id}`,
                 faIcon: "fa-pencil",
                 classes: "edit-btn",
                 onclick: function(ev) {
+                    const Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/edit", {
@@ -78,7 +83,7 @@ var DatasetListItemEdit = _super.extend(
                 }
 
                 // disable if still uploading or new
-            } else if (_.contains([STATES.UPLOAD, STATES.NEW], this.model.get("state"))) {
+            } else if ([STATES.UPLOAD, STATES.NEW].includes(this.model.get("state"))) {
                 editBtnData.disabled = true;
                 editBtnData.title = _l("This dataset is not yet editable");
             }
@@ -100,8 +105,7 @@ var DatasetListItemEdit = _super.extend(
                 faIcon: "fa-times",
                 classes: "delete-btn",
                 onclick: function() {
-                    // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
-                    self.$el.find(".icon-btn.delete-btn").trigger("mouseout");
+                    self.$el.find(".icon-btn.delete-btn").tooltip("dispose");
                     self.model["delete"]();
                 }
             });
@@ -115,10 +119,13 @@ var DatasetListItemEdit = _super.extend(
 
             var state = this.model.get("state");
 
-            if (!this.model.isDeletedOrPurged() && _.contains([STATES.OK, STATES.FAILED_METADATA], state)) {
+            if (!this.model.isDeletedOrPurged()) {
+                //Enable tagging+annotation regardless of job state (see issue #6330)
                 this._renderTags($details);
                 this._renderAnnotation($details);
-                this._makeDbkeyEditLink($details);
+                if ([STATES.OK, STATES.FAILED_METADATA].includes(state)) {
+                    this._makeDbkeyEditLink($details);
+                }
             }
 
             this._setUpBehaviors($details);
@@ -147,7 +154,7 @@ var DatasetListItemEdit = _super.extend(
             };
             var parseToolID = data => {
                 $.ajax({
-                    url: `${Galaxy.root}api/tools/${data.tool_id}/build`
+                    url: `${getAppRoot()}api/tools/${data.tool_id}/build`
                 })
                     .done(data => {
                         parseToolBuild(data);
@@ -156,9 +163,12 @@ var DatasetListItemEdit = _super.extend(
                         parseToolBuild({});
                     });
             };
+
+            const Galaxy = getGalaxyInstance();
             if (Galaxy.user.id === null) {
                 return null;
             }
+
             return faIconButton({
                 title: _l("Tool Help"),
                 classes: "icon-btn",
@@ -169,7 +179,7 @@ var DatasetListItemEdit = _super.extend(
                         self.$el.find(".toolhelp").toggle();
                     } else {
                         $.ajax({
-                            url: `${Galaxy.root}api/jobs/${jobID}`
+                            url: `${getAppRoot()}api/jobs/${jobID}`
                         })
                             .done(data => {
                                 parseToolID(data);
@@ -212,10 +222,11 @@ var DatasetListItemEdit = _super.extend(
             var self = this;
             return faIconButton({
                 title: _l("View or report this error"),
-                href: `${Galaxy.root}datasets/error?dataset_id=${this.model.attributes.id}`,
+                href: `${getAppRoot()}datasets/error?dataset_id=${this.model.attributes.id}`,
                 classes: "report-error-btn",
                 faIcon: "fa-bug",
                 onclick: function(ev) {
+                    const Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/error", {
@@ -237,6 +248,7 @@ var DatasetListItemEdit = _super.extend(
                     target: this.linkTarget,
                     faIcon: "fa-refresh",
                     onclick: function(ev) {
+                        const Galaxy = getGalaxyInstance();
                         if (Galaxy.router) {
                             ev.preventDefault();
                             Galaxy.router.push("/", {
@@ -251,71 +263,83 @@ var DatasetListItemEdit = _super.extend(
         /** Render an icon-button or popupmenu of links based on the applicable visualizations */
         _renderVisualizationsButton: function() {
             //TODO: someday - lazyload visualizations
-            var visualizations = this.model.get("visualizations");
-            if (this.model.isDeletedOrPurged() || !this.hasUser || !this.model.hasData() || _.isEmpty(visualizations)) {
+            const Galaxy = getGalaxyInstance();
+            const visualizations = this.model.get("visualizations");
+            if (
+                !Galaxy.config.visualizations_visible ||
+                this.model.isDeletedOrPurged() ||
+                !this.hasUser ||
+                !this.model.hasData() ||
+                _.isEmpty(visualizations)
+            ) {
                 return null;
             }
             if (!_.isObject(visualizations[0])) {
                 this.warn("Visualizations have been switched off");
                 return null;
             }
-
             if (visualizations.length >= 1) {
-                var url = Galaxy.root + "visualizations?dataset_id=" + this.model.get("id");
-                return $("<a/>")
-                    .addClass("visualization-link icon-btn")
-                    .attr("href", url)
-                    .append($("<span/>").addClass("fa fa-bar-chart-o"))
-                    .on("click", function(e) {
-                        Galaxy.frame.add({ url: url, title: "Visualization" });
-                        e.preventDefault();
-                    });
+                const dsid = this.model.get("id");
+                const url = getAppRoot() + "visualizations?dataset_id=" + dsid;
+                return faIconButton({
+                    title: _l("Visualize this data"),
+                    href: url,
+                    classes: "visualization-link",
+                    faIcon: "fa-bar-chart-o",
+                    onclick: ev => {
+                        if (Galaxy.frame && Galaxy.frame.active) {
+                            ev.preventDefault();
+                            Galaxy.frame.add({ url: url, title: "Visualization" });
+                        } else if (Galaxy.router) {
+                            ev.preventDefault();
+                            Galaxy.router.push("visualizations", {
+                                dataset_id: dsid
+                            });
+                            Galaxy.trigger("activate-hda", dsid);
+                        }
+                    }
+                });
             }
         },
 
-        /** add scratchbook functionality to visualization links */
-        _addScratchBookFn: function($links) {
-            $links.click(ev => {
-                if (Galaxy.frame && Galaxy.frame.active) {
-                    Galaxy.frame.add({
-                        title: _l("Visualization"),
-                        url: $(this).attr("href")
-                    });
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                }
-            });
-        },
-
-        //TODO: if possible move these to readonly view - but display the owner's tags/annotation (no edit)
         /** Render the tags list/control */
         _renderTags: function($where) {
             if (!this.hasUser) {
                 return;
             }
-            var view = this;
-            this.tagsEditor = new TAGS.TagsEditor({
+
+            const el = $where.find(".tags-display")[0];
+
+            const propsData = {
                 model: this.model,
-                el: $where.find(".tags-display"),
-                onshowFirstTime: function() {
-                    this.render();
-                },
-                // persist state on the hda view (and not the editor) since these are currently re-created each time
-                onshow: function() {
-                    view.tagsEditorShown = true;
-                },
-                onhide: function() {
-                    view.tagsEditorShown = false;
-                },
-                $activator: faIconButton({
-                    title: _l("Edit dataset tags"),
-                    classes: "tag-btn",
-                    faIcon: "fa-tags"
-                }).appendTo($where.find(".actions .right"))
-            });
+                disabled: false,
+                context: "dataset-li-edit"
+            };
+
+            const vm = mountModelTags(propsData, el);
+
+            // tag icon button open/closes
+            const activator = faIconButton({
+                title: _l("Edit dataset tags"),
+                classes: "tag-btn",
+                faIcon: "fa-tags"
+            }).appendTo($where.find(".actions .right"));
+
+            const toggleEditor = () => {
+                $(vm.$el).toggleClass("active");
+                this.tagsEditorShown = $(vm.$el).hasClass("active");
+            };
+
+            activator.on("click", toggleEditor);
+
             if (this.tagsEditorShown) {
-                this.tagsEditor.toggle(true);
+                const editorIsOpen = $(vm.$el).hasClass("active");
+                if (!editorIsOpen) {
+                    toggleEditor();
+                }
             }
+
+            return vm;
         },
 
         /** Render the annotation display/control */
@@ -393,7 +417,7 @@ var DatasetListItemEdit = _super.extend(
 
         /** listener for item purge (in the messages section) */
         _clickPurgeLink: function(ev) {
-            if (confirm(_l("This will permanently remove the data in your dataset. Are you sure?"))) {
+            if (window.confirm(_l("This will permanently remove the data in your dataset. Are you sure?"))) {
                 this.model.purge();
             }
             return false;
@@ -448,41 +472,8 @@ DatasetListItemEdit.prototype.templates = (() => {
             "dataset"
         )
     });
-
-    var visualizationsTemplate = BASE_MVC.wrapTemplate(
-        [
-            "<% if( visualizations.length === 1 ){ %>",
-            '<a class="visualization-link icon-btn" href="<%- visualizations[0].href %>"',
-            ' target="<%- visualizations[0].target %>" title="',
-            _l("Visualize in"),
-            ' <%- visualizations[0].html %>">',
-            '<span class="fa fa-bar-chart-o"></span>',
-            "</a>",
-
-            "<% } else { %>",
-            '<div class="visualizations-dropdown dropdown icon-btn">',
-            '<a data-toggle="dropdown" title="',
-            _l("Visualize"),
-            '">',
-            '<span class="fa fa-bar-chart-o"></span>',
-            "</a>",
-            '<ul class="dropdown-menu" role="menu">',
-            "<% _.each( visualizations, function( visualization ){ %>",
-            '<li><a class="visualization-link" href="<%- visualization.href %>"',
-            ' target="<%- visualization.target %>">',
-            "<%- visualization.html %>",
-            "</a></li>",
-            "<% }); %>",
-            "</ul>",
-            "</div>",
-            "<% } %>"
-        ],
-        "visualizations"
-    );
-
     return _.extend({}, _super.prototype.templates, {
-        warnings: warnings,
-        visualizations: visualizationsTemplate
+        warnings: warnings
     });
 })();
 

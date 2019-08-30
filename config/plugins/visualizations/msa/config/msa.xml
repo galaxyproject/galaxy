@@ -6,6 +6,8 @@
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
             <test test_attr="ext" result_type="datatype">txt</test>
+            <test test_attr="ext" result_type="datatype">fasta</test>
+            <test test_attr="ext" result_type="datatype">phylip</test>
             <to_param param_attr="id">dataset_id</to_param>
         </data_source>
     </data_sources>

@@ -1,4 +1,5 @@
-import * as Backbone from "libs/backbone";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import AJAX_QUEUE from "utils/ajax-queue";
 
 /** ms between fetches when checking running jobs/datasets for updates */
@@ -11,7 +12,7 @@ var BATCH_FETCH_STATE = true;
 
 var JobStatesSummary = Backbone.Model.extend({
     url: function() {
-        return `${Galaxy.root}api/histories/${this.attributes.history_id}/contents/dataset_collections/${
+        return `${getAppRoot()}api/histories/${this.attributes.history_id}/contents/dataset_collections/${
             this.attributes.collection_id
         }/jobs_summary`;
     },
@@ -131,7 +132,7 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
                 return summary.get("model");
             })
             .join(",");
-        return `${Galaxy.root}api/histories/${this.historyId}/jobs_summary?ids=${ids}&types=${types}`;
+        return `${getAppRoot()}api/histories/${this.historyId}/jobs_summary?ids=${ids}&types=${types}`;
     },
 
     monitor: function() {

@@ -15,6 +15,7 @@ from threading import Thread
 from uuid import uuid4
 
 from bioblend import galaxy
+from gxformat2 import python_to_workflow
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
@@ -24,7 +25,6 @@ from base.populators import (  # noqa: I100,I202
     GiDatasetPopulator,
     GiWorkflowPopulator,
 )
-from base.workflows_format_2.converter import python_to_workflow  # noqa: I100
 
 LONG_TIMEOUT = 1000000000
 DESCRIPTION = "Script to exercise the workflow engine."

@@ -11,11 +11,11 @@ from galaxy.exceptions import (
 )
 from galaxy.util import pretty_print_time_interval
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
+    expose_api,
+    expose_api_anonymous_and_sessionless,
     require_admin as require_admin
 )
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 from tool_shed.managers import groups
 
 log = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class GroupsController(BaseAPIController):
         """
         group_dicts = []
         deleted = util.asbool(deleted)
-        if deleted and not trans.user_is_admin():
+        if deleted and not trans.user_is_admin:
             raise AdminRequiredException('Only administrators can query deleted groups.')
         for group in self.group_manager.list(trans, deleted):
             group_dicts.append(self._populate(trans, group))

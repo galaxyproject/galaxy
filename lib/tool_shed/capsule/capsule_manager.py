@@ -4,7 +4,7 @@ import os
 import shutil
 import tarfile
 import tempfile
-import threading
+from collections import OrderedDict
 from time import gmtime, strftime
 
 import requests
@@ -13,7 +13,6 @@ from sqlalchemy import and_, false
 import tool_shed.repository_types.util as rt_util
 from galaxy import web
 from galaxy.util import asbool, build_url, CHUNK_SIZE
-from galaxy.util.odict import odict
 from galaxy.util.path import safe_relpath
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.dependencies.repository.relation_builder import RelationBuilder
@@ -66,52 +65,44 @@ class ExportRepositoryManager(object):
                     ordered_repository_ids = [self.repository_id]
                     ordered_repositories = [self.repository]
                     ordered_changeset_revisions = [repository_metadata.changeset_revision]
-        repositories_archive = None
         error_messages = ''
-        lock = threading.Lock()
-        lock.acquire(True)
+        repositories_archive = tarfile.open(repositories_archive_filename, "w:%s" % self.file_type)
+        exported_repository_registry = ExportedRepositoryRegistry()
+        for repository_id, ordered_repository, ordered_changeset_revision in zip(ordered_repository_ids,
+                                                                                 ordered_repositories,
+                                                                                 ordered_changeset_revisions):
+            with self.__tempdir(prefix='tmp-toolshed-export-er') as work_dir:
+                repository_archive, error_message = self.generate_repository_archive(ordered_repository,
+                                                                                     ordered_changeset_revision,
+                                                                                     work_dir)
+                if error_message:
+                    error_messages = '%s  %s' % (error_messages, error_message)
+                else:
+                    archive_name = str(os.path.basename(repository_archive.name))
+                    repositories_archive.add(repository_archive.name, arcname=archive_name)
+                    attributes, sub_elements = self.get_repository_attributes_and_sub_elements(ordered_repository,
+                                                                                               archive_name)
+                    elem = xml_util.create_element('repository', attributes=attributes, sub_elements=sub_elements)
+                    exported_repository_registry.exported_repository_elems.append(elem)
+        # Keep information about the export in a file named export_info.xml in the archive.
+        sub_elements = self.generate_export_elem()
+        export_elem = xml_util.create_element('export_info', attributes=None, sub_elements=sub_elements)
+        tmp_export_info = xml_util.create_and_write_tmp_file(export_elem)
         try:
-            repositories_archive = tarfile.open(repositories_archive_filename, "w:%s" % self.file_type)
-            exported_repository_registry = ExportedRepositoryRegistry()
-            for repository_id, ordered_repository, ordered_changeset_revision in zip(ordered_repository_ids,
-                                                                                     ordered_repositories,
-                                                                                     ordered_changeset_revisions):
-                with self.__tempdir(prefix='tmp-toolshed-export-er') as work_dir:
-                    repository_archive, error_message = self.generate_repository_archive(ordered_repository,
-                                                                                         ordered_changeset_revision,
-                                                                                         work_dir)
-                    if error_message:
-                        error_messages = '%s  %s' % (error_messages, error_message)
-                    else:
-                        archive_name = str(os.path.basename(repository_archive.name))
-                        repositories_archive.add(repository_archive.name, arcname=archive_name)
-                        attributes, sub_elements = self.get_repository_attributes_and_sub_elements(ordered_repository,
-                                                                                                   archive_name)
-                        elem = xml_util.create_element('repository', attributes=attributes, sub_elements=sub_elements)
-                        exported_repository_registry.exported_repository_elems.append(elem)
-            # Keep information about the export in a file named export_info.xml in the archive.
-            sub_elements = self.generate_export_elem()
-            export_elem = xml_util.create_element('export_info', attributes=None, sub_elements=sub_elements)
-            tmp_export_info = xml_util.create_and_write_tmp_file(export_elem, use_indent=True)
-            try:
-                repositories_archive.add(tmp_export_info, arcname='export_info.xml')
-            finally:
-                if os.path.exists(tmp_export_info):
-                    os.remove(tmp_export_info)
-            # Write the manifest, which must preserve the order in which the repositories should be imported.
-            exported_repository_root = xml_util.create_element('repositories')
-            for exported_repository_elem in exported_repository_registry.exported_repository_elems:
-                exported_repository_root.append(exported_repository_elem)
-            tmp_manifest = xml_util.create_and_write_tmp_file(exported_repository_root, use_indent=True)
-            try:
-                repositories_archive.add(tmp_manifest, arcname='manifest.xml')
-            finally:
-                if os.path.exists(tmp_manifest):
-                    os.remove(tmp_manifest)
-        except Exception as e:
-            log.exception(str(e))
+            repositories_archive.add(tmp_export_info, arcname='export_info.xml')
         finally:
-            lock.release()
+            if os.path.exists(tmp_export_info):
+                os.remove(tmp_export_info)
+        # Write the manifest, which must preserve the order in which the repositories should be imported.
+        exported_repository_root = xml_util.create_element('repositories', attributes=None, sub_elements=None)
+        for elem in exported_repository_registry.exported_repository_elems:
+            exported_repository_root.append(elem)
+        tmp_manifest = xml_util.create_and_write_tmp_file(exported_repository_root)
+        try:
+            repositories_archive.add(tmp_manifest, arcname='manifest.xml')
+        finally:
+            if os.path.exists(tmp_manifest):
+                os.remove(tmp_manifest)
         if repositories_archive is not None:
             repositories_archive.close()
         if self.using_api:
@@ -124,7 +115,7 @@ class ExportRepositoryManager(object):
         return repositories_archive, error_messages
 
     def generate_export_elem(self):
-        sub_elements = odict()
+        sub_elements = OrderedDict()
         sub_elements['export_time'] = strftime('%a, %d %b %Y %H:%M:%S +0000', gmtime())
         sub_elements['tool_shed'] = str(self.tool_shed_url.rstrip('/'))
         sub_elements['repository_name'] = str(self.repository.name)
@@ -165,7 +156,7 @@ class ExportRepositoryManager(object):
                         if error_message:
                             return None, error_message
                         if altered:
-                            tmp_filename = xml_util.create_and_write_tmp_file(root_elem, use_indent=True)
+                            tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
                             shutil.move(tmp_filename, full_path)
                     elif name == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                         # Eliminate the toolshed, and changeset_revision attributes from all <repository> tags.
@@ -173,7 +164,7 @@ class ExportRepositoryManager(object):
                         if error_message:
                             return None, error_message
                         if altered:
-                            tmp_filename = xml_util.create_and_write_tmp_file(root_elem, use_indent=True)
+                            tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
                             shutil.move(tmp_filename, full_path)
                     repository_archive.add(full_path, arcname=relative_path)
         repository_archive.close()
@@ -270,8 +261,8 @@ class ExportRepositoryManager(object):
         generated attributes will be contained within the <repository> tag, while the sub_elements
         will be tag sets contained within the <repository> tag set.
         """
-        attributes = odict()
-        sub_elements = odict()
+        attributes = OrderedDict()
+        sub_elements = OrderedDict()
         attributes['name'] = str(repository.name)
         attributes['type'] = str(repository.type)
         # We have to associate the public username since the user_id will be different between tool sheds.

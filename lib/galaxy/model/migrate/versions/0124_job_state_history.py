@@ -9,6 +9,7 @@ import logging
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table
 
 from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrate.versions.util import create_table, drop_table
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
@@ -24,21 +25,15 @@ JobStateHistory_table = Table("job_state_history", metadata,
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
 
-    try:
-        JobStateHistory_table.create()
-    except Exception:
-        log.exception("Creating %s table failed.", JobStateHistory_table.name)
+    create_table(JobStateHistory_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    try:
-        JobStateHistory_table.drop()
-    except Exception:
-        log.exception("Dropping %s table failed.", JobStateHistory_table.name)
+    drop_table(JobStateHistory_table)

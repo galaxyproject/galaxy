@@ -1,31 +1,17 @@
 // Bootstrap variables and core framework
-@import "../../../node_modules/bootstrap/scss/_functions.scss";
-@import "galaxy_bootstrap/variables.scss";
-@import "../../../node_modules/bootstrap/scss/bootstrap.scss";
-
-// Fontawesome configuration.
-$fa-font-path: "../images/fonts";
-@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
+@import "~bootstrap/scss/_functions.scss";
+@import "theme/blue.scss";
+@import "~bootstrap/scss/bootstrap.scss";
 
 // Bootstrap-related style overrides
-@import "galaxy_bootstrap/overrides.scss";
+@import "overrides.scss";
 
-// Galaxy specific variables
-@import "galaxy_variables.scss";
-
-$white: #fff;
-$black: #000;
-
-.fa-icon {
-    // TODO: remove fa-icon and replace with fa
-    @extend .fa;
-}
+// Fontawesome configuration.
+$fa-font-path: "../../../node_modules/font-awesome/fonts/";
+@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
 
 @import "select2.scss";
-/* fix for zero width select2 - remove when fixed there */
-.select2-minwidth {
-    min-width: 256px;
-}
+@import "jquery.rating.scss";
 
 // galaxy sub-components
 @import "reports";
@@ -33,30 +19,39 @@ $black: #000;
 @import "upload.scss";
 @import "ui.scss";
 @import "library.scss";
+@import "trackster.scss";
 @import "toastr.scss";
 @import "jstree.scss";
 @import "tour.scss";
 @import "flex.scss";
 @import "charts.scss";
+@import "message.scss";
+@import "toolshed.scss";
 
-// Mixins
+// ==== Select2 ====
+/* fix for zero width select2 - remove when fixed there */
+.select2-minwidth {
+    min-width: 256px;
+}
+.select2-drop-active,
+.select2-drop-above.select2-drop-active {
+    border: $border-default;
+    .select2-search {
+        @extend .pt-1;
+    }
+}
+.select2-drop {
+    background: $body-bg;
+    color: $text-color;
+}
+
+// ==== Mixins ====
 @mixin user-select($select) {
     -webkit-touch-callout: #{$select};
     @each $pre in -webkit-, -moz-, -ms-, -o-, -khtml- {
         #{$pre + user-select}: #{$select};
     }
     #{user-select}: #{$select};
-}
-
-.unselectable {
-    @include user-select(none);
-}
-
-.parent-width {
-    //TODO: check out box-sizing w/ bs4
-    //@include box-sizing(border-box);
-    width: 100%;
-    *width: 90%;
 }
 
 @mixin border-radius($radius) {
@@ -66,204 +61,194 @@ $black: #000;
     border-radius: $radius;
 }
 
-// ==== Real (basic) styles ====
+// ==== Basic styles ====
+
+body {
+    @extend .m-2;
+}
+
+.unselectable {
+    @include user-select(none);
+}
+
+.parent-width {
+    @extend .w-100;
+}
 
 .clear {
     @include clearfix();
 }
 
-body {
-    background: $base-bg;
-    color: $base-text-color;
-    margin: 10px;
+// ==== Page layout styles ====
 
-    // For panel layout pages
-    &.full-content {
-        overflow: hidden;
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-    }
+.full-content {
+    @extend .m-0;
+    @extend .p-0;
+    @extend .w-100;
+    @extend .h-100;
+    @extend .overflow-hidden;
+    @extend .position-absolute;
+    background: $body-bg;
+    color: $text-color;
+}
+
+.full-message {
+    @extend .w-100;
+    @extend .overflow-hidden;
+    height: $panel-message-height !important;
+    border-bottom: solid $border-color 1px;
+    font-size: 90%;
+    display: none;
+}
+
+#everything {
+    @extend .d-flex;
+    @extend .flex-column;
+    @extend .full-content;
+    top: 0px;
+    left: 0px;
+}
+
+#columns {
+    @extend .position-relative;
+    flex: 1;
+}
+
+#background {
+    @extend .full-content;
+    z-index: -1;
+}
+
+// Used for dragging panels, popup menus, to deal with capturing clicks in iframes
+#dd-helper {
+    @extend .full-content;
+    opacity: 0;
+    z-index: 900; // Bootstrap elements start at 1000
+    display: none;
 }
 
 // ==== Panel layout styles ====
 
-$panel-message-height: 30px; //1.875rem;
-
-$layout_top_padding: 0px;
-$border-default-color_padding: 0px;
-
-$panel_header_height: 30px;
-$panel_footer_height: 25px;
-
-#background {
-    position: absolute;
-    background: #fff;
-    z-index: -1;
-    top: 0;
-    left: 0;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-}
-
-#messagebox {
-    position: absolute;
-    top: $navbar-height + $layout_top_padding + 1;
-    left: 0;
-    width: 100%;
-    height: $panel-message-height !important;
-    overflow: hidden;
-    border-bottom: solid #999 1px;
-    font-size: 90%;
-    display: none;
-}
-
-#inactivebox {
-    position: absolute;
-    top: $navbar-height + $layout_top_padding + 1;
-    left: 0;
-    width: 100%;
-    height: $panel-message-height !important;
-    overflow: hidden;
-    border-bottom: solid #999 1px;
-    font-size: 90%;
-    display: none;
-}
-
-// Panels
-
 #left,
-#left-border,
 #center,
-#right-border,
 #right {
-    position: absolute;
-    top: $navbar-height + $layout_top_padding + 1;
-    bottom: 0px;
-    overflow: hidden;
-    background: #fff;
-}
-#left,
-#center,
-#right,
-#left-border,
-#right-border {
-    // border-top: solid $border-default-color 1px;
+    @extend .position-absolute;
+    @extend .h-100;
+    @extend .overflow-hidden;
 }
 #left {
+    @extend .unified-panel;
     left: 0px;
-    width: 250px;
-    z-index: 200;
-    border-right: solid $layout-border-color 1px;
-}
-#left-border {
-    left: 250px;
-}
-#center {
-    left: 250 + $border-default-color_padding;
-    right: 250 + $border-default-color_padding;
-    overflow: hidden;
-    z-index: 1;
-    .center-container {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        .center-panel {
-            display: none;
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            padding: 10px;
-            overflow: auto;
-        }
-        .center-frame {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-        }
-    }
-}
-#right-border {
-    right: 250px;
+    width: $panel-width;
+    border-right: $layout-border;
 }
 #right {
-    width: 250px;
+    @extend .unified-panel;
     right: 0px;
-    z-index: 200;
-    border-left: solid $layout-border-color 1px;
+    width: $panel-width;
+    border-left: $layout-border;
 }
-
-// If the message box or inactivity box is visible
-body.has-message-box,
-body.has-inactivity-box {
-    #left,
-    #left-border,
-    #center,
-    #right-border,
-    #right {
-        top: $panel-message-height + $navbar-height + $layout_top_padding + 1;
+#right > .unified-panel-footer {
+    .drag {
+        left: 0;
+    }
+}
+#center {
+    @extend .overflow-hidden;
+    left: $panel-width;
+    right: $panel-width;
+    .center-container {
+        @extend .position-absolute;
+        @extend .w-100;
+        @extend .h-100;
+        .center-panel {
+            @extend .position-absolute;
+            @extend .w-100;
+            @extend .h-100;
+            @extend .overflow-auto;
+            display: none;
+            padding: $margin-h $margin-v;
+            background: $white;
+        }
+        .center-frame {
+            @extend .position-absolute;
+            @extend .w-100;
+            @extend .h-100;
+        }
+    }
+    // Replaces unnecessary if/then logic in base_panels.mako
+    &:first-child {
+        left: 0;
+    }
+    &:last-child {
+        right: 0;
     }
 }
 
-// If both are visible
-body.has-message-box.has-inactivity-box {
-    #left,
-    #left-border,
-    #center,
-    #right-border,
-    #right {
-        top: 2 * $panel-message-height + $navbar-height + $layout_top_padding + 1;
-    }
-    #inactivebox {
-        top: $panel-message-height + $navbar-height + $layout_top_padding + 1;
-    }
-}
+// ==== Unified panel styles ====
 
+.unified-panel {
+    display: flex;
+    @extend .flex-column;
+    background: $panel-bg-color;
+}
 .unified-panel-header {
     @extend .unselectable;
+    @extend .px-3;
+    @extend .d-flex;
     height: $panel_header_height;
-    z-index: 1000;
-    text-shadow: rgba(255, 255, 255, 0.8) 0 1px 0;
-    background: $navbar-default-bg;
-    border-bottom: solid $layout-border-color 1px;
-    margin: 0;
-    padding: 0;
-    padding-right: 10px;
-    padding-left: 10px;
+    font-size: 1rem;
     font-weight: bold;
-
-    color: #555;
+    align-items: center;
+    color: $panel-header-text-color;
+    background: $panel-bg-header-color;
     a {
-        color: #555;
+        color: $panel-header-text-color;
     }
-    .fa {
-        font-size: 1.2em;
+    .unified-panel-header-inner {
+        @extend .w-100;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .panel-header-buttons {
+        @extend .float-right;
+        order: 9999;
+        .panel-header-button {
+            text-align: center;
+            &:not(:last-child) {
+                @extend .mr-2;
+            }
+            &:hover {
+                color: $brand-info;
+            }
+        }
     }
 }
-
-.unified-panel-header-inner {
-    padding-top: 8px;
+.unified-panel-controls {
+    @extend .px-3;
 }
-
+.unified-panel-body {
+    @extend .p-0;
+    @extend .w-100;
+    @extend .h-100;
+    @extend .overflow-auto;
+    flex: 1;
+}
+.unified-panel-body-background {
+    background: none repeat scroll 0 0 $panel-bg-color;
+}
 .unified-panel-footer {
     @extend .unselectable;
-    position: absolute;
-    bottom: 0;
+    position: relative;
     height: $panel_footer_height;
     line-height: $panel_footer_height;
     width: 100%;
-    z-index: 1000; // Above #dd-helper
-    border-top: solid $layout-border-color 1px;
-    background: $navbar-default-bg;
-
-    color: #555;
+    border-top: $layout-border;
+    background: $panel-footer-bg-color;
+    color: $panel-header-text-color;
     a {
-        color: #555;
+        color: $panel-header-text-color;
     }
-
     .drag {
         position: absolute;
         top: 0;
@@ -272,120 +257,58 @@ body.has-message-box.has-inactivity-box {
         text-align: center;
         height: $panel_footer_height;
         width: $panel_footer_height - 5;
-        background-image: url(../images/visualization/draggable_horizontal.png);
+        background-image: url(../../images/visualization/draggable_horizontal.png);
         background-repeat: no-repeat;
         background-position: 50% 50%;
-        cursor: w-resize;
-    }
-}
-
-#right > .unified-panel-footer {
-    .drag {
-        left: 0;
+        cursor: col-resize;
     }
 }
 
 // Needs to be outside panel to show when hidden
 .panel-collapse {
-    @extend .unified-panel-footer;
+    @extend .fa;
+    $border-color: darken($panel-footer-bg-color, 20%);
     font-size: 4/3em;
-    @extend .fa-icon;
-    &:before {
-        content: "\f053";
-    }
-    &.hidden:before {
-        content: "\f054";
-    }
-    z-index: 201;
     cursor: pointer;
     display: block;
     position: fixed;
-    left: 0;
-    top: inherit;
-    bottom: 0;
-    padding: 0 5px;
     text-align: center;
     height: $panel_footer_height;
     line-height: $panel_footer_height;
-    width: $panel_footer_height - 5;
-    background: none;
-    border-right: solid $layout-border-color 1px;
-    border-top: solid $layout-border-color 1px;
-    background: $navbar-default-bg;
+    width: $panel_footer_height;
+    background: $panel-footer-bg-color;
+    border: solid $panel-footer-bg-color 1px;
+    z-index: 1;
     &.right {
-        left: inherit;
         right: 0;
-        border-right: none;
-        border-left: solid $border-default-color 1px;
-        &.right:before {
+        border-top-left-radius: $border-radius-base;
+        line-height: inherit;
+        &:before {
             content: "\f054";
         }
-        &.right.hidden:before {
+        &.hidden:before {
             content: "\f053";
         }
+        &.hidden {
+            border-top-color: $border-color;
+            border-left-color: $border-color;
+        }
     }
-}
-
-.menu-bg {
-    background: whiteSmoke top repeat-x;
-}
-
-div.unified-panel-body {
-    position: absolute;
-    top: $panel_header_height;
-    bottom: 0;
-    width: 100%;
-    padding: 0px;
-}
-
-div.unified-panel-body-background {
-    background: none repeat scroll 0 0 $panel-bg-color;
-}
-
-#left > div.unified-panel-body,
-#right > div.unified-panel-body {
-    bottom: $panel_footer_height;
-    overflow: auto;
-}
-
-.panel-header-button {
-    color: #333;
-    text-decoration: none;
-    display: inline-block;
-    cursor: pointer;
-    margin: -1px;
-    padding: 1px;
-    margin-top: -0.2em;
-    // border: solid #999 1px;
-    padding-right: 0.5em;
-    padding-left: 0.5em;
-    // Fade to maroon on hover
-    &:hover {
-        color: maroon;
-        @include transition(color 0.25s linear);
+    &.left {
+        left: 0;
+        border-top-right-radius: $border-radius-base;
+        line-height: inherit;
+        &:before {
+            content: "\f053";
+        }
+        &.hidden:before {
+            content: "\f054";
+        }
+        &.hidden {
+            border-top-color: $border-color;
+            border-right-color: $border-color;
+        }
     }
-    // Bootstrap style span caret needs positioning
-    .caret {
-        margin-top: 7px;
-    }
-    // Another way to get a caret
-    &.popup {
-        padding-right: 1.75em;
-        background: url(../images/dropdownarrow.png) no-repeat right 7px;
-    }
-}
-
-// Used for dragging panels, popup menus, to deal with capturing clicks in iframes
-#dd-helper {
-    background: white;
-    opacity: 0;
-    z-index: 900; // Bootstrap elements start at 1000
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: none;
 }
 
 // Messages for message box, slightly different style
@@ -397,91 +320,103 @@ div.unified-panel-body-background {
     height: $panel-message-height;
     line-height: $panel-message-height;
     padding: 0px;
-    padding-left: 26px;
+    padding-left: 2.5rem;
     background-color: $state-danger-bg;
-    background-image: url(error_small.png);
+    background-image: url(../../images/error_small.png);
     background-repeat: no-repeat;
-    background-position: 6px 50%;
+    background-position: 0.5rem 50%;
 }
 
 .panel-warning-message {
-    background-image: url(warn_small.png);
+    background-image: url(../../images/warn_small.png);
     background-color: $state-warning-bg;
 }
 
 .panel-done-message {
-    background-image: url(ok_small.png);
+    background-image: url(../../images/ok_small.png);
     background-color: $state-success-bg;
 }
 
 .panel-info-message {
-    background-image: url(info_small.png);
+    background-image: url(../../images/info_icon.svg);
+    background-size: 1.5rem;
     background-color: $state-info-bg;
+    svg:path {
+        fill: black;
+    }
 }
 
-// Masthead
+// ==== Masthead ====
+
 #masthead {
-    padding: 0;
-    margin-bottom: 0px;
-    background-color: #2c3143;
+    @extend .p-0;
+    @extend .mb-0;
+    background-color: $brand-dark;
+    height: $masthead-height;
     .navbar-nav {
+        min-height: 100%;
         > li {
+            // This allows the background color to fill the full height of the
+            // masthead, while still keeping the contents centered (using flex)
+            min-height: 100%;
+            display: flex;
+            align-items: center;
             &.active {
-                background: black;
+                background: darken($brand-dark, 10%);
+                .nav-link {
+                    color: $white;
+                }
             }
             .nav-link {
                 cursor: pointer;
                 text-decoration: none;
+                color: $gray-300;
                 &:hover {
-                    color: gold;
+                    color: $brand-toggle;
                 }
                 &.nav-icon {
                     font-size: 1.7em;
                 }
                 &.toggle {
-                    color: gold;
+                    color: $brand-toggle;
                 }
             }
             .nav-note {
-                font-weight: bold;
-                font-size: 10px;
-                position: relative;
-                left: 30px;
-                top: -15px;
-                color: gold;
-                height: 0px;
+                @extend .font-weight-bold;
+                @extend .position-relative;
+                right: 0.4rem;
+                top: 0.7rem;
+                font-size: 0.7rem;
+                color: $brand-toggle;
+                width: 0;
             }
         }
     }
     .navbar-brand {
-        position: absolute;
-        left: 0;
+        @extend .position-absolute;
+        @extend .font-weight-bold;
+        left: 0.3rem;
         top: 0;
         font-family: verdana;
-        font-weight: bold;
-        font-size: 20px;
-        line-height: 1;
-        color: white;
-        // Override margin and padding due to shorter navbar height
-        padding: 5px 20px 12px;
-        margin-left: -15px;
+        font-size: 1.25rem;
+        color: $gray-300;
         text-decoration: none;
         .navbar-brand-image {
             display: inline;
             width: 26px;
-            vertical-align: top;
             margin-left: 0.35em;
             border: none;
         }
         .navbar-brand-title {
-            color: white;
+            color: $white;
         }
     }
 }
 
+// ==== Quota meter styles ====
+
 .quota-meter-container {
     position: absolute;
-    top: 0;
     right: 0;
     height: 32px;
 }
@@ -525,6 +460,7 @@ div.unified-panel-body-background {
         @extend .text-dark;
         font-size: 12px;
         text-decoration: none;
+        display: block;
     }
 }
 
@@ -560,23 +496,16 @@ div.metadataFormBody div.metadataFormTitle {
 
 div.metadataFormDisabled div.metadataFormTitle {
     background: #eee;
-    border-color: #999;
+    border-color: $border-color;
 }
 
 div.metadataFormDisabled {
-    border-color: #999;
+    border-color: $border-color;
 }
 
 div.metadataHelpBody {
     width: 100%;
     overflow: auto;
-}
-
-div.titleRow {
-    font-weight: bold;
-    border-bottom: dotted gray 1px;
-    margin-bottom: 0.5em;
-    padding-bottom: 0.25em;
 }
 
 // Forms
@@ -591,11 +520,11 @@ div.toolFormBody div.toolFormTitle {
 
 div.toolFormDisabled div.toolFormTitle {
     background: #f5f5f5;
-    border-color: $border-default-color;
+    border-color: $border-color;
 }
 
 div.toolFormDisabled {
-    border-color: $border-default-color;
+    border-color: $border-color;
 }
 
 div.toolHelp {
@@ -607,20 +536,44 @@ div.toolHelpBody {
     width: 100%;
 }
 
-// In workflow
+div.toolFormRow {
+    position: relative;
+}
 
 .toolForm.toolFormInCanvas {
-    border: solid $form-border 1px;
-    @include border-radius(2px);
-    background: $white;
-    margin: 0px;
+    @extend .card;
+    z-index: 100;
+    position: absolute;
+    border-color: $brand-primary;
     &.toolForm-active {
-        box-shadow: 0 0 0 3px $brand-primary;
-        @include border-radius(1px);
+        z-index: 1001;
+        box-shadow: 0 0 0 2px $brand-primary;
     }
     .toolFormTitle {
-        font-size: $font-size-base;
-        line-height: $line-height-base;
+        @extend .card-header;
+        @extend .py-1;
+        @extend .px-2;
+        cursor: move;
+        background: $brand-secondary;
+    }
+    .toolFormBody {
+        @extend .card-body;
+        @extend .p-0;
+        @extend .mx-2;
+        .rule {
+            height: 0;
+            border: none;
+            border-bottom: dotted black 1px;
+            margin: 0 5px;
+        }
+    }
+}
+
+.toolForm.toolFormInCanvas.tool-node-error {
+    border-color: $state-danger-border;
+    .toolFormTitle {
+        background: $state-danger-bg;
+        border-color: $state-danger-border;
     }
 }
 
@@ -645,6 +598,7 @@ div.form-body {
 }
 
 div.form-row {
+    position: relative;
     padding: 5px 10px;
 }
 
@@ -682,22 +636,6 @@ div.form-row-input label {
     display: inline;
 }
 
-div.form-row-error-message {
-    width: 300px;
-    float: left;
-    color: red;
-    font-weight: bold;
-    padding: 3px 0;
-}
-
-.form-row .help,
-.toolParamHelp {
-    color: #666;
-    a {
-        color: #666;
-    }
-}
-
 .form-row.form-actions {
     background: whiteSmoke;
     border-top: solid #ddd 1px;
@@ -706,22 +644,21 @@ div.form-row-error-message {
     margin-top: 5px;
 }
 
+#run-workflow {
+    @extend .float-right;
+    @extend .mt-3;
+}
+
+.workflow-right {
+    background: $white;
+}
+
+.workflow-right .right-content {
+    margin: 3px;
+}
+
 .workflow-right .right-content .section-row {
     margin-bottom: 10px;
-}
-
-// Selects
-select {
-    //border: 1px solid $input-border;
-    padding: 2px;
-    font-size: $font-size-base;
-    line-height: $line-height-base;
-}
-
-select,
-input,
-textarea {
-    font: inherit;
 }
 
 .form-row {
@@ -736,83 +673,19 @@ textarea {
     display: block;
 }
 
-textarea,
-input[type="text"],
-input[type="password"] {
-    font-size: $font-size-base;
-    line-height: $line-height-base;
-    border: 1px solid $input-border;
-    padding: 3px;
-}
-
-// Always style buttons and submits as bootstrap buttons
-input[type="submit"],
-button {
-    @extend .btn;
-    @extend .btn-secondary;
-    // The above overrides the button variants (primary, danger, etc) because it occurs later, redefine btn-primary (bit of a hack)
-    &.btn-primary {
-        @extend .btn-primary;
-    }
-}
-
-.search-query {
-    display: inline-block;
-    padding: 4px;
-    font-size: $font-size-base;
-    line-height: $line-height-base;
-    color: $gray;
-    border: 1px solid $input-border;
-    padding-left: 14px !important;
-    padding-right: 14px;
-    margin-bottom: 0; // remove the default margin on all inputs
-    @include border-radius(14px);
-    max-width: auto;
-}
-.search-query:focus {
-    border-color: darken(rgba(82, 168, 236, 0.8), 15%);
-    $shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
-    @include box-shadow($shadow);
-    outline: 0;
-    outline: thin dotted \9; /* IE6-8 */
-}
-
-.search-spinner {
-    position: absolute;
-    display: none;
-    right: 6px;
-    top: 9px;
-    font-size: 1.4em;
-    color: #888;
-}
-
-#search-clear-btn {
-    position: absolute;
-    right: 6px;
-    top: 9px;
-    display: block;
-    font-size: 1.4em !important;
-    text-decoration: none;
-    color: #888;
-    @extend .fa-icon;
-    &:before {
-        content: "\f057";
-    }
-}
-
 // Messages
 
 .errormessagelarge,
 .warningmessagelarge,
 .donemessagelarge,
 .infomessagelarge,
-.ui-form-help .error,
-.ui-form-help .warning,
-.ui-form-help .note {
+.form-help .error,
+.form-help .warning,
+.form-help .note {
     @extend .alert;
     min-height: 36px;
     padding-left: 52px;
-    background-image: url(error_large.png);
+    background-image: url(../../images/error_large.png);
     background-repeat: no-repeat;
     background-position: 10px 5px;
     .messagerow {
@@ -828,25 +701,18 @@ button {
 .warningmessagelarge {
     @extend .alert-warning;
     padding-left: 52px;
-    background-image: url(warn_large.png);
+    background-image: url(../../images/warn_large.png);
 }
 
 .donemessagelarge {
     @extend .alert-success;
     padding-left: 52px;
-    background-image: url(ok_large.png);
+    background-image: url(../../images/ok_large.png);
 }
 
 .infomessagelarge {
     @extend .alert-info;
-    background-image: url(info_large.png);
-}
-
-.screencastBox {
-    padding-left: 10px;
-    border-color: #aaaa66;
-    background-color: #ffffcc;
-    background-image: none;
+    background-image: url(../../images/info_large.png);
 }
 
 .errormessage,
@@ -857,44 +723,42 @@ button {
 .warningmessagesmall,
 .donemessagesmall,
 .infomessagesmall,
-.ui-form-help .error,
-.ui-form-help .warning,
-.ui-form-help .note {
+.form-help .error,
+.form-help .warning,
+.form-help .note {
     @extend .alert;
     padding: 5px;
     padding-left: 25px;
     min-height: 15px;
-    //border: 1px solid $error_message_border;
-    //background-color: $error_message_bg;
-    background-image: url(error_small.png);
+    background-image: url(../../images/error_small.png);
     background-repeat: no-repeat;
     background-position: 5px 6px;
 }
 
 .errormessage,
 .errormessagesmall,
-.ui-form-help .error {
+.form-help .error {
     @extend .alert-danger;
 }
 
 .warningmessage,
 .warningmessagesmall,
-.ui-form-help .warning {
+.form-help .warning {
     @extend .alert-warning;
-    background-image: url(warn_small.png);
+    background-image: url(../../images/warn_small.png);
 }
 
 .donemessage,
 .donemessagesmall {
     @extend .alert-success;
-    background-image: url(ok_small.png);
+    background-image: url(../../images/ok_small.png);
 }
 
 .infomessage,
 .infomessagesmall,
-.ui-form-help .note {
+.form-help .note {
     @extend .alert-info;
-    background-image: url(info_small.png);
+    background-image: url(../../images/info_small.png);
 }
 
 .errormark,
@@ -905,20 +769,20 @@ button {
 .err_bgr {
     padding-left: 20px;
     min-height: 15px;
-    background: url(error_small.png) no-repeat;
+    background: url(../../images/error_small.png) no-repeat;
 }
 
 .warningmark {
-    background-image: url(warn_small.png);
+    background-image: url(../../images/warn_small.png);
 }
 
 .donemark {
-    background-image: url(ok_small.png);
+    background-image: url(../../images/ok_small.png);
 }
 
 .infomark,
 .ok_bgr {
-    background-image: url(info_small.png);
+    background-image: url(../../images/info_small.png);
 }
 
 /* I think this is only used in view details */
@@ -972,7 +836,6 @@ table.colored th {
 
 table.colored tr.header {
     background: $table-heading-bg;
-    color: contrast($complement-color-3);
     background-repeat: repeat-x;
     background-position: top;
     border-bottom: solid $table-border-color 1px;
@@ -996,55 +859,49 @@ div.debug {
 }
 
 // Data grid style
-
 .grid-table {
-    width: 100%;
+    @extend .w-100;
 }
 .grid-header {
-    padding-bottom: 1em;
-}
-.grid-header h2 {
-    margin: 0;
-    margin-bottom: 0.5em;
+    @extend .mb-2;
 }
 .grid-header .title {
-    font-weight: bold;
+    @extend .font-weight-bold;
 }
 .grid {
-    padding-top: 1em;
+    @extend .pt-2;
+    @extend .w-100;
     border-collapse: collapse;
-    width: 100%;
 }
 .grid tbody td {
-    line-height: $line-height-base;
-    border-top: solid #dddddd 1px;
-    border-bottom: solid #dddddd 1px;
-    padding: 5px;
+    @extend .border-top;
+    @extend .border-bottom;
+    @extend .p-1;
 }
 .grid tbody td:empty {
-    padding: 0;
+    @extend .p-0;
 }
 .grid thead tr {
     height: 2em;
 }
 .grid thead th {
+    @extend .p-1;
+    @extend .border-top;
+    @extend .border-bottom;
     line-height: $line-height-base;
-    background: $table-heading-bg;
-    color: contrast($table-heading-bg);
-    border-top: solid $table-border-color 1px;
-    border-bottom: solid $table-border-color 1px;
-    padding: 5px;
+    background: $brand-light;
+    color: $text-color;
     text-align: left;
     white-space: nowrap;
 }
 .grid tfoot td {
-    background-color: #f8f8f8;
-    border-top: solid #dddddd 1px;
-    border-bottom: solid #dddddd 1px;
-    padding: 5px;
+    @extend .border-top;
+    @extend .border-bottom;
+    @extend .p-1;
+    background-color: $brand-light;
 }
 .grid .current {
-    background-color: #eeeeff;
+    background-color: lighten($brand-success, 20%);
 }
 
 // Pulled out of grid base
@@ -1081,7 +938,7 @@ div.debug {
     border-collapse: separate;
 }
 .delete-search-icon {
-    background: url(../images/delete_tag_icon_gray.png) center no-repeat;
+    background: url(../../images/delete_tag_icon_gray.png) center no-repeat;
     display: inline-block;
     width: 10px;
     cursor: pointer;
@@ -1090,18 +947,14 @@ div.debug {
     margin-left: 2px;
 }
 .search-box-input {
-    border: 0;
+    @extend .ui-input;
     float: left;
-    outline: medium none;
-    font-style: italic;
-    font-size: inherit;
 }
 .search-box {
     vertical-align: bottom;
     display: inline-block;
     padding: 0;
     white-space: nowrap;
-    // border: 1px solid #aaa;
 }
 .gray-background {
     background-color: #dddddd;
@@ -1154,32 +1007,25 @@ ul.manage-table-actions li {
 }
 
 .state-progress {
-    border: 1px solid gray;
-    position: relative;
-
-    margin-top: 2px;
-    margin-bottom: 1px;
-
+    @extend .position-relative;
+    @extend .m-1;
+    border: $border-default;
     .info {
-        color: $black;
-        background: $white;
+        color: $text-color;
+        background: $body-bg;
     }
-
     .new {
         background: $state-default-bg;
     }
-
     .running {
         background: $state-running-bg;
     }
-
     .ok {
         background: $state-success-bg;
     }
-
     .note {
-        margin-left: 1em;
-        position: absolute;
+        @extend .position-absolute;
+        @extend .ml-2;
     }
 }
 
@@ -1232,38 +1078,6 @@ ul.manage-table-actions li {
     background: $state-default-bg;
 }
 
-.state-fg-new {
-    color: #ffb030;
-}
-
-.state-fg-upload {
-    color: #d090d0;
-}
-
-.state-fg-waiting {
-    color: #e8c060;
-}
-
-.state-fg-queued {
-    color: #888888;
-}
-
-.state-fg-running {
-    color: #aaaa66;
-}
-
-.state-fg-ok {
-    color: #66aa66;
-}
-
-.state-fg-error {
-    color: #aa6666;
-}
-
-.state-fg-deleted {
-    color: #3399ff;
-}
-
 // Button styles
 
 button {
@@ -1279,6 +1093,7 @@ a.btn {
 }
 a.action-button {
     color: $btn-default-color;
+    background: $btn-default-bg;
     text-decoration: none;
 }
 .action-button > img {
@@ -1298,19 +1113,11 @@ a.action-button {
     @extend .btn-secondary;
 }
 
-//.action-button > * {
-//    vertical-align: middle;
-//}
-
 .action-button:hover {
     @extend .btn:hover;
-    //color: black;
-    //background: #dddddd;
 }
 .action-button:active {
     @extend .btn.active;
-    //color: white;
-    //background: #aaaaaa;
 }
 
 // A menu button is a button that has an attached popup menu
@@ -1330,14 +1137,6 @@ a.action-button {
     cursor: pointer;
     position: relative;
     @extend .unselectable;
-
-    // border: solid transparent 1px;
-    // -moz-border-radius: 0.25em;
-    // -webkit-border-radius: 0.25em;
-    // border-radius: 0.25em;
-
-    // padding: 1px 0.25em;
-    // margin: -1px -0.25em;
 
     a {
         text-decoration: none;
@@ -1388,63 +1187,20 @@ a.action-button {
 }
 
 .menubutton.popup.split:hover {
-    //background: url(../images/ddarrowsplit.png) no-repeat right -39px;
+    //background: url(../../images/ddarrowsplit.png) no-repeat right -39px;
 }
 
 // Popup menu styles
-
-/*
-.overlay-border {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
-    padding: 1em;
-    margin: -1em;
-    background-color: rgba(0,0,0,0.5);
-    -moz-border-radius: 1em;
-    -webkit-border-radius: 1em;
-    z-index: -1;
-}
-*/
-
-// Galaxy popup menus
 div.popmenu-wrapper {
     position: absolute;
     top: 100%;
     z-index: 20000;
 
-    ul.dropdown-menu {
+    .dropdown-menu {
         // Since our menus are contained in a positioned div, need to override some styles
         display: block;
         position: relative;
         float: none;
-    }
-}
-
-// For all dropdowns, define some additional item types
-ul.dropdown-menu {
-    a {
-        text-decoration: none;
-    }
-    li.head > a {
-        // From nav-list nav-header
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-        font-size: 11px;
-        font-weight: bold;
-        line-height: $line-height-base;
-        color: $gray-light;
-        text-transform: uppercase;
-    }
-
-    li.head > a:hover {
-        background: inherit;
-        border-color: transparent;
-    }
-
-    li > a {
-        @extend .dropdown-item;
     }
 }
 
@@ -1467,8 +1223,6 @@ div.permissionContainer {
 .text-content {
     hr {
         display: block;
-        background: black;
-        color: black;
         width: 100%;
         height: 1px;
         border: none;
@@ -1529,11 +1283,8 @@ div.permissionContainer {
     cursor: pointer;
     width: 16px;
     height: 16px;
-    line-height: 8px;
-    // Fade to maroon on hover
     &:hover {
-        color: maroon;
-        @include transition(color 0.25s linear);
+        color: $brand-info;
     }
 }
 
@@ -1543,11 +1294,11 @@ div.permissionContainer {
 
 .editable-text:hover {
     cursor: text;
-    border: dotted #999999 1px;
+    border: dotted $border-color 1px;
 }
 
 .icon-button.multiinput {
-    background: url(../images/documents-stack.png) no-repeat;
+    background: url(../../images/documents-stack.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1555,12 +1306,12 @@ div.permissionContainer {
 }
 
 .icon-button.multiinput.disabled {
-    background: url(../images/documents-stack-faded.png) no-repeat;
+    background: url(../../images/documents-stack-faded.png) no-repeat;
     cursor: pointer;
 }
 
 .icon-button.link {
-    background: url(../images/silk/link.png) no-repeat;
+    background: url(../../images/silk/link.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1568,7 +1319,7 @@ div.permissionContainer {
 }
 
 .icon-button.link-broken {
-    background: url(../images/silk/link_break.png) no-repeat;
+    background: url(../../images/silk/link_break.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1599,87 +1350,58 @@ div.permissionContainer {
 @import "ui/error-modal.scss";
 
 // ==== Tool menu styles
-
 .toolMenuContainer {
-    color: $base-text-color;
-    background: $side-panel-bg;
+    color: $panel-text-color;
+    a {
+        color: $panel-text-color;
+    }
+    background: $panel-bg-color;
     min-height: 100%;
-    padding: 35px 10px;
-}
-
-div.toolSectionPad {
-    margin: 0;
-    padding: 0;
-    height: 5px;
-    font-size: 0px;
-}
-
-div.toolSectionWrapper {
-    margin-bottom: 5px;
-}
-
-div.toolSectionDetailsInner {
-    margin-left: 5px;
-    margin-right: 5px;
 }
 
 div.toolSectionTitle {
-    font-weight: bold;
+    font-weight: 500;
+    font-size: $h4-font-size;
 }
 
 div.toolPanelLabel {
-    padding-top: 10px;
-    padding-bottom: 5px;
+    @extend .py-1;
+    @extend .px-3;
     font-weight: bold;
-    color: gray;
+    font-size: $h4-font-size;
+    color: $text-muted;
     text-transform: uppercase;
 }
 
-div.toolTitle {
-    padding-top: 5px;
-    padding-bottom: 5px;
-    margin-left: 16px;
-    margin-right: 10px;
-    display: list-item;
-    list-style: square outside;
+div.toolSectionTitle,
+div.toolTitle,
+div.toolTitleNoSection {
+    display: block;
     .labels {
         float: right;
-        margin-left: 2px;
+    }
+    a {
+        @extend .px-3;
+        @extend .py-1;
+        text-decoration: none;
+        display: block;
+        &:hover {
+            background: darken($panel-bg-color, 5%);
+        }
+    }
+    &.text-muted a {
+        &:hover {
+            background: inherit;
+        }
     }
 }
 
-div a.tool-link {
-    text-decoration: none;
-    display: block;
-
-    span.tool-old-link {
-        text-decoration: underline;
+div.toolSectionWrapper {
+    div.toolTitle a {
+        @extend .pl-4;
+        font-size: inherit;
     }
 }
-
-div.toolSectionBody div.toolPanelLabel {
-    padding-top: 5px;
-    padding-bottom: 5px;
-    margin-left: 16px;
-    margin-right: 10px;
-    display: list-item;
-    list-style: none outside;
-}
-
-div.toolTitleNoSection {
-    padding-bottom: 5px;
-    font-weight: bold;
-}
-
-#tool-search {
-    padding-top: 5px;
-    padding-bottom: 10px;
-    position: fixed;
-    top: 65px;
-    width: 210px;
-}
-
-// Dataset Display Styles
 
 #loading_indicator {
     position: fixed;
@@ -1688,7 +1410,7 @@ div.toolTitleNoSection {
     height: 32px;
     width: 32px;
     display: none;
-    background: url(largespinner.gif);
+    background: url(../../images/largespinner.gif);
 }
 
 #content_table td {
@@ -1718,7 +1440,7 @@ div.toolTitleNoSection {
 
 .toolMenuAndView .toolForm {
     float: left;
-    background-color: white;
+    background-color: $white;
     margin: 10px;
 }
 
@@ -1744,14 +1466,14 @@ div.toolTitleNoSection {
 }
 
 .icon-button.general-question {
-    background: url(question-octagon-frame.png) no-repeat;
+    background: url(../../images/question-octagon-frame.png) no-repeat;
     float: right;
     margin-top: 3px;
     margin-right: 4px;
 }
 
 .icon-button.tag-question {
-    background: url(question-balloon.png) no-repeat;
+    background: url(../../images/question-balloon.png) no-repeat;
     float: right;
     margin-top: 3px;
     margin-right: 4px;
@@ -1866,11 +1588,6 @@ div.toolTitleNoSection {
     padding: 2px;
 }
 
-.communication-iframe {
-    width: 100%;
-    height: 100%;
-}
-
 .close-modal {
     float: right;
     cursor: pointer;
@@ -1946,20 +1663,128 @@ div.toolTitleNoSection {
     opacity: 1;
 }
 
-/* Temporary tag editor display; will be moved to a scoped Vue SFC upon refactoring */
-.tags-display {
-    @extend %vertical-spacing;
-    .select2-container {
-        max-height: 80px;
-        overflow: auto;
-        min-width: 0px;
-        .select2-choices {
-            border-radius: 3px;
-        }
+/* TEMPORARY, REFACTOR THIS -- This is only image-related styles from the
+ * workflow editor; everything should be moved out of the mako and into its own
+ * file */
+
+#canvas-viewport {
+    background: $workflow-editor-bg url("../../images/light_gray_grid.gif");
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    overflow: hidden;
+}
+
+.base-terminal {
+    @extend .fa;
+    @extend .fa-circle;
+    @extend .mt-1;
+    color: $brand-light;
+    position: absolute;
+    z-index: 1500;
+    > icon {
+        @extend .fa;
+        @extend .fa-chevron-circle-right;
+        color: $brand-primary;
+        position: absolute;
+        left: 0px;
+        top: 0px;
     }
+}
+.input-terminal {
+    @extend .base-terminal;
+    left: -9px;
+}
+.output-terminal {
+    @extend .base-terminal;
+    right: -9px;
+    &:hover > icon {
+        color: $brand-success;
+    }
+}
+.input-terminal-active.can-accept > icon {
+    color: $brand-success;
+}
+.input-terminal-active.cannot-accept > icon {
+    color: $brand-warning;
+}
+.drag-terminal {
+    @extend .fa;
+    @extend .fa-circle;
+    color: $brand-success;
+    position: absolute;
+    z-index: 1500;
+}
+.mark-terminal {
+    cursor: pointer;
+    color: $text-muted;
+    &.mark-terminal-active {
+        color: $brand-success;
+    }
+}
+.delete-terminal {
+    @extend .btn;
+    @extend .btn-sm;
+    @extend .btn-primary;
+    @extend .fa;
+    @extend .fa-minus-circle;
+    @extend .p-1;
+    @extend .mt-1;
+    position: absolute;
+    z-index: 2500;
+    top: 0px;
+    left: -15px;
+}
+.callout-terminal {
+    position: absolute;
+}
+.workflow-overview {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    right: 0px;
+    bottom: 0px;
+    border-top: solid gray 1px;
+    border-left: solid grey 1px;
+    padding: 7px 0 0 7px;
+    background: $workflow-overview-bg no-repeat url("../../images/resizable.png");
+    z-index: 20000;
+    overflow: hidden;
+    max-width: 300px;
+    max-height: 300px;
+    min-width: 50px;
+    min-height: 50px;
 }
 
 /* For Vue */
 [v-cloak] {
     display: none;
+}
+
+/* Toolshed, reports custom styles from mako templates */
+body.toolshed,
+body.reports {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    #left {
+        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
+    }
+    .unified-panel-body {
+        overflow: auto;
+    }
+    .toolMenu {
+        margin-left: 10px;
+    }
+}
+
+/* Used in Galaxy IE for spinner loading TODO: Remove in IE entrypoint refactoring */
+#ie-loading-spinner {
+    position: absolute;
+    margin: auto;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url(../../images/largespinner.gif) no-repeat center center fixed;
 }

@@ -5,18 +5,23 @@ order to test something that cannot be tested with the default functional/api
 tessting configuration.
 """
 import os
-from unittest import skip, TestCase
+from unittest import skip, SkipTest, TestCase
 
-from galaxy.tools.deps.commands import which
-from galaxy.tools.verify.test_data import TestDataResolver
+import pytest
+
+from galaxy.tool_util.deps.commands import which
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from .api import UsesApiTestCaseMixin
 from .driver_util import GalaxyTestDriver
 
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 
 
-def skip_if_jenkins(cls):
+def _identity(func):
+    return func
 
+
+def skip_if_jenkins(cls):
     if os.environ.get("BUILD_NUMBER", ""):
         return skip
 
@@ -25,7 +30,7 @@ def skip_if_jenkins(cls):
 
 def skip_unless_executable(executable):
     if which(executable):
-        return lambda func: func
+        return _identity
     return skip("PATH doesn't contain executable %s" % executable)
 
 
@@ -33,12 +38,31 @@ def skip_unless_docker():
     return skip_unless_executable("docker")
 
 
-class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
+def skip_unless_kubernetes():
+    return skip_unless_executable("kubectl")
+
+
+def k8s_config_path():
+    return os.environ.get('GALAXY_TEST_KUBE_CONFIG_PATH', '~/.kube/config')
+
+
+def skip_unless_fixed_port():
+    if os.environ.get("GALAXY_TEST_PORT"):
+        return _identity
+
+    return skip("GALAXY_TEST_PORT must be set for this test.")
+
+
+class IntegrationInstance(UsesApiTestCaseMixin):
     """Unit test case with utilities for spinning up Galaxy."""
 
     prefer_template_database = True
     # Subclasses can override this to force uwsgi for tests.
     require_uwsgi = False
+
+    # Don't pull in default configs for un-configured things from Galaxy's
+    # config directory and such.
+    isolate_galaxy_config = True
 
     @classmethod
     def setUpClass(cls):
@@ -58,12 +82,20 @@ class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
 
     def setUp(self):
         self.test_data_resolver = TestDataResolver()
+        self._configure_interactor()
+
+    def _configure_interactor(self):
         # Setup attributes needed for API testing...
         server_wrapper = self._test_driver.server_wrappers[0]
         host = server_wrapper.host
         port = server_wrapper.port
         self.url = "http://%s:%s" % (host, port)
         self._setup_interactor()
+
+    def restart(self, handle_reconfig=None):
+        self._test_driver.restart(config_object=self.__class__, handle_config=handle_reconfig)
+        self._configure_app()
+        self._configure_interactor()
 
     @property
     def _app(self):
@@ -85,6 +117,10 @@ class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
         ```self._app``` can be used to access Galaxy core app.
         """
 
+    def _skip_unless_postgres(self):
+        if not self._app.config.database_connection.startswith("post"):
+            raise SkipTest("Test only valid for postgres")
+
     @classmethod
     def handle_galaxy_config_kwds(cls, galaxy_config_kwds):
         """Extension point for subclasses to modify arguments used to configure Galaxy.
@@ -103,3 +139,27 @@ class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
 
     def _run_tool_test(self, *args, **kwargs):
         return self._test_driver.run_tool_test(*args, **kwargs)
+
+
+class IntegrationTestCase(IntegrationInstance, TestCase):
+    """Unit TestCase with utilities for spinning up Galaxy."""
+
+
+def integration_module_instance(clazz):
+
+    def _instance():
+        instance = clazz()
+        instance.setUpClass()
+        instance.setUp()
+        yield instance
+        instance.tearDownClass()
+
+    return pytest.fixture(scope='module')(_instance)
+
+
+def integration_tool_runner(tool_ids):
+
+    def test_tools(instance, tool_id):
+        instance._run_tool_test(tool_id)
+
+    return pytest.mark.parametrize("tool_id", tool_ids)(test_tools)

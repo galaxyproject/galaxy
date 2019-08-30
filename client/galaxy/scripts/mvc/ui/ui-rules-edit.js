@@ -1,6 +1,7 @@
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import _l from "utils/localization";
-import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Vue from "vue";
 import ListCollectionCreator from "mvc/collection/list-collection-creator";
@@ -10,16 +11,13 @@ import RulesDisplay from "components/RulesDisplay.vue";
  * Bridge rule based builder and the tool form.
  */
 var View = Backbone.View.extend({
-    // initialize
     initialize: function(options) {
-        // link this
-        this.options = options;
+        this.model = new Backbone.Model();
         this.target = options.target;
-        this.reset = null;
         const view = this;
 
-        // create insert new list element button
-        this.browse_button = new Ui.ButtonIcon({
+        // create insert edit button
+        this.browse_button = new Ui.Button({
             title: _l("Edit"),
             icon: "fa fa-edit",
             tooltip: _l("Edit Rules"),
@@ -59,7 +57,7 @@ var View = Backbone.View.extend({
 
     _fetcCollectionAndEdit: function() {
         const view = this;
-        const url = `${Galaxy.root}api/dataset_collections/${view.target.id}?instance_type=history`;
+        const url = `${getAppRoot()}api/dataset_collections/${view.target.id}?instance_type=history`;
         axios
             .get(url)
             .then(response => this._showCollection(response))
@@ -74,7 +72,7 @@ var View = Backbone.View.extend({
     _showRuleEditor: function(elements) {
         const elementsType = "collection_contents";
         const importType = "collections";
-        let value = this._value;
+        const value = this._value;
         const options = {
             saveRulesFn: rules => this._handleRulesSave(rules),
             initialRules: value
@@ -96,16 +94,15 @@ var View = Backbone.View.extend({
     /** Main Template */
     _template: function(options) {
         return `
-            <div class="ui-rules-edit">
+            <div class="ui-rules-edit clearfix">
                 <span class="ui-rules-preview" />
-                <span class="ui-rules-edit-button" />
+                <span class="ui-rules-edit-button float-left" />
             </div>
         `;
     },
 
-    /** Return/Set currently selected genomespace filename */
+    /** Return/Set current value */
     value: function(new_value) {
-        // check if new_value is defined
         if (new_value !== undefined) {
             this._setValue(new_value);
         } else {
@@ -113,33 +110,31 @@ var View = Backbone.View.extend({
         }
     },
 
-    // update
+    /** Update input element options */
     update: function(input_def) {
         this.target = input_def.target;
     },
 
-    // get value
+    /** Returns current value */
     _getValue: function() {
         return this._value;
     },
 
-    // set value
+    /** Sets current value */
     _setValue: function(new_value) {
         if (new_value) {
             if (typeof new_value == "string") {
                 new_value = JSON.parse(new_value);
             }
             this._value = new_value;
+            this.model.trigger("error", null);
             this.trigger("change");
             this.instance.inputRules = new_value;
-            if (this.reset) {
-                this.reset();
-                this.reset = null;
-            }
         }
     },
 
-    validate: function(reset) {
+    /** Validate input element value */
+    validate: function() {
         const value = this._value;
         let message = null;
         if (!value || value.rules.length === 0) {
@@ -147,15 +142,14 @@ var View = Backbone.View.extend({
         } else if (value.mapping.length === 0) {
             message = "No collection identifiers defined, specify at least one collection identifier.";
         } else {
-            for (let rule of value.rules) {
+            for (const rule of value.rules) {
                 if (rule.error) {
                     message = "One or more rules in error.";
                     break;
                 }
             }
         }
-        this.reset = reset;
-        return { valid: !message, message: message };
+        return message;
     }
 });
 

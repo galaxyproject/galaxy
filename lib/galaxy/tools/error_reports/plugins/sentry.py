@@ -3,7 +3,7 @@ import logging
 
 from galaxy import web
 from galaxy.util import string_as_bool, unicodify
-from ..plugins import ErrorPlugin
+from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class SentryPlugin(ErrorPlugin):
         # if they've set a custom one, override.
         if self.custom_dsn:
             import raven
-            self.sentry = raven.Client(self.custom_dsn)
+            self.sentry = raven.Client(self.custom_dsn, transport=raven.transport.HTTPTransport)
 
     def submit_report(self, dataset, job, tool, **kwargs):
         """Submit the error report to sentry

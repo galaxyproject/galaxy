@@ -6,14 +6,14 @@ import logging
 from sqlalchemy import false
 
 from galaxy import web
-from galaxy.web.base.controller import BaseAPIController, url_for
+from galaxy.webapps.base.controller import BaseAPIController, url_for
 
 log = logging.getLogger(__name__)
 
 
 class RoleAPIController(BaseAPIController):
 
-    @web.expose_api
+    @web.legacy_expose_api
     def index(self, trans, **kwd):
         """
         GET /api/roles
@@ -21,14 +21,14 @@ class RoleAPIController(BaseAPIController):
         """
         rval = []
         for role in trans.sa_session.query(trans.app.model.Role).filter(trans.app.model.Role.table.c.deleted == false()):
-            if trans.user_is_admin() or trans.app.security_agent.ok_to_display(trans.user, role):
+            if trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role):
                 item = role.to_dict(value_mapper={'id': trans.security.encode_id})
                 encoded_id = trans.security.encode_id(role.id)
                 item['url'] = url_for('role', id=encoded_id)
                 rval.append(item)
         return rval
 
-    @web.expose_api
+    @web.legacy_expose_api
     def show(self, trans, id, **kwd):
         """
         GET /api/roles/{encoded_role_id}
@@ -37,27 +37,27 @@ class RoleAPIController(BaseAPIController):
         role_id = id
         try:
             decoded_role_id = trans.security.decode_id(role_id)
-        except TypeError:
+        except Exception:
             trans.response.status = 400
             return "Malformed role id ( %s ) specified, unable to decode." % str(role_id)
         try:
             role = trans.sa_session.query(trans.app.model.Role).get(decoded_role_id)
         except Exception:
             role = None
-        if not role or not (trans.user_is_admin() or trans.app.security_agent.ok_to_display(trans.user, role)):
+        if not role or not (trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role)):
             trans.response.status = 400
             return "Invalid role id ( %s ) specified." % str(role_id)
         item = role.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
         item['url'] = url_for('role', id=role_id)
         return item
 
-    @web.expose_api
+    @web.legacy_expose_api
     def create(self, trans, payload, **kwd):
         """
         POST /api/roles
         Creates a new role.
         """
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             trans.response.status = 403
             return "You are not authorized to create a new role."
         name = payload.get('name', None)

@@ -768,7 +768,7 @@ class RegexReplace(RecipeStep):
 
     def execute_step(self, tool_dependency, package_name, actions, action_dict, filtered_actions, env_file_builder,
                      install_environment, work_dir, current_dir=None, initial_download=False):
-        """
+        r"""
         Search and replace text in a file using regular expressions. Since this class is not used in the initial
         download stage, no recipe step filtering is performed here, and None values are always returned for
         filtered_actions and dir.
@@ -1576,7 +1576,7 @@ class SetupVirtualEnv(Download, RecipeStep):
         # This class is not currently used during stage 1 of the installation process, so filter_actions
         # are not affected, and dir is not set.  Enhancements can easily be made to this function if this
         # class is needed in stage 1.
-        venv_src_directory = os.path.abspath(os.path.join(self.app.config.tool_dependency_dir, '__virtualenv_src'))
+        venv_src_directory = os.path.abspath(os.path.join(self.app.tool_dependency_dir, '__virtualenv_src'))
         if not self.install_virtualenv(install_environment, venv_src_directory):
             log.debug('Unable to install virtualenv')
             return tool_dependency, None, None

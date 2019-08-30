@@ -4,7 +4,7 @@ type:
 activate: true
 
 icon: fa-star-half-o
-tooltip: Biostars Galaxy
+tooltip: Galaxy Help
 
 function: >
-  window.open('https://biostar.usegalaxy.org', '_blank');
+  window.open('https://help.galaxyproject.org', '_blank');

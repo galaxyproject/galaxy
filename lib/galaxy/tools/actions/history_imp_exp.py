@@ -1,10 +1,10 @@
 import logging
 import os
 import tempfile
+from collections import OrderedDict
 
 from galaxy.tools.actions import ToolAction
 from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper
-from galaxy.util.odict import odict
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +16,9 @@ class ImportHistoryToolAction(ToolAction):
         #
         # Create job.
         #
+        trans.check_user_activation()
         job = trans.app.model.Job()
+        job.galaxy_version = trans.app.config.version_major
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
         if history:
@@ -55,20 +57,19 @@ class ImportHistoryToolAction(ToolAction):
             job.add_parameter(name, value)
 
         job.state = start_job_state  # job inputs have been configured, restore initial job state
-        job.set_handler(tool.get_job_handler(None))
-        trans.sa_session.flush()
 
         # Queue the job for execution
-        trans.app.job_manager.job_queue.put(job.id, tool.id)
+        trans.app.job_manager.enqueue(job, tool=tool)
         trans.log_event("Added import history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
 
-        return job, odict()
+        return job, OrderedDict()
 
 
 class ExportHistoryToolAction(ToolAction):
     """Tool action used for exporting a history to an archive. """
 
     def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, **kwargs):
+        trans.check_user_activation()
         #
         # Get history to export.
         #
@@ -87,6 +88,7 @@ class ExportHistoryToolAction(ToolAction):
         # Create the job and output dataset objects
         #
         job = trans.app.model.Job()
+        job.galaxy_version = trans.app.config.version_major
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
         if history:
@@ -119,8 +121,8 @@ class ExportHistoryToolAction(ToolAction):
                                                        compressed=incoming['compress'])
         trans.sa_session.add(jeha)
 
-        job_wrapper = JobExportHistoryArchiveWrapper(job)
-        cmd_line = job_wrapper.setup_job(trans, jeha, include_hidden=incoming['include_hidden'],
+        job_wrapper = JobExportHistoryArchiveWrapper(trans.app, job)
+        cmd_line = job_wrapper.setup_job(jeha, include_hidden=incoming['include_hidden'],
                                          include_deleted=incoming['include_deleted'])
 
         #
@@ -134,11 +136,9 @@ class ExportHistoryToolAction(ToolAction):
             job.add_parameter(name, value)
 
         job.state = start_job_state  # job inputs have been configured, restore initial job state
-        job.set_handler(tool.get_job_handler(None))
-        trans.sa_session.flush()
 
         # Queue the job for execution
-        trans.app.job_manager.job_queue.put(job.id, tool.id)
+        trans.app.job_manager.enqueue(job, tool=tool)
         trans.log_event("Added export history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
 
-        return job, odict()
+        return job, OrderedDict()

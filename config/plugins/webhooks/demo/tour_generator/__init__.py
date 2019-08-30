@@ -1,6 +1,7 @@
 import logging
 import os
-from cgi import FieldStorage
+
+from webob.compat import cgi_FieldStorage
 
 from galaxy.util import Params
 
@@ -75,7 +76,7 @@ class TourGenerator(object):
                 upload_tool = self._trans.app.toolbox.get_tool('upload1')
                 filename = os.path.basename(input_path)
 
-                with open(input_path, 'r') as f:
+                with open(input_path, 'rb') as f:
                     content = f.read()
                     headers = {
                         'content-disposition':
@@ -84,7 +85,7 @@ class TourGenerator(object):
                             ),
                     }
 
-                    input_file = FieldStorage(headers=headers)
+                    input_file = cgi_FieldStorage(headers=headers)
                     input_file.file = input_file.make_file()
                     input_file.file.write(content)
 

@@ -1,3 +1,7 @@
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
+
 export var View = Backbone.View.extend({
     className: "ui-modal",
 
@@ -51,6 +55,7 @@ export var View = Backbone.View.extend({
                 this.hide(true);
             });
         }
+        this.$el.find(".title").focus();
     },
 
     /**
@@ -76,6 +81,9 @@ export var View = Backbone.View.extend({
         // link elements
         this.$header = this.$(".modal-header");
         this.$dialog = this.$(".modal-dialog");
+        if (this.options.extra_class) {
+            this.$dialog.addClass(this.options.extra_class);
+        }
         this.$body = this.$(".modal-body");
         this.$footer = this.$(".modal-footer");
         this.$backdrop = this.$(".modal-backdrop");
@@ -191,7 +199,7 @@ export var View = Backbone.View.extend({
             '<div class="modal-dialog">' +
             '<div class="modal-content">' +
             '<div class="modal-header">' +
-            '<h4 class="title"/>' +
+            '<h4 class="title" tabindex="0"/>' +
             "</div>" +
             '<div class="modal-body"/>' +
             '<div class="modal-footer">' +

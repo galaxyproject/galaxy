@@ -4,17 +4,15 @@ from various states, tracking results, and building implicit dataset
 collections from matched collections.
 """
 import collections
-import itertools
 import logging
-from threading import Thread
 
 import six
-from six.moves.queue import Queue
+import six.moves
 
 from galaxy import model
-from galaxy.dataset_collections.structure import get_structure, tool_output_to_structure
+from galaxy.model.dataset_collections.structure import get_structure, tool_output_to_structure
+from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.actions import filter_output, on_text_for_names, ToolExecutionCache
-from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.util import ExecutionTimer
 
 log = logging.getLogger(__name__)
@@ -31,7 +29,7 @@ class PartialJobExecution(Exception):
 MappingParameters = collections.namedtuple("MappingParameters", ["param_template", "param_combinations"])
 
 
-def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, invocation_step=None, max_num_jobs=None, job_callback=None, completed_jobs=None, workflow_resource_parameters=None):
+def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, invocation_step=None, max_num_jobs=None, job_callback=None, completed_jobs=None, workflow_resource_parameters=None, validate_outputs=False):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
@@ -46,7 +44,6 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
         execution_tracker = ToolExecutionTracker(trans, tool, mapping_params, collection_info)
     else:
         execution_tracker = WorkflowStepExecutionTracker(trans, tool, mapping_params, collection_info, invocation_step, job_callback=job_callback)
-    app = trans.app
     execution_cache = ToolExecutionCache(trans)
 
     def execute_single_job(execution_slice, completed_job):
@@ -64,7 +61,9 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params['__workflow_resource_params__']
-        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job)
+        if validate_outputs:
+            params['__validate_outputs__'] = True
+        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job, collection_info)
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
             log.debug(message)
@@ -80,50 +79,23 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
                 tool,
                 trans,
                 params,
-                history
+                history,
+                execution_cache=execution_cache,
+                collection_info=collection_info,
             )
 
     execution_tracker.ensure_implicit_collections_populated(history, mapping_params.param_template)
-    config = app.config
-    burst_at = getattr(config, 'tool_submission_burst_at', 10)
-    burst_threads = getattr(config, 'tool_submission_burst_threads', 1)
-
     job_count = len(execution_tracker.param_combinations)
 
     jobs_executed = 0
     has_remaining_jobs = False
 
-    if (job_count < burst_at or burst_threads < 2):
-        for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
-            if max_num_jobs and jobs_executed >= max_num_jobs:
-                has_remaining_jobs = True
-                break
-            else:
-                execute_single_job(execution_slice, completed_jobs[i])
-    else:
-        # TODO: re-record success...
-        q = Queue()
-
-        def worker():
-            while True:
-                params = q.get()
-                execute_single_job(params)
-                q.task_done()
-
-        for i in range(burst_threads):
-            t = Thread(target=worker)
-            t.daemon = True
-            t.start()
-
-        for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
-            if max_num_jobs and jobs_executed >= max_num_jobs:
-                has_remaining_jobs = True
-                break
-            else:
-                q.put(execution_slice, completed_jobs[i])
-                jobs_executed += 1
-
-        q.join()
+    for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
+        if max_num_jobs and jobs_executed >= max_num_jobs:
+            has_remaining_jobs = True
+            break
+        else:
+            execute_single_job(execution_slice, completed_jobs[i])
 
     if has_remaining_jobs:
         raise PartialJobExecution(execution_tracker)
@@ -161,7 +133,7 @@ class ExecutionTracker(object):
         self.output_datasets = []
         self.output_collections = []
 
-        self.implicit_collections = {}
+        self.implicit_collections = collections.OrderedDict()
 
     @property
     def param_combinations(self):
@@ -344,7 +316,9 @@ class ExecutionTracker(object):
                     implicit_collection_jobs = implicit_collection.implicit_collection_jobs
                     implicit_collection_jobs.populated_state = "ok"
                     trans.sa_session.add(implicit_collection_jobs)
-                implicit_collection.collection.finalize()
+                implicit_collection.collection.finalize(
+                    collection_type_description=self.collection_info.structure.collection_type_description
+                )
                 trans.sa_session.add(implicit_collection.collection)
         trans.sa_session.flush()
 
@@ -411,7 +385,7 @@ class ToolExecutionTracker(ExecutionTracker):
             self.outputs_by_output_name[job_output.name].append(job_output.dataset_collection)
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(itertools.izip(self.param_combinations, self.walk_implicit_collections())):
+        for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
             for dataset_collection_element in dataset_collection_elements.values():
                 assert dataset_collection_element.element_object is None
 
@@ -434,10 +408,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
         self.job_callback(job)
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(itertools.izip(self.param_combinations, self.walk_implicit_collections())):
-            # Two options here - check if the element has been populated or check if the
-            # a WorkflowInvocationStepJobAssociation exists. Not sure which is better but
-            # for now I have the first so lets check.
+        for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
             found_result = False
             for dataset_collection_element in dataset_collection_elements.values():
                 if dataset_collection_element.element_object is not None:

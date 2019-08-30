@@ -231,12 +231,12 @@ MetricsLogger.prototype._postCache = function _postCache(options) {
     var postSize = options.count || self._postSize;
 
     var // do not splice - remove after *successful* post
-    entries = self.cache.get(postSize);
+        entries = self.cache.get(postSize);
 
     var entriesLength = entries.length;
 
     var // use the optional getPingData to add any extra info we may want to send
-    postData = typeof self.options.getPingData === "function" ? self.options.getPingData() : {};
+        postData = typeof self.options.getPingData === "function" ? self.options.getPingData() : {};
 
     //console.debug( postSize, entriesLength );
 
@@ -388,7 +388,7 @@ LoggingCache.defaultOptions = {
 /** initialize with options */
 LoggingCache.prototype._init = function _init(options) {
     if (!this._hasStorage()) {
-        //TODO: fall back to jstorage
+        //TODO: fall back to local storage
         throw new Error("LoggingCache needs localStorage");
     }
     if (!options.key) {

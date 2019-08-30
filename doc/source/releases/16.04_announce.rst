@@ -9,7 +9,7 @@ Highlights
 ===========================================================
 
 **Tool Profile Versions**
-  Tools may now `declare which version <http://planemo.readthedocs.io/en/latest/galaxy_changelog.html#tool-profile-version-pr-1688>`__
+  Tools may now `declare which version <https://planemo.readthedocs.io/en/latest/galaxy_changelog.html#tool-profile-version-pr-1688>`__
   of Galaxy they require. Tools requiring 16.04 or newer will
   have new default behaviors (such as using exit code for error detection) that should simplify tool development.
   See `PR #1688 <https://github.com/galaxyproject/galaxy/pull/1688>`__.

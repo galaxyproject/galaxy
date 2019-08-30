@@ -2,6 +2,7 @@
 API operations on the contents of a history dataset.
 """
 import logging
+import os
 
 from six import string_types
 
@@ -13,16 +14,19 @@ from galaxy import (
     web
 )
 from galaxy.datatypes import dataproviders
+from galaxy.util.path import (
+    safe_walk
+)
 from galaxy.visualization.data_providers.genome import (
     BamDataProvider,
     FeatureLocationIndexDataProvider,
     SamDataProvider
 )
-from galaxy.web.base.controller import (
+from galaxy.web.framework.helpers import is_true
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     UsesVisualizationMixin
 )
-from galaxy.web.framework.helpers import is_true
 
 log = logging.getLogger(__name__)
 
@@ -31,8 +35,14 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
     def __init__(self, app):
         super(DatasetsController, self).__init__(app)
+        self.history_manager = managers.histories.HistoryManager(app)
         self.hda_manager = managers.hdas.HDAManager(app)
-        self.hda_serializer = managers.hdas.HDASerializer(self.app)
+        self.hda_serializer = managers.hdas.HDASerializer(app)
+        self.hdca_serializer = managers.hdcas.HDCASerializer(app)
+        self.serializer_by_type = {'dataset': self.hda_serializer, 'dataset_collection': self.hdca_serializer}
+        self.ldda_manager = managers.lddas.LDDAManager(app)
+        self.history_contents_manager = managers.history_contents.HistoryContentsManager(app)
+        self.history_contents_filters = managers.history_contents.HistoryContentsFilters(app)
 
     def _parse_serialization_params(self, kwd, default_view):
         view = kwd.get('view', None)
@@ -42,25 +52,81 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         return dict(view=view, keys=keys, default_view=default_view)
 
     @web.expose_api
-    def index(self, trans, **kwd):
+    def index(self,
+              trans,
+              limit=500,
+              offset=0,
+              history_id=None,
+              **kwd):
         """
-        GET /api/datasets
-        Lists datasets.
-        """
-        trans.response.status = 501
-        return 'not implemented'
+        GET /api/datasets/
 
-    @web.expose_api_anonymous
+        Search datasets or collections using a query system
+
+        :rtype:     list
+        :returns:   dictionaries containing summary of dataset or dataset_collection information
+
+        The list returned can be filtered by using two optional parameters:
+            q:      string, generally a property name to filter by followed
+                    by an (often optional) hyphen and operator string.
+            qv:     string, the value to filter by
+
+        ..example:
+            To filter the list to only those created after 2015-01-29,
+            the query string would look like:
+                '?q=create_time-gt&qv=2015-01-29'
+
+            Multiple filters can be sent in using multiple q/qv pairs:
+                '?q=create_time-gt&qv=2015-01-29&q=name-contains&qv=experiment-1'
+
+        The list returned can be paginated using two optional parameters:
+            limit:  integer, defaults to no value and no limit (return all)
+                    how many items to return
+            offset: integer, defaults to 0 and starts at the beginning
+                    skip the first ( offset - 1 ) items and begin returning
+                    at the Nth item
+
+        ..example:
+            limit and offset can be combined. Skip the first two and return five:
+                '?limit=5&offset=3'
+
+        The list returned can be ordered using the optional parameter:
+            order:  string containing one of the valid ordering attributes followed
+                    (optionally) by '-asc' or '-dsc' for ascending and descending
+                    order respectively. Orders can be stacked as a comma-
+                    separated list of values.
+
+        ..example:
+            To sort by name descending then create time descending:
+                '?order=name-dsc,create_time'
+
+        The ordering attributes and their default orders are:
+            hid defaults to 'hid-asc'
+            create_time defaults to 'create_time-dsc'
+            update_time defaults to 'update_time-dsc'
+            name    defaults to 'name-asc'
+
+        'order' defaults to 'create_time'
+        """
+        filter_params = self.parse_filter_params(kwd)
+        filters = self.history_contents_filters.parse_filters(filter_params)
+        order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=kwd.get('order', 'create_time-dsc'))
+        container = None
+        if history_id:
+            container = self.history_manager.get_accessible(self.decode_id(history_id), trans.user)
+        contents = self.history_contents_manager.contents(
+            container=container, filters=filters, limit=limit, offset=offset, order_by=order_by, user_id=trans.user.id,
+        )
+        return [self.serializer_by_type[content.history_content_type].serialize_to_view(content, user=trans.user, trans=trans, view='summary') for content in contents]
+
+    @web.legacy_expose_api_anonymous
     def show(self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd):
         """
         GET /api/datasets/{encoded_dataset_id}
         Displays information about and/or content of a dataset.
         """
         # Get dataset.
-        try:
-            dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
-        except Exception as e:
-            return str(e)
+        dataset = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=id)
 
         # Use data type to return particular type of data.
         try:
@@ -87,11 +153,30 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
                 else:
                     rval = dataset.to_dict()
 
-        except Exception as e:
-            rval = "Error in dataset API at listing contents: " + str(e)
-            log.error(rval + ": %s" % str(e), exc_info=True)
+        except Exception:
+            log.exception('Error in dataset API at listing contents')
             trans.response.status = 500
         return rval
+
+    @web.expose_api
+    def update_permissions(self, trans, dataset_id, payload, **kwd):
+        """
+        PUT /api/datasets/{encoded_dataset_id}/permissions
+        Updates permissions of a dataset.
+
+        :rtype:     dict
+        :returns:   dictionary containing new permissions
+        """
+        if payload:
+            kwd.update(payload)
+        hda_ldda = kwd.get('hda_ldda', 'hda')
+        dataset_assoc = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
+        if hda_ldda == "hda":
+            self.hda_manager.update_permissions(trans, dataset_assoc, **kwd)
+            return self.hda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
+        else:
+            self.ldda_manager.update_permissions(trans, dataset_assoc, **kwd)
+            return self.ldda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
 
     def _dataset_state(self, trans, dataset, **kwargs):
         """
@@ -281,7 +366,26 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
         return data
 
-    @web.expose_api_raw_anonymous
+    @web.legacy_expose_api_anonymous
+    def extra_files(self, trans, history_content_id, history_id, **kwd):
+        """
+        GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/extra_files
+        Generate list of extra files.
+        """
+        decoded_content_id = self.decode_id(history_content_id)
+
+        hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
+        extra_files_path = hda.extra_files_path
+        rval = []
+        for root, directories, files in safe_walk(extra_files_path):
+            for directory in directories:
+                rval.append({"class": "Directory", "path": os.path.relpath(os.path.join(root, directory), extra_files_path)})
+            for file in files:
+                rval.append({"class": "File", "path": os.path.relpath(os.path.join(root, file), extra_files_path)})
+
+        return rval
+
+    @web.legacy_expose_api_raw_anonymous
     def display(self, trans, history_content_id, history_id,
                 preview=False, filename=None, to_ext=None, raw=False, **kwd):
         """
@@ -301,29 +405,32 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
             if raw:
                 if filename and filename != 'index':
-                    file_path = trans.app.object_store.get_filename(hda.dataset,
-                                                                    extra_dir=('dataset_%s_files' % hda.dataset.id),
-                                                                    alt_name=filename)
+                    object_store = trans.app.object_store
+                    store_by = getattr(object_store, "store_by", "id")
+                    dir_name = 'dataset_%s_files' % getattr(hda.dataset, store_by)
+                    file_path = object_store.get_filename(hda.dataset,
+                                                          extra_dir=dir_name,
+                                                          alt_name=filename)
                 else:
                     file_path = hda.file_name
-                rval = open(file_path)
-
+                rval = open(file_path, 'rb')
             else:
                 display_kwd = kwd.copy()
                 if 'key' in display_kwd:
                     del display_kwd["key"]
                 rval = hda.datatype.display_data(trans, hda, preview, filename, to_ext, **display_kwd)
-
-        except Exception as exception:
-            log.error("Error getting display data for dataset (%s) from history (%s): %s",
-                      history_content_id, history_id, str(exception), exc_info=True)
+        except Exception as e:
+            log.exception("Error getting display data for dataset (%s) from history (%s)",
+                          history_content_id, history_id)
             trans.response.status = 500
-            rval = ("Could not get display data for dataset: " + str(exception))
-
+            rval = "Could not get display data for dataset: %s" % util.unicodify(e)
         return rval
 
-    @web.expose_api_raw_anonymous
+    @web.legacy_expose_api_raw_anonymous
     def get_metadata_file(self, trans, history_content_id, history_id, metadata_file=None, **kwd):
+        """
+        GET /api/histories/{history_id}/contents/{history_content_id}/metadata_file
+        """
         decoded_content_id = self.decode_id(history_content_id)
         rval = ''
         try:
@@ -332,15 +439,15 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in hda.name)[0:150]
             trans.response.headers["Content-Type"] = "application/octet-stream"
             trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (hda.hid, fname, file_ext)
-            return open(hda.metadata.get(metadata_file).file_name)
-        except Exception as exception:
-            log.error("Error getting metadata_file (%s) for dataset (%s) from history (%s): %s",
-                      metadata_file, history_content_id, history_id, str(exception), exc_info=True)
+            return open(hda.metadata.get(metadata_file).file_name, 'rb')
+        except Exception as e:
+            log.exception("Error getting metadata_file (%s) for dataset (%s) from history (%s)",
+                          metadata_file, history_content_id, history_id)
             trans.response.status = 500
-            rval = ("Could not get display data for dataset: " + str(exception))
+            rval = "Could not get metadata for dataset: %s" % util.unicodify(e)
         return rval
 
-    @web._future_expose_api_anonymous
+    @web.expose_api_anonymous
     def converted(self, trans, dataset_id, ext, **kwargs):
         """
         converted( self, trans, dataset_id, ext, **kwargs )

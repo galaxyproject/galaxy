@@ -1,4 +1,5 @@
-/* global define */
+/* global QUnit */
+import $ from "jquery";
 import testApp from "qunit/test-app";
 import GalaxyUpload from "mvc/upload/upload-view";
 
@@ -41,15 +42,6 @@ QUnit.test("test adding/removing paste/fetch upload item", function(assert) {
         "Should show regular trash icon."
     );
     $("#upload-row-0")
-        .find(".upload-settings")
-        .trigger("click");
-    assert.ok(
-        $("#upload-row-0")
-            .find(".upload-settings-cover")
-            .css("display") == "none",
-        "Settings should be enabled."
-    );
-    $("#upload-row-0")
         .find(".popover-close")
         .trigger("click");
     $("#btn-start").trigger("click");
@@ -58,17 +50,6 @@ QUnit.test("test adding/removing paste/fetch upload item", function(assert) {
             .find(".upload-symbol")
             .hasClass("fa-exclamation-triangle"),
         "Upload attempt should have failed."
-    );
-    assert.ok(
-        $("#upload-row-0")
-            .find(".upload-settings")
-            .trigger("click")
-    );
-    assert.ok(
-        $("#upload-row-0")
-            .find(".upload-settings-cover")
-            .css("display") == "block",
-        "Settings should be disabled."
     );
     $("#upload-row-0")
         .find(".upload-symbol")

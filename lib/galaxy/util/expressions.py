@@ -50,7 +50,8 @@ class ExpressionContext(MutableMapping):
     def __str__(self):
         return str(self.dict)
 
-    def __nonzero__(self):
+    def __bool__(self):
         if not self.dict and not self.parent:
             return False
         return True
+    __nonzero__ = __bool__

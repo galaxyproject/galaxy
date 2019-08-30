@@ -1,10 +1,17 @@
-/* global define */
+/* global QUnit */
+import $ from "jquery";
+import sinon from "sinon";
 import testApp from "qunit/test-app";
 import HDA_MODEL from "mvc/history/hda-model";
-import sinon from "sinon";
-import $ from "jquery";
 
-QUnit.module("History Contents Model QUnit.Tests");
+QUnit.module("History Contents Model QUnit.Tests", {
+    beforeEach: function() {
+        testApp.create();
+    },
+    afterEach: function() {
+        testApp.destroy();
+    }
+});
 
 QUnit.test("HDA Constructions with Default Attributes", function(assert) {
     var hda = new HDA_MODEL.HistoryDatasetAssociation({});

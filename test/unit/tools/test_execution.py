@@ -1,13 +1,13 @@
 """ Test Tool execution and state handling logic.
 """
+from collections import OrderedDict
 from unittest import TestCase
 
-from paste import httpexceptions
+import webob.exc
 
 import galaxy.model
 from galaxy.tools.parameters import params_to_incoming
 from galaxy.util.bunch import Bunch
-from galaxy.util.odict import odict
 from .. import tools_support
 
 BASE_REPEAT_TOOL_CONTENTS = '''<tool id="test_tool" name="Test Tool">
@@ -76,7 +76,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesApp, tools_support.UsesT
         redirect_raised = False
         try:
             self.__handle_with_incoming(param1="moo")
-        except httpexceptions.HTTPFound:
+        except webob.exc.HTTPFound:
             redirect_raised = True
         assert redirect_raised
 
@@ -177,7 +177,7 @@ class MockAction(object):
         self.execution_call_args.append(kwds)
         num_calls = len(self.execution_call_args)
         if self.expect_redirect:
-            raise httpexceptions.HTTPFound("http://google.com")
+            raise webob.exc.HTTPFound(location="http://google.com")
         if self.exception_after_exection is not None:
             if num_calls > self.exception_after_exection:
                 raise Exception("Test Exception")
@@ -185,7 +185,7 @@ class MockAction(object):
             if num_calls > self.error_message_after_excution:
                 return None, "Test Error Message"
 
-        return galaxy.model.Job(), odict(dict(out1="1"))
+        return galaxy.model.Job(), OrderedDict(out1="1")
 
     def raise_exception(self, after_execution=0):
         self.exception_after_exection = after_execution

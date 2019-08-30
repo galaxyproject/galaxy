@@ -13,7 +13,7 @@ except ImportError:
 
 def stop_err(msg):
     sys.stderr.write(msg)
-    sys.exit()
+    sys.exit(1)
 
 
 def S3_METHODS(all="key"):
@@ -22,7 +22,7 @@ def S3_METHODS(all="key"):
         "acosh", "asinh", "atanh", "lgamma", "gamma", "gammaCody", "digamma", "trigamma",
         "cumsum", "cumprod", "cummax", "cummin", "c"]
     Group_Ops = ["+", "-", "*", "/", "^", "%%", "%/%", "&", "|", "!", "==", "!=", "<", "<=", ">=", ">", "(", ")", "~", ","]
-    if all is "key":
+    if all == "key":
         return {'Math': Group_Math, 'Ops': Group_Ops}
 
 
@@ -42,7 +42,7 @@ def main():
         if word and word not in math_allowed:
             stop_err("Invalid expression '%s': term '%s' is not recognized or allowed" % (expression, word))
     symbols = set()
-    for symbol in re.compile('[^a-z0-9\s]+').findall(expression):
+    for symbol in re.compile(r'[^a-z0-9\s]+').findall(expression):
         if symbol and symbol not in ops_allowed:
             stop_err("Invalid expression '%s': operator '%s' is not recognized or allowed" % (expression, symbol))
         else:

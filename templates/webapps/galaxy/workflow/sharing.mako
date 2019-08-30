@@ -145,7 +145,7 @@
                             ${"/".join( url_parts[:-1] )}/<span id='item-identifier'>${url_parts[-1]}</span>
                         </span>
 
-                        <a href="#" id="edit-identifier"><img src="${h.url_for('/static/images/fugue/pencil.png')}"/></a>
+                        <a href="javascript:void(0)" role="button" id="edit-identifier"><img src="${h.url_for('/static/images/fugue/pencil.png')}"/></a>
                     </blockquote>
 
                     %if item.published:
@@ -307,7 +307,7 @@
 
 <%def name="body()">
     <div style="overflow: auto; height: 100%;">
-        <div class="page-container" style="padding: 10px;">
+        <div class="page-container p-2">
             ${self.render_header()}
             <h2>${get_class_display_name( item.__class__ )} '${get_item_name( item ) | h}'</h2>
             <hr/>

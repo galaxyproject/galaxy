@@ -46,9 +46,8 @@ class FilterFactory(object):
                     if category:
                         validate = getattr(trans.app.config, 'user_tool_%s_filters' % category, [])
                         self.__init_filters(category, user_filters, filters, validate=validate)
-        else:
-            if kwds.get("trackster", False):
-                filters["tool"].append(_has_trackster_conf)
+        if kwds.get("trackster", False):
+            filters["tool"].append(_has_trackster_conf)
 
         return filters
 

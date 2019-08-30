@@ -1,4 +1,4 @@
-desc: uwsgi definition, see http://uwsgi-docs.readthedocs.io/en/latest/Options.html
+desc: uwsgi definition, see https://uwsgi-docs.readthedocs.io/en/latest/Options.html
 mapping:
   socket: {desc: ' bind to the specified UNIX/TCP socket using default protocol',
     type: any}

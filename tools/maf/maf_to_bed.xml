@@ -22,7 +22,7 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" value="4.maf"/>
+            <param name="input1" value="4.maf" ftype="maf"/>
             <param name="species" value="hg17"/>
             <param name="complete_blocks" value="partial_disallowed"/>
             <output name="out_file1" file="cf_maf_to_bed.dat"/>

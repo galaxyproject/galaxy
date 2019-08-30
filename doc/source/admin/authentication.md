@@ -5,7 +5,6 @@ Galaxy supports the following authentication mechanisms:
 * [Galaxy Database](#galaxy-database) - Galaxy-specific login using e-mail address and password (the default);
 * [OIDC and OAuth2.0](#OIDC-and-OAuth2.0) - Login to Galaxy using your Google account, without having to create a Galaxy user;
 * [Authentication Framework](#authentication-framework) - A plugin-driven framework supporting LDAP/Active Directory and PAM;
-* [OpenID](#openid) - authentication with Galaxy as a relying party;
 * [Proxy Authentication](#proxy_authentication) - HTTP [remote user](http://httpd.apache.org/docs/current/mod/mod_cgi.html#env) provided by any front-end Web server.
 
 ## Galaxy Database
@@ -37,16 +36,6 @@ within Galaxy allows users to use the Galaxy UI for logging in instead of relyin
 To configure one or more authentication plugins, simply copy ``config/auth_conf.xml.sample`` to ``config/auth_conf.xml``.
 The provided sample configuration file has numerous commented out examples and serves as the most up-to-date source
 of documentation on configuring these plugins.
-
-## OpenID
-
-[OpenID](https://en.wikipedia.org/wiki/OpenID) is becoming less popular and probably shouldn't be used the primary mechanism
-for authentication in Galaxy but it is an available option.
-
-Enabling OpenID requires you to edit Galaxy's configuration file and set `enable_openid` to `true`. This file is
-likely located in `config/galaxy.yml` and can be created by copying Galaxy's sample `config/galaxy.yml.sample`.
-
-Enabling this option enables OpenID and causes the OpenID form to be displayed on the login screen.
 
 ## Remote User Authentication
 

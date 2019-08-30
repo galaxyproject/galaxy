@@ -20,6 +20,7 @@ from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import (
     base as managers_base,
     folders,
+    lddas,
     library_datasets,
     roles
 )
@@ -28,10 +29,10 @@ from galaxy.tools.parameters import populate_state
 from galaxy.util.path import full_path_permission_for_user, safe_contains, safe_relpath, unsafe_walk
 from galaxy.util.streamball import StreamBall
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous as expose_api_anonymous
+    expose_api,
+    expose_api_anonymous,
 )
-from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
+from galaxy.webapps.base.controller import BaseAPIController, UsesVisualizationMixin
 log = logging.getLogger(__name__)
 
 
@@ -43,6 +44,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         self.folder_manager = folders.FolderManager()
         self.role_manager = roles.RoleManager(app)
         self.ld_manager = library_datasets.LibraryDatasetsManager(app)
+        self.ldda_manager = lddas.LDDAManager(app)
 
     @expose_api_anonymous
     def show(self, trans, id, **kwd):
@@ -84,7 +86,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         try:
             ldda = self.get_library_dataset_dataset_association(trans, id=encoded_ldda_id, check_ownership=False, check_accessible=False)
         except Exception as e:
-            raise exceptions.ObjectNotFound('Requested version of library dataset was not found.' + str(e))
+            raise exceptions.ObjectNotFound('Requested version of library dataset was not found.' + util.unicodify(e))
 
         if ldda not in library_dataset.expired_datasets:
             raise exceptions.ObjectNotFound('Given library dataset does not have the requested version.')
@@ -115,7 +117,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
         dataset = library_dataset.library_dataset_dataset_association.dataset
         # User has to have manage permissions permission in order to see the roles.
-        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin()
+        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin
         if not can_manage:
             raise exceptions.InsufficientPermissionsException('You do not have proper permission to access permissions.')
         scope = kwd.get('scope', None)
@@ -153,18 +155,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        dataset = library_dataset.library_dataset_dataset_association.dataset
-
-        # Omit duplicated roles by converting to set
-        access_roles = set(dataset.get_access_roles(trans))
-        modify_roles = set(trans.app.security_agent.get_roles_for_action(library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY))
-        manage_roles = set(dataset.get_manage_permissions_roles(trans))
-
-        access_dataset_role_list = [(access_role.name, trans.security.encode_id(access_role.id)) for access_role in access_roles]
-        manage_dataset_role_list = [(manage_role.name, trans.security.encode_id(manage_role.id)) for manage_role in manage_roles]
-        modify_item_role_list = [(modify_role.name, trans.security.encode_id(modify_role.id)) for modify_role in modify_roles]
-
-        return dict(access_dataset_roles=access_dataset_role_list, modify_item_roles=modify_item_role_list, manage_dataset_roles=manage_dataset_role_list)
+        return self.ldda_manager.serialize_dataset_association_roles(trans, library_dataset)
 
     @expose_api
     def update(self, trans, encoded_dataset_id, payload=None, **kwd):
@@ -230,7 +221,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         # Some permissions are attached directly to the underlying dataset.
         dataset = library_dataset.library_dataset_dataset_association.dataset
         current_user_roles = trans.get_current_user_roles()
-        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin()
+        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin
         if not can_manage:
             raise exceptions.InsufficientPermissionsException('You do not have proper permissions to manage permissions on this dataset.')
         new_access_roles_ids = util.listify(kwd.get('access_ids[]', None))
@@ -239,16 +230,16 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         if action == 'remove_restrictions':
             trans.app.security_agent.make_dataset_public(dataset)
             if not trans.app.security_agent.dataset_is_public(dataset):
-                raise exceptions.InternalServerError('An error occured while making dataset public.')
+                raise exceptions.InternalServerError('An error occurred while making dataset public.')
         elif action == 'make_private':
-            if not trans.app.security_agent.dataset_is_private_to_user(trans, library_dataset):
+            if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = trans.app.security_agent.get_private_user_role(trans.user)
                 dp = trans.app.model.DatasetPermissions(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role)
                 trans.sa_session.add(dp)
                 trans.sa_session.flush()
-            if not trans.app.security_agent.dataset_is_private_to_user(trans, library_dataset):
+            if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
-                raise exceptions.InternalServerError('An error occured and the dataset is NOT private.')
+                raise exceptions.InternalServerError('An error occurred and the dataset is NOT private.')
         elif action == 'set_permissions':
             # ACCESS DATASET ROLES
             valid_access_roles = []
@@ -319,7 +310,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
         current_user_roles = trans.get_current_user_roles()
         allowed = trans.app.security_agent.can_modify_library_item(current_user_roles, library_dataset)
-        if (not allowed) and (not trans.user_is_admin()):
+        if (not allowed) and (not trans.user_is_admin):
             raise exceptions.InsufficientPermissionsException('You do not have proper permissions to delete this dataset.')
 
         if undelete:
@@ -399,7 +390,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         if source not in ['userdir_file', 'userdir_folder', 'importdir_file', 'importdir_folder', 'admin_path']:
             raise exceptions.RequestParameterMissingException('You have to specify "source" parameter. Possible values are "userdir_file", "userdir_folder", "admin_path", "importdir_file" and "importdir_folder". ')
         elif source in ['importdir_file', 'importdir_folder']:
-            if not trans.user_is_admin():
+            if not trans.user_is_admin:
                 raise exceptions.AdminRequiredException('Only admins can import from importdir.')
             if not trans.app.config.library_import_dir:
                 raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to import into library from importdir.')
@@ -446,7 +437,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         elif source == 'admin_path':
             if not trans.app.config.allow_library_path_paste:
                 raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to import into library from path.')
-            if not trans.user_is_admin():
+            if not trans.user_is_admin:
                 raise exceptions.AdminRequiredException('Only admins can import from path.')
 
         # Set up the traditional tool state/params
@@ -542,7 +533,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 except HTTPInternalServerError:
                     raise exceptions.InternalServerError('Internal error.')
                 except Exception as e:
-                    raise exceptions.InternalServerError('Unknown error.' + str(e))
+                    raise exceptions.InternalServerError('Unknown error.' + util.unicodify(e))
 
         folders_to_download = kwd.get('folder_ids%5B%5D', None)
         if folders_to_download is None:
@@ -553,7 +544,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             current_user_roles = trans.get_current_user_roles()
 
             def traverse(folder):
-                admin = trans.user_is_admin()
+                admin = trans.user_is_admin
                 rval = []
                 for subfolder in folder.active_folders:
                     if not admin:
@@ -628,6 +619,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 path += ldda.name
                 while path in seen:
                     path += '_'
+                path = "{path}.{extension}".format(path=path, extension=ldda.extension)
                 seen.append(path)
                 zpath = os.path.split(path)[-1]  # comes as base_name/fname
                 outfname, zpathext = os.path.splitext(zpath)
@@ -649,7 +641,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         raise exceptions.ObjectNotFound("Requested dataset not found. ")
                     except Exception as e:
                         log.exception("Unable to add composite parent %s to temporary library download archive", ldda.dataset.file_name)
-                        raise exceptions.InternalServerError("Unable to add composite parent to temporary library download archive. " + str(e))
+                        raise exceptions.InternalServerError("Unable to add composite parent to temporary library download archive. " + util.unicodify(e))
 
                     flist = glob.glob(os.path.join(ldda.dataset.extra_files_path, '*.*'))  # glob returns full paths
                     for fpath in flist:
@@ -668,8 +660,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                             log.exception("Requested dataset %s does not exist on the host.", fpath)
                             raise exceptions.ObjectNotFound("Requested dataset not found.")
                         except Exception as e:
-                            log.exception("Unable to add %s to temporary library download archive %s" % (fname, outfname))
-                            raise exceptions.InternalServerError("Unable to add dataset to temporary library download archive . " + str(e))
+                            log.exception("Unable to add %s to temporary library download archive %s", fname, outfname)
+                            raise exceptions.InternalServerError("Unable to add dataset to temporary library download archive . " + util.unicodify(e))
                 else:
                     try:
                         if format == 'zip':
@@ -684,7 +676,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         raise exceptions.ObjectNotFound("Requested dataset not found.")
                     except Exception as e:
                         log.exception("Unable to add %s to temporary library download archive %s", ldda.dataset.file_name, outfname)
-                        raise exceptions.InternalServerError("Unknown error. " + str(e))
+                        raise exceptions.InternalServerError("Unknown error. " + util.unicodify(e))
             lname = 'selected_dataset'
             fname = lname.replace(' ', '_') + '_files'
             if format == 'zip':
@@ -711,11 +703,11 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 fStat = os.stat(dataset.file_name)
                 trans.response.set_content_type(ldda.get_mime())
                 trans.response.headers['Content-Length'] = int(fStat.st_size)
-                fname = ldda.name
+                fname = "{path}.{extension}".format(path=ldda.name, extension=ldda.extension)
                 fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
                 try:
-                    return open(dataset.file_name)
+                    return open(dataset.file_name, 'rb')
                 except Exception:
                     raise exceptions.InternalServerError("This dataset contains no content.")
         else:

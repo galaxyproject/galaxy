@@ -1,4 +1,4 @@
-import * as Backbone from "backbone";
+import Backbone from "backbone";
 import Utils from "utils/utils";
 import { Visualization } from "mvc/visualization/visualization-model";
 export default Backbone.Model.extend({
@@ -67,8 +67,7 @@ export default Backbone.Model.extend({
                 chart_dict: this.chart_dict
             }
         });
-        viz
-            .save()
+        viz.save()
             .then(function(response) {
                 if (response && response.id) {
                     self.visualization_id = response.id;

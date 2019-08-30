@@ -38,7 +38,9 @@
 }
 
 .ac_loading {
-    background: white url("indicator.gif") right center no-repeat;
+    //TODO: lost indicator.gif, figure out a replacement
+    //background: white url("indicator.gif") right center no-repeat;
+    background: white;
 }
 
 .ac_odd {
@@ -83,7 +85,6 @@
 
 .toggle-link {
     font-weight: normal;
-    padding: 0.3em;
     margin-bottom: 1em;
     width: 100%;
     padding: 0.2em 0em 0.2em 0em;

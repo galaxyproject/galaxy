@@ -2,7 +2,11 @@
 .tox
 .venv
 .venv3
-client/node_modules
+packages/*/.venv
+packages/*/build
+packages/*/dist
+packages/venv
+node_modules
 database
 doc/build
 doc/source/conf.py
@@ -11,3 +15,5 @@ lib/galaxy/util/jstree.py
 lib/galaxy/web/proxy/js/node_modules
 static/maps
 static/scripts
+build
+dist

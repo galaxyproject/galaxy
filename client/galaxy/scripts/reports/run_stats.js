@@ -1,5 +1,6 @@
-import * as d3 from "../libs/d3";
-import { event as currentEvent } from "../libs/d3";
+import $ from "jquery";
+import * as d3 from "d3";
+import { event as currentEvent } from "d3";
 
 function date_by_subtracting_days(date, days) {
     return new Date(
@@ -74,8 +75,7 @@ export function create_chart(inp_data, name, time, title) {
     function click() {
         var classes = d3.select(this).attr("class");
         classes = classes.split(" ");
-        d3
-            .selectAll(`.${classes[0]}`)
+        d3.selectAll(`.${classes[0]}`)
             .filter(`.${classes[1]}`)
             .style("cursor", "zoom-in")
             .transition()
@@ -83,8 +83,7 @@ export function create_chart(inp_data, name, time, title) {
             .attr("height", chart_height)
             .attr("width", chart_width);
 
-        d3
-            .select(this)
+        d3.select(this)
             .style("cursor", "default")
             .transition()
             .duration(750)
@@ -127,16 +126,14 @@ export function create_chart(inp_data, name, time, title) {
             }
 
             var wdth = i * 4 + 10;
-            d3
-                .select(currentEvent.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("text")
                 .attr("transform", `translate( ${margin.left - 5}, ${height - d * zoom + margin.top + 10} )`)
                 .attr("visibility", "visible")
                 .text(d);
 
-            d3
-                .select(currentEvent.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .attr("width", `${wdth}px`)
                 .attr("height", "15px")
@@ -148,14 +145,12 @@ export function create_chart(inp_data, name, time, title) {
         })
         .on("mouseleave", d => {
             // Remove tool tip
-            d3
-                .select(currentEvent.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("text")
                 .attr("visibility", "hidden");
 
-            d3
-                .select(currentEvent.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("rect")
                 .attr("width", "0")
@@ -183,9 +178,7 @@ export function create_chart(inp_data, name, time, title) {
             var m_x = margin.left;
             var m_y = margin.top + height;
             var l_x = m_x + width;
-            var l_y = m_y;
-
-            return `M${m_x} ${m_y} L ${l_x} ${l_y}`;
+            return `M${m_x} ${m_y} L ${l_x} ${m_y}`;
         });
 
     // Declare how high the y axis goes
@@ -217,15 +210,12 @@ export function create_chart(inp_data, name, time, title) {
             var axis = d3.select(`#y_${name}`).node();
             var left_pad = margin.left - axis.getBoundingClientRect().width - 5;
             var top_pad = margin.top + axis.getBoundingClientRect().height / 2 - 30;
-            var trans = `translate(${left_pad},${top_pad})rotate(-90)`;
-
-            return trans;
+            return `translate(${left_pad},${top_pad})rotate(-90)`;
         })
         .text("Number of Jobs");
 
     // Add color to the chart's bars
-    bar
-        .append("rect")
+    bar.append("rect")
         .attr("y", d => height - d * zoom)
         .attr("height", d => d * zoom)
         .attr("width", barWidth - 1);
@@ -235,8 +225,7 @@ export function create_chart(inp_data, name, time, title) {
     // Append x axis
     if (time == "hours") {
         // Append hour lines
-        bar
-            .append("line")
+        bar.append("line")
             .attr("x1", 0)
             .attr("y1", 0)
             .attr("x2", 0)
@@ -247,8 +236,7 @@ export function create_chart(inp_data, name, time, title) {
             .attr("transform", () => `translate( ${barWidth / 2}, ${height})`);
 
         // Append hour numbers
-        bar
-            .append("text")
+        bar.append("text")
             .attr("fill", "rgb(0,0,0)")
             .attr("transform", `translate( 10, ${height + 10} )`)
             .text((d, i) => {
@@ -266,8 +254,7 @@ export function create_chart(inp_data, name, time, title) {
         // Append day lines
         var curr_day = "";
         first = false;
-        bar
-            .append("line")
+        bar.append("line")
             .attr("x1", 0)
             .attr("y1", 0)
             .attr("x2", 0)
@@ -296,8 +283,7 @@ export function create_chart(inp_data, name, time, title) {
         curr_day = "";
         var curr_day_text = "";
         first = false;
-        bar
-            .append("text")
+        bar.append("text")
             .attr("fill", "rgb(0,0,0)")
             .attr("pointer-events", "none")
             .text((d, i) => {
@@ -335,8 +321,7 @@ export function create_chart(inp_data, name, time, title) {
             });
     } else if (time == "days") {
         // Append day lines
-        bar
-            .append("line")
+        bar.append("line")
             .attr("x1", 0)
             .attr("y1", 0)
             .attr("x2", 0)
@@ -347,8 +332,7 @@ export function create_chart(inp_data, name, time, title) {
             .attr("transform", () => `translate( ${barWidth / 2}, ${height})`);
 
         // Append day numbers
-        bar
-            .append("text")
+        bar.append("text")
             .attr("fill", "rgb(0,0,0)")
             .attr("transform", `translate( 9, ${height + 10} )`)
             .text((d, i) => {
@@ -366,8 +350,7 @@ export function create_chart(inp_data, name, time, title) {
         // Append month lines
         var curr_month = "";
         first = false;
-        bar
-            .append("line")
+        bar.append("line")
             .attr("x1", 0)
             .attr("y1", 0)
             .attr("x2", 0)
@@ -396,8 +379,7 @@ export function create_chart(inp_data, name, time, title) {
         curr_month = "";
         var curr_month_text = "";
         first = false;
-        bar
-            .append("text")
+        bar.append("text")
             .attr("fill", "rgb(0,100,0)")
             .attr("pointer-events", "none")
             .text((d, i) => {
@@ -444,8 +426,7 @@ export function create_chart(inp_data, name, time, title) {
 
     // Initialize initial zoomed charts
     if (name == "jc_dy_chart" || name == "jc_hr_chart") {
-        d3
-            .select(`#${name}`)
+        d3.select(`#${name}`)
             .attr("height", chart_height * chart_zoom)
             .attr("width", chart_width * chart_zoom)
             .style("cursor", "default");
@@ -503,8 +484,7 @@ export function create_histogram(inp_data, name, title) {
     function click() {
         var classes = d3.select(this).attr("class");
         classes = classes.split(" ");
-        d3
-            .selectAll(`.${classes[0]}`)
+        d3.selectAll(`.${classes[0]}`)
             .filter(`.${classes[1]}`)
             .style("cursor", "zoom-in")
             .transition()
@@ -512,8 +492,7 @@ export function create_histogram(inp_data, name, title) {
             .attr("height", chart_height)
             .attr("width", chart_width);
 
-        d3
-            .select(this)
+        d3.select(this)
             .style("cursor", "default")
             .transition()
             .duration(750)
@@ -572,16 +551,14 @@ export function create_histogram(inp_data, name, title) {
                 i++;
             }
             var wdth = i * 4 + 10;
-            d3
-                .select(currentEvent.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("text")
                 .attr("transform", `translate( ${margin.left - 5}, ${height - d.length * zoom + margin.top + 10} )`)
                 .attr("visibility", "visible")
                 .text(d.length);
 
-            d3
-                .select(currentEvent.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .attr("width", `${wdth}px`)
                 .attr("height", "15px")
@@ -593,14 +570,12 @@ export function create_histogram(inp_data, name, title) {
         })
         .on("mouseleave", () => {
             // Remove tool tip
-            d3
-                .select(currentEvent.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("text")
                 .attr("visibility", "hidden");
 
-            d3
-                .select(currentEvent.target.parentElement)
+            d3.select(currentEvent.target.parentElement)
                 .select(".tool_tip")
                 .select("rect")
                 .attr("width", "0")
@@ -617,8 +592,7 @@ export function create_histogram(inp_data, name, title) {
     }
 
     // Add color to bar
-    bar
-        .append("rect")
+    bar.append("rect")
         .attr("x", 1)
         .attr("width", bar_x - 1)
         .attr("height", d => height - y(d.y));
@@ -647,9 +621,7 @@ export function create_histogram(inp_data, name, title) {
             var axis = d3.select(`#x_${name}`).node();
             var left_pad = margin.left + axis.getBoundingClientRect().width / 2 + 30;
             var top_pad = margin.top + height + axis.getBoundingClientRect().height + 10;
-            var trans = `translate(${left_pad},${top_pad})`;
-
-            return trans;
+            return `translate(${left_pad},${top_pad})`;
         })
         .text("ETA - hrs:mins");
 
@@ -676,9 +648,7 @@ export function create_histogram(inp_data, name, title) {
             var axis = d3.select(`#y_${name}`).node();
             var left_pad = margin.left - axis.getBoundingClientRect().width - 5;
             var top_pad = margin.top + axis.getBoundingClientRect().height / 2 - 30;
-            var trans = `translate(${left_pad},${top_pad})rotate(-90)`;
-
-            return trans;
+            return `translate(${left_pad},${top_pad})rotate(-90)`;
         })
         .text("Number of Jobs");
 

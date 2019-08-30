@@ -24,7 +24,7 @@ def main(trans, webhook, params):
             url = 'http://phdcomics.com/gradfeed.php'
             content = urlopen(url).read()
             soap = BeautifulSoup(content, 'html.parser')
-            pattern = '(?:http://www\.phdcomics\.com/comics\.php\?f=)(\d+)'
+            pattern = r'(?:http://www\.phdcomics\.com/comics\.php\?f=)(\d+)'
             webhook.config['latest_id'] = max([
                 int(re.search(pattern, link.text).group(1))
                 for link in soap.find_all('link', text=re.compile(pattern))
@@ -40,7 +40,7 @@ def main(trans, webhook, params):
         try:
             comic_src = comic_img[0].attrs.get('src')
         except IndexError:
-            pattern = '<img id=comic2 name=comic2 src=([\w:\/\.]+)'
+            pattern = r'<img id=comic2 name=comic2 src=([\w:\/\.]+)'
             comic_src = re.search(pattern, content).group(1)
 
     except Exception as e:

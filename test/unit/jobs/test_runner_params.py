@@ -21,7 +21,7 @@ def test_missing_parameter():
         runners.RunnerParams(specs={}, params=dict(foo="bar"))
     except Exception as e:
         exception = e
-    assert exception.message == runners.JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE % "foo"
+    assert str(exception) == runners.JOB_RUNNER_PARAMETER_UNKNOWN_MESSAGE % "foo"
 
 
 def test_invalid_parameter():
@@ -30,7 +30,7 @@ def test_invalid_parameter():
         runners.RunnerParams(specs=dict(foo=dict(valid=lambda x: x != "bar", defualt="baz")), params=dict(foo="bar"))
     except Exception as e:
         exception = e
-    assert exception.message == runners.JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE % "foo"
+    assert str(exception) == runners.JOB_RUNNER_PARAMETER_VALIDATION_FAILED_MESSAGE % "foo"
 
 
 def test_map_problem():
@@ -39,7 +39,7 @@ def test_map_problem():
         runners.RunnerParams(specs=dict(foo=dict(map=lambda x: 1 / 0, default="baz")), params=dict(foo="bar"))
     except Exception as e:
         exception = e
-    assert exception.message == runners.JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE % ("foo", "bar")
+    assert str(exception) == runners.JOB_RUNNER_PARAMETER_MAP_PROBLEM_MESSAGE % ("foo", "bar")
 
 
 def test_param_default():

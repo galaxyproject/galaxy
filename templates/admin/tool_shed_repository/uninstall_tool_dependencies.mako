@@ -10,9 +10,9 @@ ${render_galaxy_repository_actions( repository )}
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormTitle">Uninstall tool dependencies</div>
-    <div class="toolFormBody">
+<div class="card">
+    <div class="card-header">Uninstall tool dependencies</div>
+    <div class="card-body">
         <form name="uninstall_tool_dependenceies" id="uninstall_tool_dependenceies" action="${h.url_for( controller='admin_toolshed', action='uninstall_tool_dependencies' )}" method="post" >       
             <div class="form-row">
                 <table class="grid">
@@ -26,14 +26,14 @@ ${render_galaxy_repository_actions( repository )}
                         <input type="hidden" name="tool_dependency_ids" value="${trans.security.encode_id( tool_dependency.id )}"/>
                         <%
                             if tool_dependency.type == 'package':
-                                install_dir = os.path.join( trans.app.config.tool_dependency_dir,
+                                install_dir = os.path.join( trans.app.tool_dependency_dir,
                                                             tool_dependency.name,
                                                             tool_dependency.version,
                                                             tool_dependency.tool_shed_repository.owner,
                                                             tool_dependency.tool_shed_repository.name,
                                                             tool_dependency.tool_shed_repository.installed_changeset_revision )
                             elif tool_dependency.type == 'set_environment':
-                                install_dir = os.path.join( trans.app.config.tool_dependency_dir,
+                                install_dir = os.path.join( trans.app.tool_dependency_dir,
                                                             'environment_settings',
                                                             tool_dependency.name,
                                                             tool_dependency.tool_shed_repository.owner,

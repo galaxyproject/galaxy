@@ -1,3 +1,5 @@
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 
 const AUTO_EXTENSION = {
@@ -11,7 +13,7 @@ const DEFAULT_EXTENSION = "auto";
 
 function getUploadDatatypes(callback, datatypesDisableAuto, auto) {
     Utils.get({
-        url: `${Galaxy.root}api/datatypes?extension_only=False`,
+        url: `${getAppRoot()}api/datatypes?extension_only=False`,
         success: function(datatypes) {
             const listExtensions = [];
             for (var key in datatypes) {
@@ -38,7 +40,7 @@ function getUploadDatatypes(callback, datatypesDisableAuto, auto) {
 
 function getUploadGenomes(callback, defaultGenome) {
     Utils.get({
-        url: `${Galaxy.root}api/genomes`,
+        url: `${getAppRoot()}api/genomes`,
         success: function(genomes) {
             const listGenomes = [];
 
@@ -64,7 +66,7 @@ function getUploadGenomes(callback, defaultGenome) {
 
 function getRemoteFiles(success, error) {
     return $.ajax({
-        url: `${Galaxy.root}api/remote_files`,
+        url: `${getAppRoot()}api/remote_files`,
         method: "GET",
         success: success,
         error: error

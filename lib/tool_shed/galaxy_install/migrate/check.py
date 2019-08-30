@@ -2,11 +2,12 @@ import logging
 import os
 import subprocess
 import sys
+from collections import OrderedDict
 
 from migrate.versioning import repository, schema
 from sqlalchemy import create_engine, MetaData, Table
 
-from galaxy.util.odict import odict
+from galaxy.util import get_executable
 from tool_shed.util import common_util
 
 log = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
         tool_shed_accessible = False
         if app.new_installation:
             # New installations will not be missing tools, so we don't need to worry about them.
-            missing_tool_configs_dict = odict()
+            missing_tool_configs_dict = OrderedDict()
         else:
             tool_panel_configs = common_util.get_non_shed_tool_panel_configs(app)
             if tool_panel_configs:
@@ -46,7 +47,7 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
                 # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in
                 # the database.
                 tool_shed_accessible = True
-                missing_tool_configs_dict = odict()
+                missing_tool_configs_dict = OrderedDict()
         have_tool_dependencies = False
         for k, v in missing_tool_configs_dict.items():
             if v:
@@ -55,7 +56,8 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
         if not app.config.running_functional_tests:
             if tool_shed_accessible:
                 # Automatically update the value of the migrate_tools.version database table column.
-                cmd = ['sh', 'manage_db.sh', 'upgrade', 'tools']
+                manage_tools = os.path.abspath(os.path.join(os.path.dirname(__file__), 'scripts', 'manage_tools.py'))
+                cmd = [get_executable(), manage_tools, 'upgrade', 'tools']
                 if galaxy_config_file:
                     cmd[2:2] = ['-c', galaxy_config_file]
                 proc = subprocess.Popen(args=cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -79,8 +81,8 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
                     msg += "be removed from your file%s named %s.\n\n" % (plural, tool_panel_config_file_names)
                     msg += "CRITICAL NOTE IF YOU PLAN TO INSTALL\n"
                     msg += "The location in which the tool repositories will be installed is the value of the 'tool_path' attribute in the <tool>\n"
-                    msg += 'tag of the file named ./migrated_tool_conf.xml (i.e., <toolbox tool_path="../shed_tools">).  The default location\n'
-                    msg += "setting is '../shed_tools', which may be problematic for some cluster environments, so make sure to change it before\n"
+                    msg += 'tag of the file named ./migrated_tool_conf.xml (i.e., <toolbox tool_path="database/shed_tools">).  The default location\n'
+                    msg += "setting is 'database/shed_tools', which may be problematic for some cluster environments, so make sure to change it before\n"
                     msg += "you execute the installation process if appropriate.  The configured location must be outside of the Galaxy installation\n"
                     msg += "directory or it must be in a sub-directory protected by a properly configured .hgignore file if the directory is within\n"
                     msg += "the Galaxy installation directory hierarchy.  This is because tool shed repositories will be installed using mercurial's\n"

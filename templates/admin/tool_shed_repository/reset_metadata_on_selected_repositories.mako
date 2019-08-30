@@ -11,13 +11,14 @@
     ${render_msg( message, status )}
 %endif
 
-<div class="warningmessage">
+<div class="alert alert-warning">
     Resetting metadata may take a while, so wait until this page redirects after clicking the <b>Reset metadata on selected repositories</b> button, as 
     doing anything else will not be helpful.
 </div>
 
-<div class="toolForm">
-    <div class="toolFormTitle">Reset all metadata on each selected tool shed repository</div>
+<div class="card">
+    <div class="card-header">Reset all metadata on each selected tool shed repository</div>
+    <div class="card-body">
         <form name="reset_metadata_on_selected_repositories" id="reset_metadata_on_selected_repositories" action="${h.url_for( controller='admin_toolshed', action='reset_metadata_on_selected_installed_repositories' )}" method="post" >
             <div class="form-row">
                 Check each repository for which you want to reset metadata.  Repository names are followed by owners in parentheses.

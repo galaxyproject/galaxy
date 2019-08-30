@@ -1,4 +1,6 @@
 <%!
+    from galaxy.util.sanitize_html import sanitize_html
+
     def inherit(context):
         if context.get('use_panels'):
             if context.get('webapp'):
@@ -26,14 +28,16 @@
 %>
 </%def>
 
-<%def name="javascripts()">
-    ${parent.javascripts()}
+<%def name="javascript_app()">
+    <!-- message.mako javascript_app() -->
+    ${parent.javascript_app()}
     ${handle_refresh_frames()}
     <script type="text/javascript">
-        if ( parent.handle_minwidth_hint )
-        {
-            parent.handle_minwidth_hint( -1 );
-        }
+        config.addInitialization(function() {
+            if (parent.handle_minwidth_hint) {
+                parent.handle_minwidth_hint(-1);
+            }
+        });
     </script>
 </%def>
 
@@ -42,21 +46,22 @@
 ##
 
 <%def name="center_panel()">
-    ${render_large_message( message, status )}
+    ${render_msg( message, status )}
 </%def>
 
 <%def name="body()">
-    ${render_large_message( message, status )}
-</%def>
-
-## Render large message.
-<%def name="render_large_message( message, status )">
-    <div class="${status}messagelarge" style="margin: 1em">${_(message)}</div>
+    ${render_msg( message, status )}
 </%def>
 
 ## Render a message
 <%def name="render_msg( msg, status='done' )">
-    <div class="${status}message">${_(msg)}</div>
-    <br/>
+    <%
+        if status == "done":
+            status = "success"
+        elif status == "error":
+            status = "danger"
+        if status not in ("danger", "info", "success", "warning"):
+            status = "info"
+    %>
+    <div class="message mt-2 alert alert-${status}">${_(sanitize_html(msg))}</div>
 </%def>
-

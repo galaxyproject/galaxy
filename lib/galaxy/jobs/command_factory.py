@@ -30,7 +30,9 @@ def build_command(
     include_work_dir_outputs=True,
     create_tool_working_directory=True,
     remote_command_params={},
-    metadata_directory=None,
+    remote_job_directory=None,
+    stdout_file=None,
+    stderr_file=None,
 ):
     """
     Compose the sequence of commands necessary to execute a job. This will
@@ -101,14 +103,20 @@ def build_command(
         # xref https://github.com/galaxyproject/galaxy/issues/3289
         commands_builder.prepend_command("rm -rf working; mkdir -p working; cd working")
 
+    container_monitor_command = job_wrapper.container_monitor_command(container)
+    if container_monitor_command:
+        commands_builder.prepend_command(container_monitor_command)
+
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 
+    if stdout_file and stderr_file:
+        commands_builder.capture_stdout_stderr(stdout_file, stderr_file)
     commands_builder.capture_return_code()
 
     if include_metadata and job_wrapper.requires_setting_metadata:
-        metadata_directory = metadata_directory or job_wrapper.working_directory
-        commands_builder.append_command("cd '%s'" % metadata_directory)
+        working_directory = remote_job_directory or job_wrapper.working_directory
+        commands_builder.append_command("cd '%s'" % working_directory)
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
 
     return commands_builder.build()
@@ -136,9 +144,10 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         tool_commands
     )
     write_script(local_container_script, script_contents, config)
-    commands = local_container_script
+    commands = "%s %s" % (shell, local_container_script)
     if 'working_directory' in remote_command_params:
         commands = "%s %s" % (shell, join(remote_command_params['working_directory'], script_name))
+    commands += " > ../tool_stdout 2> ../tool_stderr"
     log.info("Built script [%s] for tool command [%s]" % (local_container_script, tool_commands))
     return commands
 
@@ -158,9 +167,8 @@ def __handle_task_splitting(commands_builder, job_wrapper):
 
 def __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params):
     local_dependency_resolution = remote_command_params.get("dependency_resolution", "local") == "local"
-
     # Prepend dependency injection
-    if job_wrapper.dependency_shell_commands and local_dependency_resolution:
+    if local_dependency_resolution and job_wrapper.dependency_shell_commands:
         commands_builder.prepend_commands(job_wrapper.dependency_shell_commands)
 
 
@@ -200,6 +208,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         datatypes_config=datatypes_config,
         compute_tmp_dir=compute_tmp_dir,
         resolve_metadata_dependencies=resolve_metadata_dependencies,
+        use_bin=job_wrapper.use_metadata_binary,
         kwds={'overwrite': False}
     ) or ''
     metadata_command = metadata_command.strip()
@@ -229,23 +238,36 @@ class CommandsBuilder(object):
         # the last thing that happens is an exit with return code.
         self.return_code_captured = False
 
-    def prepend_command(self, command):
+    def prepend_command(self, command, sep=";"):
         if command:
-            self.commands = u"%s; %s" % (command,
+            self.commands = u"%s%s %s" % (command,
+                                         sep,
                                          self.commands)
         return self
 
     def prepend_commands(self, commands):
         return self.prepend_command(u"; ".join(c for c in commands if c))
 
-    def append_command(self, command):
+    def append_command(self, command, sep=';'):
         if command:
-            self.commands = u"%s; %s" % (self.commands,
-                                         command)
+            self.commands = u"%s%s %s" % (self.commands,
+                                          sep,
+                                          command)
         return self
 
     def append_commands(self, commands):
         self.append_command(u"; ".join(c for c in commands if c))
+
+    def capture_stdout_stderr(self, stdout_file, stderr_file):
+        self.prepend_command("""out="${TMPDIR:-/tmp}/out.$$" err="${TMPDIR:-/tmp}/err.$$"
+mkfifo "$out" "$err"
+trap 'rm "$out" "$err"' EXIT
+tee -a stdout.log < "$out" &
+tee -a stderr.log < "$err" >&2 &""",
+                             sep="")
+        self.append_command("> '{stdout_file}' 2> '{stderr_file}'".format(stdout_file=stdout_file,
+                                                                          stderr_file=stderr_file),
+                            sep="")
 
     def capture_return_code(self):
         if not self.return_code_captured:

@@ -6,7 +6,8 @@ import logging
 from galaxy import web
 from galaxy.exceptions import ItemAccessibilityException
 from galaxy.model.search import GalaxySearchEngine
-from galaxy.web.base.controller import (
+from galaxy.util import unicodify
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     SharableItemSecurityMixin
 )
@@ -16,7 +17,7 @@ log = logging.getLogger(__name__)
 
 class SearchController(BaseAPIController, SharableItemSecurityMixin):
 
-    @web.expose_api
+    @web.legacy_expose_api
     def create(self, trans, payload, **kwd):
         """
         POST /api/search
@@ -29,24 +30,24 @@ class SearchController(BaseAPIController, SharableItemSecurityMixin):
             try:
                 query = se.query(query_txt)
             except Exception as e:
-                return {'error': str(e)}
+                return {'error': unicodify(e)}
             if query is not None:
                 query.decode_query_ids(trans)
                 current_user_roles = trans.get_current_user_roles()
                 try:
                     results = query.process(trans)
                 except Exception as e:
-                    return {'error': str(e)}
+                    return {'error': unicodify(e)}
                 for item in results:
                     append = False
-                    if trans.user_is_admin():
+                    if trans.user_is_admin:
                         append = True
                     if not append:
                         if type(item) in [trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset]:
                             if (trans.app.security_agent.can_access_library_item(trans.get_current_user_roles(), item, trans.user)):
                                 append = True
                         elif type(item) in [trans.app.model.Job]:
-                            if item.used_id == trans.user or trans.user_is_admin():
+                            if item.used_id == trans.user or trans.user_is_admin:
                                 append = True
                         elif type(item) in [trans.app.model.Page, trans.app.model.StoredWorkflow]:
                             try:

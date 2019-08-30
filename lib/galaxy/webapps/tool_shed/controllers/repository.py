@@ -21,8 +21,8 @@ from galaxy import (
     web
 )
 from galaxy.tools.repositories import ValidationContext
-from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField, SelectField
+from galaxy.webapps.base.controller import BaseUIController
 from galaxy.webapps.reports.framework import grids
 from galaxy.webapps.tool_shed.util import ratings_util
 from tool_shed.capsule import capsule_manager
@@ -870,22 +870,21 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                         mimetype = trans.app.datatypes_registry.get_mimetype_by_extension(extension)
                         if mimetype:
                             trans.response.set_content_type(mimetype)
-                    return open(path_to_file, 'r')
+                    return open(path_to_file, 'rb')
         return None
 
     @web.expose
     def display_tool(self, trans, repository_id, tool_config, changeset_revision, **kwd):
-        message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         render_repository_actions_for = kwd.get('render_repository_actions_for', 'tool_shed')
         with ValidationContext.from_app(trans.app) as validation_context:
             tv = tool_validator.ToolValidator(validation_context)
-            repository, tool, message = tv.load_tool_from_changeset_revision(repository_id,
-                                                                             changeset_revision,
-                                                                             tool_config)
-        if message:
+            repository, tool, valid, message = tv.load_tool_from_changeset_revision(repository_id,
+                                                                                    changeset_revision,
+                                                                                    tool_config)
+        if message or not valid:
             status = 'error'
-        tool_state = tool_util.new_state(trans, tool, invalid=False)
+        tool_state = tool_util.new_state(trans, tool, invalid=not valid)
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision(trans.app,
                                                                                              repository_id,
                                                                                              changeset_revision,
@@ -901,7 +900,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                        message=message,
                                        status=status)
         except Exception as e:
-            message = "Error displaying tool, probably due to a problem in the tool config.  The exception is: %s." % str(e)
+            message = "Error displaying tool, probably due to a problem in the tool config.  The exception is: %s." % util.unicodify(e)
         if trans.webapp.name == 'galaxy' or render_repository_actions_for == 'galaxy':
             return trans.response.send_redirect(web.url_for(controller='repository',
                                                             action='preview_tools_in_changeset',
@@ -1024,7 +1023,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             item_id = kwd.get('id', '')
             if item_id:
                 operation = kwd['operation'].lower()
-                is_admin = trans.user_is_admin()
+                is_admin = trans.user_is_admin
                 if operation == "view_or_manage_repository":
                     # The received id is a RepositoryMetadata id, so we have to get the repository id.
                     repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, item_id)
@@ -1115,7 +1114,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             item_id = kwd.get('id', '')
             if item_id:
                 operation = kwd['operation'].lower()
-                is_admin = trans.user_is_admin()
+                is_admin = trans.user_is_admin
                 if operation == "view_or_manage_repository":
                     # The received id is a RepositoryMetadata id, so we have to get the repository id.
                     repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, item_id)
@@ -1339,7 +1338,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         return suc.get_repository_file_contents(trans.app, file_path, repository_id, is_admin)
 
     @web.json
@@ -1652,7 +1651,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         irm = capsule_manager.ImportRepositoryManager(trans.app,
                                                       trans.request.host,
                                                       trans.user,
-                                                      trans.user_is_admin())
+                                                      trans.user_is_admin)
         export_info_dict = irm.get_export_info_dict(export_info_file_path)
         manifest_file_path = os.path.join(file_path, 'manifest.xml')
         # The manifest.xml file has already been validated, so no error_message should be returned here.
@@ -1708,7 +1707,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     has_deprecated_repositories = True
                     break
             # See if the current user can administer any repositories, but only if not an admin user.
-            if not trans.user_is_admin():
+            if not trans.user_is_admin:
                 if current_user.active_repositories:
                     can_administer_repositories = True
                 else:
@@ -1722,6 +1721,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         user_id = kwd.get('user_id', None)
         repository_id = kwd.get('repository_id', None)
         changeset_revision = kwd.get('changeset_revision', None)
+        self.validate_changeset_revision(trans, changeset_revision, repository_id)
         return trans.fill_template('/webapps/tool_shed/index.mako',
                                    repository_metadata=repository_metadata,
                                    can_administer_repositories=can_administer_repositories,
@@ -1772,9 +1772,9 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
         with ValidationContext.from_app(trans.app) as validation_context:
             tv = tool_validator.ToolValidator(validation_context)
-            repository, tool, error_message = tv.load_tool_from_changeset_revision(repository_id,
-                                                                                   changeset_revision,
-                                                                                   tool_config)
+            repository, tool, valid, error_message = tv.load_tool_from_changeset_revision(repository_id,
+                                                                                          changeset_revision,
+                                                                                          tool_config)
             tool_state = tool_util.new_state(trans, tool, invalid=True)
             invalid_file_tups = []
             if tool:
@@ -1801,7 +1801,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                        message=message,
                                        status='error')
         except Exception as e:
-            message = "Exception thrown attempting to display tool: %s." % str(e)
+            message = "Exception thrown attempting to display tool: %s." % util.unicodify(e)
         if trans.webapp.name == 'galaxy':
             return trans.response.send_redirect(web.url_for(controller='repository',
                                                             action='preview_tools_in_changeset',
@@ -2159,7 +2159,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         return suc.open_repository_files_folder(trans.app, folder_path, repository_id, is_admin)
 
     @web.expose
@@ -2168,6 +2168,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         status = kwd.get('status', 'done')
         repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
         changeset_revision = kwd.get('changeset_revision', repository.tip(trans.app))
+        self.validate_changeset_revision(trans, changeset_revision, repository_id)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id(repository_metadata.id),
@@ -2370,8 +2371,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     try:
                         hg_util.remove_file(repo_dir, selected_file, force=True)
                     except Exception as e:
-                        log.debug("Error removing the following file using the mercurial API:\n %s" % str(selected_file))
-                        log.debug("The error was: %s" % str(e))
+                        log.debug("Error removing the following file using the mercurial API:\n %s", selected_file)
+                        log.debug("The error was: %s", util.unicodify(e))
                         log.debug("Attempting to remove the file using a different approach.")
                         relative_selected_file = selected_file.split('repo_%d' % repository.id)[1].lstrip('/')
                         repo.dirstate.remove(relative_selected_file)
@@ -2380,7 +2381,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                         if os.path.isdir(absolute_selected_file):
                             try:
                                 os.rmdir(absolute_selected_file)
-                            except OSError as e:
+                            except OSError:
                                 # The directory is not empty
                                 pass
                         elif os.path.isfile(absolute_selected_file):
@@ -2388,7 +2389,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                             dir = os.path.split(absolute_selected_file)[0]
                             try:
                                 os.rmdir(dir)
-                            except OSError as e:
+                            except OSError:
                                 # The directory is not empty
                                 pass
                 # Commit the change set.
@@ -2460,7 +2461,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 message = "Your message has been sent"
                 status = "done"
             except Exception as e:
-                message = "An error occurred sending your message by email: %s" % str(e)
+                message = "An error occurred sending your message by email: %s" % util.unicodify(e)
                 status = "error"
         else:
             # Do all we can to eliminate spam.
@@ -2646,7 +2647,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             irm = capsule_manager.ImportRepositoryManager(trans.app,
                                                           trans.request.host,
                                                           trans.user,
-                                                          trans.user_is_admin())
+                                                          trans.user_is_admin)
             capsule_dict = irm.upload_capsule(**kwd)
             status = capsule_dict.get('status', 'error')
             if status == 'error':
@@ -2782,7 +2783,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
             user = trans.user
             if repository:
-                if user is not None and (trans.user_is_admin() or
+                if user is not None and (trans.user_is_admin or
                                          trans.app.security_agent.user_can_administer_repository(user, repository)):
                     return trans.response.send_redirect(web.url_for(controller='repository',
                                                                     action='manage_repository',
@@ -2802,6 +2803,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         avg_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, repository, webapp_model=trans.model)
         changeset_revision = kwd.get('changeset_revision', repository.tip(trans.app))
+        self.validate_changeset_revision(trans, changeset_revision, id)
         repository.share_url = repository_util.generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=changeset_revision)
         repository.clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(trans.user, repository)
         display_reviews = kwd.get('display_reviews', False)
@@ -2896,6 +2898,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         tool_lineage = []
         tool = None
         guid = None
+        self.validate_changeset_revision(trans, changeset_revision, repository_id)
         revision_label = hg_util.get_revision_label(trans.app, repository, changeset_revision, include_date=False)
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, repository_id, changeset_revision)
         if repository_metadata:
@@ -2925,7 +2928,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                     if message:
                                         status = 'error'
                                 else:
-                                    tool, message, sample_files = \
+                                    tool, valid, message, sample_files = \
                                         tv.handle_sample_files_and_load_tool_from_tmp_config(repo,
                                                                                              repository_id,
                                                                                              changeset_revision,
@@ -2983,3 +2986,16 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                    metadata=metadata,
                                    message=message,
                                    status=status)
+
+    def validate_changeset_revision(self, trans, changeset_revision, repository_id):
+        """In case changeset revision is invalid send them to the repository page"""
+        if changeset_revision:
+            repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
+            repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
+            if not hg_util.get_changectx_for_changeset(repo, changeset_revision):
+                message = 'Invalid changeset revision'
+                return trans.response.send_redirect(web.url_for(controller='repository',
+                                                                action='index',
+                                                                repository_id=repository_id,
+                                                                message=message,
+                                                                status='error'))

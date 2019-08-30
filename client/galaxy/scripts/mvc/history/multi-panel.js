@@ -1,7 +1,10 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
-import HISTORY_MODEL from "mvc/history/history-model";
+import { HistoryCollection } from "mvc/history/history-model";
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import historyCopyDialog from "mvc/history/copy-dialog";
@@ -9,9 +12,6 @@ import ERROR_MODAL from "mvc/ui/error-modal";
 import baseMVC from "mvc/base-mvc";
 import ajaxQueue from "utils/ajax-queue";
 import "ui/search-input";
-
-/* global $ */
-/* global Galaxy */
 
 var logNamespace = "history";
 /* ==============================================================================
@@ -94,10 +94,7 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         if (columnRight < viewLeft) {
             return false;
         }
-        if (columnLeft > viewRight) {
-            return false;
-        }
-        return true;
+        return columnLeft <= viewRight;
     },
 
     /** shortcut to the panel */
@@ -218,25 +215,25 @@ var HistoryViewColumn = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                     <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
                         <span class="caret"></span>
                     </button>
-                    <ul class="dropdown-menu" role="menu">
+                    <div class="dropdown-menu" role="menu">
                         <% if( !data.history.deleted ){ %>
-                            <li><a href="javascript:void(0);" class="copy-history">
+                            <a class="dropdown-item" href="javascript:void(0);" class="copy-history">
                                 ${_l("Copy")}
-                            </a></li>
-                            <li><a href="javascript:void(0);" class="delete-history">
+                            </a>
+                            <a class="dropdown-item" href="javascript:void(0);" class="delete-history">
                                 ${_l("Delete")}
-                            </a></li>
+                            </a>
                         <% } else /* if is deleted */ { %>
-                            <li><a href="javascript:void(0);" class="undelete-history">
+                            <a class="dropdown-item" href="javascript:void(0);" class="undelete-history">
                                 ${_l("Undelete")}
-                            </a></li>
+                            </a>
                         <% } %>
                         <% if( data.view.purgeAllowed ){ %>
-                            <li><a href="javascript:void(0);" class="purge-history">
+                            <a class="dropdown-item" href="javascript:void(0);" class="purge-history">
                                 ${_l("Purge")}
-                            </a></li>
+                            </a>
                         <% } %>
-                    </ul>
+                    </div>
                 </div>
             <% } %>
         </div>`,
@@ -317,7 +314,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         // console.log( 'setCollection:', collection );
         this.stopListening(this.collection);
 
-        this.collection = collection || new HISTORY_MODEL.HistoryCollection();
+        this.collection = collection || new HistoryCollection();
         this.setUpCollectionListeners();
 
         this.createColumns();
@@ -438,8 +435,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         // if sent two strings (and possibly details as 'options'), use those as message and title
         if (_.isString(model) && _.isString(xhr)) {
             var message = model;
-            var title = xhr;
-            return ERROR_MODAL.errorModal(message, title, options);
+            return ERROR_MODAL.errorModal(message, xhr, options);
         }
         // bad gateway
         // TODO: possibly to global handler
@@ -473,6 +469,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     /** create a column and its panel and set up any listeners to them */
     createColumn: function createColumn(history, options) {
+        const Galaxy = getGalaxyInstance();
         // options passed can be re-used, so extend them before adding the model to prevent pollution for the next
         options = _.extend({}, options, {
             model: history,
@@ -599,15 +596,13 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
             return this.sortedColumns();
         }
         return this.sortedColumns().filter((column, index) => {
-            var filtered = column.currentHistory || _.every(filters.map(filter => filter.call(column)));
-            return filtered;
+            return column.currentHistory || _.every(filters.map(filter => filter.call(column)));
         });
     },
 
     /** return array of Columns sorted to match the collection */
     sortedColumns: function() {
-        var sorted = this.collection.map((history, index) => this.columnMap[history.id]);
-        return sorted;
+        return this.collection.map((history, index) => this.columnMap[history.id]);
     },
 
     // ------------------------------------------------------------------------ render
@@ -755,24 +750,24 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         "click .order .set-order": "_chooseOrder",
         "click #toggle-deleted": "_clickToggleDeletedDatasets",
         "click #toggle-hidden": "_clickToggleHiddenDatasets"
-        //'dragstart .list-item .title-bar'                       : function( e ){ console.debug( 'ok' ); }
     },
 
     close: function(ev) {
         //TODO: switch to pushState/router
-        window.location = Galaxy.root;
+        window.location = getAppRoot();
     },
 
     _clickToggleDeletedHistories: function(ev) {
         this.toggleDeletedHistories($(ev.currentTarget).is(":checked"));
         this.toggleOptionsPopover();
     },
+
     /** Include deleted histories in the collection */
     toggleDeletedHistories: function(show) {
         if (show) {
-            window.location = `${Galaxy.root}history/view_multiple?include_deleted_histories=True`;
+            window.location = `${getAppRoot()}history/view_multiple?include_deleted_histories=True`;
         } else {
-            window.location = `${Galaxy.root}history/view_multiple`;
+            window.location = `${getAppRoot()}history/view_multiple`;
         }
     },
 
@@ -834,7 +829,19 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     /** Set up any view plugins */
     setUpBehaviors: function() {
         this._moreOptionsPopover();
-
+        const searchHistories = searchFor => {
+            const multipanel = this;
+            this.historySearch = searchFor;
+            this.filters = [
+                function() {
+                    // This is intentionally a function where 'this' gets
+                    // bound, applying the filter to the model of the
+                    // caller.
+                    return this.model.matchesAll(multipanel.historySearch);
+                }
+            ];
+            this.renderColumns(0);
+        };
         // input to search histories
         this.$("#search-histories").searchInput({
             name: "search-histories",
@@ -846,17 +853,11 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
                 this.collection.fetchAll().done(() => {
                     this.$("#search-histories").searchInput("toggle-loading");
                     this.renderInfo("");
+                    searchHistories(searchFor);
                 });
             },
-            onsearch: searchFor => {
-                this.historySearch = searchFor;
-                this.filters = [
-                    () => {
-                        return this.model.matchesAll(this.historySearch);
-                    }
-                ];
-                this.renderColumns(0);
-            },
+
+            onsearch: searchHistories,
             onclear: searchFor => {
                 this.historySearch = null;
                 //TODO: remove specifically not just reset
@@ -1054,36 +1055,40 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     },
 
     optionsPopoverTemplate: _.template(
-        [
-            '<div class="more-options d-flex flex-column">',
-            '<div class="order btn-group mb-2">',
-            '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
-            `${_l("Order histories by")} `,
-            '<span class="current-order"><%- view.orderDescriptions[ view.collection.order ] %></span> ',
-            '<span class="caret"></span>',
-            "</button>",
-            '<ul class="dropdown-menu" role="menu">',
-            "<% _.each( view.orderDescriptions, function( text, order ){ %>",
-            '<li class="dropdown-item"><a href="javascript:void(0);" class="set-order" data-order="<%- order %>">',
-            "<%- text %>",
-            "</a></li>",
-            "<% }); %>",
-            "</ul>",
-            "</div>",
-
-            '<div class="checkbox"><label><input id="include-deleted" type="checkbox"',
-            '<%= view.collection.includeDeleted? " checked" : "" %>>',
-            _l("Include deleted histories"),
-            "</label></div>",
-
-            '<div class="checkbox"><label><input id="toggle-deleted" type="checkbox">',
-            _l("Include deleted datasets"),
-            "</label></div>",
-            '<div class="checkbox"><label><input id="toggle-hidden" type="checkbox">',
-            _l("Include hidden datasets"),
-            "</label></div>",
-            "</div>"
-        ].join(""),
+        `<div class="more-options d-flex flex-column">
+            <div class="order btn-group mb-2">
+                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
+                    ${_l("Order histories by")}
+                    <span class="current-order"><%- view.orderDescriptions[ view.collection.order ] %></span>
+                    <span class="caret"/>
+                </button>
+                <div class="dropdown-menu" role="menu">
+                    <% _.each( view.orderDescriptions, function( text, order ){ %>
+                        <a href="javascript:void(0);" class="dropdown-item set-order" data-order="<%- order %>">
+                            <%- text %>
+                        </a>
+                    <% }); %>
+                </div>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input id="include-deleted" type="checkbox" <%= view.collection.includeDeleted? " checked" : "" %>>
+                    ${_l("Include deleted histories")}
+                </label>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input id="toggle-deleted" type="checkbox">
+                    ${_l("Include deleted datasets")}
+                </label>
+            </div>
+            <div class="checkbox">
+                <label>
+                    <input id="toggle-hidden" type="checkbox">
+                    ${_l("Include hidden datasets")}
+                </label>
+            </div>
+        </div>`,
         { variable: "view" }
     )
 });

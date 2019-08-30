@@ -26,8 +26,6 @@ class ServesTemplatesPluginMixin(object):
 
     #: default number of templates to search for plugin template lookup
     DEFAULT_TEMPLATE_COLLECTION_SIZE = 10
-    #: default encoding of plugin templates
-    DEFAULT_TEMPLATE_ENCODING = 'utf-8'
 
     def _set_up_template_plugin(self, template_cache_dir, additional_template_paths=None, **kwargs):
         """
@@ -48,7 +46,7 @@ class ServesTemplatesPluginMixin(object):
         return os.path.join(self.path, 'templates')
 
     def _build_template_lookup(self, template_cache_dir, additional_template_paths=None,
-                               collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE, output_encoding=DEFAULT_TEMPLATE_ENCODING):
+                               collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE):
         """
         Build a mako template filename lookup for the plugin.
         """
@@ -58,8 +56,7 @@ class ServesTemplatesPluginMixin(object):
         return mako.lookup.TemplateLookup(
             directories=template_lookup_paths,
             module_directory=template_cache_dir,
-            collection_size=collection_size,
-            output_encoding=output_encoding)
+            collection_size=collection_size)
 
 
 class VisualizationPlugin(ServesTemplatesPluginMixin):
@@ -75,8 +72,8 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         self.config = config
         base_url = context.get('base_url', '')
         self.base_url = '/'.join([base_url, self.name]) if base_url else self.name
-        self.static_path = os.path.join(self.path.replace('./config', './static'), 'static')
-        if os.path.exists(os.path.join(self.static_path, 'logo.png')):
+        self.static_path = self._get_static_path(self.path)
+        if self.static_path and os.path.exists(os.path.join(self.static_path, 'logo.png')):
             self.config['logo'] = '/'.join([self.static_path, 'logo.png'])
         template_cache_dir = context.get('template_cache_dir', None)
         additional_template_paths = context.get('additional_template_paths', [])
@@ -129,6 +126,13 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         if self.name in self.app.visualizations_registry.BUILT_IN_VISUALIZATIONS:
             return url_for(controller='visualization', action=self.name)
         return url_for('visualization_plugin', visualization_name=self.name)
+
+    def _get_static_path(self, path):
+        if '/config/' in path:
+            match = path.split('/config/')[-1]
+            return os.path.join('./static', match, 'static')
+        else:
+            log.debug('Visualization has no static path: %s.' % path)
 
     def _get_saved_visualization_config(self, visualization, revision=None, **kwargs):
         """

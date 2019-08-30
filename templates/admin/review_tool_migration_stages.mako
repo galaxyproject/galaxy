@@ -7,9 +7,9 @@
 <%
 from markupsafe import escape
 %>
-<div class="toolForm">
-    <div class="toolFormTitle">Tool migrations that can be performed on this Galaxy instance</div>
-    <div class="toolFormBody">
+<div class="card">
+    <div class="card-header">Tool migrations that can be performed on this Galaxy instance</div>
+    <div class="card-body">
         <div class="form-row">
             <p>
                 The list of tool migration stages below, displayed most recent to oldest, provides information about the repositories in the

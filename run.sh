@@ -80,7 +80,7 @@ if [ "$run_server" = "python" -a -n "$GALAXY_RUN_ALL" ]; then
                     continue
                 fi
                 # Search for all pids in the logs and tail for the last one
-                latest_pid=$(grep '^Starting server in PID [0-9]\+\.$' "$server.log" | sed 's/^Starting server in PID \([0-9]\+\).$/\1/' | tail -n 1)
+                latest_pid=$(grep '^Starting server in PID [0-9]\+\.$' "$server.log" | sed 's/^Starting server in PID \([0-9]\{1,\}\).$/\1/' | tail -n 1)
                 # If they're equivalent, then the current pid file agrees with our logs
                 # and we've succesfully started
                 [ -n "$latest_pid" ] && [ "$latest_pid" -eq "$current_pid_in_file" ] && break
@@ -89,7 +89,7 @@ if [ "$run_server" = "python" -a -n "$GALAXY_RUN_ALL" ]; then
         fi
     done
 else
-    echo "Executing: $run_server $server_args $pid_log_paster_args"
+    echo "Executing: $run_server $server_args"
     # args are properly quoted so use eval
-    eval $run_server $server_args $pid_log_paster_args
+    eval $run_server $server_args
 fi

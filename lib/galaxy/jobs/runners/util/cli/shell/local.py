@@ -6,11 +6,11 @@ from subprocess import (
 from tempfile import TemporaryFile
 from time import sleep
 
-from ..shell import BaseShellExec
-from ....util import (
-    Bunch,
-    kill_pid
-)
+import six
+
+from galaxy.util.bunch import Bunch
+from . import BaseShellExec
+from ....util import kill_pid
 
 log = getLogger(__name__)
 
@@ -24,7 +24,7 @@ class LocalShell(BaseShellExec):
     """
 
     >>> shell = LocalShell()
-    >>> def exec_python(script, **kwds): return shell.execute('python -c "%s"' % script, **kwds)
+    >>> def exec_python(script, **kwds): return shell.execute(['python', '-c', script], **kwds)
     >>> exec_result = exec_python("from __future__ import print_function; print('Hello World')")
     >>> exec_result.stderr == u''
     True
@@ -37,14 +37,17 @@ class LocalShell(BaseShellExec):
     True
     >>> exec_result.returncode == TIMEOUT_RETURN_CODE
     True
+    >>> shell.execute('echo hi').stdout == "hi\\n"
+    True
     """
 
     def __init__(self, **kwds):
         pass
 
     def execute(self, cmd, persist=False, timeout=DEFAULT_TIMEOUT, timeout_check_interval=DEFAULT_TIMEOUT_CHECK_INTERVAL, **kwds):
+        is_cmd_string = isinstance(cmd, six.string_types)
         outf = TemporaryFile()
-        p = Popen(cmd, shell=True, stdin=None, stdout=outf, stderr=PIPE)
+        p = Popen(cmd, stdin=None, stdout=outf, stderr=PIPE, shell=is_cmd_string)
         # poll until timeout
 
         for i in range(int(timeout / timeout_check_interval)):

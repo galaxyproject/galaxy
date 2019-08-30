@@ -1,7 +1,7 @@
 from galaxy import model
 from galaxy.tools.parameters import basic
 from galaxy.util import bunch
-from .test_parameter_parsing import BaseParameterTestCase
+from .util import BaseParameterTestCase
 
 
 class SelectToolParameterTestCase(BaseParameterTestCase):
@@ -11,7 +11,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
         try:
             self.param.from_json("42", self.trans, {"input_bam": model.HistoryDatasetAssociation()})
         except ValueError as err:
-            assert str(err) == "An invalid option was selected for my_name, '42', please verify."
+            assert str(err) == "parameter 'my_name': an invalid option ('42') was selected (valid options: ?)"
             return
         assert False
 
@@ -20,7 +20,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
         try:
             self.param.from_json("42", self.trans)
         except ValueError as err:
-            assert str(err) == "Parameter my_name requires a value, but has no legal values defined."
+            assert str(err) == "parameter 'my_name': requires a value, but no legal values defined"
             return
         assert False
 
@@ -34,7 +34,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
         try:
             self.param.from_json(model.HistoryDatasetAssociation(), self.trans, {"input_bam": None})
         except ValueError as err:
-            assert str(err) == "Parameter my_name requires a value, but has no legal values defined."
+            assert str(err) == "parameter 'my_name': requires a value, but no legal values defined"
             return
         assert False
 

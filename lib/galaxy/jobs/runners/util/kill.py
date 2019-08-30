@@ -1,4 +1,5 @@
 import os
+import signal
 import subprocess
 from platform import system
 from time import sleep
@@ -23,7 +24,7 @@ def _psutil_kill_pid(pid):
     """
     try:
         parent = Process(pid)
-        for child in parent.get_children(recursive=True):
+        for child in parent.children(recursive=True):
             child.kill()
         parent.kill()
     except NoSuchProcess:
@@ -55,7 +56,7 @@ def __kill_posix(pid):
             return False
 
     if __check_pid():
-        for sig in [15, 9]:
+        for sig in [signal.SIGTERM, signal.SIGKILL]:
             try:
                 os.killpg(pid, sig)
             except OSError:

@@ -17,6 +17,7 @@ from galaxy.exceptions import (
     MalformedId,
     RequestParameterInvalidException
 )
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class FolderManager(object):
         except NoResultFound:
             raise RequestParameterInvalidException('No folder found with the id provided.')
         except Exception as e:
-            raise InternalServerError('Error loading from the database.' + str(e))
+            raise InternalServerError('Error loading from the database.' + unicodify(e))
         folder = self.secure(trans, folder, check_manageable, check_accessible)
         return folder
 
@@ -69,13 +70,30 @@ class FolderManager(object):
         :rtype:     LibraryFolder
         """
         # all folders are accessible to an admin
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             return folder
         if check_manageable:
             folder = self.check_manageable(trans, folder)
         if check_accessible:
             folder = self.check_accessible(trans, folder)
         return folder
+
+    def check_modifyable(self, trans, folder):
+        """
+        Check whether the user can modify the folder (name and description).
+
+        :returns:   the original folder
+        :rtype:     LibraryFolder
+
+        :raises: AuthenticationRequired, InsufficientPermissionsException
+        """
+        if not trans.user:
+            raise AuthenticationRequired("Must be logged in to manage Galaxy items.", type='error')
+        current_user_roles = trans.get_current_user_roles()
+        if not trans.app.security_agent.can_modify_library_item(current_user_roles, folder):
+            raise InsufficientPermissionsException("You don't have permissions to modify this folder.", type='error')
+        else:
+            return folder
 
     def check_manageable(self, trans, folder):
         """
@@ -138,7 +156,7 @@ class FolderManager(object):
         """
         parent_folder = self.get(trans, parent_folder_id)
         current_user_roles = trans.get_current_user_roles()
-        if not (trans.user_is_admin() or trans.app.security_agent.can_add_library_item(current_user_roles, parent_folder)):
+        if not (trans.user_is_admin or trans.app.security_agent.can_add_library_item(current_user_roles, parent_folder)):
             raise InsufficientPermissionsException('You do not have proper permission to create folders under given folder.')
         new_folder = trans.app.model.LibraryFolder(name=new_folder_name, description=new_folder_description)
         # We are associating the last used genome build with folders, so we will always
@@ -169,9 +187,8 @@ class FolderManager(object):
         :raises: ItemAccessibilityException, InsufficientPermissionsException
         """
         changed = False
-        if not trans.user_is_admin():
-            if not self.check_manageable(trans, folder):
-                raise InsufficientPermissionsException("You do not have proper permission to update the library folder.")
+        if not trans.user_is_admin:
+            folder = self.check_modifyable(trans, folder)
         if folder.deleted is True:
             raise ItemAccessibilityException("You cannot update a deleted library folder. Undelete it first.")
         if name is not None and name != folder.name:
@@ -199,7 +216,7 @@ class FolderManager(object):
 
         :raises: ItemAccessibilityException
         """
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             folder = self.check_manageable(trans, folder)
         if undelete:
             folder.deleted = False
@@ -236,7 +253,7 @@ class FolderManager(object):
         """
         Return true if the user has permissions to add item to the given folder.
         """
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             return True
         current_user_roles = trans.get_current_user_roles()
         add_roles = set(trans.app.security_agent.get_roles_for_action(folder, trans.app.security_agent.permitted_actions.LIBRARY_ADD))

@@ -18,12 +18,12 @@
     <test>
       <param name="input1" value="maf_split_by_species_in.maf"/>
       <param name="collapse_columns" value="True"/>
-      <output name="out_file1" file="maf_split_by_species_collapsed_out.maf"/>
+      <output name="out_file1" file="maf_split_by_species_collapsed_out.maf" sort="true"/>
     </test>
     <test>
       <param name="input1" value="maf_split_by_species_in.maf"/>
       <param name="collapse_columns" value="False"/>
-      <output name="out_file1" file="maf_split_by_species_not_collapsed_out.maf"/>
+      <output name="out_file1" file="maf_split_by_species_not_collapsed_out.maf" sort="true"/>
     </test>
   </tests>
   <help>

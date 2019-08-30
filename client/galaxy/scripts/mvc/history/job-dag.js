@@ -1,3 +1,4 @@
+import _ from "underscore";
 import GRAPH from "utils/graph";
 import addLogging from "utils/add-logging";
 
@@ -95,8 +96,7 @@ JobDAG.prototype.read = function _read(data) {
     if (_.has(data, "historyContents") && _.has(data, "jobs") && _.has(data, "tools")) {
         // a job dag is composed of these three elements:
         //  clone the 3 data sources into the DAG, processing the jobs finally using the history and tools
-        self
-            .preprocessHistoryContents(data.historyContents || [])
+        self.preprocessHistoryContents(data.historyContents || [])
             .preprocessTools(data.tools || {})
             .preprocessJobs(data.jobs || []);
 
@@ -315,7 +315,7 @@ JobDAG.prototype.weakComponentGraphArray = function() {
             }
             return 0;
         });
-        return new Graph(dag.directed, component);
+        return new GRAPH.Graph(dag.directed, component);
     });
 };
 

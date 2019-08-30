@@ -1,10 +1,12 @@
 // dependencies
+import Backbone from "backbone";
 import Ui from "mvc/ui/ui-misc";
 import List from "mvc/ui/ui-list";
+import { getAppRoot } from "onload/loadConfig";
 
 // collection of libraries
 var Libraries = Backbone.Collection.extend({
-    url: `${Galaxy.root}api/libraries?deleted=false`
+    url: `${getAppRoot()}api/libraries?deleted=false`
 });
 
 // collection of dataset
@@ -17,7 +19,7 @@ var LibraryDatasets = Backbone.Collection.extend({
         });
     },
     url: function() {
-        return `${Galaxy.root}api/libraries/${this.config.get("library_id")}/contents`;
+        return `${getAppRoot()}api/libraries/${this.config.get("library_id")}/contents`;
     }
 });
 
@@ -113,14 +115,9 @@ var View = Backbone.View.extend({
 
     /** Template */
     _template: function() {
-        return (
-            '<div class="ui-select-library">' +
-            '<div class="library ui-margin-bottom">' +
-            '<span class="library-title">Select Library</span>' +
-            '<span class="library-select"/>' +
-            "</div>" +
-            "</div>"
-        );
+        return `<div class="ui-select-library">
+                    <div class="library-select mb-2"/>
+                </div>`;
     }
 });
 

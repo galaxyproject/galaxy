@@ -102,3 +102,62 @@ def pgcalc(sa_session, id, dryrun=False):
                     WHERE id = :id;""" % (total, deleted)
         sa_session.execute(sql_update, {'id': id})
     return (total, deleted)
+
+
+
+def disk_usage(db_session, History, user_id, HistoryDatasetAssociation, Dataset):
+    ids_dict = {}
+    total = 0
+    deleted = 0
+
+    # this can be a huge number and can run out of memory, so we avoid the mappers
+    for history in db_session.query(History).enable_eagerloads(False).filter_by(user_id=user_id, purged=False).yield_per(1000):
+        for hda, dataset in db_session.query(
+            HistoryDatasetAssociation, Dataset).enable_eagerloads(False).join(Dataset).filter(and_(
+                HistoryDatasetAssociation.history_id == history.id,
+                HistoryDatasetAssociation.purged != true(),
+                Dataset.purged != true())).yield_per(1000):
+            # TODO: def hda.counts_toward_disk_usage():
+            #   return ( not self.dataset.purged and not self.dataset.library_associations )
+            if dataset.library_associations:
+                continue
+            if str(dataset.id) not in ids_dict:
+                total += dataset.get_total_size()
+            deleted_count = count_toward_deleted_disk_usage(
+                dataset.id,
+                history.deleted,
+                hda.deleted,
+                dataset.deleted,
+                dataset.get_total_size(),
+                ids_dict)
+            deleted += deleted_count
+    return (total, deleted)
+
+
+
+def calculate_and_set_disk_usage(db_session, user):
+    total = None
+    deleted = None
+
+    current_total = user.get_disk_usage()
+    current_deleted = user.get_deleted_disk_usage()
+    if db_session.get_bind().dialect.name not in ('postgres', 'postgresql'):
+        done = False
+        while not done:
+            total, deleted = user.calculate_disk_usage()
+            db_session.refresh(user)
+            # make sure usage didn't change while calculating
+            # set done if it has not, otherwise reset current and iterate again.
+            if user.get_disk_usage() == current_total and user.get_deleted_disk_usage() == current_deleted:
+                done = True
+            else:
+                current_total = user.get_disk_usage()
+                current_deleted = user.get_deleted_disk_usage()
+    else:
+        total, deleted = pgcalc(db_session, user.id)
+    if total not in (current_total, None) or deleted not in (current_deleted, None):
+        user.set_disk_usage(total)
+        user.set_deleted_disk_usage(deleted)
+        db_session.add(user)
+        db_session.flush()
+

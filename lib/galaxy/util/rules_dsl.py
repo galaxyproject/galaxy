@@ -5,6 +5,8 @@ import re
 import six
 from six.moves import map
 
+from galaxy.util import strip_control_characters_nested
+
 
 def _ensure_rule_contains_keys(rule, keys):
     for key, instance_class in keys.items():
@@ -75,11 +77,50 @@ class AddColumnMetadataRuleDefinition(BaseRuleDefinition):
 
     def apply(self, rule, data, sources):
         rule_value = rule["value"]
-        identifier_index = int(rule_value[len("identifier"):])
+        if rule_value.startswith("identifier"):
+            identifier_index = int(rule_value[len("identifier"):])
+
+            new_rows = []
+            for index, row in enumerate(data):
+                new_rows.append(row + [sources[index]["identifiers"][identifier_index]])
+
+        elif rule_value == "tags":
+
+            def sorted_tags(index):
+                tags = sorted(sources[index]["tags"])
+                return [",".join(tags)]
+
+            new_rows = []
+            for index, row in enumerate(data):
+                new_rows.append(row + sorted_tags(index))
+
+        return new_rows, sources
+
+
+class AddColumnGroupTagValueRuleDefinition(BaseRuleDefinition):
+    rule_type = "add_column_group_tag_value"
+
+    def validate_rule(self, rule):
+        _ensure_rule_contains_keys(rule, {"value": six.string_types})
+
+    def apply(self, rule, data, sources):
+        rule_value = rule["value"]
+        tag_prefix = "group:%s:" % rule_value
 
         new_rows = []
         for index, row in enumerate(data):
-            new_rows.append(row + [sources[index]["identifiers"][identifier_index]])
+            group_tag_value = None
+            source = sources[index]
+            tags = source["tags"]
+            for tag in sorted(tags):
+                if tag.startswith(tag_prefix):
+                    group_tag_value = tag[len(tag_prefix):]
+                    break
+
+            if group_tag_value is None:
+                group_tag_value = rule.get("default_value", "")
+
+            new_rows.append(row + [group_tag_value])
 
         return new_rows, sources
 
@@ -296,7 +337,8 @@ class AddFilterEmptyRuleDefinition(BaseRuleDefinition):
         target_column = rule["target_column"]
 
         def _filter(index):
-            return not invert if len(data[target_column]) == 0 else invert
+            non_empty = len(data[index][target_column]) != 0
+            return not invert if non_empty else invert
 
         return _filter_index(_filter, data), _filter_index(_filter, sources)
 
@@ -372,21 +414,13 @@ class SortRuleDefinition(BaseRuleDefinition):
 
         sortable = zip(data, sources)
 
-        def sort_func(a, b):
-            a_val = a[0][target]
-            b_val = b[0][target]
+        def sort_func(item):
+            a_val = item[0][target]
             if numeric:
                 a_val = float(a_val)
-                b_val = float(b_val)
+            return a_val
 
-            if a_val < b_val:
-                return -1
-            elif b_val < a_val:
-                return 1
-            else:
-                return 0
-
-        sorted_data = sorted(sortable, sort_func)
+        sorted_data = sorted(sortable, key=sort_func)
 
         new_data = []
         new_sources = []
@@ -460,7 +494,7 @@ def flat_map(f, items):
 class RuleSet(object):
 
     def __init__(self, rule_set_as_dict):
-        self.raw_rules = rule_set_as_dict["rules"]
+        self.raw_rules = strip_control_characters_nested(rule_set_as_dict["rules"])
         self.raw_mapping = rule_set_as_dict.get("mapping", [])
 
     @property
@@ -532,6 +566,7 @@ class RuleSet(object):
 
 RULES_DEFINITION_CLASSES = [
     AddColumnMetadataRuleDefinition,
+    AddColumnGroupTagValueRuleDefinition,
     AddColumnConcatenateRuleDefinition,
     AddColumnBasenameRuleDefinition,
     AddColumnRegexRuleDefinition,

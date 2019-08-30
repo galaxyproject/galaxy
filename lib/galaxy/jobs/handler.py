@@ -11,6 +11,7 @@ from six.moves.queue import (
     Empty,
     Queue
 )
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql.expression import (
     and_,
     func,
@@ -27,8 +28,10 @@ from galaxy.jobs import (
     TaskWrapper
 )
 from galaxy.jobs.mapper import JobNotReadyException
+from galaxy.util import unicodify
 from galaxy.util.monitors import Monitors
-from galaxy.web.stack.message import JobHandlerMessage
+from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS
+from galaxy.web_stack.message import JobHandlerMessage
 
 log = logging.getLogger(__name__)
 
@@ -88,6 +91,38 @@ class JobHandlerQueue(Monitors):
         self.job_wrappers = {}
         name = "JobHandlerQueue.monitor_thread"
         self._init_monitor_thread(name, target=self.__monitor, config=app.config)
+        self.__grab_query = None
+        self.__grab_conn_opts = {'autocommit': False}
+        self.__initialize_job_grabbing()
+
+    def __initialize_job_grabbing(self):
+        grabbable_methods = set([
+            HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION,
+            HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED,
+        ])
+        try:
+            method = [m for m in self.app.job_config.handler_assignment_methods if m in grabbable_methods][0]
+        except IndexError:
+            return
+        subq = select([model.Job.id]) \
+            .where(and_(
+                model.Job.table.c.handler.in_(self.app.job_config.self_handler_tags),
+                model.Job.table.c.state == model.Job.states.NEW)) \
+            .order_by(model.Job.table.c.id)
+        if self.app.job_config.handler_max_grab:
+            subq = subq.limit(self.app.job_config.handler_max_grab)
+        if method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
+            subq = subq.with_for_update(skip_locked=True)
+        self.__grab_query = model.Job.table.update() \
+            .returning(model.Job.table.c.id) \
+            .where(model.Job.table.c.id.in_(subq)) \
+            .values(handler=self.app.config.server_name)
+        if method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
+            self.__grab_conn_opts['isolation_level'] = 'SERIALIZABLE'
+        log.info(
+            "Handler job grabber initialized with '%s' assignment method for handler '%s', tag(s): %s", method,
+            self.app.config.server_name, ', '.join([str(x) for x in self.app.job_config.handler_tags])
+        )
 
     def start(self):
         """
@@ -109,19 +144,6 @@ class JobHandlerQueue(Monitors):
     def job_pair_for_id(self, id):
         job = self.sa_session.query(model.Job).get(id)
         return job, self.job_wrapper(job, use_persisted_destination=True)
-
-    def __write_registry_file_if_absent(self, job):
-        # TODO: remove this and the one place it is called in late 2018, this
-        # hack attempts to minimize the job failures due to upgrades from 17.05
-        # Galaxies.
-        job_wrapper = self.job_wrapper(job)
-        cwd = job_wrapper.working_directory
-        datatypes_config = os.path.join(cwd, "registry.xml")
-        if not os.path.exists(datatypes_config):
-            try:
-                self.app.datatypes_registry.to_xml_file(path=datatypes_config)
-            except OSError:
-                pass
 
     def __check_jobs_at_startup(self):
         """
@@ -150,7 +172,6 @@ class JobHandlerQueue(Monitors):
                         (model.Job.handler == self.app.config.server_name)).all()
 
         for job in jobs_at_startup:
-            self.__write_registry_file_if_absent(job)
             if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
                 log.warning("(%s) Tool '%s' removed from tool config, unable to recover job" % (job.id, job.tool_id))
                 self.job_wrapper(job).fail('This tool was disabled before the job completed.  Please contact your Galaxy administrator.')
@@ -221,14 +242,43 @@ class JobHandlerQueue(Monitors):
 
     def __monitor_step(self):
         """
-        Called repeatedly by `monitor` to process waiting jobs. Gets any new
-        jobs (either from the database or from its own queue), then iterates
-        over all new and waiting jobs to check the state of the jobs each
-        depends on. If the job has dependencies that have not finished, it
-        goes to the waiting queue. If the job has dependencies with errors,
-        it is marked as having errors and removed from the queue. If the job
-        belongs to an inactive user it is ignored.
-        Otherwise, the job is dispatched.
+        Called repeatedly by `monitor` to process waiting jobs.
+        """
+        if self.__grab_query is not None:
+            self.__grab_unhandled_jobs()
+        self.__handle_waiting_jobs()
+
+    def __grab_unhandled_jobs(self):
+        """
+        Attempts to "grab" jobs (assign unassigned jobs to itself) using DB serialization methods, if enabled. This
+        simply sets `Job.handler` to the current server name, which causes the job to be picked up by
+        `__handle_waiting_jobs()`.
+        """
+        # an excellent discussion on PostgreSQL concurrency safety:
+        # https://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/
+        self.sa_session.expunge_all()
+        conn = self.sa_session.connection(execution_options=self.__grab_conn_opts)
+        with conn.begin() as trans:
+            try:
+                rows = conn.execute(self.__grab_query).fetchall()
+                if rows:
+                    log.debug('Grabbed job(s): %s', ', '.join([str(row[0]) for row in rows]))
+                    trans.commit()
+                else:
+                    trans.rollback()
+            except OperationalError as e:
+                # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
+                # and should have attribute `code`. Other engines should just report the message and move on.
+                if int(getattr(e.orig, 'pgcode', -1)) != 40001:
+                    log.debug('Grabbing job failed (serialization failures are ok): %s', unicodify(e))
+                trans.rollback()
+
+    def __handle_waiting_jobs(self):
+        """
+        Gets any new jobs (either from the database or from its own queue), then iterates over all new and waiting jobs
+        to check the state of the jobs each depends on. If the job has dependencies that have not finished, it goes to
+        the waiting queue. If the job has dependencies with errors, it is marked as having errors and removed from the
+        queue. If the job belongs to an inactive user it is ignored.  Otherwise, the job is dispatched.
         """
         # Pull all new jobs from the queue at once
         jobs_to_check = []
@@ -247,10 +297,8 @@ class JobHandlerQueue(Monitors):
                 .join(model.JobToInputLibraryDatasetAssociation) \
                 .join(model.LibraryDatasetDatasetAssociation) \
                 .join(model.Dataset) \
-                .filter(and_((model.Job.state == model.Job.states.NEW),
-                        or_((model.LibraryDatasetDatasetAssociation._state != null()),
-                            (model.Dataset.state.in_(model.Dataset.non_ready_states)),
-                            ))).subquery()
+                .filter(and_(model.Job.state == model.Job.states.NEW,
+                             model.Dataset.state.in_(model.Dataset.non_ready_states))).subquery()
             if self.app.config.user_activation_on:
                 jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
                     .outerjoin(model.User) \
@@ -313,8 +361,10 @@ class JobHandlerQueue(Monitors):
                     job.text_metrics = copied_from_job.text_metrics
                     job.dependencies = copied_from_job.dependencies
                     job.state = copied_from_job.state
-                    job.stderr = copied_from_job.stderr
-                    job.stdout = copied_from_job.stdout
+                    job.job_stderr = copied_from_job.job_stderr
+                    job.job_stdout = copied_from_job.job_stdout
+                    job.tool_stderr = copied_from_job.tool_stderr
+                    job.tool_stdout = copied_from_job.tool_stdout
                     job.command_line = copied_from_job.command_line
                     job.traceback = copied_from_job.traceback
                     job.tool_version = copied_from_job.tool_version
@@ -385,7 +435,7 @@ class JobHandlerQueue(Monitors):
                 model.Dataset.deleted,
                 model.Dataset.purged,
                 model.Dataset.state,
-            ).join(job_to_input) \
+            ).join(job_to_input.job) \
                 .join(input_association) \
                 .join(model.Dataset) \
                 .filter(model.Job.id.in_(job_ids_to_check)) \
@@ -402,24 +452,32 @@ class JobHandlerQueue(Monitors):
             if hda_deleted or dataset_deleted:
                 if dataset_purged:
                     # If the dataset has been purged we can't resume the job by undeleting the input
-                    jobs_to_fail[job_id].append("Input dataset '%s' was deleted before the job started" % (hda_name))
+                    jobs_to_fail[job_id].append("Input dataset '%s' was deleted before the job started" % hda_name)
                 else:
-                    jobs_to_pause[job_id].append("Input dataset '%s' was deleted before the job started" % (hda_name))
+                    jobs_to_pause[job_id].append("Input dataset '%s' was deleted before the job started" % hda_name)
             elif hda_state == model.HistoryDatasetAssociation.states.FAILED_METADATA:
-                jobs_to_pause[job_id].append("Input dataset '%s' failed to properly set metadata" % (hda_name))
+                jobs_to_pause[job_id].append("Input dataset '%s' failed to properly set metadata" % hda_name)
             elif dataset_state == model.Dataset.states.PAUSED:
-                jobs_to_pause[job_id].append("Input dataset '%s' was paused before the job started" % (hda_name))
+                jobs_to_pause[job_id].append("Input dataset '%s' was paused before the job started" % hda_name)
+            elif dataset_state == model.Dataset.states.ERROR:
+                jobs_to_pause[job_id].append("Input dataset '%s' is in error state" % hda_name)
             elif dataset_state != model.Dataset.states.OK:
                 jobs_to_ignore[job_id].append("Input dataset '%s' is in %s state" % (hda_name, dataset_state))
         for job_id in sorted(jobs_to_pause):
             pause_message = ", ".join(jobs_to_pause[job_id])
             pause_message = "%s. To resume this job fix the input dataset(s)." % pause_message
             job, job_wrapper = self.job_pair_for_id(job_id)
-            job_wrapper.pause(job=job, message=pause_message)
+            try:
+                job_wrapper.pause(job=job, message=pause_message)
+            except Exception:
+                log.exception("(%s) Caught exception while attempting to pause job.", job_id)
         for job_id in sorted(jobs_to_fail):
             fail_message = ", ".join(jobs_to_fail[job_id])
             job, job_wrapper = self.job_pair_for_id(job_id)
-            job_wrapper.fail(fail_message)
+            try:
+                job_wrapper.fail(fail_message)
+            except Exception:
+                log.exception("(%s) Caught exception while attempting to fail job.", job_id)
         jobs_to_ignore.update(jobs_to_pause)
         jobs_to_ignore.update(jobs_to_fail)
         return [j for j in jobs if j.id not in jobs_to_ignore]
@@ -457,6 +515,10 @@ class JobHandlerQueue(Monitors):
         if state == JOB_READY:
             # PASS.  increase usage by one job (if caching) so that multiple jobs aren't dispatched on this queue iteration
             self.increase_running_job_count(job.user_id, job_destination.id)
+            for job_to_input_dataset_association in job.input_datasets:
+                # We record the input dataset version, now that we know the inputs are ready
+                if job_to_input_dataset_association.dataset:
+                    job_to_input_dataset_association.dataset_version = job_to_input_dataset_association.dataset.version
         return state
 
     def __verify_job_ready(self, job, job_wrapper):
@@ -498,7 +560,7 @@ class JobHandlerQueue(Monitors):
                     usage = self.app.quota_agent.get_usage(user=job.user, history=job.history)
                     if usage > quota:
                         return JOB_USER_OVER_QUOTA, job_destination
-                except AssertionError as e:
+                except AssertionError:
                     pass  # No history, should not happen with an anon user
         # Check total walltime limits
         if (state == JOB_READY and
@@ -747,14 +809,6 @@ class JobHandlerQueue(Monitors):
         if not self.track_jobs_in_database:
             self.queue.put((job_id, tool_id))
             self.sleeper.wake()
-        else:
-            # Workflow invocations farmed out to workers will submit jobs through here. If a handler is unassigned, we
-            # will submit for one, or else claim it ourself. TODO: This should be moved to a higher level as it's now
-            # implemented here and in MessageJobQueue
-            job = self.sa_session.query(model.Job).get(job_id)
-            if job.handler is None and self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS):
-                msg = JobHandlerMessage(task='setup', job_id=job_id)
-                self.app.application_stack.send_message(self.app.application_stack.pools.JOB_HANDLERS, msg)
 
     def shutdown(self):
         """Attempts to gracefully shut down the worker thread"""
@@ -832,7 +886,10 @@ class JobHandlerStopQueue(Monitors):
                                      .filter((model.Job.state == model.Job.states.DELETED_NEW) &
                                              (model.Job.handler == self.app.config.server_name)).all()
             for job in newly_deleted_jobs:
-                jobs_to_check.append((job, job.stderr))
+                # job.stderr is always a string (job.job_stderr + job.tool_stderr, possibly `''`),
+                # while any `not None` message returned in self.queue.get_nowait() is interpreted
+                # as an error, so here we use None if job.stderr is false-y
+                jobs_to_check.append((job, job.stderr or None))
         # Also pull from the queue (in the case of Administrative stopped jobs)
         try:
             while 1:
@@ -862,7 +919,8 @@ class JobHandlerStopQueue(Monitors):
             self.sa_session.flush()
             if job.job_runner_name is not None:
                 # tell the dispatcher to stop the job
-                self.dispatcher.stop(job)
+                job_wrapper = JobWrapper(job, self, use_persisted_destination=True)
+                self.dispatcher.stop(job, job_wrapper)
 
     def put(self, job_id, error_msg=None):
         if not self.app.config.track_jobs_in_database:
@@ -926,7 +984,7 @@ class DefaultJobDispatcher(object):
             log.error('put(): (%s) Invalid job runner: %s' % (job_wrapper.job_id, runner_name))
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
-    def stop(self, job):
+    def stop(self, job, job_wrapper):
         """
         Stop the given job. The input variable job may be either a Job or a Task.
         """
@@ -935,33 +993,22 @@ class DefaultJobDispatcher(object):
         # Note that Jobs and Tasks have runner_names, which are distinct from
         # the job_runner_name and task_runner_name.
 
-        if (isinstance(job, model.Job)):
-            log.debug("Stopping job %d:", job.get_id())
-        elif(isinstance(job, model.Task)):
-            log.debug("Stopping job %d, task %d"
-                      % (job.get_job().get_id(), job.get_id()))
-        else:
-            log.debug("Unknown job to stop")
-
         # The runner name is not set until the job has started.
         # If we're stopping a task, then the runner_name may be
         # None, in which case it hasn't been scheduled.
-        if (job.get_job_runner_name() is not None):
-            runner_name = (job.get_job_runner_name().split(":", 1))[0]
-            if (isinstance(job, model.Job)):
-                log.debug("stopping job %d in %s runner" % (job.get_id(), runner_name))
-            elif (isinstance(job, model.Task)):
-                log.debug("Stopping job %d, task %d in %s runner"
-                          % (job.get_job().get_id(), job.get_id(), runner_name))
+        job_runner_name = job.get_job_runner_name()
+        if job_runner_name is not None:
+            runner_name = job_runner_name.split(":", 1)[0]
+            log.debug("Stopping job %s in %s runner" % (job_wrapper.get_id_tag(), runner_name))
             try:
-                self.job_runners[runner_name].stop_job(job)
+                self.job_runners[runner_name].stop_job(job_wrapper)
             except KeyError:
-                log.error('stop(): (%s) Invalid job runner: %s' % (job.get_id(), runner_name))
+                log.error('stop(): (%s) Invalid job runner: %s' % (job_wrapper.get_id_tag(), runner_name))
                 # Job and output dataset states have already been updated, so nothing is done here.
 
     def recover(self, job, job_wrapper):
         runner_name = (job.job_runner_name.split(":", 1))[0]
-        log.debug("recovering job %d in %s runner" % (job.get_id(), runner_name))
+        log.debug("recovering job %d in %s runner" % (job.id, runner_name))
         try:
             self.job_runners[runner_name].recover(job, job_wrapper)
         except KeyError:
@@ -969,8 +1016,12 @@ class DefaultJobDispatcher(object):
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
     def shutdown(self):
-        for runner in self.job_runners.values():
+        failures = []
+        for name, runner in self.job_runners.items():
             try:
                 runner.shutdown()
             except Exception:
-                raise Exception("Failed to shutdown runner %s" % runner)
+                failures.append(name)
+                log.exception("Failed to shutdown runner %s", name)
+        if failures:
+            raise Exception("Failed to shutdown runners: %s" % ', '.join(failures))

@@ -22,6 +22,8 @@
       <filter>filter_text_1 == "foo"</filter>
     </data>
     <data format="txt" from_work_dir="3" name="out_3">
+      <!-- always produce out_3 -->
+      <filter>input_1.ext != 'xyz'</filter>
     </data>
   </outputs>
   <tests>

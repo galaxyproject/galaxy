@@ -2,8 +2,9 @@
  *  The charts editor holds the tabs for selecting chart types, chart configuration
  *  and data group selections.
  */
+import $ from "jquery";
+import Backbone from "backbone";
 import Ui from "mvc/ui/ui-misc";
-import Utils from "utils/utils";
 import Tabs from "mvc/ui/ui-tabs";
 import Groups from "mvc/visualization/chart/views/groups";
 import Settings from "mvc/visualization/chart/views/settings";
@@ -25,11 +26,11 @@ export default Backbone.View.extend({
             icon: "fa fa-gear",
             tooltip: "Change settings.",
             $el: $("<div/>")
-                .append(new Ui.Label({ title: "Provide a title:" }).$el)
+                .append("<label><b>Provide a title</b><label>")
                 .append(this.title.$el)
                 .append(
                     $("<div/>")
-                        .addClass("ui-form-info ui-margin-bottom")
+                        .addClass("form-text text-muted")
                         .html("This title will appear in the list of 'Saved Visualizations'.")
                 )
                 .append(new Settings(this.app).$el)

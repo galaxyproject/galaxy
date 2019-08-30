@@ -6,6 +6,7 @@ from json import dumps
 
 from six import text_type
 
+from galaxy.exceptions import UserActivationRequiredException
 from galaxy.util import bunch
 
 
@@ -119,11 +120,13 @@ class ProvidesUserContext(object):
             roles = []
         return roles
 
+    @property
     def user_is_admin(self):
         if self.api_inherit_admin:
             return True
         return self.user and self.user.email in self.app.config.admin_users_list
 
+    @property
     def user_can_do_run_as(self):
         run_as_users = [user for user in self.app.config.get("api_allow_run_as", "").split(",") if user]
         if not run_as_users:
@@ -132,6 +135,15 @@ class ProvidesUserContext(object):
         # Can do if explicitly in list or master_api_key supplied.
         can_do_run_as = user_in_run_as_users or self.api_inherit_admin
         return can_do_run_as
+
+    @property
+    def user_is_active(self):
+        return not self.app.config.user_activation_on or self.user is None or self.user.active
+
+    def check_user_activation(self):
+        """If user activation is enabled and the user is not activated throw an exception."""
+        if not self.user_is_active:
+            raise UserActivationRequiredException()
 
     @property
     def user_ftp_dir(self):

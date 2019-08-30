@@ -1,3 +1,8 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import levenshteinDistance from "utils/levenshtein";
 import naturalSort from "utils/natural-sort";
 import baseCreator from "mvc/collection/base-creator";
@@ -554,6 +559,15 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                 revName.replace(new RegExp(this.filters[1]), "")
             );
 
+            /** remove url prefix if files were uploaded by url */
+            var lastSlashIndex = lcs.lastIndexOf("/");
+            if (lastSlashIndex > 0) {
+                var urlprefix = lcs.slice(0, lastSlashIndex + 1);
+                lcs = lcs.replace(urlprefix, "");
+                fwdName = fwdName.replace(extension, "");
+                revName = revName.replace(extension, "");
+            }
+
             if (removeExtensions) {
                 var lastDotIndex = lcs.lastIndexOf(".");
                 if (lastDotIndex > 0) {
@@ -620,24 +634,24 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
         createList: function(name) {
             var self = this;
 
-            var url = `${Galaxy.root}api/histories/${this.historyId}/contents/dataset_collections`;
+            var url = `${getAppRoot()}api/histories/${this.historyId}/contents/dataset_collections`;
 
             var ajaxData = {
                 type: "dataset_collection",
                 collection_type: "list:paired",
                 hide_source_items: self.hideOriginals || false,
+                copy_elements: self.copyElements,
                 name: _.escape(name || self.$(".collection-name").val()),
                 element_identifiers: self.paired.map(pair => self._pairToJSON(pair))
             };
             //this.debug( JSON.stringify( ajaxData ) );
             self.blocking = true;
-            return jQuery
-                .ajax(url, {
-                    type: "POST",
-                    contentType: "application/json",
-                    dataType: "json",
-                    data: JSON.stringify(ajaxData)
-                })
+            return $.ajax(url, {
+                type: "POST",
+                contentType: "application/json",
+                dataType: "json",
+                data: JSON.stringify(ajaxData)
+            })
                 .always(() => {
                     self.blocking = false;
                 })
@@ -866,8 +880,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             this.paired.forEach((pair, i) => {
                 //TODO: cache these?
                 var pairView = new PairView({ pair: pair });
-                self
-                    .$(".paired-columns .column-datasets")
+                self.$(".paired-columns .column-datasets")
                     .append(pairView.render().$el)
                     .append(
                         [
@@ -1241,8 +1254,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                 var $startTarget = $(ev.target).addClass("selected");
 
                 var moveListener = ev => {
-                    self
-                        .$(ev.target)
+                    self.$(ev.target)
                         .filter(".dataset")
                         .addClass("selected");
                 };
@@ -1479,8 +1491,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             //this.debug( '_pairDragstart', ev, pair )
             // auto select the pair causing the event and move all selected
             pair.$el.addClass("selected");
-            var $selected = this.$(".paired-columns .dataset.selected");
-            this.$dragging = $selected;
+            this.$dragging = this.$(".paired-columns .dataset.selected");
         },
         /** drag communication with pair sub-views: dragend - remove the placeholder */
         _pairDragend: function(ev, pair) {
@@ -1534,11 +1545,11 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             header: _.template(
                 [
                     '<div class="main-help well clear">',
-                    '<a class="more-help" href="javascript:void(0);">',
+                    '<a class="more-help" href="javascript:void(0);" role="button">',
                     _l("More help"),
                     "</a>",
                     '<div class="help-content">',
-                    '<a class="less-help" href="javascript:void(0);">',
+                    '<a class="less-help" href="javascript:void(0);" role="button">',
                     _l("Less"),
                     "</a>",
                     "</div>",
@@ -1557,7 +1568,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     "</span>",
                     '<span class="title-info unpaired-info"></span>',
                     "</div>",
-                    '<div class="unpaired-filter forward-unpaired-filter float-left">',
+                    '<div class="unpaired-filter forward-unpaired-filter float-left search-input">',
                     '<input class="search-query" placeholder="',
                     _l("Filter this list"),
                     '" />',
@@ -1566,13 +1577,13 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     "</div>",
                     '<div class="paired-column flex-column no-flex column">',
                     '<div class="column-header">',
-                    '<a class="choose-filters-link" href="javascript:void(0)">',
+                    '<a class="choose-filters-link" href="javascript:void(0)" role="button">',
                     _l("Choose filters"),
                     "</a>",
-                    '<a class="clear-filters-link" href="javascript:void(0);">',
+                    '<a class="clear-filters-link" href="javascript:void(0);" role="button">',
                     _l("Clear filters"),
                     "</a><br />",
-                    '<a class="autopair-link" href="javascript:void(0);">',
+                    '<a class="autopair-link" href="javascript:void(0);" role="button">',
                     _l("Auto-pair"),
                     "</a>",
                     "</div>",
@@ -1585,7 +1596,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     "</span>",
                     '<span class="title-info unpaired-info"></span>',
                     "</div>",
-                    '<div class="unpaired-filter reverse-unpaired-filter float-left">',
+                    '<div class="unpaired-filter reverse-unpaired-filter float-left search-input">',
                     '<input class="search-query" placeholder="',
                     _l("Filter this list"),
                     '" />',
@@ -1619,7 +1630,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     '<div class="column-title paired-column-title">',
                     '<span class="title"></span>',
                     "</div>",
-                    '<a class="unpair-all-link" href="javascript:void(0);">',
+                    '<a class="unpair-all-link" href="javascript:void(0);" role="button">',
                     _l("Unpair all"),
                     "</a>",
                     "</div>",
@@ -1667,14 +1678,14 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     _l("Create a different kind of collection"),
                     ' <span class="caret"></span>',
                     "</button>",
-                    '<ul class="dropdown-menu" role="menu">',
-                    '<li><a href="#">',
+                    '<div class="dropdown-menu" role="menu">',
+                    '<a class="dropdown-item" href="javascript:void(0)" role="button">',
                     _l("Create a <i>single</i> pair"),
-                    "</a></li>",
-                    '<li><a href="#">',
+                    "</a>",
+                    '<a class="dropdown-item" href="javascript:void(0)" role="button">',
                     _l("Create a list of <i>unpaired</i> datasets"),
-                    "</a></li>",
-                    "</ul>",
+                    "</a>",
+                    "</div>",
                     "</div>",
                     "</div>",
 
@@ -1783,7 +1794,8 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
 //=============================================================================
 /** a modal version of the paired collection creator */
 var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datasets, options) {
-    var deferred = jQuery.Deferred();
+    var Galaxy = getGalaxyInstance();
+    var deferred = $.Deferred();
     var creator;
 
     options = _.defaults(options || {}, {
@@ -1799,7 +1811,7 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datase
         title: _l("Create a collection of paired datasets")
     });
 
-    if (!window.Galaxy || !Galaxy.modal) {
+    if (!Galaxy || !Galaxy.modal) {
         throw new Error("Galaxy or Galaxy.modal not found");
     }
 
@@ -1824,7 +1836,8 @@ function createListOfPairsCollection(collection, defaultHideSourceItems) {
     //TODO: validate elements
     return pairedCollectionCreatorModal(elements, {
         historyId: collection.historyId,
-        defaultHideSourceItems: defaultHideSourceItems
+        defaultHideSourceItems: defaultHideSourceItems,
+        copyElements: !defaultHideSourceItems
     });
 }
 

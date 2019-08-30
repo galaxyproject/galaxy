@@ -2,7 +2,7 @@
 
 Regular buttons
 
-```
+```vue
 <div>
    <button type="button" class="btn btn-primary">Primary</button>
    <button type="button" class="btn btn-secondary">Secondary</button>
@@ -16,7 +16,7 @@ Regular buttons
 
 Disabled
 
-```
+```vue
 <div>
    <button type="button" class="btn btn-primary disabled">Primary</button>
    <button type="button" class="btn btn-secondary disabled">Secondary</button>
@@ -28,7 +28,7 @@ Disabled
 </div>
 ```
 
-```
+```vue
 <div>
    <button type="button" class="btn btn-outline-primary">Primary</button>
    <button type="button" class="btn btn-outline-secondary">Secondary</button>
@@ -39,60 +39,59 @@ Disabled
 </div>
 ```
 
-```
+```vue
  <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
    <button type="button" class="btn btn-primary">Primary</button>
    <div class="btn-group" role="group">
      <button id="btnGroupDrop1" type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
      <div class="dropdown-menu" aria-labelledby="btnGroupDrop1">
-       <a class="dropdown-item" href="#">Dropdown link</a>
-       <a class="dropdown-item" href="#">Dropdown link</a>
+       <a class="dropdown-item" href="javascript:void(0)">Dropdown link</a>
+       <a class="dropdown-item" href="javascript:void(0)">Dropdown link</a>
      </div>
    </div>
  </div>
 ```
 
-```
+```vue
  <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
    <button type="button" class="btn btn-success">Success</button>
    <div class="btn-group" role="group">
      <button id="btnGroupDrop2" type="button" class="btn btn-success dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
      <div class="dropdown-menu" aria-labelledby="btnGroupDrop2">
-       <a class="dropdown-item" href="#">Dropdown link</a>
-       <a class="dropdown-item" href="#">Dropdown link</a>
+       <a class="dropdown-item" href="javascript:void(0)">Dropdown link</a>
+       <a class="dropdown-item" href="javascript:void(0)">Dropdown link</a>
      </div>
    </div>
  </div>
 ```
 
-```
+```vue
  <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
    <button type="button" class="btn btn-info">Info</button>
    <div class="btn-group" role="group">
      <button id="btnGroupDrop3" type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
      <div class="dropdown-menu" aria-labelledby="btnGroupDrop3">
-       <a class="dropdown-item" href="#">Dropdown link</a>
-       <a class="dropdown-item" href="#">Dropdown link</a>
+       <a class="dropdown-item" href="javascript:void(0)">Dropdown link</a>
+       <a class="dropdown-item" href="javascript:void(0)">Dropdown link</a>
      </div>
    </div>
  </div>
 ```
 
-```
+```vue
    <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
      <button type="button" class="btn btn-danger">Danger</button>
      <div class="btn-group" role="group">
        <button id="btnGroupDrop4" type="button" class="btn btn-danger dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"></button>
        <div class="dropdown-menu" aria-labelledby="btnGroupDrop4">
-         <a class="dropdown-item" href="#">Dropdown link</a>
-         <a class="dropdown-item" href="#">Dropdown link</a>
+         <a class="dropdown-item" href="javascript:void(0)">Dropdown link</a>
+         <a class="dropdown-item" href="javascript:void(0)">Dropdown link</a>
        </div>
      </div>
    </div>
- </div>
 ```
 
-```
+```vue
  <div>
    <button type="button" class="btn btn-primary btn-lg">Large button</button>
    <button type="button" class="btn btn-primary">Default button</button>
@@ -102,41 +101,41 @@ Disabled
 
 ## Alerts
 
-```
+```vue
 <div class="alert alert-dismissable alert-warning">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
   <h4>Warning!</h4>
-  <p>Best check yo self, you're not looking too good. Nulla vitae elit libero, a pharetra augue. Praesent commodo cursus magna, <a href="#" class="alert-link">vel scelerisque nisl consectetur et</a>.</p>
+  <p>Best check yo self, you're not looking too good. Nulla vitae elit libero, a pharetra augue. Praesent commodo cursus magna, <a href="javascript:void(0)" class="alert-link">vel scelerisque nisl consectetur et</a>.</p>
 </div>
 ```
 
-```
+```vue
 <div class="alert alert-dismissable alert-danger">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <strong>Oh snap!</strong> <a href="#" class="alert-link">Change a few things up</a> and try submitting again.
+  <strong>Oh snap!</strong> <a href="javascript:void(0)" class="alert-link">Change a few things up</a> and try submitting again.
 </div>
 ```
 
-```
+```vue
 <div class="alert alert-dismissable alert-success">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <strong>Well done!</strong> You successfully read <a href="#" class="alert-link">this important alert message</a>.
+  <strong>Well done!</strong> You successfully read <a href="javascript:void(0)" class="alert-link">this important alert message</a>.
 </div>
 ```
 
-```
+```vue
 <div class="alert alert-dismissable alert-info">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <strong>Heads up!</strong> This <a href="#" class="alert-link">alert needs your attention</a>, but it's not super important.
+  <strong>Heads up!</strong> This <a href="javascript:void(0)" class="alert-link">alert needs your attention</a>, but it's not super important.
 </div>
 ```
 
 ## Badges
 
-```
+```vue
 <div>
-  <span class="badge badge-default">Default</span>
   <span class="badge badge-primary">Primary</span>
+  <span class="badge badge-secondary">Secondary</span>
   <span class="badge badge-success">Success</span>
   <span class="badge badge-warning">Warning</span>
   <span class="badge badge-danger">Danger</span>
@@ -144,19 +143,19 @@ Disabled
 </div>
 ```
 
-```
+```vue
 <div class="">
   <ul class="nav nav-pills">
-    <li class="active"><a href="#">Home <span class="badge">42</span></a></li>
-    <li><a href="#">Profile <span class="badge-pill"></span></a></li>
-    <li><a href="#">Messages <span class="badge-pill">3</span></a></li>
+    <li class="active"><a href="javascript:void(0)">Home <span class="badge">42</span></a></li>
+    <li><a href="javascript:void(0)">Profile <span class="badge-pill"></span></a></li>
+    <li><a href="javascript:void(0)">Messages <span class="badge-pill">3</span></a></li>
   </ul>
 </div>
 ```
 
 ## Tables
 
-```
+```vue
 <div class="">
   <table class="table table-striped table-bordered table-hover">
     <thead>
@@ -217,7 +216,7 @@ Disabled
 
 ## Cards
 
-```
+```vue
 <div class="row">
   <div class="col-lg-4">
     <div class="bs-component">
@@ -358,8 +357,8 @@ Disabled
           <li class="list-group-item">Vestibulum at eros</li>
         </ul>
         <div class="card-body">
-          <a href="#" class="card-link">Card link</a>
-          <a href="#" class="card-link">Another link</a>
+          <a href="javascript:void(0)" class="card-link">Card link</a>
+          <a href="javascript:void(0)" class="card-link">Another link</a>
         </div>
         <div class="card-footer text-muted">
           2 days ago
@@ -370,8 +369,8 @@ Disabled
           <h4 class="card-title">Card title</h4>
           <h6 class="card-subtitle mb-2 text-muted">Card subtitle</h6>
           <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-          <a href="#" class="card-link">Card link</a>
-          <a href="#" class="card-link">Another link</a>
+          <a href="javascript:void(0)" class="card-link">Card link</a>
+          <a href="javascript:void(0)" class="card-link">Another link</a>
         </div>
       </div>
     </div>

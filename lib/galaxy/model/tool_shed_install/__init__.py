@@ -1,12 +1,10 @@
 import logging
 import os
 
-from six.moves.urllib.parse import urljoin
-
 from galaxy.util import asbool
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
-from tool_shed.util import common_util
+from galaxy.util.tool_shed import common_util
 
 log = logging.getLogger(__name__)
 
@@ -79,13 +77,7 @@ class ToolShedRepository(object):
         return self.deleted
 
     def get_sharable_url(self, app):
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, self.tool_shed)
-        if tool_shed_url:
-            # Append a slash to the tool shed URL, because urlparse.urljoin will eliminate
-            # the last part of a URL if it does not end with a forward slash.
-            tool_shed_url = '%s/' % tool_shed_url
-            return urljoin(tool_shed_url, 'view/%s/%s' % (self.owner, self.name))
-        return tool_shed_url
+        return common_util.get_tool_shed_repository_url(app, self.tool_shed, self.owner, self.name)
 
     def get_shed_config_filename(self):
         shed_config_filename = None
@@ -563,14 +555,14 @@ class ToolDependency(object):
 
     def installation_directory(self, app):
         if self.type == 'package':
-            return os.path.join(app.config.tool_dependency_dir,
+            return os.path.join(app.tool_dependency_dir,
                                 self.name,
                                 self.version,
                                 self.tool_shed_repository.owner,
                                 self.tool_shed_repository.name,
                                 self.tool_shed_repository.installed_changeset_revision)
         if self.type == 'set_environment':
-            return os.path.join(app.config.tool_dependency_dir,
+            return os.path.join(app.tool_dependency_dir,
                                 'environment_settings',
                                 self.name,
                                 self.tool_shed_repository.owner,

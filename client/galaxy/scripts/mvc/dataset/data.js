@@ -1,6 +1,11 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import mod_icon_btn from "mvc/ui/icon-button";
-// Additional dependencies: jQuery, underscore.
+import { getGalaxyInstance } from "app";
+
 /**
  * Dataset metedata.
  */
@@ -10,7 +15,7 @@ var DatasetMetadata = Backbone.Model.extend({});
  * A dataset. In Galaxy, datasets are associated with a history, so
  * this object is also known as a HistoryDatasetAssociation.
  */
-var Dataset = Backbone.Model.extend({
+export var Dataset = Backbone.Model.extend({
     defaults: {
         id: "",
         type: "",
@@ -58,13 +63,13 @@ var Dataset = Backbone.Model.extend({
         return this.attributes.metadata.get(attribute);
     },
 
-    urlRoot: `${Galaxy.root}api/datasets`
+    urlRoot: `${getAppRoot()}api/datasets`
 });
 
 /**
  * A tabular dataset. This object extends dataset to provide incremental chunked data.
  */
-var TabularDataset = Dataset.extend({
+export var TabularDataset = Dataset.extend({
     defaults: _.extend({}, Dataset.prototype.defaults, {
         chunk_url: null,
         first_data_chunk: null,
@@ -79,8 +84,8 @@ var TabularDataset = Dataset.extend({
         if (this.attributes.first_data_chunk) {
             this.attributes.offset = this.attributes.first_data_chunk.offset;
         }
-        this.attributes.chunk_url = `${Galaxy.root}dataset/display?dataset_id=${this.id}`;
-        this.attributes.url_viz = `${Galaxy.root}visualization`;
+        this.attributes.chunk_url = `${getAppRoot()}dataset/display?dataset_id=${this.id}`;
+        this.attributes.url_viz = `${getAppRoot()}visualization`;
     },
 
     /**
@@ -116,7 +121,7 @@ var TabularDataset = Dataset.extend({
     }
 });
 
-var DatasetCollection = Backbone.Collection.extend({
+export var DatasetCollection = Backbone.Collection.extend({
     model: Dataset
 });
 
@@ -262,8 +267,30 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             );
             row.append(this._renderCell(cells.slice(num_columns - 1).join("\t"), num_columns - 1));
         } else if (cells.length === 1) {
-            // Comment line, just return the one cell.
-            row.append(this._renderCell(line, 0, num_columns));
+            cells = line.split(",");
+            if (cells.length === num_columns) {
+                _.each(
+                    cells,
+                    function(cell_contents, index) {
+                        row.append(this._renderCell(cell_contents, index));
+                    },
+                    this
+                );
+            } else {
+                cells = line.split(" ");
+                if (cells.length === num_columns) {
+                    _.each(
+                        cells,
+                        function(cell_contents, index) {
+                            row.append(this._renderCell(cell_contents, index));
+                        },
+                        this
+                    );
+                } else {
+                    // Comment line, just return the one cell.
+                    row.append(this._renderCell(line, 0, num_columns));
+                }
+            }
         } else {
             // cells.length is greater than one, but less than num_columns.  Render cells and pad tds.
             // Possibly a SAM file or like format with optional metadata missing.
@@ -349,6 +376,11 @@ var EmbeddedTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
     }
 });
 
+function search(str, array) {
+    for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
+    return -1;
+}
+
 /** Button for trackster visualization */
 var TabularButtonTracksterView = Backbone.View.extend({
     // gene region columns
@@ -373,7 +405,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
     // backbone initialize
     initialize: function(options) {
         // check if environment is available
-        var Galaxy = parent.Galaxy;
+        const Galaxy = getGalaxyInstance();
 
         // link galaxy modal or create one
         if (Galaxy && Galaxy.modal) {
@@ -419,10 +451,6 @@ var TabularButtonTracksterView = Backbone.View.extend({
         // check for vcf-file format
         if (this.file_ext == "vcf") {
             // search array
-            function search(str, array) {
-                for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
-                return -1;
-            }
 
             // load
             this.col.chrom = search("Chrom", metadata.get("column_names"));
@@ -561,31 +589,11 @@ var TabularButtonTracksterView = Backbone.View.extend({
     }
 });
 
-// -- Utility functions. --
-
-/**
- * Create a model, attach it to a view, render view, and attach it to a parent element.
- */
-var createModelAndView = (model, view, model_config, parent_elt) => {
-    // Create model, view.
-    var a_view = new view({
-        model: new model(model_config)
-    });
-
-    // Render view and add to parent element.
-    a_view.render();
-    if (parent_elt) {
-        parent_elt.append(a_view.$el);
-    }
-
-    return a_view;
-};
-
 /**
  * Create a tabular dataset chunked view (and requisite tabular dataset model)
  * and appends to parent_elt.
  */
-var createTabularDatasetChunkedView = options => {
+export var createTabularDatasetChunkedView = options => {
     // If no model, create and set model from dataset config.
     if (!options.model) {
         options.model = new TabularDataset(options.dataset_config);
@@ -614,12 +622,4 @@ var createTabularDatasetChunkedView = options => {
     }
 
     return view;
-};
-
-export default {
-    Dataset: Dataset,
-    TabularDataset: TabularDataset,
-    DatasetCollection: DatasetCollection,
-    TabularDatasetChunkedView: TabularDatasetChunkedView,
-    createTabularDatasetChunkedView: createTabularDatasetChunkedView
 };

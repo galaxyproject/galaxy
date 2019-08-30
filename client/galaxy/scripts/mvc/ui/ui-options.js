@@ -1,10 +1,9 @@
 /** Base class for options based ui elements **/
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import _ from "underscore";
 import Utils from "utils/utils";
 import Buttons from "mvc/ui/ui-buttons";
-
-/* global $ */
 
 var Base = Backbone.View.extend({
     initialize: function(options) {
@@ -13,6 +12,7 @@ var Base = Backbone.View.extend({
             (options && options.model) ||
             new Backbone.Model({
                 visible: true,
+                cls: null,
                 data: [],
                 id: Utils.uid(),
                 error_text: "No options available.",
@@ -37,7 +37,8 @@ var Base = Backbone.View.extend({
             .empty()
             .removeClass()
             .addClass("ui-options")
-            .append((this.$message = $("<div/>")))
+            .addClass(this.model.get("cls"))
+            .append((this.$message = $("<div/>").addClass("mt-2")))
             .append((this.$menu = $("<div/>").addClass("ui-options-menu")))
             .append((this.$options = $(this._template())));
 
@@ -155,6 +156,16 @@ var Base = Backbone.View.extend({
         return this.$(".ui-option").length;
     },
 
+    /** Shows the options */
+    show: function() {
+        this.model.set("visible", true);
+    },
+
+    /** Hides the options */
+    hide: function() {
+        this.model.set("visible", false);
+    },
+
     /** Set value to dom */
     _setValue: function(new_value) {
         var self = this;
@@ -163,8 +174,7 @@ var Base = Backbone.View.extend({
             if (new_value !== null) {
                 var values = $.isArray(new_value) ? new_value : [new_value];
                 _.each(values, v => {
-                    self
-                        .$(`input[value="${v}"]`)
+                    self.$(`input[value="${v}"]`)
                         .first()
                         .prop("checked", true);
                 });
@@ -189,7 +199,7 @@ var Base = Backbone.View.extend({
         this.$message
             .show()
             .removeClass()
-            .addClass(`ui-message alert alert-${status}`)
+            .addClass(`alert alert-${status}`)
             .html(text);
     },
 
@@ -262,7 +272,7 @@ RadioButton.View = Base.extend({
 
     /** Template for a single option */
     _templateOption: function(pair) {
-        var $el = $("<label/>").addClass("btn btn-secondary");
+        var $el = $("<label/>").addClass("btn btn-secondary m-0");
         if (pair.icon) {
             $el.append(
                 $("<i/>")
@@ -272,11 +282,13 @@ RadioButton.View = Base.extend({
             );
         }
         $el.append(
-            $("<input/>").attr({
-                type: "radio",
-                name: this.model.id,
-                value: pair.value
-            })
+            $("<input/>")
+                .attr({
+                    type: "radio",
+                    name: this.model.id,
+                    value: pair.value
+                })
+                .hide()
         );
         if (pair.label) {
             $el.append(pair.label);

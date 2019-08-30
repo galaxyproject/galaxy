@@ -1,9 +1,9 @@
 /**
  *  Renders tabs e.g. used in the charts editor, behaves similar to repeat and section rendering
  */
-import * as Backbone from "backbone";
+import $ from "jquery";
+import Backbone from "backbone";
 
-/* global $ */
 export var View = Backbone.View.extend({
     initialize: function(options) {
         this.collection = new Backbone.Collection();
@@ -143,7 +143,7 @@ export var View = Backbone.View.extend({
     /** Main template */
     _template: function() {
         return $("<div/>")
-            .addClass("ui-tabs tabbable tabs-left")
+            .addClass("tabbable tabs-left")
             .append(
                 $("<ul/>")
                     .attr("style", "display: flex")
@@ -155,26 +155,28 @@ export var View = Backbone.View.extend({
     /** Tab template */
     _template_tab: function(options) {
         var $tmpl = $("<li/>")
-            .addClass("tab-element nav-item")
+            .addClass("nav-item")
             .attr("id", `tab-${options.id}`)
             .append(
                 $("<a/>")
                     .addClass("nav-link")
                     .attr("id", `tab-title-link-${options.id}`)
+                    .attr("href", "javascript:void(0);")
             );
         var $href = $tmpl.find("a");
         options.icon &&
             $href.append(
                 $("<i/>")
-                    .addClass("tab-icon fa")
+                    .addClass("fa")
                     .addClass(options.icon)
             );
-        $href.append(
-            $("<span/>")
-                .attr("id", `tab-title-text-${options.id}`)
-                .addClass("tab-title-text")
-                .append(options.title)
-        );
+        options.title &&
+            $href.append(
+                $("<span/>")
+                    .attr("id", `tab-title-text-${options.id}`)
+                    .addClass("tab-title-text ml-1")
+                    .append(options.title)
+            );
         return $tmpl;
     }
 });

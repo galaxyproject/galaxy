@@ -8,25 +8,16 @@ import math
 import random
 import string
 
-from six import iteritems, string_types, text_type
+from six import iteritems, string_types
 
-__all__ = ("safe_dumps", "json_fix", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response")
+from ..util import unicodify
+
+__all__ = ("safe_dumps", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response")
 
 log = logging.getLogger(__name__)
 
 to_json_string = json.dumps
 from_json_string = json.loads
-
-
-def json_fix(val):
-    if isinstance(val, list):
-        return [json_fix(v) for v in val]
-    elif isinstance(val, dict):
-        return dict([(json_fix(k), json_fix(v)) for (k, v) in iteritems(val)])
-    elif isinstance(val, text_type):
-        return val.encode("utf8")
-    else:
-        return val
 
 
 def swap_inf_nan(val):
@@ -106,7 +97,7 @@ def validate_jsonrpc_request(request, regular_methods, notification_methods):
         return False, request, jsonrpc_response(id=None,
                                                 error=dict(code=-32700,
                                                            message='Parse error',
-                                                           data=str(e)))
+                                                           data=unicodify(e)))
     try:
         assert 'jsonrpc' in request, \
             'This server requires JSON-RPC 2.0 and no "jsonrpc" member was sent with the Request object as per the JSON-RPC 2.0 Specification.'
@@ -117,10 +108,10 @@ def validate_jsonrpc_request(request, regular_methods, notification_methods):
         return False, request, jsonrpc_response(request=request,
                                                 error=dict(code=-32600,
                                                            message='Invalid Request',
-                                                           data=str(e)))
+                                                           data=unicodify(e)))
     try:
         assert request['method'] in (regular_methods + notification_methods)
-    except AssertionError as e:
+    except AssertionError:
         return False, request, jsonrpc_response(request=request,
                                                 error=dict(code=-32601,
                                                            message='Method not found',
@@ -132,7 +123,7 @@ def validate_jsonrpc_request(request, regular_methods, notification_methods):
         return False, request, jsonrpc_response(request=request,
                                                 error=dict(code=-32600,
                                                            message='Invalid Request',
-                                                           data=str(e)))
+                                                           data=unicodify(e)))
     return True, request, None
 
 
@@ -140,8 +131,8 @@ def validate_jsonrpc_response(response, id=None):
     try:
         response = json.loads(response)
     except Exception as e:
-        log.error('Response was not valid JSON: %s' % str(e))
-        log.debug('Response was: %s' % response)
+        log.error('Response was not valid JSON: %s', unicodify(e))
+        log.debug('Response was: %s', response)
         return False, response
     try:
         assert 'jsonrpc' in response, \
@@ -153,14 +144,14 @@ def validate_jsonrpc_response(response, id=None):
                 'The "code" member of the "error" object in the Response is missing or not an integer.'
             assert 'message' in response, \
                 'The "message" member of the "error" object in the Response is missing.'
-    except Exception as e:
-        log.error('Response was not valid JSON-RPC: %s' % str(e))
+    except Exception:
+        log.exception('Response was not valid JSON-RPC')
         log.debug('Response was: %s' % response)
         return False, response
     if id is not None:
         try:
             assert 'id' in response and response['id'] == id
-        except Exception as e:
+        except Exception:
             log.error('The response id "%s" does not match the request id "%s"' % (response['id'], id))
             return False, response
     return True, response

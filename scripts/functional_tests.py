@@ -87,6 +87,8 @@ class DataManagersGalaxyTestDriver(driver_util.GalaxyTestDriver):
             testing_shed_tools=self.testing_shed_tools,
             master_api_key=get_master_api_key(),
             user_api_key=get_user_api_key(),
+            user_email=self.app.config.admin_users_list[0],
+            create_admin=True,
         )
 
 

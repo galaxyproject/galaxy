@@ -1,0 +1,23 @@
+<tool id="hidden_param" name="Hidden Parameter" version="0.1.0">
+    <description>Hidden Parameter</description>
+    <command><![CDATA[
+echo '$hidden_param' > '$out_file1'
+    ]]></command>
+    <inputs>
+        <param name="hidden_param" type="hidden" value="1" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="1" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

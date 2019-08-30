@@ -18,19 +18,22 @@ class UCSCOutWrapper(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self.lookahead is None:
-            line = self.other.next()
+            line = next(self.other)
         else:
             line = self.lookahead
             self.lookahead = None
         if line.startswith("----------"):
-            next_line = self.other.next()
+            next_line = next(self.other)
             if next_line.startswith("Reached output limit"):
                 raise UCSCLimitException(next_line.strip())
             else:
                 self.lookahead = next_line
         return line
+
+    def next(self):
+        return self.__next__()
 
     def readline(self):
         return self.next()

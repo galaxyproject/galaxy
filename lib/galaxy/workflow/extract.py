@@ -2,8 +2,10 @@
 histories.
 """
 import logging
+from collections import OrderedDict
 
 from galaxy import exceptions, model
+from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
     DataToolParameter
@@ -13,8 +15,6 @@ from galaxy.tools.parameters.grouping import (
     Repeat,
     Section
 )
-from galaxy.tools.parser import ToolOutputCollectionPart
-from galaxy.util.odict import odict
 from .steps import (
     attach_ordered_steps,
     order_workflow_steps_with_levels
@@ -124,10 +124,10 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
                 else:
                     log.info("Cannot find implicit input collection for %s" % input_name)
             if other_hid in hid_to_output_pair:
+                step_input = step.get_or_add_input(input_name)
                 other_step, other_name = hid_to_output_pair[other_hid]
                 conn = model.WorkflowStepConnection()
-                conn.input_step = step
-                conn.input_name = input_name
+                conn.input_step_input = step_input
                 # Should always be connected to an earlier step
                 conn.output_step = other_step
                 conn.output_name = other_name
@@ -141,7 +141,7 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
                 hid = None
                 for implicit_pair in jobs[job]:
                     query_assoc_name, dataset_collection = implicit_pair
-                    if query_assoc_name == assoc_name:
+                    if query_assoc_name == assoc_name or assoc_name.startswith("__new_primary_file_%s|" % query_assoc_name):
                         hid = dataset_collection.hid
                 if hid is None:
                     template = "Failed to find matching implicit job - job id is %s, implicit pairs are %s, assoc_name is %s."
@@ -199,7 +199,7 @@ class WorkflowSummary(object):
             history = trans.get_history()
         self.history = history
         self.warnings = set()
-        self.jobs = odict()
+        self.jobs = OrderedDict()
         self.job_id2representative_job = {}  # map a non-fake job id to its representative job
         self.implicit_map_jobs = []
         self.collection_types = {}
@@ -322,6 +322,7 @@ def __cleanup_param_values(inputs, values):
     if 'dbkey' in values:
         del values['dbkey']
     root_values = values
+    root_input_keys = inputs.keys()
 
     # Recursively clean data inputs and dynamic selects
     def cleanup(prefix, inputs, values):
@@ -345,7 +346,7 @@ def __cleanup_param_values(inputs, values):
                 # being pushed into the root. FIXME: MUST REMOVE SOON
                 key = prefix + key + "_"
                 for k in root_values.keys():
-                    if k.startswith(key):
+                    if k not in root_input_keys and k.startswith(key):
                         del root_values[k]
             elif isinstance(input, Repeat):
                 if key in values:

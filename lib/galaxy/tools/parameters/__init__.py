@@ -7,10 +7,10 @@ from json import dumps
 
 from boltons.iterutils import remap
 
+from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.json import json_fix
 from galaxy.util.json import safe_loads
-from .basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue, SelectToolParameter
+from .basic import DataCollectionToolParameter, DataToolParameter, is_runtime_value, runtime_to_json, SelectToolParameter
 from .grouping import Conditional, Repeat, Section, UploadDataset
 
 REPLACE_ON_TRUTHY = object()
@@ -28,9 +28,9 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
 
     If the callback returns a value, it will be replace the old value.
 
+    >>> from collections import OrderedDict
     >>> from xml.etree.ElementTree import XML
     >>> from galaxy.util.bunch import Bunch
-    >>> from galaxy.util.odict import odict
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
     >>> from galaxy.tools.parameters.grouping import Repeat
     >>> a = TextToolParameter(None, XML('<param name="a"/>'))
@@ -44,9 +44,9 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     >>> i = TextToolParameter(None, XML('<param name="i"/>'))
     >>> j = TextToolParameter(None, XML('<param name="j"/>'))
     >>> b.name = b.title = 'b'
-    >>> b.inputs = odict([ ('c', c), ('d', d) ])
+    >>> b.inputs = OrderedDict([ ('c', c), ('d', d) ])
     >>> d.name = d.title = 'd'
-    >>> d.inputs = odict([ ('e', e), ('f', f) ])
+    >>> d.inputs = OrderedDict([ ('e', e), ('f', f) ])
     >>> f.test_param = g
     >>> f.name = 'f'
     >>> f.cases = [Bunch(value='true', inputs= {'h': h}), Bunch(value='false', inputs= { 'i': i })]
@@ -55,8 +55,8 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     ...     print('name=%s, prefix=%s, prefixed_name=%s, prefixed_label=%s, value=%s' % (input.name, prefix, prefixed_name, prefixed_label, value))
     ...     if error:
     ...         print(error)
-    >>> inputs = odict([('a', a),('b', b)])
-    >>> nested = odict([('a', 1), ('b', [odict([('c', 3), ('d', [odict([ ('e', 5), ('f', odict([ ('g', True), ('h', 7)]))])])])])])
+    >>> inputs = OrderedDict([('a', a),('b', b)])
+    >>> nested = OrderedDict([('a', 1), ('b', [OrderedDict([('c', 3), ('d', [OrderedDict([ ('e', 5), ('f', OrderedDict([ ('g', True), ('h', 7)]))])])])])])
     >>> visit_input_values(inputs, nested, visitor)
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=1
     name=c, prefix=b_0|, prefixed_name=b_0|c, prefixed_label=b 1 > c, value=3
@@ -104,7 +104,7 @@ def visit_input_values(inputs, input_values, callback, name_prefix='', label_pre
     No value found for 'b 1 > d 1 > j'.
 
     >>> # Other parameters are missing in state
-    >>> nested = odict([('b', [odict([( 'd', [odict([('f', odict([('g', True), ('h', 7)]))])])])])])
+    >>> nested = OrderedDict([('b', [OrderedDict([( 'd', [OrderedDict([('f', OrderedDict([('g', True), ('h', 7)]))])])])])])
     >>> visit_input_values(inputs, nested, visitor)
     name=a, prefix=, prefixed_name=a, prefixed_label=a, value=None
     No value found for 'a'.
@@ -180,15 +180,12 @@ def check_param(trans, param, incoming_value, param_values):
     error = None
     try:
         if trans.workflow_building_mode:
-            if isinstance(value, RuntimeValue):
-                return [{'__class__' : 'RuntimeValue'}, None]
-            if isinstance(value, dict):
-                if value.get('__class__') == 'RuntimeValue':
-                    return [value, None]
+            if is_runtime_value(value):
+                return [runtime_to_json(value), None]
         value = param.from_json(value, trans, param_values)
         param.validate(value, trans)
     except ValueError as e:
-        error = str(e)
+        error = unicodify(e)
     return value, error
 
 
@@ -204,7 +201,7 @@ def params_to_strings(params, param_values, app, nested=False):
     for key, value in param_values.items():
         if key in params:
             value = params[key].value_to_basic(value, app)
-        rval[key] = value if nested else str(dumps(value))
+        rval[key] = value if nested else str(dumps(value, sort_keys=True))
     return rval
 
 
@@ -218,7 +215,7 @@ def params_from_strings(params, param_values, app, ignore_errors=False):
     rval = dict()
     param_values = param_values or {}
     for key, value in param_values.items():
-        value = json_fix(safe_loads(value))
+        value = safe_loads(value)
         if key in params:
             value = params[key].value_from_basic(value, app, ignore_errors)
         rval[key] = value
@@ -272,9 +269,9 @@ def update_dataset_ids(input_values, translate_values, src):
 def populate_state(request_context, inputs, incoming, state, errors={}, prefix='', context=None, check=True):
     """
     Populates nested state dict from incoming parameter values.
+    >>> from collections import OrderedDict
     >>> from xml.etree.ElementTree import XML
     >>> from galaxy.util.bunch import Bunch
-    >>> from galaxy.util.odict import odict
     >>> from galaxy.tools.parameters.basic import TextToolParameter, BooleanToolParameter
     >>> from galaxy.tools.parameters.grouping import Repeat
     >>> trans = Bunch(workflow_building_mode=False)
@@ -292,15 +289,15 @@ def populate_state(request_context, inputs, incoming, state, errors={}, prefix='
     >>> h = TextToolParameter(None, XML('<param name="h"/>'))
     >>> i = TextToolParameter(None, XML('<param name="i"/>'))
     >>> b.name = 'b'
-    >>> b.inputs = odict([('c', c), ('d', d)])
+    >>> b.inputs = OrderedDict([('c', c), ('d', d)])
     >>> d.name = 'd'
-    >>> d.inputs = odict([('e', e), ('f', f)])
+    >>> d.inputs = OrderedDict([('e', e), ('f', f)])
     >>> f.test_param = g
     >>> f.name = 'f'
     >>> f.cases = [Bunch(value='true', inputs= { 'h': h }), Bunch(value='false', inputs= { 'i': i })]
-    >>> inputs = odict([('a',a),('b',b)])
-    >>> flat = odict([('a', 1), ('b_0|c', 2), ('b_0|d_0|e', 3), ('b_0|d_0|f|h', 4), ('b_0|d_0|f|g', True)])
-    >>> state = odict()
+    >>> inputs = OrderedDict([('a',a),('b',b)])
+    >>> flat = OrderedDict([('a', 1), ('b_0|c', 2), ('b_0|d_0|e', 3), ('b_0|d_0|f|h', 4), ('b_0|d_0|f|g', True)])
+    >>> state = OrderedDict()
     >>> populate_state(trans, inputs, flat, state, check=False)
     >>> print(state['a'])
     1

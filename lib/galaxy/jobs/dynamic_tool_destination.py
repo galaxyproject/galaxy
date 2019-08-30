@@ -12,7 +12,7 @@ from functools import reduce
 from xml.etree import ElementTree as ET
 
 import numpy as np
-from yaml import load
+import yaml
 
 __version__ = '1.1.0'
 
@@ -330,23 +330,23 @@ class RuleValidator(object):
         """
         This function is responsible for validating nice_value.
 
-        @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of
-                            the validation, and not the validated rule itself.
-
         @type valid_rule: bool
         @param valid_rule: returns True if everything is valid. False if it
                            encounters any abnormalities in the config.
 
-        @type original_rule: dict
-        @param original_rule: contains the original received rule
+        @type return_bool: bool
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
+
+        @type rule: dict
+        @param rule: contains the original received rule
+
+        @type tool: str
+        @param tool: the name of the current tool. Necessary for log output.
 
         @type counter: int
         @param counter: this counter is used to identify what rule # is
                         currently being validated. Necessary for log output.
-
-        @type tool: str
-        @param tool: the name of the current tool. Necessary for log output.
 
         @rtype: bool, dict (tuple)
         @return: validated rule and result of validation
@@ -382,23 +382,23 @@ class RuleValidator(object):
         """
         This function is responsible for validating destination.
 
-        @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of
-                            the validation, and not the validated rule itself.
-
         @type valid_rule: bool
         @param valid_rule: returns True if everything is valid. False if it
                            encounters any abnormalities in the config.
 
+        @type return_bool: bool
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
+
         @type rule: dict
         @param rule: contains the original received rule
+
+        @type tool: str
+        @param tool: the name of the current tool. Necessary for log output.
 
         @type counter: int
         @param counter: this counter is used to identify what rule # is
                         currently being validated. Necessary for log output.
-
-        @type tool: str
-        @param tool: the name of the current tool. Necessary for log output.
 
         @rtype: bool, dict (tuple)
         @return: validated rule and result of validation
@@ -506,30 +506,30 @@ class RuleValidator(object):
         """
         This function is responsible for validating bounds.
 
-        @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of
-                            the validation, and not the validated rule itself.
-
         @type valid_rule: bool
         @param valid_rule: returns True if everything is valid. False if it
                            encounters any abnormalities in the config.
 
-        @type original_rule: dict
-        @param original_rule: contains the original received rule
+        @type return_bool: bool
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
+
+        @type rule: dict
+        @param rule: contains the original received rule
+
+        @type tool: str
+        @param tool: the name of the current tool. Necessary for log output.
 
         @type counter: int
         @param counter: this counter is used to identify what rule # is
                         currently being validated. Necessary for log output.
-
-        @type tool: str
-        @param tool: the name of the current tool. Necessary for log output.
 
         @rtype: bool/None, dict (tuple)
         @return: validated rule (or None if invalid) and result of validation
         """
 
         if "upper_bound" in rule and "lower_bound" in rule:
-            if rule["rule_type"] == "file_size":
+            if rule["rule_type"] in ("file_size", "records"):
                 upper_bound = str_to_bytes(rule["upper_bound"])
                 lower_bound = str_to_bytes(rule["lower_bound"])
             else:
@@ -543,6 +543,8 @@ class RuleValidator(object):
                     error += " Setting lower_bound to 0!"
                     lower_bound = 0
                     rule["lower_bound"] = 0
+                else:
+                    lower_bound = float('inf')
                 if verbose:
                     log.debug(error)
                 valid_rule = False
@@ -581,23 +583,23 @@ class RuleValidator(object):
         """
         This function is responsible for validating arguments.
 
-        @type return_bool: bool
-        @param return_bool: True when we are only interested in the result of
-                            the validation, and not the validated rule itself.
-
         @type valid_rule: bool
         @param valid_rule: returns True if everything is valid. False if it
                            encounters any abnormalities in the config.
 
-        @type original_rule: dict
-        @param original_rule: contains the original received rule
+        @type return_bool: bool
+        @param return_bool: True when we are only interested in the result of
+                            the validation, and not the validated rule itself.
+
+        @type rule: dict
+        @param rule: contains the original received rule
+
+        @type tool: str
+        @param tool: the name of the current tool. Necessary for log output.
 
         @type counter: int
         @param counter: this counter is used to identify what rule # is
                         currently being validated. Necessary for log output.
-
-        @type tool: str
-        @param tool: the name of the current tool. Necessary for log output.
 
         @rtype: bool/None, dict (tuple)
         @return: validated rule (or None if invalid) and result of validation
@@ -628,8 +630,8 @@ class RuleValidator(object):
         @param valid_rule: returns True if everything is valid. False if it
                            encounters any abnormalities in the config.
 
-        @type original_rule: dict
-        @param original_rule: contains the original received rule
+        @type rule: dict
+        @param rule: contains the original received rule
 
         @type counter: int
         @param counter: this counter is used to identify what rule # is
@@ -642,7 +644,7 @@ class RuleValidator(object):
         @return: validated rule and result of validation
         """
 
-        emailregex = "^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$"
+        emailregex = r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$"
 
         if "users" in rule:
             if isinstance(rule["users"], list):
@@ -725,7 +727,7 @@ def parse_yaml(path="/config/tool_destinations.yml",
     # Import file from path
     try:
         if test:
-            config = load(path)
+            config = yaml.safe_load(path)
         else:
             if path == "/config/tool_destinations.yml":
                 # os.path.realpath gets the path of DynamicToolDestination.py
@@ -739,7 +741,7 @@ def parse_yaml(path="/config/tool_destinations.yml",
                 opt_file = path
 
             with open(opt_file, 'r') as stream:
-                config = load(stream)
+                config = yaml.safe_load(stream)
 
         # Test imported file
         try:
@@ -796,7 +798,7 @@ def validate_destination(app, destination, err_message, err_message_contents,
     valid_destination = False
     suggestion = None
 
-    if destination is 'fail' and err_message is dest_err_tool_rule_dest:  # It's a tool rule that is set to fail. It's valid
+    if destination == 'fail' and err_message is dest_err_tool_rule_dest:  # It's a tool rule that is set to fail. It's valid
         valid_destination = True
     elif app is None:
         if destination in destination_list:
@@ -1389,7 +1391,7 @@ def map_tool_to_destination(
                                 for line in inp_db:
                                     if line[0] == ">":
                                         records += 1
-                    elif filesize_rule_present:
+                    if filesize_rule_present:
                         query_file = str(inp_data[da].file_name)
                         file_size += os.path.getsize(query_file)
             except AttributeError:

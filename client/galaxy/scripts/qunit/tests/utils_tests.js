@@ -1,8 +1,15 @@
-/* global define */
+/* global QUnit */
 import testApp from "qunit/test-app";
 import Utils from "utils/utils";
 
-QUnit.module("Utils test", {});
+QUnit.module("Utils test", {
+    beforeEach: function() {
+        testApp.create();
+    },
+    afterEach: function() {
+        testApp.destroy();
+    }
+});
 
 QUnit.test("isEmpty", function(assert) {
     assert.ok(Utils.isEmpty([]), "Empty array");

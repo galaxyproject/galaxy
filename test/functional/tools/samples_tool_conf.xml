@@ -12,6 +12,7 @@
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml"/>
   <tool file="library_data.xml"/>
+  <tool file="remove_value.xml"/>
   <tool file="bibtex.xml"/>
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
@@ -27,8 +28,13 @@
   <tool file="tool_provided_metadata_7.xml" />
   <tool file="tool_provided_metadata_8.xml" />
   <tool file="tool_provided_metadata_9.xml" />
+  <tool file="tool_provided_metadata_10.xml" />
+  <tool file="tool_provided_metadata_11.xml" />
+  <tool file="tool_provided_metadata_12.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="inputs_as_json.xml" />
+  <tool file="inputs_as_json_with_paths.xml" />
+  <tool file="filter_static_regexp.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_output_action.xml" />
@@ -43,10 +49,14 @@
   <tool file="metadata_column_names.xml" />
   <tool file="strict_shell.xml" />
   <tool file="strict_shell_default_off.xml" />
+  <tool file="detect_errors.xml" />
   <tool file="detect_errors_aggressive.xml" />
+  <tool file="qc_stdout.xml" />
   <tool file="md5sum.xml" />
   <tool file="checksum.xml" />
+  <tool file="composite_shapefile.xml" />
   <tool file="is_valid_xml.xml" />
+  <tool file="param_value_from_file.xml"/>
   <!--
   TODO: Figure out why this transiently fails on Jenkins.
   <tool file="maxseconds.xml" />
@@ -55,11 +65,13 @@
   <tool file="job_environment_default.xml" />
   <tool file="job_environment_default_legacy.xml" />
   <tool file="job_environment_explicit_shared_home.xml" />
+  <tool file="galaxy_slots_and_memory.xml" />
   <tool file="version_command_plain.xml" />
   <tool file="version_command_interpreter.xml" />
   <tool file="version_command_tool_dir.xml" />
   <tool file="exit_code_oom.xml" />
   <tool file="exit_code_from_file.xml" />
+  <tool file="exit_code_from_env.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
@@ -83,21 +95,31 @@
   <tool file="paths_as_file.xml" />
   <tool file="param_text_option.xml" />
   <tool file="column_param.xml" />
+  <tool file="column_param_configfile.xml" />
   <tool file="column_multi_param.xml" />
+  <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
   <tool file="sam_to_unsorted_bam.xml" />
   <tool file="top_level_data.xml" />
+  <tool file="validation_hdf5.xml" />
+  <tool file="validation_zip.xml" />
+  <tool file="validation_tar.xml" />
+  <tool file="validation_tar_gz.xml" />
   <tool file="validation_default.xml" />
   <tool file="validation_sanitizer.xml" />
   <tool file="validation_repeat.xml" />
+  <tool file="validation_metadata_in_range.xml"/>
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
+  <tool file="implicit_collection_conversion.xml" />
+  <tool file="implicit_nested_list_conversion.xml" />
   <tool file="explicit_conversion.xml" />
   <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_single_in_repeat.xml" />
+  <tool file="identifier_in_conditional.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="identifier_multiple_in_conditional.xml" />
   <tool file="identifier_multiple_in_repeat.xml" />
@@ -129,8 +151,12 @@
   <tool file="collection_type_source_map_over.xml" />
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
+  <tool file="collection_cat_group_tag.xml" />
+  <tool file="collection_cat_group_tag_multiple.xml" />
+  <tool file="expression_forty_two.xml" />
+  <tool file="expression_parse_int.xml" />
+  <tool file="expression_log_line_count.xml" />
   <tool file="cheetah_casting.xml" />
-
   <tool file="cheetah_problem_unbound_var.xml" />
   <tool file="cheetah_problem_unbound_var_input.xml" />
   <tool file="cheetah_problem_syntax_error.xml" />
@@ -139,6 +165,9 @@
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
+
+  <tool file="realtimetool_simple.xml" />
+  <tool file="realtimetool_two_entry_points.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
 
@@ -153,6 +182,7 @@
   <tool file="for_workflows/pileup.xml" />
   <tool file="for_workflows/mapper.xml" />
   <tool file="for_workflows/mapper2.xml" />
+  <tool file="for_workflows/mapper_two.xml" />
   <tool file="for_workflows/split.xml" />
   <tool file="for_workflows/empty_list.xml" />
   <tool file="for_workflows/count_list.xml" />
@@ -191,5 +221,7 @@
   <tool file="${model_tools_path}/filter_from_file.xml" />
   <tool file="${model_tools_path}/tag_collection_from_file.xml" />
   <tool file="${model_tools_path}/apply_rules.xml" />
+  <tool file="${model_tools_path}/build_list.xml" />
+  <tool file="${model_tools_path}/extract_dataset.xml" />
 
 </toolbox>

@@ -23,14 +23,14 @@
     even when their creating tool is whitelisted since it isn't possible to
     validate the information supplied in the archive.</p></div>
     <form name="sanitize_whitelist" method="post" action="${h.url_for( controller='admin', action='sanitize_whitelist' )}">
-    <div class="toolForm">
-        <div class="toolFormTitle">Tool Sanitization Whitelist</div>
-        <div class="toolFormBody">
+    <div class="card mb-3">
+        <div class="card-header">Tool Sanitization Whitelist</div>
+        <div class="card-body overflow-auto">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                 <tr>
-                    <th bgcolor="#D8D8D8">Whitelist</th>
-                    <th bgcolor="#D8D8D8">Name</th>
-                    <th bgcolor="#D8D8D8">ID</th>
+                    <th>Whitelist</th>
+                    <th>Name</th>
+                    <th>ID</th>
                 </tr>
                 <% ctr = 0 %>
                 %for tool in tools.values():

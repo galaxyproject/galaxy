@@ -1,9 +1,32 @@
 [[source]]
+url = "https://wheels.galaxyproject.org/simple"
+verify_ssl = true
+name = "galaxy"
+
+[[source]]
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
 [dev-packages]
+gunicorn = "*"
+lxml = "!=4.2.2"
+mock = "*"
+NoseHTML = "*"
+pygithub3 = {version = "*", markers = "python_version < '3'"}
+pytest = "*"
+pytest-cov = "*"
+pytest-html = "*"
+pytest-pythonpath = "*"
+pytest-postgresql = "*"
+recommonmark = "*"
+selenium = "*"
+Sphinx = "*"
+sphinx_markdown_tables = "*"
+sphinx_rtd_theme = "*"
+testfixtures = "*"
+twill = {version = "==0.9.1", markers = "python_version < '3'"}
+watchdog = "*"
 
 [packages]
 numpy = "*"
@@ -13,18 +36,21 @@ PyYAML = "*"
 SQLAlchemy = "*"
 SQLAlchemy-Utils = "*"
 Mercurial = {version = "<=3.7.3", markers = "python_version < '3'"}
+nodeenv = "*"
 pycryptodome = "*"
 uWSGI = "*"
-pysam = "==0.14.1"
-bdbag = "*"
+pysam = "==0.15.2"
+bdbag = "==1.4.1"  # 1.5.0 requires Python >=2.7.9
 bleach = "*"
+cwltool = "==1.0.20180721142728"
 "bz2file" = {version = "*", markers = "python_version < '3.3'"}
 ipaddress = {version = "*", markers = "python_version < '3.3'"}
+isa-rwval = "*"
 boltons = "*"
 Paste = "*"
 docutils = "*"
 Routes = "*"
-WebOb = "<=1.4.2"
+WebOb = "*"
 Mako = "*"
 Babel = "*"
 Beaker = "*"
@@ -42,15 +68,17 @@ bioblend = "*"
 boto = "*"
 kombu = "*"
 psutil = "*"
-pulsar-galaxy-lib = "*"
+pulsar-galaxy-lib = "==0.12.1"
 sqlalchemy-migrate = "*"
 sqlparse = "*"
 svgwrite = "*"
 pyparsing = "*"
 "Fabric3" = "*"
 paramiko = "*"
-python-genomespaceclient = "<1.0"
-social_auth_core = {version = "==1.5.0", extras = ['openidconnect']}
+python-genomespaceclient = "<2.0"
+social_auth_core = {version = "==3.1.0+gx0", extras = ['openidconnect']}
+cloudauthz = "==0.6.0"
+gxformat2 = "*"
 
 [requires]
 python_version = "2.7"

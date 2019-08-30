@@ -1,6 +1,9 @@
-import * as _ from "libs/underscore";
+import $ from "jquery";
+import _ from "libs/underscore";
+import Backbone from "backbone";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
 import DataViews from "mvc/workflow/workflow-view-data";
+
 export default Backbone.View.extend({
     initialize: function(options) {
         this.node = options.node;
@@ -48,10 +51,12 @@ export default Backbone.View.extend({
             skipResize = false;
         }
         var terminalView = this.terminalViews[input.name];
-        var terminalViewClass =
-            input.input_type == "dataset_collection"
-                ? TerminalViews.InputCollectionTerminalView
-                : TerminalViews.InputTerminalView;
+        var terminalViewClass = TerminalViews.InputTerminalView;
+        if (input.input_type == "dataset_collection") {
+            terminalViewClass = TerminalViews.InputCollectionTerminalView;
+        } else if (input.input_type == "parameter") {
+            terminalViewClass = TerminalViews.InputParameterTerminalView;
+        }
         if (terminalView && !(terminalView instanceof terminalViewClass)) {
             terminalView.el.terminal.destroy();
             terminalView = null;
@@ -79,19 +84,31 @@ export default Backbone.View.extend({
         return terminalView;
     },
 
-    addDataOutput: function(output) {
-        var terminalViewClass = output.collection
-            ? TerminalViews.OutputCollectionTerminalView
-            : TerminalViews.OutputTerminalView;
-        var terminalView = new terminalViewClass({
+    terminalViewForOutput: function(output) {
+        let terminalViewClass = TerminalViews.OutputTerminalView;
+        if (output.collection) {
+            terminalViewClass = TerminalViews.OutputCollectionTerminalView;
+        } else if (output.parameter) {
+            terminalViewClass = TerminalViews.OutputParameterTerminalView;
+        }
+        return new terminalViewClass({
             node: this.node,
             output: output
         });
-        var outputView = new DataViews.DataOutputView({
+    },
+
+    outputViewforOutput: function(output, terminalView) {
+        const outputViewClass = output.parameter ? DataViews.ParameterOutputView : DataViews.DataOutputView;
+        return new outputViewClass({
             output: output,
             terminalElement: terminalView.el,
             nodeView: this
         });
+    },
+
+    addDataOutput: function(output) {
+        const terminalView = this.terminalViewForOutput(output);
+        const outputView = this.outputViewforOutput(output, terminalView);
         this.outputViews[output.name] = outputView;
         this.tool_body.append(outputView.$el.append(terminalView.terminalElements()));
     },

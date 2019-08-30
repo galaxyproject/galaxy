@@ -1,11 +1,13 @@
-import _l from "utils/localization";
 /** Renders the composite upload row view */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
+import _l from "utils/localization";
 import Utils from "utils/utils";
 import UploadSettings from "mvc/upload/upload-settings";
 import UploadFtp from "mvc/upload/upload-ftp";
 import Popover from "mvc/ui/ui-popover";
 import Ui from "mvc/ui/ui-misc";
-import Select from "mvc/ui/ui-select";
 import "utils/uploadbox";
 export default Backbone.View.extend({
     /** Dictionary of upload states and associated icons */
@@ -38,10 +40,10 @@ export default Backbone.View.extend({
         // build upload functions
         this.uploadinput = this.$el.uploadinput({
             ondragover: function() {
-                self.model.get("enabled") && self.$el.addClass("warning");
+                self.model.get("enabled") && self.$el.addClass("alert-success");
             },
             ondragleave: function() {
-                self.$el.removeClass("warning");
+                self.$el.removeClass("alert-success");
             },
             onchange: function(files) {
                 if (self.model.get("status") != "running" && files && files.length > 0) {
@@ -91,14 +93,14 @@ export default Backbone.View.extend({
         });
 
         // add ftp file viewer
-        this.ftp = new Popover.View({
-            title: "Choose FTP file:",
-            container: this.$source.find(".ui-button-menu"),
+        this.ftp = new Popover({
+            title: "Select a file",
+            container: this.$source.find(".dropdown"),
             placement: "right"
         });
 
         // append popup to settings icon
-        this.settings = new Popover.View({
+        this.settings = new Popover({
             title: _l("Upload configuration"),
             container: this.$settings,
             placement: "bottom"
@@ -256,79 +258,67 @@ export default Backbone.View.extend({
 
     /** Show/hide ftp popup */
     _showFtp: function() {
-        if (!this.ftp.visible) {
-            var self = this;
-            this.ftp.empty();
-            this.ftp.append(
-                new UploadFtp({
-                    ftp_upload_site: this.app.ftp_upload_site,
-                    onchange: function(ftp_file) {
-                        self.ftp.hide();
-                        if (self.model.get("status") != "running" && ftp_file) {
-                            self.model.reset({
-                                file_mode: "ftp",
-                                file_name: ftp_file.path,
-                                file_size: ftp_file.size,
-                                file_path: ftp_file.path
-                            });
-                            self._refreshReady();
-                        }
+        var self = this;
+        this.ftp.show(
+            new UploadFtp({
+                ftp_upload_site: this.app.ftp_upload_site,
+                onchange: function(ftp_file) {
+                    self.ftp.hide();
+                    if (self.model.get("status") != "running" && ftp_file) {
+                        self.model.reset({
+                            file_mode: "ftp",
+                            file_name: ftp_file.path,
+                            file_size: ftp_file.size,
+                            file_path: ftp_file.path
+                        });
+                        self._refreshReady();
                     }
-                }).$el
-            );
-            this.ftp.show();
-        } else {
-            this.ftp.hide();
-        }
+                }
+            }).$el
+        );
     },
 
     /** Show/hide settings popup */
     _showSettings: function() {
-        if (!this.settings.visible) {
-            this.settings.empty();
-            this.settings.append(new UploadSettings(this).$el);
-            this.settings.show();
-        } else {
-            this.settings.hide();
-        }
+        this.settings.show(new UploadSettings(this).$el);
     },
 
     /** Template */
     _template: function() {
-        return (
-            '<tr class="upload-row">' +
-            "<td>" +
-            '<div class="upload-source"/>' +
-            '<div class="upload-text-column">' +
-            '<div class="upload-text">' +
-            '<div class="upload-text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>' +
-            '<textarea class="upload-text-content form-control"/>' +
-            "</div>" +
-            "</div>" +
-            "</td>" +
-            "<td>" +
-            '<div class="upload-status"/>' +
-            "</td>" +
-            "<td>" +
-            '<div class="upload-file-desc upload-title"/>' +
-            "</td>" +
-            "<td>" +
-            '<div class="upload-file-name upload-title"/>' +
-            "</td>" +
-            "<td>" +
-            '<div class="upload-file-size upload-size"/>' +
-            "</td>" +
-            '<td><div class="upload-settings upload-icon-button fa fa-gear"/></td>' +
-            "<td>" +
-            '<div class="upload-info">' +
-            '<div class="upload-info-text"/>' +
-            '<div class="upload-info-progress progress">' +
-            '<div class="upload-progress-bar progress-bar progress-bar-success"/>' +
-            '<div class="upload-percentage">0%</div>' +
-            "</div>" +
-            "</div>" +
-            "</td>" +
-            "</tr>"
-        );
+        return `<tr class="upload-row">
+                <td>
+                    <div class="upload-source"/>
+                    <div class="upload-text-column">
+                        <div class="upload-text">
+                            <div class="upload-text-info">Download data from the web by entering a URL (one per line) or directly paste content.</div>
+                            <textarea class="upload-text-content form-control"/>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="upload-status"/>
+                </td>
+                <td>
+                    <div class="upload-file-desc upload-title"/>
+                </td>
+                <td>
+                    <div class="upload-file-name upload-title"/>
+                </td>
+                <td>
+                    <div class="upload-file-size upload-size"/>
+                </td>
+                <td>
+                    <div class="upload-settings upload-icon-button fa fa-gear"/>
+                </td>
+                <td>
+                    <div class="upload-info">
+                        <div class="upload-info-text"/>
+                        <div class="upload-info-progress progress">
+                            <div class="upload-progress-bar progress-bar progress-bar-success"/>
+                            <div class="upload-percentage">0%</div>
+                        </div>
+                    </div>
+                </td>
+            </tr>`;
     }
 });

@@ -13,10 +13,10 @@ from galaxy.managers import (
     roles
 )
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous as expose_api_anonymous
+    expose_api,
+    expose_api_anonymous,
 )
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
@@ -208,7 +208,7 @@ class LibrariesController(BaseAPIController):
         :raises: InsufficientPermissionsException
         """
         current_user_roles = trans.get_current_user_roles()
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         library = self.library_manager.get(trans, self.__decode_id(trans, encoded_library_id, 'library'))
         if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, library)):
             raise exceptions.InsufficientPermissionsException('You do not have proper permission to access permissions of this library.')
@@ -274,7 +274,7 @@ class LibrariesController(BaseAPIController):
         """
         if payload:
             kwd.update(payload)
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         library = self.library_manager.get(trans, self.__decode_id(trans, encoded_library_id, 'library'))
 
@@ -295,7 +295,7 @@ class LibrariesController(BaseAPIController):
         elif action == 'remove_restrictions':
             is_public = self.library_manager.make_public(trans, library)
             if not is_public:
-                raise exceptions.InternalServerError('An error occured while making library public.')
+                raise exceptions.InternalServerError('An error occurred while making library public.')
         elif action == 'set_permissions':
 
             # ACCESS LIBRARY ROLES

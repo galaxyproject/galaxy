@@ -1,26 +1,45 @@
 from unittest import TestCase
-from xml.etree.ElementTree import XML
 
-from galaxy import model
-from galaxy.tools.parameters import basic
-from galaxy.util import bunch
-from ..tools_support import UsesApp
+from galaxy.tools.parameters.meta import process_key
+from .util import BaseParameterTestCase
 
 
-class BaseParameterTestCase(TestCase, UsesApp):
+class ProcessKeyTestCase(TestCase):
 
-    def setUp(self):
-        self.setup_app()
-        self.mock_tool = bunch.Bunch(
-            app=self.app,
-            tool_type="default",
-            valid_input_states=model.Dataset.valid_input_states,
-        )
+    def test_process_key(self):
+        nested_dict = {}
+        d = {
+            'repeat_1|inner_repeat_1|data_table_column_value': u'bla4',
+            'repeat_0|inner_repeat_1|data_table_column_value': u'bla2',
+            'repeat_1|inner_repeat_0|data_table_column_value': u'bla3',
+            'repeat_0|inner_repeat_0|data_table_column_value': u'bla1',
+        }
+        for key, value in d.items():
+            process_key(key, value, nested_dict)
+        expected_dict = {
+            'repeat': [
+                {'inner_repeat': [{'data_table_column_value': u'bla1'}, {'data_table_column_value': u'bla2'}]},
+                {'inner_repeat': [{'data_table_column_value': u'bla3'}, {'data_table_column_value': u'bla4'}]},
+            ]
+        }
+        self.assertEqual(nested_dict, expected_dict)
 
-    def _parameter_for(self, **kwds):
-        content = kwds["xml"]
-        param_xml = XML(content)
-        return basic.ToolParameter.build(self.mock_tool, param_xml)
+    def test_process_key_2(self):
+        nested_dict = {}
+        d = {
+            'data_tables_0|columns_0|data_table_column_value': 'Amel_HAv3.1',
+            'data_tables': [],
+            'directory_content': [],
+        }
+        for key, value in d.items():
+            process_key(key, value, nested_dict)
+        expected_dict = {
+            'data_tables': [
+                {'columns': [{'data_table_column_value': 'Amel_HAv3.1'}]}
+            ],
+            'directory_content': []
+        }
+        self.assertEqual(nested_dict, expected_dict)
 
 
 class ParameterParsingTestCase(BaseParameterTestCase):

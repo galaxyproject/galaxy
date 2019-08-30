@@ -1,0 +1,73 @@
+html {
+     background: none repeat scroll 0% 0% #f3f3f3;
+     text-align: center;
+}
+
+body {
+     background: none repeat scroll 0% 0% #ffffff;
+     color: #333333;
+     font: 80% "Trebuchet MS",Helvetica;
+     margin: 0px;
+     overflow-x: hidden;
+     text-align: left;
+}
+
+
+.match {
+     background-color: green;
+     opacity: 0.7;
+     position: absolute;
+     display: block;
+}
+
+.cigarover {
+     opacity: 0;
+}
+
+.mismatch {
+     background-color: red;
+     opacity: 0.7;
+     position: absolute;
+     display: block;
+}
+
+.delete {
+     margin-top: -5px;
+     opacity: 0.7;
+     position: absolute;
+     z-index: 999;
+     display: block;
+}
+
+.insert {
+     background-color: blue;
+     opacity: 0.7;
+     position: absolute;
+     display: block;
+}
+
+.node {
+     cursor: pointer;
+}
+
+.node circle {
+     fill: #ffffff;
+     stroke-width: 1.5px;
+     stroke: steelblue;
+}
+
+.node text {
+     font: 10px sans-serif;
+}
+
+.link {
+     fill: none;
+     /*stroke-width: 2px;*/
+     stroke: gray;
+}
+
+tr.border_bottom td {
+     border-bottom: 1pt solid white;
+}
+
+

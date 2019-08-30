@@ -1,4 +1,5 @@
 import logging
+from collections import OrderedDict
 
 from markupsafe import escape
 from six import string_types
@@ -15,11 +16,9 @@ from galaxy.model.item_attrs import (
     UsesItemRatings
 )
 from galaxy.util import listify, Params, parse_int, sanitize_text
-from galaxy.util.create_history_template import render_item
-from galaxy.util.odict import odict
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
-from galaxy.web.base.controller import (
+from galaxy.web.framework.helpers import grids, iff, time_ago
+from galaxy.webapps.base.controller import (
     BaseUIController,
     ERROR,
     ExportsHistoryMixin,
@@ -29,7 +28,7 @@ from galaxy.web.base.controller import (
     SUCCESS,
     WARNING,
 )
-from galaxy.web.framework.helpers import grids, iff, time_ago
+from ._create_history_template import render_item
 
 
 log = logging.getLogger(__name__)
@@ -99,6 +98,9 @@ class HistoryListGrid(grids.Grid):
             cols_to_filter=[columns[0], columns[3]],
             key="free-text-search", visible=False, filterable="standard")
     )
+    global_actions = [
+        grids.GridAction("Import from file", dict(controller="", action="histories/import"))
+    ]
     operations = [
         grids.GridOperation("Switch", allow_multiple=False, condition=(lambda item: not item.deleted), async_compatible=True),
         grids.GridOperation("View", allow_multiple=False, url_args=dict(controller="", action="histories/view")),
@@ -244,7 +246,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     def list_published(self, trans, **kwargs):
         return self.published_list_grid(trans, **kwargs)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_login("work with multiple histories")
     def list(self, trans, **kwargs):
         """List all available histories"""
@@ -361,7 +363,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                         if job.history_id == history.id and not job.finished:
                             # No need to check other outputs since the job's parent history is this history
                             job.mark_deleted(trans.app.config.track_jobs_in_database)
-                            trans.app.job_manager.job_stop_queue.put(job.id)
+                            trans.app.job_manager.stop(job)
         trans.sa_session.flush()
         if n_deleted:
             part = "Deleted %d %s" % (n_deleted, iff(n_deleted != 1, "histories", "history"))
@@ -491,7 +493,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         ).get(id)
         if not (history and ((history.user and trans.user and history.user.id == trans.user.id) or
                              (trans.history and history.id == trans.history.id) or
-                             trans.user_is_admin())):
+                             trans.user_is_admin)):
             return trans.show_error_message("Cannot display history structure.")
         # Resolve jobs and workflow invocations for the datasets in the history
         # items is filled with items (hdas, jobs, or workflows) that go at the
@@ -499,7 +501,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         items = []
         # First go through and group hdas by job, if there is no job they get
         # added directly to items
-        jobs = odict()
+        jobs = OrderedDict()
         for hda in history.active_datasets:
             if hda.visible is False:
                 continue
@@ -523,7 +525,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 else:
                     jobs[job] = [(hda, None)]
         # Second, go through the jobs and connect to workflows
-        wf_invocations = odict()
+        wf_invocations = OrderedDict()
         for job, hdas in jobs.items():
             # Job is attached to a workflow step, follow it to the
             # workflow_invocation and group
@@ -656,7 +658,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             user_is_owner=user_is_owner, history_dict=history_dictionary,
             user_item_rating=user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_login("changing default permissions")
     def permissions(self, trans, payload=None, **kwd):
         """
@@ -693,6 +695,42 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 permissions[trans.app.security_agent.get_action(action.action)] = in_roles
             trans.app.security_agent.history_set_default_permissions(history, permissions)
             return {'message': 'Default history \'%s\' dataset permissions have been changed.' % history.name}
+
+    @web.legacy_expose_api
+    @web.require_login("make datasets private")
+    def make_private(self, trans, history_id=None, all_histories=False, **kwd):
+        """
+        Sets the datasets within a history to private.  Also sets the default
+        permissions for the history to private, for future datasets.
+        """
+        histories = []
+        if all_histories:
+            histories = trans.user.histories
+        elif history_id:
+            history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+            if history:
+                histories.append(history)
+        if not histories:
+            return self.message_exception(trans, 'Invalid history or histories specified.')
+        private_role = trans.app.security_agent.get_private_user_role(trans.user)
+        user_roles = trans.user.all_roles()
+        private_permissions = {
+            trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: [private_role],
+            trans.app.security_agent.permitted_actions.DATASET_ACCESS: [private_role],
+        }
+        for history in histories:
+            # Set default role for history to private
+            trans.app.security_agent.history_set_default_permissions(history, private_permissions)
+            # Set private role for all datasets
+            for hda in history.datasets:
+                if (not hda.dataset.library_associations
+                        and not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset)
+                        and trans.app.security_agent.can_manage_dataset(user_roles, hda.dataset)):
+                    # If it's not private to me, and I can manage it, set fixed private permissions.
+                    trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
+                    if not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset):
+                        raise exceptions.InternalServerError('An error occurred and the dataset is NOT private.')
+        return {'message': 'Success, requested permissions have been changed in %s.' % ("all histories" if all_histories else history.name)}
 
     @web.expose
     @web.require_login("share histories with other users")
@@ -1172,7 +1210,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return
         # TODO: used in page/editor.mako
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_login("rename histories")
     def rename(self, trans, payload=None, **kwd):
         id = kwd.get('id')
@@ -1207,8 +1245,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     messages.append('History \'%s\' does not appear to belong to you.' % cur_name)
                 # skip if it wouldn't be a change
                 elif new_name != cur_name:
-                    # escape, sanitize, set, and log the change
-                    h.name = sanitize_html(escape(new_name))
+                    h.name = new_name
                     trans.sa_session.add(h)
                     trans.sa_session.flush()
                     trans.log_event('History renamed: id: %s, renamed to: %s' % (str(h.id), new_name))

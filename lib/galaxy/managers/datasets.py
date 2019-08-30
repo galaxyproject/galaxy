@@ -12,14 +12,15 @@ from galaxy import (
     exceptions,
     model
 )
+from galaxy.datatypes import sniff
 from galaxy.managers import (
     base,
     deletable,
     rbac_secured,
-    roles,
     secured,
     users
 )
+from galaxy.util.checkers import check_binary
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletabl
         """
         Is this dataset readable/viewable to user?
         """
-        if self.user_manager.is_admin(user):
+        if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
         if self.has_access_permission(dataset, user):
             return True
@@ -189,7 +190,7 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
         If the config allows or the user is admin, return the file name
         of the file that contains this dataset's data.
         """
-        is_admin = self.user_manager.is_admin(user)
+        is_admin = self.user_manager.is_admin(user, trans=context.get("trans", None))
         # expensive: allow config option due to cost of operation
         if is_admin or self.app.config.expose_dataset_path:
             if not dataset.purged:
@@ -200,7 +201,7 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
         """
         If the config allows or the user is admin, return the file path.
         """
-        is_admin = self.user_manager.is_admin(user)
+        is_admin = self.user_manager.is_admin(user, trans=context.get("trans", None))
         # expensive: allow config option due to cost of operation
         if is_admin or self.app.config.expose_dataset_path:
             if not dataset.purged:
@@ -210,7 +211,8 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
     def serialize_permissions(self, dataset, key, user=None, **context):
         """
         """
-        if not self.dataset_manager.permissions.manage.is_permitted(dataset, user):
+        trans = context.get("trans", None)
+        if not self.dataset_manager.permissions.manage.is_permitted(dataset, user, trans=trans):
             self.skip()
 
         management_permissions = self.dataset_manager.permissions.manage.by_dataset(dataset)
@@ -220,57 +222,6 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
             'access' : [self.app.security.encode_id(perm.role.id) for perm in access_permissions],
         }
         return permissions
-
-
-class DatasetDeserializer(base.ModelDeserializer, deletable.PurgableDeserializerMixin):
-    model_manager_class = DatasetManager
-
-    def __init__(self, app):
-        super(DatasetDeserializer, self).__init__(app)
-        # TODO: this manager may make more sense inside rbac_secured
-        self.role_manager = roles.RoleManager(app)
-
-    def add_deserializers(self):
-        super(DatasetDeserializer, self).add_deserializers()
-        # not much to set here besides permissions and purged/deleted
-        deletable.PurgableDeserializerMixin.add_deserializers(self)
-
-        self.deserializers.update({
-            'permissions' : self.deserialize_permissions,
-        })
-
-    def deserialize_permissions(self, dataset, key, permissions, user=None, **context):
-        """
-        Create permissions for each list of encoded role ids in the (validated)
-        `permissions` dictionary, where `permissions` is in the form::
-
-            { 'manage': [ <role id 1>, ... ], 'access': [ <role id 2>, ... ] }
-        """
-        self.manager.permissions.manage.error_unless_permitted(dataset, user)
-        self._validate_permissions(permissions, **context)
-        manage = self._list_of_roles_from_ids(permissions['manage'])
-        access = self._list_of_roles_from_ids(permissions['access'])
-        self.manager.permissions.set(dataset, manage, access, flush=False)
-        return permissions
-
-    def _validate_permissions(self, permissions, **context):
-        self.validate.type('permissions', permissions, dict)
-        for permission_key in ('manage', 'access'):
-            if(not isinstance(permissions.get(permission_key, None), list)):
-                msg = 'permissions requires "{0}" as a list of role ids'.format(permission_key)
-                raise exceptions.RequestParameterInvalidException(msg)
-
-        # TODO: push down into permissions?
-        manage_permissions = permissions['manage']
-        if len(manage_permissions) < 1:
-            raise exceptions.RequestParameterInvalidException('At least one managing role is required')
-
-        return permissions
-
-    def _list_of_roles_from_ids(self, id_list):
-        # TODO: this may make more sense inside rbac_secured
-        # note: no checking of valid roles is made
-        return self.role_manager.by_ids([self.app.security.decode_id(id_) for id_ in id_list])
 
 
 # ============================================================================= AKA DatasetInstanceManager
@@ -297,7 +248,7 @@ class DatasetAssociationManager(base.ModelManager,
         Is this DA accessible to `user`?
         """
         # defer to the dataset
-        return self.dataset_manager.is_accessible(dataset_assoc.dataset, user)
+        return self.dataset_manager.is_accessible(dataset_assoc.dataset, user, **kwargs)
 
     def purge(self, dataset_assoc, flush=True):
         """
@@ -340,6 +291,12 @@ class DatasetAssociationManager(base.ModelManager,
         """
         Stops an dataset_assoc's creating job if all the job's other outputs are deleted.
         """
+
+        # Optimize this to skip other checks if this dataset is terminal - we can infer the
+        # job is already complete.
+        if dataset_assoc.state in model.Dataset.terminal_states:
+            return False
+
         if dataset_assoc.parent_id is None and len(dataset_assoc.creating_job_associations) > 0:
             # Mark associated job for deletion
             job = dataset_assoc.creating_job_associations[0].job
@@ -347,7 +304,7 @@ class DatasetAssociationManager(base.ModelManager,
                 # Are *all* of the job's other output datasets deleted?
                 if job.check_if_output_datasets_deleted():
                     job.mark_deleted(self.app.config.track_jobs_in_database)
-                    self.app.job_manager.job_stop_queue.put(job.id)
+                    self.app.job_manager.stop(job)
                     return True
         return False
 
@@ -364,6 +321,129 @@ class DatasetAssociationManager(base.ModelManager,
         if not self.is_composite(dataset_assoc):
             return []
         return glob.glob(os.path.join(dataset_assoc.dataset.extra_files_path, '*'))
+
+    def serialize_dataset_association_roles(self, trans, dataset_assoc):
+        if hasattr(dataset_assoc, "library_dataset_dataset_association"):
+            library_dataset = dataset_assoc
+            dataset = library_dataset.library_dataset_dataset_association.dataset
+        else:
+            library_dataset = None
+            dataset = dataset_assoc.dataset
+
+        # Omit duplicated roles by converting to set
+        access_roles = set(dataset.get_access_roles(trans))
+        manage_roles = set(dataset.get_manage_permissions_roles(trans))
+
+        access_dataset_role_list = [(access_role.name, trans.security.encode_id(access_role.id)) for access_role in access_roles]
+        manage_dataset_role_list = [(manage_role.name, trans.security.encode_id(manage_role.id)) for manage_role in manage_roles]
+        rval = dict(access_dataset_roles=access_dataset_role_list, manage_dataset_roles=manage_dataset_role_list)
+        if library_dataset is not None:
+            modify_roles = set(trans.app.security_agent.get_roles_for_action(library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY))
+            modify_item_role_list = [(modify_role.name, trans.security.encode_id(modify_role.id)) for modify_role in modify_roles]
+            rval["modify_item_roles"] = modify_item_role_list
+        return rval
+
+    def ok_to_edit_metadata(self, dataset_id):
+        # prevent modifying metadata when dataset is queued or running as input/output
+        # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
+        sa_session = self.app.model.context
+        for job_to_dataset_association in sa_session.query(
+                self.app.model.JobToInputDatasetAssociation).filter_by(dataset_id=dataset_id).all() \
+                + sa_session.query(self.app.model.JobToOutputDatasetAssociation).filter_by(dataset_id=dataset_id).all():
+            if job_to_dataset_association.job.state not in [job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED]:
+                return False
+        return True
+
+    def detect_datatype(self, trans, dataset_assoc):
+        """Sniff and assign the datatype to a given dataset association (ldda or hda)"""
+        data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
+        if data.datatype.allow_datatype_change:
+            if not self.ok_to_edit_metadata(data.id):
+                raise exceptions.ItemAccessibilityException('This dataset is currently being used as input or output. You cannot change datatype until the jobs have completed or you have canceled them.')
+            else:
+                path = data.dataset.file_name
+                is_binary = check_binary(path)
+                datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order, is_binary=is_binary)
+                trans.app.datatypes_registry.change_datatype(data, datatype)
+                trans.sa_session.flush()
+                self.set_metadata(trans, dataset_assoc)
+        else:
+            raise exceptions.InsufficientPermissionsException('Changing datatype "%s" is not allowed.' % (data.extension))
+
+    def set_metadata(self, trans, dataset_assoc, overwrite=False, validate=True):
+        """Trigger a job that detects and sets metadata on a given dataset association (ldda or hda)"""
+        data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
+        if not self.ok_to_edit_metadata(data.id):
+            raise exceptions.ItemAccessibilityException('This dataset is currently being used as input or output. You cannot edit metadata until the jobs have completed or you have canceled them.')
+        else:
+            if overwrite:
+                for name, spec in data.metadata.spec.items():
+                    # We need to be careful about the attributes we are resetting
+                    if name not in ['name', 'info', 'dbkey', 'base_name']:
+                        if spec.get('default'):
+                            setattr(data.metadata, name, spec.unwrap(spec.get('default')))
+
+            self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+                self.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data, 'validate': validate},
+                overwrite=overwrite)
+
+    def update_permissions(self, trans, dataset_assoc, **kwd):
+        action = kwd.get('action', 'set_permissions')
+        if action not in ['remove_restrictions', 'make_private', 'set_permissions']:
+            raise exceptions.RequestParameterInvalidException('The mandatory parameter "action" has an invalid value. '
+                                                              'Allowed values are: "remove_restrictions", "make_private", "set_permissions"')
+        if hasattr(dataset_assoc, "library_dataset_dataset_association"):
+            library_dataset = dataset_assoc
+            dataset = library_dataset.library_dataset_dataset_association.dataset
+        else:
+            library_dataset = None
+            dataset = dataset_assoc.dataset
+
+        current_user_roles = trans.get_current_user_roles()
+        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin
+        if not can_manage:
+            raise exceptions.InsufficientPermissionsException('You do not have proper permissions to manage permissions on this dataset.')
+
+        if action == 'remove_restrictions':
+            trans.app.security_agent.make_dataset_public(dataset)
+            if not trans.app.security_agent.dataset_is_public(dataset):
+                raise exceptions.InternalServerError('An error occurred while making dataset public.')
+        elif action == 'make_private':
+            if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
+                private_role = trans.app.security_agent.get_private_user_role(trans.user)
+                dp = trans.app.model.DatasetPermissions(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role)
+                trans.sa_session.add(dp)
+                trans.sa_session.flush()
+            if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
+                # Check again and inform the user if dataset is not private.
+                raise exceptions.InternalServerError('An error occurred and the dataset is NOT private.')
+        elif action == 'set_permissions':
+
+            def to_role_id(encoded_role_id):
+                role_id = base.decode_id(self.app, encoded_role_id)
+                return role_id
+
+            def parameters_roles_or_none(role_type):
+                encoded_role_ids = kwd.get(role_type, kwd.get("%s_ids[]" % role_type, None))
+                if encoded_role_ids is not None:
+                    return list(map(to_role_id, encoded_role_ids))
+                else:
+                    return None
+
+            access_roles = parameters_roles_or_none('access')
+            manage_roles = parameters_roles_or_none('manage')
+            modify_roles = parameters_roles_or_none('modify')
+            role_ids_dict = {
+                'DATASET_MANAGE_PERMISSIONS': manage_roles,
+                'DATASET_ACCESS': access_roles,
+            }
+            if library_dataset is not None:
+                role_ids_dict["LIBRARY_MODIFY"] = modify_roles
+
+            self._set_permissions(trans, dataset_assoc, role_ids_dict)
+
+    def _set_permissions(self, trans, dataset_assoc, roles_dict):
+        raise galaxy.exceptions.NotImplemented()
 
 
 class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
@@ -442,14 +522,13 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         Cycle through meta files and return them as a list of dictionaries.
         """
         meta_files = []
-        for meta_type in dataset_assoc.metadata.spec.keys():
-            if isinstance(dataset_assoc.metadata.spec[meta_type].param, galaxy.datatypes.metadata.FileParameter):
-                meta_files.append(
-                    dict(file_type=meta_type,
-                         download_url=self.url_for('history_contents_metadata_file',
-                                                   history_id=self.app.security.encode_id(dataset_assoc.history_id),
-                                                   history_content_id=self.app.security.encode_id(dataset_assoc.id),
-                                                   metadata_file=meta_type)))
+        for meta_type in dataset_assoc.metadata_file_types:
+            meta_files.append(
+                dict(file_type=meta_type,
+                     download_url=self.url_for('history_contents_metadata_file',
+                                               history_id=self.app.security.encode_id(dataset_assoc.history_id),
+                                               history_content_id=self.app.security.encode_id(dataset_assoc.id),
+                                               metadata_file=meta_type)))
         return meta_files
 
     def serialize_metadata(self, dataset_assoc, key, excluded=None, **context):

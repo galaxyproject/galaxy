@@ -22,8 +22,8 @@ from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex
 )
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web.base.controller import (
+from galaxy.web import expose_api
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     HTTPBadRequest,
     url_for,
@@ -67,7 +67,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         current_user_roles = trans.get_current_user_roles()
 
         def traverse(folder):
-            admin = trans.user_is_admin()
+            admin = trans.user_is_admin
             rval = []
             for subfolder in folder.active_folders:
                 if not admin:
@@ -99,8 +99,8 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         except NoResultFound:
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         except Exception as e:
-            raise exceptions.InternalServerError('Error loading from the database.' + str(e))
-        if not (trans.user_is_admin() or trans.app.security_agent.can_access_library(current_user_roles, library)):
+            raise exceptions.InternalServerError('Error loading from the database.' + util.unicodify(e))
+        if not (trans.user_is_admin or trans.app.security_agent.can_access_library(current_user_roles, library)):
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         encoded_id = 'F' + trans.security.encode_id(library.root_folder.id)
         # appending root folder
@@ -226,9 +226,11 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             # security is checked in the downstream controller
             parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
         except Exception as e:
-            return str(e)
+            return util.unicodify(e)
         # The rest of the security happens in the library_common controller.
         real_folder_id = trans.security.encode_id(parent.id)
+
+        payload['tag_using_filenames'] = util.string_as_bool(payload.get('tag_using_filenames', None))
 
         # are we copying an HDA to the library folder?
         #   we'll need the id and any message to attach, then branch to that private function
@@ -294,7 +296,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         else:
             last_used_build = dbkey
         roles = kwd.get('roles', '')
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         if replace_id not in ['', None, 'None']:
             replace_dataset = trans.sa_session.query(trans.app.model.LibraryDataset).get(trans.security.decode_id(replace_id))
@@ -436,7 +438,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         rval = {'id': id}
         try:
             ld = self.get_library_dataset(trans, id, check_ownership=False, check_accessible=True)
-            user_is_admin = trans.user_is_admin()
+            user_is_admin = trans.user_is_admin
             can_modify = trans.app.security_agent.can_modify_library_item(trans.user.all_roles(), ld)
             log.debug('is_admin: %s, can_modify: %s', user_is_admin, can_modify)
             if not (user_is_admin or can_modify):
@@ -478,5 +480,5 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             log.exception('library_contents API, delete: uncaught exception: %s, %s',
                           id, str(kwd))
             trans.response.status = 500
-            rval.update({'error': str(exc)})
+            rval.update({'error': util.unicodify(exc)})
         return rval

@@ -7,13 +7,12 @@ import logging
 import os
 
 from galaxy.managers import configuration, users
-from galaxy.queue_worker import send_control_task
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
+    expose_api,
+    expose_api_anonymous_and_sessionless,
     require_admin
 )
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
@@ -49,7 +48,7 @@ class ConfigurationController(BaseAPIController):
 
         Note: a more complete list is returned if the user is an admin.
         """
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         serialization_params = self._parse_serialization_params(kwd, 'all')
         return self.get_config_dict(trans, is_admin, **serialization_params)
 
@@ -132,7 +131,7 @@ class ConfigurationController(BaseAPIController):
         PUT /api/configuration/toolbox
         Reload the Galaxy toolbox (but not individual tools).
         """
-        send_control_task(self.app.toolbox.app, 'reload_toolbox')
+        self.app.queue_worker.send_control_task('reload_toolbox')
 
 
 def _tool_conf_to_dict(conf):

@@ -34,7 +34,7 @@ class HDCAManager(
     foreign_key_name = 'history_dataset_collection_association'
 
     tag_assoc = model.HistoryDatasetCollectionTagAssociation
-    annotation_assoc = model.HistoryDatasetCollectionAnnotationAssociation
+    annotation_assoc = model.HistoryDatasetCollectionAssociationAnnotationAssociation
 
     def __init__(self, app):
         """

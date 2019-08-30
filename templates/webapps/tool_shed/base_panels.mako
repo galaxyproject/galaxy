@@ -1,13 +1,26 @@
 <%inherit file="/base/base_panels.mako"/>
+<%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 
 ## Default title
 <%def name="title()">Tool Shed</%def>
 
+<%def name="init()">
+    ${parent.init()}
+    <%
+        self.body_class = "toolshed"
+    %>
+</%def>
+
+<%def name="javascript_app()">
+    ${parent.javascript_app()}
+</%def>
+
 <%def name="javascripts()">
     ${parent.javascripts()}
     <script type="text/javascript">
-        $(document).ready( function() {
-
+        config.addInitialization(function() {
+            console.log("toolshed/base_panels.mako", "hardcoded dropdown init");
+            
             // Masthead dropdown menus
             var $dropdowns = $("#masthead ul.nav > li.dropdown > .dropdown-menu");
             $("body").on( "click.nav_popups", function( e ) {
@@ -33,22 +46,15 @@
 <%def name="masthead()">
 
     %if app.config.ga_code:
-        <script>
-          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-          ga('create', '${app.config.ga_code}', 'auto');
-          ga('send', 'pageview');
-        </script>
+        ${ galaxy_client.config_google_analytics(app.config.ga_code)}
     %endif
 
     ## start main tag
     <nav id="masthead" class="navbar navbar-expand fixed-top justify-content-center navbar-dark">
 
       ## Logo, layered over tabs to be clickable
-      <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}" class="navbar-brand">
-          <img class="navbar-brand-image" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
+      <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}" aria-label="homepage" class="navbar-brand">
+          <img alt="logo" class="navbar-brand-image" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
           <span class="navbar-brand-title">
           Galaxy Tool Shed
           %if app.config.brand:
@@ -97,7 +103,7 @@
                                         <div class="dropdown-divider"></div>
                                     %else:
                                         %if len ( menu_item ) == 1:
-                                            <a class="dropdown-item" href="#">
+                                            <a class="dropdown-item" href="javascript:void(0)" role="button">
                                                 ${menu_item[0]}
                                             </a>
                                         %elif len ( menu_item ) == 2:
@@ -165,7 +171,6 @@
                         menu_options.append( [ _('API Keys'), h.url_for( controller='/user', action='api_keys', cntrller='user' ), "galaxy_main" ] )
                         logout_url = h.url_for( controller='/user', action='logout' )
                         menu_options.append( [ 'Logout', logout_url, "_top" ] )
-                        menu_options.append( None )
                     if app.config.use_remote_user:
                         menu_options.append( [ _('Public Name'), h.url_for( controller='/user', action='edit_username', cntrller='user' ), "galaxy_main" ] )
 
@@ -174,9 +179,4 @@
                     tab( "user", "User", None, visible=visible, menu_options=menu_options )
                 %>
             </ul>
-        </div>
-    </div>
-
-    ## end main tag
-    </div>
 </%def>

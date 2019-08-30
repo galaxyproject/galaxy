@@ -1,14 +1,14 @@
 import logging
 import math
+from collections import OrderedDict
 from json import dumps, loads
 
 from markupsafe import escape
 from six import string_types, text_type
 from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
-from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemRatings
+from galaxy.model.item_attrs import get_foreign_key, UsesAnnotations, UsesItemRatings
 from galaxy.util import restore_text, sanitize_text, unicodify
-from galaxy.util.odict import odict
 from galaxy.web.framework import decorators, url_for
 
 
@@ -144,13 +144,10 @@ class Grid(object):
                     # that we can encode to UTF-8 and thus handle user input to filters.
                     if isinstance(column_filter, list):
                         # Filter is a list; process each item.
-                        column_filter = [text_type(_).encode('utf-8') if not isinstance(_, string_types) else _ for _ in column_filter]
                         extra_url_args["f-" + column.key] = dumps(column_filter)
                     else:
                         # Process singleton filter.
-                        if not isinstance(column_filter, string_types):
-                            column_filter = text_type(column_filter)
-                        extra_url_args["f-" + column.key] = column_filter.encode("utf-8")
+                        extra_url_args["f-" + column.key] = column_filter
         # Process sort arguments.
         sort_key = None
         if 'sort' in kwargs:
@@ -341,9 +338,8 @@ class Grid(object):
                     else:
                         link = None
                     target = column.target
-                    value = column.get_value(trans, self, item)
-                    if isinstance(value, str):
-                        value = text_type(value, 'utf-8')
+                    value = unicodify(column.get_value(trans, self, item))
+                    if value:
                         value = value.replace('/', '//')
                     item_dict['column_config'][column.label] = {
                         'link'      : link,
@@ -580,22 +576,14 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
         else:
             ave_item_rating = item.average_rating
             num_ratings = 2  # just used for pluralization
+        if not ave_item_rating:
+            ave_item_rating = 0
         return trans.fill_template("tool_shed_rating.mako",
                                    ave_item_rating=ave_item_rating,
                                    num_ratings=num_ratings,
                                    item_id=trans.security.encode_id(item.id))
 
     def sort(self, trans, query, ascending, column_name=None):
-        def get_foreign_key(source_class, target_class):
-            """ Returns foreign key in source class that references target class. """
-            target_fk = None
-            for fk in source_class.table.foreign_keys:
-                if fk.references(target_class.table):
-                    target_fk = fk
-                    break
-            if not target_fk:
-                raise RuntimeException("No foreign key found between objects: %s, %s" % source_class.table, target_class.table)
-            return target_fk
         # Get the columns that connect item's table and item's rating association table.
         item_rating_assoc_class = getattr(trans.model, '%sRatingAssociation' % self.model_class.__name__)
         foreign_key = get_foreign_key(item_rating_assoc_class, self.model_class)
@@ -656,7 +644,7 @@ class CommunityTagsColumn(TextColumn):
 
     def get_value(self, trans, grid, item):
         return trans.fill_template("/tagging_common.mako", tag_type="community", trans=trans, user=trans.get_user(), tagged_item=item, elt_context=self.grid_name,
-                                   in_form=True, input_size="20", tag_click_fn="add_tag_to_grid_filter", use_toggle_link=True)
+                                   tag_click_fn="add_tag_to_grid_filter", use_toggle_link=True)
 
     def filter(self, trans, user, query, column_filter):
         """ Modify query to filter model_class by tag. Multiple filters are ANDed. """
@@ -671,7 +659,7 @@ class CommunityTagsColumn(TextColumn):
         if isinstance(column_filter, list):
             # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
             column_filter = ",".join(column_filter)
-        raw_tags = trans.app.tag_handler.parse_tags(column_filter.encode("utf-8"))
+        raw_tags = trans.app.tag_handler.parse_tags(column_filter)
         clause_list = []
         for name, value in raw_tags:
             if name:
@@ -692,8 +680,6 @@ class IndividualTagsColumn(CommunityTagsColumn):
                                    user=trans.user,
                                    tagged_item=item,
                                    elt_context=self.grid_name,
-                                   in_form=True,
-                                   input_size="20",
                                    tag_click_fn="add_tag_to_grid_filter",
                                    use_toggle_link=True)
 
@@ -702,7 +688,7 @@ class IndividualTagsColumn(CommunityTagsColumn):
         if isinstance(column_filter, list):
             # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
             column_filter = ",".join(column_filter)
-        raw_tags = trans.app.tag_handler.parse_tags(column_filter.encode("utf-8"))
+        raw_tags = trans.app.tag_handler.parse_tags(column_filter)
         clause_list = []
         for name, value in raw_tags:
             if name:
@@ -791,6 +777,27 @@ class DeletedColumn(GridColumn):
         return query
 
 
+class PurgedColumn(GridColumn):
+    """ Column that tracks and filters for items with purged attribute. """
+
+    def get_accepted_filters(self):
+        """ Returns a list of accepted filters for this column. """
+        accepted_filter_labels_and_vals = {"nonpurged" : "False", "purged" : "True", "all": "All"}
+        accepted_filters = []
+        for label, val in accepted_filter_labels_and_vals.items():
+            args = {self.key: val}
+            accepted_filters.append(GridColumnFilter(label, args))
+        return accepted_filters
+
+    def filter(self, trans, user, query, column_filter):
+        """Modify query to filter self.model_class by state."""
+        if column_filter == "All":
+            pass
+        elif column_filter in ["True", "False"]:
+            query = query.filter(self.model_class.purged == (column_filter == "True"))
+        return query
+
+
 class StateColumn(GridColumn):
     """
     Column that tracks and filters for items with state attribute.
@@ -866,7 +873,7 @@ class SharingStatusColumn(GridColumn):
 
     def get_accepted_filters(self):
         """ Returns a list of accepted filters for this column. """
-        accepted_filter_labels_and_vals = odict()
+        accepted_filter_labels_and_vals = OrderedDict()
         accepted_filter_labels_and_vals["private"] = "private"
         accepted_filter_labels_and_vals["shared"] = "shared"
         accepted_filter_labels_and_vals["accessible"] = "accessible"

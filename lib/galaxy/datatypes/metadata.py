@@ -11,7 +11,6 @@ from galaxy.model.metadata import (
     DBKeyParameter,
     DictParameter,
     FileParameter,
-    JobExternalOutputMetadataWrapper,
     ListParameter,
     MetadataCollection,
     MetadataElement,
@@ -42,5 +41,4 @@ __all__ = (
     "PythonObjectParameter",
     "FileParameter",
     "MetadataTempFile",
-    "JobExternalOutputMetadataWrapper",
 )

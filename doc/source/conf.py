@@ -16,16 +16,10 @@ import os
 import sys
 
 import sphinx_rtd_theme
-
 # Library to make .md to slideshow
-from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
 
-source_parsers = {
-    '.md': CommonMarkParser,
-}
-
-# Set GALAXY_DOCS_SKIP_SOURCE=1 to skip building source and release information and
+# Set GALAXY_DOCS_SKIP_SOURCE=1 to skip building source information and
 # just build primary documentation. (Quicker to debug issues in most frequently updated
 # docs).
 SKIP_SOURCE = os.environ.get("GALAXY_DOCS_SKIP_SOURCE", False) == "1"
@@ -46,7 +40,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx']
+extensions = ['recommonmark', 'sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx_markdown_tables']
 if not SKIP_SOURCE:
     extensions += ['sphinx.ext.doctest', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.viewcode']
 
@@ -54,10 +48,11 @@ if not SKIP_SOURCE:
 templates_path = ['_templates']
 
 # Configure default autodoc's action
-autodoc_default_flags = [ 'members', 'undoc-members' ]
+autodoc_default_flags = ['members', 'undoc-members']
 
 # Prevent alphabetical reordering of module members.
 autodoc_member_order = 'bysource'
+
 
 def dont_skip_init(app, what, name, obj, skip, options):
     if name == "__init__":
@@ -66,12 +61,14 @@ def dont_skip_init(app, what, name, obj, skip, options):
 
 
 def setup(app):
-    doc_root = 'https://docs.galaxyproject.org/en/master/'
     app.connect("autodoc-skip-member", dont_skip_init)
     app.add_config_value('recommonmark_config', {
-        "url_resolver": lambda url: doc_root + url,
+        'enable_auto_doc_ref': False,
+        'enable_auto_toc_tree': False,
+        'enable_inline_math': False,  # https://github.com/rtfd/recommonmark/pull/124
     }, True)
     app.add_transform(AutoStructify)
+
 
 # The suffix of source filenames.
 source_suffix = ['.rst', '.md']
@@ -84,14 +81,14 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Galaxy Project'
-copyright = str( datetime.datetime.now().year ) + u', Galaxy Committers'
+copyright = str(datetime.datetime.now().year) + u', Galaxy Committers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-from galaxy.version import VERSION_MAJOR, VERSION
+from galaxy.version import VERSION, VERSION_MAJOR
 version = VERSION_MAJOR
 # The full version, including alpha/beta/rc tags.
 release = VERSION
@@ -108,10 +105,9 @@ release = VERSION
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
+exclude_patterns = ['**/_*.rst']
 if SKIP_SOURCE:
-    exclude_patterns = ['lib', 'releases']
-else:
-    exclude_patterns = []
+    exclude_patterns.extend(['lib'])
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
@@ -224,14 +220,14 @@ htmlhelp_basename = 'Galaxydoc'
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -314,6 +310,7 @@ class Mock(object):
             return mockType
         else:
             return Mock()
+
 
 # adding pbs_python, DRMAA_python, markupsafe, and drmaa here had no effect.
 MOCK_MODULES = ['tables', 'decorator']

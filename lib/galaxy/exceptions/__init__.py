@@ -103,6 +103,10 @@ class ToolMissingException(MessageException):
     status_code = 400
     err_code = error_codes.USER_TOOL_MISSING_PROBLEM
 
+    def __init__(self, err_msg=None, type="info", tool_id=None, **extra_error_info):
+        super(ToolMissingException, self).__init__(err_msg, type, **extra_error_info)
+        self.tool_id = tool_id
+
 
 class RequestParameterInvalidException(MessageException):
     status_code = 400
@@ -145,6 +149,11 @@ class AdminRequiredException(MessageException):
     err_code = error_codes.ADMIN_REQUIRED
 
 
+class UserActivationRequiredException(MessageException):
+    status_code = 403
+    err_code = error_codes.USER_ACTIVATION_REQUIRED
+
+
 class ObjectNotFound(MessageException):
     """ Accessed object was not found """
     status_code = 404
@@ -180,13 +189,26 @@ class InternalServerError(MessageException):
     err_code = error_codes.INTERNAL_SERVER_ERROR
 
 
+class ToolExecutionError(MessageException):
+    status_code = 500
+    err_code = error_codes.TOOL_EXECUTION_ERROR
+
+    def __init__(self, err_msg, type="error", job=None):
+        super(ToolExecutionError, self).__init__(err_msg, type)
+        self.job = job
+
+
 class NotImplemented(MessageException):
     status_code = 501
     err_code = error_codes.NOT_IMPLEMENTED
 
 
-# non-web exceptions
+class InvalidFileFormatError(MessageException):
+    status_code = 500
+    err_code = error_codes.INVALID_FILE_FORMAT
 
+
+# non-web exceptions
 
 class ContainerCLIError(Exception):
     def __init__(self, msg=None, stdout=None, stderr=None, returncode=None,
@@ -216,3 +238,9 @@ class ContainerRunError(Exception):
         super(ContainerRunError, self).__init__(msg, **kwargs)
         self.image = image
         self.command = command
+
+
+class HandlerAssignmentError(Exception):
+    def __init__(self, msg=None, obj=None, **kwargs):
+        super(HandlerAssignmentError, self).__init__(msg, **kwargs)
+        self.obj = obj

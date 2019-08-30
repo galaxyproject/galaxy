@@ -8,7 +8,6 @@ import sys
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
 import galaxy.config
-from galaxy.model.util import pgcalc
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import nice_size
 from galaxy.util.script import app_properties_from_args, populate_config_args
@@ -37,11 +36,13 @@ def init():
     return galaxy.config.init_models_from_config(config, object_store=object_store), object_store, engine
 
 
-def quotacheck(sa_session, users, engine):
+def quotacheck_old(sa_session, users, engine):
+    from galaxy.model.util import pgcalc
     sa_session.refresh(user)
     current_total = user.get_disk_usage()
     current_deleted = user.get_deleted_disk_usage()
     print(user.username, '<' + user.email + '>:', end=' ')
+
     if engine not in ('postgres', 'postgresql'):
         total, deleted = user.calculate_disk_usage()
         sa_session.refresh(user)
@@ -65,6 +66,28 @@ def quotacheck(sa_session, users, engine):
         user.set_deleted_disk_usage(deleted)
         sa_session.add(user)
         sa_session.flush()
+
+def quotacheck(sa_session, users, engine):
+    sa_session.refresh(user)
+    current = user.get_disk_usage()
+    print(user.username, '<' + user.email + '>:', end=' ')
+
+    if not args.dryrun:
+        # Apply new disk usage
+        user.calculate_and_set_disk_usage()
+        # And fetch
+        new = user.get_disk_usage()
+    else:
+        new = user.calculate_disk_usage()
+
+    print('old usage:', nice_size(current), 'change:', end=' ')
+    if new in (current, None):
+        print('none')
+    else:
+        if new > current:
+            print('+%s' % (nice_size(new - current)))
+        else:
+            print('-%s' % (nice_size(current - new)))
 
 
 if __name__ == '__main__':

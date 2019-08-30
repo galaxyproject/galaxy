@@ -4,7 +4,7 @@ import sys
 import tarfile
 import zipfile
 
-from six import StringIO
+from six import BytesIO
 from six.moves import filter
 
 from galaxy import util
@@ -25,20 +25,21 @@ HTML_CHECK_LINES = 100
 
 def check_html(file_path, chunk=None):
     if chunk is None:
-        temp = open(file_path, "U")
+        temp = open(file_path, mode='rb')
     elif hasattr(chunk, "splitlines"):
         temp = chunk.splitlines()
     else:
         temp = chunk
-    regexp1 = re.compile("<A\s+[^>]*HREF[^>]+>", re.I)
-    regexp2 = re.compile("<IFRAME[^>]*>", re.I)
-    regexp3 = re.compile("<FRAMESET[^>]*>", re.I)
-    regexp4 = re.compile("<META[\W][^>]*>", re.I)
-    regexp5 = re.compile("<SCRIPT[^>]*>", re.I)
+    regexp1 = re.compile(r"<A\s+[^>]*HREF[^>]+>", re.I)
+    regexp2 = re.compile(r"<IFRAME[^>]*>", re.I)
+    regexp3 = re.compile(r"<FRAMESET[^>]*>", re.I)
+    regexp4 = re.compile(r"<META[\W][^>]*>", re.I)
+    regexp5 = re.compile(r"<SCRIPT[^>]*>", re.I)
     lineno = 0
     # TODO: Potentially reading huge lines into string here, this should be
     # reworked.
     for line in temp:
+        line = util.unicodify(line)
         lineno += 1
         matches = regexp1.search(line) or regexp2.search(line) or regexp3.search(line) or regexp4.search(line) or regexp5.search(line)
         if matches:
@@ -55,9 +56,9 @@ def check_html(file_path, chunk=None):
 def check_binary(name, file_path=True):
     # Handles files if file_path is True or text if file_path is False
     if file_path:
-        temp = open(name, "U")
+        temp = open(name, "rb")
     else:
-        temp = StringIO(name)
+        temp = BytesIO(name)
     try:
         return util.is_binary(temp.read(1024))
     finally:
@@ -68,9 +69,8 @@ def check_gzip(file_path, check_content=True):
     # This method returns a tuple of booleans representing ( is_gzipped, is_valid )
     # Make sure we have a gzipped file
     try:
-        temp = open(file_path, "U")
-        magic_check = temp.read(2)
-        temp.close()
+        with open(file_path, "rb") as temp:
+            magic_check = temp.read(2)
         if magic_check != util.gzip_magic:
             return (False, False)
     except Exception:
@@ -79,7 +79,8 @@ def check_gzip(file_path, check_content=True):
     # If the file is Bam, it should already have been detected as such, so we'll just check
     # for sff format.
     try:
-        header = gzip.open(file_path).read(4)
+        with gzip.open(file_path, 'rb') as fh:
+            header = fh.read(4)
         if header == b'.sff':
             return (True, True)
     except Exception:
@@ -100,9 +101,8 @@ def check_gzip(file_path, check_content=True):
 
 def check_bz2(file_path, check_content=True):
     try:
-        temp = open(file_path, "U")
-        magic_check = temp.read(3)
-        temp.close()
+        with open(file_path, "rb") as temp:
+            magic_check = temp.read(3)
         if magic_check != util.bz2_magic:
             return (False, False)
     except Exception:

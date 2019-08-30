@@ -34,7 +34,7 @@ class UsesShed(object):
         cls._test_driver.temp_directories.extend([cls.conda_tmp_prefix, cls.shed_tool_data_dir, cls.shed_tools_dir])
         config["conda_auto_init"] = True
         config["conda_auto_install"] = True
-        config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, 'conda')
+        config["conda_prefix"] = os.environ.get('GALAXY_TEST_CONDA_PREFIX') or os.path.join(cls.conda_tmp_prefix, 'conda')
         config["tool_sheds_config_file"] = TOOL_SHEDS_CONF
         shed_tool_config = os.path.join(cls.shed_tools_dir, 'shed_tool_conf.xml')
         config["tool_config_file"] = "%s,%s" % (FRAMEWORK_UPLOAD_TOOL_CONF, shed_tool_config)
@@ -48,9 +48,9 @@ class UsesShed(object):
         with open(config["shed_tool_data_table_config"], 'w') as shed_data_table_config:
             shed_data_table_config.write(SHED_DATA_TABLES)
 
-    def install_repository(self, owner, name, changeset):
+    def install_repository(self, owner, name, changeset, tool_shed_url='https://toolshed.g2.bx.psu.edu'):
         payload = {
-            'tool_shed_url': 'https://toolshed.g2.bx.psu.edu',
+            'tool_shed_url': tool_shed_url,
             'name': name,
             'owner': owner,
             'changeset_revision': changeset

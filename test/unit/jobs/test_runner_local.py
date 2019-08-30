@@ -5,8 +5,8 @@ from unittest import TestCase
 
 import psutil
 
+from galaxy import job_metrics
 from galaxy import model
-from galaxy.jobs import metrics
 from galaxy.jobs.runners import local
 from galaxy.util import bunch
 from ..tools_support import (
@@ -20,7 +20,7 @@ class TestLocalJobRunner(TestCase, UsesApp, UsesTools):
     def setUp(self):
         self.setup_app()
         self._init_tool()
-        self.app.job_metrics = metrics.JobMetrics()
+        self.app.job_metrics = job_metrics.JobMetrics()
         self.job_wrapper = MockJobWrapper(self.app, self.test_directory, self.tool)
 
     def tearDown(self):
@@ -85,13 +85,8 @@ class TestLocalJobRunner(TestCase, UsesApp, UsesTools):
         t = threading.Thread(target=queue)
         t.start()
         external_id = self.job_wrapper.wait_for_external_id()
-        mock_job = bunch.Bunch(
-            get_external_output_metadata=lambda: None,
-            get_job_runner_external_id=lambda: str(external_id),
-            get_id=lambda: 1
-        )
         assert psutil.pid_exists(external_id)
-        runner.stop_job(mock_job)
+        runner.stop_job(self.job_wrapper)
         t.join(1)
         assert not psutil.pid_exists(external_id)
 
@@ -139,8 +134,9 @@ class MockJobWrapper(object):
         self.requires_setting_metadata = True
         self.job_destination = bunch.Bunch(id="default", params={})
         self.galaxy_lib_dir = os.path.abspath("lib")
+        self.job = model.Job()
         self.job_id = 1
-        self.external_id = None
+        self.job.id = 1
         self.output_paths = ['/tmp/output1.dat']
         self.mock_metadata_path = os.path.abspath(os.path.join(test_directory, "METADATA_SET"))
         self.metadata_command = "touch %s" % self.mock_metadata_path
@@ -148,6 +144,7 @@ class MockJobWrapper(object):
         self.shell = "/bin/bash"
         self.cleanup_job = "never"
         self.tmp_dir_creation_statement = ""
+        self.use_metadata_binary = False
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata = bunch.Bunch(
@@ -161,10 +158,10 @@ class MockJobWrapper(object):
         return "ok"
 
     def wait_for_external_id(self):
-        """Test method for waiting til an external id has been registered."""
+        """Test method for waiting until an external id has been registered."""
         external_id = None
         for i in range(50):
-            external_id = self.external_id
+            external_id = self.job.job_runner_external_id
             if external_id:
                 break
             time.sleep(.1)
@@ -174,10 +171,13 @@ class MockJobWrapper(object):
         self.prepare_called = True
 
     def set_job_destination(self, job_destination, external_id):
-        self.external_id = external_id
+        self.job.job_runner_external_id = external_id
 
     def get_command_line(self):
         return self.command_line
+
+    def container_monitor_command(self, *args, **kwds):
+        return None
 
     def get_id_tag(self):
         return "1"
@@ -192,7 +192,7 @@ class MockJobWrapper(object):
         return []
 
     def get_job(self):
-        return model.Job()
+        return self.job
 
     def setup_external_metadata(self, **kwds):
         return self.metadata_command
@@ -217,3 +217,6 @@ class MockJobWrapper(object):
 
     def home_directory(self):
         return None
+
+    def reclaim_ownership(self):
+        pass

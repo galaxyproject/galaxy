@@ -6,8 +6,11 @@ from six import string_types
 
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
-from galaxy.tools.verify.interactor import ToolTestDescription
-from galaxy.util import string_as_bool
+from galaxy.tool_util.verify.interactor import ToolTestDescription
+from galaxy.util import (
+    string_as_bool,
+    unicodify,
+)
 
 try:
     from nose.tools import nottest
@@ -21,7 +24,7 @@ log = logging.getLogger(__name__)
 @nottest
 def parse_tests(tool, tests_source):
     """
-    Build ToolTestBuilder objects for each "<test>" elements and
+    Build ToolTestDescription objects for each "<test>" elements and
     return default interactor (if any).
     """
     raw_tests_dict = tests_source.parse_tests_to_dict()
@@ -63,7 +66,7 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
             "test_index": test_index,
             "inputs": {},
             "error": True,
-            "exception": str(e),
+            "exception": unicodify(e),
         }
 
     return ToolTestDescription(processed_test_dict)
@@ -131,7 +134,8 @@ def _process_raw_inputs(tool, tool_inputs, raw_inputs, required_files, parent_co
                 if isinstance(value, galaxy.tools.parameters.basic.DataToolParameter):
                     if not isinstance(param_value, list):
                         param_value = [param_value]
-                    map(lambda v: _add_uploaded_dataset(context.for_state(), v, param_extra, value, required_files), param_value)
+                    for v in param_value:
+                        _add_uploaded_dataset(context.for_state(), v, param_extra, value, required_files)
                     processed_value = param_value
                 elif isinstance(value, galaxy.tools.parameters.basic.DataCollectionToolParameter):
                     assert 'collection' in param_extra

@@ -1,32 +1,34 @@
 import logging
+from collections import OrderedDict
 
 from galaxy.tools.actions import (
     DefaultToolAction,
     OutputCollections,
     ToolExecutionCache,
 )
-from galaxy.util.odict import odict
 
 log = logging.getLogger(__name__)
 
 
 class ModelOperationToolAction(DefaultToolAction):
 
-    def check_inputs_ready(self, tool, trans, incoming, history, execution_cache=None):
+    def check_inputs_ready(self, tool, trans, incoming, history, execution_cache=None, collection_info=None):
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
 
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, _ = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
+        history, inp_data, inp_dataset_collections, _, _ = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
 
         tool.check_inputs_ready(inp_data, inp_dataset_collections)
 
-    def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, job_params=None, execution_cache=None, **kwargs):
+    def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, job_params=None, execution_cache=None, collection_info=None, **kwargs):
+        trans.check_user_activation()
+
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
 
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, preserved_tags = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
+        history, inp_data, inp_dataset_collections, preserved_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
 
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
@@ -34,7 +36,7 @@ class ModelOperationToolAction(DefaultToolAction):
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming)
 
-        out_data = odict()
+        out_data = OrderedDict()
         input_collections = dict((k, v[0][0]) for k, v in inp_dataset_collections.items())
         output_collections = OutputCollections(
             trans,
@@ -55,7 +57,7 @@ class ModelOperationToolAction(DefaultToolAction):
         #
         job, galaxy_session = self._new_job_for_session(trans, tool, history)
         self._produce_outputs(trans, tool, out_data, output_collections, incoming=incoming, history=history, tags=preserved_tags)
-        self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections, current_user_roles)
+        self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
         job.state = job.states.OK
         trans.sa_session.add(job)

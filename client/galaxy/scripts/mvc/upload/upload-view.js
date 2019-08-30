@@ -1,5 +1,7 @@
-import _l from "utils/localization";
 /** Upload app contains the upload progress button and upload modal, compiles model data for API request **/
+import _l from "utils/localization";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import Modal from "mvc/ui/ui-modal";
 import Tabs from "mvc/ui/ui-tabs";
@@ -63,6 +65,7 @@ export default Backbone.View.extend({
 
     /** Show/hide upload dialog */
     show: function() {
+        const Galaxy = getGalaxyInstance();
         var self = this;
         if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
             window.setTimeout(() => {
@@ -111,6 +114,7 @@ export default Backbone.View.extend({
 
     /** Refresh user and current history */
     currentHistory: function() {
+        const Galaxy = getGalaxyInstance();
         return this.current_user && Galaxy.currHistoryPanel.model.get("id");
     },
 
@@ -149,6 +153,9 @@ export default Backbone.View.extend({
                 if (it.get("file_size") > 0) {
                     var prefix = `files_${index}|`;
                     inputs[`${prefix}type`] = "upload_dataset";
+                    if (it.get("file_name") != "New File") {
+                        inputs[`${prefix}NAME`] = it.get("file_name");
+                    }
                     inputs[`${prefix}space_to_tab`] = (it.get("space_to_tab") && "Yes") || null;
                     inputs[`${prefix}to_posix_lines`] = (it.get("to_posix_lines") && "Yes") || null;
                     inputs[`${prefix}dbkey`] = it.get("genome", null);
@@ -166,6 +173,8 @@ export default Backbone.View.extend({
                                 file: it.get("file_data")
                             });
                     }
+                } else if (it.get("optional")) {
+                    continue;
                 } else {
                     data.error_message = "Upload content incomplete.";
                     it.set("status", "error");

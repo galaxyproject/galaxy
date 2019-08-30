@@ -99,13 +99,14 @@ class DatasetMatcher(object):
         self.trans = trans
         self.param = param
         self.tool = param.tool
-        filter_value = None
+        filter_values = set()
         if param.options and other_values:
             try:
-                filter_value = param.options.get_options(trans, other_values)[0][0]
+                for v in param.options.get_options(trans, other_values):
+                    filter_values.add(v[0])
             except IndexError:
                 pass  # no valid options
-        self.filter_value = filter_value
+        self.filter_values = filter_values
 
     def valid_hda_match(self, hda, check_implicit_conversions=True):
         """ Return False of this parameter can not be matched to the supplied
@@ -152,7 +153,7 @@ class DatasetMatcher(object):
         applicable).
         """
         param = self.param
-        return param.options and param.get_options_filter_attribute(hda) != self.filter_value
+        return param.options and param.get_options_filter_attribute(hda) not in self.filter_values
 
 
 class HdaDirectMatch(object):

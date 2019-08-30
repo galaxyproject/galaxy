@@ -1,3 +1,4 @@
+import io
 import logging
 import os
 import subprocess
@@ -5,7 +6,6 @@ import time
 from string import Template
 
 from pkg_resources import resource_string
-from six import text_type
 
 from galaxy.util import unicodify
 
@@ -13,14 +13,14 @@ log = logging.getLogger(__name__)
 DEFAULT_SHELL = '/bin/bash'
 
 DEFAULT_JOB_FILE_TEMPLATE = Template(
-    resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8')
+    unicodify(resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh'))
 )
 
 SLOTS_STATEMENT_CLUSTER_DEFAULT = \
-    resource_string(__name__, 'CLUSTER_SLOTS_STATEMENT.sh').decode('UTF-8')
+    unicodify(resource_string(__name__, 'CLUSTER_SLOTS_STATEMENT.sh'))
 
 MEMORY_STATEMENT_DEFAULT = \
-    resource_string(__name__, 'MEMORY_STATEMENT.sh').decode('UTF-8')
+    unicodify(resource_string(__name__, 'MEMORY_STATEMENT.sh'))
 
 SLOTS_STATEMENT_SINGLE = """
 GALAXY_SLOTS="1"
@@ -112,10 +112,8 @@ def write_script(path, contents, config, mode=0o755):
     if not os.path.exists(dir):
         os.makedirs(dir)
 
-    with open(path, 'w') as f:
-        if isinstance(contents, text_type):
-            contents = contents.encode("UTF-8")
-        f.write(contents)
+    with io.open(path, 'w', encoding='utf-8') as f:
+        f.write(unicodify(contents))
     os.chmod(path, mode)
     _handle_script_integrity(path, config)
 

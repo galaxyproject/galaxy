@@ -9,7 +9,7 @@ import subprocess
 from functools import partial
 
 try:
-    import docker
+    import docker.types
 except ImportError:
     from galaxy.util.bunch import Bunch
     docker = Bunch(types=Bunch(
@@ -33,6 +33,7 @@ from galaxy.containers.docker_model import (
     IMAGE_CONSTRAINT
 )
 from galaxy.exceptions import ContainerRunError
+from galaxy.util import unicodify
 from galaxy.util.json import safe_dumps_formatted
 
 log = logging.getLogger(__name__)
@@ -124,7 +125,7 @@ class DockerSwarmInterface(DockerInterface):
                 subprocess.check_call(['python', SWARM_MANAGER_PATH, '--containers-config-file',
                                       self.containers_config_file, '--swarm', self.key])
             except subprocess.CalledProcessError as exc:
-                log.error('Failed to launch swarm manager: %s', str(exc))
+                log.error('Failed to launch swarm manager: %s', unicodify(exc))
 
     def _get_image(self, image):
         """Get the image string, either from the argument, or from the
@@ -280,7 +281,7 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
 
     def service_tasks(self, service):
         for task_dict in self.service_ps(service.id):
-            if task_dict['NAME'].strip().startswith('\_'):
+            if task_dict['NAME'].strip().startswith(r'\_'):
                 continue    # historical task
             yield DockerTask.from_cli(self, task_dict, service=service)
 

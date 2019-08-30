@@ -69,8 +69,8 @@ def upgrade(migrate_engine):
         psa_nonce.create()
         psa_partial.create()
         oidc_user_authnz_tokens.create()
-    except Exception as e:
-        log.exception("Creating OIDC table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating OIDC table failed")
 
 
 def downgrade(migrate_engine):
@@ -83,5 +83,5 @@ def downgrade(migrate_engine):
         psa_nonce.drop()
         psa_partial.drop()
         oidc_user_authnz_tokens.drop()
-    except Exception as e:
-        log.exception("Dropping OIDC table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping OIDC table failed")

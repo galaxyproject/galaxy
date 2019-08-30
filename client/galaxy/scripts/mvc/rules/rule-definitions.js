@@ -1,3 +1,4 @@
+import _ from "underscore";
 import _l from "utils/localization";
 import pyre from "pyre-to-regexp";
 
@@ -17,7 +18,7 @@ const multiColumnsToString = function(targetColumns, colHeaders) {
 
 const removeColumns = function(columns, targetColumns) {
     const newColumns = [];
-    for (let index in columns) {
+    for (const index in columns) {
         if (targetColumns.indexOf(index) === -1) {
             newColumns.push(columns[index]);
         }
@@ -41,7 +42,7 @@ const applyRegex = function(regex, target, data, replacement, groupCount) {
             return null;
         }
         if (!replacement) {
-            groupCount = groupCount && parseInt(groupCount);
+            groupCount = groupCount && parseInt(groupCount, 10);
             if (groupCount) {
                 if (match.length != groupCount + 1) {
                     failedCount++;
@@ -107,7 +108,7 @@ const RULES = {
             }
         },
         save: (component, rule) => {
-            rule.start = parseInt(component.addColumnRownumStart);
+            rule.start = parseInt(component.addColumnRownumStart, 10);
         },
         apply: (rule, data, sources, columns) => {
             let rownum = rule.start;
@@ -167,11 +168,19 @@ const RULES = {
         apply: (rule, data, sources, columns) => {
             const ruleValue = rule.value;
             let newRow;
-            if (ruleValue.startsWith("identifier")) {
-                const identifierIndex = parseInt(ruleValue.substring("identifier".length));
+            if (ruleValue.indexOf("identifier") == 0) {
+                const identifierIndex = parseInt(ruleValue.substring("identifier".length), 10);
                 newRow = (row, index) => {
                     const newRow = row.slice();
                     newRow.push(sources[index]["identifiers"][identifierIndex]);
+                    return newRow;
+                };
+            } else if (ruleValue == "tags") {
+                newRow = (row, index) => {
+                    const newRow = row.slice();
+                    const tags = sources[index]["tags"];
+                    tags.sort();
+                    newRow.push(tags.join(","));
                     return newRow;
                 };
             } else if (ruleValue == "hid" || ruleValue == "name" || ruleValue == "path") {
@@ -183,6 +192,47 @@ const RULES = {
             } else {
                 return { error: `Unknown metadata type [${ruleValue}}]` };
             }
+            data = data.map(newRow);
+            columns.push(NEW_COLUMN);
+            return { data, columns };
+        }
+    },
+    add_column_group_tag_value: {
+        title: _l("Add Column from Group Tag Value"),
+        display: (rule, colHeaders) => {
+            return `Add column for value of group tag ${rule.value}.`;
+        },
+        init: (component, rule) => {
+            if (!rule) {
+                component.addColumnGroupTagValueValue = null;
+                component.addColumnGroupTagValueDefault = "";
+            } else {
+                component.addColumnGroupTagValueValue = rule.value;
+                component.addColumnGroupTagValueDefault = rule.default_value;
+            }
+        },
+        save: (component, rule) => {
+            rule.value = component.addColumnGroupTagValueValue;
+            rule.default_value = component.addColumnGroupTagValueDefault;
+        },
+        apply: (rule, data, sources, columns) => {
+            const ruleValue = rule.value;
+            const groupTagPrefix = `group:${ruleValue}:`;
+            const newRow = (row, index) => {
+                const newRow = row.slice();
+                const tags = sources[index]["tags"];
+                tags.sort();
+                let groupTagValue = rule.default_value;
+                for (const index in tags) {
+                    const tag = tags[index];
+                    if (tag.indexOf(groupTagPrefix) == 0) {
+                        groupTagValue = tag.substr(groupTagPrefix.length);
+                        break;
+                    }
+                }
+                newRow.push(groupTagValue);
+                return newRow;
+            };
             data = data.map(newRow);
             columns.push(NEW_COLUMN);
             return { data, columns };
@@ -203,7 +253,7 @@ const RULES = {
                 component.addColumnRegexTarget = rule.target_column;
                 component.addColumnRegexExpression = rule.expression;
                 component.addColumnRegexReplacement = rule.replacement;
-                component.addColumnRegexGroupCount = rule.group_count;
+                component.addColumnRegexGroupCount = parseInt(rule.group_count);
             }
             let addColumnRegexType = "global";
             if (component.addColumnRegexGroupCount) {
@@ -297,7 +347,7 @@ const RULES = {
         },
         save: (component, rule) => {
             rule.target_column = component.addColumnSubstrTarget;
-            rule.length = component.addColumnSubstrLength;
+            rule.length = parseInt(component.addColumnSubstrLength, 10);
             rule.substr_type = component.addColumnSubstrType;
         },
         apply: (rule, data, sources, columns) => {
@@ -352,8 +402,8 @@ const RULES = {
             const targets = rule.target_columns;
             function newRow(row) {
                 const newRow = [];
-                for (let index in row) {
-                    if (targets.indexOf(parseInt(index)) == -1) {
+                for (const index in row) {
+                    if (targets.indexOf(parseInt(index, 10)) == -1) {
                         newRow.push(row[index]);
                     }
                 }
@@ -398,7 +448,7 @@ const RULES = {
             const target = rule.target_column;
             const invert = rule.invert;
             const filterFunction = function(el, index) {
-                const row = data[parseInt(index)];
+                const row = data[parseInt(index, 10)];
                 return regExp.exec(row[target]) ? !invert : invert;
             };
             sources = sources.filter(filterFunction);
@@ -427,13 +477,13 @@ const RULES = {
                 component.addFilterCountWhich = "first";
                 component.addFilterCountInvert = false;
             } else {
-                component.addFilterCountN = rule.count;
+                component.addFilterCountN = parseInt(rule.count, 10);
                 component.addFilterCountWhich = rule.which;
                 component.addFilterCountInvert = rule.inverse;
             }
         },
         save: (component, rule) => {
-            rule.count = component.addFilterCountN;
+            rule.count = parseInt(component.addFilterCountN, 10);
             rule.which = component.addFilterCountWhich;
             rule.invert = component.addFilterCountInvert;
         },
@@ -478,7 +528,7 @@ const RULES = {
             const target = rule.target_column;
             const invert = rule.invert;
             const filterFunction = function(el, index) {
-                const row = data[parseInt(index)];
+                const row = data[parseInt(index, 10)];
                 return row[target].length ? !invert : invert;
             };
             sources = sources.filter(filterFunction);
@@ -512,7 +562,7 @@ const RULES = {
             const invert = rule.invert;
             const value = rule.value;
             const filterFunction = function(el, index) {
-                const row = data[parseInt(index)];
+                const row = data[parseInt(index, 10)];
                 return row[target] == value ? !invert : invert;
             };
             sources = sources.filter(filterFunction);
@@ -548,7 +598,7 @@ const RULES = {
             const compare_type = rule.compare_type;
             const value = rule.value;
             const filterFunction = function(el, index) {
-                const row = data[parseInt(index)];
+                const row = data[parseInt(index, 10)];
                 const targetValue = parseFloat(row[target]);
                 let matches;
                 if (compare_type == "less_than") {
@@ -680,7 +730,7 @@ const RULES = {
                 const newRow0 = [],
                     newRow1 = [];
                 for (let index in row) {
-                    index = parseInt(index);
+                    index = parseInt(index, 10);
                     if (targets0.indexOf(index) > -1) {
                         newRow0.push(row[index]);
                     } else if (targets1.indexOf(index) > -1) {
@@ -725,6 +775,28 @@ const MAPPING_TARGETS = {
         ),
         modes: ["raw", "ftp", "datasets", "library_datasets"],
         importType: "collections"
+    },
+    name_tag: {
+        label: _l("Name Tag"),
+        help: _l("Add a name tag or hash tag based on the specified column value for imported datasets."),
+        importType: "datasets",
+        modes: ["raw", "ftp"]
+    },
+    tags: {
+        multiple: true,
+        label: _l("General Purpose Tag(s)"),
+        help: _l(
+            "Add a general purpose tag based on the specified column value, use : to separate key-value pairs if desired. These tags are not propagated to derived datasets the way name and group tags are."
+        ),
+        modes: ["raw", "ftp", "datasets", "library_datasets"]
+    },
+    group_tags: {
+        multiple: true,
+        label: _l("Group Tag(s)"),
+        help: _l(
+            "Add a group tag based on the specified column value, use : to separate key-value pairs. These tags are propagated to derived datasets and may be useful for factorial experiments."
+        ),
+        modes: ["raw", "ftp", "datasets", "library_datasets"]
     },
     name: {
         label: _l("Name"),
@@ -789,12 +861,11 @@ const colHeadersFor = function(data, columns) {
     }
 };
 
-const applyRules = function(data, sources, columns, rules, colHeadersPerRule) {
-    var colHeadersPerRule = colHeadersPerRule || [];
+const applyRules = function(data, sources, columns, rules, headersPerRule = []) {
+    const colHeadersPerRule = Array.from(headersPerRule);
     let hasRuleError = false;
     for (var ruleIndex in rules) {
-        const ruleHeaders = colHeadersFor(data, columns);
-        colHeadersPerRule[ruleIndex] = ruleHeaders;
+        colHeadersPerRule[ruleIndex] = colHeadersFor(data, columns);
         const rule = rules[ruleIndex];
         rule.error = null;
         rule.warn = null;
@@ -817,7 +888,7 @@ const applyRules = function(data, sources, columns, rules, colHeadersPerRule) {
             columns = res.columns || columns;
         }
     }
-    return { data, sources, columns };
+    return { data, sources, columns, colHeadersPerRule };
 };
 
 export default {

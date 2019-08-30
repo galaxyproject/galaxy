@@ -4,6 +4,7 @@ on the values of other parameters or other aspects of the current state)
 """
 import logging
 import os
+import re
 
 from six import StringIO
 
@@ -74,7 +75,44 @@ class StaticValueFilter(Filter):
         except Exception:
             pass
         for fields in options:
-            if (self.keep and fields[self.column] == filter_value) or (not self.keep and fields[self.column] != filter_value):
+            if self.keep == (filter_value == fields[self.column]):
+                rval.append(fields)
+        return rval
+
+
+class RegexpFilter(Filter):
+    """
+    Filters a list of options on a column by a regular expression.
+
+    Type: regexp
+
+    Required Attributes:
+        value: regular expression to compare to
+        column: column in options to compare with
+    Optional Attributes:
+        keep: Keep columns matching the regexp (True)
+              Discard columns matching the regexp (False)
+    """
+
+    def __init__(self, d_option, elem):
+        Filter.__init__(self, d_option, elem)
+        self.value = elem.get("value", None)
+        assert self.value is not None, "Required 'value' attribute missing from filter"
+        column = elem.get("column", None)
+        assert column is not None, "Required 'column' attribute missing from filter, when loading from file"
+        self.column = d_option.column_spec_to_index(column)
+        self.keep = string_as_bool(elem.get("keep", 'True'))
+
+    def filter_options(self, options, trans, other_values):
+        rval = []
+        filter_value = self.value
+        try:
+            filter_value = User.expand_user_properties(trans.user, filter_value)
+        except Exception:
+            pass
+        filter_pattern = re.compile(filter_value)
+        for fields in options:
+            if self.keep == (not filter_pattern.match(fields[self.column]) is None):
                 rval.append(fields)
         return rval
 
@@ -141,6 +179,9 @@ class DataMetaFilter(Filter):
         if not isinstance(ref, HistoryDatasetAssociation) and not is_data_or_data_list:
             return []  # not a valid dataset
 
+        # get the metadata value. for lists (of data sets) and collections
+        # the meta data value of all elements is determined if its the same
+        # for all, if different are found the filter returns an empty list
         if is_data_list:
             meta_value = None
             for single_ref in ref:
@@ -155,6 +196,8 @@ class DataMetaFilter(Filter):
         else:
             meta_value = ref.metadata.get(self.key, None)
 
+        # if no meta data value could be determined just return a copy
+        # of the original options
         if meta_value is None:
             return [(disp_name, optval, selected) for disp_name, optval, selected in options]
 
@@ -226,7 +269,7 @@ class ParamValueFilter(Filter):
         ref = str(ref)
         rval = []
         for fields in options:
-            if (self.keep and fields[self.column] == ref) or (not self.keep and fields[self.column] != ref):
+            if self.keep == (fields[self.column] == ref):
                 rval.append(fields)
         return rval
 
@@ -291,6 +334,8 @@ class MultipleSplitterFilter(Filter):
 class AttributeValueSplitterFilter(Filter):
     """
     Filters a list of attribute-value pairs to be unique attribute names.
+
+    DEPRECATED: just replace with 2 rounds of MultipleSplitterFilter
 
     Type: attribute_value_splitter
 
@@ -388,7 +433,7 @@ class RemoveValueFilter(Filter):
         self.ref_name = elem.get("ref", None)
         self.meta_ref = elem.get("meta_ref", None)
         self.metadata_key = elem.get("key", None)
-        assert self.value is not None or ((self.ref_name is not None or self.meta_ref is not None)and self.metadata_key is not None), ValueError("Required 'value' or 'ref' and 'key' attributes missing from filter")
+        assert self.value is not None or self.ref_name is not None or (self.meta_ref is not None and self.metadata_key is not None), ValueError("Required 'value', or 'ref', or 'meta_ref' and 'key' attributes missing from filter")
         self.multiple = string_as_bool(elem.get("multiple", "False"))
         self.separator = elem.get("separator", ",")
 
@@ -401,13 +446,14 @@ class RemoveValueFilter(Filter):
                 if self.multiple:
                     option_value = option_value.split(self.separator)
                     for value in filter_value:
-                        if value not in filter_value:
+                        if value not in option_value:
                             return False
                     return True
                 return option_value in filter_value
             if self.multiple:
                 return filter_value in option_value.split(self.separator)
             return option_value == filter_value
+
         value = self.value
         if value is None:
             if self.ref_name is not None:
@@ -419,7 +465,9 @@ class RemoveValueFilter(Filter):
                 if not isinstance(data_ref, HistoryDatasetAssociation) and not isinstance(data_ref, galaxy.tools.wrappers.DatasetFilenameWrapper):
                     return options  # cannot modify options
                 value = data_ref.metadata.get(self.metadata_key, None)
-        return [(disp_name, optval, selected) for disp_name, optval, selected in options if not compare_value(optval, value)]
+        # Default to the second column (i.e. 1) since this used to work only on options produced by the data_meta filter
+        value_col = self.dynamic_option.columns.get('value', 1)
+        return [option for option in options if not compare_value(option[value_col], value)]
 
 
 class SortByColumnFilter(Filter):
@@ -439,20 +487,13 @@ class SortByColumnFilter(Filter):
         self.column = d_option.column_spec_to_index(column)
 
     def filter_options(self, options, trans, other_values):
-        rval = []
-        for fields in options:
-            for j in range(0, len(rval)):
-                if fields[self.column] < rval[j][self.column]:
-                    rval.insert(j, fields)
-                    break
-            else:
-                rval.append(fields)
-        return rval
+        return sorted(options, key=lambda x: x[self.column])
 
 
 filter_types = dict(data_meta=DataMetaFilter,
                     param_value=ParamValueFilter,
                     static_value=StaticValueFilter,
+                    regexp=RegexpFilter,
                     unique_value=UniqueValueFilter,
                     multiple_splitter=MultipleSplitterFilter,
                     attribute_value_splitter=AttributeValueSplitterFilter,
@@ -470,7 +511,7 @@ class DynamicOptions(object):
             for field in from_parameter.split('.'):
                 obj = getattr(obj, field)
             if transform_lines:
-                obj = eval(transform_lines)
+                obj = eval(transform_lines, {'self': self, 'obj': obj})
             return self.parse_file_fields(obj)
         self.tool_param = tool_param
         self.columns = {}
@@ -615,11 +656,13 @@ class DynamicOptions(object):
             # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
             path = dataset.file_name
             if os.path.getsize(path) < 1048576:
-                options = self.parse_file_fields(open(path))
+                with open(path) as fh:
+                    options = self.parse_file_fields(fh)
             else:
                 # Pass just the first megabyte to parse_file_fields.
                 log.warning("Attempting to load options from large file, reading just first megabyte")
-                contents = open(path, 'r').read(1048576)
+                with open(path, 'r') as fh:
+                    contents = fh.read(1048576)
                 options = self.parse_file_fields(StringIO(contents))
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()

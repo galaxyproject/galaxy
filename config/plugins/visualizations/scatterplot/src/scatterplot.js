@@ -20,7 +20,7 @@ var Visualization = Backbone.Model.extend({
         /** override urlRoot to handle prefix */
         urlRoot: function() {
             var apiUrl = "api/visualizations";
-            return Galaxy.root + apiUrl;
+            return Galaxy.root_api + apiUrl;
         },
 
         /** Set up the model, determine if accessible, bind listeners
@@ -674,24 +674,24 @@ ScatterplotConfigEditor.templates = {
             // tab buttons/headers using Bootstrap
             '<ul class="nav nav-tabs">',
             // start with the data controls as the displayed tab
-            '<li class="active">',
-            '<a title="Use this tab to change which data are used"',
+            '<li class="nav-item active">',
+            '<a class="nav-link" title="Use this tab to change which data are used"',
             'href="#data-control" data-toggle="tab">Data Controls</a>',
-            "</li>",
-            "<li>",
-            '<a title="Use this tab to change how the chart is drawn"',
+            '</li>',
+            '<li class="nav-item">',
+            '<a class="nav-link" title="Use this tab to change how the chart is drawn"',
             'href="#chart-control" data-toggle="tab" >Chart Controls</a>',
-            "</li>",
+            '</li>',
             // chart starts as disabled since there's no info yet
-            '<li class="disabled">',
-            '<a title="This tab will display the chart"',
+            '<li class="nav-item disabled">',
+            '<a class="nav-link" title="This tab will display the chart"',
             'href="#chart-display" data-toggle="tab">Chart</a>',
-            "</li>",
+            '</li>',
             // button for saving the visualization config on the server
-            '<li class="file-controls">',
-            '<button class="save-btn btn btn-default">Save</button>',
-            "</li>",
-            "</ul>",
+            '<li class="nav-item">',
+            '<a class="save-btn nav-link">Save</a>',
+            '</li>',
+            '</ul>',
 
             // data form, chart config form, chart all get their own tab
             '<div class="tab-content">',

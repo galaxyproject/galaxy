@@ -2,16 +2,17 @@
 Manage automatic installation of tools configured in the xxx.xml files in ~/scripts/migrate_tools (e.g., 0002_tools.xml).
 All of the tools were at some point included in the Galaxy distribution, but are now hosted in the main Galaxy tool shed.
 """
+import errno
 import logging
 import os
 import shutil
 import tempfile
 import threading
+from collections import OrderedDict
 
 from galaxy import util
 from galaxy.tools.toolbox import ToolSection
 from galaxy.tools.toolbox.parser import ensure_tool_conf_item
-from galaxy.util.odict import odict
 from tool_shed.galaxy_install import install_manager
 from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
@@ -31,6 +32,12 @@ from tool_shed.util import (
 log = logging.getLogger(__name__)
 
 
+MIGRATED_TOOLS_CONF_XML = """<?xml version="1.0"?>
+<toolbox tool_path="{shed_tools_dir}">
+</toolbox>
+"""
+
+
 class ToolMigrationManager(object):
 
     def __init__(self, app, latest_migration_script_number, tool_shed_install_config, migrated_tools_config,
@@ -47,7 +54,7 @@ class ToolMigrationManager(object):
         self.tpm = tool_panel_manager.ToolPanelManager(self.app)
         # If install_dependencies is True but tool_dependency_dir is not set, do not attempt
         # to install but print informative error message.
-        if install_dependencies and app.config.tool_dependency_dir is None:
+        if install_dependencies and app.tool_dependency_dir is None:
             message = 'You are attempting to install tool dependencies but do not have a value '
             message += 'for "tool_dependency_dir" set in your galaxy.ini file.  Set this '
             message += 'location value to the path where you want tool dependencies installed and '
@@ -59,7 +66,15 @@ class ToolMigrationManager(object):
         self.proprietary_tool_panel_elems = self.get_proprietary_tool_panel_elems(latest_migration_script_number)
         # Set the location where the repositories will be installed by retrieving the tool_path
         # setting from migrated_tools_config.
-        tree, error_message = xml_util.parse_xml(migrated_tools_config)
+        try:
+            tree, error_message = xml_util.parse_xml(migrated_tools_config)
+        except (IOError, OSError) as exc:
+            if exc.errno == errno.ENOENT:
+                with open(migrated_tools_config, 'w') as fh:
+                    fh.write(MIGRATED_TOOLS_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir))
+                tree, error_message = xml_util.parse_xml(migrated_tools_config)
+            else:
+                raise
         if tree is None:
             log.error(error_message)
         else:
@@ -97,7 +112,7 @@ class ToolMigrationManager(object):
                     # tool_shed_accessible to True so that the value of migrate_tools.version can
                     # be correctly set in the database.
                     tool_shed_accessible = True
-                    missing_tool_configs_dict = odict()
+                    missing_tool_configs_dict = OrderedDict()
                 if tool_shed_accessible:
                     if len(self.proprietary_tool_confs) == 1:
                         plural = ''
@@ -371,7 +386,7 @@ class ToolMigrationManager(object):
         entries are automatically added to the reserved migrated_tools_conf.xml file as part of the migration process.
         """
         tool_configs_to_filter = []
-        tool_panel_dict_for_display = odict()
+        tool_panel_dict_for_display = OrderedDict()
         if self.tool_path:
             repo_install_dir = os.path.join(self.tool_path, relative_install_dir)
         else:

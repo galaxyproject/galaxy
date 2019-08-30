@@ -1,12 +1,19 @@
 // This file isn't really testing anything useful yet, it is just testing
 // (or demonstrating) qunit+backbone interactions.
-/* global define */
+
+/* global QUnit */
 import testApp from "qunit/test-app";
 import HDA_MODEL from "mvc/history/hda-model";
 import HDA_BASE from "mvc/history/hda-li";
-import $ from "jquery";
 
-QUnit.module("HDA base backbone view tests");
+QUnit.module("HDA base backbone view tests", {
+    beforeEach: function() {
+        testApp.create();
+    },
+    afterEach: function() {
+        testApp.destroy();
+    }
+});
 
 QUnit.test("Base HDA view default construction, initialize", function(assert) {
     var hda = new HDA_MODEL.HistoryDatasetAssociation({

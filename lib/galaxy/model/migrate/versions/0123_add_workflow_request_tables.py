@@ -5,9 +5,28 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, Integer, MetaData, String, Table, TEXT, Unicode
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    TEXT,
+    Unicode
+)
 
-from galaxy.model.custom_types import JSONType, TrimmedString, UUIDType
+from galaxy.model.custom_types import (
+    JSONType,
+    TrimmedString,
+    UUIDType
+)
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    create_table,
+    drop_column,
+    drop_table
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -61,12 +80,12 @@ TABLES = [
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     for table in TABLES:
-        __create(table)
+        create_table(table)
 
     History_column = Column("history_id", Integer, ForeignKey("history.id"), nullable=True)
     State_column = Column("state", TrimmedString(64))
@@ -75,11 +94,11 @@ def upgrade(migrate_engine):
     SchedulerId_column = Column("scheduler", TrimmedString(255))
     HandlerId_column = Column("handler", TrimmedString(255))
     WorkflowUUID_column = Column("uuid", UUIDType, nullable=True)
-    __add_column(History_column, "workflow_invocation", metadata)
-    __add_column(State_column, "workflow_invocation", metadata)
-    __add_column(SchedulerId_column, "workflow_invocation", metadata, index_nane="id_workflow_invocation_scheduler")
-    __add_column(HandlerId_column, "workflow_invocation", metadata, index_name="id_workflow_invocation_handler")
-    __add_column(WorkflowUUID_column, "workflow_invocation", metadata)
+    add_column(History_column, "workflow_invocation", metadata)
+    add_column(State_column, "workflow_invocation", metadata)
+    add_column(SchedulerId_column, "workflow_invocation", metadata, index_nane="id_workflow_invocation_scheduler")
+    add_column(HandlerId_column, "workflow_invocation", metadata, index_name="id_workflow_invocation_handler")
+    add_column(WorkflowUUID_column, "workflow_invocation", metadata)
 
     # All previous invocations have been scheduled...
     cmd = "UPDATE workflow_invocation SET state = 'scheduled'"
@@ -89,7 +108,7 @@ def upgrade(migrate_engine):
         log.exception("failed to update past workflow invocation states.")
 
     WorkflowInvocationStepAction_column = Column("action", JSONType, nullable=True)
-    __add_column(WorkflowInvocationStepAction_column, "workflow_invocation_step", metadata)
+    add_column(WorkflowInvocationStepAction_column, "workflow_invocation_step", metadata)
 
 
 def downgrade(migrate_engine):
@@ -97,41 +116,11 @@ def downgrade(migrate_engine):
     metadata.reflect()
 
     for table in TABLES:
-        __drop(table)
+        drop_table(table)
 
-    __drop_column("state", "workflow_invocation", metadata)
-    __drop_column("scheduler", "workflow_invocation", metadata)
-    __drop_column("uuid", "workflow_invocation", metadata)
-    __drop_column("history_id", "workflow_invocation", metadata)
-    __drop_column("handler", "workflow_invocation", metadata)
-    __drop_column("action", "workflow_invocation_step", metadata)
-
-
-def __add_column(column, table_name, metadata, **kwds):
-    try:
-        table = Table(table_name, metadata, autoload=True)
-        column.create(table, **kwds)
-    except Exception:
-        log.exception("Adding column %s column failed.", column)
-
-
-def __drop_column(column_name, table_name, metadata):
-    try:
-        table = Table(table_name, metadata, autoload=True)
-        getattr(table.c, column_name).drop()
-    except Exception:
-        log.exception("Dropping column %s failed.", column_name)
-
-
-def __create(table):
-    try:
-        table.create()
-    except Exception:
-        log.exception("Creating %s table failed.", table.name)
-
-
-def __drop(table):
-    try:
-        table.drop()
-    except Exception:
-        log.exception("Dropping %s table failed.", table.name)
+    drop_column("state", "workflow_invocation", metadata)
+    drop_column("scheduler", "workflow_invocation", metadata)
+    drop_column("uuid", "workflow_invocation", metadata)
+    drop_column("history_id", "workflow_invocation", metadata)
+    drop_column("handler", "workflow_invocation", metadata)
+    drop_column("action", "workflow_invocation_step", metadata)

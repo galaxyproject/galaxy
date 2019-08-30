@@ -653,7 +653,7 @@ class VcfDataProvider(GenomeDataProvider):
                 return ref_in_alt_index, alt[ref_in_alt_index + 1:], [[cig_ops.find("I"), alt_len - ref_len]]
 
         # Pack data.
-        genotype_re = re.compile('/|\|')
+        genotype_re = re.compile(r'/|\|')
         for count, line in enumerate(iterator):
             if count < start_val:
                 continue

@@ -98,8 +98,9 @@ class Test_BaseDataProvider(BaseTestCase):
         """
         def non_iterator_dprov(source):
             return self.provider_class(source)
+        # two objects without __iter__ method: build in function and int
         self.assertRaises(exceptions.InvalidDataProviderSource,
-            non_iterator_dprov, 'one two three')
+            non_iterator_dprov, sum)
         self.assertRaises(exceptions.InvalidDataProviderSource,
             non_iterator_dprov, 40)
 

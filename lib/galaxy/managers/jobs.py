@@ -8,8 +8,13 @@ from sqlalchemy.orm import aliased
 from sqlalchemy.sql import select
 
 from galaxy import model
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    ItemAccessibilityException,
+    ObjectNotFound,
+    RequestParameterInvalidException,
+)
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.util import (
@@ -37,6 +42,28 @@ def get_path_key(path_tuple):
         else:
             path_key = p
     return path_key
+
+
+class JobManager(object):
+
+    def __init__(self, app):
+        self.app = app
+        self.dataset_manager = DatasetManager(app)
+
+    def get_accessible_job(self, trans, decoded_job_id):
+        job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
+        if job is None:
+            raise ObjectNotFound()
+        belongs_to_user = (job.user == trans.user) if job.user else (job.session_id == trans.get_galaxy_session().id)
+        if not trans.user_is_admin and not belongs_to_user:
+            # Check access granted via output datasets.
+            if not job.output_datasets:
+                raise ItemAccessibilityException("Job has no output datasets.")
+            for data_assoc in job.output_datasets:
+                if not self.dataset_manager.is_accessible(data_assoc.dataset.dataset, trans.user):
+                    raise ItemAccessibilityException("You are not allowed to rerun this job.")
+        trans.sa_session.refresh(job)
+        return job
 
 
 class JobSearch(object):
@@ -147,25 +174,28 @@ class JobSearch(object):
                     conditions.append(and_(
                         model.Job.id == a.job_id,
                         a.name == k,
-                        a.dataset_id == b.id,
+                        a.dataset_id == b.id,  # b is the HDA use for the job
                         c.dataset_id == b.dataset_id,
                         c.id == v,  # c is the requested job input HDA
-                        # We can compare input dataset names and metadata for a job
-                        # if we know that the input dataset hasn't changed since the job was run,
-                        # or if the job recorded a dataset_version and name and metadata of the current
-                        # job request matches those that were recorded for the job in question (introduced in release 18.01)
-                        or_(and_(
-                            b.update_time < model.Job.create_time,
-                            b.name == c.name,
-                            b.extension == c.extension,
-                            b.metadata == c.metadata,
-                        ), and_(
-                            b.id == e.history_dataset_association_id,
-                            a.dataset_version == e.version,
-                            e.name == c.name,
-                            e.extension == c.extension,
-                            e._metadata == c._metadata,
-                        )),
+                        # We need to make sure that the job we are looking for has been run with identical inputs.
+                        # Here we deal with 3 requirements:
+                        #  - the jobs' input dataset (=b) version is 0, meaning the job's input dataset is not yet ready
+                        #  - b's update_time is older than the job create time, meaning no changes occurred
+                        #  - the job has a dataset_version recorded, and that versions' metadata matches c's metadata.
+                        or_(
+                            and_(or_(a.dataset_version.in_([0, b.version]),
+                                     b.update_time < model.Job.create_time),
+                                 b.name == c.name,
+                                 b.extension == c.extension,
+                                 b.metadata == c.metadata,
+                                 ),
+                            and_(b.id == e.history_dataset_association_id,
+                                 a.dataset_version == e.version,
+                                 e.name == c.name,
+                                 e.extension == c.extension,
+                                 e._metadata == c._metadata,
+                                 ),
+                        ),
                         or_(b.deleted == false(), c.deleted == false())
                     ))
                     if identifier:
@@ -174,13 +204,13 @@ class JobSearch(object):
                                              d.value == json.dumps(identifier)))
                     used_ids.append(a.dataset_id)
                 elif t == 'ldda':
-                        a = aliased(model.JobToInputLibraryDatasetAssociation)
-                        conditions.append(and_(
-                            model.Job.id == a.job_id,
-                            a.name == k,
-                            a.ldda_id == v
-                        ))
-                        used_ids.append(a.ldda_id)
+                    a = aliased(model.JobToInputLibraryDatasetAssociation)
+                    conditions.append(and_(
+                        model.Job.id == a.job_id,
+                        a.name == k,
+                        a.ldda_id == v
+                    ))
+                    used_ids.append(a.ldda_id)
                 elif t == 'hdca':
                     a = aliased(model.JobToInputDatasetCollectionAssociation)
                     b = aliased(model.HistoryDatasetCollectionAssociation)
@@ -203,7 +233,7 @@ class JobSearch(object):
                     return []
 
         for k, v in wildcard_param_dump.items():
-            wildcard_value = json.dumps(v).replace('"id": "__id_wildcard__"', '"id": %')
+            wildcard_value = json.dumps(v, sort_keys=True).replace('"id": "__id_wildcard__"', '"id": %')
             a = aliased(model.JobParameter)
             conditions.append(and_(
                 model.Job.id == a.job_id,
@@ -239,7 +269,7 @@ class JobSearch(object):
                     a = aliased(model.JobParameter)
                     job_parameter_conditions.append(and_(
                         a.name == k,
-                        a.value == json.dumps(v)
+                        a.value == json.dumps(v, sort_keys=True)
                     ))
             else:
                 job_parameter_conditions = [model.Job.id == job]
@@ -290,7 +320,7 @@ def fetch_job_states(app, sa_session, job_source_ids, job_source_types):
 
 
 def summarize_jobs_to_dict(sa_session, jobs_source):
-    """Proudce a summary of jobs for job summary endpoints.
+    """Produce a summary of jobs for job summary endpoints.
 
     :type   jobs_source: a Job or ImplicitCollectionJobs or None
     :param  jobs_source: the object to summarize

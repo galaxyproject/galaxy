@@ -24,6 +24,7 @@ import os
 import re
 import shutil
 import tempfile
+import unittest
 
 from base import integration_util
 from base.api_util import (
@@ -45,12 +46,12 @@ SCRIPT_DIR = os.path.normpath(os.path.dirname(__file__))
 TEST_DATA_DIRECTORY = os.path.join(SCRIPT_DIR, os.pardir, os.pardir, "test-data")
 
 
-class BaseUploadContentConfigurationTestCase(integration_util.IntegrationTestCase):
+class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstance):
 
     framework_tool_and_types = True
 
     def setUp(self):
-        super(BaseUploadContentConfigurationTestCase, self).setUp()
+        super(BaseUploadContentConfigurationInstance, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
@@ -82,6 +83,10 @@ class BaseUploadContentConfigurationTestCase(integration_util.IntegrationTestCas
     def _ensure_directory(self, path):
         if not os.path.exists(path):
             os.makedirs(path)
+
+
+class BaseUploadContentConfigurationTestCase(BaseUploadContentConfigurationInstance, unittest.TestCase):
+    pass
 
 
 class InvalidFetchRequestsTestCase(BaseUploadContentConfigurationTestCase):
@@ -669,13 +674,13 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
         full_dir_path = os.path.join(self.server_dir(), dir_to_import)
         os.makedirs(full_dir_path)
         file_content = "hello world\n"
-        with tempfile.NamedTemporaryFile(dir=full_dir_path, delete=False) as fh:
+        with tempfile.NamedTemporaryFile(mode='w', dir=full_dir_path, delete=False) as fh:
             fh.write(file_content)
             file_to_import = fh.name
 
         library_dataset = self.library_populator.new_library_dataset("serverdirupload", upload_option="upload_directory", server_dir=dir_to_import)
         # Check the file is still there and was not modified
-        with open(file_to_import) as fh:
+        with open(file_to_import, 'r') as fh:
             read_content = fh.read()
         assert read_content == file_content
 
@@ -839,3 +844,25 @@ class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
         library = matching[0]
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/file1")
         assert dataset["file_size"] == 6, dataset
+
+
+class TestDirectoryAndCompressedTypes(BaseUploadContentConfigurationTestCase):
+
+    require_admin_user = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["allow_path_paste"] = True
+
+    def test_tar_to_directory(self):
+        dataset = self.dataset_populator.new_dataset(
+            self.history_id, 'file://%s/testdir.tar' % TEST_DATA_DIRECTORY, file_type="tar", auto_decompress=False, wait=True
+        )
+        dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset)
+        assert dataset["file_ext"] == "tar", dataset
+        response = self.dataset_populator.run_tool(
+            tool_id="CONVERTER_tar_to_directory",
+            inputs={"input1": {"src": "hda", "id": dataset["id"]}},
+            history_id=self.history_id,
+        )
+        self.dataset_populator.wait_for_job(response["jobs"][0]["id"])

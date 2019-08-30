@@ -128,7 +128,7 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
         assert "github.com/galaxyproject/example/test_tool/0.2" not in open(os.path.join(self.test_directory, "tool_conf.xml"), "r").read()
         self._verify_tool_confs()
 
-        self._remove_guids(["github.com/galaxyproject/example/test_tool/0.1"], uninstall=True)
+        self._remove_repository_contents("github.com/galaxyproject/example/test_tool/0.1", uninstall=True)
 
         # Now no versions of this tool are returned by new toolbox.
         new_toolbox = self.get_new_toolbox()
@@ -144,7 +144,7 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
         self._setup_two_versions_in_config(section=True)
         self._setup_two_versions()
         self.toolbox
-        self._remove_guids(["github.com/galaxyproject/example/test_tool/0.2"], uninstall=uninstall)
+        self._remove_repository_contents("github.com/galaxyproject/example/test_tool/0.2", uninstall=uninstall)
 
     def _verify_version_2_removed_from_panel(self, section=True):
         # Check that test_tool now only has one version...
@@ -164,9 +164,11 @@ class ToolPanelManagerTestCase(BaseToolBoxTestCase):
             next(iter(self.toolbox._tool_panel.values())).id == "github.com/galaxyproject/example/test_tool/0.1"
             assert "github.com/galaxyproject/example/test_tool/0.2" not in new_toolbox._integrated_tool_panel
 
-    def _remove_guids(self, guids, uninstall, shed_tool_conf="tool_conf.xml"):
-        self.tpm.remove_guids(
-            guids_to_remove=guids,
+    def _remove_repository_contents(self, guid, uninstall, shed_tool_conf="tool_conf.xml"):
+        tool = self.toolbox.get_tool(guid)
+        repository = tool.tool_shed_repository
+        self.tpm.remove_repository_contents(
+            repository=repository,
             shed_tool_conf=shed_tool_conf,
             uninstall=uninstall,
         )

@@ -8,11 +8,12 @@ import shutil
 import string
 import tempfile
 import zipfile
-from cgi import escape
+from collections import OrderedDict
 from inspect import isclass
 
-import paste
 import six
+import webob.exc
+from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
@@ -21,10 +22,10 @@ from galaxy.util import (
     compression_utils,
     FILENAME_VALID_CHARS,
     inflector,
+    smart_str,
     unicodify
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from . import (
     dataproviders,
@@ -45,6 +46,36 @@ valid_strand = ['+', '-', '.']
 
 DOWNLOAD_FILENAME_PATTERN_DATASET = "Galaxy${hid}-[${name}].${ext}"
 DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}__${element_identifier}].${ext}"
+
+
+class DatatypeValidation(object):
+
+    def __init__(self, state, message):
+        self.state = state
+        self.message = message
+
+    @staticmethod
+    def validated():
+        return DatatypeValidation("ok", "Dataset validated by datatype validator.")
+
+    @staticmethod
+    def invalid(message):
+        return DatatypeValidation("invalid", message)
+
+    @staticmethod
+    def unvalidated():
+        return DatatypeValidation("unknown", "Dataset validation unimplemented for this datatype.")
+
+    def __repr__(self):
+        return "DatatypeValidation[state=%s,message=%s]" % (self.state, self.message)
+
+
+def validate(dataset_instance):
+    try:
+        datatype_validation = dataset_instance.datatype.validate(dataset_instance)
+    except Exception as e:
+        datatype_validation = DatatypeValidation.invalid("Problem running datatype validation method [%s]" % str(e))
+    return datatype_validation
 
 
 class DataMeta(abc.ABCMeta):
@@ -99,7 +130,7 @@ class Data(object):
     allow_datatype_change = True
     # Composite datatypes
     composite_type = None
-    composite_files = odict()
+    composite_files = OrderedDict()
     primary_file_name = 'index'
     # A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
     _max_optional_metadata_filesize = None
@@ -115,7 +146,7 @@ class Data(object):
         object.__init__(self, **kwd)
         self.supported_display_apps = self.supported_display_apps.copy()
         self.composite_files = self.composite_files.copy()
-        self.display_applications = odict()
+        self.display_applications = OrderedDict()
 
     def get_raw_data(self, dataset):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
@@ -209,7 +240,7 @@ class Data(object):
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek %s" % str(exc)
+            out = "Can't create peek: %s" % unicodify(exc)
         return out
 
     def _archive_main_file(self, archive, display_name, data_filename):
@@ -247,11 +278,23 @@ class Data(object):
             try:
                 if params.do_action == 'zip':
                     # Can't use mkstemp - the file must not exist first
-                    tmpd = tempfile.mkdtemp()
+                    tmpd = tempfile.mkdtemp(dir=trans.app.config.new_file_path, prefix='gx_composite_archive_')
                     util.umask_fix_perms(tmpd, trans.app.config.umask, 0o777, trans.app.config.gid)
                     tmpf = os.path.join(tmpd, 'library_download.' + params.do_action)
                     archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_DEFLATED, True)
-                    archive.add = lambda x, y: archive.write(x, y.encode('CP437'))
+
+                    def zipfile_add(fpath, arcname):
+                        encoded_arcname = arcname.encode('CP437')
+                        try:
+                            archive.write(fpath, encoded_arcname)
+                        except TypeError:
+                            # Despite documenting the need for CP437 encoded arcname,
+                            # python 3 actually needs this to be a unicode string ...
+                            # https://bugs.python.org/issue24110
+                            archive.write(fpath, arcname)
+
+                    archive.add = zipfile_add
+
                 elif params.do_action == 'tgz':
                     archive = util.streamball.StreamBall('w|gz')
                 elif params.do_action == 'tbz':
@@ -284,7 +327,7 @@ class Data(object):
                 if not error:
                     if params.do_action == 'zip':
                         archive.close()
-                        tmpfh = open(tmpf)
+                        tmpfh = open(tmpf, 'rb')
                         # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp
                         trans.response.set_content_type("application/x-zip-compressed")
                         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.zip"' % outfname
@@ -313,7 +356,7 @@ class Data(object):
         trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
         filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
-        return open(dataset.file_name)
+        return open(dataset.file_name, mode='rb')
 
     def to_archive(self, trans, dataset, name=""):
         """
@@ -340,10 +383,11 @@ class Data(object):
         return zip(file_paths, rel_paths)
 
     def display_data(self, trans, data, preview=False, filename=None, to_ext=None, **kwd):
-        """ Old display method, for transition - though still used by API and
-        test framework. Datatypes should be very careful if overridding this
-        method and this interface between datatypes and Galaxy will likely
-        change.
+        """
+        Displays data in central pane if preview is `True`, else handles download.
+
+        Datatypes should be very careful if overridding this method and this interface
+        between datatypes and Galaxy will likely change.
 
         TOOD: Document alternatives to overridding this method (data
         providers?).
@@ -355,13 +399,15 @@ class Data(object):
         # content from being rendered in the browser
         trans.response.headers['X-Content-Type-Options'] = 'nosniff'
         if isinstance(data, six.string_types):
-            return data
+            return smart_str(data)
         if filename and filename != "index":
             # For files in extra_files_path
-            file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
+            store_by = data.dataset.object_store.store_by
+            extra_dir = 'dataset_%s_files' % getattr(data.dataset, store_by)
+            file_path = trans.app.object_store.get_filename(data.dataset, extra_dir=extra_dir, alt_name=filename)
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
-                    with tempfile.NamedTemporaryFile(delete=False) as tmp_fh:
+                    with tempfile.NamedTemporaryFile(mode='w', delete=False, dir=trans.app.config.new_file_path, prefix='gx_html_autocreate_') as tmp_fh:
                         tmp_file_name = tmp_fh.name
                         dir_items = sorted(os.listdir(file_path))
                         base_path, item_name = os.path.split(file_path)
@@ -391,7 +437,7 @@ class Data(object):
                 self._clean_and_set_mime_type(trans, mime)
                 return self._yield_user_file_content(trans, data, file_path)
             else:
-                return paste.httpexceptions.HTTPNotFound("Could not find '%s' on the extra files path %s." % (filename, file_path))
+                return webob.exc.HTTPNotFound("Could not find '%s' on the extra files path %s." % (filename, file_path))
         self._clean_and_set_mime_type(trans, data.get_mime())
 
         trans.log_event("Display dataset id: %s" % str(data.id))
@@ -404,9 +450,9 @@ class Data(object):
                 filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
                 trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
-                return open(data.file_name)
+                return open(data.file_name, 'rb')
         if not os.path.exists(data.file_name):
-            raise paste.httpexceptions.HTTPNotFound("File Not Found (%s)." % data.file_name)
+            raise webob.exc.HTTPNotFound("File Not Found (%s)." % data.file_name)
         max_peek_size = 1000000  # 1 MB
         if isinstance(data.datatype, datatypes.text.Html):
             max_peek_size = 10000000  # 10 MB for html
@@ -416,7 +462,7 @@ class Data(object):
         else:
             trans.response.set_content_type("text/html")
             return trans.stream_template_mako("/dataset/large_file.mako",
-                                              truncated_data=open(data.file_name).read(max_peek_size),
+                                              truncated_data=open(data.file_name, 'rb').read(max_peek_size),
                                               data=data)
 
     def _yield_user_file_content(self, trans, from_dataset, filename):
@@ -426,20 +472,22 @@ class Data(object):
             # Check to see if this dataset's parent job is whitelisted
             # We cannot currently trust imported datasets for rendering.
             if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id in trans.app.config.sanitize_whitelist:
-                return open(filename)
+                return open(filename, mode='rb')
 
             # This is returning to the browser, it needs to be encoded.
             # TODO Ideally this happens a layer higher, but this is a bad
             # issue affecting many tools
-            return sanitize_html(open(filename).read()).encode('utf-8')
+            return sanitize_html(open(filename, 'r').read()).encode('utf-8')
 
-        return open(filename)
+        return open(filename, mode='rb')
 
     def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None):
         def escape(raw_identifier):
             return ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in raw_identifier)[0:150]
 
-        if not to_ext:
+        if not to_ext or to_ext == "data":
+            # If a client requests to_ext with the extension 'data', they are
+            # deferring to the server, set it based on datatype.
             to_ext = dataset.extension
 
         template_values = {
@@ -485,10 +533,6 @@ class Data(object):
         except Exception:
             return "info unavailable"
 
-    def validate(self, dataset):
-        """Unimplemented validate, return no exceptions"""
-        return list()
-
     def repair_methods(self, dataset):
         """Unimplemented method, returns dict with method/option for repairing errors"""
         return None
@@ -528,7 +572,7 @@ class Data(object):
         return self.display_applications.get(key, default)
 
     def get_display_applications_by_dataset(self, dataset, trans):
-        rval = odict()
+        rval = OrderedDict()
         for key, value in self.display_applications.items():
             value = value.filter_by_dataset(dataset, trans)
             if value.links:
@@ -648,7 +692,7 @@ class Data(object):
 
     @property
     def writable_files(self, dataset=None):
-        files = odict()
+        files = OrderedDict()
         if self.composite_type != 'auto_primary_file':
             files[self.primary_file_name] = self.__new_composite_file(self.primary_file_name)
         for key, value in self.get_composite_files(dataset=dataset).items():
@@ -664,7 +708,7 @@ class Data(object):
                     meta_value = self.metadata_spec[composite_file.substitute_name_with_metadata].default
                 return key % meta_value
             return key
-        files = odict()
+        files = OrderedDict()
         for key, value in self.composite_files.items():
             files[substitute_composite_key(key, value)] = value
         return files
@@ -724,6 +768,9 @@ class Data(object):
         if self.has_dataprovider(data_format):
             return self.dataproviders[data_format](self, dataset, **settings)
         raise dataproviders.exceptions.NoProviderAvailable(self, data_format)
+
+    def validate(self, dataset, **kwd):
+        return DatatypeValidation.unvalidated()
 
     @dataproviders.decorators.dataprovider_factory('base')
     def base_dataprovider(self, dataset, **settings):
@@ -785,10 +832,17 @@ class Text(Data):
         skipping all blank lines and comments.
         """
         data_lines = 0
-        for line in open(dataset.file_name):
-            line = line.strip()
-            if line and not line.startswith('#'):
-                data_lines += 1
+        with compression_utils.get_fileobj(dataset.file_name) as in_file:
+            # FIXME: Potential encoding issue can prevent the ability to iterate over lines
+            # causing set_meta process to fail otherwise OK jobs. A better solution than
+            # a silent try/except is desirable.
+            try:
+                for line in in_file:
+                    line = line.strip()
+                    if line and not line.startswith('#'):
+                        data_lines += 1
+            except Exception:
+                pass
         return data_lines
 
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True):
@@ -885,7 +939,7 @@ class Text(Data):
                     part_file.write(a_line)
                     lines_remaining -= 1
         except Exception as e:
-            log.error('Unable to split files: %s' % str(e))
+            log.error('Unable to split files: %s', unicodify(e))
             raise
         finally:
             f.close()
@@ -911,6 +965,10 @@ class Text(Data):
         """
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         return dataproviders.line.RegexLineDataProvider(dataset_source, **settings)
+
+
+class Directory(Data):
+    """Class representing a directory of files."""
 
 
 class GenericAsn1(Text):
@@ -1001,9 +1059,14 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
     :param is_multi_byte: deprecated
     :type  is_multi_byte: bool
 
-    >>> fname = get_test_fname('4.bed')
-    >>> get_file_peek(fname, LINE_COUNT=1)
-    u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n'
+    >>> def assert_peek_is(file_name, expected, *args, **kwd):
+    ...     path = get_test_fname(file_name)
+    ...     peek = get_file_peek(path, *args, **kwd)
+    ...     assert peek == expected, "%s != %s" % (peek, expected)
+    >>> assert_peek_is('0_nonewline', u'0')
+    >>> assert_peek_is('0.txt', u'0\\n')
+    >>> assert_peek_is('4.bed', u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n', LINE_COUNT=1)
+    >>> assert_peek_is('1.bed', u'chr1\\t147962192\\t147962580\\tCCDS989.1_cds_0_0_chr1_147962193_r\\t0\\t-\\nchr1\\t147984545\\t147984630\\tCCDS990.1_cds_0_0_chr1_147984546_f\\t0\\t+\\n', LINE_COUNT=2)
     """
     # Set size for file.readline() to a negative number to force it to
     # read until either a newline or EOF.  Needed for datasets with very
@@ -1014,20 +1077,27 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
         skipchars = []
     lines = []
     count = 0
+
+    last_line_break = False
     with compression_utils.get_fileobj(file_name, "U") as temp:
         while count < LINE_COUNT:
             try:
                 line = temp.readline(WIDTH)
             except UnicodeDecodeError:
                 return "binary file"
-            if not line_wrap:
-                if line.endswith('\n'):
-                    line = line[:-1]
-                else:
-                    while True:
-                        i = temp.read(1)
-                        if not i or i == '\n':
-                            break
+            if line == "":
+                break
+            last_line_break = False
+            if line.endswith('\n'):
+                line = line[:-1]
+                last_line_break = True
+            elif not line_wrap:
+                while True:
+                    i = temp.read(1)
+                    if i == '\n':
+                        last_line_break = True
+                    if not i or i == '\n':
+                        break
             skip_line = False
             for skipchar in skipchars:
                 if line.startswith(skipchar):
@@ -1036,4 +1106,4 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
             if not skip_line:
                 lines.append(line)
                 count += 1
-    return '\n'.join(lines)
+    return '\n'.join(lines) + ('\n' if last_line_break else '')

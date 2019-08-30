@@ -25,12 +25,12 @@ from galaxy.managers.jobs import fetch_job_states, summarize_jobs_to_dict
 from galaxy.util.json import safe_dumps
 from galaxy.util.streamball import StreamBall
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous as expose_api_anonymous,
-    _future_expose_api_raw as expose_api_raw,
-    _future_expose_api_raw_anonymous as expose_api_raw_anonymous
+    expose_api,
+    expose_api_anonymous,
+    expose_api_raw,
+    expose_api_raw_anonymous
 )
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     UsesLibraryMixin,
     UsesLibraryMixinItems,
@@ -295,7 +295,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         except Exception as e:
             log.exception("Error in API while creating dataset collection archive")
             trans.response.status = 500
-            return {'error': str(e)}
+            return {'error': util.unicodify(e)}
 
     def __stream_dataset_collection(self, trans, dataset_collection_instance):
         archive_type_string = 'w|gz'
@@ -356,6 +356,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             'source'              = 'new_collection' (default 'source' if type is
                                     'dataset_collection' - no need to specify this)
             'collection_type'     = For example, "list", "paired", "list:paired".
+            'copy_elements'       = Copy child HDAs when creating new collection,
+                                    defaults to False in the API but is set to True in the UI,
+                                    so that we can modify HDAs with tags when creating collections.
             'name'                = Name of new dataset collection.
             'element_identifiers' = Recursive list structure defining collection.
                                     Each element must have 'src' which can be
@@ -423,7 +426,6 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     def __create_hda_from_ldda(self, trans, content, history):
-        hda = None
         ld = self.get_library_dataset(trans, content)
         if type(ld) is not trans.app.model.LibraryDataset:
             raise exceptions.RequestParameterInvalidException(
@@ -446,7 +448,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             current_user_roles = trans.get_current_user_roles()
 
             def traverse(folder):
-                admin = trans.user_is_admin()
+                admin = trans.user_is_admin
                 rval = []
                 for subfolder in folder.active_folders:
                     if not admin:
@@ -493,11 +495,15 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                     :type src: str
                     :param id: identifier
                     :type id: str
+                    :param id: tags
+                    :type id: list
                 :type element: dict
             :type name: list
             :param name: name of the collection
             :type name: str
             :param hide_source_items: whether to mark the original hdas as hidden
+            :type name: bool
+            :param copy_elements: whether to copy HDAs when creating collection
             :type name: bool
         :type  payload: dict
 
@@ -510,21 +516,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         """
         source = kwd.get("source", payload.get("source", "new_collection"))
 
-        def convert_lddas(element_identifiers):
-            for ei in element_identifiers:
-                src = ei.get("src")
-                if src == "ldda":
-                    # Convert lddas to hdas since there is no direct representation of library items in history.
-                    hda = self.__create_hda_from_ldda(trans, ei['id'], history)
-                    ei["id"] = trans.security.encode_id(hda.id)
-                    ei["src"] = "hda"
-                elif src == "new_collection" and "element_identifiers" in ei:
-                    convert_lddas(ei["element_identifiers"])
-
         service = trans.app.dataset_collections_service
         if source == "new_collection":
             create_params = api_payload_to_create_params(payload)
-            convert_lddas(payload.get("element_identifiers", []))
             dataset_collection_instance = service.create(
                 trans,
                 parent=history,
@@ -553,17 +547,112 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         return self.__collection_dict(trans, dataset_collection_instance, view="element")
 
+    @expose_api
+    def show_roles(self, trans, encoded_dataset_id, **kwd):
+        """
+        Display information about current or available roles for a given dataset permission.
+
+        * GET /api/histories/{history_id}/contents/datasets/{encoded_dataset_id}/permissions
+
+        :param  encoded_dataset_id:      the encoded id of the dataset to query
+        :type   encoded_dataset_id:      an encoded id string
+
+        :returns:   either dict of current roles for all permission types
+                    or dict of available roles to choose from (is the same for any permission type)
+        :rtype:     dictionary
+
+        :raises: InsufficientPermissionsException
+        """
+        hda = self.hda_manager.get_owned(self.decode_id(encoded_dataset_id), trans.user, current_history=trans.history, trans=trans)
+        return self.hda_manager.serialize_dataset_association_roles(trans, hda)
+
+    @expose_api
+    def update_permissions(self, trans, history_id, history_content_id, payload=None, **kwd):
+        """
+        Set permissions of the given library dataset to the given role ids.
+
+        * PUT /api/histories/{history_id}/contents/datasets/{encoded_dataset_id}/permissions
+
+        :param  encoded_dataset_id:      the encoded id of the dataset to update permissions of
+        :type   encoded_dataset_id:      an encoded id string
+        :param   payload: dictionary structure containing:
+            :param  action:     (required) describes what action should be performed
+                                available actions: make_private, remove_restrictions, set_permissions
+            :type   action:     string
+            :param  access_ids[]:      list of Role.id defining roles that should have access permission on the dataset
+            :type   access_ids[]:      string or list
+            :param  manage_ids[]:      list of Role.id defining roles that should have manage permission on the dataset
+            :type   manage_ids[]:      string or list
+            :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the library dataset item
+            :type   modify_ids[]:      string or list
+        :type:      dictionary
+
+        :returns:   dict of current roles for all available permission types
+        :rtype:     dictionary
+
+        :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
+                    RequestParameterMissingException
+        """
+        if payload:
+            kwd.update(payload)
+        hda = self.hda_manager.get_owned(self.decode_id(history_content_id), trans.user, current_history=trans.history, trans=trans)
+        assert hda is not None
+        self.hda_manager.update_permissions(trans, hda, **kwd)
+        return self.hda_manager.serialize_dataset_association_roles(trans, hda)
+
+    @expose_api_anonymous
+    def update_batch(self, trans, history_id, payload, **kwd):
+        """
+        update( self, trans, history_id, id, payload, **kwd )
+        * PUT /api/histories/{history_id}/contents
+
+        :type   history_id: str
+        :param  history_id: encoded id string of the history containing supplied items
+        :type   id:         str
+        :param  id:         the encoded id of the history to update
+        :type   payload:    dict
+        :param  payload:    a dictionary containing any or all the
+
+        :rtype:     dict
+        :returns:   an error object if an error occurred or a dictionary containing
+            any values that were different from the original and, therefore, updated
+        """
+        items = payload.get("items")
+        hda_ids = []
+        hdca_ids = []
+        for item in items:
+            contents_type = item["history_content_type"]
+            if contents_type == "dataset":
+                decoded_id = self.decode_id(item["id"])
+                hda_ids.append(decoded_id)
+            else:
+                hdca_ids.append(item["id"])
+
+        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user,
+                                                 current_history=trans.history)
+        hdas = self.__datasets_for_update(trans, history, hda_ids, payload)
+        rval = []
+        for hda in hdas:
+            self.__deserialize_dataset(hda, payload, trans)
+            rval.append(self.hda_serializer.serialize_to_view(hda,
+                                                              user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'summary')))
+        for hdca_id in hdca_ids:
+            self.__update_dataset_collection(trans, history_id, hdca_id, payload, **kwd)
+            dataset_collection_instance = self.__get_accessible_collection(trans, hdca_id, history_id)
+            rval.append(self.__collection_dict(trans, dataset_collection_instance, view="summary"))
+        return rval
+
     @expose_api_anonymous
     def update(self, trans, history_id, id, payload, **kwd):
         """
         update( self, trans, history_id, id, payload, **kwd )
         * PUT /api/histories/{history_id}/contents/{id}
-            updates the values for the HDA with the given ``id``
+            updates the values for the history content item with the given ``id``
 
         :type   history_id: str
-        :param  history_id: encoded id string of the HDA's History
+        :param  history_id: encoded id string of the items's History
         :type   id:         str
-        :param  id:         the encoded id of the history to update
+        :param  id:         the encoded id of the history item to update
         :type   payload:    dict
         :param  payload:    a dictionary containing any or all the
             fields in :func:`galaxy.model.HistoryDatasetAssociation.to_dict`
@@ -584,15 +673,46 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         else:
             return self.__handle_unknown_contents_type(trans, contents_type)
 
+    @expose_api_anonymous
+    def validate(self, trans, history_id, history_content_id, payload=None, **kwd):
+        """
+        update( self, trans, history_id, id, payload, **kwd )
+        * PUT /api/histories/{history_id}/contents/{id}/validate
+            updates the values for the history content item with the given ``id``
+
+        :type   history_id: str
+        :param  history_id: encoded id string of the items's History
+        :type   id:         str
+        :param  id:         the encoded id of the history item to validate
+
+        :rtype:     dict
+        :returns:   TODO
+        """
+        decoded_id = self.decode_id(history_content_id)
+        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user,
+                                                 current_history=trans.history)
+        hda = self.hda_manager.get_owned_ids([decoded_id], history=history)[0]
+        if hda:
+            self.hda_manager.set_metadata(trans, hda, overwrite=True, validate=True)
+        return {}
+
     def __update_dataset(self, trans, history_id, id, payload, **kwd):
         # anon user: ensure that history ids match up and the history is the current,
         #   check for uploading, and use only the subset of attribute keys manipulatable by anon users
-        if trans.user is None:
-            hda = self.hda_manager.by_id(self.decode_id(id))
-            if hda.history != trans.history:
-                raise exceptions.AuthenticationRequired('API authentication required for this request')
-            hda = self.hda_manager.error_if_uploading(hda)
+        decoded_id = self.decode_id(id)
+        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user,
+                                                 current_history=trans.history)
+        hda = self.__datasets_for_update(trans, history, [decoded_id], payload)[0]
+        if hda:
+            self.__deserialize_dataset(hda, payload, trans)
+            return self.hda_serializer.serialize_to_view(hda,
+                                                         user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
+        return {}
+
+    def __datasets_for_update(self, trans, history, hda_ids, payload):
+        anonymous_user = not trans.user_is_admin and trans.user is None
+        if anonymous_user:
             anon_allowed_payload = {}
             if 'deleted' in payload:
                 anon_allowed_payload['deleted'] = payload['deleted']
@@ -600,25 +720,21 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 anon_allowed_payload['visible'] = payload['visible']
             payload = anon_allowed_payload
 
-        # logged in user: use full payload, check state if deleting, and make sure the history is theirs
-        else:
-            hda = self.hda_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
+        hdas = self.hda_manager.get_owned_ids(hda_ids, history=history)
 
-            # only check_state if not deleting, otherwise cannot delete uploading files
-            check_state = not payload.get('deleted', False)
-            if check_state:
+        # only check_state if not deleting, otherwise cannot delete uploading files
+        check_state = not payload.get('deleted', False)
+        if check_state:
+            for hda in hdas:
                 hda = self.hda_manager.error_if_uploading(hda)
 
-        # make the actual changes
-        if hda:
-            self.hda_deserializer.deserialize(hda, payload, user=trans.user, trans=trans)
-            # TODO: this should be an effect of deleting the hda
-            if payload.get('deleted', False):
-                self.hda_manager.stop_creating_job(hda)
-            return self.hda_serializer.serialize_to_view(hda,
-                                                         user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
+        return hdas
 
-        return {}
+    def __deserialize_dataset(self, hda, payload, trans):
+        self.hda_deserializer.deserialize(hda, payload, user=trans.user, trans=trans)
+        # TODO: this should be an effect of deleting the hda
+        if payload.get('deleted', False):
+            self.hda_manager.stop_creating_job(hda)
 
     def __update_dataset_collection(self, trans, history_id, id, payload, **kwd):
         return trans.app.dataset_collections_service.update(trans, "history", id, payload)
@@ -652,8 +768,8 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing:
             * id:         the encoded id of the history,
-            * deleted:    if the history was marked as deleted,
-            * purged:     if the history was purged
+            * deleted:    if the history content was marked as deleted,
+            * purged:     if the history content was purged
         """
         contents_type = kwd.get('type', 'dataset')
         if contents_type == "dataset":
@@ -773,7 +889,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         filter_params = self.parse_filter_params(kwd)
         filters = self.history_contents_filters.parse_filters(filter_params)
         limit, offset = self.parse_limit_offset(kwd)
-        order_by = self._parse_order_by(kwd.get('order', 'hid-asc'))
+        order_by = self._parse_order_by(manager=self.history_contents_manager, order_by_string=kwd.get('order', 'hid-asc'))
         serialization_params = self._parse_serialization_params(kwd, 'summary')
         # TODO: > 16.04: remove these
         # TODO: remove 'dataset_details' and the following section when the UI doesn't need it
@@ -811,13 +927,6 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         TYPE_ID_SEP = '-'
         split = type_id.split(TYPE_ID_SEP, 1)
         return TYPE_ID_SEP.join([split[0], self.app.security.encode_id(split[1])])
-
-    def _parse_order_by(self, order_by_string):
-        ORDER_BY_SEP_CHAR = ','
-        manager = self.history_contents_manager
-        if ORDER_BY_SEP_CHAR in order_by_string:
-            return [manager.parse_order_by(o) for o in order_by_string.split(ORDER_BY_SEP_CHAR)]
-        return manager.parse_order_by(order_by_string)
 
     @expose_api_raw
     def archive(self, trans, history_id, filename='', format='tgz', dry_run=True, **kwd):

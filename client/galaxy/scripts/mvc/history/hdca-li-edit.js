@@ -1,9 +1,8 @@
-import * as _ from "underscore";
+import $ from "jquery";
+import _ from "underscore";
 import HDCA_LI from "mvc/history/hdca-li";
 import DC_VIEW_EDIT from "mvc/collection/collection-view-edit";
 import _l from "utils/localization";
-
-/* global $ */
 
 //==============================================================================
 var _super = HDCA_LI.HDCAListItemView;
@@ -41,13 +40,13 @@ var HDCAListItemEdit = _super.extend(
                         <span class="fa fa-times"></span>
                     </a>
                     <div class="dropdown-menu" role="menu">
-                            <a href="#" class="dropdown-item delete-collection">
+                            <a href="javascript:void(0)" role="button" class="dropdown-item delete-collection">
                                 ${_l("Collection Only")}
                             </a>
-                            <a href="#" class="dropdown-item delete-collection-and-datasets">
+                            <a href="javascript:void(0)" role="button" class="dropdown-item delete-collection-and-datasets">
                                 ${_l("Delete Datasets")}
                             </a>
-                            <a href="#" style="display: ${
+                            <a href="javascript:void(0)" role="button" style="display: ${
                                 this.purgeAllowed ? "inherit" : "none"
                             }" class="dropdown-item delete-collection-and-purge-datasets">
                                 ${_l("Permanently Delete Datasets")}
