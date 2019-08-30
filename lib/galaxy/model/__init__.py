@@ -582,8 +582,8 @@ class User(Dictifiable, RepresentById):
         sql_calc = """
             SELECT
                 sum(coalesce(dataset.total_size, coalesce(dataset.file_size, 0))),
-                sum(coalesce(dataset.total_size, coalesce(dataset.file_size, 0)))
-                    FILTER (WHERE dataset.id not in (SELECT id from per_non_deleted_hist_hdas)),
+                sum(CASE WHEN dataset.id in (SELECT id from per_non_deleted_hist_hdas)
+                    THEN 0 ELSE coalesce(dataset.total_size, coalesce(dataset.file_size, 0)) END)
             FROM dataset
             LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
             WHERE dataset.id in (SELECT id from per_hist_hdas)
