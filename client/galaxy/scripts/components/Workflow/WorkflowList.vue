@@ -44,13 +44,18 @@
                         />
                     </template>
                     <template slot="tags" slot-scope="row">
-                        <workflowtags :workflow="row.item" @onError="onError"/>
+                        <workflowtags :workflow="row.item" @onError="onError" />
                     </template>
                     <template slot="bookmark" slot-scope="row">
                         <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
                     </template>
                     <template slot="execute" slot-scope="row">
-                        <b-button class="btn-sm btn-primary fa fa-play" @click.stop="executeWorkflow(row.item)" />
+                        <b-button
+                            v-b-tooltip.hover.bottom
+                            title="Run Workflow"
+                            class="btn-sm btn-primary fa fa-play"
+                            @click.stop="executeWorkflow(row.item)"
+                        />
                     </template>
                 </b-table>
                 <div v-if="showNotFound">

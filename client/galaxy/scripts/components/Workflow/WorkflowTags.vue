@@ -20,12 +20,10 @@ export default {
             const show_in_tool_panel = this.workflow.show_in_tool_panel;
             this.workflow.tags = tags;
             this.services
-                .updateWorkflow(
-                    id, {
-                        show_in_tool_panel: show_in_tool_panel,
-                        tags: tags
-                    }
-                )
+                .updateWorkflow(id, {
+                    show_in_tool_panel: show_in_tool_panel,
+                    tags: tags
+                })
                 .catch(error => {
                     this.$emit("onError", error);
                 });
