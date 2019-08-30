@@ -249,39 +249,6 @@ _.extend(window.bundleEntries || {}, {
             let contextSelectedItemId;
             let selectedItem;
             let mouseDownPoint;
-
-            // TODO: to make it work
-
-            /*this.erase = function () {
-                let strPathArray = new Array();
-                $(paper.project.activeLayer.children).each(function (index, item) {
-                    if (contextSelectedItemId) {
-                        if (contextSelectedItemId.length == 0 || item.data.id == contextSelectedItemId) {
-                            let strPath = item.exportJSON({ asString: true });
-                            strPathArray.push(strPath);
-                        }
-                    }
-                });
- 
-                CommandManager.execute({
-                    execute: function () {
-                        $(paper.project.activeLayer.children).each(function (index, item) {
-                            if (contextSelectedItemId) {
-                                if (contextSelectedItemId.length == 0 || item.data.id == contextSelectedItemId) {
-                                    item.remove();
-                                }
-                            }
-                        });
-                    },
-                    unexecute: function () {
-                        $(strPathArray).each(function (index, strPath) {
-                            path = new paper.Path();
-                            path.importJSON(strPath);
-                        });
-                    }
-                });
-            }*/
-
             this.downloadCanvas = function(canvas, filename) {
                 /// create an "off-screen" anchor tag
                 let lnk = document.createElement("a"),
@@ -401,10 +368,7 @@ _.extend(window.bundleEntries || {}, {
                         case "redo":
                             CommandManager.redo();
                             break;
-                        case "erase":
-                            self.erase();
-                            break;
-                        case "download":
+                        case 'download':
                             self.download();
                             break;
                         //TOOLS
