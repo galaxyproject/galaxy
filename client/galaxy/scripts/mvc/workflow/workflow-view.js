@@ -785,8 +785,8 @@ export default Backbone.View.extend({
                 $("<a/>")
                     .attr({
                         "aria-label": "clone node",
-                        "role": "button",
-                        "href": "javascript:void(0)"
+                        role: "button",
+                        href: "javascript:void(0)"
                     })
                     .addClass("fa-icon-button fa fa-files-o node-clone")
                     .click(e => {
@@ -798,8 +798,8 @@ export default Backbone.View.extend({
             $("<a/>")
                 .attr({
                     "aria-label": "destroy node",
-                    "role": "button",
-                    "href": "javascript:void(0)"
+                    role: "button",
+                    href: "javascript:void(0)"
                 })
                 .addClass("fa-icon-button fa fa-times node-destroy")
                 .click(e => {
