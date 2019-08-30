@@ -7,7 +7,6 @@
             aria-haspopup="true"
             aria-expanded="false"
         >
-            <span :class="icon" />
             {{ workflow.name }}
         </b-link>
         <div class="dropdown-menu" aria-labelledby="dropdownWorkflowDetails">
@@ -33,39 +32,32 @@ export default {
             ownerOperations: [
                 {
                     label: "Edit",
-                    icon: "fa fa-edit",
                     url: `${getAppRoot()}workflow/editor?id=${this.workflow.id}`
                 },
                 {
                     label: "Copy",
-                    icon: "fa fa-copy",
                     url: "#",
                     event: "copy"
                 },
                 {
                     label: "Download",
-                    icon: "fa fa-download",
                     url: `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`
                 },
                 {
                     label: "Rename",
-                    icon: "fa fa-edit",
                     url: "#",
                     event: "rename"
                 },
                 {
                     label: "Share",
-                    icon: "fa fa-share",
                     url: `${getAppRoot()}workflow/sharing?id=${this.workflow.id}`
                 },
                 {
                     label: "View",
-                    icon: "fa fa-eye",
                     url: `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`
                 },
                 {
                     label: "Delete",
-                    icon: "fa fa-trash",
                     url: "#",
                     event: "delete"
                 }
@@ -73,13 +65,11 @@ export default {
             limitedOperations: [
                 {
                     label: "Copy",
-                    icon: "fa fa-copy",
                     url: "#",
                     event: "copy"
                 },
                 {
                     label: "View",
-                    icon: "fa fa-eye",
                     url: `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
                         this.workflow.slug
                     }`
@@ -98,6 +88,7 @@ export default {
             if (this.workflow.shared) {
                 return "fa fa-retweet";
             }
+            return null;
         }
     },
     created() {

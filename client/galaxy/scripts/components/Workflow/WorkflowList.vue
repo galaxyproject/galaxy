@@ -176,7 +176,7 @@ export default {
             this.nWorkflows = this.workflows.length;
         },
         onUpdate: function(id, data) {
-            let workflow = this.workflows.find(item => item.id === id);
+            const workflow = this.workflows.find(item => item.id === id);
             Object.assign(workflow, data);
             this.workflows = [...this.workflows];
         },

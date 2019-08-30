@@ -14,8 +14,8 @@ export class Services {
             axios
                 .get(url)
                 .then(response => {
-                    let newWorkflow = response.data;
-                    let newName = `Copy of ${workflow.name}`;
+                    const newWorkflow = response.data;
+                    const newName = `Copy of ${workflow.name}`;
                     const currentOwner = workflow.owner;
                     if (currentOwner != Galaxy.user.attributes.username) {
                         newName += ` shared by user ${currentOwner}`;
@@ -67,7 +67,7 @@ export class Services {
             axios
                 .get(`${this.root}api/workflows`)
                 .then(response => {
-                    let workflows = response.data;
+                    const workflows = response.data;
                     workflows.forEach(workflow => {
                         this._addAttributes(workflow);
                     });
