@@ -104,8 +104,8 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             changed = True
         new_tags = new_data.get('tags', None)
         if new_tags is not None and new_tags != ldda.tags:
+            self.tag_handler.delete_item_tags(item=ldda, user=trans.user)
             for tag in new_tags:
-                self.tag_handler.delete_item_tags(item=ldda, user=trans.user)
                 self.tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
             changed = True
         if changed:
