@@ -7,6 +7,7 @@
             aria-haspopup="true"
             aria-expanded="false"
         >
+            <span :class="icon" />
             {{ workflow.name }}
         </b-link>
         <div class="dropdown-menu" aria-labelledby="dropdownWorkflowDetails">
