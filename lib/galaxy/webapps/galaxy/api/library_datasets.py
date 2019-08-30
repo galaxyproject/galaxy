@@ -49,9 +49,9 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
     @expose_api_anonymous
     def show(self, trans, id, **kwd):
         """
-        Show the details of a library dataset.
+        GET /api/libraries/datasets/{encoded_dataset_id}
 
-        * GET /api/libraries/datasets/{encoded_dataset_id}
+        Show the details of a library dataset.
 
         :param  id:      the encoded id of the library dataset to query
         :type   id:      an encoded id string
@@ -66,9 +66,9 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
     @expose_api_anonymous
     def show_version(self, trans, encoded_dataset_id, encoded_ldda_id, **kwd):
         """
-        Display a specific version of a library dataset (i.e. ldda).
+        GET /api/libraries/datasets/{encoded_dataset_id}/versions/{encoded_ldda_id}
 
-        * GET /api/libraries/datasets/{encoded_dataset_id}/versions/{encoded_ldda_id}
+        Display a specific version of a library dataset (i.e. ldda).
 
         :param  encoded_dataset_id:      the encoded id of the related library dataset
         :type   encoded_dataset_id:      an encoded id string
@@ -97,9 +97,9 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
     @expose_api
     def show_roles(self, trans, encoded_dataset_id, **kwd):
         """
-        Display information about current or available roles for a given dataset permission.
+        GET /api/libraries/datasets/{encoded_dataset_id}/permissions
 
-        * GET /api/libraries/datasets/{encoded_dataset_id}/permissions
+        Display information about current or available roles for a given dataset permission.
 
         :param  encoded_dataset_id:      the encoded id of the dataset to query
         :type   encoded_dataset_id:      an encoded id string
@@ -159,9 +159,10 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
 
     @expose_api
     def update(self, trans, encoded_dataset_id, payload=None, **kwd):
-        """Update the given library dataset (the latest linked ldda).
+        """
+        PATCH /api/libraries/datasets/{encoded_dataset_id}
 
-        * PATCH /api/libraries/datasets/{encoded_dataset_id}
+        Update the given library dataset (the latest linked ldda).
 
         :param  encoded_dataset_id: the encoded id of the library dataset to update
         :type   encoded_dataset_id: an encoded id string
@@ -187,9 +188,9 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
     @expose_api
     def update_permissions(self, trans, encoded_dataset_id, payload=None, **kwd):
         """
-        Set permissions of the given library dataset to the given role ids.
+        POST /api/libraries/datasets/{encoded_dataset_id}/permissions
 
-        *POST /api/libraries/datasets/{encoded_dataset_id}/permissions
+        Set permissions of the given library dataset to the given role ids.
 
         :param  encoded_dataset_id:      the encoded id of the dataset to update permissions of
         :type   encoded_dataset_id:      an encoded id string
@@ -294,9 +295,9 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
     @expose_api
     def delete(self, trans, encoded_dataset_id, **kwd):
         """
-        Mark the dataset deleted or undeleted.
+        DELETE /api/libraries/datasets/{encoded_dataset_id}
 
-        * DELETE /api/libraries/datasets/{encoded_dataset_id}
+        Mark the dataset deleted or undeleted.
 
         :param  encoded_dataset_id:      the encoded id of the dataset to change
         :type   encoded_dataset_id:      an encoded id string
@@ -332,9 +333,9 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
     @expose_api
     def load(self, trans, payload=None, **kwd):
         """
-        Load dataset(s) from the given source into the library.
+        POST /api/libraries/datasets
 
-        * POST /api/libraries/datasets
+        Load dataset(s) from the given source into the library.
 
         :param   payload: dictionary structure containing:
             :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
@@ -497,10 +498,10 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
     #  TODO convert to expose_api
     def download(self, trans, format, **kwd):
         """
-        Download requested datasets (identified by encoded IDs) in requested format.
+        GET /api/libraries/datasets/download/{format}
+        POST /api/libraries/datasets/download/{format}
 
-        * GET /api/libraries/datasets/download/{format}
-        * POST /api/libraries/datasets/download/{format}
+        Download requested datasets (identified by encoded IDs) in requested format.
 
         example: ``GET localhost:8080/api/libraries/datasets/download/tbz?ld_ids%255B%255D=a0d84b45643a2678&ld_ids%255B%255D=fe38c84dcd46c828``
 

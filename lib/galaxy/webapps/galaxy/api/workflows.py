@@ -238,6 +238,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         Run or create workflows from the api.
 
+        .. tip:: When executing a workflow externally (e.g. from a script) it is
+            recommended to use the :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.invoke` method below instead.
+
         If installed_repository_file or from_history_id is specified a new
         workflow will be created for this user. Otherwise, workflow_id must be
         specified and this API method will cause a workflow to execute.
@@ -732,6 +735,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         POST /api/workflows/{encoded_workflow_id}/invocations
 
         Schedule the workflow specified by `workflow_id` to run.
+
+        .. note:: This method takes the same arguments as
+            :func:`galaxy.webapps.galaxy.api.workflows.WorkflowsAPIController.create` above.
         """
         # Get workflow + accessibility check.
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
