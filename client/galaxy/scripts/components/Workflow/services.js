@@ -94,7 +94,6 @@ export class Services {
 
     _addAttributes(workflow) {
         const Galaxy = getGalaxyInstance();
-        workflow.create_time = workflow.create_time.substring(0, 10);
         workflow.shared = workflow.owner !== Galaxy.user.get("username");
         workflow.description = "Not available";
         if (workflow.annotations && workflow.annotations.length > 0) {

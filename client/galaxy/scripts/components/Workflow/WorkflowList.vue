@@ -46,9 +46,6 @@
                     <template slot="tags" slot-scope="row">
                         <workflowtags :workflow="row.item" @onError="onError"/>
                     </template>
-                    <template slot="create_time" slot-scope="data">
-                        <span class="text-nowrap">{{ data.value }}</span>
-                    </template>
                     <template slot="bookmark" slot-scope="row">
                         <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
                     </template>
@@ -89,10 +86,6 @@ export default {
                     sortable: true
                 },
                 tags: {},
-                create_time: {
-                    label: "Created",
-                    sortable: true
-                },
                 bookmark: {},
                 execute: {
                     label: "",
