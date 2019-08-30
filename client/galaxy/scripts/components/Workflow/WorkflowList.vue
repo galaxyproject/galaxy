@@ -44,7 +44,7 @@
                         />
                     </template>
                     <template slot="tags" slot-scope="row">
-                        <workflowtags :workflow="row.item" />
+                        <workflowtags :workflow="row.item" @onError="onError"/>
                     </template>
                     <template slot="create_time" slot-scope="data">
                         <span class="text-nowrap">{{ data.value }}</span>
