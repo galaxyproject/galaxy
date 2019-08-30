@@ -121,6 +121,8 @@ class LocalJobRunner(BaseJobRunner):
                 proc.wait()  # reap
                 if terminated:
                     return
+                elif check_pg(proc.pid):
+                    kill_pg(proc.pid)
             finally:
                 with self._proc_lock:
                     self._procs.remove(proc)
