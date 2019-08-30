@@ -49,9 +49,6 @@ import galaxy.model.orm.now
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
-from galaxy.managers import tags
-from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.model.util import count_toward_deleted_disk_usage, pgcalc
 from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
 from galaxy.security import get_permitted_actions
 from galaxy.util import (directory_hash_id, ready_name_for_url,
@@ -357,7 +354,9 @@ class User(Dictifiable, RepresentById):
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
     dict_collection_visible_keys = ['id', 'email', 'username', 'deleted', 'active', 'last_password_change']
     # attributes that will be accessed and returned when calling to_dict( view='element' )
-    dict_element_visible_keys = ['id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'gross_deleted_disk_usage', 'nice_gross_deleted_disk_usage', 'deleted', 'active', 'last_password_change']
+    dict_element_visible_keys = ['id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage',
+                                 'gross_deleted_disk_usage', 'nice_gross_deleted_disk_usage', 'deleted',
+                                 'active', 'last_password_change']
 
     def __init__(self, email=None, password=None, username=None):
         self.email = email
@@ -534,17 +533,8 @@ class User(Dictifiable, RepresentById):
 
     def calculate_disk_usage(self):
         """
-        Return a tuple.
-        total: byte count of total disk space used by all non-purged, non-library
-        HDAs in non-purged histories
-        AND
-        deleted: byte count of disk space used by all deleted, non-purged, non-library
-        HDAs in non-purged histories
-
-        The deleted include:
-        1) datasets that are directly labeled as 'deleted';
-        2) datasets whose associated HDAs are all deleted;
-        3) datasets whose associated histories are all deleted.
+        Return a disk usage tuple (disk_usage, deleted_disk_usage) counted from all
+        non-purged, non-library HDAs in non-purged histories.
         """
         # maintain a list so that we don't double count
         db_session = object_session(self)
@@ -552,7 +542,7 @@ class User(Dictifiable, RepresentById):
 
     def calculate_and_set_disk_usage(self):
         """
-        Calculates and sets user disk usage.
+        Calculates and sets both disk usage and deleted disk usage for user.
         """
         db_session = object_session(self)
         self._calculate_or_set_disk_usage(db_session, dryrun=False)
@@ -571,13 +561,15 @@ class User(Dictifiable, RepresentById):
                 WHERE history.user_id = :id
                     AND history.purged = false
             ),
-            per_hist_hdas AS (
+            per_hist_hdas AS
+            (
                 SELECT DISTINCT history_dataset_association.dataset_id as id
                 FROM history_dataset_association
                 WHERE history_dataset_association.purged = false
                     AND history_dataset_association.history_id in (SELECT id from per_user_histories)
             ),
-            per_non_deleted_hist_hdas AS(
+            per_non_deleted_hist_hdas AS
+            (
                 SELECT DISTINCT history_dataset_association.dataset_id as id
                 FROM history_dataset_association
                 INNER JOIN per_user_histories ON history_dataset_association.dataset_id = per_user_histories.id
