@@ -68,9 +68,9 @@ export class Services {
                 .get(`${this.root}api/workflows`)
                 .then(response => {
                     let workflows = response.data;
-                    for (workflow of workflows) {
+                    workflows.forEach(workflow => {
                         this._addAttributes(workflow);
-                    }
+                    });
                     resolve(workflows);
                 })
                 .catch(e => {

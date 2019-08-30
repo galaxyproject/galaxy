@@ -43,6 +43,9 @@
                             @onError="onError"
                         />
                     </template>
+                    <template slot="tags" slot-scope="row">
+                        <workflowtags :workflow="row.item" />
+                    </template>
                     <template slot="create_time" slot-scope="data">
                         <span class="text-nowrap">{{ data.value }}</span>
                     </template>
@@ -67,10 +70,12 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services.js";
+import WorkflowTags from "./WorkflowTags.vue";
 import WorkflowDropdown from "./WorkflowDropdown.vue";
 
 export default {
     components: {
+        workflowtags: WorkflowTags,
         workflowdropdown: WorkflowDropdown
     },
     data() {
@@ -83,6 +88,7 @@ export default {
                 description: {
                     sortable: true
                 },
+                tags: {},
                 create_time: {
                     label: "Created",
                     sortable: true
@@ -149,7 +155,11 @@ export default {
             // Ideally we would notify only the tool panel of a change
             const id = workflow.id;
             const show_in_tool_panel = workflow.show_in_tool_panel;
-            const data = { show_in_tool_panel: !show_in_tool_panel };
+            const tags = workflow.tags;
+            const data = {
+                show_in_tool_panel: !show_in_tool_panel,
+                tags: tags
+            };
             this.services
                 .updateWorkflow(id, data)
                 .then(() => {
