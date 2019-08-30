@@ -15,8 +15,8 @@ export class Services {
                 .get(url)
                 .then(response => {
                     const newWorkflow = response.data;
-                    const newName = `Copy of ${workflow.name}`;
                     const currentOwner = workflow.owner;
+                    let newName = `Copy of ${workflow.name}`;
                     if (currentOwner != Galaxy.user.attributes.username) {
                         newName += ` shared by user ${currentOwner}`;
                     }
