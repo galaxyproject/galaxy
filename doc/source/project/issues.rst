@@ -60,7 +60,7 @@ Labeling Structure
 To allow for easy search, filtering, and general issue management every
 issue or PR (not tagged ``procedures`` or ``planning``) is expected to
 have two labels which indicate the type (``kind/``) and focus
-area(``area/``) of the issue. Any issue without these tags will
+area (``area/``) of the issue. Any issue without these tags will
 automatically have a ``triage`` label applied indicating that it needs
 human intervention to be correctly tagged. These ``triage`` tagged
 issues will be regularly reviewed and tagged as appropriate.
