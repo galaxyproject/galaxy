@@ -20,7 +20,8 @@ from galaxy.managers.collections_util import (
 )
 from galaxy.model import (
     ExtendedMetadata,
-    ExtendedMetadataIndex
+    ExtendedMetadataIndex,
+    tags
 )
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
@@ -155,6 +156,9 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             rval['ldda_id'] = trans.security.encode_id(rval['ldda_id'])
             rval['folder_id'] = 'F' + str(trans.security.encode_id(rval['folder_id']))
             rval['parent_library_id'] = trans.security.encode_id(rval['parent_library_id'])
+
+            tag_manager = tags.GalaxyTagHandler(trans.sa_session)
+            rval['tags'] = tag_manager.get_tags_str(content.library_dataset_dataset_association.tags)
         return rval
 
     @expose_api
@@ -202,6 +206,8 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 description of the folder to create
             * tag_using_filename: (optional)
                 create tags on datasets using the file's original name
+            * tags: (optional)
+                create the given list of tags on datasets
 
         :returns:   a dictionary describing the new item unless ``from_hdca_id`` is supplied,
                     in that case a list of such dictionaries is returned.
@@ -231,6 +237,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         real_folder_id = trans.security.encode_id(parent.id)
 
         payload['tag_using_filenames'] = util.string_as_bool(payload.get('tag_using_filenames', None))
+        payload['tags'] = util.listify(payload.get('tags', None))
 
         # are we copying an HDA to the library folder?
         #   we'll need the id and any message to attach, then branch to that private function
