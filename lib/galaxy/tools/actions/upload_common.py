@@ -158,6 +158,7 @@ def handle_library_params(trans, params, folder_id, replace_dataset=None):
     for role_id in util.listify(params.get('roles', [])):
         role = trans.sa_session.query(trans.app.model.Role).get(role_id)
         library_bunch.roles.append(role)
+    library_bunch.tags = params.get('tags', None)
     return library_bunch
 
 
@@ -280,6 +281,9 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
 def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None):
     if library_bunch:
         upload_target_dataset_instance = __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state)
+        if library_bunch.tags and not uploaded_dataset.tags:
+            for tag in library_bunch.tags:
+                trans.app.tag_handler.apply_item_tag(user=trans.user, item=upload_target_dataset_instance, name='name', value=tag)
     else:
         upload_target_dataset_instance = __new_history_upload(trans, uploaded_dataset, history=history, state=state)
 
