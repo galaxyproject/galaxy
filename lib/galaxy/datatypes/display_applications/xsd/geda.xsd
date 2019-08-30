@@ -268,6 +268,11 @@ A data param that provides a BGZIP file (from an initial VCF file), with a Tabix
                         <xs:documentation xml:lang="en">'dataset' is default name assigned to dataset to be displayed</xs:documentation>
                     </xs:annotation>
                 </xs:attribute>
+                <xs:attribute name="allow_cors" type="PermissiveBoolean" default="false">
+                    <xs:annotation>
+                        <xs:documentation xml:lang="en">Automatically enable CORS for origin of request.</xs:documentation>
+                    </xs:annotation>
+                </xs:attribute>
             </xs:extension>
         </xs:simpleContent>
     </xs:complexType>
