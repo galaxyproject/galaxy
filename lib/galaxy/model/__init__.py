@@ -946,7 +946,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     def all_entry_points_configured(self):
         # consider an actual DB attribute for this.
         all_configured = True
-        for ep in self.realtimetool_entry_points:
+        for ep in self.interactivetool_entry_points:
             all_configured = ep.configured and all_configured
         return all_configured
 
