@@ -14,7 +14,7 @@ from .test_containerized_jobs import ContainerizedIntegrationTestCase
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
 
-class RealtimeToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
+class InteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
 
     framework_tool_and_types = True
     container_type = "docker"
@@ -22,12 +22,12 @@ class RealtimeToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
     enable_realtime_mapping = True
 
     def setUp(self):
-        super(RealtimeToolsIntegrationTestCase, self).setUp()
+        super(InteractiveToolsIntegrationTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
 
     def test_simple_execution(self):
-        response_dict = self.dataset_populator.run_tool("realtimetool_simple", {}, self.history_id, assert_ok=True)
+        response_dict = self.dataset_populator.run_tool("interactivetool_simple", {}, self.history_id, assert_ok=True)
         assert "jobs" in response_dict, response_dict
         jobs = response_dict["jobs"]
         assert isinstance(jobs, list)
@@ -41,7 +41,7 @@ class RealtimeToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
         assert content == "moo cow\n", content
 
     def test_multi_server_realtime_tool(self):
-        response_dict = self.dataset_populator.run_tool("realtimetool_two_entry_points", {}, self.history_id, assert_ok=True)
+        response_dict = self.dataset_populator.run_tool("interactivetool_two_entry_points", {}, self.history_id, assert_ok=True)
         assert "jobs" in response_dict, response_dict
         jobs = response_dict["jobs"]
         assert isinstance(jobs, list)
