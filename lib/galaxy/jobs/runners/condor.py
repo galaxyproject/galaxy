@@ -195,7 +195,7 @@ class CondorJobRunner(AsynchronousJobRunner):
 
             if job_running:
                 # If running, check for entry points...
-                cjs.job_wrapper.job_wrapper.check_for_entry_points()
+                cjs.job_wrapper.check_for_entry_points()
 
             if job_running and not cjs.running:
                 log.debug("(%s/%s) job is now running" % (galaxy_id_tag, job_id))
