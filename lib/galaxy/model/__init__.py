@@ -523,6 +523,7 @@ class User(Dictifiable, RepresentById):
         Utility to calculate (returning a value) or just set the disk usage
         (returning None / applying immediately)
         """
+        sql_false = '0' if 'sqlite' in sa_session.bind.dialect.name else 'false'
 
         ctes = """
             WITH per_user_histories AS
@@ -530,15 +531,15 @@ class User(Dictifiable, RepresentById):
                 SELECT history.id as id
                 FROM history
                 WHERE history.user_id = :id
-                    AND history.purged = false
+                    AND history.purged = %s
             ),
             per_hist_hdas AS (
                 SELECT DISTINCT history_dataset_association.dataset_id as id
                 FROM history_dataset_association
-                WHERE history_dataset_association.purged = false
+                WHERE history_dataset_association.purged = %s
                     AND history_dataset_association.history_id in (SELECT id from per_user_histories)
             )
-        """
+        """ % (sql_false, sql_false)
 
         sql_calc = """
             SELECT sum(coalesce(dataset.total_size, coalesce(dataset.file_size, 0)))
