@@ -123,8 +123,8 @@ class ToolSource(object):
         """
 
     @abstractmethod
-    def parse_realtime(self):
-        """ Return RealTimeTool entry point templates to expose.
+    def parse_interactivetool(self):
+        """ Return InteractiveTool entry point templates to expose.
         """
 
     def parse_redirect_url_params_elem(self):
