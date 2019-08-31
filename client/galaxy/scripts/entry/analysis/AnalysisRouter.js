@@ -78,7 +78,7 @@ export const getAnalysisRouter = Galaxy =>
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
-            "(/)realtime_entry_points(/)list": "show_realtime_list"
+            "(/)interactivetool_entry_points(/)list": "show_interactivetool_list"
         },
 
         require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth"],
@@ -115,10 +115,10 @@ export const getAnalysisRouter = Galaxy =>
             this.page.display(new FormWrapper.View(_.extend(model.get(form_id), { active_tab: "user" })));
         },
 
-        show_realtime_list: function() {
+        show_interactivetool_list: function() {
             this.page.display(
                 new EntryPointGridView({
-                    url_base: `${getAppRoot()}realtime/list`,
+                    url_base: `${getAppRoot()}interactivetool/list`,
                     active_tab: "analysis"
                 })
             );
