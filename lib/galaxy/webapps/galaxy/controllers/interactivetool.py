@@ -1,5 +1,5 @@
 """
-Provides web interaction with RealTimeTools
+Provides web interaction with InteractiveTools
 """
 import logging
 
@@ -28,7 +28,7 @@ class EntryPointLinkColumn(grids.GridColumn):
         return '<a class="entry-point-link" entry_point_id="%s">%s</a>' % (trans.security.encode_id(item.id), item.name)
 
 
-class RealTimeToolEntryPointListGrid(grids.Grid):
+class InteractiveToolEntryPointListGrid(grids.Grid):
 
     use_panels = True
     title = "Available InteractiveTools"
@@ -53,16 +53,16 @@ class RealTimeToolEntryPointListGrid(grids.Grid):
     ]
 
     def build_initial_query(self, trans, **kwargs):
-        # Get list of user's active RealTimeTools
-        return trans.app.realtime_manager.get_nonterminal_for_user_by_trans(trans)
+        # Get list of user's active InteractiveTools
+        return trans.app.interactivetool_manager.get_nonterminal_for_user_by_trans(trans)
 
 
-class RealTime(BaseUIController):
-    entry_point_grid = RealTimeToolEntryPointListGrid()
+class InteractiveTool(BaseUIController):
+    entry_point_grid = InteractiveToolEntryPointListGrid()
 
     @web.expose_api_anonymous
     def list(self, trans, **kwargs):
-        """List all available realtimetools"""
+        """List all available interactivetools"""
         if not trans.app.config.interactivetools_enable:
             raise web.httpexceptions.HTTPNotFound()
         operation = kwargs.get('operation', None)
@@ -77,7 +77,7 @@ class RealTime(BaseUIController):
                 for entry_point_id in ids:
                     entry_point_id = self.decode_id(entry_point_id)
                     entry_point = trans.sa_session.query(trans.app.model.InteractiveToolEntryPoint).get(entry_point_id)
-                    if trans.app.realtime_manager.can_access_entry_point(trans, entry_point):
+                    if trans.app.interactivetool_manager.can_access_entry_point(trans, entry_point):
                         eps.append(entry_point)
             if eps:
                 failed = []
@@ -86,7 +86,7 @@ class RealTime(BaseUIController):
                 if operation == 'stop':
                     for ep in eps:
                         if ep.job not in jobs:
-                            stopped = trans.app.realtime_manager.stop(trans, ep)
+                            stopped = trans.app.interactivetool_manager.stop(trans, ep)
                             if stopped:
                                 succeeded.append(ep)
                                 jobs.append(ep.job)
