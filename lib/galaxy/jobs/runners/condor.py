@@ -175,7 +175,6 @@ class CondorJobRunner(AsynchronousJobRunner):
         for cjs in self.watched:
             job_id = cjs.job_id
             galaxy_id_tag = cjs.job_wrapper.get_id_tag()
-            log.debug("### (%s/%s) whats-up" % (galaxy_id_tag, job_id))
             try:
                 if os.stat(cjs.user_log).st_size == cjs.user_log_size:
                     new_watched.append(cjs)
