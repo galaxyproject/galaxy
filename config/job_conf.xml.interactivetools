@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- A sample job config for RealTimeTools using local runner. -->
+<!-- A sample job config for InteractiveTools using local runner. -->
 <job_conf>
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
