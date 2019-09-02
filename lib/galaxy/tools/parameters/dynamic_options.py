@@ -655,19 +655,19 @@ class DynamicOptions(object):
                 datasets = [datasets]
             options = []
             for dataset in datasets:
-	            if not dataset or not hasattr(dataset, 'file_name'):
-	                return []  # no valid dataset in history
-	            # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
-	            path = dataset.file_name
-	            if os.path.getsize(path) < 1048576:
-	                with open(path) as fh:
-	                    options.extend(self.parse_file_fields(fh))
-	            else:
-	                # Pass just the first megabyte to parse_file_fields.
-	                log.warning("Attempting to load options from large file, reading just first megabyte")
-	                with open(path, 'r') as fh:
-	                    contents = fh.read(1048576)
-	                options.extend(self.parse_file_fields(StringIO(contents)))
+                if not dataset or not hasattr(dataset, 'file_name'):
+                    return []  # no valid dataset in history
+                # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
+                path = dataset.file_name
+                if os.path.getsize(path) < 1048576:
+                    with open(path) as fh:
+                        options.extend(self.parse_file_fields(fh))
+                else:
+                    # Pass just the first megabyte to parse_file_fields.
+                    log.warning("Attempting to load options from large file, reading just first megabyte")
+                    with open(path, 'r') as fh:
+                        contents = fh.read(1048576)
+                    options.extend(self.parse_file_fields(StringIO(contents)))
         elif self.tool_data_table:
             options = self.tool_data_table.get_fields()
         elif self.file_fields:
