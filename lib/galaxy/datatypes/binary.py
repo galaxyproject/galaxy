@@ -810,11 +810,16 @@ class Loom(H5):
 
     def sniff(self, filename):
         if super(Loom, self).sniff(filename):
-            try:
-                with h5py.File(filename) as loom_file:
-                    return bool(loom_file.attrs.get('LOOM_SPEC_VERSION', False))
-            except Exception:
-                return False
+            with h5py.File(filename, 'r') as loom_file:
+                # Check the optional but distinctive LOOM_SPEC_VERSION attribute
+                if bool(loom_file.attrs.get('LOOM_SPEC_VERSION')):
+                    return True
+                # Check some mandatory H5 datasets and groups
+                for el in ('matrix', 'row_attrs', 'col_attrs'):
+                    if loom_file.get(el) is None:
+                        return False
+                else:
+                    return True
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):
