@@ -122,9 +122,7 @@ class ProvidesUserContext(object):
 
     @property
     def user_is_admin(self):
-        if self.api_inherit_admin:
-            return True
-        return self.user and self.user.email in self.app.config.admin_users_list
+        return self.api_inherit_admin or self.app.config.is_admin_user(self.user)
 
     @property
     def user_can_do_run_as(self):
