@@ -5,7 +5,7 @@ import _ from "underscore";
 // Use lighter weight 'core' version of paper since we don't need paperscript
 import paper from "../node_modules/paper/dist/paper-core.js";
 
-var CommandManager = (function() {
+const CommandManager = (function() {
     function CommandManager() {}
 
     CommandManager.executed = [];
@@ -17,7 +17,7 @@ var CommandManager = (function() {
     };
 
     CommandManager.undo = function undo() {
-        let cmd1 = CommandManager.executed.pop();
+        const cmd1 = CommandManager.executed.pop();
         if (cmd1 !== undefined) {
             if (cmd1.unexecute !== undefined) {
                 cmd1.unexecute();
@@ -44,10 +44,10 @@ var CommandManager = (function() {
     return CommandManager;
 })();
 
-var generateUUID = function() {
+const generateUUID = function() {
     let d = new Date().getTime();
-    let uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
-        let r = (d + Math.random() * 16) % 16 | 0;
+    const uuid = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c) {
+        const r = (d + Math.random() * 16) % 16 | 0;
         d = Math.floor(d / 16);
         return (c == "x" ? r : (r & 0x7) | 0x8).toString(16);
     });
@@ -56,12 +56,12 @@ var generateUUID = function() {
 
 _.extend(window.bundleEntries || {}, {
     load: function(opt) {
-        let chart = opt.chart;
-        let dataset = opt.dataset;
-        let defaults = { color: "red", width: 4, opacity: 0.5 };
+        const chart = opt.chart;
+        const dataset = opt.dataset;
+        const defaults = { color: "red", width: 4, opacity: 0.5 };
         $.fn.createCanvas = function(options) {
             let settings = $.extend({}, defaults, options || {});
-            let self = this;
+            const self = this;
 
             this.setOptions = function(options) {
                 settings = $.extend(settings, options);
@@ -70,9 +70,9 @@ _.extend(window.bundleEntries || {}, {
             $(document).ready(function() {
                 $(self).each(function(eachIndex, eachItem) {
                     self.paths = [];
-                    let img = eachItem;
+                    const img = eachItem;
                     // Get a reference to the canvas object
-                    let canvas = $("<canvas>")
+                    const canvas = $("<canvas>")
                         .attr({
                             width: options.img_width + "px",
                             height: options.img_height + "px"
@@ -94,7 +94,7 @@ _.extend(window.bundleEntries || {}, {
                         paper.projects[eachIndex].activate();
                     });
                     // Create a simple drawing tool:
-                    let tool = new paper.Tool();
+                    const tool = new paper.Tool();
 
                     tool.onMouseMove = function(event) {
                         if (!$(".context-menu-list").is(":visible")) {
@@ -163,8 +163,8 @@ _.extend(window.bundleEntries || {}, {
                             case 0:
                                 if (selectedItem) {
                                     if (mouseDownPoint) {
-                                        let selectedItemId = selectedItem.id;
-                                        let draggingStartPoint = { x: mouseDownPoint.x, y: mouseDownPoint.y };
+                                        const selectedItemId = selectedItem.id;
+                                        const draggingStartPoint = { x: mouseDownPoint.x, y: mouseDownPoint.y };
                                         CommandManager.execute({
                                             execute: function() {
                                                 //item was already moved, so do nothing
@@ -173,7 +173,7 @@ _.extend(window.bundleEntries || {}, {
                                                 $(paper.project.activeLayer.children).each(function(index, item) {
                                                     if (item.id == selectedItemId) {
                                                         if (item.segments) {
-                                                            let middlePoint = new paper.Point(
+                                                            const middlePoint = new paper.Point(
                                                                 (item.segments[item.segments.length - 1].point.x -
                                                                     item.segments[0].point.x) /
                                                                     2,
@@ -199,8 +199,8 @@ _.extend(window.bundleEntries || {}, {
                                     // When the mouse is released, simplify it:
                                     path.simplify();
                                     path.remove();
-                                    let strPath = path.exportJSON({ asString: true });
-                                    let uid = generateUUID();
+                                    const strPath = path.exportJSON({ asString: true });
+                                    const uid = generateUUID();
                                     CommandManager.execute({
                                         execute: function() {
                                             path = new paper.Path();
@@ -306,29 +306,29 @@ _.extend(window.bundleEntries || {}, {
             };
 
             this.download = function() {
-                let canvas = paper.project.activeLayer.view.element,
-                    img = $(canvas)[0];
-                let mergeCanvas = $("<canvas>").attr({
+                const canvas = paper.project.activeLayer.view.element;
+                const img = $(canvas)[0];
+                const mergeCanvas = $("<canvas>").attr({
                     width: img.width,
                     height: img.height
                 });
-                let mergedContext = mergeCanvas[0].getContext("2d");
+                const mergedContext = mergeCanvas[0].getContext("2d");
                 mergedContext.clearRect(0, 0, img.width, img.height);
                 mergedContext.drawImage(img, 0, 0);
                 mergedContext.drawImage(canvas, 0, 0);
                 self.downloadCanvas(mergeCanvas[0], "only-annotations.png");
 
                 // create canvas for original and annotations
-                let annotated_img = $(canvas)
+                const annotated_img = $(canvas)
                     .parent()
                     .find("img")[0];
-                let wt = $(annotated_img).width();
-                let ht = $(annotated_img).height();
-                let mergeCanvasAnnotated = $("<canvas>").attr({
+                const wt = $(annotated_img).width();
+                const ht = $(annotated_img).height();
+                const mergeCanvasAnnotated = $("<canvas>").attr({
                     width: $(annotated_img).width(),
                     height: $(annotated_img).height()
                 });
-                let mergedContextAnnotated = mergeCanvasAnnotated[0].getContext("2d");
+                const mergedContextAnnotated = mergeCanvasAnnotated[0].getContext("2d");
                 mergedContextAnnotated.clearRect(0, 0, $(annotated_img).width(), $(annotated_img).height());
                 mergedContextAnnotated.drawImage(annotated_img, 0, 0);
                 mergedContextAnnotated.drawImage(canvas, 0, 0);
@@ -336,13 +336,13 @@ _.extend(window.bundleEntries || {}, {
             };
 
             this.setText = function() {
-                let uid = generateUUID();
-                let pos = contextPoint;
+                const uid = generateUUID();
+                const pos = contextPoint;
                 CommandManager.execute({
                     execute: function() {
-                        let TXT_DBL_CLICK = "<<double click to edit>>";
-                        let txt = TXT_DBL_CLICK;
-                        let text = new paper.PointText(pos);
+                        const TXT_DBL_CLICK = "<<double click to edit>>";
+                        const txt = TXT_DBL_CLICK;
+                        const text = new paper.PointText(pos);
                         text.content = txt;
                         text.fillColor = settings.color;
                         text.fontSize = 14;
@@ -351,7 +351,7 @@ _.extend(window.bundleEntries || {}, {
                         text.opacity = settings.opacity;
                         text.onDoubleClick = function(event) {
                             if (this.className == "PointText") {
-                                let txt = prompt("Type in your text", this.content.replace(TXT_DBL_CLICK, ""));
+                                const txt = prompt("Type in your text", this.content.replace(TXT_DBL_CLICK, ""));
                                 if (txt.length > 0) this.content = txt;
                             }
                         };
@@ -444,7 +444,7 @@ _.extend(window.bundleEntries || {}, {
                 }
             });
 
-            let $menuList = $(".context-menu-list");
+            const $menuList = $(".context-menu-list");
             $menuList.find(".context-menu-icon-text").css({
                 "background-image": "url(/static/plugins/visualizations/annotate_image/static/images/text.png)",
                 "background-repeat": "no-repeat",
@@ -480,14 +480,14 @@ _.extend(window.bundleEntries || {}, {
         $.ajax({
             url: dataset.download_url,
             success: function(content) {
-                let $chartViewer = $("#" + opt.targets[0]);
+                const $chartViewer = $("#" + opt.targets[0]);
                 $chartViewer.html("<img id='image-annotate' src='" + dataset.download_url + "' />");
                 $chartViewer.css("overflow", "auto");
                 $chartViewer.css("position", "relative");
-                let $image = $chartViewer.find("img");
+                const $image = $chartViewer.find("img");
                 $image.on("load", function() {
-                    let width = $(this).width();
-                    let height = $(this).height();
+                    const width = $(this).width();
+                    const height = $(this).height();
                     $image.width(width);
                     $image.height(height);
                     $image.createCanvas({
