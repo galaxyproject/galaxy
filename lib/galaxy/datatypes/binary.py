@@ -810,11 +810,16 @@ class Loom(H5):
 
     def sniff(self, filename):
         if super(Loom, self).sniff(filename):
-            try:
-                with h5py.File(filename) as loom_file:
-                    return bool(loom_file.attrs.get('LOOM_SPEC_VERSION', False))
-            except Exception:
-                return False
+            with h5py.File(filename, 'r') as loom_file:
+                # Check the optional but distinctive LOOM_SPEC_VERSION attribute
+                if bool(loom_file.attrs.get('LOOM_SPEC_VERSION')):
+                    return True
+                # Check some mandatory H5 datasets and groups
+                for el in ('matrix', 'row_attrs', 'col_attrs'):
+                    if loom_file.get(el) is None:
+                        return False
+                else:
+                    return True
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -843,7 +848,7 @@ class Loom(H5):
                 dataset.creation_date = loom_file.attrs.get('creation_date', None)
                 dataset.metadata.shape = tuple(loom_file['matrix'].shape)
 
-                tmp = list(loom_file['layers'].keys())
+                tmp = list(loom_file.get('layers', {}).keys())
                 dataset.metadata.layers_count = len(tmp)
                 dataset.metadata.layers_names = tmp
 
@@ -855,11 +860,15 @@ class Loom(H5):
                 dataset.metadata.col_attrs_count = len(tmp)
                 dataset.metadata.col_attrs_names = tmp
 
-                tmp = list(loom_file['col_graphs'].keys())
+                # According to the Loom file format specification, col_graphs
+                # and row_graphs are mandatory groups, but files created by
+                # Bioconductor LoomExperiment do not always have them:
+                # https://github.com/Bioconductor/LoomExperiment/issues/7
+                tmp = list(loom_file.get('col_graphs', {}).keys())
                 dataset.metadata.col_graphs_count = len(tmp)
                 dataset.metadata.col_graphs_names = tmp
 
-                tmp = list(loom_file['row_graphs'].keys())
+                tmp = list(loom_file.get('row_graphs', {}).keys())
                 dataset.metadata.row_graphs_count = len(tmp)
                 dataset.metadata.row_graphs_names = tmp
         except Exception as e:
