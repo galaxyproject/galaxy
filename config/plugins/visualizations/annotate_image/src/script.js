@@ -98,7 +98,6 @@ _.extend(window.bundleEntries || {}, {
 
                     tool.onMouseMove = function(event) {
                         if (!$(".context-menu-list").is(":visible")) {
-                            position = event.point;
                             paper.project.activeLayer.selected = false;
                             self.setPenColor(settings.color);
                             if (event.item) {
@@ -173,7 +172,7 @@ _.extend(window.bundleEntries || {}, {
                                                 $(paper.project.activeLayer.children).each(function(index, item) {
                                                     if (item.id == selectedItemId) {
                                                         if (item.segments) {
-                                                            const middlePoint = new paper.Point(
+                                                            new paper.Point(
                                                                 (item.segments[item.segments.length - 1].point.x -
                                                                     item.segments[0].point.x) /
                                                                     2,
@@ -222,7 +221,8 @@ _.extend(window.bundleEntries || {}, {
                             // rightclick
                             case 2:
                                 contextPoint = event.point;
-                                contextSelectedItemId = selectedItem ? selectedItem.data.id : "";
+                                //Unused?
+                                //contextSelectedItemId = selectedItem ? selectedItem.data.id : "";
                                 break;
                         }
                     };
@@ -244,15 +244,13 @@ _.extend(window.bundleEntries || {}, {
             });
 
             let path;
-            let position;
             let contextPoint;
-            let contextSelectedItemId;
+            //let contextSelectedItemId;
             let selectedItem;
             let mouseDownPoint;
             this.downloadCanvas = function(canvas, filename) {
                 /// create an "off-screen" anchor tag
-                let lnk = document.createElement("a"),
-                    e;
+                const lnk = document.createElement("a");
 
                 /// the key here is to set the download attribute of the a tag
                 lnk.download = filename;
@@ -264,7 +262,7 @@ _.extend(window.bundleEntries || {}, {
 
                 /// create a "fake" click-event to trigger the download
                 if (document.createEvent) {
-                    e = document.createEvent("MouseEvents");
+                    const e = document.createEvent("MouseEvents");
                     e.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
                     lnk.dispatchEvent(e);
                 } else if (lnk.fireEvent) {
@@ -289,8 +287,6 @@ _.extend(window.bundleEntries || {}, {
                 const annotated_img = $(canvas)
                     .parent()
                     .find("img")[0];
-                const wt = $(annotated_img).width();
-                const ht = $(annotated_img).height();
                 const mergeCanvasAnnotated = $("<canvas>").attr({
                     width: $(annotated_img).width(),
                     height: $(annotated_img).height()
@@ -318,7 +314,7 @@ _.extend(window.bundleEntries || {}, {
                         text.opacity = settings.opacity;
                         text.onDoubleClick = function(event) {
                             if (this.className == "PointText") {
-                                const txt = prompt("Type in your text", this.content.replace(TXT_DBL_CLICK, ""));
+                                const txt = window.prompt("Type in your text", this.content.replace(TXT_DBL_CLICK, ""));
                                 if (txt.length > 0) this.content = txt;
                             }
                         };
@@ -368,7 +364,7 @@ _.extend(window.bundleEntries || {}, {
                         case "redo":
                             CommandManager.redo();
                             break;
-                        case 'download':
+                        case "download":
                             self.download();
                             break;
                         //TOOLS
