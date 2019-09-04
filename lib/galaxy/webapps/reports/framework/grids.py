@@ -1,5 +1,6 @@
 import logging
 import math
+from collections import OrderedDict
 from json import dumps, loads
 
 from markupsafe import escape
@@ -8,7 +9,6 @@ from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
 from galaxy.model.item_attrs import get_foreign_key, UsesAnnotations, UsesItemRatings
 from galaxy.util import sanitize_text, unicodify
-from galaxy.util.odict import odict
 from galaxy.web.framework import decorators, url_for
 from galaxy.web.framework.helpers import iff
 
@@ -765,7 +765,7 @@ class SharingStatusColumn(GridColumn):
 
     def get_accepted_filters(self):
         """ Returns a list of accepted filters for this column. """
-        accepted_filter_labels_and_vals = odict()
+        accepted_filter_labels_and_vals = OrderedDict()
         accepted_filter_labels_and_vals["private"] = "private"
         accepted_filter_labels_and_vals["shared"] = "shared"
         accepted_filter_labels_and_vals["accessible"] = "accessible"

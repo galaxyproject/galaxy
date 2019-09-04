@@ -8,7 +8,7 @@ from galaxy import (
     util,
     web
 )
-from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
+from galaxy.webapps.base.controller import BaseUIController, UsesFormDefinitionsMixin
 
 
 class User(BaseUIController, UsesFormDefinitionsMixin):

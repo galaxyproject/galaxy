@@ -10,7 +10,7 @@ RELEASE_NEXT:=16.04
 RELEASE_NEXT_BRANCH:=dev
 RELEASE_UPSTREAM:=upstream
 MY_UPSTREAM:=origin
-CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/webapps/config_manage.py
+CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 DOCS_DIR=doc
 DOC_SOURCE_DIR=$(DOCS_DIR)/source
@@ -129,11 +129,14 @@ release-check-blocking-prs: ## Check github for release blocking PRs
 release-bootstrap-history: ## bootstrap history for a new release
 	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
 
-update-dependencies:  ## update linting + dev dependencies
-	sh lib/galaxy/dependencies/pipfiles/update.sh
+build-dependencies-docker: ## Builds the docker container used for dependency updates
+	$(MAKE) -C lib/galaxy/dependencies/pipfiles/docker
 
-update-and-commit-dependencies:  ## update and commit linting + dev dependencies
-	sh lib/galaxy/dependencies/pipfiles/update.sh -c
+update-dependencies:  build-dependencies-docker ## update linting + dev dependencies
+	sh lib/galaxy/dependencies/pipfiles/update.sh -d
+
+update-and-commit-dependencies: build-dependencies-docker ## update and commit linting + dev dependencies
+	sh lib/galaxy/dependencies/pipfiles/update.sh -d -c
 
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN

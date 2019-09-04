@@ -1,10 +1,11 @@
 import logging
 import os
+from collections import OrderedDict
 from json import dumps
 
-from galaxy.jobs.datasets import DatasetPath
+from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
-from galaxy.util.odict import odict
+from galaxy.util import asbool
 from . import ToolAction
 
 log = logging.getLogger(__name__)
@@ -34,7 +35,11 @@ class SetMetadataToolAction(ToolAction):
         """
         Execute using application.
         """
+
         for name, value in incoming.items():
+            # Why are we looping here and not just using a fixed input name? Needed?
+            if not name.startswith("input"):
+                continue
             if isinstance(value, app.model.HistoryDatasetAssociation):
                 dataset = value
                 dataset_name = name
@@ -52,6 +57,7 @@ class SetMetadataToolAction(ToolAction):
 
         # Create the job object
         job = app.model.Job()
+        job.galaxy_version = app.config.version_major
         job.session_id = session_id
         job.history_id = history_id
         job.tool_id = tool.id
@@ -78,10 +84,11 @@ class SetMetadataToolAction(ToolAction):
         job_working_dir = app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(job.id))
         datatypes_config = os.path.join(job_working_dir, 'registry.xml')
         app.datatypes_registry.to_xml_file(path=datatypes_config)
-        external_metadata_wrapper = get_metadata_compute_strategy(app, job.id)
+        external_metadata_wrapper = get_metadata_compute_strategy(app.config, job.id)
         output_datatasets_dict = {
             dataset_name: dataset,
         }
+        validate_outputs = asbool(incoming.get("validate", False))
         cmd_line = external_metadata_wrapper.setup_external_metadata(output_datatasets_dict,
                                                                      sa_session,
                                                                      exec_dir=None,
@@ -93,6 +100,7 @@ class SetMetadataToolAction(ToolAction):
                                                                      datatypes_config=datatypes_config,
                                                                      job_metadata=os.path.join(job_working_dir, 'working', tool.provided_metadata_file),
                                                                      include_command=False,
+                                                                     validate_outputs=validate_outputs,
                                                                      max_metadata_value_size=app.config.max_metadata_value_size,
                                                                      kwds={'overwrite': overwrite})
         incoming['__SET_EXTERNAL_METADATA_COMMAND_LINE__'] = cmd_line
@@ -117,4 +125,4 @@ class SetMetadataToolAction(ToolAction):
         # clear e.g. converted files
         dataset.datatype.before_setting_metadata(dataset)
 
-        return job, odict()
+        return job, OrderedDict()

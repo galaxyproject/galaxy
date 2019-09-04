@@ -62,8 +62,7 @@ var HistoryGridView = GridView.extend({
                         $(`.delayed-value-datasets_by_state[data-id='${historyId}']`).html(stateHtml);
                         $(`.delayed-value-disk_size[data-id='${historyId}']`).html(response.nice_size);
                     };
-                    var xhr = $.ajax(options);
-                    return xhr;
+                    return $.ajax(options);
                 };
             })
         );
@@ -79,7 +78,7 @@ var HistoryGridView = GridView.extend({
             })
             .done(() => {
                 historyCopyDialog(history, {}).done(() => {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     if (Galaxy && Galaxy.currHistoryPanel) {
                         Galaxy.currHistoryPanel.loadCurrentHistory();
                     }
@@ -101,7 +100,7 @@ var HistoryGridView = GridView.extend({
 var View = Backbone.View.extend({
     title: _l("Histories"),
     initialize: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         LoadingIndicator.markViewAsLoading(this);
 
         if (options.action_id == "list_published") {

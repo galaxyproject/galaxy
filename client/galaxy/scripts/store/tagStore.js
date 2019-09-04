@@ -6,7 +6,7 @@ export const state = {
 export const getters = {
     getTagsById: state => key => {
         if (state.modelTagCache.has(key)) {
-            let tagSet = state.modelTagCache.get(key); //.sort();
+            const tagSet = state.modelTagCache.get(key); //.sort();
             return Array.from(tagSet);
         }
         return [];

@@ -118,6 +118,28 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
         this.active = true;
     },
 
+    trackModel: function(historyContent) {
+        if (historyContent.has("job_states_summary")) {
+            // already tracked...
+            return;
+        }
+
+        const historyId = this.historyId;
+        if (historyContent.attributes.history_content_type === "dataset_collection") {
+            var jobSourceType = historyContent.attributes.job_source_type;
+            var jobSourceId = historyContent.attributes.job_source_id;
+            if (jobSourceType) {
+                this.add({
+                    id: jobSourceId,
+                    model: jobSourceType,
+                    history_id: historyId,
+                    collection_id: historyContent.attributes.id
+                });
+                historyContent.jobStatesSummary = this.get(jobSourceId);
+            }
+        }
+    },
+
     url: function() {
         var nonTerminalModels = this.models.filter(model => {
             return !model.terminal();

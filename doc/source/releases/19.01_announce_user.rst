@@ -41,13 +41,13 @@ There's a new discussion forum to replace Biostars. It is accessible under the '
    :alt: Galaxy's new help forum which replaces biostars
 
 
-New Visualisations
+New Visualizations
 ===========================================================
 
 `Aequatus visualisation plugin <https://docs.google.com/presentation/d/1_KdwjbIyjUhdb_huAzOuI34693mciw_vXDCGLctKs9A/edit#slide=id.p2>`__ has been released which allows visualisation of gene alignments and gene family aggregations.
 
 .. figure:: https://lh3.googleusercontent.com/wgNqZT2idSR4AkvUZ55ZQGXOfOPlAxFimO9795WvrQwP1ZMxxdYwNmRZErf-n5hZMGa1SulFry321vgHPoc11wsmJlmVPrmyxG8buV6P=s1600
-   :alt: The Aequatus visualisation allows analysing gene family alignments
+   :alt: The Aequatus visualization allows analyzing gene family alignments
 
 New Datatypes
 ===========================================================

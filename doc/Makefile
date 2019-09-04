@@ -42,8 +42,8 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 	@echo "  updaterst  to update Sphinx RST files for lib/ to reflect code structure changes"
 
-source/dev/schema.md: parse_gx_xsd.py schema_template.md ../lib/galaxy/tools/xsd/galaxy.xsd ## Build Github-flavored Markdown from Galaxy Tool XSD (expects lxml in environment)
-	python parse_gx_xsd.py schema_template.md ../lib/galaxy/tools/xsd/galaxy.xsd > $@
+source/dev/schema.md: parse_gx_xsd.py schema_template.md ../lib/galaxy/tool_util/xsd/galaxy.xsd ## Build Github-flavored Markdown from Galaxy Tool XSD (expects lxml in environment)
+	python parse_gx_xsd.py schema_template.md ../lib/galaxy/tool_util/xsd/galaxy.xsd > $@
 
 source/api/api.rst: source/lib/galaxy.webapps.galaxy.api.rst
 	printf "Galaxy API\n==========\n" > $@
@@ -57,7 +57,7 @@ source/api/ts_api.rst: source/lib/galaxy.webapps.tool_shed.api.rst
 	sed -i.bak -e 's/^galaxy\\\.webapps\\\.tool\\_shed\\\.api\\\.//' $@
 	rm -f $@.bak
 
-source/admin/config_logging_default_yaml.rst: ../lib/galaxy/config.py
+source/admin/config_logging_default_yaml.rst: ../lib/galaxy/config/__init__.py
 	printf '.. code-block:: yaml\n\n' > $@
 	printf '    galaxy:\n' >> $@
 	printf '      logging:\n        ' >> $@

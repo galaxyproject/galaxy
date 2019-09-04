@@ -24,10 +24,10 @@ from base import populators  # noqa: I100,I202
 from base.api import UsesApiTestCaseMixin  # noqa: I100
 from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address  # noqa: I100
 from base.testcase import FunctionalTestCase  # noqa: I100
-from galaxy_selenium import (  # noqa: I100,I201
+from galaxy.selenium import (  # noqa: I100,I201
     driver_factory,
 )
-from galaxy_selenium.navigates_galaxy import (  # noqa: I100
+from galaxy.selenium.navigates_galaxy import (  # noqa: I100
     NavigatesGalaxy,
     retry_during_transitions
 )
@@ -92,10 +92,12 @@ def managed_history(f):
             f(self, *args, **kwds)
         finally:
             if "GALAXY_TEST_NO_CLEANUP" not in os.environ:
-                current_history_id = self.current_history_id()
-                self.dataset_populator.cancel_history_jobs(current_history_id)
-                self.api_delete("histories/%s" % current_history_id)
-
+                try:
+                    current_history_id = self.current_history_id()
+                    self.dataset_populator.cancel_history_jobs(current_history_id)
+                    self.api_delete("histories/%s" % current_history_id)
+                except Exception:
+                    print("Faild to cleanup managed history, selenium connection corrupted somehow?")
     return func_wrapper
 
 
@@ -532,9 +534,17 @@ class SeleniumSessionGetPostMixin(object):
         response = requests.get(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
         return response
 
-    def _post(self, route, data={}):
+    def _post(self, route, data=None, files=None):
         full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
-        response = requests.post(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
+        if data is None:
+            data = {}
+
+        if files is None:
+            files = data.get("__files", None)
+            if files is not None:
+                del data["__files"]
+
+        response = requests.post(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies(), files=files)
         return response
 
     def _delete(self, route, data={}):

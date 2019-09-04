@@ -9,8 +9,8 @@ from galaxy import (
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web.base.controller import (
+from galaxy.web import expose_api
+from galaxy.webapps.base.controller import (
     BaseAPIController,
     UsesStoredWorkflowMixin
 )

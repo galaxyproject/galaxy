@@ -2,31 +2,38 @@
     <div class="ui-thumbnails">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <input
-                class="search-query parent-width"
-                name="query"
-                placeholder="search visualizations"
-                autocomplete="off"
-                type="text"
-                v-model="search"
-            />
+            <div class="search-input">
+                <input
+                    class="search-query parent-width"
+                    name="query"
+                    placeholder="search visualizations"
+                    autocomplete="off"
+                    type="text"
+                    v-model="search"
+                />
+            </div>
             <div v-for="plugin in plugins" :key="plugin.name">
                 <table v-if="match(plugin)">
                     <tr class="ui-thumbnails-item" @click="select(plugin)">
                         <td>
-                            <img v-if="plugin.logo" class="ui-thumbnails-image" :src="plugin.logo" />
+                            <img
+                                v-if="plugin.logo"
+                                alt="ui thumbnails"
+                                class="ui-thumbnails-image"
+                                :src="plugin.logo"
+                            />
                             <div v-else class="ui-thumbnails-icon fa fa-eye" />
                         </td>
                         <td>
-                            <div class="ui-thumbnails-title font-weight-bold text-dark">{{ plugin.html }}</div>
-                            <div class="ui-thumbnails-text text-dark">{{ plugin.description }}</div>
+                            <div class="ui-thumbnails-title font-weight-bold">{{ plugin.html }}</div>
+                            <div class="ui-thumbnails-text">{{ plugin.description }}</div>
                         </td>
                     </tr>
                     <tr v-if="!fixed">
                         <td />
                         <td v-if="plugin.name == name">
                             <div v-if="hdas && hdas.length > 0">
-                                <div class="font-weight-bold text-dark">Select a dataset to visualize:</div>
+                                <div class="font-weight-bold">Select a dataset to visualize:</div>
                                 <div class="ui-select">
                                     <select class="select" v-model="selected">
                                         <option v-for="file in hdas" :key="file.id" :value="file.id">{{
@@ -73,9 +80,9 @@ export default {
         };
     },
     created() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         let url = `${getAppRoot()}api/plugins`;
-        let dataset_id = Galaxy.params.dataset_id;
+        const dataset_id = Galaxy.params.dataset_id;
         if (dataset_id) {
             this.fixed = true;
             this.selected = dataset_id;
@@ -95,8 +102,8 @@ export default {
             if (this.fixed) {
                 this.create(plugin);
             } else {
-                let Galaxy = getGalaxyInstance();
-                let history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
+                const Galaxy = getGalaxyInstance();
+                const history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
                 if (history_id) {
                     axios
                         .get(`${getAppRoot()}api/plugins/${plugin.name}?history_id=${history_id}`)
@@ -116,7 +123,7 @@ export default {
             }
         },
         create: function(plugin) {
-            let href = `${plugin.href}?dataset_id=${this.selected}`;
+            const href = `${plugin.href}?dataset_id=${this.selected}`;
             if (plugin.target == "_top") {
                 window.location.href = href;
             } else {
@@ -131,7 +138,7 @@ export default {
             );
         },
         _errorMessage: function(e) {
-            let message = e && e.response && e.response.data && e.response.data.err_msg;
+            const message = e && e.response && e.response.data && e.response.data.err_msg;
             return message || "Request failed for an unknown reason.";
         }
     }

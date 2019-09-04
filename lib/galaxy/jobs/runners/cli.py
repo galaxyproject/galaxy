@@ -181,6 +181,8 @@ class ShellJobRunner(AsynchronousJobRunner):
                     # Try to find out the reason for exiting
                     self.__handle_out_of_memory(ajs, external_job_id)
                     self.work_queue.put((self.mark_as_failed, ajs))
+                    # Don't add the job to the watched items once it fails, deals with https://github.com/galaxyproject/galaxy/issues/7820
+                    continue
             if state == model.Job.states.RUNNING and not ajs.running:
                 ajs.running = True
             ajs.old_state = state

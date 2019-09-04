@@ -11,7 +11,10 @@ from paste import httpexceptions
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework.webapp
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    unicodify,
+)
 from galaxy.util.properties import load_app_properties
 from galaxy.webapps.util import (
     build_template_error_formatters,
@@ -32,7 +35,7 @@ def add_ui_controllers(webapp, app):
     Search for controllers in the 'galaxy.webapps.controllers' module and add
     them to the webapp.
     """
-    from galaxy.web.base.controller import BaseUIController
+    from galaxy.webapps.base.controller import BaseUIController
     import galaxy.webapps.reports.controllers
     controller_dir = galaxy.webapps.reports.controllers.__path__[0]
     for fname in os.listdir(controller_dir):
@@ -128,7 +131,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                                           args=(conf,),
                                           kwargs=dict(templating_formatters=build_template_error_formatters()))
         except MiddlewareWrapUnsupported as exc:
-            log.warning(str(exc))
+            log.warning(unicodify(exc))
             import galaxy.web.framework.middleware.error
             app = wrap_if_allowed(app, stack, galaxy.web.framework.middleware.error.ErrorMiddleware, args=(conf,))
     else:

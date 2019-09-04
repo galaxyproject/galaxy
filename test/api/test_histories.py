@@ -249,7 +249,7 @@ class HistoriesApiTestCase(api.ApiTestCase):
         # The cleanup() method of the __IMPORT_HISTORY__ job (which is executed
         # after the job has entered its final state):
         # - creates a new dataset with 'ok' state and adds it to the history
-        # - starts a __SET_METADATA__ job to regerenate the dataset metadata, if
+        # - starts a __SET_METADATA__ job to regenerate the dataset metadata, if
         #   needed
         # We need to wait a bit for the creation of the __SET_METADATA__ job.
         time.sleep(1)
@@ -262,9 +262,6 @@ class HistoriesApiTestCase(api.ApiTestCase):
         assert len(bai_response.content) > 4
 
     def test_import_export_collection(self):
-        from nose.plugins.skip import SkipTest
-        raise SkipTest("Collection import/export not yet implemented")
-
         history_name = "for_export_with_collections"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_collection_populator.create_list_in_history(history_id, contents=["Hello", "World"], direct_upload=True)
@@ -285,6 +282,26 @@ class HistoriesApiTestCase(api.ApiTestCase):
             assert element1["hid"] == 3
 
         self._check_imported_collection(imported_history_id, hid=1, collection_type="list", elements_checker=check_elements)
+
+    def test_import_export_nested_collection(self):
+        history_name = "for_export_with_nested_collections"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        self.dataset_collection_populator.create_list_of_pairs_in_history(history_id)
+
+        imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=3)
+        self._assert_history_length(imported_history_id, 3)
+
+        def check_elements(elements):
+            assert len(elements) == 1
+            element0 = elements[0]["object"]
+            self._assert_has_keys(element0, "elements", "collection_type")
+
+            child_elements = element0["elements"]
+
+            assert len(child_elements) == 2
+            assert element0["collection_type"] == "paired"
+
+        self._check_imported_collection(imported_history_id, hid=1, collection_type="list:paired", elements_checker=check_elements)
 
     def _reimport_history(self, history_id, history_name, wait_on_history_length=None, export_kwds={}):
         # Ensure the history is ready to go...

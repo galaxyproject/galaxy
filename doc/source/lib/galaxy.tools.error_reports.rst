@@ -1,5 +1,5 @@
-galaxy\.tools\.error\_reports package
-=====================================
+galaxy.tools.error\_reports package
+===================================
 
 .. automodule:: galaxy.tools.error_reports
     :members:

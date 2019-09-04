@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <job_conf>
     <plugins>
-        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="1"/>
     </plugins>
 
     <handlers>

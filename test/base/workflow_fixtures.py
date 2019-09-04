@@ -444,3 +444,240 @@ steps:
       input1: input1
       queries_0|input2: input1
 """
+
+WORKFLOW_WITH_CUSTOM_REPORT_1 = """
+class: GalaxyWorkflow
+name: My Cool Workflow
+inputs:
+  input_1: data
+  image_input: data
+  input_list: collection
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+  output_image:
+    outputSource: image_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+  image_cat:
+    tool_id: cat
+    in:
+      input1: image_input
+  qc_step:
+    tool_id: qc_stdout
+    state:
+      quality: 9
+    in:
+      input: input_1
+report:
+  markdown: |
+    ## About This Report
+
+    This report is generated from markdown content in the workflow YAML/JSON.
+    Workflow invocation reports provide a customizable way for workflow authors
+    to summarize the results of a workflow execution. There is a default markdown
+    template if a workflow does not define one (right now it just shows the inputs,
+    outputs, and workflow - but this will evolve).
+
+    This report is written in "Galaxy Workflow Flavored Markdown". This workflow
+    variant of "Galaxy Flavored Markdown" contains workflow-relative references.
+    Dataset, collections, and jobs are referenced by step labels, input labels, and output
+    labels - rather than by object IDs. The Galaxy invocation report generator plugin
+    translates this to "Galaxy Flavored Markdown" at the time the report is viewed and
+    that format references actual object IDs (by database ID internally, and encoded ID
+    when exported to the client via the API).
+
+    An upshot of translating the workflow markdown to this second neutral format that
+    has no concept of the workflow invocation is that client side rendering (and much
+    of the backend processing) is completely general and not tied to workflows or
+    invocations. The same markdown components could potentially be used to render pages,
+    history annotations, describe library folders, etc..
+
+    The next two sections demonstrate the auto generated inputs and outputs sections
+    in the default workflow invocation report template.
+
+        ## Workflow Inputs
+        ```galaxy
+        invocation_inputs()
+        ```
+
+        ## Workflow Outputs
+        ```galaxy
+        invocation_outputs()
+        ```
+
+    ## Workflow Inputs
+    ```galaxy
+    invocation_inputs()
+    ```
+
+    ## Workflow Outputs
+    ```galaxy
+    invocation_outputs()
+    ```
+
+    The auto-generated sections could be hand-crafted from workflow markdown also,
+    listing out each input and output explicitly. The auto generated sections are merely
+    a convenience to avoid needing to that by hand and for supplying a default report
+    for workflows that don't define a custom one report.
+
+    ## More Custom Content
+
+    The rest of this report demonstrates more the directives allowed in the report
+    markdown. ``invocation_outputs`` and ``invocation_inputs`` are not allow in
+    "Galaxy Flavored Markdown" (the non-workflow invocation specific format), but
+    the remainder of these are allowed - they would just need to reference object
+    IDs instead of inputs, outputs, and steps.
+
+    Once can reference an output and embed a display of it as follows:
+
+        ```galaxy
+        history_dataset_display(output=output_1)
+        ```
+
+    ```galaxy
+    history_dataset_display(output=output_1)
+    ```
+
+    Inputs can be referenced and displayed the same way:
+
+        ```galaxy
+        history_dataset_display(input=input_1)
+        ```
+
+    ```galaxy
+    history_dataset_display(input=input_1)
+    ```
+
+    ---
+
+    Images can be embedded directly into the report as follows:
+
+        ```galaxy
+        history_dataset_as_image(output=output_image)
+        ```
+
+    ```galaxy
+    history_dataset_as_image(output=output_image)
+    ```
+
+    ---
+
+    Dataset peek content can be displayed to quickly provided an embedded
+    summary of an input or output:
+
+        ```galaxy
+        history_dataset_peek(output=output_1)
+        ```
+
+    ```galaxy
+    history_dataset_peek(output=output_1)
+    ```
+
+    ---
+
+    Dataset "info" content can be displayed as well:
+
+        ```galaxy
+        history_dataset_info(input=input_1)
+        ```
+
+    ```galaxy
+    history_dataset_info(input=input_1)
+    ```
+
+    ---
+
+    Collections can be displayed:
+
+        ```galaxy
+        history_dataset_collection_display(input=input_list)
+        ```
+
+    ```galaxy
+    history_dataset_collection_display(input=input_list)
+    ```
+
+    ---
+
+    The whole workflow can be embedded to provide some context and display
+    annotations and steps.
+
+        ```galaxy
+        workflow_display()
+        ```
+
+    ```galaxy
+    workflow_display()
+    ```
+
+    ---
+
+    Job parameters can be summarized:
+
+        ```galaxy
+        job_parameters(step=qc_step)
+        ```
+
+    ```galaxy
+    job_parameters(step=qc_step)
+    ```
+
+    ---
+
+    Job metrics can be summarized as well:
+
+        ```galaxy
+        job_metrics(step=image_cat)
+        ```
+
+    ```galaxy
+    job_metrics(step=image_cat)
+    ```
+
+    ---
+
+    Tool standard out and error are also available for steps.
+
+        ```galaxy
+        tool_stdout(step=qc_step)
+        ```
+
+    ```galaxy
+    tool_stdout(step=qc_step)
+    ```
+
+        ```galaxy
+        tool_stderr(step=qc_step)
+        ```
+
+    ```galaxy
+    tool_stderr(step=qc_step)
+    ```
+
+    ---
+
+    *fin*
+
+"""
+
+WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA = """
+input_1:
+  value: 1.bed
+  type: File
+  name: my bed file
+image_input:
+  value: 454Score.png
+  type: File
+  file_type: png
+  name: my input image
+input_list:
+  type: list
+  elements:
+    - identifier: i1
+      content: "0"
+  name: example list
+"""

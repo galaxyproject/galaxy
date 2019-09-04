@@ -6,8 +6,8 @@ from galaxy import (
     model,
     util
 )
-from galaxy.tools.parser import output_collection_def
-from galaxy.tools.provided_metadata import LegacyToolProvidedMetadata, NullToolProvidedMetadata
+from galaxy.tool_util.parser import output_collection_def
+from galaxy.tool_util.provided_metadata import LegacyToolProvidedMetadata, NullToolProvidedMetadata
 from .. import tools_support
 
 DEFAULT_TOOL_OUTPUT = "out1"
@@ -407,6 +407,9 @@ class MockObjectStore(object):
     def size(self, dataset):
         path = self.created_datasets[dataset]
         return os.stat(path).st_size
+
+    def exists(self, *args, **kwargs):
+        return True
 
     def get_filename(self, dataset):
         return self.created_datasets[dataset]

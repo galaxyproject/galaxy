@@ -1,3 +1,4 @@
+import errno
 import logging
 from xml.etree import ElementTree as XmlET
 
@@ -31,7 +32,15 @@ class ToolPanelManager(object):
         shed_tool_conf = shed_tool_conf_dict['config_filename']
         tool_path = shed_tool_conf_dict['tool_path']
         config_elems = []
-        tree, error_message = xml_util.parse_xml(shed_tool_conf)
+        try:
+            tree, error_message = xml_util.parse_xml(shed_tool_conf)
+        except (OSError, IOError) as exc:
+            if (exc.errno == errno.ENOENT and shed_tool_conf_dict.get('create', None) is not None):
+                with open(shed_tool_conf, 'w') as fh:
+                    fh.write(shed_tool_conf_dict['create'])
+                tree, error_message = xml_util.parse_xml(shed_tool_conf)
+            else:
+                raise
         if tree:
             root = tree.getroot()
             for elem in root:
@@ -409,7 +418,7 @@ class ToolPanelManager(object):
                         # Keep a list of all empty section elements so they can be removed.
                         config_elems_to_remove.append(config_elem)
                 elif config_elem.tag == 'tool':
-                    if (tool_elem.get('guid'), tool_elem.get('file')) in guid_paths_to_remove:
+                    if (config_elem.get('guid'), config_elem.get('file')) in guid_paths_to_remove:
                         config_elems_to_remove.append(config_elem)
             for config_elem in config_elems_to_remove:
                 config_elems.remove(config_elem)

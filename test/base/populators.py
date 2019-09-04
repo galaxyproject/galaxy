@@ -23,7 +23,7 @@ from gxformat2 import (
 from pkg_resources import resource_string
 from six import StringIO
 
-from galaxy.tools.verify.test_data import TestDataResolver
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import unicodify
 from . import api_asserts
 
@@ -516,6 +516,28 @@ class BaseDatasetPopulator(object):
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
+    def validate_dataset(self, history_id, dataset_id):
+        url = "histories/%s/contents/%s/validate" % (history_id, dataset_id)
+        update_response = self.galaxy_interactor._put(url, {})
+        assert update_response.status_code == 200, update_response.content
+        return update_response.json()
+
+    def validate_dataset_and_wait(self, history_id, dataset_id):
+        self.validate_dataset(history_id, dataset_id)
+
+        def validated():
+            metadata = self.get_history_dataset_details(history_id, dataset_id=dataset_id)
+            validated_state = metadata['validated_state']
+            if validated_state == 'unknown':
+                return
+            else:
+                return validated_state
+
+        return wait_on(
+            validated,
+            "dataset validation"
+        )
+
     def export_url(self, history_id, data, check_download=True):
         url = "histories/%s/exports" % history_id
         put_response = self._put(url, data)
@@ -570,6 +592,11 @@ class BaseDatasetPopulator(object):
         self.wait_for_history(imported_history_id)
         return imported_history_id
 
+    def rename_history(self, history_id, new_name):
+        update_url = "histories/%s" % history_id
+        put_response = self._put(update_url, {"name": new_name})
+        return put_response
+
     def get_histories(self):
         history_index_response = self._get("histories")
         api_asserts.assert_status_code_is(history_index_response, 200)
@@ -578,12 +605,16 @@ class BaseDatasetPopulator(object):
     def wait_on_history_length(self, history_id, wait_on_history_length):
 
         def history_has_length():
-            contents_response = self._get("histories/%s/contents" % history_id)
-            api_asserts.assert_status_code_is(contents_response, 200)
-            contents = contents_response.json()
-            return None if len(contents) != wait_on_history_length else True
+            history_length = self.history_length(history_id)
+            return None if history_length != wait_on_history_length else True
 
         wait_on(history_has_length, desc="import history population")
+
+    def history_length(self, history_id):
+        contents_response = self._get("histories/%s/contents" % history_id)
+        api_asserts.assert_status_code_is(contents_response, 200)
+        contents = contents_response.json()
+        return len(contents)
 
     def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds, url, api_key):
         # Export the history.
@@ -721,6 +752,24 @@ class BaseWorkflowPopulator(object):
         url = "workflows/%s/usage/%s" % (workflow_id, invocation_id)
         return wait_on_state(lambda: self._get(url), desc="workflow invocation state", timeout=timeout)
 
+    def history_invocations(self, history_id):
+        history_invocations_response = self._get("invocations", {"history_id": history_id})
+        api_asserts.assert_status_code_is(history_invocations_response, 200)
+        return history_invocations_response.json()
+
+    def wait_for_history_workflows(self, history_id, assert_ok=True, timeout=DEFAULT_TIMEOUT, expected_invocation_count=None):
+        if expected_invocation_count is not None:
+            def invocation_count():
+                invocations = self.history_invocations(history_id)
+                if len(invocations) == expected_invocation_count:
+                    return True
+
+            wait_on(invocation_count, "%s history invocations" % expected_invocation_count)
+        for invocation in self.history_invocations(history_id):
+            workflow_id = invocation["workflow_id"]
+            invocation_id = invocation["id"]
+            self.wait_for_workflow(workflow_id, invocation_id, history_id, timeout=timeout, assert_ok=assert_ok)
+
     def wait_for_workflow(self, workflow_id, invocation_id, history_id, assert_ok=True, timeout=DEFAULT_TIMEOUT):
         """ Wait for a workflow invocation to completely schedule and then history
         to be complete. """
@@ -750,6 +799,11 @@ class BaseWorkflowPopulator(object):
             return invocation_id
         else:
             return invocation_response
+
+    def workflow_report_json(self, workflow_id, invocation_id):
+        response = self._get("workflows/%s/invocations/%s/report" % (workflow_id, invocation_id))
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
 
     def download_workflow(self, workflow_id, style=None):
         params = {}
@@ -1285,11 +1339,13 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
 
 def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_populator):
 
-    def read_test_data(test_dict):
+    def open_test_data(test_dict, mode="rb"):
         test_data_resolver = TestDataResolver()
         filename = test_data_resolver.get_filename(test_dict["value"])
-        content = open(filename, "r").read()
-        return content
+        return open(filename, mode)
+
+    def read_test_data(test_dict):
+        return open_test_data(test_dict, mode="r").read()
 
     inputs = {}
     label_map = {}
@@ -1335,7 +1391,7 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
         elif is_dict and "type" in value:
             input_type = value["type"]
             if input_type == "File":
-                content = read_test_data(value)
+                content = open_test_data(value)
                 new_dataset_kwds = {
                     "content": content
                 }
@@ -1363,7 +1419,7 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
 def wait_on_state(state_func, desc="state", skip_states=None, assert_ok=False, timeout=DEFAULT_TIMEOUT):
     def get_state():
         response = state_func()
-        assert response.status_code == 200, "Failed to fetch state update while waiting."
+        assert response.status_code == 200, "Failed to fetch state update while waiting. [%s]" % response.content
         state = response.json()["state"]
         if state in skip_states:
             return None

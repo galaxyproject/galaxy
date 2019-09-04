@@ -740,14 +740,14 @@ def test_config_parse_azure():
 
 
 class TestConfig(object):
-    def __init__(self, config_str=DISK_TEST_CONFIG, clazz=None):
+    def __init__(self, config_str=DISK_TEST_CONFIG, clazz=None, store_by="id"):
         self.temp_directory = mkdtemp()
         if config_str.startswith("<"):
             config_file = "store.xml"
         else:
             config_file = "store.yaml"
         self.write(config_str, config_file)
-        config = MockConfig(self.temp_directory, config_file)
+        config = MockConfig(self.temp_directory, config_file, store_by=store_by)
         if clazz is None:
             self.object_store = objectstore.build_object_store_from_config(config)
         elif config_file == "store.xml":
@@ -774,11 +774,12 @@ class TestConfig(object):
 
 class MockConfig(object):
 
-    def __init__(self, temp_directory, config_file):
+    def __init__(self, temp_directory, config_file, store_by="id"):
         self.file_path = temp_directory
         self.object_store_config_file = os.path.join(temp_directory, config_file)
         self.object_store_check_old_style = False
         self.object_store_cache_path = os.path.join(temp_directory, "staging")
+        self.object_store_store_by = store_by
         self.jobs_directory = temp_directory
         self.new_file_path = temp_directory
         self.umask = 0000

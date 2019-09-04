@@ -19,7 +19,7 @@ from galaxy import (
 )
 from galaxy.datatypes import sniff
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import MessageException, RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import (
     inflector,
@@ -29,8 +29,8 @@ from galaxy.util import (
 from galaxy.util.checkers import check_binary
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
-from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
 from galaxy.web.framework.helpers import grids, iff, time_ago
+from galaxy.webapps.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
 
 log = logging.getLogger(__name__)
 
@@ -250,7 +250,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             ck_size = int(ck_size)
         return data.datatype.display_data(trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd)
 
-    @web.expose_api_anonymous
+    @web.legacy_expose_api_anonymous
     def get_edit(self, trans, dataset_id=None, **kwd):
         """Produces the input definitions available to modify dataset attributes"""
         status = None
@@ -389,18 +389,11 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         else:
             return self.message_exception(trans, 'You do not have permission to edit this dataset\'s ( id: %s ) information.' % str(dataset_id))
 
-    @web.expose_api_anonymous
+    @web.legacy_expose_api_anonymous
     def set_edit(self, trans, payload=None, **kwd):
         """Allows user to modify parameters of an HDA."""
         def __ok_to_edit_metadata(dataset_id):
-            # prevent modifying metadata when dataset is queued or running as input/output
-            # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
-            for job_to_dataset_association in trans.sa_session.query(
-                    self.app.model.JobToInputDatasetAssociation).filter_by(dataset_id=dataset_id).all() \
-                    + trans.sa_session.query(self.app.model.JobToOutputDatasetAssociation).filter_by(dataset_id=dataset_id).all():
-                if job_to_dataset_association.job.state not in [job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED]:
-                    return False
-            return True
+            return self.hda_manager.ok_to_edit_metadata(dataset_id)
 
         status = 'success'
         operation = payload.get('operation')
@@ -465,25 +458,17 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 return self.message_exception(trans, 'Changing datatype "%s" is not allowed.' % (data.extension))
         elif operation == 'autodetect':
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
-            # prevent modifying metadata when dataset is queued or running as input/output
-            if not __ok_to_edit_metadata(data.id):
-                return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them.')
-            else:
-                for name, spec in data.metadata.spec.items():
-                    # We need to be careful about the attributes we are resetting
-                    if name not in ['name', 'info', 'dbkey', 'base_name']:
-                        if spec.get('default'):
-                            setattr(data.metadata, name, spec.unwrap(spec.get('default')))
-                message = 'Attributes have been queued to be updated.'
-                trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data})
-                trans.sa_session.flush()
+            try:
+                self.hda_manager.set_metadata(trans, data, overwrite=True)
+            except MessageException as e:
+                return self.message_exception(trans, e.err_msg)
         elif operation == 'conversion':
             target_type = payload.get('target_type')
             if target_type:
                 try:
                     message = data.datatype.convert_dataset(trans, data, target_type)
                 except Exception as e:
-                    return self.message_exception(trans, str(e))
+                    return self.message_exception(trans, util.unicodify(e))
         elif operation == 'permission':
             if not trans.user:
                 return self.message_exception(trans, 'You must be logged in if you want to change permissions.')
@@ -830,7 +815,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             action_param = display_link.get_param_name_by_url(action_param)
                         except ValueError as e:
                             log.debug(e)
-                            return paste.httpexceptions.HTTPNotFound(str(e))
+                            return paste.httpexceptions.HTTPNotFound(util.unicodify(e))
                         value = display_link.get_param_value(action_param)
                         assert value, "An invalid parameter name was provided: %s" % action_param
                         assert value.parameter.viewable, "This parameter is not viewable."
@@ -849,6 +834,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         else:
                             rval = str(value)
                             content_length = len(rval)
+                        # Set Access-Control-Allow-Origin as specified in GEDA
+                        if value.parameter.allow_cors:
+                            trans.set_cors_origin()
                         trans.response.set_content_type(value.mime_type(action_param_extra=action_param_extra))
                         trans.response.headers['Content-Length'] = content_length
                         return rval

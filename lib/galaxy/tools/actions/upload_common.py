@@ -5,6 +5,7 @@ import shlex
 import socket
 import subprocess
 import tempfile
+from collections import OrderedDict
 from json import dump, dumps
 
 from six import StringIO
@@ -16,7 +17,6 @@ from galaxy import datatypes, util
 from galaxy.exceptions import ConfigDoesNotAllowException, ObjectInvalid
 from galaxy.model import tags
 from galaxy.util import unicodify
-from galaxy.util.odict import odict
 
 log = logging.getLogger(__name__)
 
@@ -158,6 +158,7 @@ def handle_library_params(trans, params, folder_id, replace_dataset=None):
     for role_id in util.listify(params.get('roles', [])):
         role = trans.sa_session.query(trans.app.model.Role).get(role_id)
         library_bunch.roles.append(role)
+    library_bunch.tags = params.get('tags', None)
     return library_bunch
 
 
@@ -223,6 +224,12 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
         tag_manager = tags.GalaxyTagHandler(trans.sa_session)
         tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag_from_filename)
 
+    tags_list = uploaded_dataset.get('tags', False)
+    if tags_list:
+        tag_manager = tags.GalaxyTagHandler(trans.sa_session)
+        for tag in tags_list:
+            tag_manager.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
+
     trans.sa_session.add(ldda)
     if state:
         ldda.state = state
@@ -274,6 +281,9 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
 def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None):
     if library_bunch:
         upload_target_dataset_instance = __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state)
+        if library_bunch.tags and not uploaded_dataset.tags:
+            for tag in library_bunch.tags:
+                trans.app.tag_handler.apply_item_tag(user=trans.user, item=upload_target_dataset_instance, name='name', value=tag)
     else:
         upload_target_dataset_instance = __new_history_upload(trans, uploaded_dataset, history=history, state=state)
 
@@ -308,7 +318,7 @@ def create_paramfile(trans, uploaded_datasets):
             stdout, stderr = p.communicate()
             assert p.returncode == 0, stderr
         except Exception as e:
-            log.warning('Changing ownership of uploaded file %s failed: %s' % (path, str(e)))
+            log.warning('Changing ownership of uploaded file %s failed: %s', path, unicodify(e))
 
     tool_params = []
     json_file_path = None
@@ -385,6 +395,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     Create the upload job.
     """
     job = trans.app.model.Job()
+    job.galaxy_version = trans.app.config.version_major
     galaxy_session = trans.get_galaxy_session()
     if type(galaxy_session) == trans.model.GalaxySession:
         job.session_id = galaxy_session.id
@@ -441,7 +452,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     # Queue the job for execution
     trans.app.job_manager.enqueue(job, tool=tool)
     trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
-    output = odict()
+    output = OrderedDict()
     for i, v in enumerate(outputs):
         if not hasattr(output_object, "collection_type"):
             output['output%i' % i] = v

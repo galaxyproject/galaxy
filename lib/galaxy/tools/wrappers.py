@@ -1,12 +1,13 @@
 import logging
 import tempfile
+from collections import OrderedDict
+from functools import total_ordering
 
 from six import string_types, text_type
 from six.moves import shlex_quote
 
 from galaxy import exceptions
-from galaxy.util import odict
-from galaxy.util.none_like import NoneDataset
+from galaxy.model.none_like import NoneDataset
 from galaxy.util.object_wrapper import wrap_with_safe_string
 
 log = logging.getLogger(__name__)
@@ -67,6 +68,7 @@ class RawObjectWrapper(ToolParameterValueWrapper):
         return getattr(self.obj, key)
 
 
+@total_ordering
 class InputValueWrapper(ToolParameterValueWrapper):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.
@@ -107,8 +109,18 @@ class InputValueWrapper(ToolParameterValueWrapper):
     def __getattr__(self, key):
         return getattr(self.value, key)
 
+    def __gt__(self, other):
+        if isinstance(other, string_types):
+            return str(self) > other
+        elif isinstance(other, int):
+            return int(self) > other
+        elif isinstance(other, float):
+            return float(self) > other
+        else:
+            super(InputValueWrapper, self).__gt__(other)
+
     def __int__(self):
-        return int(str(self))
+        return int(float(self))
 
     def __float__(self):
         return float(str(self))
@@ -310,7 +322,7 @@ class HasDatasets(object):
 
     def _dataset_wrapper(self, dataset, dataset_paths, **kwargs):
         wrapper_kwds = kwargs.copy()
-        if dataset:
+        if dataset and dataset_paths:
             real_path = dataset.file_name
             if real_path in dataset_paths:
                 wrapper_kwds["dataset_path"] = dataset_paths[real_path]
@@ -407,7 +419,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self.collection = collection
 
         elements = collection.elements
-        element_instances = odict.odict()
+        element_instances = OrderedDict()
 
         element_instance_list = []
         for dataset_collection_element in elements:
