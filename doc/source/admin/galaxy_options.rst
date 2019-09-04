@@ -536,18 +536,18 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_mulled_containers``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_mulled_containers``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable Galaxy to fetch Docker containers registered with quay.io
-    generated from tool requirements resolved through conda. These
+    Enable Galaxy to fetch containers registered with quay.io
+    generated from tool requirements resolved through Conda. These
     containers (when available) have been generated using mulled -
-    https://github.com/mulled . These containers are highly beta and
-    availability will vary by tool. This option will additionally only
-    be used for job destinations with Docker enabled.
-:Default: ``false``
+    https://github.com/mulled. Container availability will vary by
+    tool, this option will only be used for job destinations with
+    Docker or Singularity enabled.
+:Default: ``true``
 :Type: bool
 
 
@@ -559,7 +559,7 @@
     Container resolvers configuration (beta). Set up a file describing
     container resolvers to use when discovering containers for Galaxy.
     If this is set to None, the default containers loaded is
-    determined by enable_beta_mulled_containers.
+    determined by enable_mulled_containers.
 :Default: ````
 :Type: str
 

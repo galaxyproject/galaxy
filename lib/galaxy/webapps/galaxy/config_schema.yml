@@ -410,17 +410,16 @@ mapping:
           considered deprecated and this option will likely be removed in future versions of
           Galaxy. For more information see https://github.com/galaxyproject/galaxy/issues/6513.
 
-      enable_beta_mulled_containers:
+      enable_mulled_containers:
         type: bool
-        default: false
+        default: true
         required: false
         desc: |
-          Enable Galaxy to fetch Docker containers registered with quay.io generated
-          from tool requirements resolved through conda. These containers (when
-          available) have been generated using mulled - https://github.com/mulled .
-          These containers are highly beta and availability will vary by tool.
-          This option will additionally only be used for job destinations with
-          Docker enabled.
+          Enable Galaxy to fetch containers registered with quay.io generated
+          from tool requirements resolved through Conda. These containers (when
+          available) have been generated using mulled - https://github.com/mulled.
+          Container availability will vary by tool, this option will only be used
+          for job destinations with Docker or Singularity enabled.
 
       containers_resolvers_config_file:
         type: str
@@ -430,7 +429,7 @@ mapping:
           Container resolvers configuration (beta). Set up a file describing
           container resolvers to use when discovering containers for Galaxy. If
           this is set to None, the default containers loaded is determined by
-          enable_beta_mulled_containers.
+          enable_mulled_containers.
 
       involucro_path:
         type: str

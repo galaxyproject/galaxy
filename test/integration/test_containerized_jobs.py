@@ -57,7 +57,6 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         config["tool_dependency_dir"] = "none"
         config["conda_auto_init"] = False
         config["conda_auto_install"] = False
-        config["enable_beta_mulled_containers"] = "true"
 
     @classmethod
     def setUpClass(cls):

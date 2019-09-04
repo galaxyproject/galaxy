@@ -94,7 +94,6 @@ class BaseKubernetesStagingIntegrationTestCase(BaseJobEnvironmentIntegrationTest
         config["default_job_shell"] = '/bin/sh'
         # Disable tool dependency resolution.
         config["tool_dependency_dir"] = "none"
-        config["enable_beta_mulled_containers"] = "true"
 
     @skip_without_tool("job_environment_default")
     def test_job_environment(self):
