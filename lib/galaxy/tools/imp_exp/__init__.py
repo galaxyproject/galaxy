@@ -4,6 +4,7 @@ import shutil
 import tempfile
 
 from galaxy import model
+from galaxy import util
 from galaxy.model import store
 from galaxy.version import VERSION_MAJOR
 
@@ -87,6 +88,10 @@ class JobExportHistoryArchiveWrapper:
         # Use abspath because mkdtemp() does not, contrary to the documentation,
         # always return an absolute path.
         temp_output_dir = os.path.abspath(tempfile.mkdtemp())
+        # if Galaxy runs jobs as real user, then the user needs to be able to
+        # read it
+        if self.app.config.external_chown_script is not None:
+            util.umask_fix_perms(temp_output_dir, self.app.config.umask, 0o755)
 
         history = jeha.history
         history_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_HISTORY)
