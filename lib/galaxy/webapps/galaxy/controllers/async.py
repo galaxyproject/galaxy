@@ -29,7 +29,7 @@ class ASync(BaseUIController):
 
     @web.expose
     def index(self, trans, tool_id=None, data_secret=None, **kwd):
-        """Manages ascynchronous connections"""
+        """Manages asynchronous connections"""
 
         if tool_id is None:
             return "tool_id argument is required"
