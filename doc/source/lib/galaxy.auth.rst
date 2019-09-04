@@ -1,5 +1,5 @@
-galaxy\.auth package
-====================
+galaxy.auth package
+===================
 
 .. automodule:: galaxy.auth
     :members:
@@ -16,8 +16,8 @@ Subpackages
 Submodules
 ----------
 
-galaxy\.auth\.util module
--------------------------
+galaxy.auth.util module
+-----------------------
 
 .. automodule:: galaxy.auth.util
     :members:

@@ -45,7 +45,7 @@ export class TracksterUI extends Backbone.Model {
      * Save visualization, returning a Deferred object for the remote call to save.
      */
     save_viz() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         // show dialog
         Galaxy.modal.show({ title: "Saving...", body: "progress" });
@@ -197,7 +197,7 @@ export class TracksterUI extends Backbone.Model {
             .appendTo(new_bookmark);
 
         //position_link
-        $("<a href=''/>")
+        $("<a href='javascript:void(0)'/>")
             .text(position)
             .appendTo(position_div)
             .click(() => {
@@ -223,7 +223,7 @@ export class TracksterUI extends Backbone.Model {
                 });
 
             // delete_icon
-            $("<a href=''/>")
+            $("<a href='javascript:void(0)'/>")
                 .addClass("icon-button delete")
                 .appendTo(delete_icon_container);
 
@@ -347,7 +347,7 @@ export class TracksterUI extends Backbone.Model {
      * Handle unsaved changes in visualization.
      */
     handle_unsaved_changes(view) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (view.has_changes) {
             Galaxy.modal.show({
                 title: _l("Close visualization"),
@@ -416,7 +416,7 @@ export class TracksterUIView extends Backbone.View {
     }
 
     choose_existing_or_new() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var dbkey = query_string.get("dbkey");
         var listTracksParams = {};
 
@@ -452,7 +452,7 @@ export class TracksterUIView extends Backbone.View {
 
     // view
     view_in_saved(dataset_params) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var tracks_grid = new GridView({
             url_base: `${getAppRoot()}visualization/list_tracks`,
             embedded: true
@@ -501,7 +501,7 @@ export class TracksterUIView extends Backbone.View {
 
     // view
     view_new() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         // ajax
         $.ajax({
             url: `${getAppRoot()}api/genomes?chrom_info=True`,

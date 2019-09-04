@@ -1,10 +1,10 @@
 import logging
 import os
+from collections import OrderedDict
 from json import dumps
 
-from galaxy.jobs.datasets import DatasetPath
+from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
-from galaxy.util.odict import odict
 from . import ToolAction
 
 log = logging.getLogger(__name__)
@@ -52,6 +52,7 @@ class SetMetadataToolAction(ToolAction):
 
         # Create the job object
         job = app.model.Job()
+        job.galaxy_version = app.config.version_major
         job.session_id = session_id
         job.history_id = history_id
         job.tool_id = tool.id
@@ -78,7 +79,7 @@ class SetMetadataToolAction(ToolAction):
         job_working_dir = app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(job.id))
         datatypes_config = os.path.join(job_working_dir, 'registry.xml')
         app.datatypes_registry.to_xml_file(path=datatypes_config)
-        external_metadata_wrapper = get_metadata_compute_strategy(app, job.id)
+        external_metadata_wrapper = get_metadata_compute_strategy(app.config, job.id)
         output_datatasets_dict = {
             dataset_name: dataset,
         }
@@ -117,4 +118,4 @@ class SetMetadataToolAction(ToolAction):
         # clear e.g. converted files
         dataset.datatype.before_setting_metadata(dataset)
 
-        return job, odict()
+        return job, OrderedDict()

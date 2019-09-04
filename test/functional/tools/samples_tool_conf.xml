@@ -52,7 +52,9 @@
   <tool file="detect_errors_aggressive.xml" />
   <tool file="md5sum.xml" />
   <tool file="checksum.xml" />
+  <tool file="composite_shapefile.xml" />
   <tool file="is_valid_xml.xml" />
+  <tool file="param_value_from_file.xml"/>
   <!--
   TODO: Figure out why this transiently fails on Jenkins.
   <tool file="maxseconds.xml" />
@@ -109,6 +111,8 @@
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
+  <tool file="implicit_collection_conversion.xml" />
+  <tool file="implicit_nested_list_conversion.xml" />
   <tool file="explicit_conversion.xml" />
   <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
@@ -159,6 +163,9 @@
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
+
+  <tool file="realtimetool_simple.xml" />
+  <tool file="realtimetool_two_entry_points.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
 

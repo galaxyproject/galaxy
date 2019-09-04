@@ -6,7 +6,7 @@
 set -e
 
 display_help(){
-  scriptname=`basename $0`
+  scriptname=$(basename "$0")
   printf "./$scriptname [--help] [--no-dry-run] [--days 10] 
 Will run the galaxy cleanup scripts in the recommend order. By default a 'dry-run' is started. Specify --no-dry-run to do the actual cleanup.
 
@@ -52,7 +52,7 @@ do
   esac
 done
 
-cd "$(cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd)"/../
+cd "$(dirname "$0")"/..
 
 . scripts/common_startup_functions.sh
 

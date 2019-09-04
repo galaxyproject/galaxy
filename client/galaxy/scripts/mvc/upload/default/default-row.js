@@ -84,7 +84,7 @@ export default Backbone.View.extend({
         // handle extension info popover
         this.$(".upload-extension-info")
             .on("click", e => {
-                let upload_ext = this.upload_extension;
+                const upload_ext = this.upload_extension;
                 if (upload_ext) {
                     if (upload_ext.extension_popup.visible) {
                         upload_ext.extension_popup.hide();

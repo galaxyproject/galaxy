@@ -218,6 +218,14 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         # and this is an invalid ID.
         assert update_response.status_code == 400, update_response.content
 
+    def test_update_batch(self):
+        hda1 = self._wait_for_new_hda()
+        assert str(hda1["deleted"]).lower() == "false"
+        payload = dict(items=[{"history_content_type": "dataset", "id": hda1["id"]}], deleted=True)
+        update_response = self._raw_update_batch(payload)
+        objects = update_response.json()
+        assert objects[0]["deleted"]
+
     def test_update_type_failures(self):
         hda1 = self._wait_for_new_hda()
         update_response = self._raw_update(hda1["id"], dict(deleted='not valid'))
@@ -243,6 +251,11 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
     def _update_permissions(self, url, data, admin=False):
         key_param = "use_admin_key" if admin else "use_key"
         update_url = self._api_url(url, **{key_param: True})
+        update_response = put(update_url, json=data)
+        return update_response
+
+    def _raw_update_batch(self, data):
+        update_url = self._api_url("histories/%s/contents" % (self.history_id), use_key=True)
         update_response = put(update_url, json=data)
         return update_response
 

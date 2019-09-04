@@ -43,7 +43,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         try:
             ld = trans.sa_session.query(trans.app.model.LibraryDataset).filter(trans.app.model.LibraryDataset.table.c.id == decoded_library_dataset_id).one()
         except Exception as e:
-            raise InternalServerError('Error loading from the database.' + str(e))
+            raise InternalServerError('Error loading from the database.' + util.unicodify(e))
         ld = self.secure(trans, ld, check_accessible)
         return ld
 
@@ -101,6 +101,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             ldda.dbkey = new_genome_build
             changed = True
         if changed:
+            ldda.update_parent_folder_update_times()
             trans.sa_session.add(ldda)
             trans.sa_session.flush()
         return changed
@@ -223,6 +224,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         rval['full_path'] = full_path
         rval['file_size'] = util.nice_size(int(ldda.get_size()))
         rval['date_uploaded'] = ldda.create_time.strftime("%Y-%m-%d %I:%M %p")
+        rval['update_time'] = ldda.update_time.strftime("%Y-%m-%d %I:%M %p")
         rval['can_user_modify'] = trans.user_is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, ld)
         rval['is_unrestricted'] = trans.app.security_agent.dataset_is_public(ldda.dataset)
         rval['tags'] = self.tag_handler.get_tags_str(ldda.tags)

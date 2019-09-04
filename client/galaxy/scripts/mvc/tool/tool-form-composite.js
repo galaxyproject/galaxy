@@ -17,7 +17,7 @@ import WorkflowIcons from "mvc/workflow/workflow-icons";
 
 var View = Backbone.View.extend({
     initialize: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.modal = Galaxy.modal || new Modal.View();
         this.model = (options && options.model) || new Backbone.Model(options);
         this.deferred = new Deferred();
@@ -39,7 +39,7 @@ var View = Backbone.View.extend({
     /** Configures form/step options for each workflow step */
     _configure: function() {
         var self = this;
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.forms = [];
         this.steps = [];
         this.links = [];
@@ -222,6 +222,7 @@ var View = Backbone.View.extend({
     _renderHeader: function() {
         var self = this;
         this.execute_btn = new Ui.Button({
+            id: "run-workflow",
             icon: "fa-check",
             title: _l("Run workflow"),
             cls: "btn btn-primary",
@@ -233,7 +234,7 @@ var View = Backbone.View.extend({
             .addClass("h4")
             .empty()
             .append(`<b>Workflow: ${this.model.get("name")}<b>`)
-            .append(this.execute_btn.$el.addClass("float-right mt-3"));
+            .append(this.execute_btn.$el);
     },
 
     /** Render message */
@@ -335,7 +336,7 @@ var View = Backbone.View.extend({
 
     /** Render job caching option */
     _renderUseCachedJob: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var extra_user_preferences = {};
         if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
             extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
@@ -369,7 +370,7 @@ var View = Backbone.View.extend({
 
     /** Render step */
     _renderStep: function(step) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var self = this;
         var form = null;
         this.deferred.execute(promise => {
@@ -528,7 +529,7 @@ var View = Backbone.View.extend({
 
     /** Refresh the history after job submission while form is shown */
     _refreshHistory: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var self = this;
         var history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
         if (this._refresh_history) {
@@ -560,7 +561,7 @@ var View = Backbone.View.extend({
 
     /** Validate and submit workflow */
     _submit: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var self = this;
         var history_form_data = this.history_form.data.create();
         var job_def = {
@@ -715,13 +716,13 @@ var View = Backbone.View.extend({
 
     /** Templates */
     _templateSuccess: function(response) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if ($.isArray(response) && response.length > 0) {
             let timesExecuted = "";
             // Default destination blurb, used for a single execution, same history.
             let destinationBlurb =
                 "You can check the status of queued jobs and view the resulting data by refreshing the History pane, if this has not already happened automatically.";
-            let newHistoryTarget =
+            const newHistoryTarget =
                 (response[0].history_id &&
                     Galaxy.currHistoryPanel &&
                     Galaxy.currHistoryPanel.model.id != response[0].history_id) ||

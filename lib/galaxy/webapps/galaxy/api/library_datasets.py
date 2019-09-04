@@ -29,10 +29,10 @@ from galaxy.tools.parameters import populate_state
 from galaxy.util.path import full_path_permission_for_user, safe_contains, safe_relpath, unsafe_walk
 from galaxy.util.streamball import StreamBall
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous as expose_api_anonymous
+    expose_api,
+    expose_api_anonymous,
 )
-from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
+from galaxy.webapps.base.controller import BaseAPIController, UsesVisualizationMixin
 log = logging.getLogger(__name__)
 
 
@@ -86,7 +86,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         try:
             ldda = self.get_library_dataset_dataset_association(trans, id=encoded_ldda_id, check_ownership=False, check_accessible=False)
         except Exception as e:
-            raise exceptions.ObjectNotFound('Requested version of library dataset was not found.' + str(e))
+            raise exceptions.ObjectNotFound('Requested version of library dataset was not found.' + util.unicodify(e))
 
         if ldda not in library_dataset.expired_datasets:
             raise exceptions.ObjectNotFound('Given library dataset does not have the requested version.')
@@ -533,7 +533,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 except HTTPInternalServerError:
                     raise exceptions.InternalServerError('Internal error.')
                 except Exception as e:
-                    raise exceptions.InternalServerError('Unknown error.' + str(e))
+                    raise exceptions.InternalServerError('Unknown error.' + util.unicodify(e))
 
         folders_to_download = kwd.get('folder_ids%5B%5D', None)
         if folders_to_download is None:
@@ -619,6 +619,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 path += ldda.name
                 while path in seen:
                     path += '_'
+                path = "{path}.{extension}".format(path=path, extension=ldda.extension)
                 seen.append(path)
                 zpath = os.path.split(path)[-1]  # comes as base_name/fname
                 outfname, zpathext = os.path.splitext(zpath)
@@ -640,7 +641,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         raise exceptions.ObjectNotFound("Requested dataset not found. ")
                     except Exception as e:
                         log.exception("Unable to add composite parent %s to temporary library download archive", ldda.dataset.file_name)
-                        raise exceptions.InternalServerError("Unable to add composite parent to temporary library download archive. " + str(e))
+                        raise exceptions.InternalServerError("Unable to add composite parent to temporary library download archive. " + util.unicodify(e))
 
                     flist = glob.glob(os.path.join(ldda.dataset.extra_files_path, '*.*'))  # glob returns full paths
                     for fpath in flist:
@@ -659,8 +660,8 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                             log.exception("Requested dataset %s does not exist on the host.", fpath)
                             raise exceptions.ObjectNotFound("Requested dataset not found.")
                         except Exception as e:
-                            log.exception("Unable to add %s to temporary library download archive %s" % (fname, outfname))
-                            raise exceptions.InternalServerError("Unable to add dataset to temporary library download archive . " + str(e))
+                            log.exception("Unable to add %s to temporary library download archive %s", fname, outfname)
+                            raise exceptions.InternalServerError("Unable to add dataset to temporary library download archive . " + util.unicodify(e))
                 else:
                     try:
                         if format == 'zip':
@@ -675,7 +676,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                         raise exceptions.ObjectNotFound("Requested dataset not found.")
                     except Exception as e:
                         log.exception("Unable to add %s to temporary library download archive %s", ldda.dataset.file_name, outfname)
-                        raise exceptions.InternalServerError("Unknown error. " + str(e))
+                        raise exceptions.InternalServerError("Unknown error. " + util.unicodify(e))
             lname = 'selected_dataset'
             fname = lname.replace(' ', '_') + '_files'
             if format == 'zip':
@@ -702,7 +703,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 fStat = os.stat(dataset.file_name)
                 trans.response.set_content_type(ldda.get_mime())
                 trans.response.headers['Content-Length'] = int(fStat.st_size)
-                fname = ldda.name
+                fname = "{path}.{extension}".format(path=ldda.name, extension=ldda.extension)
                 fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
                 try:

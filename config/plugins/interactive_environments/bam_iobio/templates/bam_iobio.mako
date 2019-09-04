@@ -24,6 +24,7 @@ root = h.url_for( '/' )
 <html>
 <head>
     ${ ie.load_default_js() }
+    ${ ie.load_default_app() }
 </head>
 <body>
 
@@ -31,12 +32,8 @@ root = h.url_for( '/' )
 
         ${ ie.default_javascript_variables() }
         var notebook_access_url = '${ notebook_access_url }';
-        ${ ie.plugin_require_config() }
 
-        requirejs(['galaxy.interactive_environments', 'plugin/bam_iobio'], function(IES){
-            window.IES = IES;
-            IES.display_spinner();
-        });
+        IES.display_spinner();
 
         toastr.info(
             "BAM io.bio is starting up!",
@@ -46,11 +43,8 @@ root = h.url_for( '/' )
 
         var startup = function(){
             // Load notebook
-            requirejs(['galaxy.interactive_environments', 'plugin/bam_iobio'], function(IES){
-                window.IES = IES;
-                IES.load_when_ready(ie_readiness_url, function(){
-                    load_notebook(notebook_access_url);
-                });
+            IES.load_when_ready(ie_readiness_url, function(){
+                load_notebook(notebook_access_url);
             });
 
         };

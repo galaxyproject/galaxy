@@ -22,7 +22,7 @@ def upgrade(migrate_engine):
     # Create published column in history table.
     History_table = Table("history", metadata, autoload=True)
     c = Column("published", Boolean, index=True)
-    add_column(c, History_table, index_name='ix_history_published')
+    add_column(c, History_table, metadata, index_name='ix_history_published')
     if migrate_engine.name != 'sqlite':
         # Create index for published column in history table.
         try:
@@ -35,7 +35,7 @@ def upgrade(migrate_engine):
     # Create published column in stored workflows table.
     StoredWorkflow_table = Table("stored_workflow", metadata, autoload=True)
     c = Column("published", Boolean, index=True)
-    add_column(c, StoredWorkflow_table, index_name='ix_stored_workflow_published')
+    add_column(c, StoredWorkflow_table, metadata, index_name='ix_stored_workflow_published')
     if migrate_engine.name != 'sqlite':
         # Create index for published column in stored workflows table.
         try:
@@ -48,7 +48,7 @@ def upgrade(migrate_engine):
     # Create importable column in page table.
     Page_table = Table("page", metadata, autoload=True)
     c = Column("importable", Boolean, index=True)
-    add_column(c, Page_table, index_name='ix_page_importable')
+    add_column(c, Page_table, metadata, index_name='ix_page_importable')
     if migrate_engine.name != 'sqlite':
         # Create index for importable column in page table.
         try:

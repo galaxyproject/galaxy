@@ -65,7 +65,7 @@ export default Backbone.View.extend({
 
     /** Show/hide upload dialog */
     show: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var self = this;
         if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
             window.setTimeout(() => {
@@ -114,7 +114,7 @@ export default Backbone.View.extend({
 
     /** Refresh user and current history */
     currentHistory: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         return this.current_user && Galaxy.currHistoryPanel.model.get("id");
     },
 
@@ -173,6 +173,8 @@ export default Backbone.View.extend({
                                 file: it.get("file_data")
                             });
                     }
+                } else if (it.get("optional")) {
+                    continue;
                 } else {
                     data.error_message = "Upload content incomplete.";
                     it.set("status", "error");

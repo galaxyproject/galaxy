@@ -1,13 +1,30 @@
+from __future__ import print_function
+
 import datetime
 import logging
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Numeric, String, Table, TEXT
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Numeric,
+    String,
+    Table,
+    TEXT
+)
 
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString
+from galaxy.model.custom_types import (
+    JSONType,
+    MetadataType,
+    TrimmedString
+)
 
-now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
+now = datetime.datetime.utcnow
 metadata = MetaData()
 
 # Tables as of changeset 1464:c7acaa1bb88f
@@ -197,5 +214,6 @@ StoredWorkflowMenuEntry_table = Table("stored_workflow_menu_entry", metadata,
 
 
 def upgrade(migrate_engine):
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.create_all()

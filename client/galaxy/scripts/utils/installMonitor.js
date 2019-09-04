@@ -26,9 +26,9 @@ export function installMonitor(globalProp) {
 }
 
 export function installObjectWatcher(globalProp, getter = null, setter = null) {
-    let label = `window.${globalProp}`;
-    let debug = isPropMonitored(globalProp);
-    let logger = debug ? console : mock(console);
+    const label = `window.${globalProp}`;
+    const debug = isPropMonitored(globalProp);
+    const logger = debug ? console : mock(console);
 
     // Replaces window.Thing with an object definition that forwards
     // gets and set values to window._monitorStorage
@@ -75,7 +75,7 @@ export function installObjectWatcher(globalProp, getter = null, setter = null) {
 // sets a flag in sessionStorage to install a monitor for the
 // indicated prop on the next page refresh
 export function toggleGlobalMonitor(prop, bShow = true) {
-    let toggleList = getToggles();
+    const toggleList = getToggles();
     if (bShow) {
         toggleList[prop] = true;
     } else {
@@ -89,21 +89,20 @@ export function toggleGlobalMonitor(prop, bShow = true) {
 
 // determines whether specified prop is toggled on or off by the user
 export function isPropMonitored(prop) {
-    let toggleList = getToggles();
+    const toggleList = getToggles();
     return toggleList[prop] == true;
 }
 
 // show list of monitor toggles
 export function showMonitorToggles() {
-    let toggleList = getToggles();
+    const toggleList = getToggles();
     console.log(toggleList);
 }
 
 // retrieve toggle list from the session storage
 function getToggles() {
-    let json = sessionStorage.getItem("global_monitors");
-    let existinglist = json ? JSON.parse(json) : {};
-    return existinglist;
+    const json = sessionStorage.getItem("global_monitors");
+    return json ? JSON.parse(json) : {};
 }
 
 // put the toggle list back in session storage
@@ -114,7 +113,7 @@ function setToggles(toggleList) {
 // Display properties available for monitoring at time of page reload
 // (you can add more during a page-session with installMonitor)
 export function monitorInit() {
-    let monitoredProps = Object.keys(getToggles());
+    const monitoredProps = Object.keys(getToggles());
 
     console.groupCollapsed("monitor init");
     console.log(

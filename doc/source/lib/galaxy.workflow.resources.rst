@@ -1,5 +1,5 @@
-galaxy\.workflow\.resources package
-===================================
+galaxy.workflow.resources package
+=================================
 
 .. automodule:: galaxy.workflow.resources
     :members:

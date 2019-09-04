@@ -47,6 +47,12 @@ class HDAManager(datasets.DatasetAssociationManager,
         super(HDAManager, self).__init__(app)
         self.user_manager = users.UserManager(app)
 
+    def get_owned_ids(self, object_ids, history=None):
+        """Get owned IDs.
+        """
+        filters = [self.model_class.id.in_(object_ids), self.model_class.history_id == history.id]
+        return self.list(filters=filters)
+
     # .... security and permissions
     def is_accessible(self, hda, user, **kwargs):
         """
@@ -294,7 +300,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
 
             'annotation',
 
-            'api_type'
+            'api_type',
+            'created_from_basename',
         ], include_keys_from='summary')
 
         self.add_view('extended', [
@@ -348,7 +355,8 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             # TODO: to DatasetAssociationSerializer
             'accessible'    : lambda i, k, user=None, **c: self.manager.is_accessible(i, user, **c),
             'api_type'      : lambda *a, **c: 'file',
-            'type'          : lambda *a, **c: 'file'
+            'type'          : lambda *a, **c: 'file',
+            'created_from_basename' : lambda i, k, **c: i.created_from_basename,
         })
 
     def serialize(self, hda, keys, user=None, **context):

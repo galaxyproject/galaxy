@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------- generic panel list items
 .job.list-item {
-    border: 1px solid $border-default-color;
+    border: 1px solid $border-color;
 
     .title-bar {
         .subtitle {
@@ -45,7 +45,7 @@
                 .list-item {
                     border: 0px;
                     border-radius: 0px;
-                    border-top: 1px solid $border-default-color;
+                    border-top: 1px solid $border-color;
                     &:last-child {
                     }
                 }

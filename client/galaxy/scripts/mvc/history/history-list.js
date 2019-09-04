@@ -32,7 +32,7 @@ var HistoryGridView = GridView.extend({
                     options.success = req => {
                         const contentsStates = req.contents_states;
                         let stateHtml = "";
-                        for (let state of ["ok", "running", "queued", "new", "error"]) {
+                        for (const state of ["ok", "running", "queued", "new", "error"]) {
                             const stateCount = contentsStates[state];
                             if (stateCount) {
                                 stateHtml += `<div class="count-box state-color-${state}" title="Datasets in ${state} state">${stateCount}</div> `;
@@ -50,8 +50,7 @@ var HistoryGridView = GridView.extend({
                         $(`.delayed-value-datasets_by_state[data-id='${historyId}']`).html(stateHtml);
                         $(`.delayed-value-disk_size[data-id='${historyId}']`).html(req.nice_size);
                     };
-                    var xhr = $.ajax(options);
-                    return xhr;
+                    return $.ajax(options);
                 };
             })
         );
@@ -67,7 +66,7 @@ var HistoryGridView = GridView.extend({
             })
             .done(() => {
                 historyCopyDialog(history, {}).done(() => {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     if (Galaxy && Galaxy.currHistoryPanel) {
                         Galaxy.currHistoryPanel.loadCurrentHistory();
                     }
@@ -89,7 +88,7 @@ var HistoryGridView = GridView.extend({
 var View = Backbone.View.extend({
     title: _l("Histories"),
     initialize: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         LoadingIndicator.markViewAsLoading(this);
 
         if (options.action_id == "list_published") {

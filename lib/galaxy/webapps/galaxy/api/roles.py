@@ -6,14 +6,14 @@ import logging
 from sqlalchemy import false
 
 from galaxy import web
-from galaxy.web.base.controller import BaseAPIController, url_for
+from galaxy.webapps.base.controller import BaseAPIController, url_for
 
 log = logging.getLogger(__name__)
 
 
 class RoleAPIController(BaseAPIController):
 
-    @web.expose_api
+    @web.legacy_expose_api
     def index(self, trans, **kwd):
         """
         GET /api/roles
@@ -28,7 +28,7 @@ class RoleAPIController(BaseAPIController):
                 rval.append(item)
         return rval
 
-    @web.expose_api
+    @web.legacy_expose_api
     def show(self, trans, id, **kwd):
         """
         GET /api/roles/{encoded_role_id}
@@ -51,7 +51,7 @@ class RoleAPIController(BaseAPIController):
         item['url'] = url_for('role', id=role_id)
         return item
 
-    @web.expose_api
+    @web.legacy_expose_api
     def create(self, trans, payload, **kwd):
         """
         POST /api/roles

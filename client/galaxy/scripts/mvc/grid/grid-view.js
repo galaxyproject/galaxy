@@ -34,7 +34,7 @@ export default Backbone.View.extend({
         store.watch(
             state => state.gridSearch.searchTags,
             newTags => {
-                let tagArray = Array.from(newTags);
+                const tagArray = Array.from(newTags);
                 self.grid.add_filter("tags", tagArray, false);
                 self.openAdvancedSearch();
                 self.render_filter_button("tags", tagArray);
@@ -84,7 +84,7 @@ export default Backbone.View.extend({
     handle_refresh: function(refresh_frames) {
         if (refresh_frames) {
             if ($.inArray("history", refresh_frames) > -1) {
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 if (Galaxy && Galaxy.currHistoryPanel) {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 }
@@ -416,7 +416,7 @@ export default Backbone.View.extend({
                 // Add hyperlink for this filter since grid will no longer be using this filter. It is assumed that
                 // this element has a single child, a hyperlink/anchor.
                 $(this).empty();
-                var t = $(`<a href="#">${text}</a>`);
+                var t = $(`<a href="javascript:void(0)" role="button">${text}</a>`);
                 t.click(() => {
                     self.set_categorical_filter(name, filter_value);
                 });
@@ -458,7 +458,7 @@ export default Backbone.View.extend({
                 text = $(this).text();
                 $(this).empty();
                 $(this).removeClass("inactive-link");
-                var t = $(`<a href="#">${text}</a>`);
+                var t = $(`<a href="javascript:void(0)" role="button">${text}</a>`);
                 t.click(() => {
                     self.set_page(page_num);
                 });

@@ -44,6 +44,9 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev=None):
     if ctx_rev:
         cmd.extend(['-r', ctx_rev])
     cmd.extend([repository_clone_url, repository_file_dir])
+    # Make sure the destination path actually exists before attempting to clone
+    if not os.path.exists(repository_file_dir):
+        os.makedirs(repository_file_dir)
     try:
         subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         return True, None

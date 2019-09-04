@@ -1,7 +1,7 @@
 <template>
     <div class="container">
         <div class="row justify-content-md-center">
-            <div class="col col-lg-6">
+            <div class="col" :class="{ 'col-lg-6': !isAdmin }">
                 <b-alert :show="registration_warning_message" variant="danger">
                     {{ registration_warning_message }}
                 </b-alert>
@@ -27,14 +27,17 @@
                                     ('.', '_', '-').</b-form-text
                                 >
                             </b-form-group>
-                            <b-form-group v-if="mailing_join_addr && smtp_server" label="Subscribe to mailing list">
+                            <b-form-group
+                                v-if="mailing_join_addr && server_mail_configured"
+                                label="Subscribe to mailing list"
+                            >
                                 <input name="subscribe" type="checkbox" v-model="subscribe" />
                             </b-form-group>
-                            <b-button name="create" type="submit">Create</b-button>
+                            <b-button name="create" type="submit" :disabled="disableCreate">Create</b-button>
                         </b-card-body>
-                        <b-card-footer>
+                        <b-card-footer v-if="!isAdmin">
                             Already have an account?
-                            <a id="login-toggle" href="#" @click.prevent="toggleLogin">Log in here.</a>
+                            <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="toggleLogin">Log in here.</a>
                         </b-card-footer>
                     </b-card>
                 </b-form>
@@ -57,8 +60,8 @@ export default {
             type: String,
             required: false
         },
-        smtp_server: {
-            type: String,
+        server_mail_configured: {
+            type: Boolean,
             required: false
         },
         mailing_join_addr: {
@@ -71,8 +74,9 @@ export default {
         }
     },
     data() {
-        let galaxy = getGalaxyInstance();
+        const galaxy = getGalaxyInstance();
         return {
+            disableCreate: false,
             email: null,
             password: null,
             username: null,
@@ -80,7 +84,8 @@ export default {
             subscribe: null,
             messageText: null,
             messageVariant: null,
-            session_csrf_token: galaxy.session_csrf_token
+            session_csrf_token: galaxy.session_csrf_token,
+            isAdmin: galaxy.user.isAdmin()
         };
     },
     computed: {
@@ -95,7 +100,8 @@ export default {
             }
         },
         submit: function(method) {
-            let rootUrl = getAppRoot();
+            this.disableCreate = true;
+            const rootUrl = getAppRoot();
             axios
                 .post(`${rootUrl}user/create`, this.$data)
                 .then(response => {
@@ -105,8 +111,9 @@ export default {
                     window.location = this.redirect || rootUrl;
                 })
                 .catch(error => {
+                    this.disableCreate = false;
                     this.messageVariant = "danger";
-                    let message = error.response.data && error.response.data.err_msg;
+                    const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Registration failed for an unknown reason.";
                 });
         }

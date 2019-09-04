@@ -33,7 +33,7 @@ export default Backbone.View.extend({
             if (field.update) {
                 field.update(node);
                 field.trigger("change");
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 Galaxy.emit.debug("form-view::update()", `Updating input: ${input_id}`);
             }
         });
@@ -157,7 +157,7 @@ export default Backbone.View.extend({
                 message: options.message
             });
         }
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         Galaxy.emit.debug("form-view::initialize()", "Completed");
     }
 });

@@ -28,9 +28,10 @@ from galaxy.jobs import (
     TaskWrapper
 )
 from galaxy.jobs.mapper import JobNotReadyException
+from galaxy.util import unicodify
 from galaxy.util.monitors import Monitors
-from galaxy.web.stack.handlers import HANDLER_ASSIGNMENT_METHODS
-from galaxy.web.stack.message import JobHandlerMessage
+from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS
+from galaxy.web_stack.message import JobHandlerMessage
 
 log = logging.getLogger(__name__)
 
@@ -107,8 +108,9 @@ class JobHandlerQueue(Monitors):
             .where(and_(
                 model.Job.table.c.handler.in_(self.app.job_config.self_handler_tags),
                 model.Job.table.c.state == model.Job.states.NEW)) \
-            .order_by(model.Job.table.c.id) \
-            .limit(self.app.job_config.handler_max_grab)
+            .order_by(model.Job.table.c.id)
+        if self.app.job_config.handler_max_grab:
+            subq = subq.limit(self.app.job_config.handler_max_grab)
         if method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
             subq = subq.with_for_update(skip_locked=True)
         self.__grab_query = model.Job.table.update() \
@@ -268,7 +270,7 @@ class JobHandlerQueue(Monitors):
                 # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
                 # and should have attribute `code`. Other engines should just report the message and move on.
                 if int(getattr(e.orig, 'pgcode', -1)) != 40001:
-                    log.debug('Grabbing job failed (serialization failures are ok): %s', str(e))
+                    log.debug('Grabbing job failed (serialization failures are ok): %s', unicodify(e))
                 trans.rollback()
 
     def __handle_waiting_jobs(self):
@@ -433,7 +435,7 @@ class JobHandlerQueue(Monitors):
                 model.Dataset.deleted,
                 model.Dataset.purged,
                 model.Dataset.state,
-            ).join(job_to_input) \
+            ).join(job_to_input.job) \
                 .join(input_association) \
                 .join(model.Dataset) \
                 .filter(model.Job.id.in_(job_ids_to_check)) \
@@ -450,13 +452,15 @@ class JobHandlerQueue(Monitors):
             if hda_deleted or dataset_deleted:
                 if dataset_purged:
                     # If the dataset has been purged we can't resume the job by undeleting the input
-                    jobs_to_fail[job_id].append("Input dataset '%s' was deleted before the job started" % (hda_name))
+                    jobs_to_fail[job_id].append("Input dataset '%s' was deleted before the job started" % hda_name)
                 else:
-                    jobs_to_pause[job_id].append("Input dataset '%s' was deleted before the job started" % (hda_name))
+                    jobs_to_pause[job_id].append("Input dataset '%s' was deleted before the job started" % hda_name)
             elif hda_state == model.HistoryDatasetAssociation.states.FAILED_METADATA:
-                jobs_to_pause[job_id].append("Input dataset '%s' failed to properly set metadata" % (hda_name))
+                jobs_to_pause[job_id].append("Input dataset '%s' failed to properly set metadata" % hda_name)
             elif dataset_state == model.Dataset.states.PAUSED:
-                jobs_to_pause[job_id].append("Input dataset '%s' was paused before the job started" % (hda_name))
+                jobs_to_pause[job_id].append("Input dataset '%s' was paused before the job started" % hda_name)
+            elif dataset_state == model.Dataset.states.ERROR:
+                jobs_to_pause[job_id].append("Input dataset '%s' is in error state" % hda_name)
             elif dataset_state != model.Dataset.states.OK:
                 jobs_to_ignore[job_id].append("Input dataset '%s' is in %s state" % (hda_name, dataset_state))
         for job_id in sorted(jobs_to_pause):
@@ -882,7 +886,10 @@ class JobHandlerStopQueue(Monitors):
                                      .filter((model.Job.state == model.Job.states.DELETED_NEW) &
                                              (model.Job.handler == self.app.config.server_name)).all()
             for job in newly_deleted_jobs:
-                jobs_to_check.append((job, job.stderr))
+                # job.stderr is always a string (job.job_stderr + job.tool_stderr, possibly `''`),
+                # while any `not None` message returned in self.queue.get_nowait() is interpreted
+                # as an error, so here we use None if job.stderr is false-y
+                jobs_to_check.append((job, job.stderr or None))
         # Also pull from the queue (in the case of Administrative stopped jobs)
         try:
             while 1:

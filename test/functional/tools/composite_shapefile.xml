@@ -1,0 +1,39 @@
+<tool id="shapefile_composite" name="composite shapefile tool" version="1.0.0">
+    <requirements>
+        <requirement type="package" version="1.8.6">fiona</requirement>
+    </requirements>
+    <command><![CDATA[
+        mkdir '$output_shapefile.extra_files_path' &&
+        python -c "import fiona; shape = fiona.open('$input.extra_files_path/shapefile.shp'); print(shape.schema)" > '$output' &&
+        cp '$input.extra_files_path'/* '$output_shapefile.extra_files_path'
+    ]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="shp" label="Shapefile" help="Used in GIS applications"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" label="${tool.name} on ${on_string}: Shapefile test" />
+        <data name="output_shapefile" format="shp" label="${tool.name} on ${on_string}: Shapefile test - shp" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="" ftype="shp" >
+                <composite_data value="shapefile/shapefile.shp"/>
+                <composite_data value="shapefile/shapefile.shx"/>
+                <composite_data value="shapefile/shapefile.dbf"/>
+                <composite_data value="shapefile/shapefile.prj"/>
+            </param>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="{'properties': OrderedDict([('FIPS', 'str:2'), ('ISO2', 'str:2'), ('ISO3', 'str:3'), ('UN', 'int:3')," />
+                </assert_contents>
+            </output>
+            <output name="output_shapefile" file="shapefile/output.html">
+                <extra_files type="file" name="shapefile.shp" value="shapefile/shapefile.shp" md5="ae4648a8a6be706e910e46607f261317" />
+                <extra_files type="file" name="shapefile.shx" value="shapefile/shapefile.shx" md5="6321ef787b7826afe06e9cf3eb20e656" />
+                <extra_files type="file" name="shapefile.dbf" value="shapefile/shapefile.dbf" md5="d65d87e1570510af8a81d7d174ea361a" />
+                <extra_files type="file" name="shapefile.prj" value="shapefile/shapefile.prj" lines_diff="2" />
+            </output>
+        </test>
+    </tests>
+</tool>

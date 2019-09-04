@@ -215,25 +215,23 @@ previous section:
     ```
 
 2. The Galaxy application needs to be aware that it is running with a prefix (for generating URLs in dynamic pages).
-   This is accomplished by configuring uWSGI and Galaxy (the `uwsgi` and `galaxy` sections in `config/galaxy.yml`
-   respectively) like so and restarting Galaxy:
+   This is accomplished by configuring uWSGI (the `uwsgi` section in `config/galaxy.yml`) like so and restarting Galaxy:
 
     ```yaml
     uwsgi:
         #...
-        socket: unix:///srv/galaxy/var/uwsgi.sock
+        socket: /srv/galaxy/var/uwsgi.sock
         mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
         manage-script-name: true
         # `module` MUST NOT be set when `mount` is in use
         #module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
-
-    galaxy:
-        #...
-        cookie_path: /galaxy
     ```
 
-   `cookie_path` should be set to prevent Galaxy's session cookies from clobbering each other if you are running more
-   than one instance of Galaxy under different URL prefixes on the same hostname.
+    ```eval_rst
+    .. note:: Older versions of Galaxy required you to set the ``cookie_path`` option. This is no longer necessary as of
+       Galaxy release 19.05 as it is now set automatically, but the (now undocumented) option still remains and
+       overrides the automatic setting. If you have this option set, unset it unless you know what you're doing.
+    ```
 
    Be sure to consult the [Scaling and Load Balancing](scaling.md) documentation, other options unrelated to proxying
    should also be set in the `uwsgi` section of the config.
@@ -244,9 +242,9 @@ previous section:
 
 Galaxy sends files (e.g. dataset downloads) by opening the file and streaming it in chunks through the proxy server.
 However, this ties up the Galaxy process, which can impact the performance of other operations (see [Production Server
-Configuration](production.md) for a more in-depth explanation). 
+Configuration](production.md) for a more in-depth explanation).
 
-Nginx can assume this task instead and, as an added benefit, speed up downloads. In addition, both the IGV genome browser and JBrowse tool (run within Galaxy) require support for the HTTP *Range* header, and this is only available if the proxy serves datasets.
+Nginx can assume this task instead and, as an added benefit, speed up downloads. In addition, the Integrative Genomics Viewer (IGV), the Integrated Genome Browser (IGB), and the JBrowse tool (run within Galaxy) require support for the HTTP *Range* header, and this is only available if the proxy serves datasets.
 This is accomplished through the use of the special `X-Accel-Redirect` header. Dataset security is maintained in this configuration because nginx will still check with Galaxy to ensure that the requesting user has permission to access the dataset before sending it.
 
 To enable it, add the following to your Galaxy's `server {}` block:

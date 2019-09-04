@@ -8,7 +8,7 @@ from base.populators import (
     DatasetPopulator,
 )
 
-from galaxy.tools.deps.commands import which
+from galaxy.tool_util.deps.commands import which
 from .test_job_environments import RunsEnvironmentJobs
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
@@ -29,6 +29,15 @@ class MulledJobTestCases(object):
         self.dataset_populator.wait_for_history(self.history_id, assert_ok=True)
         output = self.dataset_populator.get_history_dataset_content(self.history_id, timeout=EXTENDED_TIMEOUT)
         assert "0.7.15-r1140" in output
+
+
+class ContainerizedIntegrationTestCase(integration_util.IntegrationTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        if not which(cls.container_type):
+            raise unittest.SkipTest("Executable '%s' not found on PATH" % cls.container_type)
+        super(ContainerizedIntegrationTestCase, cls).setUpClass()
 
 
 class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, RunsEnvironmentJobs, MulledJobTestCases):

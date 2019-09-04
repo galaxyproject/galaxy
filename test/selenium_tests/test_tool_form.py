@@ -2,8 +2,8 @@ import json
 
 from base import rules_test_data
 from base.populators import flakey, load_data_dict
-from galaxy_selenium.navigates_galaxy import retry_call_during_transitions
 
+from galaxy.selenium.navigates_galaxy import retry_call_during_transitions
 from .framework import (
     managed_history,
     retry_assertion_during_transitions,

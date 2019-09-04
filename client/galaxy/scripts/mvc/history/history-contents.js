@@ -78,8 +78,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                         history_id: this.history_id,
                         collection_id: historyContent.attributes.id
                     });
-                    var jobStatesSummary = this.jobStateSummariesCollection.get(jobSourceId);
-                    historyContent.jobStatesSummary = jobStatesSummary;
+                    historyContent.jobStatesSummary = this.jobStateSummariesCollection.get(jobSourceId);
                 }
             }
         });
@@ -394,7 +393,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     progressivelyFetchDetails: function(options) {
         // TODO: only fetch tags and annotations if specifically requested
         options = options || {};
-        let deferred = jQuery.Deferred();
+        const deferred = jQuery.Deferred();
         this._recursivelyFetch(
             options,
             HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes.join(","),
@@ -442,7 +441,8 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                 data: JSON.stringify({
                     content: id,
                     source: contentType,
-                    type: type
+                    type: type,
+                    copy_elements: true
                 })
             })
             .done(response => {
