@@ -199,6 +199,19 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
     default_config_file_name = 'galaxy.yml'
 
     def __init__(self, **kwargs):
+        self._load_schema()
+        self._load_raw_config_from_schema()
+        self._process_config(kwargs)
+
+    def _load_schema(self):
+        self.schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
+
+    def _load_raw_config_from_schema(self):
+        self._raw_config = {}
+        for key, data in self.schema.app_schema.items():
+            self._raw_config[key] = data.get('default')
+
+    def _process_config(self, kwargs):
         self.config_dict = kwargs
         self.root = find_root(kwargs)
 
