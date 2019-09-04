@@ -201,7 +201,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
     def __init__(self, **kwargs):
         self._load_schema()  # Load schema from schema definition file
         self._load_raw_config_from_schema()  # Load default propery values from schema
-        self._update_raw_config_from_kwargs(kwargs) # Overwrite default values passed as kwargs
+        self._update_raw_config_from_kwargs(kwargs)  # Overwrite default values passed as kwargs
         self._process_config(kwargs)  # Finish processing configuration
 
     def _load_schema(self):
@@ -213,8 +213,16 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self._raw_config[key] = data.get('default')
 
     def _update_raw_config_from_kwargs(self, kwargs):
+        type_converters = {
+            bool: string_as_bool,
+            int: int,
+            float: float,
+        }
         for key, value in kwargs.items():
             if key in self._raw_config:
+                datatype = self.schema.app_schema[key]['type']  # assume 'type' is present
+                if datatype in type_converters:
+                    value = type_converters[datatype](value)
                 self._raw_config[key] = value
 
     def _process_config(self, kwargs):
