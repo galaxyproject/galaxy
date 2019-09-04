@@ -161,7 +161,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
     def recover(self, job, job_wrapper):
         ajs = self._recover_async_job_state(job, job_wrapper)
         if getattr(ajs, 'fail_job', False):
-            log.error("(%s) Failing job due to job state recovery error",
+            log.error("(%s) Failing job due to job state (%s) recovery error",
                       job.id, job.state)
             self.mark_as_failed(ajs)
         else:

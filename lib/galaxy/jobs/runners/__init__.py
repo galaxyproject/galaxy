@@ -768,7 +768,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         self.work_queue.put((self.fail_job, job_state))
 
     def _recover_async_job_state(self, job, job_wrapper, cls=AsynchronousJobState):
-        """Recovers jobs still in the submitted/queued/running state when Galaxy started"""
+        """Recovers job still in the submitted/queued/running state when Galaxy started"""
         assert job.state in (model.Job.states.SUBMITTED, model.Job.states.QUEUED, model.Job.states.RUNNING,
                              model.Job.states.STAGEOUT, model.Job.states.FINISHING), \
             "(%s) Cannot recover job in '%s' state, this is a bug" % (job.id, job.state)

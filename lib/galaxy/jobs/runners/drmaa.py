@@ -365,7 +365,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         ajs = self._recover_async_job_state(job, job_wrapper)
         if getattr(ajs, 'fail_job', False):
-            log.error("(%s) Failing job due to job state recovery error", job.id, job.state)
+            log.error("(%s) Failing job due to job state (%s) recovery error", job.id, job.state)
             self.mark_as_failed(ajs)
         else:
             log.debug("(%s/%s) Job recovered in '%s' state, adding to the runner monitor queue", job.id, ajs.job_id, job.state)

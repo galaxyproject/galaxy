@@ -270,7 +270,7 @@ class CondorJobRunner(AsynchronousJobRunner):
         cjs.user_log = os.path.join(self.app.config.cluster_files_directory, 'galaxy_%s.condor.log' % galaxy_id_tag)
         cjs.register_cleanup_file_attribute('user_log')
         if getattr(cjs, 'fail_job', False):
-            log.error("(%s) Failing job due to job state recovery error", job.id, job.state)
+            log.error("(%s) Failing job due to job state (%s) recovery error", job.id, job.state)
             self.mark_as_failed(cjs)
         else:
             log.debug("(%s/%s) Job recovered in '%s' state, adding to the runner monitor queue", job.id, cjs.job_id, job.state)
