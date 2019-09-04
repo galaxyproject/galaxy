@@ -145,9 +145,20 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     )
     write_script(local_container_script, script_contents, config)
     commands = "%s %s" % (shell, local_container_script)
-    if 'working_directory' in remote_command_params:
-        commands = "%s %s" % (shell, join(remote_command_params['working_directory'], script_name))
-    commands += " > ../tool_stdout 2> ../tool_stderr"
+    # TODO: Cleanup for_pulsar hack.
+    # - Integrate Pulsar sending tool_stdout/tool_stderr back
+    #   https://github.com/galaxyproject/pulsar/pull/202
+    # *and*
+    # - Get Galaxy to write these files to an output directory so the container itself
+    #   doesn't need to mount the job directory (rw) and then eliminate this hack
+    #   (or restrict to older Pulsar versions).
+    #   https://github.com/galaxyproject/galaxy/pull/8449
+    for_pulsar = False
+    if 'script_directory' in remote_command_params:
+        commands = "%s %s" % (shell, join(remote_command_params['script_directory'], script_name))
+        for_pulsar = True
+    if not for_pulsar:
+        commands += " > ../tool_stdout 2> ../tool_stderr"
     log.info("Built script [%s] for tool command [%s]" % (local_container_script, tool_commands))
     return commands
 
