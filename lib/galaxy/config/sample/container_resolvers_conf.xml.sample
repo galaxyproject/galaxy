@@ -3,8 +3,8 @@
   <!-- explicit: resolves container URI for a job through explict container
        tags in the tool XML wrapper. -->
 
-  <!-- All mulled flavors below only work if enable_beta_mulled_containers is
-       set to true in the galaxy.yaml config file. -->
+  <!-- All mulled flavors below work by default unless enable_mulled_containers is
+       set to false in the galaxy.yaml config file. -->
 
   <!-- <cached_mulled /> -->
   <!-- cached_mulled: resolves container URI through bioconda to mulled
@@ -14,8 +14,7 @@
   <!-- <cached_mulled_singularity /> -->
   <!-- cached_mulled_singularity: resolves container URI through
        bioconda to mulled automatic mapping, preferring cached singularity
-       images to building local singularity images. Only works with
-       enable_beta_mulled_containers set to true in the galaxy.yaml config file.
+       images to building local singularity images.
        -->
 
   <!-- <mulled auto_install="True"/> -->

@@ -543,7 +543,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             # self, populate config_dict
             self.config_dict["conda_mapping_files"] = conda_mapping_files
 
-        self.enable_beta_mulled_containers = string_as_bool(kwargs.get('enable_beta_mulled_containers', 'False'))
+        self.enable_mulled_containers = string_as_bool(kwargs.get('enable_mulled_containers', 'True'))
         containers_resolvers_config_file = kwargs.get('containers_resolvers_config_file', None)
         if containers_resolvers_config_file:
             containers_resolvers_config_file = resolve_path(containers_resolvers_config_file, self.root)
@@ -1144,7 +1144,7 @@ class ConfiguresGalaxyMixin(object):
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
             library_import_dir=self.config.library_import_dir,
-            enable_beta_mulled_containers=self.config.enable_beta_mulled_containers,
+            enable_mulled_containers=self.config.enable_mulled_containers,
             containers_resolvers_config_file=self.config.containers_resolvers_config_file,
             involucro_path=self.config.involucro_path,
             involucro_auto_init=self.config.involucro_auto_init,
