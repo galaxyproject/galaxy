@@ -2,20 +2,19 @@
 API operations for asynchonous mode.
 """
 import logging
+
 import requests
 from six.moves.urllib.parse import urlencode
-from galaxy import jobs
 
+from galaxy import jobs
 from galaxy.util import (
     Params, unicodify
 )
+from galaxy.util.hash_util import hmac_new
 from galaxy.web import (
     expose_api_anonymous_and_sessionless
 )
-from galaxy.util.hash_util import hmac_new
-from galaxy.web.base.controller import (
-    BaseAPIController
-)
+from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
