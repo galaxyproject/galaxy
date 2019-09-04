@@ -11,6 +11,7 @@
                 <b-row class="mb-3">
                     <b-col cols="6">
                         <b-input
+                            id="search-workflow"
                             class="m-1"
                             name="query"
                             placeholder="search workflows"
@@ -21,11 +22,11 @@
                     </b-col>
                     <b-col>
                         <span class="float-right">
-                            <b-button class="m-1" @click="createWorkflow">
+                            <b-button id="new-workflow" class="m-1" @click="createWorkflow">
                                 <span class="fa fa-plus" />
                                 Create
                             </b-button>
-                            <b-button class="m-1" @click="importWorkflow">
+                            <b-button id="import-workflow" class="m-1" @click="importWorkflow">
                                 <span class="fa fa-upload" />
                                 Import
                             </b-button>
