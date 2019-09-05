@@ -233,7 +233,7 @@ export var DatasetListItemView = _super.extend(
         },
 
         _usesWaitingState: function() {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             var methods = Galaxy.config.job.handler_assignment_methods;
             return methods.indexOf("db-skip-locked") >= 0 || methods.indexOf("db-transaction-isolation") >= 0;
         },
