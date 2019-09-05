@@ -77,7 +77,7 @@ steps:
       textinsert: 'filter'
 
     - title: "Tool categories"
-      element: '#title_filter > a'
+      element: '.toolSectionTitle'
       intro: "Tools are grouped into categories to make them easier to find."
       position: "right"
 
