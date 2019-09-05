@@ -530,12 +530,12 @@ class User(Dictifiable, RepresentById):
                 SELECT history.id as id
                 FROM history
                 WHERE history.user_id = :id
-                    AND history.purged = false
+                    AND history.purged = '0'
             ),
             per_hist_hdas AS (
                 SELECT DISTINCT history_dataset_association.dataset_id as id
                 FROM history_dataset_association
-                WHERE history_dataset_association.purged = false
+                WHERE history_dataset_association.purged = '0'
                     AND history_dataset_association.history_id in (SELECT id from per_user_histories)
             )
         """
