@@ -207,10 +207,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
     def _load_schema(self):
         self.schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
+        self.appschema = self.schema.app_schema
 
     def _load_raw_config_from_schema(self):
         self._raw_config = {}
-        for key, data in self.schema.app_schema.items():
+        for key, data in self.appschema.items():
             self._raw_config[key] = data.get('default')
 
     def _update_raw_config_from_kwargs(self, kwargs):
@@ -220,8 +221,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             float: float,
         }
         for key, value in kwargs.items():
-            if key in self._raw_config:
-                datatype = self.schema.app_schema[key].get('type')
+            if key in self.appschema:
+                datatype = self.appschema[key].get('type')
                 if datatype in type_converters:
                     value = type_converters[datatype](value)
                 self._raw_config[key] = value
@@ -1042,7 +1043,7 @@ def reload_config_options(current_config, path=None):
                 log.info('Reloaded %s' % option)
 
 
-def get_reloadable_config_options():
+def get_reloadable_config_options():  # TODO change this!
     schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
     return schema.get_reloadable_option_defaults()
 

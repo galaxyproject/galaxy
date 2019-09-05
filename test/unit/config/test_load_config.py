@@ -13,17 +13,11 @@ MOCK_PROPERTIES = {
 }
 
 
-class MockSchema():
-    @property
-    def app_schema(self):
-        return MOCK_PROPERTIES
-
-
 @pytest.fixture
 def mock_init(monkeypatch):
 
     def mock_load_schema(self):
-        self.schema = MockSchema()
+        self.appschema = MOCK_PROPERTIES
 
     def mock_process_config(self, kwargs):
         pass
