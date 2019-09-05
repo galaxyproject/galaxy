@@ -11,7 +11,7 @@
                 <b-row class="mb-3">
                     <b-col cols="6">
                         <b-input
-                            id="search-workflow"
+                            id="workflow-search"
                             class="m-1"
                             name="query"
                             placeholder="search workflows"
@@ -22,18 +22,18 @@
                     </b-col>
                     <b-col>
                         <span class="float-right">
-                            <b-button id="new-workflow" class="m-1" @click="createWorkflow">
+                            <b-button id="workflow-create" class="m-1" @click="createWorkflow">
                                 <span class="fa fa-plus" />
                                 Create
                             </b-button>
-                            <b-button id="import-workflow" class="m-1" @click="importWorkflow">
+                            <b-button id="workflow-import" class="m-1" @click="importWorkflow">
                                 <span class="fa fa-upload" />
                                 Import
                             </b-button>
                         </span>
                     </b-col>
                 </b-row>
-                <b-table striped :fields="fields" :items="workflows" :filter="filter" @filtered="filtered">
+                <b-table id="workflow-table" striped :fields="fields" :items="workflows" :filter="filter" @filtered="filtered">
                     <template slot="name" slot-scope="row">
                         <workflowdropdown
                             :workflow="row.item"

@@ -1,7 +1,7 @@
 <template>
     <div>
         <b-link
-            id="dropdownWorkflowDetails"
+            id="workflow-dropdown"
             class="font-weight-bold"
             data-toggle="dropdown"
             aria-haspopup="true"
@@ -10,7 +10,7 @@
             <span :class="icon" />
             {{ workflow.name }}
         </b-link>
-        <div class="dropdown-menu" aria-labelledby="dropdownWorkflowDetails">
+        <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a
                 v-for="ops in operations"
                 :key="ops.label"

@@ -940,8 +940,8 @@ class NavigatesGalaxy(HasDriver):
         self.click_masthead_workflow()
 
     def workflow_index_table_elements(self):
-        self.wait_for_selector_visible("tbody.workflow-search")
-        table_elements = self.driver.find_elements_by_css_selector("tbody.workflow-search > tr:not([style*='display: none'])")
+        self.wait_for_selector_visible("#workflow-table")
+        table_elements = self.driver.find_elements_by_css_selector("#workflow-table > tbody > tr:not([style*='display: none'])")
         return table_elements
 
     def workflow_index_table_row(self, workflow_index=0):
@@ -954,11 +954,11 @@ class NavigatesGalaxy(HasDriver):
         return columns[column_index].text
 
     def workflow_index_click_search(self):
-        return self.wait_for_and_click_selector("input.search-wf")
+        return self.wait_for_and_click_selector("#workflow-search")
 
     def workflow_index_search_for(self, search_term=None):
         return self._inline_search_for(
-            "input.search-wf",
+            "#workflow-search",
             search_term,
         )
 
@@ -983,7 +983,7 @@ class NavigatesGalaxy(HasDriver):
         @retry_during_transitions
         def click_option():
             workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
-            workflow_button = workflow_row.find_element_by_css_selector("button.dropdown-toggle")
+            workflow_button = workflow_row.find_element_by_css_selector("#workflow-dropdown")
             workflow_button.click()
 
         click_option()
