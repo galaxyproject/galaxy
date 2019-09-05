@@ -9,6 +9,7 @@ MOCK_PROPERTIES = {
     'property3': {'default': 1.0, 'type': float},  # float
     'property4': {'default': True, 'type': bool},  # bool
     'property5': {'something_else': 'b', 'type': 'invalid'},
+    'property6': {'something_else': 'b'},  # no type
 }
 
 
@@ -34,12 +35,13 @@ def mock_init(monkeypatch):
 def test_load_raw_config_from_schema(mock_init):
     config = GalaxyAppConfiguration()
 
-    assert len(config._raw_config) == 5
+    assert len(config._raw_config) == 6
     assert config._raw_config['property1'] == 'a'
     assert config._raw_config['property2'] == 1
     assert config._raw_config['property3'] == 1.0
     assert config._raw_config['property4'] is True
     assert config._raw_config['property5'] is None
+    assert config._raw_config['property6'] is None
 
     assert type(config._raw_config['property1']) is str
     assert type(config._raw_config['property2']) is int
@@ -50,12 +52,13 @@ def test_load_raw_config_from_schema(mock_init):
 def test_update_raw_config_from_kwargs(mock_init):
     config = GalaxyAppConfiguration(property2=2, property3=2.0, another_key=66)
 
-    assert len(config._raw_config) == 5   # no change: another_key NOT added
+    assert len(config._raw_config) == 6   # no change: another_key NOT added
     assert config._raw_config['property1'] == 'a'  # no change
     assert config._raw_config['property2'] == 2  # updated
     assert config._raw_config['property3'] == 2.0  # updated
     assert config._raw_config['property4'] is True  # no change
     assert config._raw_config['property5'] is None  # no change
+    assert config._raw_config['property6'] is None  # no change
 
     assert type(config._raw_config['property1']) is str
     assert type(config._raw_config['property2']) is int
@@ -67,7 +70,7 @@ def test_update_raw_config_from_string_kwargs(mock_init):
     # kwargs may be passed as strings: property data types should not be affected
     config = GalaxyAppConfiguration(property1='b', property2='2', property3='2.0', property4='false')
 
-    assert len(config._raw_config) == 5  # no change
+    assert len(config._raw_config) == 6  # no change
     assert config._raw_config['property1'] == 'b'  # updated
     assert config._raw_config['property2'] == 2  # updated
     assert config._raw_config['property3'] == 2.0  # updated

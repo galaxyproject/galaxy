@@ -221,7 +221,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         }
         for key, value in kwargs.items():
             if key in self._raw_config:
-                datatype = self.schema.app_schema[key]['type']  # assume 'type' is present
+                datatype = self.schema.app_schema[key].get('type')
                 if datatype in type_converters:
                     value = type_converters[datatype](value)
                 self._raw_config[key] = value
