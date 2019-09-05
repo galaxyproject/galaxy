@@ -101,7 +101,6 @@ mapping:
 
       database_template:
         type: str
-        default: ''
         required: false
         desc: |
           If auto-creating a postgres database on startup - it can be based on an existing
@@ -109,7 +108,7 @@ mapping:
           documentation is included here for completeness.
 
       slow_query_log_threshold:
-        type: int
+        type: float
         default: 0
         required: false
         desc: |
@@ -750,7 +749,6 @@ mapping:
 
       smtp_server:
         type: str
-        default: ''
         required: false
         desc: |
           Galaxy sends mail for various things: subscribing users to the mailing list
@@ -761,7 +759,6 @@ mapping:
 
       smtp_username:
         type: str
-        default: ''
         required: false
         desc: |
           If your SMTP server requires a username and password, you can provide them
@@ -770,7 +767,6 @@ mapping:
 
       smtp_password:
         type: str
-        default: ''
         required: false
         desc: |
           If your SMTP server requires a username and password, you can provide them
@@ -795,7 +791,6 @@ mapping:
 
       error_email_to:
         type: str
-        default: ''
         required: false
         desc: |
           Datasets in an error state include a link to report the error.  Those reports
@@ -888,7 +883,6 @@ mapping:
 
       ga_code:
         type: str
-        default: ''
         required: false
         desc: |
           You can enter tracking code here to track visitor's behavior
@@ -970,7 +964,6 @@ mapping:
 
       brand:
         type: str
-        default: ''
         required: false
         desc: |
           Append "/{brand}" to the "Galaxy" text in the masthead.
@@ -1053,7 +1046,6 @@ mapping:
 
       helpsite_url:
         type: str
-        default: ''
         required: false
         desc: |
           The URL linked by the "Galaxy Help" link in the "Help" menu.
@@ -1110,7 +1102,6 @@ mapping:
 
       terms_url:
         type: str
-        default: ''
         required: false
         desc: |
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
@@ -1400,7 +1391,6 @@ mapping:
 
       dynamic_proxy_golang_api_key:
         type: str
-        default: ''
         required: false
         desc: |
           The golang proxy uses a RESTful HTTP API for communication with Galaxy
@@ -1622,7 +1612,6 @@ mapping:
 
       sentry_dsn:
         type: str
-        default: ''
         required: false
         desc: |
           Log to Sentry
@@ -1689,7 +1678,6 @@ mapping:
 
       library_import_dir:
         type: str
-        default: ''
         required: false
         desc: |
           Add an option to the library upload form which allows administrators to
@@ -1697,7 +1685,6 @@ mapping:
 
       user_library_import_dir:
         type: str
-        default: ''
         required: false
         desc: |
           Add an option to the library upload form which allows authorized
@@ -1906,7 +1893,6 @@ mapping:
 
       remote_user_maildomain:
         type: str
-        default: ''
         required: false
         desc: |
           If use_remote_user is enabled and your external authentication
@@ -1938,7 +1924,6 @@ mapping:
 
       remote_user_logout_href:
         type: str
-        default: ''
         required: false
         desc: |
           If use_remote_user is enabled, you can set this to a URL that will log your
@@ -2114,7 +2099,8 @@ mapping:
         required: false
         desc: |
           Enable beta workflow modules that should not yet be considered part of Galaxy's
-          stable API.
+          stable API. (The module state definitions may change and workflows built using 
+          these modules may not function in the future.)
 
       default_workflow_export_format:
         type: str
@@ -2289,7 +2275,6 @@ mapping:
 
       ftp_upload_dir:
         type: str
-        default: ''
         required: false
         desc: |
           Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
@@ -2300,7 +2285,6 @@ mapping:
 
       ftp_upload_site:
         type: str
-        default: ''
         required: false
         desc: |
           This should be the hostname of your FTP server, which will be provided to
@@ -2616,7 +2600,6 @@ mapping:
 
       environment_setup_file:
         type: str
-        default: ''
         required: false
         desc: |
           File to source to set up the environment when running jobs.  By default, the
