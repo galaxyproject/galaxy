@@ -33,4 +33,6 @@ galaxy:
   # If you develop InteractiveTools locally and do not have a full FQDN you can
   # use an arbritrary one, e.g. 'my-hostname' here, if you set this hostname in your
   # job_conf.xml as well (see the corresponding comment).
+  # Please make sure that in the local development case you use https://localhost:8080 to access
+  # your Galaxy. http://my-hostname:8080 will not work.
   # galaxy_infrastructure_url: http://my-hostname:8080

@@ -22,7 +22,8 @@
                This can be done via the --add-host parameter during the `docker run` command.
                'my-hostname' here is an arbritrary hostname that matches the IP address of your
                Galaxy host. Make sure this hostname ('my-hostname') is also set in your galaxy.yml file, e.g.
-               `galaxy_infrastructure_url: http://my-hostname:8080`. -->
+               `galaxy_infrastructure_url: http://my-hostname:8080`. 
+          -->
           <!--param id="docker_run_extra_arguments">--add-host my-hostname:10.1.2.3</param-->
         </destination>
 
