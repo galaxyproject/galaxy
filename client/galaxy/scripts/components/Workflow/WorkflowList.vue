@@ -33,7 +33,14 @@
                         </span>
                     </b-col>
                 </b-row>
-                <b-table id="workflow-table" striped :fields="fields" :items="workflows" :filter="filter" @filtered="filtered">
+                <b-table
+                    id="workflow-table"
+                    striped
+                    :fields="fields"
+                    :items="workflows"
+                    :filter="filter"
+                    @filtered="filtered"
+                >
                     <template slot="name" slot-scope="row">
                         <workflowdropdown
                             :workflow="row.item"
