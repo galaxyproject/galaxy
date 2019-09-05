@@ -821,23 +821,23 @@ class PulsarMQJobRunner(PulsarJobRunner):
             # Nothing else to do? - Attempt to fail the job?
 
 
-class PulsarKubernetesCoexecutionJobRunner(PulsarMQJobRunner):
-    """Flavor of Pulsar job runner with sensible defaults for Kubernetes Pod co-execution."""
+KUBERNETES_DESTINATION_DEFAULTS = {
+    "default_file_action": "remote_transfer",
+    "rewrite_parameters": "true",
+    "jobs_directory": "/pulsar_staging",
+    "pulsar_container_image": "galaxy/pulsar-pod-staging:0.13.0",
+    "remote_container_handling": True,
+    "k8s_enabled": True,
+    "url": PARAMETER_SPECIFICATION_IGNORED,
+    "private_token": PARAMETER_SPECIFICATION_IGNORED,
+}
 
-    destination_defaults = dict(
-        default_file_action="remote_transfer",
-        rewrite_parameters="true",
-        dependency_resolution="none",
-        jobs_directory="/pulsar_staging",
-        pulsar_container_image="galaxy/pulsar-pod-staging:0.12.0",
-        remote_container_handling=True,
-        k8s_enabled=True,
-        url=PARAMETER_SPECIFICATION_IGNORED,
-        private_token=PARAMETER_SPECIFICATION_IGNORED,
-    )
+
+class PulsarKubernetesJobRunner(PulsarMQJobRunner):
+    destination_defaults = KUBERNETES_DESTINATION_DEFAULTS
 
     def _populate_parameter_defaults(self, job_destination):
-        super(PulsarKubernetesCoexecutionJobRunner, self)._populate_parameter_defaults(job_destination)
+        super(PulsarKubernetesJobRunner, self)._populate_parameter_defaults(job_destination)
         params = job_destination.params
         # Set some sensible defaults for Pulsar application that runs in staging container.
         if "pulsar_app_config" not in params:
@@ -846,9 +846,6 @@ class PulsarKubernetesCoexecutionJobRunner(PulsarMQJobRunner):
         if "staging_directory" not in pulsar_app_config:
             # coexecution always uses a fixed path for staging directory
             pulsar_app_config["staging_directory"] = params.get("jobs_directory")
-        if "manager" not in pulsar_app_config and "managers" not in pulsar_app_config:
-            # coexecution always uses coexecution manager
-            pulsar_app_config["manager"] = {"type": "coexecution"}
 
 
 class PulsarRESTJobRunner(PulsarJobRunner):
