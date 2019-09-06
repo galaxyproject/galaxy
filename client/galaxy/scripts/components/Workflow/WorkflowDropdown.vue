@@ -15,7 +15,7 @@
                 v-for="ops in operations"
                 :key="ops.label"
                 class="dropdown-item"
-                @click="onClick(ops.event)"
+                @click="ops.event()"
                 :href="ops.url"
             >
                 {{ ops.label }}
@@ -33,47 +33,52 @@ export default {
             ownerOperations: [
                 {
                     label: "Edit",
-                    url: `${getAppRoot()}workflow/editor?id=${this.workflow.id}`
+                    url: `${getAppRoot()}workflow/editor?id=${this.workflow.id}`,
+                    event: () => {}
                 },
                 {
                     label: "Copy",
                     url: "#",
-                    event: "copy"
+                    event: this.onCopy
                 },
                 {
                     label: "Download",
-                    url: `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`
+                    url: `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`,
+                    event: () => {}
                 },
                 {
                     label: "Rename",
                     url: "#",
-                    event: "rename"
+                    event: this.onRename
                 },
                 {
                     label: "Share",
-                    url: `${getAppRoot()}workflow/sharing?id=${this.workflow.id}`
+                    url: `${getAppRoot()}workflow/sharing?id=${this.workflow.id}`,
+                    event: () => {}
                 },
                 {
                     label: "View",
-                    url: `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`
+                    url: `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`,
+                    event: () => {}
                 },
                 {
                     label: "Delete",
                     url: "#",
-                    event: "delete"
+                    event: this.onDelete
                 }
             ],
             limitedOperations: [
                 {
                     label: "Copy",
                     url: "#",
-                    event: "copy"
+                    event: this.onCopy
                 },
                 {
                     label: "View",
                     url: `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
                         this.workflow.slug
-                    }`
+                    }`,
+                    event: () => {}
                 }
             ]
         };
@@ -97,19 +102,6 @@ export default {
         this.services = new Services({ root: this.root });
     },
     methods: {
-        onClick: function(event) {
-            switch (event) {
-                case "copy":
-                    this.onCopy();
-                    break;
-                case "delete":
-                    this.onDelete();
-                    break;
-                case "rename":
-                    this.onRename();
-                    break;
-            }
-        },
         onCopy: function() {
             this.services
                 .copyWorkflow(this.workflow)
