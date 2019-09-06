@@ -187,7 +187,7 @@ automatically if profile is set to any version newer than ``16.01``, such as
         <xs:annotation>
           <xs:documentation xml:lang="en">This string specifies the minimum Python
 version that is able to fill the Cheetah sections of the tool. If unset defaults
-to 2.7 if the profile is older than 19.01, otherwise defaults to 3.5. Galaxy will 
+to 2.7 if the profile is older than 19.01, otherwise defaults to 3.5. Galaxy will
 attempt to convert Python statements in Cheetah sections using [future](http://python-future.org/)
 if Galaxy is run on Python 3 and ``python_template_version`` is below 3.</xs:documentation>
         </xs:annotation>
@@ -748,6 +748,14 @@ be present in ``test`` definition.</xs:documentation>
       <xs:annotation>
         <xs:documentation xml:lang="en">Maximum amount of time to let test run.</xs:documentation>
       </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="name" type="xs:string" use="optional">
+        <xs:annotation>
+            <xs:documentation xml:lang="en">Title given to a test to be displayed
+when using planemo test. Use of this will change the CL output from "tool_id[0]: passed/failed"
+to tool_id[specific name]: passed/failed"</xs:documentation>
+            </xs:annotation>
+        </xs:annotation>
     </xs:attribute>
   </xs:complexType>
   <xs:group name="TestParamElement">
@@ -3217,7 +3225,7 @@ validators is in the ``validator_types`` dictionary in
 [/lib/galaxy/tools/parameters/validation.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/validation.py).
 Valid values include: ``expression``, ``regex``, ``in_range``, ``length``,
 ``metadata``, ``unspecified_build``, ``no_options``, ``empty_field``,
-``dataset_metadata_in_file``, 
+``dataset_metadata_in_file``,
 ``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``,
 ``value_in_data_table``, ``value_not_in_data_table``,
 ``dataset_ok_validator``, ``dataset_metadata_in_range``]]></xs:documentation>
@@ -5601,15 +5609,15 @@ A tool can have any number of EDAM operation references.
       <xs:documentation xml:lang="en"><![CDATA[
 Container tag set for the ``<xref>`` tags.
 A tool can refer multiple reference IDs.
-	
+
 ```xml
    <!-- Example: this tool is seqtk -->
-   <xrefs>      
+   <xrefs>
 	<xref type="bio.tools">seqtk</xref>
    </xrefs>
    <!-- https://bio.tools/seqtk -->
 ```
-   
+
 ]]></xs:documentation>
     </xs:annotation>
       <xs:sequence>
@@ -5619,7 +5627,7 @@ A tool can refer multiple reference IDs.
   </xs:complexType>
   <xs:complexType name="xref">
     <xs:annotation>
-      <xs:documentation xml:lang="en">The ``xref`` element specifies reference 
+      <xs:documentation xml:lang="en">The ``xref`` element specifies reference
 information according to a catalog.</xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
