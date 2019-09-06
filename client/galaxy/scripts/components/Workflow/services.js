@@ -7,89 +7,60 @@ export class Services {
         this.root = options.root;
     }
 
-    copyWorkflow(workflow) {
+    async copyWorkflow(workflow) {
         const Galaxy = getGalaxyInstance();
         const url = `${this.root}api/workflows/${workflow.id}/download`;
-        return new Promise((resolve, reject) => {
-            axios
-                .get(url)
-                .then(response => {
-                    const newWorkflow = response.data;
-                    const currentOwner = workflow.owner;
-                    let newName = `Copy of ${workflow.name}`;
-                    if (currentOwner != Galaxy.user.attributes.username) {
-                        newName += ` shared by user ${currentOwner}`;
-                    }
-                    newWorkflow.name = newName;
-                    this.createWorkflow(newWorkflow)
-                        .then(workflow => {
-                            this._addAttributes(workflow);
-                            resolve(workflow);
-                        })
-                        .catch(message => {
-                            reject(message);
-                        });
-                })
-                .catch(e => {
-                    reject(this._errorMessage(e));
-                });
-        });
+        try {
+            const response = await axios.get(url);
+            const newWorkflow = response.data;
+            const currentOwner = workflow.owner;
+            let newName = `Copy of ${workflow.name}`;
+            if (currentOwner != Galaxy.user.attributes.username) {
+                newName += ` shared by user ${currentOwner}`;
+            }
+            newWorkflow.name = newName;
+            const createUrl = `${this.root}api/workflows`;
+            const createResponse = await axios.post(createUrl, { workflow: newWorkflow });
+            const createWorkflow = createResponse.data;
+            this._addAttributes(createWorkflow);
+            return createWorkflow;
+        } catch (e) {
+            this._errorMessage(e);
+        }
     }
 
-    createWorkflow(workflow) {
-        return new Promise((resolve, reject) => {
-            axios
-                .post(`${this.root}api/workflows`, { workflow: workflow })
-                .then(response => {
-                    resolve(response.data);
-                })
-                .catch(e => {
-                    reject(this._errorMessage(e));
-                });
-        });
+    async deleteWorkflow(id) {
+        const url = `${this.root}api/workflows/${id}`;
+        try {
+            const response = await axios.delete(url);
+            return response.data;
+        } catch (e) {
+            this._errorMessage(e);
+        }
     }
 
-    deleteWorkflow(id) {
-        return new Promise((resolve, reject) => {
-            axios
-                .delete(`${this.root}api/workflows/${id}`)
-                .then(response => {
-                    resolve(response.data);
-                })
-                .catch(e => {
-                    reject(this._errorMessage(e));
-                });
-        });
+    async getWorkflows(id) {
+        const url = `${this.root}api/workflows`;
+        try {
+            const response = await axios.get(url);
+            const workflows = response.data;
+            workflows.forEach(workflow => {
+                this._addAttributes(workflow);
+            });
+            return workflows;
+        } catch (e) {
+            this._errorMessage(e);
+        }
     }
 
-    getWorkflows() {
-        return new Promise((resolve, reject) => {
-            axios
-                .get(`${this.root}api/workflows`)
-                .then(response => {
-                    const workflows = response.data;
-                    workflows.forEach(workflow => {
-                        this._addAttributes(workflow);
-                    });
-                    resolve(workflows);
-                })
-                .catch(e => {
-                    reject(this._errorMessage(e));
-                });
-        });
-    }
-
-    updateWorkflow(id, data) {
-        return new Promise((resolve, reject) => {
-            axios
-                .put(`${this.root}api/workflows/${id}`, data)
-                .then(response => {
-                    resolve(response.data);
-                })
-                .catch(e => {
-                    reject(this._errorMessage(e));
-                });
-        });
+    async updateWorkflow(id, data) {
+        const url = `${this.root}api/workflows/${id}`;
+        try {
+            const response = await axios.put(url, data);
+            return response.data;
+        } catch (e) {
+            this._errorMessage(e);
+        }
     }
 
     _addAttributes(workflow) {
@@ -105,10 +76,10 @@ export class Services {
     }
 
     _errorMessage(e) {
-        let errorMessage = "Request failed.";
+        let message = "Request failed.";
         if (e.response) {
-            errorMessage = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
+            message = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
         }
-        return errorMessage;
+        throw message;
     }
 }
