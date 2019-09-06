@@ -10,16 +10,18 @@
             <span :class="icon" />
             {{ workflow.name }}
         </b-link>
-        <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
-            <a
-                v-for="ops in operations"
-                :key="ops.label"
-                class="dropdown-item"
-                @click="ops.event()"
-                :href="ops.url"
-            >
-                {{ ops.label }}
-            </a>
+        <div v-if="workflow.shared" class="dropdown-menu" aria-labelledby="workflow-dropdown">
+            <a class="dropdown-item" href="#" @click="onCopy">Copy</a>
+            <a class="dropdown-item" :href="urlViewShared">View</a>
+        </div>
+        <div v-else class="dropdown-menu" aria-labelledby="workflow-dropdown">
+            <a class="dropdown-item" :href="urlEdit">Edit</a>
+            <a class="dropdown-item" href="#" @click="onCopy">Copy</a>
+            <a class="dropdown-item" :href="urlDownload">Download</a>
+            <a class="dropdown-item" href="#" @click="onRename">Rename</a>
+            <a class="dropdown-item" :href="urlShare">Share</a>
+            <a class="dropdown-item" :href="urlView">View</a>
+            <a class="dropdown-item" href="#" @click="onDelete">Delete</a>
         </div>
     </div>
 </template>
@@ -30,66 +32,16 @@ export default {
     props: ["workflow"],
     data() {
         return {
-            ownerOperations: [
-                {
-                    label: "Edit",
-                    url: `${getAppRoot()}workflow/editor?id=${this.workflow.id}`,
-                    event: () => {}
-                },
-                {
-                    label: "Copy",
-                    url: "#",
-                    event: this.onCopy
-                },
-                {
-                    label: "Download",
-                    url: `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`,
-                    event: () => {}
-                },
-                {
-                    label: "Rename",
-                    url: "#",
-                    event: this.onRename
-                },
-                {
-                    label: "Share",
-                    url: `${getAppRoot()}workflow/sharing?id=${this.workflow.id}`,
-                    event: () => {}
-                },
-                {
-                    label: "View",
-                    url: `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`,
-                    event: () => {}
-                },
-                {
-                    label: "Delete",
-                    url: "#",
-                    event: this.onDelete
-                }
-            ],
-            limitedOperations: [
-                {
-                    label: "Copy",
-                    url: "#",
-                    event: this.onCopy
-                },
-                {
-                    label: "View",
-                    url: `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
-                        this.workflow.slug
-                    }`,
-                    event: () => {}
-                }
-            ]
+            urlEdit: `${getAppRoot()}workflow/editor?id=${this.workflow.id}`,
+            urlDownload: `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`,
+            urlShare: `${getAppRoot()}workflow/sharing?id=${this.workflow.id}`,
+            urlView: `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`,
+            urlViewShared: `${getAppRoot()}workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${
+                this.workflow.slug
+            }`
         };
     },
     computed: {
-        operations() {
-            if (this.workflow.shared) {
-                return this.limitedOperations;
-            }
-            return this.ownerOperations;
-        },
         icon() {
             if (this.workflow.shared) {
                 return "fa fa-retweet";
