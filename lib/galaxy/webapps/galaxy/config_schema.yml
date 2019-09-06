@@ -28,7 +28,6 @@ mapping:
 
       config_dir:
         type: str
-        default: 'false'
         required: false
         desc: |
           The directory that will be prepended to relative paths in options specifying
@@ -37,7 +36,6 @@ mapping:
 
       data_dir:
         type: str
-        default: 'false'
         required: false
         desc: |
           The directory that will be prepended to relative paths in options specifying
