@@ -2223,7 +2223,6 @@ mapping:
 
       master_api_key:
         type: str
-        default: changethis
         required: false
         desc: |
           Master key that allows many API admin actions to be used without actually
