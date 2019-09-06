@@ -2269,7 +2269,7 @@ mapper(model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=di
 ))
 
 mapper(model.InteractiveToolEntryPoint, model.InteractiveToolEntryPoint.table, properties=dict(
-    job=relation(model.Job, backref=backref('realtimetool_entry_points', uselist=True), uselist=False)
+    job=relation(model.Job, backref=backref('interactivetool_entry_points', uselist=True), uselist=False)
 ))
 
 mapper(model.JobContainerAssociation, model.JobContainerAssociation.table, properties=dict(

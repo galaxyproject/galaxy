@@ -166,8 +166,8 @@
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
 
-  <tool file="realtimetool_simple.xml" />
-  <tool file="realtimetool_two_entry_points.xml" />
+  <tool file="interactivetool_simple.xml" />
+  <tool file="interactivetool_two_entry_points.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
 
