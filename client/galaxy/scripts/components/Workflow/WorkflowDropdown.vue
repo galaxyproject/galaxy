@@ -2,7 +2,7 @@
     <div>
         <b-link
             id="workflow-dropdown"
-            class="font-weight-bold"
+            class="workflow-dropdown font-weight-bold"
             data-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false"
