@@ -12,6 +12,7 @@ $brand-toggle: gold;
 // Text colors
 $text-color: $brand-dark;
 $text-muted: lighten($text-color, 10%);
+$text-light: lighten($text-color, 20%);
 $border-color: lighten($text-color, 60%);
 
 // Light grays for backgrounds
