@@ -96,6 +96,9 @@ uwsgi:
   # Ensure application threads will run if `threads` is unset.
   enable-threads: true
 
+  # On some systems uWSGI has a default umask of 000, for Galaxy a 
+  # somewhat safer default is chosen
+  umask: 022
 galaxy:
 
   # The directory that will be prepended to relative paths in options
