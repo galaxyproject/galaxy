@@ -239,7 +239,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self._set_reloadable_properties(kwargs)
 
         # Configs no longer read from samples
-        self.migrated_tools_config = resolve_path(kwargs.get('migrated_tools_conf', 'migrated_tools_conf.xml'), self.mutable_config_dir)
+        self.migrated_tools_config = resolve_path(kwargs.get('migrated_tools_config', 'migrated_tools_conf.xml'), self.mutable_config_dir)
         self.shed_tool_conf = resolve_path(kwargs.get('shed_tool_conf', 'shed_tool_conf.xml'), self.mutable_config_dir)
         for name in ('migrated_tools_config', 'shed_tool_conf'):
             setattr(self, name + '_set', kwargs.get(name, None) is not None)
