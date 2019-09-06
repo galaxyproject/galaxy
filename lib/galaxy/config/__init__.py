@@ -200,7 +200,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
     def __init__(self, **kwargs):
         self._load_schema()  # Load schema from schema definition file
-        self._load_raw_config_from_schema()  # Load default propery values from schema
+        self._load_config_from_schema()  # Load default propery values from schema
         self._update_raw_config_from_kwargs(kwargs)  # Overwrite default values passed as kwargs
         self._create_attributes_from_raw_config()  # Create attributes for LOADED properties
         self._process_config(kwargs)  # Finish processing configuration
@@ -209,10 +209,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
         self.appschema = self.schema.app_schema
 
-    def _load_raw_config_from_schema(self):
-        self._raw_config = {}
+    def _load_config_from_schema(self):
+        self._raw_config = {}  # keeps track of values provided to the app
+        self.reloadable_options = set()
         for key, data in self.appschema.items():
             self._raw_config[key] = data.get('default')
+            if data.get('reloadable'):
+                self.reloadable_options.add(key)
 
     def _update_raw_config_from_kwargs(self, kwargs):
         type_converters = {
@@ -234,9 +237,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
     def _process_config(self, kwargs):
         self.config_dict = kwargs
         self.root = find_root(kwargs)
-
         self._set_config_base(kwargs)
-        self._set_reloadable_properties(kwargs)
 
         # Configs no longer read from samples
         self.migrated_tools_config = resolve_path(kwargs.get('migrated_tools_config', 'migrated_tools_conf.xml'), self.mutable_config_dir)
@@ -659,17 +660,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 'filters': ['stack']
             }
 
-    def _set_reloadable_properties(self, kwargs):
-        reloadable_config_options = get_reloadable_config_options()
-        for key, default_value in reloadable_config_options.items():
-            value = kwargs.get(key) or default_value
-            setattr(self, key, value)
-
-    def update_reloadable_property(self, key, value):
-        # TODO: after config_schema.yml is read only once at startup, add this:
-        # "if key in reloadable_config_options" (just a safety measure)
-        setattr(self, key, value)
-
     @property
     def admin_users(self):
         return self._admin_users
@@ -864,17 +854,13 @@ Configuration = GalaxyAppConfiguration
 def reload_config_options(current_config, path=None):
     """ Reload modified reloadable config options """
     modified_config = read_properties_from_file(current_config.config_file)
-    reloadable_config_options = get_reloadable_config_options()
-    for option in reloadable_config_options:
+    for option in current_config.reloadable_options:
         if option in modified_config:
-            if getattr(current_config, option) != modified_config[option]:
-                current_config.update_reloadable_property(option, modified_config[option])
+            # compare to raw value, as that one is set only on load and reload
+            if current_config._raw_config[option] != modified_config[option]:
+                current_config._raw_config[option] = modified_config[option]
+                setattr(current_config, option, modified_config[option])
                 log.info('Reloaded %s' % option)
-
-
-def get_reloadable_config_options():  # TODO change this!
-    schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
-    return schema.get_reloadable_option_defaults()
 
 
 def get_database_engine_options(kwargs, model_prefix=''):
