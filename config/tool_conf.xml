@@ -19,6 +19,7 @@
   
   <section id="Transcribe" name="Speech to Text">
     <tool file="aws/transcribe.xml"/>
+    <tool file="kaldi/kaldi_local.xml"/>
   </section>
   <section id="collection_operations" name="Collection Operations">
     <tool file="${model_tools_path}/unzip_collection.xml" labels="new" />
