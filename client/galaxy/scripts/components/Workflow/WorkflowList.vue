@@ -61,7 +61,7 @@
                         <b-button
                             v-b-tooltip.hover.bottom
                             title="Run Workflow"
-                            class="btn-sm btn-primary fa fa-play"
+                            class="workflow-run btn-sm btn-primary fa fa-play"
                             @click.stop="executeWorkflow(row.item)"
                         />
                     </template>
