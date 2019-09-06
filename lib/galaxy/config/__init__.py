@@ -216,9 +216,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
     def _update_raw_config_from_kwargs(self, kwargs):
         type_converters = {
-            bool: string_as_bool,
-            int: int,
-            float: float,
+            'bool': string_as_bool,
+            'int': int,
+            'float': float,
         }
         for key, value in kwargs.items():
             if key in self.appschema:

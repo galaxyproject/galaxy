@@ -4,10 +4,10 @@ from galaxy.config import GalaxyAppConfiguration
 
 
 MOCK_PROPERTIES = {
-    'property1': {'default': 'a', 'type': str},  # str
-    'property2': {'default': 1, 'type': int},  # int
-    'property3': {'default': 1.0, 'type': float},  # float
-    'property4': {'default': True, 'type': bool},  # bool
+    'property1': {'default': 'a', 'type': 'str'},  # str
+    'property2': {'default': 1, 'type': 'int'},  # int
+    'property3': {'default': 1.0, 'type': 'float'},  # float
+    'property4': {'default': True, 'type': 'bool'},  # bool
     'property5': {'something_else': 'b', 'type': 'invalid'},
     'property6': {'something_else': 'b'},  # no type
 }
