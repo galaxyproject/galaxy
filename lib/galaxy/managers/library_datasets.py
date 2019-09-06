@@ -63,6 +63,8 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
             :type  file_ext:        str
             :param genome_build:    new ld's genome build
             :type  genome_build:    str
+            :param tags:            list of dataset tags
+            :type  tags:            list
         :type   payload: dict
 
         :returns:   the changed library dataset
@@ -100,6 +102,12 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         if new_genome_build is not None and new_genome_build != ldda.dbkey:
             ldda.dbkey = new_genome_build
             changed = True
+        new_tags = new_data.get('tags', None)
+        if new_tags is not None and new_tags != ldda.tags:
+            self.tag_handler.delete_item_tags(item=ldda, user=trans.user)
+            for tag in new_tags:
+                self.tag_handler.apply_item_tag(item=ldda, user=trans.user, name='name', value=tag)
+            changed = True
         if changed:
             ldda.update_parent_folder_update_times()
             trans.sa_session.add(ldda)
@@ -129,6 +137,9 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
                 if len(val) < MINIMUM_STRING_LENGTH:
                     raise RequestParameterInvalidException('%s must have at least length of %s' % (key, MINIMUM_STRING_LENGTH))
                 val = validation.validate_and_sanitize_basestring(key, val)
+                validated_payload[key] = val
+            if key in ('tags'):
+                val = validation.validate_and_sanitize_basestring_list(key, val)
                 validated_payload[key] = val
         return validated_payload
 

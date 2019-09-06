@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 DATABASE_TABLE_NAME = 'gxitproxy'
 
 
-class RealtimeSqlite(object):
+class InteractiveToolSqlite(object):
 
     def __init__(self, sqlite_filename, encode_id):
         self.sqlite_filename = sqlite_filename
@@ -128,9 +128,9 @@ class RealtimeSqlite(object):
         return self.remove(key=self.encode_id(entry_point.id), key_type=entry_point.__class__.__name__.lower())
 
 
-class RealTimeManager(object):
+class InteractiveToolManager(object):
     """
-    Manager for dealing with RealTimeTools
+    Manager for dealing with InteractiveTools
     """
 
     def __init__(self, app):
@@ -139,7 +139,7 @@ class RealTimeManager(object):
         self.security = app.security
         self.sa_session = app.model.context
         self.job_manager = app.job_manager
-        self.propagator = RealtimeSqlite(app.config.realtime_map, app.security.encode_id)
+        self.propagator = InteractiveToolSqlite(app.config.interactivetool_map, app.security.encode_id)
 
     def create_entry_points(self, job, tool, entry_points=None, flush=True):
         entry_points = entry_points or tool.ports
@@ -156,7 +156,7 @@ class RealTimeManager(object):
         # There can be multiple entry points that reference the same tool port (could have different entry URLs)
         configured = []
         not_configured = []
-        for ep in job.realtimetool_entry_points:
+        for ep in job.interactivetool_entry_points:
             port_dict = ports_dict.get(str(ep.tool_port), None)
             if port_dict is None:
                 log.error("Did not find port to assign to InteractiveToolEntryPoint by tool port: %s.", ep.tool_port)
@@ -179,12 +179,12 @@ class RealTimeManager(object):
         """
         self.propagator.save_entry_point(entry_point)
 
-    def create_realtime(self, job, tool, entry_points):
+    def create_interactivetool(self, job, tool, entry_points):
         # create from initial job
         if job and tool:
             self.create_entry_points(job, tool, entry_points)
         else:
-            log.warning('Called RealTimeManager.create_realtime, but job (%s) or tool (%s) is None', job, tool)
+            log.warning('Called InteractiveToolManager.create_interactivetool, but job (%s) or tool (%s) is None', job, tool)
 
     def get_nonterminal_for_user_by_trans(self, trans):
         if trans.user:
@@ -260,19 +260,19 @@ class RealTimeManager(object):
     def target_if_active(self, trans, entry_point):
         if entry_point.active and not entry_point.deleted:
             request_host = trans.request.host
-            rval = '%s//%s.%s.%s.%s.%s/' % (trans.request.host_url.split('//', 1)[0], entry_point.__class__.__name__.lower(), trans.security.encode_id(entry_point.id),
-                    entry_point.token, self.app.config.realtime_prefix, request_host)
+            rval = '%s//%s-%s.%s.%s.%s/' % (trans.request.host_url.split('//', 1)[0], trans.security.encode_id(entry_point.id),
+                    entry_point.token, entry_point.__class__.__name__.lower(), self.app.config.interactivetool_prefix, request_host)
             if entry_point.entry_url:
                 rval = '%s/%s' % (rval.rstrip('/'), entry_point.entry_url.lstrip('/'))
             return rval
 
     def access_entry_point_target(self, trans, entry_point_id):
         entry_point = trans.sa_session.query(model.InteractiveToolEntryPoint).get(entry_point_id)
-        if self.app.realtime_manager.can_access_entry_point(trans, entry_point):
+        if self.app.interactivetool_manager.can_access_entry_point(trans, entry_point):
             if entry_point.active:
                 return self.target_if_active(entry_point)
             elif entry_point.deleted:
-                raise exceptions.MessageException('RealTimeTool has ended. You will have to start a new one.')
+                raise exceptions.MessageException('InteractiveTool has ended. You will have to start a new one.')
             else:
-                raise exceptions.MessageException('RealTimeTool is not active. If you recently launched this tool it may not be ready yet, please wait a moment and refresh this page.')
-        raise exceptions.ItemAccessibilityException("You do not have access to this RealTimeTool entry point.")
+                raise exceptions.MessageException('InteractiveTool is not active. If you recently launched this tool it may not be ready yet, please wait a moment and refresh this page.')
+        raise exceptions.ItemAccessibilityException("You do not have access to this InteractiveTool entry point.")

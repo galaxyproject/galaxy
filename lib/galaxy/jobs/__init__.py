@@ -1064,7 +1064,7 @@ class JobWrapper(HasResourceParameters):
         # if the server was stopped and restarted before the job finished
         job.command_line = unicodify(self.command_line)
         job.dependencies = self.tool.dependencies
-        self.realtimetools = getattr(tool_evaluator, 'realtimetools', None)
+        self.interactivetools = getattr(tool_evaluator, 'interactivetools', None)
         self.sa_session.add(job)
         self.sa_session.flush()
         # Return list of all extra files
@@ -1993,7 +1993,7 @@ class JobWrapper(HasResourceParameters):
                     # File exists, but is not fully populated yet
                     return False
             log.debug("found container runtime %s" % container_runtime)
-            self.app.realtime_manager.configure_entry_points(job, container_runtime)
+            self.app.interactivetool_manager.configure_entry_points(job, container_runtime)
             return True
 
     def container_monitor_command(self, container, **kwds):

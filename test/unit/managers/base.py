@@ -38,8 +38,14 @@ class BaseTestCase(unittest.TestCase):
         self.set_up_trans()
 
     def set_up_mocks(self):
-        self.trans = galaxy_mock.MockTrans(admin_users=admin_users)
+        admin_users_list = [u for u in admin_users.split(',') if u]
+        self.trans = galaxy_mock.MockTrans(admin_users=admin_users, admin_users_list=admin_users_list)
         self.app = self.trans.app
+
+        def mock_is_admin_user(user):
+            return user.email in admin_users
+
+        self.trans.app.config.is_admin_user = mock_is_admin_user
 
     def set_up_managers(self):
         self.user_manager = UserManager(self.app)

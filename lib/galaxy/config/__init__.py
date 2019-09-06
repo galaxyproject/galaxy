@@ -24,6 +24,7 @@ import yaml
 from six import string_types
 from six.moves import configparser
 
+from galaxy.config.schema import AppSchema
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.model import mapping
@@ -47,11 +48,12 @@ from galaxy.web_stack import (
     get_stack_facts,
     register_postfork_function
 )
-from .config_manage import GALAXY_APP
 from ..version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
 
+GALAXY_APP_NAME = 'galaxy'
+GALAXY_CONFIG_SCHEMA_PATH = 'lib/galaxy/webapps/galaxy/config_schema.yml'
 LOGGING_CONFIG_DEFAULT = {
     'version': 1,
     'root': {
@@ -541,7 +543,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             # self, populate config_dict
             self.config_dict["conda_mapping_files"] = conda_mapping_files
 
-        self.enable_beta_mulled_containers = string_as_bool(kwargs.get('enable_beta_mulled_containers', 'False'))
+        self.enable_mulled_containers = string_as_bool(kwargs.get('enable_mulled_containers', 'True'))
         containers_resolvers_config_file = kwargs.get('containers_resolvers_config_file', None)
         if containers_resolvers_config_file:
             containers_resolvers_config_file = resolve_path(containers_resolvers_config_file, self.root)
@@ -728,8 +730,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.dynamic_proxy_golang_api_key = kwargs.get("dynamic_proxy_golang_api_key", None)
 
         # InteractiveTools propagator mapping file
-        self.realtime_map = self.resolve_path(kwargs.get("interactivetools_map", os.path.join(self.data_dir, "interactivetools_map.sqlite")))
-        self.realtime_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
+        self.interactivetool_map = self.resolve_path(kwargs.get("interactivetools_map", os.path.join(self.data_dir, "interactivetools_map.sqlite")))
+        self.interactivetool_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
         self.interactivetools_enable = string_as_bool(kwargs.get('interactivetools_enable', False))
 
         # Default chunk size for chunkable datatypes -- 64k
@@ -1009,7 +1011,8 @@ def reload_config_options(current_config, path=None):
 
 
 def get_reloadable_config_options():
-    return GALAXY_APP.schema.get_reloadable_option_defaults()
+    schema = AppSchema(GALAXY_CONFIG_SCHEMA_PATH, GALAXY_APP_NAME)
+    return schema.get_reloadable_option_defaults()
 
 
 def get_database_engine_options(kwargs, model_prefix=''):
@@ -1141,7 +1144,7 @@ class ConfiguresGalaxyMixin(object):
             outputs_to_working_directory=self.config.outputs_to_working_directory,
             container_image_cache_path=self.config.container_image_cache_path,
             library_import_dir=self.config.library_import_dir,
-            enable_beta_mulled_containers=self.config.enable_beta_mulled_containers,
+            enable_mulled_containers=self.config.enable_mulled_containers,
             containers_resolvers_config_file=self.config.containers_resolvers_config_file,
             involucro_path=self.config.involucro_path,
             involucro_auto_init=self.config.involucro_auto_init,

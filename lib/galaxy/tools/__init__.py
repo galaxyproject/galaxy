@@ -159,7 +159,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "sam_pileup",
     "find_diag_hits",
     "cufflinks",
-    "gops_intersect_1",
     # Tools improperly migrated to the tool shed (iuc)
     "tabular_to_dbnsfp",
     # Tools improperly migrated using Galaxy (from shed other)
@@ -176,11 +175,12 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
 # Tools that needed galaxy on the PATH in the past but no longer do along
 # with the version at which they were fixed.
 GALAXY_LIB_TOOLS_VERSIONED = {
-    "sam_to_bam": packaging.version.parse("1.1.3"),
-    "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
-    "fetchflank": packaging.version.parse("1.0.1"),
     "Extract genomic DNA 1": packaging.version.parse("3.0.0"),
+    "fetchflank": packaging.version.parse("1.0.1"),
+    "gops_intersect_1": packaging.version.parse("1.0.0"),
     "lastz_wrapper_2": packaging.version.parse("1.3"),
+    "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
+    "sam_to_bam": packaging.version.parse("1.1.3"),
 }
 
 
@@ -818,7 +818,7 @@ class Tool(Dictifiable):
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths()
-        self.ports = tool_source.parse_realtime()
+        self.ports = tool_source.parse_interactivetool()
 
     def __parse_legacy_features(self, tool_source):
         self.code_namespace = dict()
@@ -1936,7 +1936,7 @@ class Tool(Dictifiable):
 
         tool_class = self.__class__
         # FIXME: the Tool class should declare directly, instead of ad hoc inspection
-        regular_form = tool_class == Tool or isinstance(self, (DatabaseOperationTool, RealTimeTool))
+        regular_form = tool_class == Tool or isinstance(self, (DatabaseOperationTool, InteractiveTool))
         tool_dict["form_style"] = "regular" if regular_form else "special"
 
         return tool_dict
@@ -2458,33 +2458,33 @@ class ImportHistoryTool(Tool):
     tool_type = 'import_history'
 
 
-class RealTimeTool(Tool):
+class InteractiveTool(Tool):
     tool_type = 'interactive'
     produces_entry_points = True
 
     def __init__(self, config_file, tool_source, app, **kwd):
         assert app.config.interactivetools_enable, ValueError('Trying to load an InteractiveTool, but InteractiveTools are not enabled.')
-        super(RealTimeTool, self).__init__(config_file, tool_source, app, **kwd)
+        super(InteractiveTool, self).__init__(config_file, tool_source, app, **kwd)
         for port in self.ports:
             assert port.get('requires_domain', None), ValueError('InteractiveTools currently only work when requires_domain is True for each entry_point.')
 
-    def __remove_realtime_by_job(self, job):
+    def __remove_interactivetool_by_job(self, job):
         if job:
-            eps = job.realtimetool_entry_points
-            log.debug('__remove_realtime_by_job: %s', eps)
-            self.app.realtime_manager.remove_entry_points(eps)
+            eps = job.interactivetool_entry_points
+            log.debug('__remove_interactivetool_by_job: %s', eps)
+            self.app.interactivetool_manager.remove_entry_points(eps)
         else:
             log.warning("Could not determine job to stop InteractiveTool: %s", job)
 
     def exec_after_process(self, app, inp_data, out_data, param_dict, job=None, **kwds):
         # run original exec_after_process
-        super(RealTimeTool, self).exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
-        self.__remove_realtime_by_job(job)
+        super(InteractiveTool, self).exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
+        self.__remove_interactivetool_by_job(job)
 
     def job_failed(self, job_wrapper, message, exception=False):
-        super(RealTimeTool, self).job_failed(job_wrapper, message, exception=exception)
+        super(InteractiveTool, self).job_failed(job_wrapper, message, exception=exception)
         job = job_wrapper.sa_session.query(model.Job).get(job_wrapper.job_id)
-        self.__remove_realtime_by_job(job)
+        self.__remove_interactivetool_by_job(job)
 
 
 class DataManagerTool(OutputParameterJSONTool):
@@ -3097,7 +3097,7 @@ class FilterFromFileTool(DatabaseOperationTool):
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool, RealTimeTool,
+for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, ExpressionTool, InteractiveTool,
                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
                    BuildListCollectionTool, ExtractDatasetCollectionTool,

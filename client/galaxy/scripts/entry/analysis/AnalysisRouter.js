@@ -28,6 +28,7 @@ import Workflows from "mvc/workflow/workflow";
 import WorkflowImport from "components/WorkflowImport.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryView from "components/HistoryView.vue";
+import WorkflowInvocationReport from "components/WorkflowInvocationReport.vue";
 import HistoryList from "mvc/history/history-list";
 import PluginList from "components/PluginList.vue";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
@@ -62,6 +63,7 @@ export const getAnalysisRouter = Galaxy =>
             "(/)workflows/import": "show_workflows_import",
             "(/)workflows/run(/)": "show_workflows_run",
             "(/)workflows(/)list": "show_workflows",
+            "(/)workflows/invocations/report": "show_workflow_invocation_report",
             "(/)workflows/list_published(/)": "show_workflows_published",
             "(/)workflows/create(/)": "show_workflows_create",
             "(/)histories(/)citations(/)": "show_history_citations",
@@ -76,7 +78,7 @@ export const getAnalysisRouter = Galaxy =>
             "(/)custom_builds": "show_custom_builds",
             "(/)datasets/edit": "show_dataset_edit_attributes",
             "(/)datasets/error": "show_dataset_error",
-            "(/)realtime_entry_points(/)list": "show_realtime_list"
+            "(/)interactivetool_entry_points(/)list": "show_interactivetool_list"
         },
 
         require_login: ["show_user", "show_user_form", "show_workflows", "show_cloud_auth"],
@@ -113,10 +115,10 @@ export const getAnalysisRouter = Galaxy =>
             this.page.display(new FormWrapper.View(_.extend(model.get(form_id), { active_tab: "user" })));
         },
 
-        show_realtime_list: function() {
+        show_interactivetool_list: function() {
             this.page.display(
                 new EntryPointGridView({
-                    url_base: `${getAppRoot()}realtime/list`,
+                    url_base: `${getAppRoot()}interactivetool/list`,
                     active_tab: "analysis"
                 })
             );
@@ -179,6 +181,14 @@ export const getAnalysisRouter = Galaxy =>
             const vm = document.createElement("div");
             this.page.display(vm);
             new historyInstance({ propsData: { id: QueryStringParsing.get("id") } }).$mount(vm);
+        },
+
+        show_workflow_invocation_report: function() {
+            const invocationId = QueryStringParsing.get("id");
+            var reportInstance = Vue.extend(WorkflowInvocationReport);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new reportInstance({ propsData: { invocationId: invocationId } }).$mount(vm);
         },
 
         show_history_structure: function() {

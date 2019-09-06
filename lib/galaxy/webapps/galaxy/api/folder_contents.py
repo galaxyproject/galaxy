@@ -9,6 +9,7 @@ from galaxy import (
     util
 )
 from galaxy.managers import folders
+from galaxy.model import tags
 from galaxy.web import (
     expose_api,
     expose_api_anonymous
@@ -111,6 +112,10 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
 
                 library_dataset_dict = content_item.to_dict()
                 encoded_ldda_id = trans.security.encode_id(content_item.library_dataset_dataset_association.id)
+
+                tag_manager = tags.GalaxyTagHandler(trans.sa_session)
+                ldda_tags = tag_manager.get_tags_str(content_item.library_dataset_dataset_association.tags)
+
                 return_item.update(dict(file_ext=library_dataset_dict['file_ext'],
                                         date_uploaded=library_dataset_dict['date_uploaded'],
                                         update_time=update_time,
@@ -120,7 +125,8 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                                         state=library_dataset_dict['state'],
                                         file_size=nice_size,
                                         raw_size=raw_size,
-                                        ldda_id=encoded_ldda_id))
+                                        ldda_id=encoded_ldda_id,
+                                        tags=ldda_tags))
                 if content_item.library_dataset_dataset_association.message:
                     return_item.update(dict(message=content_item.library_dataset_dataset_association.message))
 
@@ -251,8 +257,9 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
     @expose_api
     def create(self, trans, encoded_folder_id, payload, **kwd):
         """
-        * POST /api/folders/{encoded_id}/contents
-            create a new library file from an HDA
+        POST /api/folders/{encoded_id}/contents
+
+        Create a new library file from an HDA.
 
         :param  encoded_folder_id:      the encoded id of the folder to import dataset(s) to
         :type   encoded_folder_id:      an encoded id string
@@ -299,7 +306,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
 
     def __decode_library_content_id(self, trans, encoded_folder_id):
         """
-        Identifies whether the id provided is properly encoded
+        Identify whether the id provided is properly encoded
         LibraryFolder.
 
         :param  encoded_folder_id:  encoded id of Galaxy LibraryFolder

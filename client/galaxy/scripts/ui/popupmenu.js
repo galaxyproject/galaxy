@@ -39,13 +39,15 @@ export function make_popupmenu(button_element, initial_options) {
                     // Action can be either an anonymous function and a mapped dict.
                     const action = v.action || v;
                     const url = v.url || "javascript:void(0);";
-                    menu_element.append(
-                        $("<a>")
-                            .addClass("dropdown-item")
-                            .attr("href", url)
-                            .html(k)
-                            .click(action)
-                    );
+                    const $a = $("<a>")
+                        .addClass("dropdown-item")
+                        .attr("href", url)
+                        .html(k)
+                        .click(action);
+                    if (v.class) {
+                        $a.addClass(v.class);
+                    }
+                    menu_element.append($a);
                 } else {
                     menu_element.append(
                         $("<div/>")

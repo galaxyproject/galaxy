@@ -509,6 +509,9 @@ var FolderListView = Backbone.View.extend({
                         <span title="Sorted by Desc." class="sort-icon-message fa"></span>
                     </th>
                     <th style="width:5%;">
+                        <span>Tags</span>
+                    </th>
+                    <th style="width:5%;">
                         <a class="sort-folder-file_ext" title="Click to reverse order" href="javascript:void(0)" role="button">Data Type</a>
                         <span title="Sorted by Type" class="sort-icon-file_ext fa"></span>
                     </th>

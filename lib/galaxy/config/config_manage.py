@@ -25,6 +25,8 @@ except ImportError:
 if __name__ == '__main__':
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)))
 
+
+from galaxy.config import GALAXY_CONFIG_SCHEMA_PATH
 from galaxy.config.schema import AppSchema, Schema
 from galaxy.util import safe_makedirs
 from galaxy.util.properties import nice_config_parser
@@ -296,6 +298,7 @@ OPTION_ACTIONS = {
     'tool_submission_burst_threads': _DeprecatedAndDroppedAction(),
     'tool_submission_burst_at': _DeprecatedAndDroppedAction(),
     'toolform_upgrade': _DeprecatedAndDroppedAction(),
+    'enable_beta_mulled_containers': _DeprecatedAndDroppedAction(),
 }
 
 
@@ -308,7 +311,7 @@ def _sample_destination(self):
 
 
 def _schema(self):
-    return AppSchema(self)
+    return AppSchema(self.schema_path, self.app_name)
 
 
 App.app_name = property(_app_name)
@@ -323,7 +326,7 @@ GALAXY_APP = App(
     "8080",
     ["galaxy.web.buildapp:app_factory"],  # TODO: Galaxy could call factory a few different things and they'd all be fine.
     "config/galaxy.yml",
-    "lib/galaxy/webapps/galaxy/config_schema.yml",
+    GALAXY_CONFIG_SCHEMA_PATH,
     'galaxy.webapps.galaxy.buildapp:uwsgi_app()',
 )
 SHED_APP = App(

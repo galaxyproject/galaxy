@@ -363,6 +363,8 @@ export default Backbone.View.extend({
                 () => (window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`)
             );
             $("#workflow-save-button").click(() => save_current_workflow());
+            $("#workflow-report-button").click(() => edit_report());
+            $("#workflow-canvas-button").click(() => edit_canvas());
             make_popupmenu($("#workflow-options-button"), {
                 "Save As": workflow_save_as,
                 "Edit Attributes": function() {
@@ -419,6 +421,16 @@ export default Backbone.View.extend({
             self.workflow.fit_canvas_to_nodes();
             self.scroll_to_nodes();
             self.canvas_manager.draw_overview();
+        }
+
+        function edit_report() {
+            $(".workflow-canvas-content").hide();
+            $(".workflow-report-content").show();
+        }
+
+        function edit_canvas() {
+            $(".workflow-canvas-content").show();
+            $(".workflow-report-content").hide();
         }
 
         // On load, set the size to the pref stored in local storage if it exists
@@ -785,8 +797,8 @@ export default Backbone.View.extend({
                 $("<a/>")
                     .attr({
                         "aria-label": "clone node",
-                        "role": "button",
-                        "href": "javascript:void(0)"
+                        role: "button",
+                        href: "javascript:void(0)"
                     })
                     .addClass("fa-icon-button fa fa-files-o node-clone")
                     .click(e => {
@@ -798,8 +810,8 @@ export default Backbone.View.extend({
             $("<a/>")
                 .attr({
                     "aria-label": "destroy node",
-                    "role": "button",
-                    "href": "javascript:void(0)"
+                    role: "button",
+                    href: "javascript:void(0)"
                 })
                 .addClass("fa-icon-button fa fa-times node-destroy")
                 .click(e => {
