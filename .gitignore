@@ -172,3 +172,6 @@ packages/*/*.egg-info
 .DS_Store
 *.rej
 *~
+
+# Plugin build artifacts -- TODO make this more generic as a part of the standard plugin interface
+config/plugins/visualizations/**/static/script.js
