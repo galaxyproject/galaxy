@@ -10,7 +10,7 @@ export class Services {
             const response = await axios.get(url);
             return response.data;
         } catch (e) {
-            return this._errorMessage(e);
+            this._errorMessage(e);
         }
     }
     async getRepositories(params) {
@@ -27,7 +27,7 @@ export class Services {
             });
             return incoming;
         } catch (e) {
-            return this._errorMessage(e);
+            this._errorMessage(e);
         }
     }
     async getDetails(toolshedUrl, repository_id) {
@@ -48,7 +48,7 @@ export class Services {
             });
             return table;
         } catch (e) {
-            return `${this._errorMessage(e)}, ${url}`;
+            this._errorMessage(e);
         }
     }
     async getInstalledRepositories(repo) {
@@ -76,7 +76,7 @@ export class Services {
             const response = await axios.post(url, payload);
             return response.data;
         } catch (e) {
-            return this._errorMessage(e);
+            this._errorMessage(e);
         }
     }
     async uninstallRepository(params) {
@@ -88,7 +88,7 @@ export class Services {
             const response = await axios.delete(url);
             return response.data;
         } catch (e) {
-            return this._errorMessage(e);
+            this._errorMessage(e);
         }
     }
     _formatCount(value) {
@@ -100,7 +100,7 @@ export class Services {
         if (e.response) {
             message = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
         }
-        return message;
+        throw message;
     }
     _getParamString(params) {
         return Object.keys(params).reduce(function(previous, key) {
