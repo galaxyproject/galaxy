@@ -354,9 +354,7 @@ class User(Dictifiable, RepresentById):
     # attributes that will be accessed and returned when calling to_dict( view='collection' )
     dict_collection_visible_keys = ['id', 'email', 'username', 'deleted', 'active', 'last_password_change']
     # attributes that will be accessed and returned when calling to_dict( view='element' )
-    dict_element_visible_keys = ['id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage',
-                                 'gross_deleted_disk_usage', 'nice_gross_deleted_disk_usage', 'deleted',
-                                 'active', 'last_password_change']
+    dict_element_visible_keys = ['id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage', 'deleted', 'active', 'last_password_change']
 
     def __init__(self, email=None, password=None, username=None):
         self.email = email
@@ -559,31 +557,31 @@ class User(Dictifiable, RepresentById):
                 SELECT history.id as id, history.deleted as deleted
                 FROM history
                 WHERE history.user_id = :id
-                    AND history.purged = false
+                    AND history.purged = '0'
             ),
             per_hist_hdas AS
             (
                 SELECT DISTINCT history_dataset_association.dataset_id as id
                 FROM history_dataset_association
-                WHERE history_dataset_association.purged = false
+                WHERE history_dataset_association.purged = '0'
                     AND history_dataset_association.history_id in (SELECT id from per_user_histories)
             ),
             per_non_deleted_hist_hdas AS
             (
                 SELECT DISTINCT history_dataset_association.dataset_id as id
                 FROM history_dataset_association
-                INNER JOIN per_user_histories ON history_dataset_association.dataset_id = per_user_histories.id
-                WHERE history_dataset_association.deleted = false
-                    AND per_user_histories.deleted = false
-                    AND history_dataset_association.purged = false
+                INNER JOIN per_user_histories ON history_dataset_association.history_id = per_user_histories.id
+                WHERE history_dataset_association.deleted = '0'
+                    AND per_user_histories.deleted = '0'
+                    AND history_dataset_association.purged = '0'
             )
         """
 
         sql_calc = """
             SELECT
                 sum(coalesce(dataset.total_size, coalesce(dataset.file_size, 0))),
-                sum(CASE WHEN dataset.id in (SELECT id from per_non_deleted_hist_hdas)
-                    THEN 0 ELSE coalesce(dataset.total_size, coalesce(dataset.file_size, 0)) END)
+                sum(CASE WHEN dataset.id in (SELECT id from per_non_deleted_hist_hdas) THEN 0
+                         ELSE coalesce(dataset.total_size, coalesce(dataset.file_size, 0)) END)
             FROM dataset
             LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
             WHERE dataset.id in (SELECT id from per_hist_hdas)
@@ -1878,26 +1876,6 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
             func.sum(db_session.query(HistoryDatasetAssociation.dataset_id, Dataset.total_size).join(Dataset)
                     .filter(HistoryDatasetAssociation.table.c.history_id == self.id)
                     .filter(HistoryDatasetAssociation.purged != true())
-                    .filter(Dataset.purged != true())
-                    # unique datasets only
-                    .distinct().subquery().c.total_size)).first()[0]
-        if rval is None:
-            rval = 0
-        return rval
-
-    @hybrid.hybrid_property
-    def deleted_disk_size(self):
-        """
-        Return the size in bytes of this history by summing the 'total_size's of
-        all deleted, non-purged, unique datasets within it.
-        """
-        # non-.expression part of hybrid.hybrid_property: called when an instance is the namespace (not the class)
-        db_session = object_session(self)
-        rval = db_session.query(
-            func.sum(db_session.query(HistoryDatasetAssociation.dataset_id, Dataset.total_size).join(Dataset)
-                    .filter(HistoryDatasetAssociation.table.c.history_id == self.id)
-                    .filter(HistoryDatasetAssociation.purged != true())
-                    .filter(HistoryDatasetAssociation.deleted == true())
                     .filter(Dataset.purged != true())
                     # unique datasets only
                     .distinct().subquery().c.total_size)).first()[0]

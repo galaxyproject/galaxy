@@ -34,18 +34,6 @@ class NoQuotaAgent(object):
             usage = user.total_disk_usage
         return usage
 
-    def get_deleted_usage(self, trans=None, user=False, history=False):
-        if trans:
-            user = trans.user
-            history = trans.history
-        assert user is not False, "Could not determine user."
-        if not user:
-            assert history, "Could not determine anonymous user's history."
-            usage = history.deleted_disk_size
-        else:
-            usage = user.gross_deleted_disk_usage
-        return usage
-
     def get_percent(self, trans=None, user=False, history=False, usage=False, quota=False):
         return None
 

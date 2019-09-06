@@ -198,8 +198,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         else:
             raise exceptions.NotImplemented()
         item = user.to_dict(view='element', value_mapper={'id': trans.security.encode_id,
-                                                          'total_disk_usage': float,
-                                                          'gross_deleted_disk_usage': float})
+                                                          'total_disk_usage': float})
         return item
 
     @expose_api
@@ -270,11 +269,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
     def anon_user_api_value(self, trans):
         """Return data for an anonymous user, truncated to only usage and quota_percent"""
         usage = trans.app.quota_agent.get_usage(trans)
-        deleted_usage = trans.app.quota_agent.get_deleted_usage(trans)
         percent = trans.app.quota_agent.get_percent(trans=trans, usage=usage)
         return {'total_disk_usage': int(usage),
                 'nice_total_disk_usage': util.nice_size(usage),
-                'gross_deleted_disk_usage': int(deleted_usage),
                 'quota_percent': percent}
 
     def _get_extra_user_preferences(self, trans):
@@ -903,6 +900,42 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             return {'message': 'Deleted %s.' % key}
         else:
             raise exceptions.ObjectNotFound('Could not find and delete build (%s).' % key)
+
+    @expose_api
+    def calculate_disk_usage(self, trans, id, deleted='False', payload={}, **kwd):
+        """recalculate user disk usage, including total disk usage and deleted, but
+        none-purged disk usage, and return updated user infomation.
+
+        GET /api/users/{encoded_id}/calculate_disk_usage
+        GET /api/users/current/calculate_disk_usage
+
+        :param id: the encoded id of the user or 'current'
+        :type  id: str
+        """
+        deleted = util.string_as_bool(deleted)
+        try:
+            # user is requesting data about themselves
+            if id == "current":
+                # ...and is anonymous - return usage and quota (if any)
+                if not trans.user:
+                    item = self.anon_user_api_value(trans)
+                    return item
+
+                # ...and is logged in - return full
+                else:
+                    user = trans.user
+            else:
+                user = self.get_user(trans, id, deleted=deleted)
+            # check that the user is requesting themselves (and they aren't del'd) unless admin
+            if not trans.user_is_admin:
+                assert trans.user == user
+                assert not user.deleted
+        except exceptions.ItemDeletionException:
+            raise
+        except Exception:
+            raise exceptions.RequestParameterInvalidException('Invalid user id specified', id=id)
+        user.calculate_and_set_disk_usage()
+        return self.user_serializer.serialize_to_view(user, view='detailed_with_usage')
 
     def _get_user(self, trans, id):
         user = self.get_user(trans, id)

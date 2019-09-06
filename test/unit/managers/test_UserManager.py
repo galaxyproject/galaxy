@@ -204,6 +204,10 @@ class UserSerializerTestCase(BaseTestCase):
         default_view = self.user_serializer.serialize_to_view(user, default_view='summary')
         self.assertKeys(default_view, self.user_serializer.views['summary'])
 
+        self.log('should have a detailed_and_usage view')
+        default_view = self.user_serializer.serialize_to_view(user, default_view='detailed_with_usage')
+        self.assertKeys(default_view, self.user_serializer.views['detailed_with_usage'])
+
         self.log('should have a serializer for all serializable keys')
         for key in self.user_serializer.serializable_keyset:
             instantiated_attribute = getattr(user, key, None)
@@ -267,14 +271,13 @@ class CurrentUserSerializerTestCase(BaseTestCase):
         self.log('should be able to serialize anonymous user')
         serialized = self.user_serializer.serialize_to_view(anonym, view='detailed', trans=self.trans)
         self.assertKeys(serialized,
-            ['id', 'total_disk_usage', 'nice_total_disk_usage', 'gross_deleted_disk_usage', 'quota_percent'])
+            ['id', 'total_disk_usage', 'nice_total_disk_usage', 'quota_percent'])
 
         self.log('anonymous\'s id should be None')
         self.assertEqual(serialized['id'], None)
         self.log('everything serialized should be of the proper type')
         self.assertIsInstance(serialized['total_disk_usage'], float)
         self.assertIsInstance(serialized['nice_total_disk_usage'], string_types)
-        self.assertIsInstance(serialized['gross_deleted_disk_usage'], float)
         self.assertIsInstance(serialized['quota_percent'], (type(None), float))
 
         self.log('serialized should jsonify well')

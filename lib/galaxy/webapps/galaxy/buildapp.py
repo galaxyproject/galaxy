@@ -739,6 +739,12 @@ def populate_api_routes(webapp, app):
                           action='remove_favorite',
                           conditions=dict(method=["DELETE"]))
 
+    webapp.mapper.connect('calculate_disk_usage',
+                          '/api/users/{id}/calculate_disk_usage',
+                          controller='users',
+                          action='calculate_disk_usage',
+                          conditions=dict(method=["GET"]))
+
     # ========================
     # ===== WEBHOOKS API =====
     # ========================

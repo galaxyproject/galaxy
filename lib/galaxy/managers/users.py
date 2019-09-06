@@ -549,7 +549,6 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             'is_admin',
             'total_disk_usage',
             'nice_total_disk_usage',
-            'gross_deleted_disk_usage',
             'quota_percent',
             'quota',
             'deleted',
@@ -562,6 +561,9 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             # all annotations
             # 'annotations'
         ], include_keys_from='summary')
+        self.add_view('detailed_with_usage',
+                      ['gross_deleted_disk_usage'],
+                      include_keys_from='detailed')
 
     def add_serializers(self):
         super(UserSerializer, self).add_serializers()
@@ -574,10 +576,10 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             'is_admin'      : lambda i, k, **c: self.user_manager.is_admin(i),
             'preferences'   : lambda i, k, **c: self.user_manager.preferences(i),
             'total_disk_usage' : lambda i, k, **c: float(i.total_disk_usage),
-            'gross_deleted_disk_usage' : lambda i, k, **c: float(i.gross_deleted_disk_usage),
             'quota_percent' : lambda i, k, **c: self.user_manager.quota(i),
             'quota'         : lambda i, k, **c: self.user_manager.quota(i, total=True),
             'tags_used'     : lambda i, k, **c: self.user_manager.tags_used(i),
+            'gross_deleted_disk_usage' : lambda i, k, **c: float(i.gross_deleted_disk_usage),
         })
 
 
@@ -619,13 +621,11 @@ class CurrentUserSerializer(UserSerializer):
         # use the current history if any to get usage stats for trans' anonymous user
         # TODO: might be better as sep. Serializer class
         usage = 0
-        deleted_usage = 0
         percent = None
 
         history = trans.history
         if history:
             usage = self.app.quota_agent.get_usage(trans, history=trans.history)
-            deleted_usage = self.app.quota_agent.get_deleted_usage(trans, history=trans.history)
             percent = self.app.quota_agent.get_percent(trans=trans, usage=usage)
 
         # a very small subset of keys available
@@ -633,7 +633,6 @@ class CurrentUserSerializer(UserSerializer):
             'id'                    : None,
             'total_disk_usage'      : float(usage),
             'nice_total_disk_usage' : util.nice_size(usage),
-            'gross_deleted_disk_usage' : float(deleted_usage),
             'quota_percent'         : percent,
         }
         serialized = {}

@@ -59,7 +59,7 @@ class QuotaAPIController(BaseAPIController, AdminActions, UsesQuotaMixin, QuotaP
         Displays information about a quota.
         """
         quota = self.get_quota(trans, id, deleted=util.string_as_bool(deleted))
-        return quota.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'total_disk_usage': float, 'gross_deleted_disk_usage': float})
+        return quota.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'total_disk_usage': float})
 
     @web.legacy_expose_api
     @web.require_admin
