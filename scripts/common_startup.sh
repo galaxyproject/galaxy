@@ -204,8 +204,8 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
             echo "Skipping Galaxy client build because git is not in use and the client build state cannot be compared against local changes.  If you have made local modifications, then manual client builds will be required.  See ./client/README.md for more information."
             SKIP_CLIENT_BUILD=1
         else
-            # Check if anything has changed in client/ since the last build
-            if git diff --quiet "$(cat static/client_build_hash.txt)" -- client/; then
+            # Check if anything has changed in client/ or visualization plugins since the last build
+            if git diff --quiet "$(cat static/client_build_hash.txt)" -- client/ config/plugins/visualizations/; then
                 echo "The Galaxy client build is up to date and will not be rebuilt at this time."
                 SKIP_CLIENT_BUILD=1
             else
