@@ -422,7 +422,6 @@ mapping:
 
       containers_resolvers_config_file:
         type: str
-        default: ''
         required: false
         desc: |
           Container resolvers configuration (beta). Set up a file describing
@@ -800,7 +799,6 @@ mapping:
 
       email_from:
         type: str
-        default: ''
         required: false
         desc: |
           Email address to use in the 'From' field when sending emails for
@@ -948,7 +946,6 @@ mapping:
 
       message_box_content:
         type: str
-        default: ''
         required: false
         reloadable: true
         desc: |
@@ -1510,7 +1507,6 @@ mapping:
 
       allowed_origin_hostnames:
         type: str
-        default: ''
         required: false
         desc: |
           Return a Access-Control-Allow-Origin response header that matches the Origin
@@ -1703,7 +1699,6 @@ mapping:
 
       user_library_import_symlink_whitelist:
         type: str
-        default: ''
         required: false
         desc: |
           For security reasons, users may not import any files that actually lie
@@ -1950,7 +1945,6 @@ mapping:
 
       admin_users:
         type: str
-        default: ''
         required: false
         reloadable: true
         desc: |

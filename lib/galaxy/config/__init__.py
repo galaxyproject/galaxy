@@ -682,7 +682,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
     @admin_users.setter
     def admin_users(self, value):
         self._admin_users = value
-        self.admin_users_list = [u.strip() for u in value.split(',') if u]
+        if value:
+            self.admin_users_list = [u.strip() for u in value.split(',') if u]
+        else:  # provide empty list for convenience (check membership, etc.)
+            self.admin_users_list = []
 
     @property
     def sentry_dsn_public(self):
