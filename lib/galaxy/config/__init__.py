@@ -599,8 +599,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.manage_dynamic_proxy = string_as_bool(kwargs.get("dynamic_proxy_manage", "True"))  # Set to false if being launched externally
 
         # InteractiveTools propagator mapping file
-        self.realtime_map = self.resolve_path(kwargs.get("interactivetools_map", os.path.join(self.data_dir, "interactivetools_map.sqlite")))
-        self.realtime_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
+        self.interactivetool_map = self.resolve_path(kwargs.get("interactivetools_map", os.path.join(self.data_dir, "interactivetools_map.sqlite")))
+        self.interactivetool_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
+        self.interactivetools_enable = string_as_bool(kwargs.get('interactivetools_enable', False))
 
         self.citation_cache_data_dir = resolve_path(kwargs.get("citation_cache_data_dir", "citations/data"), self.data_dir)
         self.citation_cache_lock_dir = resolve_path(kwargs.get("citation_cache_lock_dir", "citations/locks"), self.data_dir)
