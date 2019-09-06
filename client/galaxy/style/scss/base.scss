@@ -1663,6 +1663,16 @@ div.toolSectionWrapper {
     opacity: 1;
 }
 
+.center-panel .page-container, .center-panel ul.manage-table-actions {
+    display: inline-block;
+    margin-top: 0;
+}
+
+@media (max-width: 1065px) {
+    .center-panel ul.manage-table-actions { padding-left: 0; float: none; }
+    .center-panel ul.manage-table-actions li { margin-top: 3px; }
+}
+
 /* TEMPORARY, REFACTOR THIS -- This is only image-related styles from the
  * workflow editor; everything should be moved out of the mako and into its own
  * file */
