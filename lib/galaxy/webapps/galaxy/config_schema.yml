@@ -1212,7 +1212,6 @@ mapping:
 
       nginx_x_accel_redirect_base:
         type: str
-        default: ''
         required: false
         desc: |
           The same download handling can be done by nginx using X-Accel-Redirect.  This
@@ -1244,7 +1243,6 @@ mapping:
 
       nginx_upload_store:
         type: str
-        default: ''
         required: false
         desc: |
           nginx can also handle file uploads (user-to-Galaxy) via nginx_upload_module.
@@ -1254,7 +1252,6 @@ mapping:
 
       nginx_upload_path:
         type: str
-        default: ''
         required: false
         desc: |
           This value overrides the action set on the file upload form, e.g. the web
@@ -1263,7 +1260,6 @@ mapping:
 
       nginx_upload_job_files_store:
         type: str
-        default: ''
         required: false
         desc: |
           Galaxy can also use nginx_upload_module to receive files staged out upon job
@@ -1273,7 +1269,6 @@ mapping:
 
       nginx_upload_job_files_path:
         type: str
-        default: ''
         required: false
         desc: |
           Galaxy can also use nginx_upload_module to receive files staged out upon job
