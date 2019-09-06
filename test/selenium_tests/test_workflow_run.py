@@ -199,7 +199,7 @@ steps:
     def workflow_run_with_name(self, name):
         self.workflow_index_open()
         self.workflow_index_search_for(name)
-        self.workflow_index_name(workflow_element=".fa-play")
+        self.workflow_click_option(".fa-play")
 
     def _assert_has_3_lines_after_run(self, hid):
         self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=1)

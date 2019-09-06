@@ -972,22 +972,20 @@ class NavigatesGalaxy(HasDriver):
         alert.accept()
 
     @retry_during_transitions
-    def workflow_index_name(self, workflow_index=0, workflow_element=".workflow-dropdown"):
+    def workflow_index_name(self, workflow_index=0):
         """Get workflow name for workflow_index'th row."""
         row_element = self.workflow_index_table_row(workflow_index=workflow_index)
-        workflow_button = row_element.find_element_by_css_selector(workflow_element)
+        workflow_button = row_element.find_element_by_css_selector(".workflow-dropdown")
         return workflow_button.text
 
+    @retry_during_transitions
+    def workflow_click_option(self, workflow_selector, workflow_index=0):
+        workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
+        workflow_button = workflow_row.find_element_by_css_selector(workflow_selector)
+        workflow_button.click()
+
     def workflow_index_click_option(self, option_title, workflow_index=0):
-
-        @retry_during_transitions
-        def click_option():
-            workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
-            workflow_button = workflow_row.find_element_by_css_selector(".workflow-dropdown")
-            workflow_button.click()
-
-        click_option()
-
+        self.workflow_click_option(".workflow-dropdown", workflow_index)
         menu_element = self.wait_for_selector_visible(".dropdown-menu.show")
         menu_options = menu_element.find_elements_by_css_selector("a.dropdown-item")
         found_option = False
