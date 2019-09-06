@@ -1662,6 +1662,12 @@ class GTrack(Interval):
     MetadataElement(name="strandCol", desc="Strand column",
                     param=metadata.ColumnParameter, optional=True, no_value=0)
 
+    SEQID = 'seqid'
+    START = 'start'
+    END = 'end'
+    STRAND = 'strand'
+    VALUE = 'value'
+
     GTRACK_STD_COLUMN_TYPES = {
         'genome': 'str',
         'seqid': 'str',
@@ -1689,17 +1695,12 @@ class GTrack(Interval):
 
     SUBTYPE_URL = 'subtype url:'
     STD_COLUMNS = ['start', 'end', 'value', 'edges']
+    DEFAULT_COLUMNS = [SEQID, START, END]
     GTRACK_VERSION = 'gtrack version:'
     GTRACK_SUBTYPE = 'gtrack subtype:'
     VALUE_COLUMN = 'value column:'
     VALUE_TYPE = 'value type:'
     VALUE_DIMENSION = 'value dimension:'
-
-    SEQID = 'seqid'
-    START = 'start'
-    END = 'end'
-    STRAND = 'strand'
-    VALUE = 'value'
 
     def sniff_prefix(self, file_prefix):
         hash_count_to_lines, num_data_lines, data_lines = self._parse_file(file_prefix.string_io(), True)
@@ -1738,8 +1739,8 @@ class GTrack(Interval):
         self._set_meta_for_counts(dataset, hash_count_to_lines, num_data_lines)
 
         column_lines = hash_count_to_lines[3]
-        if column_lines:
-            self._set_meta_for_column_line(dataset, column_lines[0], hash_count_to_lines[2])
+        column_line = column_lines[0] if column_lines else '\t'.join(self.DEFAULT_COLUMNS)
+        self._set_meta_for_column_line(dataset, column_line, hash_count_to_lines[2])
 
     def _set_meta_for_counts(self, dataset, hash_count_to_lines, num_data_lines):
         dataset.metadata.comment_lines = len(hash_count_to_lines[1])

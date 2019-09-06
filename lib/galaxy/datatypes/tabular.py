@@ -2042,7 +2042,7 @@ class GSuite(Tabular):
             self._set_meta_for_column_line(dataset, column_lines[0])
         else:
             dataset.metadata.columns = 1
-            dataset.metadata.column_types = ['string']
+            dataset.metadata.column_types = ['str']
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -2072,7 +2072,7 @@ class GSuite(Tabular):
         dataset.metadata.columns = len(cols)
         dataset.metadata.column_names = cols
 
-        col_types = ['string' for i in range(len(cols))]
+        col_types = ['str' for i in range(len(cols))]
         dataset.metadata.column_types = col_types
 
     def get_mime(self):
