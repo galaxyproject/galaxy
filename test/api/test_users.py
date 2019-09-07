@@ -170,6 +170,15 @@ class UsersApiTestCase(api.ApiTestCase):
         put(url, data=json.dumps(dict(enable="true")))
         self.assertEqual(self.__filter(get(url).json(), "enable", "value"), "true")
 
+    def test_calculate_disk_usage(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        url = self.__url("calculate_disk_usage", user)
+        with self._different_user(email=TEST_USER_EMAIL):
+            response = get(url)
+            self._assert_status_code_is(response, 200)
+            self.__assert_matches_user(user, response.json())
+            assert 'gross_deleted_disk_usage' in response.json()
+
     def __filter(self, response, name, attr):
         return [r[attr] for r in response["inputs"] if r["name"] == name][0]
 
