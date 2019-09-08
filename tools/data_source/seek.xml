@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<tool name="SEEK test" id="data_source_seek" tool_type="data_source" version="0.0.1">
+    <description>Import files from SEEK</description>
+    <command interpreter="python">
+        data_source.py '$output' $__app__.config.output_size_limit
+    </command>
+    <inputs action="http://193.197.73.91/data_files" check_values="false" method="get" target="_top">
+        <display>go to Sync Datasource $GALAXY_URL</display>
+    </inputs>
+    <request_param_translation>
+        <request_param galaxy_name="URL" remote_name="URL" missing="" />
+        <request_param galaxy_name="URL_method" remote_name="URL_method" missing="get" />
+    </request_param_translation>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="auto" />
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+</tool>
+
