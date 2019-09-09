@@ -1763,7 +1763,6 @@ class GTrack(Interval):
         value_type = None
         for line in header_lines:
             line = line.lower()
-            #column_line = self._replace_column_name(line, column_line, self.VALUE_COLUMN_DEF)
             #handle value column header
             if line.lower().startswith(self.VALUE_COLUMN_DEF):
                 value_column_name = line[len(self.VALUE_COLUMN_DEF):].strip()
@@ -1777,15 +1776,6 @@ class GTrack(Interval):
         for col_name, metadata_col in self.METADATA_COLUMNS_MAPPING.iteritems():
             if col_name in cols:
                 setattr(dataset.metadata, metadata_col, cols.index(col_name))
-
-        # if self.SEQID in cols:
-        #     dataset.metadata.chromCol = cols.index(self.SEQID)
-        # if self.START in cols:
-        #     dataset.metadata.startCol = cols.index(self.START)
-        # if self.END in cols:
-        #     dataset.metadata.endCol = cols.index(self.END)
-        # if self.STRAND in cols:
-        #     dataset.metadata.strandCol = cols.index(self.STRAND)
 
     def _check_url(self, line):
         url = line[len(self.SUBTYPE_URL):].strip()
