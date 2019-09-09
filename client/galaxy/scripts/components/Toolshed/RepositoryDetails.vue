@@ -167,7 +167,7 @@ export default {
                 .uninstallRepository({
                     tool_shed_url: this.toolshedUrl,
                     name: this.repo.name,
-                    owner: this.repo.repo_owner_username,
+                    owner: this.repo.owner,
                     changeset_revision: details.changeset_revision
                 })
                 .catch(error => {

@@ -22,6 +22,7 @@ export class Services {
             const data = response.data;
             const incoming = data.hits.map(x => x.repository);
             incoming.forEach(x => {
+                x.owner = x.repo_owner_username;
                 x.times_downloaded = this._formatCount(x.times_downloaded);
                 x.repository_url = `${data.hostname}repository?repository_id=${x.id}`;
             });
@@ -52,7 +53,7 @@ export class Services {
         }
     }
     async getInstalledRepositories(repo) {
-        const paramsString = `name=${repo.name}&owner=${repo.repo_owner_username}`;
+        const paramsString = `name=${repo.name}&owner=${repo.owner}`;
         const url = `${getAppRoot()}api/tool_shed_repositories?${paramsString}`;
         try {
             const response = await axios.get(url);

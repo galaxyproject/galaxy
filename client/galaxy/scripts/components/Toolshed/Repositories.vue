@@ -37,7 +37,7 @@ export default {
                 { key: "name" },
                 { key: "description" },
                 { key: "last_updated", label: "Updated" },
-                { key: "repo_owner_username", label: "Owner" },
+                { key: "owner", label: "Owner" },
                 { key: "times_downloaded", label: "Downloaded" }
             ],
             page: 1,

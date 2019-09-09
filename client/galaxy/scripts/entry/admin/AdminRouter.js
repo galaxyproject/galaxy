@@ -11,6 +11,7 @@ import Jobs from "components/admin/Jobs.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
 import Register from "components/login/Register.vue";
+import RepositoryList from "components/Repositories/RepositoryList.vue";
 import ErrorStack from "components/admin/ErrorStack.vue";
 import DisplayApplications from "components/admin/DisplayApplications.vue";
 import Toolshed from "components/Toolshed/Index.vue";
@@ -83,7 +84,7 @@ export const getAdminRouter = (Galaxy, options) => {
         },
 
         show_repositories: function() {
-            this._show_grid_view("admin_toolshed/browse_repositories");
+            this._display_vue_helper(RepositoryList);
         },
 
         show_toolshed: function() {

@@ -8,7 +8,7 @@
         <div class="mb-1">
             {{ repo.long_description || repo.description }}
         </div>
-        <div class="text-muted small mb-3">{{ repo.repo_owner_username }} rev. {{ changesetRevision }}</div>
+        <div class="text-muted small mb-3">{{ repo.owner }} rev. {{ changesetRevision }}</div>
         <b-form-group
             v-if="requiresPanel"
             label="Target Section:"
@@ -115,7 +115,7 @@ export default {
                 .installRepository({
                     tool_shed_url: this.toolshedUrl,
                     name: this.repo.name,
-                    owner: this.repo.repo_owner_username,
+                    owner: this.repo.owner,
                     changeset_revision: this.changesetRevision,
                     new_tool_panel_section_label: sectionLabel,
                     tool_panel_section_id: sectionId,
