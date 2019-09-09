@@ -101,7 +101,7 @@ def _get_uwsgi_args(cliargs, kwargs):
                               'unix_signal:15 gracefully_kill_them_all'),
         'py-call-osafterfork': True,
         'cron': '0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py %s --config-section tool_shed -d' % ts_cron_config_option,
-        'umask': '0o027',
+        'umask': '027',
     }
     __add_config_file_arg(args, config_file, cliargs.app)
     if not __arg_set('module', uwsgi_kwargs):
