@@ -2023,11 +2023,7 @@ class GSuite(Tabular):
             line_cols = line.split('\t')
             if len(line_cols) != cols_num:
                 return False
-            from urlparse import urlparse
-            parsed_url = urlparse(line_cols[0])
-            if parsed_url.scheme not in self.schemes:
-                return False
-            if not parsed_url.netloc and parsed_url.scheme not in ('file', 'hb', 'galaxy'):
+            if not self._is_uri_valid(line_cols[0]):
                 return False
 
         return True
@@ -2074,6 +2070,16 @@ class GSuite(Tabular):
 
         col_types = ['str' for i in range(len(cols))]
         dataset.metadata.column_types = col_types
+
+    def _is_uri_valid(self, uri_col):
+        from urlparse import urlparse
+        parsed_url = urlparse(uri_col)
+        if parsed_url.scheme not in self.schemes:
+            return False
+        if not parsed_url.netloc and parsed_url.scheme not in ('file', 'hb', 'galaxy'):
+            return False
+
+        return True
 
     def get_mime(self):
         return 'text/plain'

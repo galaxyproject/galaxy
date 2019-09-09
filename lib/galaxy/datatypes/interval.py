@@ -1667,15 +1667,18 @@ class GTrack(Interval):
     END = 'end'
     STRAND = 'strand'
     VALUE = 'value'
+    EDGES = 'edges'
+    GENOME = 'genome'
+    ID = 'id'
 
     GTRACK_STD_COLUMN_TYPES = {
-        'genome': 'str',
-        'seqid': 'str',
-        'start': 'int',
-        'end': 'int',
-        'strand': 'str',
-        'id': 'str',
-        'edges': 'list'
+        GENOME: 'str',
+        SEQID: 'str',
+        START: 'int',
+        END: 'int',
+        STRAND: 'str',
+        ID: 'str',
+        EDGES: 'list'
     }
 
     GTRACK_COLUMN_NAMES_MAPPING = {
@@ -1693,13 +1696,20 @@ class GTrack(Interval):
         'pair' : 'list'
     }
 
+    METADATA_COLUMNS_MAPPING = {
+        SEQID : 'chromCol',
+        START: 'startCol',
+        END: 'endCol',
+        STRAND: 'strandCol'
+    }
+
     SUBTYPE_URL = 'subtype url:'
-    STD_COLUMNS = ['start', 'end', 'value', 'edges']
+    STD_COLUMNS = [START, END, VALUE, EDGES]
     DEFAULT_COLUMNS = [SEQID, START, END]
     GTRACK_VERSION = 'gtrack version:'
     GTRACK_SUBTYPE = 'gtrack subtype:'
-    VALUE_COLUMN = 'value column:'
-    VALUE_TYPE = 'value type:'
+    VALUE_COLUMN_DEF = 'value column:'
+    VALUE_TYPE_DEF = 'value type:'
     VALUE_DIMENSION = 'value dimension:'
 
     def sniff_prefix(self, file_prefix):
@@ -1711,12 +1721,8 @@ class GTrack(Interval):
             if line.lower().startswith((self.GTRACK_VERSION, self.GTRACK_SUBTYPE)):
                 return True
             if line.lower().startswith(self.SUBTYPE_URL):
-                url = line[len(self.SUBTYPE_URL):].strip()
-                if url:
-                    from urlparse import urlparse
-                    parsed_url = urlparse(url)
-                    if parsed_url.netloc:
-                        return True
+                if self._check_url(line):
+                    return True
             if column_line:
                 for column_name in (self.GTRACK_COLUMN_NAMES_MAPPING.keys()):
                     column_line = self._replace_column_name(line, column_line, column_name)
@@ -1757,14 +1763,52 @@ class GTrack(Interval):
         value_type = None
         for line in header_lines:
             line = line.lower()
-            column_line = self._replace_column_name(line, column_line, self.VALUE_COLUMN)
-            if line.startswith(self.VALUE_TYPE):
-                value_type =  self.GTRACK_VALUE_TYPE[line[len(self.VALUE_TYPE):].strip()]
-            if line.startswith(self.VALUE_DIMENSION):
-                dimension = line[len(self.VALUE_DIMENSION):].strip()
-                if dimension != 'scalar':
-                    value_type = self.GTRACK_VALUE_TYPE[dimension]
+            #column_line = self._replace_column_name(line, column_line, self.VALUE_COLUMN_DEF)
+            #handle value column header
+            if line.lower().startswith(self.VALUE_COLUMN_DEF):
+                value_column_name = line[len(self.VALUE_COLUMN_DEF):].strip()
+                cols = [col if col != value_column_name else self.VALUE for col in cols]
 
+            value_type = self._get_value_type(line)
+
+        col_types = self._get_column_types(cols, value_type)
+        dataset.metadata.column_types = col_types
+
+        for col_name, metadata_col in self.METADATA_COLUMNS_MAPPING.iteritems():
+            if col_name in cols:
+                setattr(dataset.metadata, metadata_col, cols.index(col_name))
+
+        # if self.SEQID in cols:
+        #     dataset.metadata.chromCol = cols.index(self.SEQID)
+        # if self.START in cols:
+        #     dataset.metadata.startCol = cols.index(self.START)
+        # if self.END in cols:
+        #     dataset.metadata.endCol = cols.index(self.END)
+        # if self.STRAND in cols:
+        #     dataset.metadata.strandCol = cols.index(self.STRAND)
+
+    def _check_url(self, line):
+        url = line[len(self.SUBTYPE_URL):].strip()
+        if url:
+            from urlparse import urlparse
+            parsed_url = urlparse(url)
+            if parsed_url.netloc:
+                return True
+
+        return False
+
+    def _get_value_type(self, line):
+        value_type = None
+        if line.startswith(self.VALUE_TYPE_DEF):
+            value_type = self.GTRACK_VALUE_TYPE[line[len(self.VALUE_TYPE_DEF):].strip()]
+        if line.startswith(self.VALUE_DIMENSION):
+            dimension = line[len(self.VALUE_DIMENSION):].strip()
+            if dimension != 'scalar':
+                value_type = self.GTRACK_VALUE_TYPE[dimension]
+
+        return value_type
+
+    def _get_column_types(self, cols, value_type):
         col_types = []
         for col in cols:
             col_type = self.GTRACK_STD_COLUMN_TYPES.get(col)
@@ -1777,16 +1821,8 @@ class GTrack(Interval):
                 else:
                     col_type = 'str'
             col_types.append(col_type)
-        dataset.metadata.column_types = col_types
 
-        if self.SEQID in cols:
-            dataset.metadata.chromCol = cols.index(self.SEQID)
-        if self.START in cols:
-            dataset.metadata.startCol = cols.index(self.START)
-        if self.END in cols:
-            dataset.metadata.endCol = cols.index(self.END)
-        if self.STRAND in cols:
-            dataset.metadata.strandCol = cols.index(self.STRAND)
+        return col_types
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
