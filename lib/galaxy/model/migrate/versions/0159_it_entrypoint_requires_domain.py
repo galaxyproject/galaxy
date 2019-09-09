@@ -5,9 +5,9 @@ import datetime
 import logging
 
 from sqlalchemy import (
+    Boolean,
     Column,
     MetaData,
-    Boolean
 )
 
 from galaxy.model.migrate.versions.util import (
