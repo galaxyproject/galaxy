@@ -1,16 +1,14 @@
 import $ from "jquery";
-import * as source from "ol/source";
-import * as format from "ol/format";
+import _ from "underscore";
+
+import { Map, View, Graticule } from "ol";
+import { OSM, Vector } from "ol/source";
+import { GeoJSON } from "ol/format";
 import * as interaction from "ol/interaction";
 import * as style from "ol/style";
 import * as layer from "ol/layer";
 import * as control from "ol/control";
-import View from "../node_modules/ol/View.js";
-import Map from "../node_modules/ol/Map.js";
-import Graticule from "../node_modules/ol/Graticule.js";
-import * as fileSaver from "file-saver";
-
-import _ from "underscore";
+import { saveAs } from "file-saver";
 
 import * as proj4 from "proj4";
 import * as JSZipUtils from "jszip-utils";
@@ -619,7 +617,7 @@ var MapViewer = (function(mv) {
                 navigator.msSaveBlob(canvas.msToBlob(), fileName);
             } else {
                 canvas.toBlob(blob => {
-                    fileSaver.saveAs(blob, fileName);
+                    saveAs(blob, fileName);
                 });
             }
         });
@@ -628,7 +626,7 @@ var MapViewer = (function(mv) {
 
     /** Create the map view */
     mv.setMap = (vSource, target, options, styleFunction) => {
-        let tile = new layer.Tile({ source: new source.OSM() });
+        let tile = new layer.Tile({ source: new OSM() });
         // add fullscreen handle
         let fullScreen = new control.FullScreen();
         // add scale to the map
@@ -673,7 +671,7 @@ var MapViewer = (function(mv) {
     /** Load the map GeoJson and Shapefiles*/
     mv.loadFile = (filePath, fileType, options, chart) => {
         let target = options.targets[0];
-        let formatType = new format.GeoJSON();
+        let formatType = new GeoJSON();
         let toExport = options.chart.settings.get("export_map");
         let geometryColor = options.chart.settings.get("geometry_color");
         let selectedStyles = mv.setStyle(geometryColor);
@@ -686,13 +684,13 @@ var MapViewer = (function(mv) {
         }
 
         if (fileType === "geojson") {
-            let sourceVec = new source.Vector({ format: formatType, url: filePath, wrapX: false });
+            let sourceVec = new Vector({ format: formatType, url: filePath, wrapX: false });
             mv.createMap(filePath, sourceVec, options, chart, styleFunction, target);
         } else if (fileType === "shp") {
             loadshp({ url: filePath, encoding: "utf-8", EPSG: 4326 }, geoJson => {
                 let URL = window.URL || window.webkitURL || window.mozURL;
                 let url = URL.createObjectURL(new Blob([JSON.stringify(geoJson)], { type: "application/json" }));
-                let sourceVec = new source.Vector({ format: formatType, url: url, wrapX: false });
+                let sourceVec = new Vector({ format: formatType, url: url, wrapX: false });
                 mv.createMap(url, sourceVec, options, chart, styleFunction, target);
             });
         }
