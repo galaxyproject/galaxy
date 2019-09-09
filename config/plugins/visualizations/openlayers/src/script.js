@@ -5,7 +5,6 @@ import * as interaction from "ol/interaction";
 import * as style from "ol/style";
 import * as layer from "ol/layer";
 import * as control from "ol/control";
-import { fromLonLat } from "ol/proj";
 import View from "../node_modules/ol/View.js";
 import Map from "../node_modules/ol/Map.js";
 import Graticule from "../node_modules/ol/Graticule.js";
