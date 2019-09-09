@@ -399,9 +399,9 @@ class ToolEvaluator:
         it = []
         for ep in getattr(self.tool, 'ports', []):
             ep_dict = {}
-            for key in 'port', 'name', 'url':
+            for key in 'port', 'name', 'url', 'requires_domain':
                 val = ep.get(key, None)
-                if val is not None:
+                if val is not None and not isinstance(val, bool):
                     val = fill_template(val, context=param_dict, python_template_version=self.tool.python_template_version)
                     clean_val = []
                     for line in val.split('\n'):
