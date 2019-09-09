@@ -2,6 +2,7 @@
 Support for generating the options for a SelectToolParameter dynamically (based
 on the values of other parameters or other aspects of the current state)
 """
+import copy
 import logging
 import os
 import re
@@ -171,34 +172,33 @@ class DataMetaFilter(Filter):
             return file_value == dataset_value
         ref = other_values.get(self.ref_name, None)
         if isinstance(ref, HistoryDatasetCollectionAssociation):
-            ref = ref.to_hda_representative(self.multiple)
+            ref = ref.to_hda_representative(multiple = True)
         is_data = isinstance(ref, galaxy.tools.wrappers.DatasetFilenameWrapper)
         is_data_list = isinstance(ref, galaxy.tools.wrappers.DatasetListWrapper) or isinstance(ref, list)
         is_data_or_data_list = is_data or is_data_list
         if not isinstance(ref, HistoryDatasetAssociation) and not is_data_or_data_list:
             return []  # not a valid dataset
 
-        # get the metadata value. for lists (of data sets) and collections
-        # the meta data value of all elements is determined if its the same
-        # for all, if different are found the filter returns an empty list
+        # get the metadata value.
+        # - for lists: (of data sets) and collections the unique meta data
+        #   value of all elements is determined (None if they are not unique)
+        # - for data sets: the meta data value
+        # in both cases only meta data that is set (i.e. differs from the no_value)
+        # is considered
+        meta_value = None
         if is_data_list:
-            meta_value = None
-            for single_ref in ref:
-                this_meta_value = single_ref.metadata.get(self.key, None)
-                if this_meta_value == meta_value:
-                    continue
-                elif meta_value is None:
-                    meta_value = this_meta_value
-                else:
-                    # Different values with mismatching metadata, return []
-                    return []
+            meta_value_set = set([ _.metadata.get(self.key, None) for _ in ref if _.metadata.element_is_set(self.key) ])
+            meta_value_set.discard(None)
+            if len(meta_value_set) == 1:
+                meta_value = meta_value_set.pop()
         else:
-            meta_value = ref.metadata.get(self.key, None)
+            if ref.metadata.element_is_set(self.key):
+                meta_value = ref.metadata.get(self.key, None)
 
         # if no meta data value could be determined just return a copy
         # of the original options
         if meta_value is None:
-            return [(disp_name, optval, selected) for disp_name, optval, selected in options]
+            return copy.deepcopy(options)
 
         if self.column is not None:
             rval = []

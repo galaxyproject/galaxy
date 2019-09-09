@@ -132,7 +132,23 @@ class MetadataCollection(Mapping):
             log.info("Attempted to delete invalid key '%s' from MetadataCollection" % name)
 
     def element_is_set(self, name):
-        return bool(self.parent._metadata.get(name, False))
+        """
+        check if the meta data with the given name is set, i.e.
+        - if the such a metadata actually exists and
+        - if its value differs from no_value
+
+        param name the name of the metadata element
+        return True if the value differes from the no_value
+            False if its equal of if no metadata with the name is specified
+        """
+        try:
+            meta_val = self.parent._metadata[name]
+        except KeyError:
+            log.error("no metadata with name %s found"%(name))
+            return False
+
+        meta_spec = self.parent.metadata.spec[name]
+        return meta_val != meta_spec.no_value
 
     def get_metadata_parameter(self, name, **kwd):
         if name in self.spec:
