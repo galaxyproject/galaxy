@@ -1,4 +1,3 @@
-# TODO: implement and demo embedded job_metrics.
 # TODO: translocate docker option docs into docker_local environment description
 # TODO: translocate singluarity option docs into singularity_local environment description
 # TODO: all destinations from condor on
@@ -358,6 +357,10 @@ execution:
       local_slots: 4
       # Embed metadata collection in local job script (defaults to true for most runners).
       embed_metadata_in_job: true
+      # Can define custom job metrics plugins for this environment with a list of configuration
+      # dictionaries. Alternatively {src: path, path: /path/to/metrics.(xml|yml)} can be used to
+      # load job metric configuration for this destination from another file.
+      metrics: []
 
     docker_local:
       runner: local

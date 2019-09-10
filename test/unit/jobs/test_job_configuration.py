@@ -7,6 +7,7 @@ import unittest
 import mock
 from pykwalify.core import Core
 
+from galaxy.job_metrics import JobMetrics
 from galaxy.jobs import JobConfiguration
 from galaxy.util import bunch
 from galaxy.web_stack import ApplicationStack, UWSGIApplicationStack
@@ -51,7 +52,7 @@ class BaseJobConfXmlParserTestCase(unittest.TestCase):
         if not self._app:
             self._app = bunch.Bunch(
                 config=self.config,
-                job_metrics=MockJobMetrics(),
+                job_metrics=JobMetrics(),
                 application_stack=self.application_stack
             )
         return self._app
@@ -281,6 +282,16 @@ class SimpleJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
 
 class AdvancedJobConfXmlParserTestCase(BaseJobConfXmlParserTestCase):
 
+    def test_disable_job_metrics(self):
+        self._with_advanced_config()
+        self.job_config.destinations["multicore_local"]
+        assert len(self.app.job_metrics.job_instrumenters["multicore_local"].plugins) == 0
+
+    def test_default_job_metrics(self):
+        self._with_advanced_config()
+        self.job_config.destinations["pbs_longjobs"]
+        assert self.app.job_metrics.job_instrumenters["pbs_longjobs"] == self.app.job_metrics.default_job_instrumenter
+
     def test_load_destination_params(self):
         self._with_advanced_config()
         pbs_dest = self.job_config.destinations["pbs_longjobs"][0]
@@ -401,12 +412,3 @@ def test_yaml_advanced_validation():
             schema_files=[schema],
         )
         c.validate()
-
-
-class MockJobMetrics(object):
-
-    def __init__(self):
-        pass
-
-    def set_destination_conf_element(self, id, element):
-        pass
