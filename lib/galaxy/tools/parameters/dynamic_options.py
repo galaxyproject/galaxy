@@ -213,9 +213,7 @@ class DataMetaFilter(Filter):
                     "selected" : 2
                 }
                 self.dynamic_option.largest_index = 2
-            if not isinstance(meta_value, list):
-                meta_value = [meta_value]
-            for value in meta_value:
+            for value in reduce(lambda x, y: x + y, meta_value):
                 options.append((value, value, False))
             return options
 
