@@ -33,6 +33,8 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
         return message
     if not(VALID_EMAIL_RE.match(email)):
         message = "The format of the email address is not correct."
+    elif not email.islower():
+        message = "Please use lower-case characters for your email."
     elif len(email) > EMAIL_MAX_LEN:
         message = "Email address cannot be more than %d characters in length." % EMAIL_MAX_LEN
     elif check_dup and trans.sa_session.query(trans.app.model.User).filter_by(email=email).first():
