@@ -415,11 +415,8 @@
                volumes should be exposed how based on Galaxy's settings and the
                destination - but be sure to add any library paths or data incides
                that may be needed read-only.
-          -->
-          <!--
-          <param id="docker_volumes">$defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
-          -->
-          <!-- For a stock Galaxy instance and traditional job runner $defaults will
+
+               For a stock Galaxy instance and traditional job runner $defaults will
                expand out as:
 
                $galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:rw
@@ -446,6 +443,9 @@
                $galaxy_root, $default_file_path, $tool_directory, $working_directory,
                are available to all jobs and $job_directory is also available for
                Pulsar jobs.
+          -->
+          <!--
+          <param id="docker_volumes">$defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
           -->
           <!-- One can run docker using volumes-from tag by setting the following
                parameter. For more information on volumes-from check out the following
@@ -477,6 +477,9 @@
           <!-- By default, a container will live on past its run. By
                adding the '\-\-rm' flag to the command line, the container
                will be removed automatically after the program is complete.
+               Galaxy does this by default to clean up the containers it runs,
+               but this can be disabled for debugging and such using the following
+               command.
           -->
           <!-- <param id="docker_auto_rm">true</param> -->
           <!-- Override which user to launch Docker container as - defaults to 
@@ -509,9 +512,8 @@
           <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
 
           <!-- If the destination should be secured to only allow containerized jobs
-               the following parameter may be set for the job destination. Not all,
-               or even most, tools available in Galaxy core or in the Tool Shed
-               support Docker yet so this option may require a lot of extra work for
+               the following parameter may be set for the job destination. Some tools do
+               not yet support Docker so this option may require extra work for
                the deployer. -->
           <!-- <param id="require_container">true</param> -->
         </destination>
