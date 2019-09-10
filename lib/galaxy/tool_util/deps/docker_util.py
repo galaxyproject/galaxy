@@ -9,7 +9,7 @@ from six.moves import shlex_quote
 from .commands import argv_to_str
 
 DEFAULT_DOCKER_COMMAND = "docker"
-DEFAULT_SUDO = True
+DEFAULT_SUDO = False
 DEFAULT_SUDO_COMMAND = "sudo"
 DEFAULT_HOST = None
 DEFAULT_VOLUME_MOUNT_TYPE = "rw"
