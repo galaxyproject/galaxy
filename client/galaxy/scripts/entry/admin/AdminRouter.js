@@ -11,7 +11,6 @@ import Jobs from "components/admin/Jobs.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
 import Register from "components/login/Register.vue";
-import RepositoryList from "components/Repositories/RepositoryList.vue";
 import ErrorStack from "components/admin/ErrorStack.vue";
 import DisplayApplications from "components/admin/DisplayApplications.vue";
 import Toolshed from "components/Toolshed/Index.vue";
@@ -32,7 +31,6 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin(/)display_applications": "show_display_applications",
             "(/)admin(/)tool_versions": "show_tool_versions",
             "(/)admin(/)quotas": "show_quotas",
-            "(/)admin(/)repositories": "show_repositories",
             "(/)admin(/)forms": "show_forms",
             "(/)admin(/)form(/)(:form_id)": "show_form",
             "(/)admin/data_tables": "show_data_tables",
@@ -81,10 +79,6 @@ export const getAdminRouter = (Galaxy, options) => {
 
         show_groups: function() {
             this._show_grid_view("admin/groups_list");
-        },
-
-        show_repositories: function() {
-            this._display_vue_helper(RepositoryList);
         },
 
         show_toolshed: function() {

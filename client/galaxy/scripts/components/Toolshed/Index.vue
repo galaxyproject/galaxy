@@ -11,48 +11,22 @@
             />
             <b-form-radio-group class="mb-3" v-model="tabCurrent" :options="tabOptions" />
             <div v-if="tabCurrent">
-                <serverselection
-                    :toolshedUrl="toolshedUrl"
-                    :toolshedUrls="toolshedUrls"
-                    :total="total"
-                    :loading="loading"
-                    @onToolshed="setToolshed"
-                />
-                <repositories
-                    :query="query"
-                    :scrolled="scrolled"
-                    :toolshedUrl="toolshedUrl"
-                    @onError="setError"
-                    v-if="!queryEmpty"
-                />
-                <categories
-                    :toolshedUrl="toolshedUrl"
-                    :loading="loading"
-                    @onCategory="setQuery"
-                    @onTotal="setTotal"
-                    @onError="setError"
-                    @onLoading="setLoading"
-                    v-show="queryEmpty"
-                />
+                <search :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
             </div>
             <div v-else>
-                <repositorylist :filter="queryInput" />
+                <installed :filter="queryInput" />
             </div>
         </div>
     </div>
 </template>
 <script>
 import { getGalaxyInstance } from "app";
-import Categories from "./Categories.vue";
-import Repositories from "./Repositories.vue";
-import ServerSelection from "./ServerSelection.vue";
-import RepositoryList from "components/Repositories/RepositoryList.vue";
+import Search from "./SearchList/Index.vue";
+import Installed from "./InstalledList/Index.vue";
 export default {
     components: {
-        categories: Categories,
-        repositories: Repositories,
-        serverselection: ServerSelection,
-        repositorylist: RepositoryList
+        search: Search,
+        installed: Installed
     },
     data() {
         return {
@@ -113,15 +87,6 @@ export default {
         setQuery(query) {
             this.clearTimer();
             this.query = this.queryInput = query;
-        },
-        setToolshed(url) {
-            this.toolshedUrl = url;
-        },
-        setTotal(total) {
-            this.total = total;
-        },
-        setLoading(loading) {
-            this.loading = loading;
         },
         onScroll: function({ target: { scrollTop, clientHeight, scrollHeight } }) {
             this.scrolled = scrollTop + clientHeight >= scrollHeight;

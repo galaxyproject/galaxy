@@ -20,8 +20,8 @@
     </div>
 </template>
 <script>
-import RepositoryDetails from "./RepositoryDetails.vue";
-import { Services } from "./services.js";
+import RepositoryDetails from "components/Toolshed/RepositoryDetails/Index.vue";
+import { Services } from "../services.js";
 const READY = 0;
 const LOADING = 1;
 const COMPLETE = 2;

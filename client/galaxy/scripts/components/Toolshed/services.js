@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 
 /** Request repositories, categories etc from toolshed server **/
 export class Services {
@@ -71,6 +72,49 @@ export class Services {
             this._errorMessage(e);
         }
     }
+    async getInstalledRepositoryList() {
+        const Galaxy = getGalaxyInstance();
+        const url = `${getAppRoot()}api/tool_shed_repositories/?deleted=false&uninstalled=false`;
+        try {
+            const response = await axios.get(url);
+            const incoming = response.data;
+            const repositories = [];
+            const hash = {};
+            incoming.forEach(x => {
+                const hashCode = `${x.name}_${x.owner}`;
+                if (!hash[hashCode]) {
+                    hash[hashCode] = true;
+                    for (const url of Galaxy.config.tool_shed_urls) {
+                        if (url.includes(x.tool_shed)) {
+                            x.tool_shed_url = url;
+                            break;
+                        }
+                    }
+                    repositories.push(x);
+                }
+            });
+            return repositories;
+        } catch (e) {
+            this._errorMessage(e);
+        }
+    }
+    async getRepositoryByName(repository) {
+        const params = `tool_shed_url=${repository.tool_shed_url}&name=${repository.name}&owner=${repository.owner}`;
+        const url = `${getAppRoot()}api/tool_shed/request?controller=repositories&${params}`;
+        try {
+            const response = await axios.get(url);
+            const length = response.data.length;
+            if (length > 0) {
+                const result = response.data[0];
+                result.repository_url = `${repository.tool_shed_url}repository?repository_id=${result.id}`;
+                return result;
+            } else {
+                throw "Repository details not found.";
+            }
+        } catch (e) {
+            this._errorMessage(e);
+        }
+    }
     async installRepository(payload) {
         const url = `${getAppRoot()}api/tool_shed_repositories`;
         try {
@@ -100,6 +144,8 @@ export class Services {
         let message = "Request failed.";
         if (e.response) {
             message = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
+        } else if (typeof e == "string") {
+            message = e;
         }
         throw message;
     }

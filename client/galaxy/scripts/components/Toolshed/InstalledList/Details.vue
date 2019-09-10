@@ -16,8 +16,8 @@
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "./services.js";
-import RepositoryDetails from "components/Toolshed/RepositoryDetails.vue";
+import { Services } from "../services.js";
+import RepositoryDetails from "../RepositoryDetails/Index.vue";
 
 export default {
     props: ["repo"],
@@ -40,7 +40,7 @@ export default {
         load() {
             this.loading = true;
             this.services
-                .getRepository(this.repo)
+                .getRepositoryByName(this.repo)
                 .then(toolshedRepository => {
                     this.toolshedRepository = toolshedRepository;
                     this.loading = false;

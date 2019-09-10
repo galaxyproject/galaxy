@@ -19,7 +19,7 @@
     </div>
 </template>
 <script>
-import { Services } from "./services.js";
+import { Services } from "../services.js";
 export default {
     props: ["toolshedUrl", "loading"],
     data() {

@@ -52,7 +52,7 @@
     </b-card>
 </template>
 <script>
-import { Services } from "./services.js";
+import { Services } from "../services.js";
 import InstallationSettings from "./InstallationSettings.vue";
 import InstallationButton from "./InstallationButton.vue";
 import RepositoryTools from "./RepositoryTools.vue";

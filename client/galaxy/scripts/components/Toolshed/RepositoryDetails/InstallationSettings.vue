@@ -51,7 +51,7 @@
 </template>
 <script>
 import { getGalaxyInstance } from "app";
-import { Services } from "./services.js";
+import { Services } from "../services.js";
 export default {
     props: ["repo", "changesetRevision", "requiresPanel", "toolshedUrl"],
     data() {

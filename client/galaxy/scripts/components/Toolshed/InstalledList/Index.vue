@@ -47,8 +47,8 @@
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
-import { Services } from "./services.js";
-import RepositoryDetails from "./RepositoryDetails.vue";
+import { Services } from "../services.js";
+import RepositoryDetails from "./Details.vue";
 
 export default {
     components: {
@@ -92,9 +92,8 @@ export default {
     methods: {
         load() {
             this.loading = true;
-            this.filter = "";
             this.services
-                .getInstalledRepositories()
+                .getInstalledRepositoryList()
                 .then(repositories => {
                     this.repositories = repositories;
                     this.nRepositories = repositories.length;
