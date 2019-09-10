@@ -1129,6 +1129,8 @@ class AdminToolshed(AdminGalaxy):
         install_repository_dependencies = CheckboxField.is_checked(kwd.get('install_repository_dependencies', ''))
         install_tool_dependencies = CheckboxField.is_checked(kwd.get('install_tool_dependencies', ''))
         install_resolver_dependencies = CheckboxField.is_checked(kwd.get('install_resolver_dependencies', ''))
+        if not suc.have_shed_tool_conf_for_install(trans.app):
+            raise Exception("No valid shed tool configuration file available, please configure one")
         shed_tool_conf, tool_path, relative_install_dir = \
             suc.get_tool_panel_config_tool_path_install_dir(trans.app, tool_shed_repository)
         repository_clone_url = common_util.generate_clone_url_for_installed_repository(trans.app, tool_shed_repository)

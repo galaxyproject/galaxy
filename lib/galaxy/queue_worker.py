@@ -178,8 +178,6 @@ def _get_new_toolbox(app):
     if hasattr(app, 'tool_shed_repository_cache'):
         app.tool_shed_repository_cache.rebuild()
     tool_configs = app.config.tool_configs
-    if app.config.migrated_tools_config not in tool_configs:
-        tool_configs.append(app.config.migrated_tools_config)
 
     new_toolbox = tools.ToolBox(tool_configs, app.config.tool_path, app)
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
