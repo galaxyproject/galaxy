@@ -4,34 +4,40 @@
         <div v-else>
             <b-input
                 class="mb-3"
-                placeholder="search repositories"
+                placeholder="Search Repositories"
                 v-model="queryInput"
                 @input="delayQuery"
                 @change="setQuery"
             />
-            <serverselection
-                :toolshedUrl="toolshedUrl"
-                :toolshedUrls="toolshedUrls"
-                :total="total"
-                :loading="loading"
-                @onToolshed="setToolshed"
-            />
-            <repositories
-                :query="query"
-                :scrolled="scrolled"
-                :toolshedUrl="toolshedUrl"
-                @onError="setError"
-                v-if="!queryEmpty"
-            />
-            <categories
-                :toolshedUrl="toolshedUrl"
-                :loading="loading"
-                @onCategory="setQuery"
-                @onTotal="setTotal"
-                @onError="setError"
-                @onLoading="setLoading"
-                v-show="queryEmpty"
-            />
+            <b-form-radio-group class="mb-3" v-model="tabCurrent" :options="tabOptions" />
+            <div v-if="tabCurrent">
+                <serverselection
+                    :toolshedUrl="toolshedUrl"
+                    :toolshedUrls="toolshedUrls"
+                    :total="total"
+                    :loading="loading"
+                    @onToolshed="setToolshed"
+                />
+                <repositories
+                    :query="query"
+                    :scrolled="scrolled"
+                    :toolshedUrl="toolshedUrl"
+                    @onError="setError"
+                    v-if="!queryEmpty"
+                />
+                <categories
+                    :toolshedUrl="toolshedUrl"
+                    :loading="loading"
+                    @onCategory="setQuery"
+                    @onTotal="setTotal"
+                    @onError="setError"
+                    @onLoading="setLoading"
+                    v-show="queryEmpty"
+                />
+            </div>
+            <div v-else>
+                <repositorylist :filter="queryInput" />
+            </div>
         </div>
     </div>
 </template>
@@ -40,11 +46,13 @@ import { getGalaxyInstance } from "app";
 import Categories from "./Categories.vue";
 import Repositories from "./Repositories.vue";
 import ServerSelection from "./ServerSelection.vue";
+import RepositoryList from "components/Repositories/RepositoryList.vue";
 export default {
     components: {
         categories: Categories,
         repositories: Repositories,
-        serverselection: ServerSelection
+        serverselection: ServerSelection,
+        repositorylist: RepositoryList
     },
     data() {
         return {
@@ -58,7 +66,12 @@ export default {
             scrolled: false,
             loading: false,
             total: 0,
-            error: null
+            error: null,
+            tabCurrent: 'true',
+            tabOptions: [
+              { text: 'Search All', value: true },
+              { text: 'Installed Only', value: false }
+            ]
         };
     },
     created() {

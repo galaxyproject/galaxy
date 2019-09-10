@@ -8,14 +8,6 @@
             </span>
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-                <b-input
-                    id="repository-search"
-                    name="query"
-                    placeholder="search installed repositories"
-                    autocomplete="off"
-                    type="text"
-                    v-model="filter"
-                />
                 <div class="mt-3 mb-1 mx-1 text-muted">
                     {{ repositories.length }} repositories installed on this instance.
                 </div>
@@ -62,6 +54,7 @@ export default {
     components: {
         repositorydetails: RepositoryDetails
     },
+    props: ["filter"],
     data() {
         return {
             error: null,
@@ -73,7 +66,6 @@ export default {
                     sortable: true
                 }
             },
-            filter: "",
             loading: true,
             message: null,
             messageVariant: null,
