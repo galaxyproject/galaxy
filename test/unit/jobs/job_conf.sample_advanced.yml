@@ -1,4 +1,3 @@
-# TODO: translocate docs for all pulsar embedded
 # TODO: translocate docs for all kubernetes
 # TODO: implement and demo embedded job_metrics.
 # TODO: translocate docker option docs into docker_local environment description
@@ -126,9 +125,8 @@ runners:
     #amqp_consumer_timeout: None
 
   pulsar_k8s:
-    # Use a two-container Kubernetes to run jobs - one for staging and one
-    # for tool execution.
-    load: galaxy.jobs.runners.pulsar:PulsarKubernetesCoexecutionJobRunner
+    # Use Kubernetes pods to run jobs.
+    load: galaxy.jobs.runners.pulsar:PulsarKubernetesJobRunner
     galaxy_url: http://docker.for.mac.localhost:8080
     amqp_url: amqp://guest:guest@localhost:5672//
 
@@ -142,6 +140,28 @@ runners:
     # target LWR servers, but this support should be considered
     # deprecated and will disappear with a future release of Galaxy.
     load: galaxy.jobs.runners.pulsar:PulsarLegacyJobRunner
+
+  pulsar_embedded:
+    # The embedded Pulsar runner starts a Pulsar app
+    # internal to Galaxy and communicates it directly.
+    # This maybe be useful for instance when Pulsar
+    # staging is important but a Pulsar server is
+    # unneeded (for instance if compute servers cannot
+    # mount Galaxy's files but Galaxy can mount a
+    # scratch directory available on compute).
+    load: galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner
+
+    # Specify a complete description of the Pulsar app
+    # to create. If this configuration defines more than
+    # one manager - you can specify the manager name 
+    # using the "manager" destination parameter. For more
+    # information on configuring a Pulsar app see:
+    #  https://github.com/galaxyproject/pulsar/blob/master/app.yml.sample
+    #  https://pulsar.readthedocs.io/en/latest/configure.html
+    # This can be specified as a YAML dictionary in this configuration (using app) or
+    # by loading a separate file (using pulsar_config).
+    #app: {}
+    #pulsar_config: path/to/pulsar/app.yml
 
 handling:
   processes:
@@ -388,7 +408,7 @@ execution:
        # the Pulsar to initiate HTTP transfers instead of Galaxy, or
        # 'remote_copy' to cause Pulsar to initiate file system copies.
        # If setting this to 'remote_transfer' be sure to specify a
-       # 'galaxy_url' attribute on the runner plugin above. -->
+       # 'galaxy_url' attribute on the runner plugin above.
        default_file_action: none
 
        # The above option is just the default, the transfer behavior
