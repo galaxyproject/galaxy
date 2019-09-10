@@ -1,8 +1,10 @@
 <template>
     <div>
         <span v-if="loading">
-            <span class="fa fa-spinner fa-spin" />
-            Loading installed repository details...
+            <b-card>
+                <span class="fa fa-spinner fa-spin" />
+                Loading installed repository details...
+            </b-card>
         </span>
         <div v-else>
             <repositorydetails :repo="toolshedRepository" :toolshedUrl="repo.tool_shed_url" />
