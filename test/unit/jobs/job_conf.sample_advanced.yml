@@ -1,4 +1,3 @@
-# TODO: translocate docs for all kubernetes
 # TODO: implement and demo embedded job_metrics.
 # TODO: translocate docker option docs into docker_local environment description
 # TODO: translocate singluarity option docs into singularity_local environment description
@@ -35,6 +34,175 @@ runners:
     # The `load` attribute is not required (and ignored if
     # included).
     rules_module: galaxy.jobs.rules
+
+  k8s:
+    load: galaxy.jobs.runners.kubernetes:KubernetesJobRunner
+    # The Kubernetes (k8s) plugin allows to send jobs to a k8s cluster which shares filesystem with Galaxy.
+
+    # The shared file system needs to be exposed to k8s through a Persistent Volume (rw) and a Persistent
+    # Volume Claim. An example of a Persistent Volume could be, in yaml (access modes, reclaim policy and
+    # path are relevant) (persistent_volume.yaml):
+    # 
+    #     kind: PersistentVolume
+    #     apiVersion: v1
+    #     metadata:
+    #       name: pv-galaxy-nfs
+    #       labels:
+    #         type: nfs
+    #     spec:
+    #       capacity:
+    #         storage: 10Gi
+    #       accessModes:
+    #         - ReadWriteMany
+    #       persistentVolumeReclaimPolicy: Retain
+    #       nfs:
+    #         path: /scratch1/galaxy_data
+    #         server: 192.168.64.1
+
+    # The path (nfs:path: in the example) set needs to be a parent directory of the directories used for
+    # variables “file_path” and “new_file_path” on the galaxy.yml files. Clearly, for this particular example
+    # to work, there needs to be a NFS server serving that directory on that ip. Please make sure that you
+    # use reasonable storage size for your set up (possibly larger that the 10Gi written).
+
+    # An example of the volume claim should be (this needs to be followed more closely) (pv_claim.yaml):
+
+    #      kind: PersistentVolumeClaim
+    #      apiVersion: v1
+    #      metadata:
+    #        name: galaxy-pvc
+    #      spec:
+    #        accessModes:
+    #          - ReadWriteMany
+    #        volumeName: pv-galaxy-nfs
+    #        resources:
+    #          requests:
+    #            storage: 2Gi
+
+    # The volume claim needs to reference the name of the volume in spec:volumeName. The name of the claim
+    # (metadat:name) is referenced in the plugin definition (see below), through param
+    # "k8s_persistent_volume_claim_name". These two k8s object need to be created before galaxy can use them:
+
+    #     kubectl create -f <path/to/persistent_volume.yaml>
+    #     kubectl create -f <path/to/pv_claim.yaml>
+
+    # pointing to the Kubernetes cluster that you intend to use.
+
+    # This is the path to the kube config file, which is normally on ~/.kube/config, but that will depend on
+    # your installation. This is the file that tells the plugin where the k8s cluster is, access credentials,
+    # etc. This parameter is not necessary and ignored if k8s_use_service_account is set to True
+    #k8s_config_path: /path/to/kubeconfig
+
+    # Sets the pull policy to be used for all containers invoked for jobs by the Kubernetes cluster. Can take
+    # any value among the possible Kubernetes container image pull policies: Always, IfNotPresent or Never
+    # (respecting capitalization). Any other value, such as "Default", will not change the setting on k8s and
+    # leave for the containers to run with the default pull policy specified at the cluster (this is normally
+    # IfNotPresent). Container images using latest are by default always pulled, so you need to use defined
+    # versions for offline cases to work (and images need to be previously pulled).
+    # k8s_pull_policy: Default
+
+    # For use when Kubernetes should be accessed from inside a Pod running Galaxy (that is,
+    # galaxy is running inside Kubernetes). If this variable is True, then the previous k8s_config_path is
+    # not required and actually ignored. It is not necessary to set this value if not setting it to true.
+    #k8s_use_service_account: false
+
+    # Version of the Kubernetes Job API object to use, the default one batch/v1 should be supported from
+    # Kubernetes 1.2 and on. Changing this a much newer version in the future might require changes to the
+    # plugin runner code. Value extensions/v1beta1 is also supported for pre 1.2 legacy installations.
+    #k8s_job_api_version: batch/v1
+
+    # Comma separated list of Persistent Volume Claim (PVC) to container mount point mappings, in the format
+    # PVC:mount point
+    # Typical mount paths are the file_path, job_working_directory, all paths containing tools and scripts
+    # and all library paths set in galaxy.yml (or equivalent general galaxy config file).
+    #k8s_persistent_volume_claims: galaxy_pvc1:/mount_point1,galaxy_pvc2:/mount_point2
+
+    # The namespace to be used on the Kubernetes cluster, if different from default, this needs to be set
+    # accordingly in the PV and PVC detailed above.
+    #k8s_namespace: default
+
+    # Allows pods to retry up to this number of times, before marking the galaxy job failed. k8s is a state
+    # setter essentially, so by default it will try to take a job submitted to successful completion. A job
+    # submits pods, until the number of successes (1 in this use case) is achieved, assuming that whatever is
+    # making the pods fail will be fixed (such as a stale disk or a dead node that it is being restarted).
+    # This option sets a limit of retrials, so that after that number of failed pods, the job is re-scaled to
+    # zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
+    # to failed).
+    #k8s_pod_retrials: 4
+
+    # Controls the maximum time before kubernetes terminates the job. Sets activeDeadlineSeconds
+    # in the kubernetes job spec. Once a Job reaches activeDeadlineSeconds, all of its running Pods are
+    # terminated and the Job status will become `type: Failed` with `reason: DeadlineExceeded`.
+    #k8s_walltime_limit: 172800
+
+    # Identifies the Galaxy instance where this runner belongs. Setting this variable means that the runner
+    # will trust k8s Jobs with the structure galaxy-my-instance-<number> to be its own. This variable needs
+    # to be DNS friendly, and up to 20 characters, as it will go in the k8s Jobs and Pods names. An instance
+    # in this context is understood as a running Galaxy setup that is bound to a particular database stored
+    # state. This is mostly relevant for long term running instances. When resetting a long term running
+    # instance to zero (database and files deleted), one would want to change this instance id to avoid
+    # clashing with previous jobs in the same k8s cluster where the older setup run.
+    #k8s_galaxy_instance_id: my-instance
+
+    # If the above `k8s_galaxy_instance_id` is not set, when finding an existing k8s job with the same
+    # id as a new job being generated, the runner will attempt to delete that existing job first, to proceed
+    # then to create the new job (the old job is not trusted to have been instructed to do the same as the
+    # new one). This variables controls the timeout for waiting for that job deletion. If the timeout is
+    # exceeded and the existing job is not deleted, the new job won't be added to the Galaxy queue.
+    #k8s_timeout_seconds_job_deletion: 30
+
+    # If mounting an NFS / GlusterFS or other shared file system which is administered to ONLY provide access
+    # to a DEFINED user/group, these variables set the group id that Pods need to use to be able to read and
+    # write from that mount. If left to zero or deleted, these parameters are neglected. Integer values
+    # above zero trigger the addition of a security context on each Pod created to dispatch jobs:
+
+    #   securityContext:
+    #      supplementalGroups: [value-set-goes-here]
+    #      fsGroup: fs-group-integer-value
+
+    # inside the Pod spec, applicable for all containers on the pod. Just one of them set to >0 will generate
+    # the security context.
+
+    # Using this requires that the Kubernetes cluster is not running the admission controller
+    # "SecurityContextDeny". To check this, look at the admission-control= variable setup for the
+    # api-server pod definition (normally in /etc/kubernetes/manifests/kube-apiserver.manifest), it shouldn't
+    # have the mentioned admission controller. Pods with the securityContext set will fail if such admission
+    # controller is present. Removing that admission controller from the manifest should provoke kubelet
+    # to restart the api-server pod running on that machine (although this might vary on your Kubernetes
+    # installation).
+
+    # For more information see point 21.2.4.1 Group IDs on:
+    # https://access.redhat.com/documentation/en-us/openshift_container_platform/3.4/html/
+    # installation_and_configuration/configuring-persistent-storage
+
+    # Different storage strategies might or might not require supplemental groups or fs groups, one is not
+    # a requirement of the other.
+    #k8s_supplemental_group_id: 0
+    #k8s_fs_group_id: 0
+
+    # Kubernetes resource Requests and Limits
+    # Parameters above (requests_* and limits_*) set default minimal (requests) and
+    # maximal (limits) CPU and memory resources to be allocated to all containers in
+    # Kubernetes jobs by default.
+
+    # Limits and requests for CPU resources are measured in cpu units. Fractional requests are allowed. A
+    # Container with requests_cpu of 0.5 is guaranteed half as much CPU as one that asks for 1 CPU. The
+    # expression 0.1 is equivalent to the expression 100m, which can be read as “one hundred millicpu”. Some
+    # people say “one hundred millicores”, and this is understood to mean the same thing. A request with a
+    # decimal point, like 0.1, is converted to 100m by the API, and precision finer than 1m is not allowed.
+    # For this reason, the form 100m might be preferred.
+
+    # You can express memory as a plain integer or as a fixed-point integer using one of these suffixes: E,
+    # P, T, G, M, K. You can also use the power-of-two equivalents: Ei, Pi, Ti, Gi, Mi, Ki.
+    # For instance, "1Gi" stands for 1 Gigabyte, and "500Mi" stands for 500 megabytes. Using other formats
+    # will make the jobs fail as Kubernetes won't recognize the assignment.
+
+    # For more details on the Kubernetes resources management, see:
+    # https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+
+    #requests_cpu: 500m
+    #requests_memory: 500Mi
+    #limits_cpu: 2
+    #limits_memory: 2Gi
 
   godocker:
     # Go-Docker is a batch computing/cluster management tool using Docker
