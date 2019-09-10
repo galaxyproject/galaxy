@@ -8,8 +8,11 @@ R1, R2, N1, N2 = 'reloadable1', 'reloadable2', 'nonrelodable1', 'nonreloadable2'
 class MockGalaxyAppConfiguration():
     def __init__(self, properties):
         self.config_file = None
+        self.reloadable_options = {R1, R2}
+        self._raw_config = {}
         for key, value in properties.items():
             setattr(self, key, value)
+            self._raw_config[key] = value
 
     def update_reloadable_property(self, key, value):
         setattr(self, key, value)
@@ -24,10 +27,6 @@ def test_update_property(monkeypatch):
     def mock_read_properties_from_file(values):
         return {R1: 1, R2: 42, N1: 99}  # edits: R2, N1 modified
 
-    def mock_get_reloadable_config_options():
-        return {R1: None, R2: None}
-
-    monkeypatch.setattr(config, 'get_reloadable_config_options', mock_get_reloadable_config_options)
     monkeypatch.setattr(config, 'read_properties_from_file', mock_read_properties_from_file)
 
     assert getattr(appconfig, R1) == 1
@@ -41,6 +40,33 @@ def test_update_property(monkeypatch):
     assert getattr(appconfig, N1) == 3  # no change: option modified but is non-relodable
 
 
+def test_overwrite_reloadable_attribute(monkeypatch):
+    # This is similar to test_update_property, but here we overwrite the attribute before reloading.
+    # This can happen if a config property is modified AFTER it has been loaded from schema or kwargs.
+    # For example: load `foo` (from schema or kwargs), but then, in a # subsequent step while initializing
+    # GalaxyAppConfiguration, do something like this: `foo = resove_path(foo, bar)`. Now the value of `foo`
+    # is not what was initially loaded, and if `foo` is reloadable, it will be reset to its default as soon
+    # as the config file is modified. To prevent this, we compare the values read from the modified file
+    # to the `_raw_config` dict. This test ensures this works correctly.
+    appconfig = MockGalaxyAppConfiguration({R1: 1, R2: 2, N1: 3})
+
+    def mock_read_properties_from_file(values):
+        return {R1: 1, R2: 42}  # edits: R2 modified
+
+    monkeypatch.setattr(config, 'read_properties_from_file', mock_read_properties_from_file)
+
+    assert getattr(appconfig, R1) == 1
+    assert getattr(appconfig, R2) == 2
+
+    # overwrite R1
+    setattr(appconfig, R1, 99)
+    assert getattr(appconfig, R1) == 99
+    # then reload
+    reload_config_options(appconfig)
+    assert getattr(appconfig, R1) == 99  # no change; should remain overwritten
+    assert getattr(appconfig, R2) == 42  # change: reloadable option modified
+
+
 def test_cant_delete_property(monkeypatch):
     # A property should not be deleted: we don't know whether it was initially
     # set to a default, loaded from a config file, env var, etc. Therefore, if a property
@@ -50,10 +76,6 @@ def test_cant_delete_property(monkeypatch):
     def mock_read_properties_from_file(values):
         return {R1: 1, N1: 3}  # edits: R2, N2 deleted
 
-    def mock_get_reloadable_config_options():
-        return {R1: None, R2: None}
-
-    monkeypatch.setattr(config, 'get_reloadable_config_options', mock_get_reloadable_config_options)
     monkeypatch.setattr(config, 'read_properties_from_file', mock_read_properties_from_file)
 
     assert getattr(appconfig, R1) == 1

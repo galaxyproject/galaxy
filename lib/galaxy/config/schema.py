@@ -34,21 +34,7 @@ class AppSchema(Schema):
         self.description = self.raw_schema.get("desc", None)
         app_schema = self.raw_schema['mapping'][app_name]['mapping']
         super(AppSchema, self).__init__(app_schema)
-        self.reloadable_options = self._load_reloadable_options(app_schema)  # TODO redo
 
     def _read_schema(self, path):
         with open(path, "r") as f:
             return ordered_load(f)
-
-    def get_reloadable_option_defaults(self):  # TODO redo
-        option_dict = {}
-        for key in self.reloadable_options:
-            option_dict[key] = self.get_app_option(key)["default"]
-        return option_dict
-
-    def _load_reloadable_options(self, mapping):  # TODO redo
-        reloadable_options = []
-        for key, option in mapping.items():
-            if option.get("reloadable", False):
-                reloadable_options.append(key)
-        return reloadable_options

@@ -26,7 +26,7 @@ def mock_init(monkeypatch):
     monkeypatch.setattr(GalaxyAppConfiguration, '_process_config', mock_process_config)
 
 
-def test_load_raw_config_from_schema(mock_init):
+def test_load_config_from_schema(mock_init):
     config = GalaxyAppConfiguration()
 
     assert len(config._raw_config) == 6
