@@ -1,13 +1,16 @@
 <template>
     <div>
-        <span v-if="loading">
-            <b-card>
-                <span class="fa fa-spinner fa-spin" />
-                Loading installed repository details...
-            </b-card>
-        </span>
+        <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
-            <repositorydetails :repo="toolshedRepository" :toolshedUrl="repo.tool_shed_url" />
+            <span v-if="loading">
+                <b-card>
+                    <span class="fa fa-spinner fa-spin" />
+                    Loading installed repository details...
+                </b-card>
+            </span>
+            <div v-else>
+                <repositorydetails :repo="toolshedRepository" :toolshedUrl="repo.tool_shed_url" />
+            </div>
         </div>
     </div>
 </template>
@@ -24,7 +27,8 @@ export default {
     data() {
         return {
             loading: true,
-            toolshedRepository: null
+            toolshedRepository: null,
+            error: null
         };
     },
     created() {
