@@ -141,7 +141,7 @@ class MetadataCollection:
         try:
             meta_val = self.parent._metadata[name]
         except KeyError:
-            log.error("no metadata with name %s found"%(name))
+            log.debug("no metadata with name %s found" % (name))
             return False
 
         meta_spec = self.parent.metadata.spec[name]

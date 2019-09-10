@@ -173,7 +173,7 @@ class DataMetaFilter(Filter):
             return file_value == dataset_value
         ref = other_values.get(self.ref_name, None)
         if isinstance(ref, HistoryDatasetCollectionAssociation):
-            ref = ref.to_hda_representative(multiple = True)
+            ref = ref.to_hda_representative(multiple=True)
         is_data = isinstance(ref, galaxy.tools.wrappers.DatasetFilenameWrapper)
         is_data_list = isinstance(ref, galaxy.tools.wrappers.DatasetListWrapper) or isinstance(ref, list)
         is_data_or_data_list = is_data or is_data_list
@@ -181,21 +181,20 @@ class DataMetaFilter(Filter):
             return []  # not a valid dataset
 
         # get the metadata value.
-        # - for lists: (of data sets) and collections the unique meta data
-        #   value of all elements is determined (None if they are not unique)
+        # - for lists: (of data sets) and collections the meta data values of all
+        #   elements is determined
         # - for data sets: the meta data value
         # in both cases only meta data that is set (i.e. differs from the no_value)
         # is considered
         meta_value = None
         if is_data_list:
-            meta_value_set = set([ _.metadata.get(self.key, None) for _ in ref if _.metadata.element_is_set(self.key) ])
+            meta_value_set = set([_.metadata.get(self.key, None) for _ in ref if _.metadata.element_is_set(self.key)])
             meta_value_set.discard(None)
-            if len(meta_value_set) == 1:
-                meta_value = meta_value_set.pop()
+            if len(meta_value_set) > 0:
+                meta_value = list(meta_value_set)
         else:
             if ref.metadata.element_is_set(self.key):
-                meta_value = ref.metadata.get(self.key, None)
-
+                meta_value = [ref.metadata.get(self.key, None)]
         # if no meta data value could be determined just return a copy
         # of the original options
         if meta_value is None:
