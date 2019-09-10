@@ -6,8 +6,7 @@ export class Services {
     constructor(options = {}) {
         this.root = options.root;
     }
-
-    async getRepositories() {
+    async getInstalledRepositories() {
         const Galaxy = getGalaxyInstance();
         const url = `${this.root}api/tool_shed_repositories/?deleted=false&uninstalled=false`;
         try {
@@ -33,27 +32,29 @@ export class Services {
             this._errorMessage(e);
         }
     }
-
     async getRepository(repository) {
         const params = `tool_shed_url=${repository.tool_shed_url}&name=${repository.name}&owner=${repository.owner}`;
         const url = `${this.root}api/tool_shed/request?controller=repositories&${params}`;
         try {
             const response = await axios.get(url);
-            if (response.data.length > 0) {
+            const length = response.data.length;
+            if (length > 0) {
                 const result = response.data[0];
                 result.repository_url = `${repository.tool_shed_url}repository?repository_id=${result.id}`;
                 return result;
+            } else {
+                throw "Repository details not found.";
             }
-            throw "Repository details not found.";
         } catch (e) {
             this._errorMessage(e);
         }
     }
-
     _errorMessage(e) {
         let message = "Request failed.";
         if (e.response) {
             message = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
+        } else if (typeof e == "string") {
+            message = e;
         }
         throw message;
     }

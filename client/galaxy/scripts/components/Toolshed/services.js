@@ -4,8 +4,8 @@ import { getAppRoot } from "onload/loadConfig";
 /** Request repositories, categories etc from toolshed server **/
 export class Services {
     async getCategories(toolshedUrl) {
-        const paramString = `tool_shed_url=${toolshedUrl}&controller=categories`;
-        const url = `${getAppRoot()}api/tool_shed/request?${paramString}`;
+        const paramsString = `tool_shed_url=${toolshedUrl}&controller=categories`;
+        const url = `${getAppRoot()}api/tool_shed/request?${paramsString}`;
         try {
             const response = await axios.get(url);
             return response.data;
@@ -15,8 +15,8 @@ export class Services {
     }
     async getRepositories(params) {
         params["controller"] = "repositories";
-        const paramString = this._getParamString(params);
-        const url = `${getAppRoot()}api/tool_shed/request?${paramString}`;
+        const paramsString = this._getParamsString(params);
+        const url = `${getAppRoot()}api/tool_shed/request?${paramsString}`;
         try {
             const response = await axios.get(url);
             const data = response.data;
@@ -32,8 +32,8 @@ export class Services {
         }
     }
     async getDetails(toolshedUrl, repository_id) {
-        const paramString = `tool_shed_url=${toolshedUrl}&id=${repository_id}&controller=repositories&action=metadata`;
-        const url = `${getAppRoot()}api/tool_shed/request?${paramString}`;
+        const paramsString = `tool_shed_url=${toolshedUrl}&id=${repository_id}&controller=repositories&action=metadata`;
+        const url = `${getAppRoot()}api/tool_shed/request?${paramsString}`;
         try {
             const response = await axios.get(url);
             const data = response.data;
@@ -103,7 +103,7 @@ export class Services {
         }
         throw message;
     }
-    _getParamString(params) {
+    _getParamsString(params) {
         return Object.keys(params).reduce(function(previous, key) {
             return `${previous}${key}=${params[key]}&`;
         }, "");

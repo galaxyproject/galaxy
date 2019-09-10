@@ -106,7 +106,7 @@ export default {
             this.loading = true;
             this.filter = "";
             this.services
-                .getRepositories()
+                .getInstalledRepositories()
                 .then(repositories => {
                     this.repositories = repositories;
                     this.nRepositories = repositories.length;
