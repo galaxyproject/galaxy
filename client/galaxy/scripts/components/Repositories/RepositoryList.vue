@@ -71,10 +71,6 @@ export default {
                 },
                 owner: {
                     sortable: true
-                },
-                tool_shed: {
-                    label: "Toolshed",
-                    sortable: true
                 }
             },
             filter: "",
