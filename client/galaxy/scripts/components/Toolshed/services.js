@@ -15,9 +15,8 @@ export class Services {
         }
     }
     async getRepositories(params) {
-        params["controller"] = "repositories";
         const paramsString = this._getParamsString(params);
-        const url = `${getAppRoot()}api/tool_shed/request?${paramsString}`;
+        const url = `${getAppRoot()}api/tool_shed/request?controller=repositories&${paramsString}`;
         try {
             const response = await axios.get(url);
             const data = response.data;
@@ -32,8 +31,8 @@ export class Services {
             this._errorMessage(e);
         }
     }
-    async getDetails(toolshedUrl, repository_id) {
-        const paramsString = `tool_shed_url=${toolshedUrl}&id=${repository_id}&controller=repositories&action=metadata`;
+    async getRepository(toolshedUrl, repositoryId) {
+        const paramsString = `tool_shed_url=${toolshedUrl}&id=${repositoryId}&controller=repositories&action=metadata`;
         const url = `${getAppRoot()}api/tool_shed/request?${paramsString}`;
         try {
             const response = await axios.get(url);
@@ -53,26 +52,24 @@ export class Services {
             this._errorMessage(e);
         }
     }
-    async getInstalledRepositories(repo) {
-        const paramsString = `name=${repo.name}&owner=${repo.owner}`;
-        const url = `${getAppRoot()}api/tool_shed_repositories?${paramsString}`;
+    async getRepositoryByName(toolshedUrl, repositoryName, repositoryOwner) {
+        const params = `tool_shed_url=${toolshedUrl}&name=${repositoryName}&owner=${repositoryOwner}`;
+        const url = `${getAppRoot()}api/tool_shed/request?controller=repositories&${params}`;
         try {
             const response = await axios.get(url);
-            const data = response.data;
-            const result = {};
-            data.forEach(x => {
-                const d = {
-                    status: x.status,
-                    installed: !x.deleted && !x.uninstalled
-                };
-                result[x.changeset_revision] = result[x.installed_changeset_revision] = d;
-            });
-            return result;
+            const length = response.data.length;
+            if (length > 0) {
+                const result = response.data[0];
+                result.repository_url = `${toolshedUrl}repository?repository_id=${result.id}`;
+                return result;
+            } else {
+                throw "Repository details not found.";
+            }
         } catch (e) {
             this._errorMessage(e);
         }
     }
-    async getInstalledRepositoryList() {
+    async getInstalledRepositories() {
         const Galaxy = getGalaxyInstance();
         const url = `${getAppRoot()}api/tool_shed_repositories/?deleted=false&uninstalled=false`;
         try {
@@ -98,19 +95,21 @@ export class Services {
             this._errorMessage(e);
         }
     }
-    async getRepositoryByName(repository) {
-        const params = `tool_shed_url=${repository.tool_shed_url}&name=${repository.name}&owner=${repository.owner}`;
-        const url = `${getAppRoot()}api/tool_shed/request?controller=repositories&${params}`;
+    async getInstalledRepositoriesByName(repositoryName, repositoryOwner) {
+        const paramsString = `name=${repositoryName}&owner=${repositoryOwner}`;
+        const url = `${getAppRoot()}api/tool_shed_repositories?${paramsString}`;
         try {
             const response = await axios.get(url);
-            const length = response.data.length;
-            if (length > 0) {
-                const result = response.data[0];
-                result.repository_url = `${repository.tool_shed_url}repository?repository_id=${result.id}`;
-                return result;
-            } else {
-                throw "Repository details not found.";
-            }
+            const data = response.data;
+            const result = {};
+            data.forEach(x => {
+                const d = {
+                    status: x.status,
+                    installed: !x.deleted && !x.uninstalled
+                };
+                result[x.changeset_revision] = result[x.installed_changeset_revision] = d;
+            });
+            return result;
         } catch (e) {
             this._errorMessage(e);
         }

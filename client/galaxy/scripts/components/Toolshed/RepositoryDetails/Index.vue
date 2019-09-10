@@ -108,7 +108,7 @@ export default {
         },
         loadDetails() {
             this.services
-                .getDetails(this.toolshedUrl, this.repo.id)
+                .getRepository(this.toolshedUrl, this.repo.id)
                 .then(response => {
                     this.repoTable = response;
                     this.loadInstalledRepositories();
@@ -126,7 +126,7 @@ export default {
         },
         loadInstalledRepositories() {
             this.services
-                .getInstalledRepositories(this.repo)
+                .getInstalledRepositoriesByName(this.repo.name, this.repo.owner)
                 .then(revisions => {
                     let changed = false;
                     this.repoTable.forEach(x => {

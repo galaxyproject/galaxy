@@ -93,7 +93,7 @@ export default {
         load() {
             this.loading = true;
             this.services
-                .getInstalledRepositoryList()
+                .getInstalledRepositories()
                 .then(repositories => {
                     this.repositories = repositories;
                     this.nRepositories = repositories.length;

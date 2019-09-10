@@ -40,7 +40,7 @@ export default {
         load() {
             this.loading = true;
             this.services
-                .getRepositoryByName(this.repo)
+                .getRepositoryByName(this.repo.tool_shed_url, this.repo.name, this.repo.owner)
                 .then(toolshedRepository => {
                     this.toolshedRepository = toolshedRepository;
                     this.loading = false;
