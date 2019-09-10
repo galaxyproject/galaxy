@@ -10,9 +10,9 @@ import * as layer from "ol/layer";
 import * as control from "ol/control";
 import { saveAs } from "file-saver";
 
-import * as proj4 from "proj4";
-import * as JSZipUtils from "jszip-utils";
-import * as JSZip from "jszip";
+import proj4 from "proj4";
+import JSZipUtils from "jszip-utils";
+import JSZip from "jszip";
 
 var geojsonData = {};
 
@@ -353,13 +353,13 @@ var inputData = {},
     url,
     encoding,
     EPSG,
-    EPSG4326 = proj4.default("EPSG:4326");
+    EPSG4326 = proj4("EPSG:4326");
 
 function loadshp(config, returnData) {
     url = config.url;
     encoding = typeof config.encoding != "utf-8" ? config.encoding : "utf-8";
     EPSG = typeof config.EPSG != "undefined" ? config.EPSG : 4326;
-    proj4.default.defs([
+    proj4.defs([
         ["EPSG:4326", "+title=WGS 84 (long/lat) +proj=longlat +ellps=WGS84 +datum=WGS84 +units=degrees"],
         [
             "EPSG:4269",
@@ -371,7 +371,7 @@ function loadshp(config, returnData) {
         JSZipUtils.getBinaryContent(url, function(err, data) {
             let URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
             let shpString, dbfString, prjString;
-            let zip = new JSZip.default();
+            let zip = new JSZip();
             zip.loadAsync(data).then(function(zipFiles) {
                 shpString = zipFiles.file(/.shp$/i)[0].name;
                 dbfString = zipFiles.file(/.dbf$/i)[0].name;
@@ -403,10 +403,8 @@ function loadEPSG(url, callback) {
 }
 
 function TransCoord(x, y) {
-    if (proj4) {
-        var p = proj4.default(EPSG4326, [parseFloat(x), parseFloat(y)]);
-        return { x: p[0], y: p[1] };
-    }
+    var p = proj4(EPSG4326, [parseFloat(x), parseFloat(y)]);
+    return { x: p[0], y: p[1] };
 }
 
 function shpLoader(data, returnData) {
