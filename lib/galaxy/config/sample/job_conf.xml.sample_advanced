@@ -869,11 +869,7 @@
         <!-- Jobs can be re-submitted for various reasons (to the same destination or others,
              with or without a short delay). For instance, jobs that hit the walltime on one
              destination can be automatically resubmitted to another destination. Re-submission
-             is defined on a per-destination basis using ``resubmit`` tags. Re-submission only
-             happens currently in response to problems in the job runner - so for instance if a
-             job fails to allocate memory but the job runner doesn't detect this and completes
-             the job normally but the exit code indicates the error - the job failure
-             re-submission won't run yet (this will be added in the future).
+             is defined on a per-destination basis using ``resubmit`` tags.
 
              Multiple `resubmit` tags can be defined, the first resubmit condition that is true
              (i.e. evaluates to a Python truthy value) will be used for a particular job failure.
