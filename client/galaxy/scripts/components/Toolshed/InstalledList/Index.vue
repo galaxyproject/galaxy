@@ -26,7 +26,7 @@
                         <p>{{ row.item.description }}</p>
                     </template>
                     <template slot="row-details" slot-scope="row">
-                        <repositorydetails :repo="row.item" />
+                        <RepositoryDetails :repo="row.item" />
                     </template>
                 </b-table>
                 <div v-if="showNotFound">
@@ -47,7 +47,7 @@ import RepositoryDetails from "./Details.vue";
 
 export default {
     components: {
-        repositorydetails: RepositoryDetails
+        RepositoryDetails
     },
     props: ["filter"],
     data() {

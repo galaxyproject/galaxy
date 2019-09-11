@@ -19,7 +19,7 @@
                             <span class="font-weight-bold">{{ data.value }}</span>
                         </template>
                         <template slot="tools" slot-scope="data">
-                            <repositorytools :tools="data.value" />
+                            <RepositoryTools :tools="data.value" />
                         </template>
                         <template slot="profile" slot-scope="data">
                             {{ data.value ? `+${data.value}` : "-" }}
@@ -29,7 +29,7 @@
                             <span v-else :class="repoUnchecked" />
                         </template>
                         <template slot="actions" slot-scope="row">
-                            <installationbutton
+                            <InstallationButton
                                 :installed="row.item.installed"
                                 :status="row.item.status"
                                 @onInstall="setupRepository(row.item)"
@@ -37,7 +37,7 @@
                             />
                         </template>
                     </b-table>
-                    <installationsettings
+                    <InstallationSettings
                         v-if="showSettings"
                         :repo="repo"
                         :toolshedUrl="toolshedUrl"
@@ -58,9 +58,9 @@ import InstallationButton from "./InstallationButton.vue";
 import RepositoryTools from "./RepositoryTools.vue";
 export default {
     components: {
-        installationsettings: InstallationSettings,
-        installationbutton: InstallationButton,
-        repositorytools: RepositoryTools
+        InstallationSettings,
+        InstallationButton,
+        RepositoryTools
     },
     props: ["repo", "toolshedUrl"],
     data() {

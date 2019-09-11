@@ -7,7 +7,7 @@
                 </b-link>
             </template>
             <template slot="row-details" slot-scope="row">
-                <repositorydetails :repo="row.item" :toolshedUrl="toolshedUrl" />
+                <RepositoryDetails :repo="row.item" :toolshedUrl="toolshedUrl" />
             </template>
         </b-table>
         <div v-if="noResultsFound">
@@ -27,7 +27,7 @@ const LOADING = 1;
 const COMPLETE = 2;
 export default {
     components: {
-        repositorydetails: RepositoryDetails
+        RepositoryDetails
     },
     props: ["query", "scrolled", "toolshedUrl"],
     data() {

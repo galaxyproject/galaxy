@@ -1,20 +1,20 @@
 <template>
     <div>
-        <serverselection
+        <ServerSelection
             :toolshedUrl="toolshedUrl"
             :toolshedUrls="toolshedUrls"
             :total="total"
             :loading="loading"
             @onToolshed="setToolshed"
         />
-        <repositories
+        <Repositories
             :query="query"
             :scrolled="scrolled"
             :toolshedUrl="toolshedUrl"
             @onError="setError"
             v-if="!queryEmpty"
         />
-        <categories
+        <Categories
             :toolshedUrl="toolshedUrl"
             :loading="loading"
             @onCategory="setQuery"
@@ -33,9 +33,9 @@ import ServerSelection from "./ServerSelection.vue";
 export default {
     props: ["query", "scrolled"],
     components: {
-        categories: Categories,
-        repositories: Repositories,
-        serverselection: ServerSelection
+        Categories,
+        Repositories,
+        ServerSelection
     },
     data() {
         return {
