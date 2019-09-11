@@ -47,7 +47,7 @@ export default {
     },
     watch: {
         tabValue() {
-            this.queryInput = "";
+            this.setQuery("");
         }
     },
     created() {
