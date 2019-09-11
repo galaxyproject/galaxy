@@ -149,8 +149,8 @@ class ToolEvaluator(object):
         self.__sanitize_param_dict(param_dict)
         # Parameters added after this line are not sanitized
         self.__populate_non_job_params(param_dict)
-        # Populate and store templated RealTimeTools values
-        self.__populate_realtimetools(param_dict)
+        # Populate and store templated InteractiveTools values
+        self.__populate_interactivetools(param_dict)
 
         # Return the dictionary of parameters
         return param_dict
@@ -406,11 +406,11 @@ class ToolEvaluator(object):
             # the paths rewritten.
             self.__walk_inputs(self.tool.inputs, param_dict, rewrite_unstructured_paths)
 
-    def __populate_realtimetools(self, param_dict):
+    def __populate_interactivetools(self, param_dict):
         """
-        Populate RealTimeTools templated values.
+        Populate InteractiveTools templated values.
         """
-        rtt = []
+        it = []
         for ep in getattr(self.tool, 'ports', []):
             ep_dict = {}
             for key in 'port', 'name', 'url':
@@ -423,12 +423,12 @@ class ToolEvaluator(object):
                     val = '\n'.join(clean_val)
                     val = val.replace("\n", " ").replace("\r", " ").strip()
                 ep_dict[key] = val
-            rtt.append(ep_dict)
-        self.realtimetools = rtt
-        rtt_man = getattr(self.app, "realtime_manager", None)
-        if rtt_man:
-            rtt_man.create_realtime(self.job, self.tool, rtt)
-        return rtt
+            it.append(ep_dict)
+        self.interactivetools = it
+        it_man = getattr(self.app, "interactivetool_manager", None)
+        if it_man:
+            it_man.create_interactivetool(self.job, self.tool, it)
+        return it
 
     def __sanitize_param_dict(self, param_dict):
         """

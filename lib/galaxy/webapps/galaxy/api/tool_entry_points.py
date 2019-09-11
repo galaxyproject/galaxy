@@ -4,7 +4,7 @@ related to running and queued jobs.
 import logging
 
 from galaxy import exceptions, util
-from galaxy.managers.realtime import RealTimeManager
+from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.webapps.base.controller import BaseAPIController
 
@@ -15,7 +15,7 @@ class ToolEntryPointsAPIController(BaseAPIController):
 
     def __init__(self, app):
         self.app = app
-        self.realtime_manager = RealTimeManager(app)
+        self.interactivetool_manager = InteractiveToolManager(app)
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, running=False, job_id=None, **kwd):
@@ -43,16 +43,16 @@ class ToolEntryPointsAPIController(BaseAPIController):
 
         if job_id is not None:
             job = trans.sa_session.query(trans.app.model.Job).get(self.decode_id(job_id))
-            if not self.realtime_manager.can_access_job(trans, job):
+            if not self.interactivetool_manager.can_access_job(trans, job):
                 raise exceptions.ItemAccessibilityException()
-            entry_points = job.realtimetool_entry_points
+            entry_points = job.interactivetool_entry_points
         if running:
-            entry_points = self.realtime_manager.get_nonterminal_for_user_by_trans(trans)
+            entry_points = self.interactivetool_manager.get_nonterminal_for_user_by_trans(trans)
 
         rval = []
         for entry_point in entry_points:
             as_dict = self.encode_all_ids(trans, entry_point.to_dict(), True)
-            target = self.realtime_manager.target_if_active(trans, entry_point)
+            target = self.interactivetool_manager.target_if_active(trans, entry_point)
             if target:
                 as_dict["target"] = target
             rval.append(as_dict)
@@ -68,10 +68,10 @@ class ToolEntryPointsAPIController(BaseAPIController):
         :param  id: Encoded entry point id
 
         :rtype:     dictionary
-        :returns:   dictionary containing target for realtime entry point
+        :returns:   dictionary containing target for interactivetool entry point
         """
         # Because of auto id encoding needed for link from grid, the item.id keyword must be 'id'
         if not id:
             raise exceptions.RequestParameterMissingException("Must supply entry point ID.")
         entry_point_id = self.decode_id(id)
-        return {"target": self.realtime_manager.access_entry_point_target(trans, entry_point_id)}
+        return {"target": self.interactivetool_manager.access_entry_point_target(trans, entry_point_id)}

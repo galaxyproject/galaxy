@@ -993,6 +993,7 @@ model.Workflow.table = Table(
     Column("name", TEXT),
     Column("has_cycles", Boolean),
     Column("has_errors", Boolean),
+    Column("reports_config", JSONType),
     Column("uuid", UUIDType, nullable=True))
 
 model.WorkflowStep.table = Table(
@@ -2268,7 +2269,7 @@ mapper(model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=di
 ))
 
 mapper(model.InteractiveToolEntryPoint, model.InteractiveToolEntryPoint.table, properties=dict(
-    job=relation(model.Job, backref=backref('realtimetool_entry_points', uselist=True), uselist=False)
+    job=relation(model.Job, backref=backref('interactivetool_entry_points', uselist=True), uselist=False)
 ))
 
 mapper(model.JobContainerAssociation, model.JobContainerAssociation.table, properties=dict(

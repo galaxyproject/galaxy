@@ -530,12 +530,12 @@ class User(Dictifiable, RepresentById):
                 SELECT history.id as id
                 FROM history
                 WHERE history.user_id = :id
-                    AND history.purged = false
+                    AND history.purged = '0'
             ),
             per_hist_hdas AS (
                 SELECT DISTINCT history_dataset_association.dataset_id as id
                 FROM history_dataset_association
-                WHERE history_dataset_association.purged = false
+                WHERE history_dataset_association.purged = '0'
                     AND history_dataset_association.history_id in (SELECT id from per_user_histories)
             )
         """
@@ -946,7 +946,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     def all_entry_points_configured(self):
         # consider an actual DB attribute for this.
         all_configured = True
-        for ep in self.realtimetool_entry_points:
+        for ep in self.interactivetool_entry_points:
             all_configured = ep.configured and all_configured
         return all_configured
 
@@ -4581,6 +4581,21 @@ class Workflow(Dictifiable, RepresentById):
             for workflow_output in step.workflow_outputs:
                 yield workflow_output
 
+    def workflow_output_for(self, output_label):
+        target_output = None
+        for workflow_output in self.workflow_outputs:
+            if workflow_output.label == output_label:
+                target_output = workflow_output
+                break
+        return target_output
+
+    @property
+    def workflow_output_labels(self):
+        names = []
+        for workflow_output in self.workflow_outputs:
+            names.append(workflow_output.label)
+        return names
+
     @property
     def top_level_workflow(self):
         """ If this workflow is not attached to stored workflow directly,
@@ -4965,6 +4980,13 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 target_invocation_step = invocation_step
         return target_invocation_step
 
+    def step_invocation_for_label(self, label):
+        target_invocation_step = None
+        for invocation_step in self.steps:
+            if label == invocation_step.workflow_step.label:
+                target_invocation_step = invocation_step
+        return target_invocation_step
+
     @staticmethod
     def poll_unhandled_workflow_ids(sa_session):
         and_conditions = [
@@ -5020,6 +5042,47 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             self.output_dataset_collections.append(output_assoc)
         else:
             raise Exception("Unknown output type encountered")
+
+    def get_output_object(self, label):
+        for output_dataset_assoc in self.output_datasets:
+            if output_dataset_assoc.workflow_output.label == label:
+                return output_dataset_assoc.dataset
+        for output_dataset_collection_assoc in self.output_dataset_collections:
+            if output_dataset_collection_assoc.workflow_output.label == label:
+                return output_dataset_collection_assoc.dataset_collection
+        # That probably isn't good.
+        workflow_output = self.workflow.workflow_output_for(label)
+        if workflow_output:
+            raise Exception("Failed to find workflow output named [%s], one was defined but none registered during execution." % label)
+        else:
+            raise Exception("Failed to find workflow output named [%s], workflow doesn't define output by that name - valid names are %s." % (label, self.workflow.workflow_output_labels))
+
+    def get_input_object(self, label):
+        for input_dataset_assoc in self.input_datasets:
+            if input_dataset_assoc.workflow_step.label == label:
+                return input_dataset_assoc.dataset
+        for input_dataset_collection_assoc in self.input_dataset_collections:
+            if input_dataset_collection_assoc.workflow_step.label == label:
+                return input_dataset_collection_assoc.dataset_collection
+        raise Exception("Failed to find input with label %s" % label)
+
+    @property
+    def output_associations(self):
+        outputs = []
+        for output_dataset_assoc in self.output_datasets:
+            outputs.append(output_dataset_assoc)
+        for output_dataset_collection_assoc in self.output_dataset_collections:
+            outputs.append(output_dataset_collection_assoc.dataset_collection)
+        return outputs
+
+    @property
+    def input_associations(self):
+        inputs = []
+        for input_dataset_assoc in self.input_datasets:
+            inputs.append(input_dataset_assoc)
+        for input_dataset_collection_assoc in self.input_dataset_collections:
+            inputs.append(input_dataset_collection_assoc)
+        return inputs
 
     def to_dict(self, view='collection', value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super(WorkflowInvocation, self).to_dict(view=view, value_mapper=value_mapper)
@@ -5090,22 +5153,30 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     def update(self):
         self.update_time = galaxy.model.orm.now.now()
 
-    def add_input(self, content, step_id):
+    def add_input(self, content, step_id=None, step=None):
+        assert step_id is not None or step is not None
+
+        def attach_step(request_to_content):
+            if step_id is not None:
+                request_to_content.workflow_step_id = step_id
+            else:
+                request_to_content.workflow_step = step
+
         history_content_type = getattr(content, "history_content_type", None)
         if history_content_type == "dataset":
             request_to_content = WorkflowRequestToInputDatasetAssociation()
             request_to_content.dataset = content
-            request_to_content.workflow_step_id = step_id
+            attach_step(request_to_content)
             self.input_datasets.append(request_to_content)
         elif history_content_type == "dataset_collection":
             request_to_content = WorkflowRequestToInputDatasetCollectionAssociation()
             request_to_content.dataset_collection = content
-            request_to_content.workflow_step_id = step_id
+            attach_step(request_to_content)
             self.input_dataset_collections.append(request_to_content)
         else:
             request_to_content = WorkflowRequestInputStepParameter()
             request_to_content.parameter_value = content
-            request_to_content.workflow_step_id = step_id
+            attach_step(request_to_content)
             self.input_step_parameters.append(request_to_content)
 
     @property
@@ -5255,12 +5326,14 @@ class WorkflowRequestStepState(Dictifiable, RepresentById):
 class WorkflowRequestToInputDatasetAssociation(Dictifiable, RepresentById):
     """ Workflow step input dataset parameters.
     """
+    history_content_type = "dataset"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_id', 'name']
 
 
 class WorkflowRequestToInputDatasetCollectionAssociation(Dictifiable, RepresentById):
     """ Workflow step input dataset collection parameters.
     """
+    history_content_type = "dataset_collection"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
 
 
@@ -5272,11 +5345,13 @@ class WorkflowRequestInputStepParameter(Dictifiable, RepresentById):
 
 class WorkflowInvocationOutputDatasetAssociation(Dictifiable, RepresentById):
     """Represents links to output datasets for the workflow."""
+    history_content_type = "dataset"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_id', 'name']
 
 
 class WorkflowInvocationOutputDatasetCollectionAssociation(Dictifiable, RepresentById):
     """Represents links to output dataset collections for the workflow."""
+    history_content_type = "dataset_collection"
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
 
 

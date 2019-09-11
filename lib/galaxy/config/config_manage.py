@@ -298,6 +298,7 @@ OPTION_ACTIONS = {
     'tool_submission_burst_threads': _DeprecatedAndDroppedAction(),
     'tool_submission_burst_at': _DeprecatedAndDroppedAction(),
     'toolform_upgrade': _DeprecatedAndDroppedAction(),
+    'enable_beta_mulled_containers': _DeprecatedAndDroppedAction(),
 }
 
 

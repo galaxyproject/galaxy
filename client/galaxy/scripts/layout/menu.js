@@ -313,7 +313,7 @@ const Collection = Backbone.Collection.extend({
                 userTab.menu[userTab.menu.length - 1].divider = true;
                 userTab.menu.push({
                     title: _l("Active InteractiveTools"),
-                    url: "realtime_entry_points/list",
+                    url: "interactivetool_entry_points/list",
                     target: "__use_router__"
                 });
             }
