@@ -66,7 +66,7 @@ class Container(object):
         self.container_description = container_description
 
     def prop(self, name, default):
-        destination_name = "docker_%s" % name
+        destination_name = "%s_%s" % (self.container_type, name)
         return self.destination_info.get(destination_name, default)
 
     @property
