@@ -1,4 +1,3 @@
-# TODO: all destinations from condor on
 runners:
   local:
     load: galaxy.jobs.runners.local:LocalJobRunner
@@ -837,6 +836,102 @@ execution:
       # Galaxy's configured container resolution strategy and a default container can be
       # specified here with docker_default_container_id for instance.
       #universe: docker
+
+    # Job Re-submission
+    # Jobs can be re-submitted for various reasons (to the same destination or others,
+    # with or without a short delay). For instance, jobs that hit the walltime on one
+    # destination can be automatically resubmitted to another destination. Re-submission
+    # is defined on a per-destination basis using ``resubmit`` tags.
+
+    # Multiple `resubmit` conditions can be defined, the first resubmit condition that is true
+    # (i.e. evaluates to a Python truthy value) will be used for a particular job failure.
+
+    # The ``condition`` attribute is optional, if not present, the
+    # resubmit environments will be used for all relevant failure types.
+    # Conditions are expressed as Python-like expressions (a fairly safe subset of Python
+    # is available). These expressions include math and logical operators, numbers,
+    # strings, etc.... The following variables are available in these expressions:
+
+    #   - "walltime_reached" (True if and only if the job runner indicates a walltime maximum was reached)
+    #   - "memory_limit_reached" (True if and only if the job runner indicates a memory limit was hit)
+    #   - "unknown_error" (True for job or job runner problems that aren't otherwise classified)
+    #   - "attempt" (the re-submission attempt number this is)
+    #   - "seconds_since_queued" (the number of seconds since the last time the job was in a queued state within Galaxy)
+    #   - "seconds_running" (the number of seconds the job was in a running state within Galaxy)
+
+    # The ``handler`` attribute is optional, if not present, the job's original
+    # handler will be reused for the resubmitted job. The ``environment`` attriubte
+    # is optional, if not present the job's original environment will be reused for the
+    # re-submission. The ``delay`` attribute is optional, if present it will cause the job to
+    # delay for that number of seconds before being re-submitted. 
+    short_fast:
+      runner: slurm
+      native_specification: '--time=00:05:00 --nodes=1'
+      resubmit:
+      - condition: walltime_reached
+        environment: long_slow
+        handler: sge_handler
+    long_slow:
+      runner: sge
+      # The environment that you resubmit jobs to can be any runner type
+      native_specification: '-l h_rt=96:00:00'
+    smallmem:
+      runner: slurm
+      native_specification: '--mem-per-cpu=512'
+      resubmit:
+      - condition: memory_limit_reached
+        environment: bigmem
+    retry_on_unknown_problems:
+      runner: slurm
+      # Just retry the job 5 times if un-categories errors occur backing
+      # off by 30 more seconds between attempts. -->
+      resubmit:
+      - condition: 'unknown_error and attempt <= 5'
+        delay: 'attempt * 30'
+
+    k8s_environment:
+      runner: k8s
+
+      # REQUIRED: To play nicely with the existing galaxy setup for containers this boilerplate is needed currently.
+      docker_enabled: true
+
+      # Allows pods to retry up to this number of times, before marking the galaxy job failed. k8s is a state
+      # setter essentially, so by default it will try to take a job submitted to successful completion. A job
+      # submits pods, until the number of successes (1 in this use case) is achieved, assuming that whatever is
+      # making the pods fail will be fixed (such as a stale disk or a dead node that it is being restarted).
+      # This option sets a limit of retries, so that after that number of failed pods, the job is re-scaled to
+      # zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
+      # to failed).
+      #max_pod_retries: 3
+
+    godocker_environment:
+      runner: godocker
+      # REQUIRED: To play nicely with the existing galaxy setup for containers this boilerplate is needed currently.
+      docker_enabled: true
+      # Many other default docker options available: docker_cpu, docker_memory, docker_default_container_id, etc..
+
+      # Mount the godocker volumes volumes must be separated by commas.
+      #godocker_volumes: home,galaxy
+
+      # If a tool execution in container requires galaxy virtualenv, 
+      # then enable it by setting the value to true.
+      # Disable venv by setting the value to false.
+      virtualenv: false
+
+    chronos_dest:
+      runner: chronos
+      # REQUIRED: To play nicely with the existing galaxy setup for containers this boilerplate is needed currently.
+      docker_enabled: true
+      # Many other default docker options available: docker_cpu, docker_memory, docker_default_container_id, etc..
+
+      # Directory which is mounted to the container and is parent of
+      # the  `job_working_directory`, `file_path`, `new_file_path`
+      # directories. Directories of the data used by tools are
+      # included as well.
+      volumes: /directory/
+
+      # Number of retries to attempt if a command returns a non-zero status
+      max_retries: 2
 
 # Tools can be configured to use specific destinations or handlers,
 # identified by either the "id" or "tags" attribute.  If assigned to
