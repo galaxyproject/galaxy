@@ -813,6 +813,7 @@ execution:
       job_ncpus: 4
       job_partition: my_partition
 
+    # Example CLI LSF Runner: 8 cores and 16 GB ram
     local_lsf_8cpu_16GbRam:
       runner: cli
       shell_plugin: LocalShell
@@ -820,6 +821,22 @@ execution:
       job_memory: 16000
       job_cores: 8
       job_project: BigMem
+
+    condor:
+      runner: condor
+
+      # With no params, jobs are submitted to the 'vanilla' universe with:
+      #     notification = NEVER
+      #     getenv = true
+      # Additional/override query ClassAd params can be specified with
+      # environment options.
+      #request_cpus: 8
+
+      # Recent version of HTCondor do have a `docker` universe to handle containers.
+      # Activate this feature by explicitly specifying the `docker` universe. This uses
+      # Galaxy's configured container resolution strategy and a default container can be
+      # specified here with docker_default_container_id for instance.
+      #universe: docker
 
 # Tools can be configured to use specific destinations or handlers,
 # identified by either the "id" or "tags" attribute.  If assigned to
