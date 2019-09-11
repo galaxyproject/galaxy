@@ -1,21 +1,21 @@
 <template>
     <div class="overflow-auto h-100 p-1" @scroll="onScroll">
+        <b-input
+            class="mb-3"
+            placeholder="search repositories"
+            v-model="queryInput"
+            @input="delayQuery"
+            @change="setQuery"
+        />
+        <serverselection
+            :toolshedUrl="toolshedUrl"
+            :toolshedUrls="toolshedUrls"
+            :total="total"
+            :loading="loading"
+            @onToolshed="setToolshed"
+        />
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <b-input
-                class="mb-3"
-                placeholder="search repositories"
-                v-model="queryInput"
-                @input="delayQuery"
-                @change="setQuery"
-            />
-            <serverselection
-                :toolshedUrl="toolshedUrl"
-                :toolshedUrls="toolshedUrls"
-                :total="total"
-                :loading="loading"
-                @onToolshed="setToolshed"
-            />
             <repositories
                 :query="query"
                 :scrolled="scrolled"
@@ -102,6 +102,7 @@ export default {
             this.query = this.queryInput = query;
         },
         setToolshed(url) {
+            this.error = null;
             this.toolshedUrl = url;
         },
         setTotal(total) {
