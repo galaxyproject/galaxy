@@ -165,7 +165,7 @@ class DataMetaFilter(Filter):
             else:
                 meta_value.add(m)
         def compare_meta_value(file_value, dataset_value):
-            if isinstance(dataset_value, list):
+            if isinstance(dataset_value, set):
                 if self.multiple:
                     file_value = file_value.split(self.separator)
                     for value in dataset_value:
