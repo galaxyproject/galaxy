@@ -12,8 +12,8 @@ runners:
     load: galaxy.jobs.runners.drmaa:DRMAAJobRunner
 
     # Different DRMs handle successfully completed jobs differently,
-    # these options can be changed to handle such differences and
-    # are explained in detail on the Galaxy wiki. Defaults are shown
+    # these options can be changed to handle such differences.
+    # Defaults are shown:
     invalidjobexception_state: ok
     invalidjobexception_retries: 0
     internalexception_state: ok

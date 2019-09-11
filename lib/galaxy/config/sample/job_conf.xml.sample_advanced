@@ -13,8 +13,8 @@
         <plugin id="pbs" type="runner" load="galaxy.jobs.runners.pbs:PBSJobRunner" workers="2"/>
         <plugin id="drmaa" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner">
             <!-- Different DRMs handle successfully completed jobs differently,
-                 these options can be changed to handle such differences and
-                 are explained in detail on the Galaxy wiki. Defaults are shown -->
+                 these options can be changed to handle such differences. Defaults are
+                 shown. -->
             <param id="invalidjobexception_state">ok</param>
             <param id="invalidjobexception_retries">0</param>
             <param id="internalexception_state">ok</param>
