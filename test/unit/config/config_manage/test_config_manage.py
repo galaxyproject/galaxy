@@ -81,6 +81,16 @@ def test_build_uwsgi_yaml():
         config_dir.manage_cli(["build_uwsgi_yaml"])
 
 
+def test_validate_simple_config():
+    with _config_directory("simple") as config_dir:
+        config_dir.manage_cli(["validate", "galaxy"])
+
+
+def test_validate_embedded_config():
+    with _config_directory("embedded") as config_dir:
+        config_dir.manage_cli(["validate", "galaxy"])
+
+
 class _TestConfigDirectory(object):
 
     def __init__(self, base_name):

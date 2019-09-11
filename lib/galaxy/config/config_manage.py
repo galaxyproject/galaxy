@@ -15,6 +15,7 @@ from textwrap import TextWrapper
 import requests
 import six
 import yaml
+from boltons.iterutils import remap
 from six import StringIO
 
 try:
@@ -511,7 +512,12 @@ def _validate(args, app_desc):
         path = config_p.name
 
     fp = tempfile.NamedTemporaryFile(delete=False, suffix=".yml")
-    ordered_dump(app_desc.schema.raw_schema, fp)
+
+    def _clean(p, k, v):
+        return k != 'reloadable'
+
+    clean_schema = remap(app_desc.schema.raw_schema, _clean)
+    ordered_dump(clean_schema, fp)
     fp.flush()
     name = fp.name
     if Core is None:
