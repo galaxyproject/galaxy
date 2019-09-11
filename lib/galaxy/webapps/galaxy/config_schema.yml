@@ -186,7 +186,7 @@ mapping:
           nodes that will run Galaxy jobs, unless using Pulsar.
 
       tool_config_file:
-        type: list or str
+        type: any
         default: config/tool_conf.xml
         required: false
         desc: |
