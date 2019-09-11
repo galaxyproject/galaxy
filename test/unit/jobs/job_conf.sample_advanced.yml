@@ -1,4 +1,3 @@
-# TODO: translocate singluarity option docs into singularity_local environment description
 # TODO: all destinations from condor on
 runners:
   local:
@@ -363,7 +362,6 @@ execution:
 
     docker_local:
       runner: local
-
       # Enable docker execution of tools with the follow property.
       docker_enabled: true
 
@@ -475,10 +473,54 @@ execution:
       # do not yet support Docke so this option may require extra work for
       # the deployer.
       #require_container: true
-      
+
     singularity_local:
       runner: local
+      # Enable Singularity execution of tools with the follow property.
       singularity_enabled: true
+      
+      # See the above documentation for docker_volumes, singularity_volumes works
+      # almost the same way. The only difference is that $default will expand with
+      # rw directories that in Docker would expand as ro if any of subdirectories are rw.
+
+      # As an example consider that Docker mounts the parent of the working directory
+      # (this is known as the job directory) as ro and the working directory itself as rw.
+      # This doesn't work in Singularity because if any parent directory is mounted as ro
+      # none of its children will be rw. So the job directory will be mounted rw for
+      # Singularity.
+      #singularity_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
+
+      # You can configure singularity to run using sudo - this probably should not
+      # be set and may be removed in the future.
+      #singularity_sudo: false
+
+      # Following option can be used to tweak sudo command used by
+      # default.
+      #singularity_sudo_cmd: /usr/bin/sudo -extra_param
+
+      # Pass extra arguments to the singularity exec command not covered by the
+      # above options.
+      #singularity_run_extra_arguments: ''
+
+      # Following command can be used to tweak Singularity command.
+      #singularity_cmd: /usr/local/custom_docker/docker
+
+      # If deployer wants to use singularity for isolation, but does not
+      # trust tool's specified container - a destination wide override
+      # can be set. This will cause all jobs on this destination to use
+      # that singularity image.
+      #singularity_container_id_override: /path/to/singularity/image
+
+      # Likewise, if deployer wants to use singularity for isolation and
+      # does trust tool's specified container - but also wants tool's not
+      # configured to run in a container the following option can provide
+      # a fallback.
+      #singularity_default_container_id: /path/to/singularity/image
+
+      # If the destination should be secured to only allow containerized jobs
+      # the following parameter may be set for the job destination. See notes
+      # above.
+      #require_container: true
 
     # The above Docker and Singularity examples describe how to specify
     # default and override containers but fuller descriptions can be used
