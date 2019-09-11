@@ -14,9 +14,9 @@ import proj4 from "proj4";
 import JSZipUtils from "jszip-utils";
 import JSZip from "jszip";
 
-var geojsonData = {};
+const geojsonData = {};
 
-var SHP = {
+const SHP = {
     NULL: 0,
     POINT: 1,
     POLYLINE: 3,
@@ -24,22 +24,22 @@ var SHP = {
 };
 
 SHP.getShapeName = function(id) {
-    for (name in this) {
+    for (const name in this) {
         if (id === this[name]) {
             return name;
         }
     }
 };
 
-var SHPParser = function() {};
+const SHPParser = function() {};
 
 SHPParser.prototype.parseShape = function(dv, idx, length) {
-    var i = 0,
-        c = null,
-        shape = {};
+    let i = 0;
+    let c = null;
+    const shape = {};
+
     shape.type = dv.getInt32(idx, true);
     idx += 4;
-    var byteLen = length * 2;
     switch (shape.type) {
         case SHP.NULL: // Null
             break;
@@ -75,9 +75,10 @@ SHPParser.prototype.parseShape = function(dv, idx, length) {
 };
 
 SHPParser.prototype.parse = function(arrayBuffer, url) {
-    var o = {},
-        dv = new DataView(arrayBuffer),
-        idx = 0;
+    const o = {};
+    const dv = new DataView(arrayBuffer);
+    let idx = 0;
+
     o.fileName = url;
     o.fileCode = dv.getInt32(idx, false);
 
@@ -100,7 +101,7 @@ SHPParser.prototype.parse = function(arrayBuffer, url) {
     idx += 8 * 8;
     o.records = [];
     while (idx < o.byteLength) {
-        var record = {};
+        const record = {};
         record.number = dv.getInt32(idx, false);
         idx += 4;
         record.length = dv.getInt32(idx, false);
@@ -117,7 +118,7 @@ SHPParser.prototype.parse = function(arrayBuffer, url) {
 };
 
 SHPParser.load = function(url, callback, returnData) {
-    var xhr = new XMLHttpRequest();
+    const xhr = new XMLHttpRequest();
     xhr.open("GET", url);
     xhr.responseType = "arraybuffer";
     xhr.onload = function() {
@@ -129,21 +130,16 @@ SHPParser.load = function(url, callback, returnData) {
     xhr.send(null);
 };
 
-var DBF = {};
-
-var DBFParser = function() {};
+const DBFParser = function() {};
 
 DBFParser.load = function(url, encoding, callback, returnData) {
-    var xhr = new XMLHttpRequest();
+    const xhr = new XMLHttpRequest();
     xhr.open("GET", url);
     xhr.responseType = "arraybuffer";
-
     xhr.onload = function() {
-        var xhrText = new XMLHttpRequest();
-        var xhrTextResponse = "";
+        const xhrText = new XMLHttpRequest();
         xhrText.open("GET", url);
         xhrText.overrideMimeType("text/plain; charset=" + encoding);
-
         xhrText.onload = function() {
             geojsonData["dbf"] = new DBFParser().parse(xhr.response, url, xhrText.responseText, encoding);
             callback(geojsonData["dbf"], returnData);
@@ -156,10 +152,10 @@ DBFParser.load = function(url, encoding, callback, returnData) {
 };
 
 DBFParser.prototype.parse = function(arrayBuffer, src, response, encoding) {
-    var o = {},
-        dv = new DataView(arrayBuffer),
-        idx = 0,
-        offset;
+    const o = {};
+    const dv = new DataView(arrayBuffer);
+    let idx = 0;
+    let offset;
 
     switch (encoding.toLowerCase()) {
         case "big5":
@@ -208,7 +204,7 @@ DBFParser.prototype.parse = function(arrayBuffer, src, response, encoding) {
 
     o.fields = [];
     let responseHeader;
-    var response_handler = response.split("\r");
+    const response_handler = response.split("\r");
     if (response_handler.length > 2) {
         response_handler.pop();
         responseHeader = response_handler.join("\r");
@@ -218,10 +214,10 @@ DBFParser.prototype.parse = function(arrayBuffer, src, response, encoding) {
         responseHeader = responseHeader.slice(32, responseHeader.length);
         offset = 2;
     }
-    var charString = [],
-        count = 0,
-        index = 0,
-        sum = (responseHeader.length + 1) / 32;
+
+    const charString = [];
+    let count = 0;
+    let index = 0;
 
     while (responseHeader.length > 0) {
         while (count < 10) {
@@ -248,13 +244,14 @@ DBFParser.prototype.parse = function(arrayBuffer, src, response, encoding) {
         charString.push(responseHeader.slice(0, 10).replace(/\0/g, ""));
         responseHeader = responseHeader.slice(32, responseHeader.length);
     }
-    while (true) {
-        var field = {},
+
+    for (;;) {
+        const field = {},
             nameArray = [];
 
         for (var i = 0, z = 0; i < 10; i++) {
             try {
-                var letter = dv.getUint8(idx);
+                const letter = dv.getUint8(idx);
                 if (letter != 0) nameArray.push(String.fromCharCode(letter));
                 idx += 1;
             } catch (error) {
@@ -290,6 +287,7 @@ DBFParser.prototype.parse = function(arrayBuffer, src, response, encoding) {
         }
     }
 
+
     let responseText;
     idx += 1;
     o.fieldpos = idx;
@@ -297,14 +295,16 @@ DBFParser.prototype.parse = function(arrayBuffer, src, response, encoding) {
 
     responseText = response.split("\r")[response.split("\r").length - 1];
 
-    for (var i = 0; i < o.numberOfRecords; i++) {
+    for (let i = 0; i < o.numberOfRecords; i++) {
         responseText = responseText.slice(1, responseText.length);
-        var record = {};
+        const record = {};
 
-        for (var j = 0; j < o.fields.length; j++) {
-            var charString = [],
-                count = 0,
-                z = 0;
+
+        for (let j = 0; j < o.fields.length; j++) {
+            // TODO Problem: charString is redefined below before ever being used?
+            const charString = [];
+            let count = 0;
+            let z = 0;
 
             while (count < o.fields[j].fieldLength) {
                 try {
@@ -312,7 +312,8 @@ DBFParser.prototype.parse = function(arrayBuffer, src, response, encoding) {
                         if (encodeURIComponent(responseText[z]).match(/%[A-F\d]{2}/g).length > 1) {
                             count += offset;
                             z++;
-                            check = 1;
+                            // Check is not defined and unused?
+                            // check = 1;
                         } else {
                             count += 1;
                             z++;
@@ -347,18 +348,12 @@ DBFParser.prototype.parse = function(arrayBuffer, src, response, encoding) {
     return o;
 };
 
-var inputData = {},
-    geoData = {},
-    EPSGUser,
-    url,
-    encoding,
-    EPSG,
-    EPSG4326 = proj4("EPSG:4326");
+const inputData = {};
+const EPSG4326 = proj4("EPSG:4326");
 
 function loadshp(config, returnData) {
-    url = config.url;
-    encoding = typeof config.encoding != "utf-8" ? config.encoding : "utf-8";
-    EPSG = typeof config.EPSG != "undefined" ? config.EPSG : 4326;
+    const url = config.url;
+    const encoding = typeof config.encoding != "utf-8" ? config.encoding : "utf-8";
     proj4.defs([
         ["EPSG:4326", "+title=WGS 84 (long/lat) +proj=longlat +ellps=WGS84 +datum=WGS84 +units=degrees"],
         [
@@ -369,9 +364,9 @@ function loadshp(config, returnData) {
 
     if (typeof url === "string") {
         JSZipUtils.getBinaryContent(url, function(err, data) {
-            let URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
-            let shpString, dbfString, prjString;
-            let zip = new JSZip();
+            const URL = window.URL || window.webkitURL || window.mozURL || window.msURL;
+            const zip = new JSZip();
+            let shpString, dbfString;
             zip.loadAsync(data).then(function(zipFiles) {
                 shpString = zipFiles.file(/.shp$/i)[0].name;
                 dbfString = zipFiles.file(/.dbf$/i)[0].name;
@@ -393,7 +388,7 @@ function loadshp(config, returnData) {
         });
     }
 }
-
+/*
 function loadEPSG(url, callback) {
     var script = document.createElement("script");
     script.src = url;
@@ -401,9 +396,10 @@ function loadEPSG(url, callback) {
     script.onload = callback;
     document.getElementsByTagName("head")[0].appendChild(script);
 }
+*/
 
 function TransCoord(x, y) {
-    var p = proj4(EPSG4326, [parseFloat(x), parseFloat(y)]);
+    const p = proj4(EPSG4326, [parseFloat(x), parseFloat(y)]);
     return { x: p[0], y: p[1] };
 }
 
@@ -418,40 +414,40 @@ function dbfLoader(data, returnData) {
 }
 
 function toGeojson(geojsonData) {
-    var geojson = {},
-        features = [],
-        feature,
-        geometry,
-        points;
+    const geojson = {};
+    const features = [];
+    let feature;
+    let geometry;
 
-    var shpRecords = geojsonData.shp.records;
-    var dbfRecords = geojsonData.dbf.records;
+    const shpRecords = geojsonData.shp.records;
+    //var dbfRecords = geojsonData.dbf.records;
 
     geojson.type = "FeatureCollection";
-    let min_coordinate = TransCoord(geojsonData.shp.minX, geojsonData.shp.minY);
-    let max_coordinate = TransCoord(geojsonData.shp.maxX, geojsonData.shp.maxY);
+    const min_coordinate = TransCoord(geojsonData.shp.minX, geojsonData.shp.minY);
+    const max_coordinate = TransCoord(geojsonData.shp.maxX, geojsonData.shp.maxY);
     geojson.bbox = [min_coordinate.x, min_coordinate.y, max_coordinate.x, max_coordinate.y];
 
     geojson.features = features;
 
-    for (var i = 0; i < shpRecords.length; i++) {
+    for (let i = 0; i < shpRecords.length; i++) {
         feature = {};
         feature.type = "Feature";
         geometry = feature.geometry = {};
-        let properties = (feature.properties = dbfRecords[i]);
+        //const properties = (feature.properties = dbfRecords[i]);
         // point : 1 , polyline : 3 , polygon : 5, multipoint : 8
+        let reprj;
         switch (shpRecords[i].shape.type) {
             case 1:
                 geometry.type = "Point";
-                var reprj = TransCoord(shpRecords[i].shape.content.x, shpRecords[i].shape.content.y);
+                reprj = TransCoord(shpRecords[i].shape.content.x, shpRecords[i].shape.content.y);
                 geometry.coordinates = [reprj.x, reprj.y];
                 break;
             case 3:
             case 8:
                 geometry.type = shpRecords[i].shape.type == 3 ? "LineString" : "MultiPoint";
                 geometry.coordinates = [];
-                for (var j = 0; j < shpRecords[i].shape.content.points.length; j += 2) {
-                    var reprj = TransCoord(
+                for (let j = 0; j < shpRecords[i].shape.content.points.length; j += 2) {
+                    reprj = TransCoord(
                         shpRecords[i].shape.content.points[j],
                         shpRecords[i].shape.content.points[j + 1]
                     );
@@ -462,19 +458,18 @@ function toGeojson(geojsonData) {
                 geometry.type = "Polygon";
                 geometry.coordinates = [];
 
-                for (var pts = 0; pts < shpRecords[i].shape.content.parts.length; pts++) {
-                    var partsIndex = shpRecords[i].shape.content.parts[pts],
-                        part = [],
-                        dataset;
+                for (let pts = 0; pts < shpRecords[i].shape.content.parts.length; pts++) {
+                    const partsIndex = shpRecords[i].shape.content.parts[pts];
+                    const part = [];
 
                     for (
-                        var j = partsIndex * 2;
+                        let j = partsIndex * 2;
                         j <
                         (shpRecords[i].shape.content.parts[pts + 1] * 2 || shpRecords[i].shape.content.points.length);
                         j += 2
                     ) {
-                        var point = shpRecords[i].shape.content.points;
-                        var reprj = TransCoord(point[j], point[j + 1]);
+                        const point = shpRecords[i].shape.content.points;
+                        reprj = TransCoord(point[j], point[j + 1]);
                         part.push([reprj.x, reprj.y]);
                     }
                     geometry.coordinates.push(part);
@@ -489,12 +484,12 @@ function toGeojson(geojsonData) {
     return geojson;
 }
 
-var MapViewer = (function(mv) {
+const MapViewer = (function(mv) {
     mv.gMap = null;
 
     /** Set the style properties of shapes */
     mv.setStyle = selectedColor => {
-        let styles = {
+        const styles = {
             Polygon: new style.Style({
                 stroke: new style.Stroke({
                     color: selectedColor,
@@ -574,11 +569,11 @@ var MapViewer = (function(mv) {
 
     /** Set up events and methods for interactions with map view*/
     mv.setInteractions = (source, options) => {
-        let geometryType = options.chart.settings.get("geometry_type");
-        let geometryColor = options.chart.settings.get("geometry_color");
+        const geometryType = options.chart.settings.get("geometry_type");
+        const geometryColor = options.chart.settings.get("geometry_color");
         let drawInteraction;
 
-        let addInteraction = () => {
+        const addInteraction = () => {
             if (geometryType !== "None") {
                 drawInteraction = new interaction.Draw({
                     source: source,
@@ -586,7 +581,7 @@ var MapViewer = (function(mv) {
                     freehand: true
                 });
                 drawInteraction.on("drawstart", event => {
-                    let sty = new style.Style({
+                    const sty = new style.Style({
                         stroke: new style.Stroke({
                             color: geometryColor,
                             width: 2
@@ -606,7 +601,7 @@ var MapViewer = (function(mv) {
     /** Export the map view to PNG image*/
     mv.exportMap = () => {
         mv.gMap.once("rendercomplete", event => {
-            let canvas = event.context.canvas;
+            const canvas = event.context.canvas;
             let fileName = Math.random()
                 .toString(11)
                 .replace("0.", "");
@@ -624,18 +619,18 @@ var MapViewer = (function(mv) {
 
     /** Create the map view */
     mv.setMap = (vSource, target, options, styleFunction) => {
-        let tile = new layer.Tile({ source: new OSM() });
+        const tile = new layer.Tile({ source: new OSM() });
         // add fullscreen handle
-        let fullScreen = new control.FullScreen();
+        const fullScreen = new control.FullScreen();
         // add scale to the map
-        let scaleLineControl = new control.ScaleLine();
+        const scaleLineControl = new control.ScaleLine();
         // create vector with styles
-        let vectorLayer = new layer.Vector({
+        const vectorLayer = new layer.Vector({
             source: vSource,
             style: styleFunction
         });
 
-        let view = new View({
+        const view = new View({
             center: [0, 0],
             zoom: 2
         });
@@ -651,7 +646,7 @@ var MapViewer = (function(mv) {
         });
 
         // add grid lines
-        let graticule = new Graticule({
+        const graticule = new Graticule({
             strokeStyle: new style.Stroke({
                 color: "rgba(255, 120, 0, 0.9)",
                 width: 2,
@@ -668,12 +663,12 @@ var MapViewer = (function(mv) {
 
     /** Load the map GeoJson and Shapefiles*/
     mv.loadFile = (filePath, fileType, options, chart) => {
-        let target = options.targets[0];
-        let formatType = new GeoJSON();
-        let toExport = options.chart.settings.get("export_map");
-        let geometryColor = options.chart.settings.get("geometry_color");
-        let selectedStyles = mv.setStyle(geometryColor);
-        let styleFunction = feature => {
+        const target = options.targets[0];
+        const formatType = new GeoJSON();
+        const toExport = options.chart.settings.get("export_map");
+        const geometryColor = options.chart.settings.get("geometry_color");
+        const selectedStyles = mv.setStyle(geometryColor);
+        const styleFunction = feature => {
             return selectedStyles[feature.getGeometry().getType()];
         };
 
@@ -682,13 +677,12 @@ var MapViewer = (function(mv) {
         }
 
         if (fileType === "geojson") {
-            let sourceVec = new Vector({ format: formatType, url: filePath, wrapX: false });
+            const sourceVec = new Vector({ format: formatType, url: filePath, wrapX: false });
             mv.createMap(filePath, sourceVec, options, chart, styleFunction, target);
         } else if (fileType === "shp") {
             loadshp({ url: filePath, encoding: "utf-8", EPSG: 4326 }, geoJson => {
-                let URL = window.URL || window.webkitURL || window.mozURL;
-                let url = URL.createObjectURL(new Blob([JSON.stringify(geoJson)], { type: "application/json" }));
-                let sourceVec = new Vector({ format: formatType, url: url, wrapX: false });
+                const url = window.URL.createObjectURL(new Blob([JSON.stringify(geoJson)], { type: "application/json" }));
+                const sourceVec = new Vector({ format: formatType, url: url, wrapX: false });
                 mv.createMap(url, sourceVec, options, chart, styleFunction, target);
             });
         }
@@ -705,9 +699,8 @@ var MapViewer = (function(mv) {
 
 _.extend(window.bundleEntries || {}, {
     load: options => {
-        var chart = options.chart,
-            dataset = options.dataset,
-            settings = options.chart.settings;
+        const chart = options.chart;
+        const dataset = options.dataset;
         $.ajax({
             url: dataset.download_url,
             success: content => {
