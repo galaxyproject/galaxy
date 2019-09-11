@@ -117,10 +117,17 @@ class GitLabPlugin(BaseGitPlugin):
                 error_message = self._generate_error_message(dataset, job, kwargs)
 
                 # Determine the user to assign to the issue
-                gl_username = gl_project.commits.list()[0].attributes['author_name']
-                if gl_username not in self.git_username_id_cache:
-                    self.git_username_id_cache[gl_username] = gitlab.users.list(username=gl_username)[0].get_id()
-                gl_userid = self.git_username_id_cache[gl_username]
+                gl_userid = None
+                if len(gl_project.commits.list()) > 0:
+                    gl_username = gl_project.commits.list()[0].attributes['author_name']
+                    if not self.redact_user_details_in_bugreport:
+                        log.debug("GitLab error reporting - Last commiter username: %s" % gl_username)
+                    if gl_username not in self.git_username_id_cache:
+                        log.debug("GitLab error reporting - Last Committer user ID: %d" %
+                                  self.gitlab.users.list(username=gl_username)[0].get_id())
+                        self.git_username_id_cache[gl_username] = self.gitlab.users.list(username=gl_username)[
+                            0].get_id()
+                    gl_userid = self.git_username_id_cache.get(gl_username, None)
 
                 log.info(error_title in self.issue_cache[issue_cache_key])
                 if error_title not in self.issue_cache[issue_cache_key]:
@@ -179,7 +186,7 @@ class GitLabPlugin(BaseGitPlugin):
 
         # Assign the user to the issue
         gl_userid = kwargs.get("gl_userid", None)
-        if not gl_userid:
+        if gl_userid is not None:
             issue_data['assignee_ids'] = [gl_userid]
 
         # Create the issue on GitLab
