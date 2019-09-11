@@ -45,6 +45,11 @@ export default {
             tabOptions: [{ text: "Search All", value: true }, { text: "Installed Only", value: false }]
         };
     },
+    watch: {
+        tabValue() {
+            this.queryInput = "";
+        }
+    },
     created() {
         this.configureToolsheds();
     },
