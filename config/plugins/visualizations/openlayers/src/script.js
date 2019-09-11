@@ -353,7 +353,7 @@ const EPSG4326 = proj4("EPSG:4326");
 
 function loadshp(config, returnData) {
     const url = config.url;
-    const encoding = typeof config.encoding != "utf-8" ? config.encoding : "utf-8";
+    const encoding = config.encoding != "utf-8" ? config.encoding : "utf-8";
     proj4.defs([
         ["EPSG:4326", "+title=WGS 84 (long/lat) +proj=longlat +ellps=WGS84 +datum=WGS84 +units=degrees"],
         [
