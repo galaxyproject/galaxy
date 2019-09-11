@@ -122,11 +122,13 @@ SHPParser.load = function(url, callback, returnData) {
     xhr.open("GET", url);
     xhr.responseType = "arraybuffer";
     xhr.onload = function() {
-        geojsonData["shp"] = new SHPParser().parse(xhr.response, url);
-        callback(geojsonData["shp"], returnData);
+        geojsonData.shp = new SHPParser().parse(xhr.response, url);
+        callback(geojsonData.shp, returnData);
         URL.revokeObjectURL(url);
     };
-    xhr.onerror = onerror;
+    // TODO: This does not exist?
+    //xhr.onerror = onerror;
+    xhr.onerror = callback;
     xhr.send(null);
 };
 
@@ -141,13 +143,15 @@ DBFParser.load = function(url, encoding, callback, returnData) {
         xhrText.open("GET", url);
         xhrText.overrideMimeType("text/plain; charset=" + encoding);
         xhrText.onload = function() {
-            geojsonData["dbf"] = new DBFParser().parse(xhr.response, url, xhrText.responseText, encoding);
-            callback(geojsonData["dbf"], returnData);
+            geojsonData.dbf = new DBFParser().parse(xhr.response, url, xhrText.responseText, encoding);
+            callback(geojsonData.dbf, returnData);
             URL.revokeObjectURL(url);
         };
         xhrText.send();
     };
-    xhr.onerror = onerror;
+    // TODO: This does not exist?
+    //xhr.onerror = onerror;
+    xhr.onerror = callback;
     xhr.send(null);
 };
 
@@ -404,13 +408,13 @@ function TransCoord(x, y) {
 }
 
 function shpLoader(data, returnData) {
-    inputData["shp"] = data;
-    if (inputData["shp"] && inputData["dbf"]) if (returnData) returnData(toGeojson(inputData));
+    inputData.shp = data;
+    if (inputData.shp && inputData.dbf) if (returnData) returnData(toGeojson(inputData));
 }
 
 function dbfLoader(data, returnData) {
-    inputData["dbf"] = data;
-    if (inputData["shp"] && inputData["dbf"]) if (returnData) returnData(toGeojson(inputData));
+    inputData.dbf = data;
+    if (inputData.shp && inputData.dbf) if (returnData) returnData(toGeojson(inputData));
 }
 
 function toGeojson(geojsonData) {
