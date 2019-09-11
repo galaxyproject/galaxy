@@ -65,7 +65,7 @@ export default {
                 });
         },
         onCategory(category) {
-            this.$emit("onCategory", category);
+            this.$emit("onCategory", `category:${category}`);
         }
     }
 };
