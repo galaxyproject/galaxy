@@ -39,7 +39,7 @@ export class Services {
         }
     }
 
-    async getWorkflows(id) {
+    async getWorkflows() {
         const url = `${this.root}api/workflows`;
         try {
             const response = await axios.get(url);
