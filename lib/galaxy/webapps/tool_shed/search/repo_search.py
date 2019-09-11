@@ -76,8 +76,9 @@ class RepoSearch(object):
 
         :returns results: dictionary containing hits themselves and the hits summary
         """
-        allow_query, search_term_without_filters = self._parse_reserved_filters(search_term)
-        log.debug('user search query: #' + str(search_term))
+        log.debug('raw search query: #' + str(search_term))
+        lower_search_term = search_term.lower()
+        allow_query, search_term_without_filters = self._parse_reserved_filters(lower_search_term)
         log.debug('term without filters: #' + str(search_term_without_filters))
 
         whoosh_index_dir = trans.app.config.whoosh_index_dir
