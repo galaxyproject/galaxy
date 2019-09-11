@@ -158,6 +158,11 @@ class DataMetaFilter(Filter):
         return self.ref_name
 
     def filter_options(self, options, trans, other_values):
+        def _add_meta( meta_value, m ):
+            if isinstance(m, list):
+                meta_value |= set(m)
+            else:
+                meta_value.add(m)
         def compare_meta_value(file_value, dataset_value):
             if isinstance(dataset_value, list):
                 if self.multiple:
@@ -185,18 +190,18 @@ class DataMetaFilter(Filter):
         # - for data sets: the meta data value
         # in both cases only meta data that is set (i.e. differs from the no_value)
         # is considered
-        meta_value = None
+        meta_value = set()
         if is_data_list:
-            meta_value_set = set([_.metadata.get(self.key, None) for _ in ref if _.metadata.element_is_set(self.key)])
-            meta_value_set.discard(None)
-            if len(meta_value_set) > 0:
-                meta_value = list(meta_value_set)
+            for r in ref:
+                if not r.metadata.element_is_set(self.key):
+                    continue
+                _add_meta(meta_value, r.metadata.get(self.key))
         else:
             if ref.metadata.element_is_set(self.key):
-                meta_value = [ref.metadata.get(self.key, None)]
+                _add_meta(meta_value, ref.metadata.get(self.key))
         # if no meta data value could be determined just return a copy
         # of the original options
-        if meta_value is None:
+        if len(meta_value) == 0:
             return copy.deepcopy(options)
 
         if self.column is not None:
@@ -213,7 +218,7 @@ class DataMetaFilter(Filter):
                     "selected" : 2
                 }
                 self.dynamic_option.largest_index = 2
-            for value in reduce(lambda x, y: x + y, meta_value):
+            for value in meta_value:
                 options.append((value, value, False))
             return options
 
