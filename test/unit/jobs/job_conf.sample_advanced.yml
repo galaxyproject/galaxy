@@ -1,4 +1,3 @@
-# TODO: translocate docker option docs into docker_local environment description
 # TODO: translocate singluarity option docs into singularity_local environment description
 # TODO: all destinations from condor on
 runners:
@@ -364,8 +363,119 @@ execution:
 
     docker_local:
       runner: local
+
+      # Enable docker execution of tools with the follow property.
       docker_enabled: true
 
+      # docker_volumes can be used to configure volumes to expose to docker,
+      # For added isolation append :ro to the path to mount it read only.
+      # Galaxy will attempt to infer a reasonable set of defaults which
+      # volumes should be exposed how based on Galaxy's settings and the
+      # destination - but be sure to add any library paths or data incides
+      # that may be needed read-only.
+
+      # For a stock Galaxy instance and traditional job runner $defaults will
+      # expand out as:
+
+      # $galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:rw
+
+      # This assumes most of what is needed is available under Galaxy's root directory,
+      # the tool directory, and the Galaxy's file_path (if using object store creatively
+      # you will definitely need to expand defaults).
+
+      # This configuration allows any docker instance to write to any Galaxy
+      # file - for greater isolation set outputs_to_working_directory in
+      # galaxy.yml. This will cause $defaults to allow writing to much
+      # less. It will then expand as follows:
+
+      # $galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:ro
+
+      # If using the Pulsar, defaults will be even further restricted because the
+      # Pulsar will (by default) stage all needed inputs into the job's job_directory
+      # (so there is not need to allow the docker container to read all the
+      # files - let alone write over them). Defaults in this case becomes:
+
+      # $job_directory:ro,$tool_directory:ro,$job_directory/outputs:rw,$working_directory:rw
+
+      # Python string.Template is used to expand volumes and values $defaults,
+      # $galaxy_root, $default_file_path, $tool_directory, $working_directory,
+      # are available to all jobs and $job_directory is also available for
+      # Pulsar jobs.
+      #docker_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro
+
+      # One can run docker using volumes-from tag by setting the following
+      # parameter. For more information on volumes-from check out the following
+      # docker tutorial. https://docs.docker.com/userguide/dockervolumes/
+      #docker_volumes_from: parent_container_name
+
+      # Control memory allocatable by docker container with following option:
+      #docker_memory: 24G
+
+      # By default, Galaxy will assume it belongs to the same group as the
+      # Docker host and so can execute Docker commands without sudo. If instead
+      # sudo is required, Galaxy can be configured to use password-less sudo - this
+      # can be configured by adding the following line to the sudoers file of all compute
+      # nodes with docker enabled:
+
+      #    galaxy  ALL = (root) NOPASSWD: SETENV: /usr/bin/docker
+
+      # And then setting the following option to true.
+      #docker_sudo: false
+
+      # Following option can be used to tweak sudo command used by
+      # default.
+      #docker_sudo_cmd: /usr/bin/sudo -extra_param
+
+      # By default, docker container will not have any networking
+      # enabled. host networking can be bridged by un-commenting next option
+      # http://docs.docker.io/reference/run/#network-settings
+      #docker_net: bridge
+
+      # By default, a container will live on past its run. By
+      # adding the '--rm' flag to the command line, the container
+      # will be removed automatically after the program is complete.
+      # Galaxy does this by default to clean up the containers it runs,
+      # but this can be disabled for debugging and such using the following
+      # command.
+      #docker_auto_rm: true
+
+      # Override which user to launch Docker container as - defaults to 
+      # Galaxy's user id. For remote job execution (e.g. Pulsar) set to
+      # remote job user. Leave empty to not use the -u argument with
+      # Docker.
+      #docker_set_user: $UID
+
+      # Pass extra arguments to the docker run command not covered by the
+      # above options.
+      #docker_run_extra_arguments: 
+
+      # Following command can be used to tweak docker command.
+      #docker_cmd: /usr/local/custom_docker/docker
+
+      # Following can be used to connect to docker server in different
+      # ways (translated as -H argument to docker client).
+      #docker_host: unix:///var/run/docker.sock
+      #docker_host: ':5555'
+      #docker_host: tcp://127.0.0.1:4243
+
+      # If deployer wants to use docker for isolation, but does not
+      # trust tool's specified container - a destination wide override
+      # can be set. This will cause all jobs on this destination to use
+      # that docker image.
+      #docker_container_id_override: busybox:ubuntu-14.04
+
+      # Likewise, if deployer wants to use docker for isolation and
+      # does trust tool's specified container - but also wants tool's not
+      # configured to run in a container the following option can provide
+      # a fallback. -->
+      #docker_default_container_id: busybox:ubuntu-14.04
+
+      # If the destination should be secured to only allow containerized jobs
+      # the following parameter may be set for the job destination. Some tools
+      # do not yet support Docke so this option may require extra work for
+      # the deployer.
+      #require_container: true
+      
     singularity_local:
       runner: local
       singularity_enabled: true
