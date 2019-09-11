@@ -1,5 +1,5 @@
-<tool id="dbkey_filter_collection_input" name="dbkey_filter_multi_input" version="0.1.0">
-    <description>Filter select on dbkey of multiple inputs</description>
+<tool id="dbkey_filter_collection_input" name="dbkey_filter_collection_input" version="0.1.0">
+    <description>Filter select on dbkey of collection inputs</description>
     <command><![CDATA[
         #for $input in $inputs#
         cat $input >> $output;
@@ -15,6 +15,12 @@
             <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
           </options>
         </param>
+        <param name="index_multi" type="select" multiple="true" label="Using reference genome">
+          <options from_data_table="test_fasta_indexes">
+            <filter type="data_meta" ref="inputs" key="dbkey" column="1" />
+            <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+          </options>
+        </param>
     </inputs>
 
     <outputs>
@@ -22,47 +28,66 @@
     </outputs>
 
     <tests>
+        <!-- note: in the following tests two different files are needed
+             because otherwise only the later dbkey is uses. apparently
+             the two data sets would be considered as the same data set -->
         <!-- can choose a dbkey if it matches input -->
         <test>
             <param name="inputs" >
-                <collection type="paired">
+                <collection type="list">
                     <element name="e1" value="simple_line.txt" dbkey="hg19"/>
-                    <element name="e2" value="simple_line.txt" dbkey="hg19"/>
+                    <element name="e2" value="same_simple_line.txt" dbkey="hg19"/>
                 </collection>
             </param>
             <param name="index" value="hg19" />
+            <param name="index_multi" value="hg19" />
             <output name="output" file="simple_line_x2.txt"/>
         </test>
         <!-- can choose any dbkey if none specified in reference -->
         <test>
             <param name="inputs" >
-                <collection type="paired">
+                <collection type="list">
                     <element name="e1" value="simple_line.txt"/>
-                    <element name="e2" value="simple_line.txt"/>
+                    <element name="e2" value="same_simple_line.txt"/>
                 </collection>
             </param>
             <param name="index" value="hg19" />
+            <param name="index_multi" value="hg18,hg19" />
             <output name="output" file="simple_line_x2.txt"/>
         </test>
         <!-- can choose any dbkey specified in reference -->
         <test>
             <param name="inputs" >
-                <collection type="paired">
-                    <element name="e1" value="simple_line.txt" dbkey="hg18"/>
-                    <element name="e2" value="simple_line.txt" dbkey="hg19"/>
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt" dbkey="hg19"/>
+                    <element name="e2" value="same_simple_line.txt" dbkey="hg18"/>
                 </collection>
             </param>
             <param name="index" value="hg18" />
+            <param name="index_multi" value="hg18,hg19" />
             <output name="output" file="simple_line_x2.txt"/>
         </test>
         <test>
             <param name="inputs" >
-                <collection type="paired">
-                    <element name="e1" value="simple_line.txt" dbkey="hg18"/>
-                    <element name="e2" value="simple_line.txt" dbkey="hg19"/>
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt" dbkey="hg19"/>
+                    <element name="e2" value="same_simple_line.txt" dbkey="hg18"/>
                 </collection>
             </param>
             <param name="index" value="hg19" />
+            <param name="index_multi" value="hg18,hg19" />
+            <output name="output" file="simple_line_x2.txt"/>
+        </test>
+        <!-- cant choose a dkkey different from reference -->
+        <test expect_failure="true">
+            <param name="inputs" >
+                <collection type="list">
+                    <element name="e1" value="simple_line.txt" dbkey="hg19"/>
+                    <element name="e2" value="same_simple_line.txt" dbkey="hg19"/>
+                </collection>
+            </param>
+            <param name="index" value="hg18" />
+            <param name="index_multi" value="hg18" />
             <output name="output" file="simple_line_x2.txt"/>
         </test>
     </tests>
