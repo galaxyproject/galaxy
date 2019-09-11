@@ -25,11 +25,6 @@
                         </b-link>
                         <p>{{ row.item.description }}</p>
                     </template>
-                    <template slot="tool_shed" slot-scope="row">
-                        <b-link :href="row.item.tool_shed_url" role="button" class="font-weight-bold">
-                            {{ row.item.tool_shed }}
-                        </b-link>
-                    </template>
                     <template slot="row-details" slot-scope="row">
                         <repositorydetails :repo="row.item" />
                     </template>

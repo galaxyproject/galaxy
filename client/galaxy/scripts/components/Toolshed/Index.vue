@@ -9,24 +9,24 @@
                 @input="delayQuery"
                 @change="setQuery"
             />
-            <b-form-radio-group class="mb-3" v-model="tabCurrent" :options="tabOptions" />
-            <div v-if="tabCurrent">
-                <search :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
+            <b-form-radio-group class="mb-3" v-model="tabValue" :options="tabOptions" />
+            <div v-if="tabValue">
+                <searchlist :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
             </div>
             <div v-else>
-                <installed :filter="queryInput" />
+                <installedlist :filter="queryInput" />
             </div>
         </div>
     </div>
 </template>
 <script>
 import { getGalaxyInstance } from "app";
-import Search from "./SearchList/Index.vue";
-import Installed from "./InstalledList/Index.vue";
+import SearchList from "./SearchList/Index.vue";
+import InstalledList from "./InstalledList/Index.vue";
 export default {
     components: {
-        search: Search,
-        installed: Installed
+        searchlist: SearchList,
+        installedlist: InstalledList
     },
     data() {
         return {
@@ -41,11 +41,8 @@ export default {
             loading: false,
             total: 0,
             error: null,
-            tabCurrent: 'true',
-            tabOptions: [
-              { text: 'Search All', value: true },
-              { text: 'Installed Only', value: false }
-            ]
+            tabValue: true,
+            tabOptions: [{ text: "Search All", value: true }, { text: "Installed Only", value: false }]
         };
     },
     created() {
