@@ -162,10 +162,6 @@ class ToolWatcher(BaseWatcher):
         self.tool_dir_callbacks = {}
         self.monitored_dirs = {}
 
-    def monitor(self, dir):
-        if self.observer is not None:
-            self.observer.schedule(self.event_handler, dir, recursive=False)
-
     def watch_file(self, tool_file, tool_id):
         tool_file = os.path.abspath(tool_file)
         self.tool_file_ids[tool_file] = tool_id

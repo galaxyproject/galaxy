@@ -71,6 +71,7 @@ class BaseWatcher(object):
         self.observer = None
         self.observer_class = observer_class
         self.event_handler = even_handler_class(self)
+        self.monitored_dirs = {}
 
     def start(self):
         if self.observer is None:
@@ -78,8 +79,14 @@ class BaseWatcher(object):
             self.observer.start()
             self.resume_watching()
 
+    def monitor(self, dir, recursive=False):
+        self.monitored_dirs[dir] = recursive
+        if self.observer is not None:
+            self.observer.schedule(self.event_handler, dir, recursive=recursive)
+
     def resume_watching(self):
-        pass
+        for dir_path, recursive in self.monitored_dirs.items():
+            self.monitor(dir_path, recursive)
 
     def shutdown(self):
         if self.observer is not None:
@@ -92,22 +99,12 @@ class Watcher(BaseWatcher):
 
     def __init__(self, observer_class, event_handler_class, **kwargs):
         super(Watcher, self).__init__(observer_class, event_handler_class, **kwargs)
-        self.monitored_dirs = {}
         self.path_hash = {}
         self.file_callbacks = {}
         self.dir_callbacks = {}
         self.ignore_extensions = {}
         self.require_extensions = {}
         self.event_handler = event_handler_class(self)
-
-    def monitor(self, dir, recursive=False):
-        self.monitored_dirs[dir] = recursive
-        if self.observer is not None:
-            self.observer.schedule(self.event_handler, dir, recursive=recursive)
-
-    def resume_watching(self):
-        for dir_path, recursive in self.monitored_dirs.items():
-            self.monitor(dir_path, recursive)
 
     def watch_file(self, file_path, callback=None):
         file_path = os.path.abspath(file_path)
