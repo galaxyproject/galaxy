@@ -359,21 +359,25 @@ class MetadataGenerator(object):
                 metadata_dict['sample_files'] = sample_file_metadata_paths
             # Copy all sample files included in the repository to a single directory location so we
             # can load tools that depend on them.
+            datatableconfxmlsample_found = False
             for sample_file in sample_file_copy_paths:
                 tool_util.copy_sample_file(self.app, sample_file, dest_path=work_dir)
                 # If the list of sample files includes a tool_data_table_conf.xml.sample file, load
                 # its table elements into memory.
                 relative_path, filename = os.path.split(sample_file)
                 if filename == 'tool_data_table_conf.xml.sample':
-                    # We create a new ToolDataTableManager to avoid adding entries to the app-wide
-                    # tool data tables. This is only used for checking that the data table is valid.
-                    new_table_elems, error_message = \
-                        validation_context.tool_data_tables.add_new_entries_from_config_file(config_filename=sample_file,
-                                                                                             tool_data_path=work_dir,
-                                                                                             shed_tool_data_table_config=work_dir,
-                                                                                             persist=False)
-                    if error_message:
-                        self.invalid_file_tups.append((filename, error_message))
+                    datatableconfxmlsample_found = True
+
+            if datatableconfxmlsample_found:
+                # We create a new ToolDataTableManager to avoid adding entries to the app-wide
+                # tool data tables. This is only used for checking that the data table is valid.
+                new_table_elems, error_message = \
+                    validation_context.tool_data_tables.add_new_entries_from_config_file(config_filename=sample_file,
+                                                                                         tool_data_path=work_dir,
+                                                                                         shed_tool_data_table_config=work_dir,
+                                                                                         persist=False)
+                if error_message:
+                    self.invalid_file_tups.append((filename, error_message))
             for root, dirs, files in os.walk(files_dir):
                 if root.find('.hg') < 0 and root.find('hgrc') < 0:
                     if '.hg' in dirs:
