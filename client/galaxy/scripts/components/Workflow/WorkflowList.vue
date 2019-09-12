@@ -95,9 +95,6 @@ export default {
                 name: {
                     sortable: true
                 },
-                description: {
-                    sortable: true
-                },
                 tags: {},
                 bookmark: {},
                 execute: {

@@ -10,6 +10,7 @@
             <span :class="icon" />
             {{ workflow.name }}
         </b-link>
+        <p>{{ workflow.description }}</p>
         <div v-if="workflow.shared" class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a class="dropdown-item" href="#" @click="onCopy">Copy</a>
             <a class="dropdown-item" :href="urlViewShared">View</a>
