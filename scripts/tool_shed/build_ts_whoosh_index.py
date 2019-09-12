@@ -130,7 +130,7 @@ def get_repos(sa_session, path_to_repositories, hgweb_config_dir):
         category_names = []
         for rca in sa_session.query(model.RepositoryCategoryAssociation).filter(model.RepositoryCategoryAssociation.repository_id == repo.id):
             for category in sa_session.query(model.Category).filter(model.Category.id == rca.category.id):
-                category_names.append(category.name)
+                category_names.append(category.name.lower())
         categories = (",").join(category_names)
         repo_id = repo.id
         name = repo.name
@@ -146,7 +146,7 @@ def get_repos(sa_session, path_to_repositories, hgweb_config_dir):
         repo_owner_username = ''
         if repo.user_id is not None:
             user = sa_session.query(model.User).filter(model.User.id == repo.user_id).one()
-            repo_owner_username = user.username
+            repo_owner_username = user.username.lower()
 
         approved = 'no'
         for review in repo.reviews:
