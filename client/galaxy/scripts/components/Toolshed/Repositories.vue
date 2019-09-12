@@ -41,7 +41,7 @@ export default {
                 { key: "times_downloaded", label: "Downloaded" }
             ],
             page: 1,
-            pageSize: 10,
+            pageSize: 50,
             pageState: READY,
             error: null
         };

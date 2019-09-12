@@ -7,7 +7,7 @@ import whoosh.index
 from whoosh import scoring
 from whoosh.fields import KEYWORD, Schema, STORED, TEXT
 from whoosh.qparser import MultifieldParser
-from whoosh.query import And, Term
+from whoosh.query import And, Every, Term
 
 from galaxy import exceptions
 from galaxy.exceptions import ObjectNotFound
@@ -74,8 +74,13 @@ class RepoSearch(object):
         :param page_size: integer defining a length of one page
         :param page: integer with the number of page requested
 
-        :returns results: dictionary containing hits themselves and the number of hits
+        :returns results: dictionary containing hits themselves and the hits summary
         """
+        log.debug('raw search query: #' + str(search_term))
+        lower_search_term = search_term.lower()
+        allow_query, search_term_without_filters = self._parse_reserved_filters(lower_search_term)
+        log.debug('term without filters: #' + str(search_term_without_filters))
+
         whoosh_index_dir = trans.app.config.whoosh_index_dir
         index_exists = whoosh.index.exists_in(whoosh_index_dir)
         if index_exists:
@@ -92,11 +97,7 @@ class RepoSearch(object):
                                                         'remote_repository_url_B' : boosts.repo_remote_repository_url_boost,
                                                         'repo_owner_username_B' : boosts.repo_owner_username_boost,
                                                         'categories_B' : boosts.categories_boost})
-
                 searcher = index.searcher(weighting=repo_weighting)
-
-                allow_query, search_term_without_filters = self._parse_reserved_filters(search_term)
-
                 parser = MultifieldParser([
                     'name',
                     'description',
@@ -105,17 +106,20 @@ class RepoSearch(object):
                     'remote_repository_url',
                     'repo_owner_username',
                     'categories'], schema=schema)
-                user_query = parser.parse('*' + search_term_without_filters + '*')
 
+                # If user query has just filters prevent wildcard search.
+                if len(search_term_without_filters) < 1:
+                    user_query = Every('name')
+                    sortedby = 'name'
+                else:
+                    user_query = parser.parse('*' + search_term_without_filters + '*')
+                    sortedby = ''
                 try:
-                    hits = searcher.search_page(user_query, page, pagelen=page_size, filter=allow_query, terms=True)
+                    hits = searcher.search_page(user_query, page, pagelen=page_size, filter=allow_query, terms=True, sortedby=sortedby)
+                    log.debug('total hits: ' + str(len(hits)))
+                    log.debug('scored hits: ' + str(hits.scored_length()))
                 except ValueError:
                     raise ObjectNotFound('The requested page does not exist.')
-
-                log.debug('user search query: #' + str(search_term))
-                log.debug('term without filters: #' + str(search_term_without_filters))
-                log.debug('total hits: ' + str(len(hits)))
-                log.debug('scored hits: ' + str(hits.scored_length()))
                 results = {}
                 results['total_results'] = str(len(hits))
                 results['page'] = str(page)
