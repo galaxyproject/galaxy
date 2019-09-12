@@ -170,6 +170,8 @@ class RepoSearch(object):
         (And([Term('categories', 'Climate Analysis')]), 'psy_maps')
         >>> rs._parse_reserved_filters("climate category:'Climate Analysis' owner:'bjoern gruening' psy_maps")
         (And([Term('categories', 'Climate Analysis'), Term('repo_owner_username', 'bjoern gruening')]), 'climate psy_maps')
+        >>> rs._parse_reserved_filters("climate category:'John Says This Fails' owner:'bjoern gruening' psy_maps")
+        (And([Term('categories', 'John Says This Fails'), Term('repo_owner_username', 'bjoern gruening')]), 'climate psy_maps')
         >>> rs._parse_reserved_filters("abyss category:assembly")
         (And([Term('categories', 'assembly')]), 'abyss')
         >>> rs._parse_reserved_filters("abyss category:assembly greg")
@@ -181,28 +183,19 @@ class RepoSearch(object):
         >>> rs._parse_reserved_filters("meaningoflife:42")
         (None, 'meaningoflife:42')
         """
-        allow_query = None
         allow_terms = []
-        # Split query string on spaces that are not followed by <anytext>singlequote_space_
-        # to allow for quoting filtering values. Also unify double and single quotes into single quotes.
-        search_term_chunks = re.split(r"\s+(?!\w+'\s)", search_term.replace('"', "'"), re.MULTILINE)
-        reserved_terms = []
-        for term_chunk in search_term_chunks:
-            if ":" in term_chunk:
-                reserved_filter = term_chunk.split(":")[0]
-                # Remove the quotes used for delimiting values with space(s)
-                reserved_filter_value = term_chunk.split(":")[1].replace("'", "")
-                if reserved_filter in RESERVED_SEARCH_TERMS:
-                    reserved_terms.append(term_chunk)
-                    if reserved_filter == "category":
-                        allow_terms.append(Term('categories', reserved_filter_value))
-                    elif reserved_filter == "owner":
-                        allow_terms.append(Term('repo_owner_username', reserved_filter_value))
-                else:
-                    pass  # Treat unrecognized filter as normal search term.
-        if allow_terms:
-            allow_query = And(allow_terms)
-            search_term_without_filters = " ".join([chunk for chunk in search_term_chunks if chunk not in reserved_terms])
-        else:
-            search_term_without_filters = search_term
+        search_term_without_filters = None
+        search_space = search_term.replace('"', "'")
+        reserved = re.compile(r"(category|owner):(\w+|\'.*?\')")
+        while True:
+            match = reserved.search(search_space)
+            if match is None:
+                search_term_without_filters = ' '.join(search_space.split())
+                break
+            if match.groups()[0] in ["category", "c"]:
+                allow_terms.append(Term('categories', match.groups()[1].strip().replace("'", "")))
+            elif match.groups()[0] in ["owner", "o"]:
+                allow_terms.append(Term('repo_owner_username', match.groups()[1].strip().replace("'", "")))
+            search_space = search_space[0:match.start()] + search_space[match.end():]
+        allow_query = And(allow_terms) if allow_terms else None
         return allow_query, search_term_without_filters
