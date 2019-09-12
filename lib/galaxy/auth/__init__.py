@@ -66,8 +66,7 @@ class AuthManager(object):
                     try:
                         auth_return = parse_auth_results(trans, auth_results, options)
                     except Conflict:
-                        log.exception(Conflict)
-                        raise
+                        break
                     return auth_return
                 elif auth_results[0] is None:
                     auto_email = str(auth_results[1]).lower()
