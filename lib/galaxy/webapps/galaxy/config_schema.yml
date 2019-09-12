@@ -107,7 +107,7 @@ mapping:
 
       slow_query_log_threshold:
         type: float
-        default: 0
+        default: 0.0
         required: false
         desc: |
           Slow query logging.  Queries slower than the threshold indicated below will
