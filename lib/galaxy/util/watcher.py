@@ -79,10 +79,10 @@ class BaseWatcher(object):
             self.observer.start()
             self.resume_watching()
 
-    def monitor(self, dir, recursive=False):
-        self.monitored_dirs[dir] = recursive
+    def monitor(self, dir_path, recursive=False):
+        self.monitored_dirs[dir_path] = recursive
         if self.observer is not None:
-            self.observer.schedule(self.event_handler, dir, recursive=recursive)
+            self.observer.schedule(self.event_handler, dir_path, recursive=recursive)
 
     def resume_watching(self):
         for dir_path, recursive in self.monitored_dirs.items():

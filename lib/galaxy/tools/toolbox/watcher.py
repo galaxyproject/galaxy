@@ -160,7 +160,6 @@ class ToolWatcher(BaseWatcher):
         self.toolbox = toolbox
         self.tool_file_ids = {}
         self.tool_dir_callbacks = {}
-        self.monitored_dirs = {}
 
     def watch_file(self, tool_file, tool_id):
         tool_file = os.path.abspath(tool_file)
