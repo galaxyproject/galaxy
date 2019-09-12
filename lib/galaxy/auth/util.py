@@ -68,7 +68,6 @@ def get_authenticators(auth_config_file, auth_config_file_set):
 def parse_auth_results(trans, auth_results, options):
     auth_return = {}
     auth_result, auto_email, auto_username = auth_results[:3]
-    auto_email = str(auto_email).lower()
     auto_username = str(auto_username).lower()
     # make username unique
     if validate_publicname(trans, auto_username) != '':

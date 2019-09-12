@@ -7,7 +7,10 @@ from datetime import datetime, timedelta
 
 from markupsafe import escape
 from six.moves.urllib.parse import unquote
-from sqlalchemy import or_
+from sqlalchemy import (
+    func,
+    or_
+)
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
@@ -133,7 +136,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if not login or not password:
             return self.message_exception(trans, "Please specify a username and password.")
         user = trans.sa_session.query(trans.app.model.User).filter(or_(
-            trans.app.model.User.table.c.email == login,
+            func.lower(trans.app.model.User.table.c.email) == login.lower(),
             trans.app.model.User.table.c.username == login
         )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
