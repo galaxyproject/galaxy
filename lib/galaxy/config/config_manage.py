@@ -506,12 +506,12 @@ def _validate(args, app_desc):
     raw_config = _order_load_path(path)
     if raw_config.get(app_desc.app_name, None) is None:
         raw_config[app_desc.app_name] = {}
-        config_p = tempfile.NamedTemporaryFile(delete=False, suffix=".yml")
+        config_p = tempfile.NamedTemporaryFile('w', delete=False, suffix=".yml")
         ordered_dump(raw_config, config_p)
         config_p.flush()
         path = config_p.name
 
-    fp = tempfile.NamedTemporaryFile(delete=False, suffix=".yml")
+    fp = tempfile.NamedTemporaryFile('w', delete=False, suffix=".yml")
 
     def _clean(p, k, v):
         return k != 'reloadable'
