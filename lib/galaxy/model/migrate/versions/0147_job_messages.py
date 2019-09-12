@@ -5,7 +5,12 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, MetaData, Table, TEXT
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+    TEXT
+)
 
 from galaxy.model.custom_types import JSONType
 from galaxy.model.migrate.versions.util import (
@@ -25,19 +30,19 @@ def upgrade(migrate_engine):
 
     jobs_table = Table("job", metadata, autoload=True)
     job_messages_column = Column("job_messages", JSONType, nullable=True)
-    add_column(job_messages_column, jobs_table)
+    add_column(job_messages_column, jobs_table, metadata)
     job_job_stdout_column = Column("job_stdout", TEXT, nullable=True)
-    add_column(job_job_stdout_column, jobs_table)
+    add_column(job_job_stdout_column, jobs_table, metadata)
     job_job_stderr_column = Column("job_stderr", TEXT, nullable=True)
-    add_column(job_job_stderr_column, jobs_table)
+    add_column(job_job_stderr_column, jobs_table, metadata)
 
     tasks_table = Table("task", metadata, autoload=True)
     task_job_messages_column = Column("job_messages", JSONType, nullable=True)
-    add_column(task_job_messages_column, tasks_table)
+    add_column(task_job_messages_column, tasks_table, metadata)
     task_job_stdout_column = Column("job_stdout", TEXT, nullable=True)
-    add_column(task_job_stdout_column, tasks_table)
+    add_column(task_job_stdout_column, tasks_table, metadata)
     task_job_stderr_column = Column("job_stderr", TEXT, nullable=True)
-    add_column(task_job_stderr_column, tasks_table)
+    add_column(task_job_stderr_column, tasks_table, metadata)
 
     for table in [jobs_table, tasks_table]:
         alter_column('stdout', table, name='tool_stdout')

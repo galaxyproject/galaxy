@@ -8,11 +8,11 @@ import os
 import shutil
 import tempfile
 import threading
+from collections import OrderedDict
 
 from galaxy import util
 from galaxy.tools.toolbox import ToolSection
 from galaxy.tools.toolbox.parser import ensure_tool_conf_item
-from galaxy.util.odict import odict
 from tool_shed.galaxy_install import install_manager
 from tool_shed.galaxy_install.datatypes import custom_datatype_manager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
@@ -112,7 +112,7 @@ class ToolMigrationManager(object):
                     # tool_shed_accessible to True so that the value of migrate_tools.version can
                     # be correctly set in the database.
                     tool_shed_accessible = True
-                    missing_tool_configs_dict = odict()
+                    missing_tool_configs_dict = OrderedDict()
                 if tool_shed_accessible:
                     if len(self.proprietary_tool_confs) == 1:
                         plural = ''
@@ -386,7 +386,7 @@ class ToolMigrationManager(object):
         entries are automatically added to the reserved migrated_tools_conf.xml file as part of the migration process.
         """
         tool_configs_to_filter = []
-        tool_panel_dict_for_display = odict()
+        tool_panel_dict_for_display = OrderedDict()
         if self.tool_path:
             repo_install_dir = os.path.join(self.tool_path, relative_install_dir)
         else:

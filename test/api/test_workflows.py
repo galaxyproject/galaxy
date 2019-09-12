@@ -23,6 +23,8 @@ from base.workflow_fixtures import (  # noqa: I100
     WORKFLOW_ONE_STEP_DEFAULT,
     WORKFLOW_RENAME_ON_INPUT,
     WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
+    WORKFLOW_WITH_CUSTOM_REPORT_1,
+    WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
@@ -1233,6 +1235,58 @@ test_data:
             assert nested_collection['element_count'] == 1
             assert nested_collection['elements'][0]['object']['populated']
             assert nested_collection['elements'][0]['object']['element_count'] == 2
+
+    @skip_without_tool("cat")
+    def test_workflow_invocation_report_1(self):
+        test_data = """
+input_1:
+  value: 1.bed
+  type: File
+"""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_jobs(r"""
+class: GalaxyWorkflow
+inputs:
+  input_1: data
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+""", test_data=test_data, history_id=history_id)
+            workflow_id = summary.workflow_id
+            invocation_id = summary.invocation_id
+            report_json = self.workflow_populator.workflow_report_json(workflow_id, invocation_id)
+            assert "markdown" in report_json
+            self._assert_has_keys(report_json , "markdown", "render_format")
+            assert report_json["render_format"] == "markdown"
+            markdown_content = report_json["markdown"]
+            assert "## Workflow Outputs" in markdown_content
+            assert "## Workflow Inputs" in markdown_content
+            assert "## About This Report" not in markdown_content
+
+    @skip_without_tool("cat")
+    def test_workflow_invocation_report_custom(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_jobs(
+                WORKFLOW_WITH_CUSTOM_REPORT_1,
+                test_data=WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
+                history_id=history_id
+            )
+            workflow_id = summary.workflow_id
+            invocation_id = summary.invocation_id
+            report_json = self.workflow_populator.workflow_report_json(workflow_id, invocation_id)
+            assert "markdown" in report_json, "markdown not in report json %s" % report_json
+            self._assert_has_keys(report_json , "markdown", "render_format")
+            assert report_json["render_format"] == "markdown"
+            markdown_content = report_json["markdown"]
+            assert "## Workflow Outputs" in markdown_content
+            assert "\n```galaxy\nhistory_dataset_display(history_dataset_id=" in markdown_content
+            assert "## Workflow Inputs" in markdown_content
+            assert "## About This Report" in markdown_content
 
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):
@@ -3147,6 +3201,69 @@ steps:
             # assert hda3["deleted"]
             print(hda3["deleted"])
             assert not hda4["deleted"]
+
+    @skip_without_tool("cat1")
+    def test_validated_post_job_action_validated(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+    post_job_actions:
+      ValidateOutputsAction:
+        action_type: ValidateOutputsAction
+""", test_data={"input1": {"type": "File", "file_type": "fastqsanger", "value": "1.fastqsanger"}}, history_id=history_id)
+            hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
+            assert hda2["validated_state"] == "ok"
+
+    @skip_without_tool("cat1")
+    def test_validated_post_job_action_unvalidated_default(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+""", test_data={"input1": {"type": "File", "file_type": "fastqsanger", "value": "1.fastqsanger"}}, history_id=history_id)
+            hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
+            assert hda2["validated_state"] == "unknown"
+
+    @skip_without_tool("cat1")
+    def test_validated_post_job_action_invalid(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+outputs:
+  wf_output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+    post_job_actions:
+      ValidateOutputsAction:
+        action_type: ValidateOutputsAction
+""", test_data={"input1": {"type": "File", "file_type": "fastqcssanger", "value": "1.fastqsanger"}}, history_id=history_id)
+            hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
+            assert hda2["validated_state"] == "invalid"
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):

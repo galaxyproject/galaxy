@@ -399,7 +399,7 @@ export default Backbone.View.extend({
                 // Add hyperlink for this filter since grid will no longer be using this filter. It is assumed that
                 // this element has a single child, a hyperlink/anchor.
                 $(this).empty();
-                var t = $(`<a href="#">${text}</a>`);
+                var t = $(`<a href="javascript:void(0)" role="button">${text}</a>`);
                 t.click(() => {
                     self.set_categorical_filter(name, filter_value);
                 });
@@ -441,7 +441,7 @@ export default Backbone.View.extend({
                 text = $(this).text();
                 $(this).empty();
                 $(this).removeClass("inactive-link");
-                var t = $(`<a href="#">${text}</a>`);
+                var t = $(`<a href="javascript:void(0)" role="button">${text}</a>`);
                 t.click(() => {
                     self.set_page(page_num);
                 });

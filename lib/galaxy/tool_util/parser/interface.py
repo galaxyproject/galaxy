@@ -5,7 +5,7 @@ from abc import (
 
 import six
 
-from .error_level import StdioErrorLevel
+from .util import _parse_name
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 
@@ -120,6 +120,11 @@ class ToolSource(object):
         """ Return string containing the interpreter to prepend to the command
         (for instance this might be 'python' to run a Python wrapper located
         adjacent to the tool).
+        """
+
+    @abstractmethod
+    def parse_interactivetool(self):
+        """ Return InteractiveTool entry point templates to expose.
         """
 
     def parse_redirect_url_params_elem(self):
@@ -290,6 +295,14 @@ class InputSource(object):
     def parse_label(self):
         return self.get("label")
 
+    def parse_name(self):
+        """Return name of an input source
+        returns the name or if absent the argument property
+        In the latter case, leading dashes are stripped and
+        all remaining dashes are replaced by underscores.
+        """
+        return _parse_name(self.get('name'), self.get('argument'))
+
     def parse_help(self):
         return self.get("help")
 
@@ -339,56 +352,6 @@ class InputSource(object):
 
     def parse_when_input_sources(self):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
-
-
-class ToolStdioRegex(object):
-    """
-    This is a container for the <stdio> element's regex subelement.
-    The regex subelement has a "match" attribute, a "sources"
-    attribute that contains "output" and/or "error", and a "level"
-    attribute that contains "warning" or "fatal".
-    """
-
-    def __init__(self, as_dict=None):
-        as_dict = as_dict or {}
-        self.match = as_dict.get("match", "")
-        self.stdout_match = as_dict.get("stdout_match", False)
-        self.stderr_match = as_dict.get("stderr_match", False)
-        self.error_level = as_dict.get("error_level", StdioErrorLevel.FATAL)
-        self.desc = as_dict.get("desc", "")
-
-    def to_dict(self):
-        return {
-            "class": "ToolStdioRegex",
-            "match": self.match,
-            "stdout_match": self.stdout_match,
-            "stderr_match": self.stderr_match,
-            "error_level": self.error_level,
-            "desc": self.desc,
-        }
-
-
-class ToolStdioExitCode(object):
-    """
-    This is a container for the <stdio> element's <exit_code> subelement.
-    The exit_code element has a range of exit codes and the error level.
-    """
-
-    def __init__(self, as_dict=None):
-        as_dict = as_dict or {}
-        self.range_start = as_dict.get("range_start", float("-inf"))
-        self.range_end = as_dict.get("range_end", float("inf"))
-        self.error_level = as_dict.get("error_level", StdioErrorLevel.FATAL)
-        self.desc = as_dict.get("desc", "")
-
-    def to_dict(self):
-        return {
-            "class": "ToolStdioExitCode",
-            "range_start": self.range_start,
-            "range_end": self.range_end,
-            "error_level": self.error_level,
-            "desc": self.desc,
-        }
 
 
 class TestCollectionDef(object):

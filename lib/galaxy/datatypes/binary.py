@@ -22,7 +22,10 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes.data import get_file_peek
+from galaxy.datatypes.data import (
+    DatatypeValidation,
+    get_file_peek,
+)
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
 from galaxy.util import nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
@@ -284,6 +287,10 @@ class BamNative(CompressedArchive):
         Binary.init_meta(self, dataset, copy_from=copy_from)
 
     def sniff(self, filename):
+        return BamNative.is_bam(filename)
+
+    @classmethod
+    def is_bam(cls, filename):
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
         try:
@@ -422,6 +429,13 @@ class BamNative(CompressedArchive):
                                        column_number=column_number,
                                        column_names=column_names,
                                        column_types=column_types)
+
+    def validate(self, dataset, **kwd):
+        if not BamNative.is_bam(dataset.file_name):
+            return DatatypeValidation.invalid("This dataset does not appear to a BAM file.")
+        elif self.dataset_content_needs_grooming(dataset.file_name):
+            return DatatypeValidation.invalid("This BAM file does not appear to have the correct sorting for declared datatype.")
+        return DatatypeValidation.validated()
 
 
 @dataproviders.decorators.has_dataproviders
@@ -810,11 +824,16 @@ class Loom(H5):
 
     def sniff(self, filename):
         if super(Loom, self).sniff(filename):
-            try:
-                with h5py.File(filename) as loom_file:
-                    return bool(loom_file.attrs.get('LOOM_SPEC_VERSION', False))
-            except Exception:
-                return False
+            with h5py.File(filename, 'r') as loom_file:
+                # Check the optional but distinctive LOOM_SPEC_VERSION attribute
+                if bool(loom_file.attrs.get('LOOM_SPEC_VERSION')):
+                    return True
+                # Check some mandatory H5 datasets and groups
+                for el in ('matrix', 'row_attrs', 'col_attrs'):
+                    if loom_file.get(el) is None:
+                        return False
+                else:
+                    return True
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):
@@ -834,16 +853,16 @@ class Loom(H5):
     def set_meta(self, dataset, overwrite=True, **kwd):
         super(Loom, self).set_meta(dataset, overwrite=overwrite, **kwd)
         try:
-            with h5py.File(dataset.file_name) as loom_file:
-                dataset.metadata.title = loom_file.attrs.get('title', None)
-                dataset.metadata.description = loom_file.attrs.get('description', None)
-                dataset.metadata.url = loom_file.attrs.get('url', None)
-                dataset.metadata.doi = loom_file.attrs.get('doi', None)
-                dataset.metadata.loom_spec_version = loom_file.attrs.get('LOOM_SPEC_VERSION', None)
-                dataset.creation_date = loom_file.attrs.get('creation_date', None)
+            with h5py.File(dataset.file_name, 'r') as loom_file:
+                dataset.metadata.title = util.unicodify(loom_file.attrs.get('title'))
+                dataset.metadata.description = util.unicodify(loom_file.attrs.get('description'))
+                dataset.metadata.url = util.unicodify(loom_file.attrs.get('url'))
+                dataset.metadata.doi = util.unicodify(loom_file.attrs.get('doi'))
+                dataset.metadata.loom_spec_version = util.unicodify(loom_file.attrs.get('LOOM_SPEC_VERSION'))
+                dataset.creation_date = util.unicodify(loom_file.attrs.get('creation_date'))
                 dataset.metadata.shape = tuple(loom_file['matrix'].shape)
 
-                tmp = list(loom_file['layers'].keys())
+                tmp = list(loom_file.get('layers', {}).keys())
                 dataset.metadata.layers_count = len(tmp)
                 dataset.metadata.layers_names = tmp
 
@@ -855,11 +874,15 @@ class Loom(H5):
                 dataset.metadata.col_attrs_count = len(tmp)
                 dataset.metadata.col_attrs_names = tmp
 
-                tmp = list(loom_file['col_graphs'].keys())
+                # According to the Loom file format specification, col_graphs
+                # and row_graphs are mandatory groups, but files created by
+                # Bioconductor LoomExperiment do not always have them:
+                # https://github.com/Bioconductor/LoomExperiment/issues/7
+                tmp = list(loom_file.get('col_graphs', {}).keys())
                 dataset.metadata.col_graphs_count = len(tmp)
                 dataset.metadata.col_graphs_names = tmp
 
-                tmp = list(loom_file['row_graphs'].keys())
+                tmp = list(loom_file.get('row_graphs', {}).keys())
                 dataset.metadata.row_graphs_count = len(tmp)
                 dataset.metadata.row_graphs_names = tmp
         except Exception as e:
@@ -880,7 +903,7 @@ class Anndata(H5):
     def sniff(self, filename):
         if super(Anndata, self).sniff(filename):
             try:
-                with h5py.File(filename) as f:
+                with h5py.File(filename, 'r') as f:
                     return all(attr in f for attr in ['X', 'obs', 'var'])
             except Exception:
                 return False
@@ -1002,45 +1025,40 @@ class Biom2(H5):
         False
         """
         if super(Biom2, self).sniff(filename):
-            try:
-                f = h5py.File(filename)
-                attributes = list(dict(f.attrs.items()))
-                required_fields = ['id', 'format-url', 'type', 'generated-by', 'creation-date', 'nnz', 'shape']
-                return set(required_fields).issubset(attributes)
-            except Exception:
-                return False
+            with h5py.File(filename, 'r') as f:
+                required_fields = {'id', 'format-url', 'type', 'generated-by', 'creation-date', 'nnz', 'shape'}
+                return required_fields.issubset(f.attrs.keys())
         return False
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         super(Biom2, self).set_meta(dataset, overwrite=overwrite, **kwd)
         try:
-            f = h5py.File(dataset.file_name)
-            attributes = dict(f.attrs.items())
+            with h5py.File(dataset.file_name, 'r') as f:
+                attributes = f.attrs
 
-            dataset.metadata.id = attributes['id']
-            dataset.metadata.format_url = attributes['format-url']
-            if 'format-version' in attributes:  # biom 2.1
-                dataset.metadata.format_version = '.'.join(map(str, list(attributes['format-version'])))
-            elif 'format' in attributes:  # biom 2.0
-                dataset.metadata.format = attributes['format']
-            dataset.metadata.type = attributes['type']
-            dataset.metadata.shape = tuple(attributes['shape'])
-            dataset.metadata.generated_by = attributes['generated-by']
-            dataset.metadata.creation_date = attributes['creation-date']
-            dataset.metadata.nnz = int(attributes['nnz'])
-
+                dataset.metadata.id = util.unicodify(attributes['id'])
+                dataset.metadata.format_url = util.unicodify(attributes['format-url'])
+                if 'format-version' in attributes:  # biom 2.1
+                    dataset.metadata.format_version = '.'.join(str(_) for _ in attributes['format-version'])
+                elif 'format' in attributes:  # biom 2.0
+                    dataset.metadata.format = util.unicodify(attributes['format'])
+                dataset.metadata.type = util.unicodify(attributes['type'])
+                dataset.metadata.shape = tuple((int(_) for _ in attributes['shape']))
+                dataset.metadata.generated_by = util.unicodify(attributes['generated-by'])
+                dataset.metadata.creation_date = util.unicodify(attributes['creation-date'])
+                dataset.metadata.nnz = int(attributes['nnz'])
         except Exception as e:
-            log.warning('%s, set_meta Exception: %s', self, e)
+            log.warning('%s, set_meta Exception: %s', self, util.unicodify(e))
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             lines = ['Biom2 (HDF5) file']
             try:
-                f = h5py.File(dataset.file_name)
-                for k, v in dict(f.attrs).items():
-                    lines.append('%s:  %s' % (k, v))
+                with h5py.File(dataset.file_name) as f:
+                    for k, v in f.attrs.items():
+                        lines.append('%s:  %s' % (k, util.unicodify(v)))
             except Exception as e:
-                log.warning('%s, set_peek Exception: %s', self, e)
+                log.warning('%s, set_peek Exception: %s', self, util.unicodify(e))
             dataset.peek = '\n'.join(lines)
             dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -1084,8 +1102,8 @@ class Cool(H5):
         if super(Cool, self).sniff(filename):
             keys = ['chroms', 'bins', 'pixels', 'indexes']
             with h5py.File(filename, 'r') as handle:
-                fmt = handle.attrs.get('format', None)
-                url = handle.attrs.get('format-url', None)
+                fmt = handle.attrs.get('format')
+                url = handle.attrs.get('format-url')
                 if fmt == MAGIC or url == URL:
                     if not all(name in handle.keys() for name in keys):
                         return False
@@ -1144,8 +1162,8 @@ class MCool(H5):
                     return False
                 res0 = list(handle['resolutions'].keys())[0]
                 keys = ['chroms', 'bins', 'pixels', 'indexes']
-                fmt = handle['resolutions'][res0].attrs.get('format', None)
-                url = handle['resolutions'][res0].attrs.get('format-url', None)
+                fmt = handle['resolutions'][res0].attrs.get('format')
+                url = handle['resolutions'][res0].attrs.get('format-url')
                 if fmt == MAGIC or url == URL:
                     if not all(name in handle['resolutions'][res0].keys() for name in keys):
                         return False
@@ -1953,17 +1971,14 @@ class PostgresqlArchive(CompressedArchive):
             if dataset and tarfile.is_tarfile(dataset.file_name):
                 with tarfile.open(dataset.file_name, 'r') as temptar:
                     pg_version_file = temptar.extractfile('postgresql/db/PG_VERSION')
-                    dataset.metadata.version = pg_version_file.read().strip()
+                    dataset.metadata.version = util.unicodify(pg_version_file.read()).strip()
         except Exception as e:
-            log.warning('%s, set_meta Exception: %s', self, e)
+            log.warning('%s, set_meta Exception: %s', self, util.unicodify(e))
 
     def sniff(self, filename):
         if filename and tarfile.is_tarfile(filename):
-            try:
-                with tarfile.open(filename, 'r') as temptar:
-                    return 'postgresql/db/PG_VERSION' in temptar.getnames()
-            except Exception as e:
-                log.warning('%s, sniff Exception: %s', self, e)
+            with tarfile.open(filename, 'r') as temptar:
+                return 'postgresql/db/PG_VERSION' in temptar.getnames()
         return False
 
     def set_peek(self, dataset, is_multi_byte=False):

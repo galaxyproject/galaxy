@@ -177,7 +177,7 @@ def collection_wrapper_to_array(inputs_dir, wrapped_value):
 
 
 def collection_wrapper_to_record(inputs_dir, wrapped_value):
-    rval = dict()  # TODO: THIS NEEDS TO BE ORDERED BUT odict not json serializable!
+    rval = collections.OrderedDict()
     for key, value in wrapped_value.items():
         rval[key] = dataset_wrapper_to_file_json(inputs_dir, value)
     return rval

@@ -1,18 +1,22 @@
+from collections import OrderedDict
+
 import packaging.version
 
 from galaxy.tool_util.deps import requirements
-from galaxy.util.odict import odict
-from .interface import InputSource
-from .interface import PageSource
-from .interface import PagesSource
-from .interface import ToolSource
+from .interface import (
+    InputSource,
+    PageSource,
+    PagesSource,
+    ToolSource,
+)
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
 from .output_objects import (
     ToolOutput,
     ToolOutputCollection,
     ToolOutputCollectionStructure,
 )
-from .util import error_on_exit_code, is_dict
+from .stdio import error_on_exit_code
+from .util import is_dict
 
 
 class YamlToolSource(ToolSource):
@@ -105,10 +109,10 @@ class YamlToolSource(ToolSource):
             else:
                 message = "Unknown output_type [%s] encountered." % output_type
                 raise Exception(message)
-        outputs = odict()
+        outputs = OrderedDict()
         for output in output_defs:
             outputs[output.name] = output
-        output_collections = odict()
+        output_collections = OrderedDict()
         for output in output_collection_defs:
             output_collections[output.name] = output
 
@@ -167,6 +171,9 @@ class YamlToolSource(ToolSource):
 
     def parse_profile(self):
         return self.root_dict.get("profile", "16.04")
+
+    def parse_interactivetool(self):
+        return self.root_dict.get("entry_points", [])
 
     def parse_python_template_version(self):
         python_template_version = self.root_dict.get("python_template_version", None)

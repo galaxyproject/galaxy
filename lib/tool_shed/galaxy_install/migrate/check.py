@@ -2,12 +2,12 @@ import logging
 import os
 import subprocess
 import sys
+from collections import OrderedDict
 
 from migrate.versioning import repository, schema
 from sqlalchemy import create_engine, MetaData, Table
 
 from galaxy.util import get_executable
-from galaxy.util.odict import odict
 from tool_shed.util import common_util
 
 log = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
         tool_shed_accessible = False
         if app.new_installation:
             # New installations will not be missing tools, so we don't need to worry about them.
-            missing_tool_configs_dict = odict()
+            missing_tool_configs_dict = OrderedDict()
         else:
             tool_panel_configs = common_util.get_non_shed_tool_panel_configs(app)
             if tool_panel_configs:
@@ -47,7 +47,7 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
                 # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in
                 # the database.
                 tool_shed_accessible = True
-                missing_tool_configs_dict = odict()
+                missing_tool_configs_dict = OrderedDict()
         have_tool_dependencies = False
         for k, v in missing_tool_configs_dict.items():
             if v:

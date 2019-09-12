@@ -629,3 +629,15 @@ class ExpectationsTestCase(BaseLoaderTestCase):
         test_0 = tests[0]
         assert len(test_0["stderr"]) == 1
         assert len(test_0["stdout"]) == 2
+
+
+class QcStdioTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/qc_stdout.xml")
+    source_contents = None
+
+    def test_tests(self):
+        exit, regexes = self._tool_source.parse_stdio()
+        assert len(exit) == 2
+        assert len(regexes) == 1
+        regex = regexes[0]
+        assert regex.error_level == 1.1

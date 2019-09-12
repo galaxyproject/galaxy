@@ -9,8 +9,8 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData,
 from galaxy.model.custom_types import JSONType, UUIDType
 from galaxy.model.migrate.versions.util import add_column, create_table, drop_column, drop_table
 
-now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
+now = datetime.datetime.utcnow
 metadata = MetaData()
 
 
@@ -30,27 +30,17 @@ DynamicTool_table = Table(
     Column("value", JSONType()),
 )
 
-TABLES = [
-    DynamicTool_table,
-]
-
 
 def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    for table in TABLES:
-        create_table(table)
+    create_table(DynamicTool_table)
 
-    if migrate_engine.name in ['postgres', 'postgresql']:
-        workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), nullable=True)
-        job_workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), nullable=True)
-    else:
-        workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, nullable=True)
-        job_workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, nullable=True)
-
+    workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), nullable=True)
     add_column(workflow_dynamic_tool_id_column, "workflow_step", metadata)
+    job_workflow_dynamic_tool_id_column = Column("dynamic_tool_id", Integer, ForeignKey("dynamic_tool.id"), nullable=True)
     add_column(job_workflow_dynamic_tool_id_column, "job", metadata)
 
 
@@ -60,6 +50,4 @@ def downgrade(migrate_engine):
 
     drop_column("dynamic_tool_id", "workflow_step", metadata)
     drop_column("dynamic_tool_id", "job", metadata)
-
-    for table in TABLES:
-        drop_table(table)
+    drop_table(DynamicTool_table)

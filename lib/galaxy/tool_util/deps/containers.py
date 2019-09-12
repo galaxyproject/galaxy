@@ -178,7 +178,7 @@ class ContainerRegistry(object):
 
     def __init__(self, app_info):
         self.resolver_classes = self.__resolvers_dict()
-        self.enable_beta_mulled_containers = app_info.enable_beta_mulled_containers
+        self.enable_mulled_containers = app_info.enable_mulled_containers
         self.app_info = app_info
         self.container_resolvers = self.__build_container_resolvers(app_info)
 
@@ -203,7 +203,7 @@ class ContainerRegistry(object):
             ExplicitContainerResolver(self.app_info),
             ExplicitSingularityContainerResolver(self.app_info),
         ]
-        if self.enable_beta_mulled_containers:
+        if self.enable_mulled_containers:
             default_resolvers.extend([
                 CachedMulledDockerContainerResolver(self.app_info, namespace="biocontainers"),
                 CachedMulledDockerContainerResolver(self.app_info, namespace="local"),

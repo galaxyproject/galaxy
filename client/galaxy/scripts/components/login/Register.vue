@@ -37,7 +37,9 @@
                         </b-card-body>
                         <b-card-footer v-if="!isAdmin">
                             Already have an account?
-                            <a id="login-toggle" href="#" @click.prevent="toggleLogin">Log in here.</a>
+                            <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="toggleLogin"
+                                >Log in here.</a
+                            >
                         </b-card-footer>
                     </b-card>
                 </b-form>

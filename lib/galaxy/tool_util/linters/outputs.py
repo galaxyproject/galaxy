@@ -1,4 +1,5 @@
 """This module contains a linting functions for tool outputs."""
+from ._util import is_valid_cheetah_placeholder
 
 
 def lint_output(tool_xml, lint_ctx):
@@ -22,6 +23,9 @@ def lint_output(tool_xml, lint_ctx):
         output_attrib = output.attrib
         if "name" not in output_attrib:
             lint_ctx.warn("Tool output doesn't define a name - this is likely a problem.")
+        else:
+            if not is_valid_cheetah_placeholder(output_attrib["name"]):
+                lint_ctx.warn("Tool output name [%s] is not a valid Cheetah placeholder.", output_attrib["name"])
 
         if output.tag == "data":
             format_set = False

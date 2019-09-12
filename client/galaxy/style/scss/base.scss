@@ -105,6 +105,8 @@ body {
     @extend .d-flex;
     @extend .flex-column;
     @extend .full-content;
+    top: 0px;
+    left: 0px;
 }
 
 #columns {
@@ -1355,6 +1357,9 @@ div.permissionContainer {
     }
     background: $panel-bg-color;
     min-height: 100%;
+    .tool-old-link {
+        font-weight: bold;
+    }
 }
 
 div.toolSectionTitle {
@@ -1363,13 +1368,15 @@ div.toolSectionTitle {
 }
 
 div.toolPanelLabel {
-    @extend .py-1;
+    @extend .pb-1;
+    @extend .pt-2;
     @extend .px-3;
     font-weight: bold;
-    font-size: $h4-font-size;
-    color: $text-muted;
+    font-size: $h5-font-size;
+    color: $text-light;
     text-transform: uppercase;
 }
+
 
 div.toolSectionTitle,
 div.toolTitle,

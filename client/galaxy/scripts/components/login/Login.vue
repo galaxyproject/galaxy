@@ -12,16 +12,24 @@
                             <b-form-group label="Password">
                                 <b-form-input name="password" type="password" v-model="password" />
                                 <b-form-text
-                                    >Forgot password? Click here to <a @click="reset" href="#">reset</a> your
-                                    password.</b-form-text
-                                >
+                                    >Forgot password?
+                                    <a @click="reset" href="javascript:void(0)" role="button"
+                                        >Click here to reset your password.</a
+                                    >
+                                </b-form-text>
                             </b-form-group>
                             <b-button name="login" type="submit">Login</b-button>
                         </b-card-body>
                         <b-card-footer>
                             Don't have an account?
                             <span v-if="allowUserCreation">
-                                <a id="register-toggle" href="#" @click.prevent="toggleLogin">Register here.</a>
+                                <a
+                                    id="register-toggle"
+                                    href="javascript:void(0)"
+                                    role="button"
+                                    @click.prevent="toggleLogin"
+                                    >Register here.</a
+                                >
                             </span>
                             <span v-else>
                                 Registration for this Galaxy instance is disabled. Please contact an administrator for

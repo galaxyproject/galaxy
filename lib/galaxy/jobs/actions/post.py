@@ -68,6 +68,23 @@ class EmailAction(DefaultJobAction):
             return "Email the current user when this job is complete."
 
 
+class ValidateOutputsAction(DefaultJobAction):
+    """
+    This action validates the produced outputs against the expected datatype.
+    """
+    name = "ValidateOutputsAction"
+    verbose_name = "Validate Tool Outputs"
+
+    @classmethod
+    def execute(cls, app, sa_session, action, job, replacement_dict):
+        # no-op: needs to inject metadata handling parameters ahead of time.
+        pass
+
+    @classmethod
+    def get_short_str(cls, pja):
+        return "Validate tool outputs."
+
+
 class ChangeDatatypeAction(DefaultJobAction):
     name = "ChangeDatatypeAction"
     verbose_name = "Change Datatype"

@@ -98,6 +98,17 @@ uwsgi:
 
 galaxy:
 
+  # The directory that will be prepended to relative paths in options
+  # specifying other Galaxy config files (e.g. datatypes_config_file).
+  # Defaults to the directory in which galaxy.yml is located.
+  #config_dir: 'false'
+
+  # The directory that will be prepended to relative paths in options
+  # specifying Galaxy data/cache directories and files (such as the
+  # default SQLite database, file_path, etc.). Defaults to `database/`
+  # if running Galaxy from source or `<config_dir>/data` otherwise.
+  #data_dir: 'false'
+
   # By default, Galaxy uses a SQLite database at
   # 'database/universe.sqlite'.  You may use a SQLAlchemy connection
   # string to specify an external database instead.  This string takes
@@ -296,9 +307,9 @@ galaxy:
   # not exist).
   #tool_sheds_config_file: config/tool_sheds_conf.xml
 
-  # Set to true to enable monitoring of tools and tool directories
-  # listed in any tool config file specified in tool_config_file option.
-  # If changes are found, tools are automatically reloaded.  Watchdog (
+  # Monitor the tools and tool directories listed in any tool config
+  # file specified in tool_config_file option.  If changes are found,
+  # tools are automatically reloaded. Watchdog (
   # https://pypi.org/project/watchdog/ ) must be installed and available
   # to Galaxy to use this option. Other options include 'auto' which
   # will attempt to watch tools if the watchdog library is available but
@@ -307,10 +318,16 @@ galaxy:
   # scenarios than the watchdog default.
   #watch_tools: 'false'
 
-  # Set to true to enable monitoring of dynamic job rules. If changes
-  # are found, rules are automatically reloaded. Takes the same values
-  # as the 'watch_tools' option.
+  # Monitor dynamic job rules. If changes are found, rules are
+  # automatically reloaded. Takes the same values as the 'watch_tools'
+  # option.
   #watch_job_rules: 'false'
+
+  # Monitor a subset of options in the core configuration file (See
+  # RELOADABLE_CONFIG_OPTIONS in lib/galaxy/config/__init__.py).  If
+  # changes are found, modified options are automatically reloaded.
+  # Takes the same values as the 'watch_tools' option.
+  #watch_core_config: 'false'
 
   # As of 18.09, Galaxy defaults to setting up the object store
   # configuration for output datasets during the job queue step in job
@@ -326,18 +343,18 @@ galaxy:
   # https://github.com/galaxyproject/galaxy/issues/6513.
   #legacy_eager_objectstore_initialization: false
 
-  # Enable Galaxy to fetch Docker containers registered with quay.io
-  # generated from tool requirements resolved through conda. These
-  # containers (when available) have been generated using mulled -
-  # https://github.com/mulled . These containers are highly beta and
-  # availability will vary by tool. This option will additionally only
-  # be used for job destinations with Docker enabled.
-  #enable_beta_mulled_containers: false
+  # Enable Galaxy to fetch containers registered with quay.io generated
+  # from tool requirements resolved through Conda. These containers
+  # (when available) have been generated using mulled -
+  # https://github.com/mulled. Container availability will vary by tool,
+  # this option will only be used for job destinations with Docker or
+  # Singularity enabled.
+  #enable_mulled_containers: true
 
   # Container resolvers configuration (beta). Set up a file describing
   # container resolvers to use when discovering containers for Galaxy.
   # If this is set to None, the default containers loaded is determined
-  # by enable_beta_mulled_containers.
+  # by enable_mulled_containers.
   #containers_resolvers_config_file: ''
 
   # involucro is a tool used to build Docker or Singularity containers
@@ -400,10 +417,9 @@ galaxy:
   # installed from a ToolShed. Defaults to tool_data_path.
   #shed_tool_data_path: tool-data
 
-  # Set to true to enable monitoring of the tool_data and
-  # shed_tool_data_path directories. If changes in tool data table files
-  # are found, the tool data tables for that data manager are
-  # automatically reloaded. Watchdog (
+  # Monitor the tool_data and shed_tool_data_path directories. If
+  # changes in tool data table files are found, the tool data tables for
+  # that data manager are automatically reloaded. Watchdog (
   # https://pypi.org/project/watchdog/ ) must be installed and available
   # to Galaxy to use this option. Other options include 'auto' which
   # will attempt to use the watchdog library if it is available but
@@ -656,6 +672,12 @@ galaxy:
   # appears to reference the Galaxy server, but contains a redirect to a
   # third-party server, tricking a Galaxy user to access said site.
   #enable_old_display_applications: true
+
+  # Enable InteractiveTools.
+  #interactivetools_enable: false
+
+  # Show visualization tab and list in masthead.
+  #visualizations_visible: true
 
   # Show a message box under the masthead.
   #message_box_visible: false
@@ -1700,6 +1722,10 @@ galaxy:
   # could be implemented but haven't yet - for instance using workflow
   # tags to do the mapping).
   #workflow_resource_params_mapper: config/workflow_resource_mapper_conf.yml
+
+  # Optional configuration file similar to `job_config_file` to specify
+  # which Galaxy processes should schedule workflows.
+  #workflow_schedulers_config_file: config/workflow_schedulers_conf.xml
 
   # If using job concurrency limits (configured in job_config_file),
   # several extra database queries must be performed to determine the

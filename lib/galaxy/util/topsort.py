@@ -36,7 +36,7 @@ then CycleError is raised, and the exception object supports
 many methods to help analyze and break the cycles.  This requires
 a good deal more code than topsort itself!
 """
-from galaxy.util.odict import odict as OrderedDict
+from collections import OrderedDict
 
 
 class CycleError(Exception):

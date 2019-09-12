@@ -514,6 +514,28 @@ class BaseDatasetPopulator(object):
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
+    def validate_dataset(self, history_id, dataset_id):
+        url = "histories/%s/contents/%s/validate" % (history_id, dataset_id)
+        update_response = self.galaxy_interactor._put(url, {})
+        assert update_response.status_code == 200, update_response.content
+        return update_response.json()
+
+    def validate_dataset_and_wait(self, history_id, dataset_id):
+        self.validate_dataset(history_id, dataset_id)
+
+        def validated():
+            metadata = self.get_history_dataset_details(history_id, dataset_id=dataset_id)
+            validated_state = metadata['validated_state']
+            if validated_state == 'unknown':
+                return
+            else:
+                return validated_state
+
+        return wait_on(
+            validated,
+            "dataset validation"
+        )
+
     def export_url(self, history_id, data, check_download=True):
         url = "histories/%s/exports" % history_id
         put_response = self._put(url, data)
@@ -728,6 +750,24 @@ class BaseWorkflowPopulator(object):
         url = "workflows/%s/usage/%s" % (workflow_id, invocation_id)
         return wait_on_state(lambda: self._get(url), desc="workflow invocation state", timeout=timeout)
 
+    def history_invocations(self, history_id):
+        history_invocations_response = self._get("invocations", {"history_id": history_id})
+        api_asserts.assert_status_code_is(history_invocations_response, 200)
+        return history_invocations_response.json()
+
+    def wait_for_history_workflows(self, history_id, assert_ok=True, timeout=DEFAULT_TIMEOUT, expected_invocation_count=None):
+        if expected_invocation_count is not None:
+            def invocation_count():
+                invocations = self.history_invocations(history_id)
+                if len(invocations) == expected_invocation_count:
+                    return True
+
+            wait_on(invocation_count, "%s history invocations" % expected_invocation_count)
+        for invocation in self.history_invocations(history_id):
+            workflow_id = invocation["workflow_id"]
+            invocation_id = invocation["id"]
+            self.wait_for_workflow(workflow_id, invocation_id, history_id, timeout=timeout, assert_ok=assert_ok)
+
     def wait_for_workflow(self, workflow_id, invocation_id, history_id, assert_ok=True, timeout=DEFAULT_TIMEOUT):
         """ Wait for a workflow invocation to completely schedule and then history
         to be complete. """
@@ -757,6 +797,11 @@ class BaseWorkflowPopulator(object):
             return invocation_id
         else:
             return invocation_response
+
+    def workflow_report_json(self, workflow_id, invocation_id):
+        response = self._get("workflows/%s/invocations/%s/report" % (workflow_id, invocation_id))
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
 
     def download_workflow(self, workflow_id, style=None):
         params = {}

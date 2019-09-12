@@ -137,8 +137,8 @@ SSLStaplingCache        shmcb:/var/run/ocsp(128000)
         Require all granted
     </Directory>
 
-	# Galaxy needs to know that this is https for generating URLs
-	RequestHeader set X-URL-SCHEME "%{REQUEST_SCHEME}e"
+    # Galaxy needs to know that this is https for generating URLs
+    RequestHeader set X-URL-SCHEME "%{REQUEST_SCHEME}e"
 
     # allow up to 3 minutes for Galaxy to respond to slow requests before timing out
     ProxyTimeout 180
@@ -205,22 +205,22 @@ previous section:
 
 1. In the Apache config, prefix all of the location directives with your prefix, like so:
 
-	```apache
-		#...
+    ```apache
+        #...
 
-		# proxy all requests not matching other locations to uWSGI
-		ProxyPass /galaxy unix:///srv/galaxy/var/uwsgi.sock|uwsgi://
-		# or uWSGI on a TCP socket
-		#ProxyPass /galaxy uwsgi://127.0.0.1:4001/
+        # proxy all requests not matching other locations to uWSGI
+        ProxyPass /galaxy unix:///srv/galaxy/var/uwsgi.sock|uwsgi://
+        # or uWSGI on a TCP socket
+        #ProxyPass /galaxy uwsgi://127.0.0.1:4001/
 
-		# serve framework static content
-		RewriteEngine On
-		RewriteRule ^/galaxy/$ /galaxy [R,L]
-		RewriteRule ^/galaxy/static/style/(.*) ${galaxy_root}/static/style/blue/$1 [L]
-		RewriteRule ^/galaxy/static/(.*) ${galaxy_root}/static/$1 [L]
-		RewriteRule ^/galaxy/favicon.ico ${galaxy_root}/static/favicon.ico [L]
-		RewriteRule ^/galaxy/robots.txt ${galaxy_root}/static/robots.txt [L]
-	```
+        # serve framework static content
+        RewriteEngine On
+        RewriteRule ^/galaxy/$ /galaxy [R,L]
+        RewriteRule ^/galaxy/static/style/(.*) ${galaxy_root}/static/style/blue/$1 [L]
+        RewriteRule ^/galaxy/static/(.*) ${galaxy_root}/static/$1 [L]
+        RewriteRule ^/galaxy/favicon.ico ${galaxy_root}/static/favicon.ico [L]
+    RewriteRule ^/galaxy/robots.txt ${galaxy_root}/static/robots.txt [L]
+    ```
 
 2. The Galaxy application needs to be aware that it is running with a prefix (for generating URLs in dynamic pages).
    This is accomplished by configuring uWSGI (the `uwsgi` section in `config/galaxy.yml`) like so and restarting Galaxy:

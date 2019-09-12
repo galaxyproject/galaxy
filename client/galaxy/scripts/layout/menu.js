@@ -66,24 +66,26 @@ const Collection = Backbone.Collection.extend({
         //
         // Visualization tab.
         //
-        this.add({
-            id: "visualization",
-            title: _l("Visualize"),
-            tooltip: _l("Visualize datasets"),
-            disabled: !Galaxy.user.id,
-            menu: [
-                {
-                    title: _l("Create Visualization"),
-                    url: "visualizations",
-                    target: "__use_router__"
-                },
-                {
-                    title: _l("Interactive Environments"),
-                    url: "visualization/gie_list",
-                    target: "galaxy_main"
-                }
-            ]
-        });
+        if (Galaxy.config.visualizations_visible) {
+            this.add({
+                id: "visualization",
+                title: _l("Visualize"),
+                tooltip: _l("Visualize datasets"),
+                disabled: !Galaxy.user.id,
+                menu: [
+                    {
+                        title: _l("Create Visualization"),
+                        url: "visualizations",
+                        target: "__use_router__"
+                    },
+                    {
+                        title: _l("Interactive Environments"),
+                        url: "visualization/gie_list",
+                        target: "galaxy_main"
+                    }
+                ]
+            });
+        }
 
         //
         // 'Shared Items' or Libraries tab.
@@ -297,14 +299,24 @@ const Collection = Backbone.Collection.extend({
                         title: _l("Pages"),
                         url: "pages/list",
                         target: "__use_router__"
-                    },
-                    {
-                        title: _l("Visualizations"),
-                        url: "visualizations/list",
-                        target: "__use_router__"
                     }
                 ]
             };
+            if (Galaxy.config.visualizations_visible) {
+                userTab.menu.push({
+                    title: _l("Visualizations"),
+                    url: "visualizations/list",
+                    target: "__use_router__"
+                });
+            }
+            if (Galaxy.config.interactivetools_enable) {
+                userTab.menu[userTab.menu.length - 1].divider = true;
+                userTab.menu.push({
+                    title: _l("Active InteractiveTools"),
+                    url: "interactivetool_entry_points/list",
+                    target: "__use_router__"
+                });
+            }
         }
         this.add(userTab);
         return new $.Deferred().resolve().promise();
