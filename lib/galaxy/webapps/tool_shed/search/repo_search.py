@@ -15,7 +15,6 @@ from galaxy.exceptions import ObjectNotFound
 if sys.version_info > (3,):
     long = int
 
-RESERVED_SEARCH_TERMS = ["category", "owner"]
 log = logging.getLogger(__name__)
 
 schema = Schema(
@@ -159,7 +158,7 @@ class RepoSearch(object):
         :returns allow_query: whoosh Query object used for filtering
             results of searching in index
         :returns search_term_without_filters: str that represents user's
-            search phrase without the wildcards
+            search phrase without the filters
 
         >>> rs = RepoSearch()
         >>> rs._parse_reserved_filters("category:assembly")
@@ -172,6 +171,8 @@ class RepoSearch(object):
         (And([Term('categories', 'Climate Analysis'), Term('repo_owner_username', 'bjoern gruening')]), 'climate psy_maps')
         >>> rs._parse_reserved_filters("climate category:'John Says This Fails' owner:'bjoern gruening' psy_maps")
         (And([Term('categories', 'John Says This Fails'), Term('repo_owner_username', 'bjoern gruening')]), 'climate psy_maps')
+        >>> rs._parse_reserved_filters("climate o:'bjoern gruening' middle strings c:'John Says This Fails' psy_maps")
+        (And([Term('repo_owner_username', 'bjoern gruening'), Term('categories', 'John Says This Fails')]), 'climate middle strings psy_maps')
         >>> rs._parse_reserved_filters("abyss category:assembly")
         (And([Term('categories', 'assembly')]), 'abyss')
         >>> rs._parse_reserved_filters("abyss category:assembly greg")
@@ -186,7 +187,7 @@ class RepoSearch(object):
         allow_terms = []
         search_term_without_filters = None
         search_space = search_term.replace('"', "'")
-        reserved = re.compile(r"(category|owner):(\w+|\'.*?\')")
+        reserved = re.compile(r"(category|c|owner|o):(\w+|\'.*?\')")
         while True:
             match = reserved.search(search_space)
             if match is None:
