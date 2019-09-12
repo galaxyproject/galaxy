@@ -819,13 +819,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
 
     @expose_api
-    def show_invocation(self, trans, workflow_id, invocation_id, **kwd):
+    def show_invocation(self, trans, invocation_id, **kwd):
         """
         GET /api/workflows/{workflow_id}/invocations/{invocation_id}
-        Get detailed description of workflow invocation
+        GET /api/invocations/{invocation_id}
 
-        :param  workflow_id:        the workflow id (required)
-        :type   workflow_id:        str
+        Get detailed description of workflow invocation
 
         :param  invocation_id:      the invocation id (required)
         :type   invocation_id:      str
@@ -857,13 +856,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return None
 
     @expose_api
-    def cancel_invocation(self, trans, workflow_id, invocation_id, **kwd):
+    def cancel_invocation(self, trans, invocation_id, **kwd):
         """
         DELETE /api/workflows/{workflow_id}/invocations/{invocation_id}
+        DELETE /api/invocations/{invocation_id}
         Cancel the specified workflow invocation.
-
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
 
         :param  invocation_id:      the usage id (required)
         :type   invocation_id:      str
@@ -875,9 +872,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.__encode_invocation(workflow_invocation, **kwd)
 
     @expose_api
-    def show_invocation_report(self, trans, workflow_id, invocation_id, **kwd):
+    def show_invocation_report(self, trans, invocation_id, **kwd):
         """
         GET /api/workflows/{workflow_id}/invocations/{invocation_id}/report
+        GET /api/invocations/{invocation_id}/report
 
         Get JSON summarizing invocation for reporting.
         """
@@ -890,12 +888,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         )
 
     @expose_api
-    def invocation_step(self, trans, workflow_id, invocation_id, step_id, **kwd):
+    def invocation_step(self, trans, invocation_id, step_id, **kwd):
         """
         GET /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
-
-        :param  workflow_id:        the workflow id (required)
-        :type   workflow_id:        str
+        GET /api/invocations/{invocation_id}/steps/{step_id}
 
         :param  invocation_id:      the invocation id (required)
         :type   invocation_id:      str
@@ -968,16 +964,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)][0]
 
     @expose_api
-    def update_invocation_step(self, trans, workflow_id, invocation_id, step_id, payload, **kwd):
+    def update_invocation_step(self, trans, invocation_id, step_id, payload, **kwd):
         """
         PUT /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
+        PUT /api/invocations/{invocation_id}/steps/{step_id}
+
         Update state of running workflow step invocation - still very nebulous
         but this would be for stuff like confirming paused steps can proceed
         etc....
-
-
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
 
         :param  invocation_id:      the usage id (required)
         :type   invocation_id:      str
