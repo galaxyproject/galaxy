@@ -30,8 +30,6 @@ export default {
     },
     data() {
         return {
-            toolshedUrl: null,
-            toolshedUrls: [],
             queryInput: null,
             queryDelay: 1000,
             queryTimer: null,
@@ -50,24 +48,12 @@ export default {
             this.setQuery("");
         }
     },
-    created() {
-        this.configureToolsheds();
-    },
     computed: {
         queryEmpty() {
             return !this.query || this.query.length < this.queryLength;
         }
     },
     methods: {
-        configureToolsheds() {
-            const galaxy = getGalaxyInstance();
-            this.toolshedUrls = galaxy.config.tool_shed_urls;
-            if (!this.toolshedUrls || this.toolshedUrls.length == 0) {
-                this.setError("Toolshed registry is empty, no servers found.");
-            } else {
-                this.toolshedUrl = this.toolshedUrls[0];
-            }
-        },
         clearTimer() {
             if (this.queryTimer) {
                 clearTimeout(this.queryTimer);
