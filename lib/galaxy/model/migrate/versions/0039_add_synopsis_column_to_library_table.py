@@ -5,20 +5,25 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, MetaData, Table, TEXT
+from sqlalchemy import (
+    Column,
+    MetaData,
+    Table,
+    TEXT
+)
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
-        Library_table = Table( "library", metadata, autoload=True )
-        c = Column( "synopsis", TEXT )
-        c.create( Library_table )
+        Library_table = Table("library", metadata, autoload=True)
+        c = Column("synopsis", TEXT)
+        c.create(Library_table)
         assert c is Library_table.c.synopsis
     except Exception:
         log.exception("Adding column 'synopsis' to 'library' table failed.")
@@ -28,7 +33,7 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     try:
-        Library_table = Table( "library", metadata, autoload=True )
+        Library_table = Table("library", metadata, autoload=True)
         Library_table.c.synopsis.drop()
     except Exception:
         log.exception("Dropping column 'synopsis' from 'library' table failed")

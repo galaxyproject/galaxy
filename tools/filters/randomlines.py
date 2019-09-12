@@ -11,7 +11,7 @@ def main():
     total_lines = int(sys.argv[2])
 
     if total_lines < 1:
-        sys.stderr.write( "Must select at least one line." )
+        sys.stderr.write("Must select at least one line.")
         sys.exit()
 
     kept = []
@@ -26,10 +26,10 @@ def main():
             kept.append(line)
 
     if n < total_lines:
-        sys.stderr.write( "Error: asked to select more lines than there were in the file." )
+        sys.stderr.write("Error: asked to select more lines than there were in the file.")
         sys.exit()
 
-    open(sys.argv[3], 'w').write( "\n".join(kept) )
+    open(sys.argv[3], 'w').write("\n".join(kept))
 
 
 if __name__ == "__main__":

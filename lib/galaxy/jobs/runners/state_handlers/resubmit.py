@@ -1,21 +1,19 @@
 import logging
-
 from datetime import datetime
+
+from galaxy import model
+from galaxy.jobs.runners import JobState
+from ._safe_eval import safe_eval
 
 __all__ = ('failure', )
 
 log = logging.getLogger(__name__)
 
-from galaxy import model
-from galaxy.jobs.runners import JobState
-
-from ._safe_eval import safe_eval
-
-
 MESSAGES = dict(
     walltime_reached='it reached the walltime',
     memory_limit_reached='it exceeded the amount of allocated memory',
-    unknown_error='it encountered an unknown error'
+    unknown_error='it encountered an unknown error',
+    tool_detected='it encountered a tool detected error condition',
 )
 
 
@@ -44,6 +42,7 @@ def eval_condition(condition, job_state):
     condition_locals = {
         "walltime_reached": runner_state == JobState.runner_states.WALLTIME_REACHED,
         "memory_limit_reached": runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
+        "tool_detected_failure": runner_state == JobState.runner_states.TOOL_DETECT_ERROR,
         "unknown_error": JobState.runner_states.UNKNOWN_ERROR,
         "any_failure": True,
         "any_potential_job_failure": True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
@@ -68,6 +67,8 @@ def failure(app, job_runner, job_state):
     runner_state = getattr(job_state, 'runner_state', None) or JobState.runner_states.UNKNOWN_ERROR
     if (runner_state not in (JobState.runner_states.WALLTIME_REACHED,
                              JobState.runner_states.MEMORY_LIMIT_REACHED,
+                             JobState.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER,
+                             JobState.runner_states.TOOL_DETECT_ERROR,
                              JobState.runner_states.UNKNOWN_ERROR)):
         # not set or not a handleable runner state
         return
@@ -96,13 +97,14 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
         else:
             job_log_prefix = "(%s)" % (job_state.job_wrapper.job_id)
 
-        destination = resubmit['destination']
+        # Is destination needed here, might these be serialized to the database?
+        destination = resubmit.get('environment') or resubmit.get('destination')
         log.info("%s Job will be resubmitted to '%s' because %s at "
                  "the '%s' destination",
                  job_log_prefix,
                  destination,
                  MESSAGES[runner_state],
-                 job_state.job_wrapper.job_destination.id )
+                 job_state.job_wrapper.job_destination.id)
         # fetch JobDestination for the id or tag
         if destination:
             new_destination = app.job_config.get_destination(destination)
@@ -121,7 +123,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
                       job_log_prefix,
                       resubmit['handler'])
             job.set_handler(resubmit['handler'])
-            job_runner.sa_session.add( job )
+            job_runner.sa_session.add(job)
             # Is this safe to do here?
             job_runner.sa_session.flush()
         # Cache the destination to prevent rerunning dynamic after
@@ -186,6 +188,7 @@ class _ExpressionContext(object):
                 "walltime_reached": runner_state == JobState.runner_states.WALLTIME_REACHED,
                 "memory_limit_reached": runner_state == JobState.runner_states.MEMORY_LIMIT_REACHED,
                 "unknown_error": JobState.runner_states.UNKNOWN_ERROR,
+                "tool_detected_failure": runner_state == JobState.runner_states.TOOL_DETECT_ERROR,
                 "any_failure": True,
                 "any_potential_job_failure": True,  # Add a hook here - later on allow tools to describe things that are definitely input problems.
                 "attempt": attempt,

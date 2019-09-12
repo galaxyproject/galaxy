@@ -11,13 +11,13 @@ BLOCK_SIZE = 100
 
 
 class BedGraphReader(Iterator):
-    def __init__( self, f ):
+    def __init__(self, f):
         self.f = f
 
-    def __iter__( self ):
+    def __iter__(self):
         return self
 
-    def __next__( self ):
+    def __next__(self):
         while True:
             line = self.f.readline()
             if not line:
@@ -27,7 +27,7 @@ class BedGraphReader(Iterator):
             if line[0] == "#":
                 continue
             if line[0].isalpha():
-                if line.startswith( "track" ) or line.startswith( "browser" ):
+                if line.startswith("track") or line.startswith("browser"):
                     continue
 
                 feature = line.strip().split()
@@ -42,15 +42,15 @@ def main():
     input_fname = sys.argv[1]
     out_fname = sys.argv[2]
 
-    reader = BedGraphReader( open( input_fname ) )
+    reader = BedGraphReader(open(input_fname))
 
     # Fill array from reader
-    d = array_tree_dict_from_reader( reader, {}, block_size=BLOCK_SIZE )
+    d = array_tree_dict_from_reader(reader, {}, block_size=BLOCK_SIZE)
 
     for array_tree in d.values():
         array_tree.root.build_summary()
 
-    FileArrayTreeDict.dict_to_file( d, open( out_fname, "w" ) )
+    FileArrayTreeDict.dict_to_file(d, open(out_fname, "w"))
 
 
 if __name__ == "__main__":

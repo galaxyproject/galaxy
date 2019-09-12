@@ -1,2 +1,0 @@
-define([],function(){var a=Backbone.Model.extend({defaults:{extension:"auto",genome:"?",url_paste:"",status:"init",info:null,file_name:"",file_mode:"",file_size:0,file_type:null,file_path:"",file_data:null,percentage:0,space_to_tab:!1,to_posix_lines:!0,enabled:!0},reset:function(a){this.clear().set(this.defaults).set(a)}}),b=Backbone.Collection.extend({model:a});return{Model:a,Collection:b}});
-//# sourceMappingURL=../../../maps/mvc/upload/upload-model.js.map

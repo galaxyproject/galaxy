@@ -10,7 +10,7 @@
       <xml name="suffix_param">
           <param name="suffix_pattern" label="Use the follow suffix pattern:" help="Describe the suffix pattern to use when joing element name and data copy number. For instance, the default is '_#', which will produce _1 as the first suffix used." value="_#" type="text">
               <sanitizer invalid_char="">
-                  <valid initial="string.letters,string.digits">
+                  <valid initial="string.ascii_letters,string.digits">
                       <add value="_" />
                       <add value="-" />
                       <add value="#" />

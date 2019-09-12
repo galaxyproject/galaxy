@@ -10,9 +10,9 @@ ${render_galaxy_repository_actions( repository )}
 
 %if tool_metadata:
     <p/>
-    <div class="toolForm">
-        <div class="toolFormTitle">${tool_metadata[ 'name' ]|h} tool metadata</div>
-        <div class="toolFormBody">
+    <div class="card">
+        <div class="card-header">${tool_metadata[ 'name' ]|h} tool metadata</div>
+        <div class="card-body">
             <div class="form-row">
                 <table width="100%">
                     <tr bgcolor="#D8D8D8" width="100%"><td><b>Miscellaneous</td></tr>
@@ -78,8 +78,6 @@ ${render_galaxy_repository_actions( repository )}
                             </tr>
                         %endfor
                     </table>
-                %else:
-                    No tool versions are defined for this tool so it is critical that you <b>Set tool versions</b> from the <b>Manage repository</b> page.
                 %endif
             </div>
             <div class="form-row">

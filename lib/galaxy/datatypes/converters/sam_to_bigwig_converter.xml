@@ -1,26 +1,24 @@
-<tool id="CONVERTER_sam_to_bigwig_0" name="Convert SAM to BigWig" version="1.0.0" hidden="true">
+<tool id="CONVERTER_sam_to_bigwig_0" name="Convert SAM to BigWig" version="1.0.2" hidden="true">
     <requirements>
-        <requirement type="package">ucsc_tools</requirement>
-        <requirement type="package">samtools</requirement>
-        <requirement type="package">bedtools</requirement>
+        <requirement type="package" version="357">ucsc-bedgraphtobigwig</requirement>
+        <requirement type="package" version="1.6">samtools</requirement>
+        <requirement type="package" version="2.27.1">bedtools</requirement>
     </requirements>
-    <command>
-<![CDATA[
-        samtools view -bh '$input' | bedtools genomecov -bg -split -ibam stdin -g '$chromInfo'
+    <command detect_errors="aggressive"><![CDATA[
+samtools view -bh '$input' | bedtools genomecov -bg -split -ibam stdin
 
-        ## Streaming the bedgraph file to wigToBigWig is fast but very memory intensive; hence, this
-        ## should only be used on systems with large RAM.
-        ## | wigToBigWig stdin '$chromInfo' '$output'
+## Streaming the bedgraph file to wigToBigWig is fast but very memory intensive; hence, this
+## should only be used on systems with large RAM.
+## | wigToBigWig stdin '$chromInfo' '$output'
 
-        ## This can be used anywhere.
-        > temp.bg && bedGraphToBigWig temp.bg '$chromInfo' '$output'
-]]>
-    </command>
+## This can be used anywhere.
+> temp.bg && bedGraphToBigWig temp.bg '$chromInfo' '$output'
+    ]]></command>
     <inputs>
-        <param format="bam" name="input" type="data" label="Choose BAM file"/>
+        <param name="input" type="data" format="sam" label="Choose BAM file"/>
     </inputs>
     <outputs>
-        <data format="bigwig" name="output"/>
+        <data name="output" format="bigwig"/>
     </outputs>
     <help>
     </help>

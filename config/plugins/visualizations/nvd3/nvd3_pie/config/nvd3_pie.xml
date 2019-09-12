@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Pie chart (NVD3)">
+    <macros>
+        <import>../../nvd3_bar/config/nvd3_shared.xml</import>
+    </macros>
+    <description>Renders a pie chart using NVD3 hosted at http://www.nvd3.org.</description>
+    <expand macro="data"/>
+    <entry_point entry_point_type="chart" src="../../nvd3_bar/static/nvd3.js" css="../../nvd3_bar/static/nvd3.css" load="nvd3_pie"/>
+    <specs>
+        <expand macro="specs"/>
+        <use_panels>yes</use_panels>
+    </specs>
+    <groups>
+        <input>
+            <name>key</name>
+            <label>Provide a label</label>
+            <type>text</type>
+            <placeholder>Data label</placeholder>
+            <value>Data label</value>
+        </input>
+        <input>
+            <name>label</name>
+            <label>Labels</label>
+            <type>data_column</type>
+            <is_label>true</is_label>
+            <is_auto>true</is_auto>
+        </input>
+        <input>
+            <name>y</name>
+            <label>Values</label>
+            <type>data_column</type>
+            <is_numeric>true</is_numeric>
+        </input>
+    </groups>
+    <settings>
+        <input>
+            <name>donut_ratio</name>
+            <label>Donut ratio</label>
+            <help>Determine how large the donut hole will be.</help>
+            <type>float</type>
+            <value>0.5</value>
+            <max>1</max>
+            <min>0</min>
+        </input>
+        <input>
+            <name>legend_visible</name>
+            <label>Show legend</label>
+            <help>Would you like to add a legend?</help>
+            <type>select</type>
+            <display>radiobutton</display>
+            <value>false</value>
+            <data>
+                <data>
+                    <label>Yes</label>
+                    <value>true</value>
+                </data>
+                <data>
+                    <label>No</label>
+                    <value>false</value>
+                </data>
+            </data>
+        </input>
+        <input>
+            <name>label</name>
+            <type>conditional</type>
+            <test_param>
+                <name>type</name>
+                <label>Donut label</label>
+                <type>select</type>
+                <value>percent</value>
+                <help>What would you like to show for each slice?</help>
+                <data>
+                    <data>
+                        <value>hide</value>
+                        <label>-- Nothing --</label>
+                    </data>
+                    <data>
+                        <value>key</value>
+                        <label>Label column</label>
+                    </data>
+                    <data>
+                        <value>percent</value>
+                        <label>Percentage</label>
+                    </data>
+                </data>
+            </test_param>
+            <cases>
+                <cases>
+                    <value>hide</value>
+                </cases>
+                <cases>
+                    <value>key</value>
+                    <inputs>
+                        <inputs>
+                            <name>outside</name>
+                            <label>Show outside</label>
+                            <help>Would you like to show labels outside the donut?</help>
+                            <type>select</type>
+                            <display>radiobutton</display>
+                            <value>true</value>
+                            <data>
+                                <data>
+                                    <label>Yes</label>
+                                    <value>true</value>
+                                </data>
+                                <data>
+                                    <label>No</label>
+                                    <value>false</value>
+                                </data>
+                            </data>
+                        </inputs>
+                    </inputs>
+                </cases>
+                <cases>
+                    <value>percent</value>
+                    <inputs>
+                        <inputs>
+                            <name>outside</name>
+                            <label>Show outside</label>
+                            <help>Would you like to show labels outside the donut?</help>
+                            <type>select</type>
+                            <display>radiobutton</display>
+                            <value>true</value>
+                            <data>
+                                <data>
+                                    <label>Yes</label>
+                                    <value>true</value>
+                                </data>
+                                <data>
+                                    <label>No</label>
+                                    <value>false</value>
+                                </data>
+                            </data>
+                        </inputs>
+                    </inputs>
+                </cases>
+            </cases>
+        </input>
+    </settings>
+</visualization>

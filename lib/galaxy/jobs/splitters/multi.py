@@ -1,12 +1,12 @@
-import os
 import logging
+import os
 import shutil
-import inspect
 
 from galaxy import model, util
+from galaxy.util.getargspec import getfullargspec
 
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 def do_split(job_wrapper):
@@ -31,7 +31,7 @@ def do_split(job_wrapper):
         shared_inputs = [x.strip() for x in shared_inputs.split(",")]
     illegal_inputs = [x for x in shared_inputs if x in split_inputs]
     if len(illegal_inputs) > 0:
-        raise Exception("Inputs have conflicting parallelism attributes: %s" % str( illegal_inputs ))
+        raise Exception("Inputs have conflicting parallelism attributes: %s" % str(illegal_inputs))
 
     subdir_index = [0]  # use a list to get around Python 2.x lame closure support
     task_dirs = []
@@ -83,7 +83,7 @@ def do_split(job_wrapper):
                 raise Exception(log_error)
             input_datasets.append(input.dataset)
 
-    input_type = type_to_input_map.keys()[0]
+    input_type = next(iter(type_to_input_map.keys()))
     # DBTODO execute an external task to do the splitting, this should happen at refactor.
     # If the number of tasks is sufficiently high, we can use it to calculate job completion % and give a running status.
     try:
@@ -108,7 +108,7 @@ def do_split(job_wrapper):
     return tasks
 
 
-def do_merge( job_wrapper, task_wrappers):
+def do_merge(job_wrapper, task_wrappers):
     parallel_settings = job_wrapper.get_parallelism().attributes
     # Syntax: merge_outputs="export" pickone_outputs="genomesize"
     # Designates outputs to be merged, or selected from as a representative
@@ -125,7 +125,7 @@ def do_merge( job_wrapper, task_wrappers):
 
     illegal_outputs = [x for x in merge_outputs if x in pickone_outputs]
     if len(illegal_outputs) > 0:
-        return ('Tool file error', 'Outputs have conflicting parallelism attributes: %s' % str( illegal_outputs ))
+        return ('Tool file error', 'Outputs have conflicting parallelism attributes: %s' % str(illegal_outputs))
 
     stdout = ''
     stderr = ''
@@ -140,8 +140,8 @@ def do_merge( job_wrapper, task_wrappers):
         pickone_done = []
         task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
         task_dirs.sort(key=lambda x: int(x.split('task_')[-1]))
-        for index, output in enumerate( outputs ):
-            output_file_name = str( output_paths[ index ] )  # Use false_path if set, else real path.
+        for index, output in enumerate(outputs):
+            output_file_name = str(output_paths[index])  # Use false_path if set, else real path.
             base_output_name = os.path.basename(output_file_name)
             if output in merge_outputs:
                 output_dataset = outputs[output][0]
@@ -149,7 +149,7 @@ def do_merge( job_wrapper, task_wrappers):
                 output_files = [os.path.join(dir, base_output_name) for dir in task_dirs]
                 # Just include those files f in the output list for which the
                 # file f exists; some files may not exist if a task fails.
-                output_files = [ f for f in output_files if os.path.exists(f) ]
+                output_files = [f for f in output_files if os.path.exists(f)]
                 if output_files:
                     log.debug('files %s ' % output_files)
                     if len(output_files) < len(task_dirs):
@@ -157,7 +157,7 @@ def do_merge( job_wrapper, task_wrappers):
                                   % (len(output_files), len(task_dirs), output_file_name))
                     # First two args to merge always output_files and path of dataset. More
                     # complicated merge methods may require more parameters. Set those up here.
-                    extra_merge_arg_names = inspect.getargspec( output_type.merge ).args[2:]
+                    extra_merge_arg_names = getfullargspec(output_type.merge).args[2:]
                     extra_merge_args = {}
                     if "output_dataset" in extra_merge_arg_names:
                         extra_merge_args["output_dataset"] = output_dataset
@@ -172,7 +172,7 @@ def do_merge( job_wrapper, task_wrappers):
                 # just pick one of them
                 if output not in pickone_done:
                     task_file_name = os.path.join(task_dirs[0], base_output_name)
-                    shutil.move( task_file_name, output_file_name )
+                    shutil.move(task_file_name, output_file_name)
                     pickone_done.append(output)
             else:
                 log_error = "The output '%s' does not define a method for implementing parallelism" % output
@@ -180,8 +180,8 @@ def do_merge( job_wrapper, task_wrappers):
                 raise Exception(log_error)
     except Exception as e:
         stdout = 'Error merging files'
-        log.exception( stdout )
-        stderr = str(e)
+        log.exception(stdout)
+        stderr = util.unicodify(e)
 
     for tw in task_wrappers:
         # Prevent repetitive output, e.g. "Sequence File Aligned"x20

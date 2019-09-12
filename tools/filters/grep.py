@@ -85,8 +85,8 @@ def main():
         pattern = pattern.replace(value, key)
 
     # match filename and invert flag
-    fileRegEx = re.compile("^[A-Za-z0-9./\-_]+$")
-    invertRegEx = re.compile("(true)|(false)")
+    fileRegEx = re.compile(r"^[A-Za-z0-9./\-_]+$")
+    invertRegEx = re.compile(r"(true)|(false)")
 
     # verify that filename and inversion flag are in the correct format
     if not fileRegEx.match(outputfile):
@@ -118,16 +118,16 @@ def main():
     # create temp file holding pattern
     # by using a file to hold the pattern, we don't have worry about sanitizing grep commandline and can include single quotes in pattern
     pattern_file_name = NamedTemporaryFile().name
-    open( pattern_file_name, 'w' ).write( pattern )
+    open(pattern_file_name, 'w').write(pattern)
 
     # generate grep command
-    commandline = "grep %s %s -f %s %s > %s" % ( versionflag, invertflag, pattern_file_name, inputfile, outputfile )
+    commandline = "grep %s %s -f %s %s > %s" % (versionflag, invertflag, pattern_file_name, inputfile, outputfile)
 
     # run grep
     errorcode = subprocess.call(commandline, shell=True)
 
     # remove temp pattern file
-    os.unlink( pattern_file_name )
+    os.unlink(pattern_file_name)
 
     # return error code
     return errorcode

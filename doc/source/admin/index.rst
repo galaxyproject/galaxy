@@ -6,10 +6,19 @@ This documentation is in the midst of being ported and unified based on resource
 .. toctree::
    :maxdepth: 2
 
+   config
+   config_logging
+   production
+   scaling
+   nginx
+   apache
+   cluster
+   jobs
    tool_panel
    authentication
    dependency_resolvers
    conda_faq
    framework_dependencies
+   options
    reports
    useful_scripts

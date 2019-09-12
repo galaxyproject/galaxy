@@ -1,14 +1,21 @@
 <tool id="output_filter" name="output_filter" version="1.0.0">
+  <description>test for output filtering and expect_num_outputs</description>
   <command>
     echo "test" > 1;
     echo "test" > 2;
     echo "test" > 3;
     echo "test" > 4;
     echo "test" > 5;
+    echo "test" > p1.forward;
+    echo "test" > p1.reverse;
+    echo "test" > p2.forward;
+    echo "test" > p2.reverse;
   </command>
   <inputs>
     <param name="produce_out_1" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Do Filter 1" />
     <param name="filter_text_1" type="text" value="1" />
+    <param name="produce_collection" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Collection Filter" />
+    <param name="produce_paired_collection" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Paired Collection Filter" />
   </inputs>
   <outputs>
     <data format="txt" from_work_dir="1" name="out_1">
@@ -19,8 +26,15 @@
       <!-- Must pass all filters... -->
       <filter>filter_text_1 == "foo"</filter>
     </data>
-    <data format="txt" from_work_dir="3" name="out_3">
-    </data>
+    <data format="txt" from_work_dir="3" name="out_3"/>
+    <collection name="list_output" type="list" label="List">
+      <discover_datasets pattern="(?P&lt;identifier_0&gt;[45])" ext="txt" visible="true" />
+      <filter>produce_collection is True</filter>
+    </collection>
+    <collection name="paired_list_output" type="list:paired" label="paired list">
+      <discover_datasets pattern="(?P&lt;identifier_0&gt;p[12])\.(?P&lt;identifier_1&gt;.*)" ext="txt" visible="true" />
+      <filter>produce_paired_collection is True</filter>
+    </collection>
   </outputs>
   <tests>
     <test expect_num_outputs="3">
@@ -40,6 +54,41 @@
       <param name="produce_out_1" value="false" />
       <param name="filter_text_1" value="not_foo_or_bar" />
       <output name="out_3"><assert_contents><has_line line="test" /></assert_contents></output>
+    </test>
+    <test expect_num_outputs="4">
+      <param name="produce_out_1" value="true" />
+      <param name="filter_text_1" value="foo" />
+      <param name="produce_collection" value="true" />
+      <output name="out_1"><assert_contents><has_line line="test" /></assert_contents></output>
+      <output name="out_2"><assert_contents><has_line line="test" /></assert_contents></output>
+      <output name="out_3"><assert_contents><has_line line="test" /></assert_contents></output>
+      <output_collection name="list_output" type="list" count="2">
+        <element name="4"><assert_contents><has_line line="test" /></assert_contents></element>
+        <element name="5"><assert_contents><has_line line="test" /></assert_contents></element>
+      </output_collection>
+    </test>
+    <test expect_num_outputs="5">
+      <param name="produce_out_1" value="true" />
+      <param name="filter_text_1" value="foo" />
+      <param name="produce_collection" value="true" />
+      <param name="produce_paired_collection" value="true" />
+      <output name="out_1"><assert_contents><has_line line="test" /></assert_contents></output>
+      <output name="out_2"><assert_contents><has_line line="test" /></assert_contents></output>
+      <output name="out_3"><assert_contents><has_line line="test" /></assert_contents></output>
+      <output_collection name="list_output" type="list" count="2">
+        <element name="4"><assert_contents><has_line line="test" /></assert_contents></element>
+        <element name="5"><assert_contents><has_line line="test" /></assert_contents></element>
+      </output_collection>
+      <output_collection name="paired_list_output" type="list:paired" count="2">
+        <element name="p1">
+          <element name="forward"><assert_contents><has_line line="test" /></assert_contents></element>
+          <element name="reverse"><assert_contents><has_line line="test" /></assert_contents></element>
+        </element>
+        <element name="p2">
+          <element name="forward"><assert_contents><has_line line="test" /></assert_contents></element>
+          <element name="reverse"><assert_contents><has_line line="test" /></assert_contents></element>
+        </element>
+      </output_collection>
     </test>
   </tests>
 </tool>

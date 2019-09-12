@@ -11,14 +11,13 @@
 """
 # 03/05/2013 guerler
 
-import os
+import subprocess
 import sys
 from optparse import OptionParser
 
 
-def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
-    sys.exit()
+def stop_err(msg):
+    sys.exit(msg)
 
 
 def main():
@@ -27,6 +26,7 @@ def main():
     parser.add_option("-i", "--input")
     parser.add_option("-o", "--output")
     parser.add_option("-k", "--key", action="append")
+    parser.add_option("-H", "--header_lines", type='int')
 
     # parse
     options, args = parser.parse_args()
@@ -35,17 +35,27 @@ def main():
         # retrieve options
         input = options.input
         output = options.output
+        header_lines = options.header_lines
         key = [" -k" + k for k in options.key]
 
-        # grep comments
-        grep_comments = "(grep '^#' %s) > %s" % (input, output)
+        with open(output, 'w') as out:
+            # sed header
+            if header_lines > 0:
+                sed_header = ['sed', '-n', "1,%dp" % header_lines, input]
+                subprocess.check_call(sed_header, stdout=out)
 
-        # grep and sort columns
-        sort_columns = "(grep '^[^#]' %s | sort -f -t '\t' %s) >> %s" % (input, ' '.join(key), output)
+            # grep comments
+            grep_comments = ['grep', '^#', input]
+            exit_code = subprocess.call(grep_comments, stdout=out)
+            if exit_code not in [0, 1]:
+                stop_err('Searching for comment lines failed')
 
-        # execute
-        os.system(grep_comments)
-        os.system(sort_columns)
+            # grep and sort columns
+            sed_header_restore = ""
+            if header_lines > 0:
+                sed_header_restore = "sed '1,%dd' | " % (header_lines)
+            sort_columns = "(cat %s | %s grep '^[^#]' | sort -f -t '\t' %s)" % (input, sed_header_restore, ' '.join(key))
+            subprocess.check_call(sort_columns, stdout=out, shell=True)
 
     except Exception as ex:
         stop_err('Error running sorter.py\n' + str(ex))

@@ -6,16 +6,9 @@ from __future__ import print_function
 
 import logging
 
-log = logging.getLogger( __name__ )
+from galaxy.model.migrate.versions.util import engine_true
 
-
-def engine_true(migrate_engine):
-    if migrate_engine.name in ['postgres', 'postgresql']:
-        return "TRUE"
-    elif migrate_engine.name in ['mysql', 'sqlite']:
-        return 1
-    else:
-        raise Exception('Unknown database type: %s' % migrate_engine.name)
+log = logging.getLogger(__name__)
 
 
 def upgrade(migrate_engine):

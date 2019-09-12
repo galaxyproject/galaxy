@@ -19,7 +19,7 @@ class SlurmTorque(Torque):
         for line in status.strip().splitlines():
             if line.startswith("Job ID"):
                 continue
-            line_parts = re.compile("\s+").split(line)
+            line_parts = re.compile(r"\s+").split(line)
             if len(line_parts) < 5:
                 continue
             id = line_parts[0]

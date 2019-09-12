@@ -12,24 +12,12 @@ from galaxy.jobs.runners.util.job_script import (
     write_script,
 )
 
-log = getLogger( __name__ )
+log = getLogger(__name__)
 
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
-if [ "$GALAXY_LIB" != "None" ]; then
-    if [ -n "$PYTHONPATH" ]; then
-        PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
-    else
-        PYTHONPATH="$GALAXY_LIB"
-    fi
-    export PYTHONPATH
-fi
-if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" \
-     -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then
-    . "$GALAXY_VIRTUAL_ENV/bin/activate"
-fi
-GALAXY_PYTHON=`command -v python`
+[ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True
 """
 
 
@@ -42,7 +30,9 @@ def build_command(
     include_work_dir_outputs=True,
     create_tool_working_directory=True,
     remote_command_params={},
-    metadata_directory=None,
+    remote_job_directory=None,
+    stdout_file=None,
+    stderr_file=None,
 ):
     """
     Compose the sequence of commands necessary to execute a job. This will
@@ -66,14 +56,21 @@ def build_command(
     if not commands_builder.commands:
         return None
 
+    # Version, dependency resolution, and task splitting are prepended to the
+    # command - so they need to appear in the following order to ensure that
+    # the underlying application used by version command is available in the
+    # environment after dependency resolution, but the task splitting command
+    # is still executed in Galaxy's Python environment.
+
     __handle_version_command(commands_builder, job_wrapper)
-    __handle_task_splitting(commands_builder, job_wrapper)
 
     # One could imagine also allowing dependencies inside of the container but
     # that is too sophisticated for a first crack at this - build your
     # containers ready to go!
     if not container or container.resolve_dependencies:
         __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params)
+
+    __handle_task_splitting(commands_builder, job_wrapper)
 
     if (container and modify_command_for_container) or job_wrapper.commands_in_new_shell:
         if container and modify_command_for_container:
@@ -92,9 +89,9 @@ def build_command(
             run_in_container_command = container.containerize_command(
                 externalized_commands
             )
-            commands_builder = CommandsBuilder( run_in_container_command )
+            commands_builder = CommandsBuilder(run_in_container_command)
         else:
-            commands_builder = CommandsBuilder( externalized_commands )
+            commands_builder = CommandsBuilder(externalized_commands)
 
     # Don't need to create a separate tool working directory for Pulsar
     # jobs - that is handled by Pulsar.
@@ -106,21 +103,27 @@ def build_command(
         # xref https://github.com/galaxyproject/galaxy/issues/3289
         commands_builder.prepend_command("rm -rf working; mkdir -p working; cd working")
 
+    container_monitor_command = job_wrapper.container_monitor_command(container)
+    if container_monitor_command:
+        commands_builder.prepend_command(container_monitor_command)
+
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 
+    if stdout_file and stderr_file:
+        commands_builder.capture_stdout_stderr(stdout_file, stderr_file)
     commands_builder.capture_return_code()
 
     if include_metadata and job_wrapper.requires_setting_metadata:
-        metadata_directory = metadata_directory or job_wrapper.working_directory
-        commands_builder.append_command("cd '%s'" % metadata_directory)
+        working_directory = remote_job_directory or job_wrapper.working_directory
+        commands_builder.append_command("cd '%s'" % working_directory)
         __handle_metadata(commands_builder, job_wrapper, runner, remote_command_params)
 
     return commands_builder.build()
 
 
 def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_params, script_name="tool_script.sh"):
-    local_container_script = join( job_wrapper.working_directory, script_name )
+    local_container_script = join(job_wrapper.working_directory, script_name)
     tool_commands = commands_builder.build()
     config = job_wrapper.app.config
     integrity_injection = ""
@@ -141,9 +144,21 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         tool_commands
     )
     write_script(local_container_script, script_contents, config)
-    commands = local_container_script
-    if 'working_directory' in remote_command_params:
-        commands = "%s %s" % (shell, join(remote_command_params['working_directory'], script_name))
+    commands = "%s %s" % (shell, local_container_script)
+    # TODO: Cleanup for_pulsar hack.
+    # - Integrate Pulsar sending tool_stdout/tool_stderr back
+    #   https://github.com/galaxyproject/pulsar/pull/202
+    # *and*
+    # - Get Galaxy to write these files to an output directory so the container itself
+    #   doesn't need to mount the job directory (rw) and then eliminate this hack
+    #   (or restrict to older Pulsar versions).
+    #   https://github.com/galaxyproject/galaxy/pull/8449
+    for_pulsar = False
+    if 'script_directory' in remote_command_params:
+        commands = "%s %s" % (shell, join(remote_command_params['script_directory'], script_name))
+        for_pulsar = True
+    if not for_pulsar:
+        commands += " > ../tool_stdout 2> ../tool_stderr"
     log.info("Built script [%s] for tool command [%s]" % (local_container_script, tool_commands))
     return commands
 
@@ -163,9 +178,8 @@ def __handle_task_splitting(commands_builder, job_wrapper):
 
 def __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params):
     local_dependency_resolution = remote_command_params.get("dependency_resolution", "local") == "local"
-
     # Prepend dependency injection
-    if job_wrapper.dependency_shell_commands and local_dependency_resolution:
+    if local_dependency_resolution and job_wrapper.dependency_shell_commands:
         commands_builder.prepend_commands(job_wrapper.dependency_shell_commands)
 
 
@@ -174,7 +188,7 @@ def __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_comm
     work_dir_outputs_kwds = {}
     if 'working_directory' in remote_command_params:
         work_dir_outputs_kwds['job_working_directory'] = remote_command_params['working_directory']
-    work_dir_outputs = runner.get_work_dir_outputs( job_wrapper, **work_dir_outputs_kwds )
+    work_dir_outputs = runner.get_work_dir_outputs(job_wrapper, **work_dir_outputs_kwds)
     if work_dir_outputs:
         commands_builder.capture_return_code()
         copy_commands = map(__copy_if_exists_command, work_dir_outputs)
@@ -185,14 +199,14 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     # Append metadata setting commands, we don't want to overwrite metadata
     # that was copied over in init_meta(), as per established behavior
     metadata_kwds = remote_command_params.get('metadata_kwds', {})
-    exec_dir = metadata_kwds.get( 'exec_dir', abspath( getcwd() ) )
-    tmp_dir = metadata_kwds.get( 'tmp_dir', job_wrapper.working_directory )
-    dataset_files_path = metadata_kwds.get( 'dataset_files_path', runner.app.model.Dataset.file_path )
-    output_fnames = metadata_kwds.get( 'output_fnames', job_wrapper.get_output_fnames() )
-    config_root = metadata_kwds.get( 'config_root', None )
-    config_file = metadata_kwds.get( 'config_file', None )
-    datatypes_config = metadata_kwds.get( 'datatypes_config', None )
-    compute_tmp_dir = metadata_kwds.get( 'compute_tmp_dir', None )
+    exec_dir = metadata_kwds.get('exec_dir', abspath(getcwd()))
+    tmp_dir = metadata_kwds.get('tmp_dir', job_wrapper.working_directory)
+    dataset_files_path = metadata_kwds.get('dataset_files_path', runner.app.model.Dataset.file_path)
+    output_fnames = metadata_kwds.get('output_fnames', job_wrapper.get_output_fnames())
+    config_root = metadata_kwds.get('config_root', None)
+    config_file = metadata_kwds.get('config_file', None)
+    datatypes_config = metadata_kwds.get('datatypes_config', None)
+    compute_tmp_dir = metadata_kwds.get('compute_tmp_dir', None)
     resolve_metadata_dependencies = job_wrapper.commands_in_new_shell
     metadata_command = job_wrapper.setup_external_metadata(
         exec_dir=exec_dir,
@@ -205,7 +219,8 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         datatypes_config=datatypes_config,
         compute_tmp_dir=compute_tmp_dir,
         resolve_metadata_dependencies=resolve_metadata_dependencies,
-        kwds={ 'overwrite': False }
+        use_bin=job_wrapper.use_metadata_binary,
+        kwds={'overwrite': False}
     ) or ''
     metadata_command = metadata_command.strip()
     if metadata_command:
@@ -217,7 +232,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
 
 def __copy_if_exists_command(work_dir_output):
     source_file, destination = work_dir_output
-    return "if [ -f %s ] ; then cp %s %s ; fi" % ( source_file, source_file, destination )
+    return "if [ -f %s ] ; then cp %s %s ; fi" % (source_file, source_file, destination)
 
 
 class CommandsBuilder(object):
@@ -234,23 +249,36 @@ class CommandsBuilder(object):
         # the last thing that happens is an exit with return code.
         self.return_code_captured = False
 
-    def prepend_command(self, command):
+    def prepend_command(self, command, sep=";"):
         if command:
-            self.commands = u"%s; %s" % (command,
+            self.commands = u"%s%s %s" % (command,
+                                         sep,
                                          self.commands)
         return self
 
     def prepend_commands(self, commands):
         return self.prepend_command(u"; ".join(c for c in commands if c))
 
-    def append_command(self, command):
+    def append_command(self, command, sep=';'):
         if command:
-            self.commands = u"%s; %s" % (self.commands,
-                                         command)
+            self.commands = u"%s%s %s" % (self.commands,
+                                          sep,
+                                          command)
         return self
 
     def append_commands(self, commands):
         self.append_command(u"; ".join(c for c in commands if c))
+
+    def capture_stdout_stderr(self, stdout_file, stderr_file):
+        self.prepend_command("""out="${TMPDIR:-/tmp}/out.$$" err="${TMPDIR:-/tmp}/err.$$"
+mkfifo "$out" "$err"
+trap 'rm "$out" "$err"' EXIT
+tee -a stdout.log < "$out" &
+tee -a stderr.log < "$err" >&2 &""",
+                             sep="")
+        self.append_command("> '{stdout_file}' 2> '{stderr_file}'".format(stdout_file=stdout_file,
+                                                                          stderr_file=stderr_file),
+                            sep="")
 
     def capture_return_code(self):
         if not self.return_code_captured:
@@ -263,4 +291,4 @@ class CommandsBuilder(object):
         return self.commands
 
 
-__all__ = ( "build_command", )
+__all__ = ("build_command", )

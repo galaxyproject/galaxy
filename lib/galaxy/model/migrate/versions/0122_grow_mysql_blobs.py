@@ -7,7 +7,7 @@ import logging
 
 from sqlalchemy import MetaData
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
 BLOB_COLUMNS = [
@@ -33,8 +33,8 @@ BLOB_COLUMNS = [
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     if migrate_engine.name != "mysql":
@@ -43,13 +43,10 @@ def upgrade(migrate_engine):
     for (table, column) in BLOB_COLUMNS:
         cmd = "ALTER TABLE %s MODIFY COLUMN %s MEDIUMBLOB;" % (table, column)
         try:
-            migrate_engine.execute( cmd )
+            migrate_engine.execute(cmd)
         except Exception:
             log.exception("Failed to grow column %s.%s", table, column)
 
 
 def downgrade(migrate_engine):
-    metadata.bind = migrate_engine
-    metadata.reflect()
-    # Ignoring..., changed the datatype so no guarantee these columns weren't
-    # MEDIUMBLOBs before.
+    pass

@@ -9,7 +9,7 @@ usage: %prog in_file out_file
 """
 import optparse
 
-from pysam import ctabix
+import pysam
 
 
 def main():
@@ -18,7 +18,7 @@ def main():
     (options, args) = parser.parse_args()
     input_fname, output_fname = args
 
-    ctabix.tabix_compress(input_fname, output_fname, force=True)
+    pysam.tabix_compress(input_fname, output_fname, force=True)
 
 
 if __name__ == "__main__":

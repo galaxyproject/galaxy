@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Bar diagram (jqPlot)">
+    <macros>
+        <import>jqplot_shared.xml</import>
+    </macros>
+    <description>Renders a bar diagram using jqPlot hosted at http://www.jqplot.com.</description>
+    <expand macro="data"/>
+    <entry_point entry_point_type="chart" src="script.js" css="script.css" load="jqplot_bar"/>
+    <specs>
+        <expand macro="specs"/>
+    </specs>
+    <groups>
+        <expand macro="groups"/>
+        <expand macro="groups_bar"/>
+    </groups>
+    <settings>
+        <expand macro="settings"/>
+    </settings>
+</visualization>

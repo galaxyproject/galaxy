@@ -1,11 +1,15 @@
 <tool id="multi_data_optional" name="multi_data_optional" version="0.1.0">
   <command>
-    touch $out1;
+touch '$out1';
+#if $input1
     #for $input in $input1
-    #if $input
-    cat $input >> $out1;
-    #end if
+        #if $input
+            cat '$input' >> '$out1';
+        #end if
     #end for
+#else
+    echo "No input selected" >> '$out1'
+#end if
   </command>
   <inputs>
     <param name="input1" type="data" format="txt" multiple="true" label="Data 1" optional="true" />
@@ -20,6 +24,13 @@
         <assert_contents>
           <has_line line="This is a line of text." />
           <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="No input selected" />
         </assert_contents>
       </output>
     </test>

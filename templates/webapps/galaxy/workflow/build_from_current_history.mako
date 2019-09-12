@@ -113,7 +113,7 @@ into a workflow will be shown in gray.</p>
         disabled = True
         tool_name = getattr( job, 'name', tool_name )
     else:
-        tool = app.toolbox.get_tool( job.tool_id )
+        tool = app.toolbox.get_tool( job.tool_id, tool_version=job.tool_version )
         if tool:
             tool_name = tool.name
         if tool is None or not( tool.is_workflow_compatible ):

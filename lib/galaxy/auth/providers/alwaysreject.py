@@ -26,7 +26,7 @@ class AlwaysReject(AuthProvider):
         """
         See abstract method documentation.
         """
-        log.debug("User: %s, ALWAYSREJECT: None" % (user.email))
+        log.debug("User: %s, ALWAYSREJECT: None" % (user.id if options['redact_username_in_logs'] else user.email))
         return None
 
 

@@ -63,7 +63,6 @@ class PulsarObjectStore(ObjectStore):
     def __build_kwds(self, obj, **kwds):
         kwds['object_id'] = obj.id
         return kwds
-        pass
 
     def __build_pulsar_client(self, config_xml):
         if ObjectStoreClientManager is None:

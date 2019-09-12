@@ -21,8 +21,8 @@ import tempfile
 from bx.cookbook import doc_optparse
 
 
-def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
+def stop_err(msg):
+    sys.stderr.write("%s\n" % msg)
     sys.exit()
 
 
@@ -37,7 +37,7 @@ def replaceNeg1(fin, fout):
 
 def __main__():
     # Parse Command Line
-    options, args = doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse(__doc__)
     # common temp file setup
     tmpf = tempfile.NamedTemporaryFile()  # forward reads
     tmpqf = tempfile.NamedTemporaryFile()

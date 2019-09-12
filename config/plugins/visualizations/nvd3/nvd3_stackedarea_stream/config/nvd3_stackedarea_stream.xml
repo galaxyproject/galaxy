@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Stream (NVD3)">
+    <macros>
+        <import>../../nvd3_bar/config/nvd3_shared.xml</import>
+    </macros>
+    <description>Renders a stream chart using NVD3 hosted at http://www.nvd3.org.</description>
+    <expand macro="data"/>
+    <entry_point entry_point_type="chart" src="../../nvd3_bar/static/nvd3.js" css="../../nvd3_bar/static/nvd3.css" load="nvd3_stackedarea_stream"/>
+    <specs>
+        <expand macro="specs"/>
+        <use_panels>no</use_panels>
+    </specs>
+    <groups>
+        <expand macro="groups"/>
+        <expand macro="groups_bar"/>
+    </groups>
+    <settings>
+        <expand macro="settings"/>
+    </settings>
+</visualization>

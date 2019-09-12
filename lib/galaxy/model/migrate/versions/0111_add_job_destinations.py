@@ -9,7 +9,7 @@ from sqlalchemy import Column, MetaData, String, Table
 
 from galaxy.model.custom_types import JSONType
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 
 def upgrade(migrate_engine):
@@ -17,18 +17,18 @@ def upgrade(migrate_engine):
     metadata = MetaData()
     metadata.bind = migrate_engine
     metadata.reflect()
-    Job_table = Table( "job", metadata, autoload=True )
+    Job_table = Table("job", metadata, autoload=True)
 
-    c = Column( "destination_id", String( 255 ), nullable=True )
+    c = Column("destination_id", String(255), nullable=True)
     try:
-        c.create( Job_table )
+        c.create(Job_table)
         assert c is Job_table.c.destination_id
     except Exception:
         log.exception("Adding column 'destination_id' to job table failed.")
 
-    c = Column( "destination_params", JSONType, nullable=True )
+    c = Column("destination_params", JSONType, nullable=True)
     try:
-        c.create( Job_table )
+        c.create(Job_table)
         assert c is Job_table.c.destination_params
     except Exception:
         log.exception("Adding column 'destination_params' to job table failed.")
@@ -38,7 +38,7 @@ def downgrade(migrate_engine):
     metadata = MetaData()
     metadata.bind = migrate_engine
     metadata.reflect()
-    Job_table = Table( "job", metadata, autoload=True )
+    Job_table = Table("job", metadata, autoload=True)
 
     try:
         Job_table.c.destination_params.drop()

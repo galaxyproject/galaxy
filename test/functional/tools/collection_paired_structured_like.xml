@@ -1,0 +1,32 @@
+<tool id="collection_paired_structured_like" name="collection_paired_structured_like" version="0.1.0">
+  <!-- You usually wouldn't want to do this - just write the operation for
+       a single dataset and allow the user to map that tool over the whole
+       collection. -->
+  <command>
+        cat '${input1.forward}' > '${list_output.forward}';
+        cat '${input1.reverse}' > '${list_output.reverse}'
+  </command>
+  <inputs>
+    <param name="input1" type="data_collection" collection_type="paired" label="Input" help="Input collection..." format="txt" />
+  </inputs>
+  <outputs>
+    <collection name="list_output" structured_like="input1" type="paired" label="Duplicate List" inherit_format="true">
+      <!-- inherit_format can be used in conjunction with structured_like
+           to perserve format. -->
+    </collection>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1">
+        <collection type="paired">
+          <element name="forward" value="simple_line.txt" />
+          <element name="reverse" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output_collection name="list_output" type="paired">
+          <element name="forward" file="simple_line.txt" ftype="txt"/>
+          <element name="reverse" file="simple_line_alternative.txt" ftype="txt"/>
+      </output_collection>
+    </test>
+  </tests>
+</tool>

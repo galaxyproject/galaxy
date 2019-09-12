@@ -1,0 +1,5 @@
+id: xkcd
+type:
+  - tool
+  - workflow
+activate: true

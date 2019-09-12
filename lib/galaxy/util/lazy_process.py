@@ -3,18 +3,18 @@ import threading
 import time
 
 
-class LazyProcess( object ):
+class LazyProcess(object):
     """ Abstraction describing a command line launching a service - probably
     as needed as functionality is accessed in Galaxy.
     """
 
-    def __init__( self, command_and_args ):
+    def __init__(self, command_and_args):
         self.command_and_args = command_and_args
         self.thread_lock = threading.Lock()
         self.allow_process_request = True
         self.process = None
 
-    def start_process( self ):
+    def start_process(self):
         with self.thread_lock:
             if self.allow_process_request:
                 self.allow_process_request = False
@@ -24,9 +24,9 @@ class LazyProcess( object ):
 
     def __start(self):
         with self.thread_lock:
-            self.process = subprocess.Popen( self.command_and_args, close_fds=True )
+            self.process = subprocess.Popen(self.command_and_args, close_fds=True)
 
-    def shutdown( self ):
+    def shutdown(self):
         with self.thread_lock:
             self.allow_process_request = False
         if self.running:
@@ -36,22 +36,22 @@ class LazyProcess( object ):
                 self.process.kill()
 
     @property
-    def running( self ):
+    def running(self):
         return self.process and not self.process.poll()
 
 
-class NoOpLazyProcess( object ):
+class NoOpLazyProcess(object):
     """ LazyProcess abstraction meant to describe potentially optional
     services, in those cases where one is not configured or valid, this
     class can be used in place of LazyProcess.
     """
 
-    def start_process( self ):
+    def start_process(self):
         return
 
-    def shutdown( self ):
+    def shutdown(self):
         return
 
     @property
-    def running( self ):
+    def running(self):
         return False

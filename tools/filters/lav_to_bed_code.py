@@ -7,13 +7,13 @@ def exec_after_process(app, inp_data, out_data, param_dict, tool, stdout, stderr
             fields = line.split("\t")
             filename_to_build[fields[1]] = fields[2].strip()
         else:
-            new_stdout = "%s%s" % ( new_stdout, line )
+            new_stdout = "%s%s" % (new_stdout, line)
     for data in out_data.values():
         try:
-            data.info = "%s\n%s" % ( new_stdout, stderr )
+            data.info = "%s\n%s" % (new_stdout, stderr)
             data.dbkey = filename_to_build[data.file_name]
-            data.name = "%s (%s)" % ( data.name, data.dbkey )
-            app.model.context.add( data )
+            data.name = "%s (%s)" % (data.name, data.dbkey)
+            app.model.context.add(data)
             app.model.context.flush()
-        except:
+        except Exception:
             continue

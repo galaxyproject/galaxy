@@ -1,3 +1,10 @@
+<%def name="load_default_js()">
+${h.css( 'base' ) }
+${h.js('bundled/libs.chunk',
+       'bundled/base.chunk',
+       'bundled/generic.bundled')}
+</%def>
+
 <%def name="default_javascript_variables()">
 // Globals
 
@@ -10,27 +17,15 @@ ie_password = '${ ie_request.notebook_pw }';
 var galaxy_root = '${ ie_request.attr.root }';
 var app_root = '${ ie_request.attr.app_root }';
 var ie_readiness_url = '${ h.url_for("/interactive_environments/ready") }';
-</%def>
 
-
-<%def name="load_default_js()">
-${h.css( 'base' ) }
-${h.js( 'libs/jquery/jquery',
-        'libs/toastr',
-        'libs/require')}
-</%def>
-
-<%def name="plugin_require_config()">
-require.config({
-    baseUrl: app_root,
-    paths: {
-        "plugin" : app_root + "js/",
-        "interactive_environments": "${h.url_for('/static/scripts/galaxy.interactive_environments')}",
-    },
-});
+window.IES = bundleEntries.IES;
+window.toastr = bundleEntries.Toast;
 
 window.onbeforeunload = function() {
     return 'You are leaving your Interactive Environment.';
 };
+</%def>
 
+<%def name="load_default_app()">
+<script src="${'%sjs/main.js?v=%s' % (ie_request.attr.app_root, app.server_starttime)}" type="text/javascript"></script>
 </%def>

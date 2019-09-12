@@ -8,7 +8,6 @@ Usage:
 from __future__ import print_function
 
 import sys
-
 from ast import Module, parse, walk
 
 from bx.intervals.io import GenomicInterval
@@ -25,18 +24,18 @@ AST_NODE_TYPE_WHITELIST = [
 
 
 BUILTIN_AND_MATH_FUNCTIONS = 'abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor'.split('|')
-STRING_AND_LIST_METHODS = [ name for name in dir('') + dir([]) if not name.startswith('_') ]
+STRING_AND_LIST_METHODS = [name for name in dir('') + dir([]) if not name.startswith('_')]
 VALID_FUNCTIONS = BUILTIN_AND_MATH_FUNCTIONS + STRING_AND_LIST_METHODS
 # Name blacklist isn't strictly needed - but provides extra peace of mind.
 NAME_BLACKLIST = ["exec", "eval", "globals", "locals", "__import__", "__builtins__"]
 
 
-def __check_name( ast_node ):
+def __check_name(ast_node):
     name = ast_node.id
     return name not in NAME_BLACKLIST
 
 
-def check_expression( text ):
+def check_expression(text):
     """
 
     >>> check_expression("c1=='chr1' and c3-c2>=2000 and c6=='+'")
@@ -71,20 +70,20 @@ def check_expression( text ):
     False
     """
     try:
-        module = parse( text )
+        module = parse(text)
     except SyntaxError:
         return False
 
     if not isinstance(module, Module):
         return False
     statements = module.body
-    if not len( statements ) == 1:
+    if not len(statements) == 1:
         return False
     expression = statements[0]
     if expression.__class__.__name__ != 'Expr':
         return False
 
-    for ast_node in walk( expression ):
+    for ast_node in walk(expression):
         ast_node_class = ast_node.__class__.__name__
 
         # Toss out everything that is not a "simple" expression,
@@ -129,15 +128,15 @@ def __main__():
 
     # Unescape operations in condition str.
     for key, value in mapped_ops.items():
-        condition = condition.replace( key, value )
+        condition = condition.replace(key, value)
 
     # Error checking: condition should be of the form <operator><number>
     for op in ops:
         if op in condition:
-            empty, number_str = condition.split( op )
+            empty, number_str = condition.split(op)
             try:
-                number = float( number_str )
-            except:
+                number = float(number_str)
+            except ValueError:
                 number = None
             if empty != "" or not number:
                 print("Invalid condition: %s, cannot filter." % condition, file=sys.stderr)
@@ -148,15 +147,15 @@ def __main__():
     kept_features = 0
     skipped_lines = 0
     first_skipped_line = 0
-    out = open( output_name, 'w' )
-    for i, feature in enumerate( GFFReaderWrapper( open( input_name ) ) ):
-        if not isinstance( feature, GenomicInterval ):
+    out = open(output_name, 'w')
+    for i, feature in enumerate(GFFReaderWrapper(open(input_name))):
+        if not isinstance(feature, GenomicInterval):
             continue
         count = 0
         for interval in feature.intervals:
             if interval.feature == feature_name:
                 count += 1
-        eval_text = '%s %s' % ( count, condition )
+        eval_text = '%s %s' % (count, condition)
         if not check_expression(eval_text):
             print("Invalid condition: %s, cannot filter." % condition, file=sys.stderr)
             sys.exit(1)
@@ -164,7 +163,7 @@ def __main__():
         if eval(eval_text):
             # Keep feature.
             for interval in feature.intervals:
-                out.write( "\t".join(interval.fields) + '\n' )
+                out.write("\t".join(interval.fields) + '\n')
             kept_features += 1
 
     # Needed because i is 0-based but want to display stats using 1-based.
@@ -173,9 +172,9 @@ def __main__():
     # Clean up.
     out.close()
     info_msg = "%i of %i features kept (%.2f%%) using condition %s.  " % \
-        ( kept_features, i, float(kept_features) / i * 100.0, feature_name + condition )
+        (kept_features, i, float(kept_features) / i * 100.0, feature_name + condition)
     if skipped_lines > 0:
-        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % ( skipped_lines, first_skipped_line )
+        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (skipped_lines, first_skipped_line)
     print(info_msg)
 
 

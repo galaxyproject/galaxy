@@ -8,20 +8,21 @@ import galaxy.util
 log = logging.getLogger(__name__)
 
 
-class NoQuotaAgent( object ):
+class NoQuotaAgent(object):
     """Base quota agent, always returns no quota"""
-    def __init__( self, model ):
+
+    def __init__(self, model):
         self.model = model
         self.sa_session = model.context
 
-    def get_quota( self, user, nice_size=False ):
+    def get_quota(self, user, nice_size=False):
         return None
 
     @property
-    def default_quota( self ):
+    def default_quota(self):
         return None
 
-    def get_usage( self, trans=None, user=False, history=False ):
+    def get_usage(self, trans=None, user=False, history=False):
         if trans:
             user = trans.user
             history = trans.history
@@ -33,16 +34,17 @@ class NoQuotaAgent( object ):
             usage = user.total_disk_usage
         return usage
 
-    def get_percent( self, trans=None, user=False, history=False, usage=False, quota=False ):
+    def get_percent(self, trans=None, user=False, history=False, usage=False, quota=False):
         return None
 
-    def get_user_quotas( self, user ):
+    def get_user_quotas(self, user):
         return []
 
 
-class QuotaAgent( NoQuotaAgent ):
+class QuotaAgent(NoQuotaAgent):
     """Class that handles galaxy quotas"""
-    def get_quota( self, user, nice_size=False ):
+
+    def get_quota(self, user, nice_size=False):
         """
         Calculated like so:
 
@@ -57,13 +59,13 @@ class QuotaAgent( NoQuotaAgent ):
         if not user:
             return self.default_unregistered_quota
         quotas = []
-        for group in [ uga.group for uga in user.groups ]:
-            for quota in [ gqa.quota for gqa in group.quotas ]:
+        for group in [uga.group for uga in user.groups]:
+            for quota in [gqa.quota for gqa in group.quotas]:
                 if quota not in quotas:
-                    quotas.append( quota )
-        for quota in [ uqa.quota for uqa in user.quotas ]:
+                    quotas.append(quota)
+        for quota in [uqa.quota for uqa in user.quotas]:
             if quota not in quotas:
-                quotas.append( quota )
+                quotas.append(quota)
         use_default = True
         max = 0
         adjustment = 0
@@ -92,47 +94,47 @@ class QuotaAgent( NoQuotaAgent ):
                 rval = 0
         if nice_size:
             if rval is not None:
-                rval = galaxy.util.nice_size( rval )
+                rval = galaxy.util.nice_size(rval)
             else:
                 rval = 'unlimited'
         return rval
 
     @property
-    def default_unregistered_quota( self ):
-        return self._default_quota( self.model.DefaultQuotaAssociation.types.UNREGISTERED )
+    def default_unregistered_quota(self):
+        return self._default_quota(self.model.DefaultQuotaAssociation.types.UNREGISTERED)
 
     @property
-    def default_registered_quota( self ):
-        return self._default_quota( self.model.DefaultQuotaAssociation.types.REGISTERED )
+    def default_registered_quota(self):
+        return self._default_quota(self.model.DefaultQuotaAssociation.types.REGISTERED)
 
-    def _default_quota( self, default_type ):
-        dqa = self.sa_session.query( self.model.DefaultQuotaAssociation ).filter( self.model.DefaultQuotaAssociation.table.c.type == default_type ).first()
+    def _default_quota(self, default_type):
+        dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(self.model.DefaultQuotaAssociation.table.c.type == default_type).first()
         if not dqa:
             return None
         if dqa.quota.bytes < 0:
             return None
         return dqa.quota.bytes
 
-    def set_default_quota( self, default_type, quota ):
+    def set_default_quota(self, default_type, quota):
         # Unset the current default(s) associated with this quota, if there are any
         for dqa in quota.default:
-            self.sa_session.delete( dqa )
+            self.sa_session.delete(dqa)
         # Unset the current users/groups associated with this quota
         for uqa in quota.users:
-            self.sa_session.delete( uqa )
+            self.sa_session.delete(uqa)
         for gqa in quota.groups:
-            self.sa_session.delete( gqa )
+            self.sa_session.delete(gqa)
         # Find the old default, assign the new quota if it exists
-        dqa = self.sa_session.query( self.model.DefaultQuotaAssociation ).filter( self.model.DefaultQuotaAssociation.table.c.type == default_type ).first()
+        dqa = self.sa_session.query(self.model.DefaultQuotaAssociation).filter(self.model.DefaultQuotaAssociation.table.c.type == default_type).first()
         if dqa:
             dqa.quota = quota
         # Or create if necessary
         else:
-            dqa = self.model.DefaultQuotaAssociation( default_type, quota )
-        self.sa_session.add( dqa )
+            dqa = self.model.DefaultQuotaAssociation(default_type, quota)
+        self.sa_session.add(dqa)
         self.sa_session.flush()
 
-    def get_percent( self, trans=None, user=False, history=False, usage=False, quota=False ):
+    def get_percent(self, trans=None, user=False, history=False, usage=False, quota=False):
         """
         Return the percentage of any storage quota applicable to the user/transaction.
         """
@@ -142,50 +144,50 @@ class QuotaAgent( NoQuotaAgent ):
             history = trans.history
         # if quota wasn't passed, attempt to get the quota
         if quota is False:
-            quota = self.get_quota( user )
+            quota = self.get_quota(user)
         # return none if no applicable quotas or quotas disabled
         if quota is None:
             return None
         # get the usage, if it wasn't passed
         if usage is False:
-            usage = self.get_usage( trans, user, history )
+            usage = self.get_usage(trans, user, history)
         try:
-            return min( ( int( float( usage ) / quota * 100 ), 100 ) )
+            return min((int(float(usage) / quota * 100), 100))
         except ZeroDivisionError:
             return 100
 
-    def set_entity_quota_associations( self, quotas=[], users=[], groups=[], delete_existing_assocs=True ):
+    def set_entity_quota_associations(self, quotas=[], users=[], groups=[], delete_existing_assocs=True):
         for quota in quotas:
             if delete_existing_assocs:
                 flush_needed = False
                 for a in quota.users + quota.groups:
-                    self.sa_session.delete( a )
+                    self.sa_session.delete(a)
                     flush_needed = True
                 if flush_needed:
                     self.sa_session.flush()
             for user in users:
-                uqa = self.model.UserQuotaAssociation( user, quota )
-                self.sa_session.add( uqa )
+                uqa = self.model.UserQuotaAssociation(user, quota)
+                self.sa_session.add(uqa)
             for group in groups:
-                gqa = self.model.GroupQuotaAssociation( group, quota )
-                self.sa_session.add( gqa )
+                gqa = self.model.GroupQuotaAssociation(group, quota)
+                self.sa_session.add(gqa)
             self.sa_session.flush()
 
-    def get_user_quotas( self, user ):
+    def get_user_quotas(self, user):
         rval = []
         if not user:
-            dqa = self.sa_session.query( self.model.DefaultQuotaAssociation ) \
-                .filter( self.model.DefaultQuotaAssociation.table.c.type == self.model.DefaultQuotaAssociation.types.UNREGISTERED ).first()
+            dqa = self.sa_session.query(self.model.DefaultQuotaAssociation) \
+                .filter(self.model.DefaultQuotaAssociation.table.c.type == self.model.DefaultQuotaAssociation.types.UNREGISTERED).first()
             if dqa:
-                rval.append( dqa.quota )
+                rval.append(dqa.quota)
         else:
-            dqa = self.sa_session.query( self.model.DefaultQuotaAssociation ) \
-                .filter( self.model.DefaultQuotaAssociation.table.c.type == self.model.DefaultQuotaAssociation.types.REGISTERED ).first()
+            dqa = self.sa_session.query(self.model.DefaultQuotaAssociation) \
+                .filter(self.model.DefaultQuotaAssociation.table.c.type == self.model.DefaultQuotaAssociation.types.REGISTERED).first()
             if dqa:
-                rval.append( dqa.quota )
+                rval.append(dqa.quota)
             for uqa in user.quotas:
-                rval.append( uqa.quota )
-            for group in [ uga.group for uga in user.groups ]:
+                rval.append(uqa.quota)
+            for group in [uga.group for uga in user.groups]:
                 for gqa in group.quotas:
-                    rval.append( gqa.quota )
+                    rval.append(gqa.quota)
         return rval

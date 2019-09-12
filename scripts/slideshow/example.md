@@ -24,7 +24,7 @@ behaviors that were required for backward compatiblity.
 
 #### `set -e` by default ([d020522](https://github.com/galaxyproject/galaxy/pull/1688/commits/d020522650a9bfc86c22923a01fd5d7c07c65326))
 
-From the [IUC best practices documentation](http://galaxy-iuc-standards.readthedocs.org/en/latest/best_practices/tool_xml.html#command-tag):
+From the [IUC best practices documentation](https://galaxy-iuc-standards.readthedocs.io/en/latest/best_practices/tool_xml.html#command-tag):
 
 > _"If you need to execute more than one shell command, concatenate them with a double ampersand (`&&`), so that an error in a command will abort the execution of the following ones."_
 
@@ -91,7 +91,7 @@ Full [Galaxy changelog](https://docs.galaxyproject.org/en/master/releases/16.01_
   for the job with `FastQC` at version `0.11.4` installed.
 - Only dependency resolver that can be installed at runtime - great for
   Docker images, heterogeneous clusters, and testing tools.
-- Links [Conda](http://conda.pydata.org/docs/) and [BioConda](https://bioconda.github.io/)
+- Links [Conda](https://conda.io/docs/) and [BioConda](https://bioconda.github.io/)
 
 ---
 

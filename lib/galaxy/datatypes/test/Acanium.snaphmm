@@ -1,0 +1,21 @@
+zoeHMM Acanium.hmm 6 8 6 7
+
+<STATES>
+
+Einit	0	0	3	-1	explicit
+Esngl	0	0	150	-1	explicit
+Eterm	0	0	3	-1	explicit
+Exon	0	0	6	-1	explicit
+Inter	0.9	0.9	0	0	geometric
+Intron	0.1	0.1	0	0	geometric
+
+<STATE_TRANSITIONS>
+
+Einit	Intron	1
+Esngl	Inter	1
+Eterm	Inter	1
+Exon	Intron	1
+Inter	Einit	0.852754
+Inter	Esngl	0.147246
+Intron	Eterm	0.129065
+Intron	Exon	0.870935

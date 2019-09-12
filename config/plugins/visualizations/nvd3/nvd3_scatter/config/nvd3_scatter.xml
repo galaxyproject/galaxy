@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="Scatter plot (NVD3)">
+    <macros>
+        <import>../../nvd3_bar/config/nvd3_shared.xml</import>
+    </macros>
+    <description>Renders a scatter plot using NVD3 hosted at http://www.nvd3.org.</description>
+    <expand macro="data"/>
+    <entry_point entry_point_type="chart" src="../../nvd3_bar/static/nvd3.js" css="../../nvd3_bar/static/nvd3.css" load="nvd3_scatter"/>
+    <specs>
+        <expand macro="specs"/>
+        <zoomable>true</zoomable>
+    </specs>
+    <groups>
+        <expand macro="groups"/>
+        <input>
+            <name>x</name>
+            <label>Values for x-axis</label>
+            <type>data_column</type>
+            <is_numeric>true</is_numeric>
+        </input>
+        <input>
+            <name>y</name>
+            <label>Values for y-axis</label>
+            <type>data_column</type>
+            <is_numeric>true</is_numeric>
+        </input>
+    </groups>
+    <settings>
+        <expand macro="settings"/>
+    </settings>
+</visualization>

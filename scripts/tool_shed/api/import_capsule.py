@@ -23,24 +23,24 @@ from common import submit
 log = logging.getLogger(__name__)
 
 
-def main( options ):
+def main(options):
     api_key = options.api
-    base_tool_shed_url = options.tool_shed_url.rstrip( '/' )
+    base_tool_shed_url = options.tool_shed_url.rstrip('/')
     data = {}
-    data[ 'tool_shed_url' ] = options.tool_shed_url
-    data[ 'capsule_file_name' ] = options.capsule_file_name
+    data['tool_shed_url'] = options.tool_shed_url
+    data['capsule_file_name'] = options.capsule_file_name
     url = '%s/api/repositories/new/import_capsule' % base_tool_shed_url
     try:
-        submit( url, data, api_key )
+        submit(url, data, api_key)
     except Exception as e:
-        log.exception( str( e ) )
-        sys.exit( 1 )
+        log.exception(str(e))
+        sys.exit(1)
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser( description='Import the contents of a repository capsule via the Tool Shed API.' )
-    parser.add_argument( "-u", "--url", dest="tool_shed_url", required=True, help="Tool Shed URL" )
-    parser.add_argument( "-a", "--api", dest="api", required=True, help="API Key" )
-    parser.add_argument( "-c", "--capsule_file_name", required=True, help="Capsule file name." )
+    parser = argparse.ArgumentParser(description='Import the contents of a repository capsule via the Tool Shed API.')
+    parser.add_argument("-u", "--url", dest="tool_shed_url", required=True, help="Tool Shed URL")
+    parser.add_argument("-a", "--api", dest="api", required=True, help="API Key")
+    parser.add_argument("-c", "--capsule_file_name", required=True, help="Capsule file name.")
     options = parser.parse_args()
-    main( options )
+    main(options)

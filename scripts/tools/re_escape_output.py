@@ -11,22 +11,22 @@ import re
 
 def __main__():
     parser = optparse.OptionParser()
-    parser.add_option( "-m", "--multiline", action="store_true", dest="multiline", default=False, help="Use Multiline Matching")
-    ( options, args ) = parser.parse_args()
-    input = open( args[0], 'rb' )
-    if len( args ) > 1:
-        output = open( args[1], 'wb' )
+    parser.add_option("-m", "--multiline", action="store_true", dest="multiline", default=False, help="Use Multiline Matching")
+    (options, args) = parser.parse_args()
+    input = open(args[0], 'rb')
+    if len(args) > 1:
+        output = open(args[1], 'wb')
     else:
         if options.multiline:
             suffix = 're_match_multiline'
         else:
             suffix = 're_match'
-        output = open( "%s.%s" % ( args[0], suffix ), 'wb' )
+        output = open("%s.%s" % (args[0], suffix), 'wb')
     if options.multiline:
-        lines = [ re.escape( input.read() ) ]
+        lines = [re.escape(input.read())]
     else:
-        lines = [ "%s\n" % re.escape( line.rstrip( '\n\r' ) ) for line in input ]
-    output.writelines( lines )
+        lines = ["%s\n" % re.escape(line.rstrip('\n\r')) for line in input]
+    output.writelines(lines)
     output.close()
 
 

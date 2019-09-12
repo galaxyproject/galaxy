@@ -1,12 +1,9 @@
 #!/bin/sh
 
-: ${GALAXY_VIRTUAL_ENV:=.venv}
+cd "$(dirname "$0")"
 
-if [ -d "$GALAXY_VIRTUAL_ENV" ];
-then
-    printf "Activating virtualenv at $GALAXY_VIRTUAL_ENV\n"
-    . "$GALAXY_VIRTUAL_ENV/bin/activate"
-fi
+. ./scripts/common_startup_functions.sh
 
-cd `dirname $0`
-python ./scripts/create_db.py $@
+setup_python
+
+python ./scripts/create_db.py "$@"

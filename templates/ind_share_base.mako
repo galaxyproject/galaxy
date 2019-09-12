@@ -84,16 +84,16 @@
         item_name = get_item_name(item)
     %>
     
-    <div class="toolForm">
-        <div class="toolFormTitle">Share ${item_class_name} '${item_name | h}' with Another User</div>
-            <div class="toolFormBody">
+    <div class="card">
+        <div class="card-header">Share ${item_class_name} '${item_name | h}' with Another User</div>
+            <div class="card-body">
                 <form action="${h.url_for(controller=item_controller, action='share', id=trans.security.encode_id( item.id ) )}" method="POST">
                     <div class="form-row">
                         <label>
                             Email address of user to share with
                         </label>
                         <div style="float: left; width: 100%;  margin-right: 10px;">
-                            %if trans.app.config.expose_user_email or trans.app.config.expose_user_name or trans.user_is_admin():
+                            %if trans.app.config.expose_user_email or trans.app.config.expose_user_name or trans.user_is_admin:
                             <input type="hidden" id="email_select" name="email" >
                             </input>
                             %else:
@@ -108,7 +108,7 @@
                         <input type="submit" value="Share"></input>
                     </div>
                     <div class="form-row">
-                        <a href="${h.url_for(controller=item_controller, action="sharing", id=trans.security.encode_id( item.id ) )}">Back to ${item_class_name}'s Sharing Home</a>
+                        <a href="${h.url_for(controller="", action="%s/sharing" % item_class_plural_name_lc, id=trans.security.encode_id( item.id ) )}">Back to ${item_class_name}'s Sharing Home</a>
                     </div>
                 </form>
             </div>

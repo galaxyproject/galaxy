@@ -86,12 +86,12 @@ def main():
 
     try:
         (primaryFile, primary, primaryLengths) = parse_spec(primary)
-    except:
+    except Exception:
         usage("bad primary spec (must be seq_file[:species_name]:lengths_file")
 
     try:
         (secondaryFile, secondary, secondaryLengths) = parse_spec(secondary)
-    except:
+    except Exception:
         usage("bad secondary spec (must be seq_file[:species_name]:lengths_file")
 
     # read the lengths
@@ -103,8 +103,8 @@ def main():
     # read the alignments
 
     out = bx.align.lav.Writer(open(lav_out, 'w'),
-                              attributes={ "name_format_1": primaryFile,
-                                           "name_format_2": secondaryFile })
+                              attributes={"name_format_1": primaryFile,
+                                          "name_format_2": secondaryFile})
 
     axtsRead = 0
     axtsWritten = 0
@@ -158,16 +158,16 @@ def read_lengths(fileName):
 
         fields = line.split()
         if len(fields) != 2:
-            raise Exception( "bad lengths line (%s:%d): %s" % (fileName, lineNumber, line) )
+            raise Exception("bad lengths line (%s:%d): %s" % (fileName, lineNumber, line))
 
         chrom = fields[0]
         try:
             length = int(fields[1])
-        except:
-            raise Exception( "bad lengths line (%s:%d): %s" % (fileName, lineNumber, line) )
+        except Exception:
+            raise Exception("bad lengths line (%s:%d): %s" % (fileName, lineNumber, line))
 
         if chrom in chromToLength:
-            raise Exception( "%s appears more than once (%s:%d): %s" % (chrom, fileName, lineNumber) )
+            raise Exception("%s appears more than once (%s:%d): %s" % (chrom, fileName, lineNumber))
 
         chromToLength[chrom] = length
 

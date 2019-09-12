@@ -2,10 +2,10 @@
 
 Galaxy supports the following authentication mechanisms:
 
-* [Galaxy Database](#galaxy-database) - Galaxy-specific login using e-mail address and password (the default)
-* [Authentication Framework](#authentication-framework) - A plugin-driven framework supporting LDAP/Active Directory and PAM.
-* [OpenID](#openid) - authentication with Galaxy as a relying party
-* [Proxy Authentication](#proxy_authentication) - HTTP [remote user](http://httpd.apache.org/docs/current/mod/mod_cgi.html#env) provided by any front-end Web server
+* [Galaxy Database](#galaxy-database) - Galaxy-specific login using e-mail address and password (the default);
+* [OIDC and OAuth2.0](#OIDC-and-OAuth2.0) - Login to Galaxy using your Google account, without having to create a Galaxy user;
+* [Authentication Framework](#authentication-framework) - A plugin-driven framework supporting LDAP/Active Directory and PAM;
+* [Proxy Authentication](#proxy_authentication) - HTTP [remote user](http://httpd.apache.org/docs/current/mod/mod_cgi.html#env) provided by any front-end Web server.
 
 ## Galaxy Database
 
@@ -14,6 +14,15 @@ Galaxy user interface and API provide functions allowing users to register accou
 
 If deploying Galaxy using the default authentication option, user activation can be enabled also. This is documented
 [below](#user-activation).
+
+## OIDC and OAuth2.0
+Leveraging OpenID Connect (OIDC) protocol, we enable login to Galaxy without explicitly creating a Galaxy user. This feature is disabled by default. In short, to enable this feature, a Galaxy server admin has to take the following two steps: 
+
+1. Define the Galaxy instance on an OIDC identity provider. At the moment, we support Google. To set a Galaxy instance on Google, go to _credentials_ section at [developers console](https://console.developers.google.com/), and configure the instance. At the end, you'll receive _client ID_ and _client secret_ take a note of these two tokens. 
+
+2. Configure Galaxy. In the `galaxy.yml` file enable the OIDC service using the `enable_oidc` key and set the two configuration files (i.e., `oidc_config_file` and `oidc_backends_config_file`), based on the IdP information. 
+
+**This configuration is explained in details, and with screenshots, at [this page](https://galaxyproject.org/admin/authentication/config/). Also, [at this page](https://galaxyproject.org/admin/authentication/) we explain how a user can benefit from this feature.**
 
 ## Authentication Framework
 
@@ -27,16 +36,6 @@ within Galaxy allows users to use the Galaxy UI for logging in instead of relyin
 To configure one or more authentication plugins, simply copy ``config/auth_conf.xml.sample`` to ``config/auth_conf.xml``.
 The provided sample configuration file has numerous commented out examples and serves as the most up-to-date source
 of documentation on configuring these plugins.
-
-## OpenID
-
-[OpenID](https://en.wikipedia.org/wiki/OpenID) is becoming less popular and probably shouldn't be used the primary mechanism
-for authentication in Galaxy but it is an available option.
-
-Enabling OpenID requires you to edit Galaxy's configuration file and set `enable_openid` to `True`. This file is
-likely located in `config/galaxy.ini` and can be created by copying Galaxy's sample `config/galaxy.ini.sample`.
-
-Enabling this option enables OpenID and causes the OpenID form to be displayed on the login screen.
 
 ## Remote User Authentication
 
@@ -55,8 +54,8 @@ and the "external" flag should itself prohibit the traditional mechanism being u
 user returns to Galaxy and is not already logged in, the details of the user are retrieved according to the identity
 information supplied by the Web server.
 
-Enabling remote user authentication requires you to edit Galaxy's configuration file and set `use_remote_user` to `True`.
-This file is likely located in `config/galaxy.ini` and can be created by copying Galaxy's sample `config/galaxy.ini.sample`.
+Enabling remote user authentication requires you to edit Galaxy's configuration file and set `use_remote_user` to `true`.
+This file is likely located in `config/galaxy.yml` and can be created by copying Galaxy's sample `config/galaxy.yml.sample`.
 
 Additional Galaxy configuration options related to remote user authentication are documented in Galaxy's sample 
 configuration file. The options ``remote_user_maildomain``, ``remote_user_header``, and ``normalize_remote_user_email`` can
@@ -75,29 +74,30 @@ How to set up this config is presented here.
 
 ### Account activation feature
 
-In the Galaxy config file **config/galaxy.ini** there is the user activation setting that you have to turn on.
+In the Galaxy config file **config/galaxy.yml** there is the user activation setting that you have to turn on.
 
-```
-user_activation_on = True
+```yaml
+user_activation_on: true
 ```
 
 
 There is also the option for tracking jobs in database that is required to be turned on for the account activation to be effective. By default it is off.
 
-```
-track_jobs_in_database = True
+```yaml
+track_jobs_in_database: true
 ```
 
 
 After you turn on both of these every user that will try to register after this configuration file takes effect will have the verification email sent to the email address provided. Unless the Grace period (see below) is set, the user won't be able to login before the verification happens.
 
 Furthermore in order for this to work correctly smtp server and admin email should be set:
-```
-#smtp_server = some.server.edu:587
-#smtp_username = example_username
-#smtp_password = example_passsword
-#activation_email = activation-noreply@example.com
-#error_email_to = admin@example.com
+
+```yaml
+smtp_server: some.server.edu:587
+smtp_username: example_username
+smtp_password: example_passsword
+activation_email: activation-noreply@example.com
+error_email_to: admin@example.com
 ```
 
 Smtp server takes care of the email sending and the activation_email email is used as the *From* address in the verification email. Furthermore the error_email_to is being shown to the user if the Galaxy detects its own misconfiguration.

@@ -80,9 +80,6 @@ def main():
         config_sample.write(outputfile)
         outputfile.close()
     else:
-        # print "----------"
-        # config_sample.write(sys.stdout)
-        # print "----------"
         logging.info("use -o OUTPUT to write the merged configuration into a file.")
 
     logging.info("read Galaxy galaxy.ini.sample for detailed information.")

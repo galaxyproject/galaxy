@@ -1,0 +1,18 @@
+id: tour_generator
+type:
+  - onload
+  - tool-menu
+activate: true
+
+icon: fa-puzzle-piece
+title: Generate Tour
+
+function: >
+  if (typeof TourGenerator !== 'undefined') {
+    new TourGenerator({
+      toolId: options.id,
+      toolVersion: options.version
+    });
+  } else {
+      console.error("Tour generator is not loaded.  Please report this to a Galaxy administrator.")
+  }

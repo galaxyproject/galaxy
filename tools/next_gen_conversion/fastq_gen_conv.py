@@ -17,8 +17,8 @@ import sys
 from bx.cookbook import doc_optparse
 
 
-def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
+def stop_err(msg):
+    sys.stderr.write("%s\n" % msg)
     sys.exit()
 
 
@@ -33,7 +33,7 @@ def all_bases_valid(seq):
 
 def __main__():
     # Parse Command Line
-    options, args = doc_optparse.parse( __doc__ )
+    options, args = doc_optparse.parse(__doc__)
     orig_type = options.origType
     if orig_type == 'sanger' and options.allOrNot == 'not':
         max_blocks = int(options.blocks)
@@ -113,7 +113,7 @@ def __main__():
                                     lines = []
                                     break
                                 else:
-                                    qualities.append( chr( ord(c) - 31 ) )
+                                    qualities.append(chr(ord(c) - 31))
                             quals = ''.join(qualities)
                         elif orig_type == 'solexa':
                             for c in line.strip():
@@ -127,8 +127,8 @@ def __main__():
                                     lines = []
                                     break
                                 else:
-                                    p = 10.0 ** ( ( ord(c) - 64 ) / -10.0 ) / ( 1 + 10.0 ** ( ( ord(c) - 64 ) / -10.0 ) )
-                                    qualities.append( chr( int( -10.0 * math.log10( p ) ) + 33 ) )
+                                    p = 10.0 ** ((ord(c) - 64) / -10.0) / (1 + 10.0 ** ((ord(c) - 64) / -10.0))
+                                    qualities.append(chr(int(-10.0 * math.log10(p)) + 33))
                             quals = ''.join(qualities)
                         else:  # 'sanger'
                             for c in line.strip():

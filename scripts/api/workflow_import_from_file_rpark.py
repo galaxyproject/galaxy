@@ -21,8 +21,8 @@ def openWorkflow(in_file):
 try:
     assert sys.argv[2]
 except IndexError:
-    print('usage: %s key url [name] ' % os.path.basename( sys.argv[0] ))
-    sys.exit( 1 )
+    print('usage: %s key url [name] ' % os.path.basename(sys.argv[0]))
+    sys.exit(1)
 try:
     data = {}
     workflow_dict = openWorkflow(sys.argv[3])
@@ -30,4 +30,4 @@ try:
 except IndexError:
     pass
 
-submit( sys.argv[1], sys.argv[2], data )
+submit(sys.argv[1], sys.argv[2], data)

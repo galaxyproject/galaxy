@@ -1,0 +1,22 @@
+<tool id="mulled_example_explicit" name="mulled_example_explicit" version="0.1.0">
+    <requirements>
+        <requirement type="package" version="0.7.15">bwa</requirement>
+        <container type="docker">quay.io/biocontainers/bwa:0.7.15--0</container>
+    </requirements>
+    <stdio>
+        <exit_code range="2:" />
+    </stdio>
+    <command><![CDATA[
+        bwa > $output_1 2>&1
+    ]]></command>
+    <inputs>
+    </inputs>
+    <outputs>
+      <data name="output_1" />
+    </outputs>
+    <help><![CDATA[
+        TODO: Fill in help.
+    ]]></help>
+    <tests>
+    </tests>
+</tool>

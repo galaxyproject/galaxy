@@ -9,8 +9,8 @@
     <param type="data_collection" collection_type="paired" name="input" label="Input Paired Dataset" />
   </inputs>
   <outputs>
-    <data name="forward" label="${on_string} (forward)" />
-    <data name="reverse" label="${on_string} (reverse)" />
+    <data name="forward" label="${on_string} (forward)" format_source="input"/>
+    <data name="reverse" label="${on_string} (reverse)" format_source="input"/>
   </outputs>
   <help><![CDATA[
 

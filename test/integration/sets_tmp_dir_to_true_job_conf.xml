@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="1"/>
+    </plugins>
+
+    <destinations>
+        <destination id="local_dest" runner="local">
+            <param id="tmp_dir">True</param>
+        </destination>
+    </destinations>
+
+</job_conf>

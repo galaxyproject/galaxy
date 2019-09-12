@@ -7,7 +7,7 @@ import logging
 
 from sqlalchemy import MetaData, Table, Text
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
 

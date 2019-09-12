@@ -12,8 +12,8 @@ import tempfile
 assert sys.version_info[:2] >= (2.4)
 
 
-def stop_err( msg ):
-    sys.stderr.write( "%s\n" % msg )
+def stop_err(msg):
+    sys.stderr.write("%s\n" % msg)
     sys.exit()
 
 
@@ -52,7 +52,7 @@ def __main__():
                 spaced_seed = sys.argv[4]
             else:
                 stop_err('Error in assigning parameter: Spaced seed.')
-        except:
+        except Exception:
             stop_err('Spaced seed must be a combination of 1s and 0s.')
 
         seed_matches_per_window = sys.argv[5]

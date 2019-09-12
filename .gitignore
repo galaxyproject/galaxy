@@ -7,6 +7,18 @@ scripts/scramble/archives
 
 # Python virtualenv
 .venv
+.venv3
+
+# Python build artifacts
+build
+dist
+lib/galaxy.egg-info
+.eggs
+
+# Generated static content
+lib/galaxy/web/framework/static/maps
+lib/galaxy/web/framework/static/scripts
+lib/galaxy/web/framework/static/style
 
 # Database stuff
 database/beaker_sessions
@@ -17,6 +29,7 @@ database/files
 database/jobs_directory
 database/job_working_directory
 database/pbs
+database/shed_tools
 database/test_errors
 database/tmp
 database/*.sqlite
@@ -71,9 +84,11 @@ job_metrics_conf.xml
 workflow_schedulers_conf.xml
 config/*
 config/plugins/interactive_environments/**/*.ini
+config/plugins/**/.cache
 !config/plugins
 static/welcome.html.*
 static/welcome.html
+static/client_build_hash.txt
 
 # Tool data.
 tool-data/annotation_profiler_options.xml
@@ -97,9 +112,13 @@ tool-data/toolshed.g2.bx.psu.edu/
 tool-data/**/*.fa
 
 # Test output
+.pytest_cache/
+assets/
 test-data-cache
 run_framework_tests.html
 run_functional_tests.html
+run_integration_tests.html
+run_selenium_tests.html
 run_toolshed_tests.html
 run_api_tests.html
 test/tool_shed/tmp/*
@@ -111,6 +130,10 @@ test/unit/**.log
 
 # Project files
 *.kpf
+.idea
+.vscode
+client/**/jsconfig.json
+
 
 # Chrom len files
 *.len
@@ -118,22 +141,38 @@ test/unit/**.log
 # Jars
 tool-data/shared/jars/
 
-# CSS build artifacts.
-sprite-*.less
-
 # JS, Local node_modules, and bower_components directories
-static/scripts/bundled/[0-9]*
+static/maps
+static/plugins
+static/scripts
 node_modules
 bower_components
+client/galaxy/scripts/libs/*
+client/galaxy/style/less/*
 
 # Documentation build files.
 doc/build
 doc/schema.md
+doc/source/admin/config_logging_default_yaml.rst
+doc/source/api/api.rst
+doc/source/api/ts_api.rst
+doc/source/dev/schema.md
 doc/source/dev/schema.rst
+client/styleguide
+
+# webpack stats
+client/webpack-stats.json
+
+# packages
+packages/*/build
+packages/*/dist
+packages/*/*.egg-info
 
 # Misc
 *.orig
 .DS_Store
 *.rej
 *~
-.idea
+
+# Plugin build artifacts -- TODO make this more generic as a part of the standard plugin interface
+config/plugins/visualizations/**/static/script.js

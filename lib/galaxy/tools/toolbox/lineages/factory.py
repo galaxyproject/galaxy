@@ -1,5 +1,4 @@
 from galaxy.util.tool_version import remove_version_from_guid
-
 from .interface import ToolLineage
 
 
@@ -16,7 +15,7 @@ class LineageMap(object):
         versionless_tool_id = remove_version_from_guid(tool_id)
         lineage = self.lineage_map.get(versionless_tool_id)
         if not lineage:
-            lineage = ToolLineage.from_tool( tool )
+            lineage = ToolLineage.from_tool(tool)
         else:
             # A lineage for a tool with the same versionless_tool_id exists,
             # but this lineage may not have the current tools' version,
@@ -42,7 +41,7 @@ class LineageMap(object):
         if tool_id not in self.lineage_map:
             tool = self.app.toolbox._tools_by_id.get(tool_id)
             if tool:
-                lineage = ToolLineage.from_tool( tool )
+                lineage = ToolLineage.from_tool(tool)
             if lineage:
                 self.lineage_map[tool_id] = lineage
         return self.lineage_map.get(tool_id)

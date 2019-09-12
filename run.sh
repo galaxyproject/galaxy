@@ -1,6 +1,15 @@
 #!/bin/sh
 
+
+# Usage: ./run.sh <start|stop|restart>
+#
+#
+# Description: This script can be used to start or stop the galaxy
+# web application.
+
 cd "$(dirname "$0")"
+
+. ./scripts/common_startup_functions.sh
 
 # If there is a file that defines a shell environment specific to this
 # instance of Galaxy, source the file.
@@ -9,77 +18,21 @@ then
     GALAXY_LOCAL_ENV_FILE='./config/local_env.sh'
 fi
 
-if [ -f $GALAXY_LOCAL_ENV_FILE ];
+if [ -f "$GALAXY_LOCAL_ENV_FILE" ];
 then
-    . $GALAXY_LOCAL_ENV_FILE
+    . "$GALAXY_LOCAL_ENV_FILE"
 fi
 
-INITIALIZE_TOOL_DEPENDENCIES=1  # Install Conda if needed.
-# Pop args meant for common_startup.sh
-while :
-do
-    case "$1" in
-        --skip-eggs|--skip-wheels|--skip-samples|--dev-wheels|--no-create-venv|--no-replace-pip|--replace-pip)
-            common_startup_args="$common_startup_args $1"
-            shift
-            ;;
-        --skip-tool-dependency-initialization)
-            INITIALIZE_TOOL_DEPENDENCIES=0
-            shift
-            ;;
-        --skip-venv)
-            skip_venv=1
-            common_startup_args="$common_startup_args $1"
-            shift
-            ;;
-        --stop-daemon)
-            common_startup_args="$common_startup_args $1"
-            paster_args="$paster_args $1"
-            stop_daemon_arg_set=1
-            shift
-            ;;
-        --daemon|--restart|restart)
-            if [ "$1" = "--restart" ]
-            then
-                paster_args="$paster_args restart"
-            else
-                paster_args="$paster_args $1"
-            fi
+GALAXY_PID=${GALAXY_PID:-galaxy.pid}
+GALAXY_LOG=${GALAXY_LOG:-galaxy.log}
+PID_FILE=$GALAXY_PID
+LOG_FILE=$GALAXY_LOG
 
-            daemon_or_restart_arg_set=1
-            shift
-            ;;
-        --wait)
-            wait_arg_set=1
-            shift
-            ;;
-        "")
-            break
-            ;;
-        *)
-            paster_args="$paster_args $1"
-            shift
-            ;;
-    esac
-done
+parse_common_args $@
 
-./scripts/common_startup.sh $common_startup_args || exit 1
+run_common_start_up
 
-# If there is a .venv/ directory, assume it contains a virtualenv that we
-# should run this instance in.
-GALAXY_VIRTUAL_ENV="${GALAXY_VIRTUAL_ENV:-.venv}"
-if [ -d "$GALAXY_VIRTUAL_ENV" -a -z "$skip_venv" ];
-then
-    [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
-    echo "Activating virtualenv at $GALAXY_VIRTUAL_ENV"
-    . "$GALAXY_VIRTUAL_ENV/bin/activate"
-fi
-
-# If you are using --skip-venv we assume you know what you are doing but warn
-# in case you don't.
-[ -n "$PYTHONPATH" ] && echo 'WARNING: $PYTHONPATH is set, this can cause problems importing Galaxy dependencies'
-
-python ./scripts/check_python.py || exit 1
+setup_python
 
 if [ ! -z "$GALAXY_RUN_WITH_TEST_TOOLS" ];
 then
@@ -93,52 +46,50 @@ if [ -n "$GALAXY_UNIVERSE_CONFIG_DIR" ]; then
     python ./scripts/build_universe_config.py "$GALAXY_UNIVERSE_CONFIG_DIR"
 fi
 
-if [ -z "$GALAXY_CONFIG_FILE" ]; then
-    if [ -f universe_wsgi.ini ]; then
-        GALAXY_CONFIG_FILE=universe_wsgi.ini
-    elif [ -f config/galaxy.ini ]; then
-        GALAXY_CONFIG_FILE=config/galaxy.ini
-    else
-        GALAXY_CONFIG_FILE=config/galaxy.ini.sample
-    fi
-    export GALAXY_CONFIG_FILE
-fi
+set_galaxy_config_file_var
 
-if [ $INITIALIZE_TOOL_DEPENDENCIES -eq 1 ]; then
+if [ "$INITIALIZE_TOOL_DEPENDENCIES" -eq 1 ]; then
     # Install Conda environment if needed.
-    python ./scripts/manage_tool_dependencies.py -c "$GALAXY_CONFIG_FILE" init_if_needed
+    python ./scripts/manage_tool_dependencies.py init_if_needed
 fi
 
-if [ -n "$GALAXY_RUN_ALL" ]; then
+[ -n "$GALAXY_UWSGI" ] && APP_WEBSERVER='uwsgi'
+find_server "${GALAXY_CONFIG_FILE:-none}" galaxy
+
+if [ "$run_server" = "python" -a -n "$GALAXY_RUN_ALL" ]; then
     servers=$(sed -n 's/^\[server:\(.*\)\]/\1/  p' "$GALAXY_CONFIG_FILE" | xargs echo)
     if [ -z "$stop_daemon_arg_set" -a -z "$daemon_or_restart_arg_set" ]; then
-        echo "ERROR: \$GALAXY_RUN_ALL cannot be used without the '--daemon', '--stop-daemon' or 'restart' arguments to run.sh"
+        echo "ERROR: \$GALAXY_RUN_ALL cannot be used without the '--daemon', '--stop-daemon', 'restart', 'start' or 'stop' arguments to run.sh"
         exit 1
     fi
     for server in $servers; do
+        echo "Executing: python $server_args --server-name=\"$server\" --pid-file=\"$server.pid\" --log-file=\"$server.log\""
+        eval python $server_args --server-name="$server" --pid-file="$server.pid" --log-file="$server.log"
         if [ -n "$wait_arg_set" -a -n "$daemon_or_restart_arg_set" ]; then
-            python ./scripts/paster.py serve "$GALAXY_CONFIG_FILE" --server-name="$server" --pid-file="$server.pid" --log-file="$server.log" $paster_args
             while true; do
                 sleep 1
-                printf "."
-                # Grab the current pid from the pid file
-                if ! current_pid_in_file=$(cat "$server.pid"); then
+                # Grab the current pid from the pid file and remove any trailing space
+                if ! current_pid_in_file=$(sed -e 's/[[:space:]]*$//' "$server.pid"); then
                     echo "A Galaxy process died, interrupting" >&2
                     exit 1
                 fi
+                if [ -n "$current_pid_in_file" ]; then
+                    echo "Found PID $current_pid_in_file in '$server.pid', monitoring '$server.log'"
+                else
+                    echo "No PID found in '$server.pid' yet"
+                    continue
+                fi
                 # Search for all pids in the logs and tail for the last one
-                latest_pid=$(egrep '^Starting server in PID [0-9]+\.$' "$server.log" -o | sed 's/Starting server in PID //g;s/\.$//g' | tail -n 1)
+                latest_pid=$(grep '^Starting server in PID [0-9]\+\.$' "$server.log" | sed 's/^Starting server in PID \([0-9]\{1,\}\).$/\1/' | tail -n 1)
                 # If they're equivalent, then the current pid file agrees with our logs
                 # and we've succesfully started
                 [ -n "$latest_pid" ] && [ "$latest_pid" -eq "$current_pid_in_file" ] && break
             done
             echo
-        else
-            echo "Handling $server with log file $server.log..."
-            python ./scripts/paster.py serve "$GALAXY_CONFIG_FILE" --server-name="$server" --pid-file="$server.pid" --log-file="$server.log" $paster_args
         fi
     done
 else
-    # Handle only 1 server, whose name can be specified with --server-name parameter (defaults to "main")
-    python ./scripts/paster.py serve "$GALAXY_CONFIG_FILE" $paster_args
+    echo "Executing: $run_server $server_args"
+    # args are properly quoted so use eval
+    eval $run_server $server_args
 fi

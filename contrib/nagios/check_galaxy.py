@@ -13,9 +13,14 @@ import os
 import socket
 import sys
 import time
-import urllib2
 import warnings
 from user import home
+
+from six.moves.urllib.request import (
+    build_opener,
+    HTTPCookieProcessor,
+    Request
+)
 
 with warnings.catch_warnings():
     warnings.simplefilter('ignore')
@@ -34,11 +39,11 @@ def usage():
 
 
 try:
-    opts, args = getopt.getopt( sys.argv[1:], 'n' )
+    opts, args = getopt.getopt(sys.argv[1:], 'n')
 except getopt.GetoptError as e:
     print(str(e))
     usage()
-if len( args ) < 1:
+if len(args) < 1:
     usage()
 server = args[0]
 username = args[1]
@@ -56,9 +61,9 @@ for o, a in opts:
         usage()
 
 # state information
-var_dir = os.path.join( home, ".check_galaxy", server.replace('http://', '').replace('https://', ''), handler )
-if not os.access( var_dir, os.F_OK ):
-    os.makedirs( var_dir, 0o700 )
+var_dir = os.path.join(home, ".check_galaxy", server.replace('http://', '').replace('https://', ''), handler)
+if not os.access(var_dir, os.F_OK):
+    os.makedirs(var_dir, 0o700)
 
 # default timeout for twill browser is never
 socket.setdefaulttimeout(60)
@@ -68,7 +73,7 @@ tc.agent("Mozilla/5.0 (compatible; check_galaxy/0.2)")
 tc.config('use_tidy', 0)
 
 
-class Browser:
+class Browser(object):
     def __init__(self):
         self.server = server
         self.handler = handler
@@ -79,13 +84,13 @@ class Browser:
         self._history_id = None
         if not self.server.startswith('http'):
             self.server = 'http://' + self.server
-        self.cookie_jar = os.path.join( var_dir, "cookie_jar" )
+        self.cookie_jar = os.path.join(var_dir, "cookie_jar")
         dprint("cookie jar path: %s" % self.cookie_jar)
         if not os.access(self.cookie_jar, os.R_OK):
             dprint("no cookie jar at above path, creating")
             tc.save_cookies(self.cookie_jar)
         tc.load_cookies(self.cookie_jar)
-        self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(tc.get_browser().cj))
+        self.opener = build_opener(HTTPCookieProcessor(tc.get_browser().cj))
 
     def get(self, path):
         tc.go("%s%s" % (self.server, path))
@@ -94,12 +99,12 @@ class Browser:
     def req(self, path, data=None, method=None):
         url = self.server + path
         if data:
-            req = urllib2.Request(url, headers={'Content-Type': 'application/json'}, data=json.dumps(data))
+            req = Request(url, headers={'Content-Type': 'application/json'}, data=json.dumps(data))
         else:
-            req = urllib2.Request(url, headers={'Content-Type': 'application/json'})
+            req = Request(url, headers={'Content-Type': 'application/json'})
         if method:
             req.get_method = lambda: method
-        res = self.opener.open( req )
+        res = self.opener.open(req)
         print('==> at %s (%s)' % (url, method or 'GET'))
         assert res.getcode() == 200, url
         return res
@@ -115,7 +120,7 @@ class Browser:
 
     def delete_history(self):
         # note, this could cause a history to be created and then deleted.  i don't care.
-        self.req( '/api/histories/%s' % self.history_id, method='DELETE' )
+        self.req('/api/histories/%s' % self.history_id, method='DELETE')
 
     def login(self, user, pw):
         self.get("/user/login")
@@ -135,9 +140,9 @@ class Browser:
 
     def runtool(self):
         path = '/api/tools'
-        data = { 'tool_id' : self.tool,
-                 'history_id' : self.history_id,
-                 'inputs' : { 'echo' : self.handler } }
+        data = {'tool_id' : self.tool,
+                'history_id' : self.history_id,
+                'inputs' : {'echo' : self.handler}}
         res = self.req(path, data=data)
         dprint(json.loads(res.read()))
 
@@ -210,7 +215,7 @@ class Browser:
         while count < maxiter:
             count += 1
             if not self.history_state_terminal:
-                time.sleep( sleep_amount )
+                time.sleep(sleep_amount)
                 sleep_amount += 1
             else:
                 break

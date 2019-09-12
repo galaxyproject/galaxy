@@ -1,7 +1,10 @@
-import os
+from __future__ import print_function
+
 import copy
-import dictobj
+import os
 from collections import namedtuple
+
+import dictobj
 
 Path = namedtuple('Path', ('path', 'id', 'options'))
 
@@ -44,31 +47,22 @@ class Node(dictobj.DictionaryObject):
     For example, users may want to pass "attr" or some other valid jsTree options.
 
     Example:
-      >>> import jstree
-      >>> node = jstree.Node('a', None)
-      >>> print node
-      Node({'text': 'a', 'children': MutableDictionaryObject({})})
-      >>> print node.jsonData()
-      {'text': 'a'}
+      >>> node = Node('a', None)
+      >>> assert node._items == {'text': 'a', 'children': dictobj.MutableDictionaryObject({})}
+      >>> assert node.jsonData() == {'text': 'a'}
 
-      >>> import jstree
-      >>> node = jstree.Node('a', 1)
-      >>> print node
-      Node({'text': 'a', 'children': MutableDictionaryObject({}), 'li_attr': DictionaryObject({'id': 1}), 'id': 1})
-      >>> print node.jsonData()
-      {'text': 'a', 'id': 1, 'li_attr': {'id': 1}}
+      >>> node = Node('a', 1)
+      >>> assert node._items == {'text': 'a', 'children': dictobj.MutableDictionaryObject({}), 'li_attr': dictobj.DictionaryObject({'id': 1}), 'id': 1}
+      >>> assert node.jsonData() == {'text': 'a', 'id': 1, 'li_attr': {'id': 1}}
 
-      >>> import jstree
-      >>> node = jstree.Node('a', 5, icon="folder", state = {'opened': True})
-      >>> print node
-      Node({'text': 'a', 'id': 5, 'state': DictionaryObject({'opened': True}), 'children': MutableDictionaryObject({}), 'li_attr': DictionaryObject({'id': 5}), 'icon': 'folder'})
-      >>> print node.jsonData()
-      {'text': 'a', 'state': {'opened': True}, 'id': 5, 'li_attr': {'id': 5}, 'icon': 'folder'}
+      >>> node = Node('a', 5, icon="folder", state = {'opened': True})
+      >>> assert node._items == {'text': 'a', 'id': 5, 'state': dictobj.DictionaryObject({'opened': True}), 'children': dictobj.MutableDictionaryObject({}), 'li_attr': dictobj.DictionaryObject({'id': 5}), 'icon': 'folder'}
+      >>> assert node.jsonData() == {'text': 'a', 'state': {'opened': True}, 'id': 5, 'li_attr': {'id': 5}, 'icon': 'folder'}
     """
     super(Node, self).__init__()
 
     children = kwargs.get('children', {})
-    if len(filter(lambda key: not isinstance(children[key], Node), children)):
+    if len([key for key in children if not isinstance(children[key], Node)]):
       raise TypeError(
         "One or more children were not instances of '%s'" % Node.__name__)
     if 'children' in kwargs:
@@ -114,7 +108,7 @@ class JSTree(dictobj.DictionaryObject):
     in the JSON.
 
     """
-    if len(filter(lambda p: not isinstance(p, Path), paths)):
+    if len([p for p in paths if not isinstance(p, Path)]):
       raise TypeError(
         "All paths must be instances of '%s'" % Path.__name__)
 

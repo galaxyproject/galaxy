@@ -9,19 +9,20 @@ from sqlalchemy import Column, MetaData, Table
 
 from galaxy.model.custom_types import TrimmedString
 
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
-    for t_name in ( 'dataset', 'job', 'metadata_file' ):
-        t = Table( t_name, metadata, autoload=True )
-        c = Column( "object_store_id", TrimmedString( 255 ), index=True )
+
+    for t_name in ('dataset', 'job', 'metadata_file'):
+        t = Table(t_name, metadata, autoload=True)
+        c = Column("object_store_id", TrimmedString(255), index=True)
         try:
-            c.create( t, index_name="ix_%s_object_store_id" % t_name)
+            c.create(t, index_name="ix_%s_object_store_id" % t_name)
             assert c is t.c.object_store_id
         except Exception:
             log.exception("Adding object_store_id column to %s table failed.", t_name)
@@ -30,8 +31,9 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    for t_name in ( 'dataset', 'job', 'metadata_file' ):
-        t = Table( t_name, metadata, autoload=True )
+
+    for t_name in ('dataset', 'job', 'metadata_file'):
+        t = Table(t_name, metadata, autoload=True)
         try:
             t.c.object_store_id.drop()
         except Exception:

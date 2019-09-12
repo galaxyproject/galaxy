@@ -23,18 +23,19 @@ def get_current_thread_object_dict():
     # Acquire the lock and then union the contents of 'active' and 'limbo'
     # threads into the return value.
     threading._active_limbo_lock.acquire()
-    rval.update( threading._active )
-    rval.update( threading._limbo )
+    rval.update(threading._active)
+    rval.update(threading._limbo)
     threading._active_limbo_lock.release()
     return rval
 
 
-class Heartbeat( threading.Thread ):
+class Heartbeat(threading.Thread):
     """
     Thread that periodically dumps the state of all threads to a file
     """
-    def __init__( self, config, name="Heartbeat Thread", period=20, fname="heartbeat.log" ):
-        threading.Thread.__init__( self, name=name )
+
+    def __init__(self, config, name="Heartbeat Thread", period=20, fname="heartbeat.log"):
+        threading.Thread.__init__(self, name=name)
         self.config = config
         self.should_stop = False
         self.period = period
@@ -43,11 +44,11 @@ class Heartbeat( threading.Thread ):
         self.fname_nonsleeping = None
         self.file_nonsleeping = None
         self.pid = None
-        self.nonsleeping_heartbeats = { }
+        self.nonsleeping_heartbeats = {}
         # Event to wait on when sleeping, allows us to interrupt for shutdown
         self.wait_event = threading.Event()
 
-    def run( self ):
+    def run(self):
         self.pid = os.getpid()
         self.fname = self.fname.format(
             server_name=self.config.server_name,
@@ -61,52 +62,52 @@ class Heartbeat( threading.Thread ):
         while not self.should_stop:
             if self.period > 0:
                 self.dump()
-            self.wait_event.wait( wait )
+            self.wait_event.wait(wait)
 
-    def open_logs( self ):
+    def open_logs(self):
         if self.file is None or self.file.closed:
-            self.file = open( self.fname, "a" )
-            self.file_nonsleeping = open( self.fname_nonsleeping, "a" )
-            self.file.write( "Heartbeat for pid %d thread started at %s\n\n" % ( self.pid, time.asctime() ) )
-            self.file_nonsleeping.write( "Non-Sleeping-threads for pid %d thread started at %s\n\n" % ( self.pid, time.asctime() ) )
+            self.file = open(self.fname, "a")
+            self.file_nonsleeping = open(self.fname_nonsleeping, "a")
+            self.file.write("Heartbeat for pid %d thread started at %s\n\n" % (self.pid, time.asctime()))
+            self.file_nonsleeping.write("Non-Sleeping-threads for pid %d thread started at %s\n\n" % (self.pid, time.asctime()))
 
-    def close_logs( self ):
+    def close_logs(self):
         if self.file is not None and not self.file.closed:
-            self.file.write( "Heartbeat for pid %d thread stopped at %s\n\n" % ( self.pid, time.asctime() ) )
-            self.file_nonsleeping.write( "Non-Sleeping-threads for pid %d thread stopped at %s\n\n" % ( self.pid, time.asctime() ) )
+            self.file.write("Heartbeat for pid %d thread stopped at %s\n\n" % (self.pid, time.asctime()))
+            self.file_nonsleeping.write("Non-Sleeping-threads for pid %d thread stopped at %s\n\n" % (self.pid, time.asctime()))
             self.file.close()
             self.file_nonsleeping.close()
 
-    def dump( self ):
+    def dump(self):
         self.open_logs()
         try:
             # Print separator with timestamp
-            self.file.write( "Traceback dump for all threads at %s:\n\n" % time.asctime() )
+            self.file.write("Traceback dump for all threads at %s:\n\n" % time.asctime())
             # Print the thread states
             threads = get_current_thread_object_dict()
             for thread_id, frame in iteritems(sys._current_frames()):
                 if thread_id in threads:
-                    object = repr( threads[thread_id] )
+                    object = repr(threads[thread_id])
                 else:
                     object = "<No Thread object>"
-                self.file.write( "Thread %s, %s:\n\n" % ( thread_id, object ) )
-                traceback.print_stack( frame, file=self.file )
-                self.file.write( "\n" )
-            self.file.write( "End dump\n\n" )
+                self.file.write("Thread %s, %s:\n\n" % (thread_id, object))
+                traceback.print_stack(frame, file=self.file)
+                self.file.write("\n")
+            self.file.write("End dump\n\n")
             self.file.flush()
             self.print_nonsleeping(threads)
-        except:
-            self.file.write( "Caught exception attempting to dump thread states:" )
-            traceback.print_exc( None, self.file )
-            self.file.write( "\n" )
+        except Exception:
+            self.file.write("Caught exception attempting to dump thread states:")
+            traceback.print_exc(None, self.file)
+            self.file.write("\n")
 
-    def shutdown( self ):
+    def shutdown(self):
         self.should_stop = True
         self.wait_event.set()
         self.close_logs()
         self.join()
 
-    def thread_is_sleeping( self, last_stack_frame ):
+    def thread_is_sleeping(self, last_stack_frame):
         """
         Returns True if the given stack-frame represents a known
         sleeper function (at least in python 2.5)
@@ -138,7 +139,7 @@ class Heartbeat( threading.Thread ):
         # By default, assume the thread is not sleeping
         return False
 
-    def get_interesting_stack_frame( self, stack_frames ):
+    def get_interesting_stack_frame(self, stack_frames):
         """
         Scans a given backtrace stack frames, returns a single
         quadraple of [filename, line, function-name, text] of
@@ -153,17 +154,17 @@ class Heartbeat( threading.Thread ):
             idx = _filename.find("/lib/galaxy/")
             if idx != -1:
                 relative_filename = _filename[idx:]
-                return ( relative_filename, _line, _funcname, _text )
+                return (relative_filename, _line, _funcname, _text)
         # no "/lib/galaxy" code found, return the innermost frame
         return stack_frames[-1]
 
-    def print_nonsleeping( self, threads_object_dict ):
-        self.file_nonsleeping.write( "Non-Sleeping threads at %s:\n\n" % time.asctime() )
+    def print_nonsleeping(self, threads_object_dict):
+        self.file_nonsleeping.write("Non-Sleeping threads at %s:\n\n" % time.asctime())
         all_threads_are_sleeping = True
         threads = get_current_thread_object_dict()
         for thread_id, frame in iteritems(sys._current_frames()):
             if thread_id in threads:
-                object = repr( threads[thread_id] )
+                object = repr(threads[thread_id])
             else:
                 object = "<No Thread object>"
             tb = traceback.extract_stack(frame)
@@ -179,14 +180,14 @@ class Heartbeat( threading.Thread ):
                 self.nonsleeping_heartbeats[thread_id] = 1
 
             good_frame = self.get_interesting_stack_frame(tb)
-            self.file_nonsleeping.write( "Thread %s\t%s\tnon-sleeping for %d heartbeat(s)\n  File %s:%d\n    Function \"%s\"\n      %s\n" %
-                ( thread_id, object, self.nonsleeping_heartbeats[thread_id], good_frame[0], good_frame[1], good_frame[2], good_frame[3] ) )
+            self.file_nonsleeping.write("Thread %s\t%s\tnon-sleeping for %d heartbeat(s)\n  File %s:%d\n    Function \"%s\"\n      %s\n" %
+                (thread_id, object, self.nonsleeping_heartbeats[thread_id], good_frame[0], good_frame[1], good_frame[2], good_frame[3]))
             all_threads_are_sleeping = False
 
         if all_threads_are_sleeping:
-            self.file_nonsleeping.write( "All threads are sleeping.\n" )
-        self.file_nonsleeping.write( "\n" )
+            self.file_nonsleeping.write("All threads are sleeping.\n")
+        self.file_nonsleeping.write("\n")
         self.file_nonsleeping.flush()
 
-    def dump_signal_handler( self, signum, frame ):
+    def dump_signal_handler(self, signum, frame):
         self.dump()

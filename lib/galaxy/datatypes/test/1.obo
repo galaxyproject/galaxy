@@ -1,0 +1,31 @@
+format-version: GO_1.0 
+!any comment here 
+typeref: relationship.types 
+subsetdef: goslim "Generic GO Slim" 
+version: $Revision: 1.18 $ 
+date: April 18th, 2003 
+saved-by: jrichter 
+remark: Example file 
+
+[Term] 
+id: GO:0003674 
+name: molecular_function 
+def: "The action characteristic of a gene product." [GO:curators] 
+subset: goslim 
+
+[Term] 
+id: GO:0016209 
+name: antioxidant activity 
+is_a: GO:0003674 
+def: "Inhibition of the reactions brought about by dioxygen or peroxides. Usually the antioxidant is effective because it can itself be more easily oxidized than the substance protected. The term is often applied to components that can trap free radicals, thereby breaking the chain reaction that normally leads to extensive biological damage." [ISBN:0198506732] 
+
+[Term] 
+id: GO:0045174 
+name: glutathione dehydrogenase (ascorbate) activity 
+xref_analog: EC:1.8.5.1 "" 
+def: "Catalysis of the reaction: 2 glutathione + dehydroascorbate = glutathione disulfide + ascorbate." [EC:1.8.5.1] 
+synonym: dehydroascorbate reductase [] 
+is_a: GO:0009055 
+is_a: GO:0015038 
+is_a: GO:0016672
+

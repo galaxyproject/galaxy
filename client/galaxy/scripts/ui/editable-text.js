@@ -1,18 +1,5 @@
-// from: https://raw.githubusercontent.com/umdjs/umd/master/jqueryPlugin.js
-// Uses AMD or browser globals to create a jQuery plugin.
-(function (factory) {
-    if (typeof define === 'function' && define.amd) {
-        //TODO: So...this turns out to be an all or nothing thing. If I load jQuery in the define below, it will
-        //  (of course) wipe the old jquery *and all the plugins loaded into it*. So the define below *is still
-        //  relying on jquery being loaded globally* in order to preserve plugins.
-        define([ 'jquery' ], factory);
-    } else {
-        // Browser globals
-        factory(jQuery);
-    }
-
-}(function ( jQuery ) {
-'use_strict';
+import jQuery from "jquery";
+("use_strict");
 
 var $ = jQuery;
 
@@ -24,11 +11,14 @@ var $ = jQuery;
  */
 $.fn.make_text_editable = function(config_dict) {
     // Get config options.
-    var num_cols = ("num_cols" in config_dict ? config_dict.num_cols : 30),
-        num_rows = ("num_rows" in config_dict ? config_dict.num_rows : 4),
-        use_textarea = ("use_textarea" in config_dict ? config_dict.use_textarea : false),
-        on_finish = ("on_finish" in config_dict ? config_dict.on_finish : null),
-        help_text = ("help_text" in config_dict ? config_dict.help_text : null);
+    var num_cols = "num_cols" in config_dict ? config_dict.num_cols : 30;
+
+    var num_rows = "num_rows" in config_dict ? config_dict.num_rows : 4;
+
+    var use_textarea = "use_textarea" in config_dict ? config_dict.use_textarea : false;
+
+    var on_finish = "on_finish" in config_dict ? config_dict.on_finish : null;
+    var help_text = "help_text" in config_dict ? config_dict.help_text : null;
 
     // Add element behavior.
     var container = $(this);
@@ -41,7 +31,7 @@ $.fn.make_text_editable = function(config_dict) {
         container.removeClass("editable-text");
 
         // Handler for setting element text.
-        var set_text = function(new_text) {
+        var set_text = new_text => {
             container.find(":input").remove();
 
             if (new_text !== "") {
@@ -58,40 +48,47 @@ $.fn.make_text_editable = function(config_dict) {
         };
 
         // Create input element(s) for editing.
-        var cur_text = ("cur_text" in config_dict ? config_dict.cur_text : container.text() ),
-            input_elt, button_elt;
+        var cur_text = "cur_text" in config_dict ? config_dict.cur_text : container.text();
+
+        var input_elt;
+        var button_elt;
 
         if (use_textarea) {
             input_elt = $("<textarea/>")
-                .attr({ rows: num_rows, cols: num_cols }).text($.trim(cur_text))
-                .keyup(function(e) {
+                .attr({ rows: num_rows, cols: num_cols })
+                .text($.trim(cur_text))
+                .keyup(e => {
                     if (e.keyCode === 27) {
                         // Escape key.
                         set_text(cur_text);
                     }
                 });
-            button_elt = $("<button/>").text("Done").click(function() {
-                set_text(input_elt.val());
-                // Return false so that click does not propogate to container.
-                return false;
-            });
-        }
-        else {
-            input_elt = $("<input type='text'/>").attr({ value: $.trim(cur_text), size: num_cols })
-            .blur(function() {
-                set_text(cur_text);
-            }).keyup(function(e) {
-                if (e.keyCode === 27) {
-                    // Escape key.
-                    $(this).trigger("blur");
-                } else if (e.keyCode === 13) {
-                    // Enter key.
-                    set_text($(this).val());
-                }
+            button_elt = $("<button/>")
+                .addClass("btn-sm float-right")
+                .text("Done")
+                .click(() => {
+                    set_text(input_elt.val());
+                    // Return false so that click does not propogate to container.
+                    return false;
+                });
+        } else {
+            input_elt = $("<input type='text'/>")
+                .attr({ value: $.trim(cur_text), size: num_cols })
+                .blur(() => {
+                    set_text(cur_text);
+                })
+                .keyup(function(e) {
+                    if (e.keyCode === 27) {
+                        // Escape key.
+                        $(this).trigger("blur");
+                    } else if (e.keyCode === 13) {
+                        // Enter key.
+                        set_text($(this).val());
+                    }
 
-                // Do not propogate event to avoid unwanted side effects.
-                e.stopPropagation();
-            });
+                    // Do not propogate event to avoid unwanted side effects.
+                    e.stopPropagation();
+                });
         }
 
         // Replace text with input object(s) and focus & select.
@@ -116,4 +113,3 @@ $.fn.make_text_editable = function(config_dict) {
 };
 
 // ============================================================================
-}));

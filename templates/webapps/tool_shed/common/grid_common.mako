@@ -1,5 +1,5 @@
 <%!
-    from galaxy.web.framework.helpers.grids import TextColumn, StateColumn, GridColumnFilter
+    from galaxy.webapps.reports.framework.grids import TextColumn, StateColumn, GridColumnFilter
     from galaxy.web.framework.helpers import iff
 %>
 
@@ -71,7 +71,9 @@
                             size = size + 4
                         %>
                         <input class="search-box-input" id="input-${column.key}-filter" name="f-${column.key}" type="text" value="${value}" size="${size}"/>
-                        <button class="submit-image" type="submit" title='Search'><span style="display: none;"></button>
+                        <button type="submit" title='Search' style="background: transparent; border: none; padding: 4px; margin: 0px;">
+                            <i class="fa fa-search"></i>
+                        </button>
                     </span>
                 </form>
             %else:

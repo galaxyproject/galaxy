@@ -1,4 +1,3 @@
-import re
 from ast import (
     Module,
     parse,
@@ -16,26 +15,25 @@ AST_NODE_TYPE_WHITELIST = [
 
 
 BUILTIN_AND_MATH_FUNCTIONS = 'abs|all|any|bin|chr|cmp|complex|divmod|float|hex|int|len|long|max|min|oct|ord|pow|range|reversed|round|sorted|str|sum|type|unichr|unicode|log|exp|sqrt|ceil|floor'.split('|')
-STRING_AND_LIST_METHODS = [ name for name in dir('') + dir([]) if not name.startswith('_') ]
+STRING_AND_LIST_METHODS = [name for name in dir('') + dir([]) if not name.startswith('_')]
 VALID_FUNCTIONS = BUILTIN_AND_MATH_FUNCTIONS + STRING_AND_LIST_METHODS
 
 
-def _check_name(ast_node, allowed_variables=[]):
+def _check_name(ast_node, allowed_variables=None):
+    if allowed_variables is None:
+        allowed_variables = []
     name = ast_node.id
     return name in (VALID_FUNCTIONS + allowed_variables)
-    if re.match(r'^c\d+$', name):
-        return True
-    return name in VALID_FUNCTIONS
 
 
-def _check_attribute( ast_node ):
+def _check_attribute(ast_node):
     attribute_name = ast_node.attr
     if attribute_name not in STRING_AND_LIST_METHODS:
         return False
     return True
 
 
-def _check_call( ast_node ):
+def _check_call(ast_node):
     # If we are calling a function or method, it better be a math,
     # string or list function.
     ast_func = ast_node.func
@@ -44,7 +42,7 @@ def _check_call( ast_node ):
         if ast_func.id not in BUILTIN_AND_MATH_FUNCTIONS:
             return False
     elif ast_func_class == 'Attribute':
-        if not _check_attribute( ast_func ):
+        if not _check_attribute(ast_func):
             return False
     else:
         return False
@@ -52,7 +50,7 @@ def _check_call( ast_node ):
     return True
 
 
-def _check_expression(text, allowed_variables=[]):
+def _check_expression(text, allowed_variables=None):
     """
 
     >>> allowed_variables = ["c1", "c2", "c3", "c4", "c5"]
@@ -85,6 +83,8 @@ def _check_expression(text, allowed_variables=[]):
     >>> _check_expression("str(c2) in [\\\"a\\\",\\\"b\\\"]", allowed_variables)
     True
     """
+    if allowed_variables is None:
+        allowed_variables = []
     try:
         module = parse(text)
     except SyntaxError:
@@ -136,6 +136,6 @@ def safe_eval(expression, variables):
     >>> exception_thrown
     True
     """
-    if not _check_expression(expression, allowed_variables=variables.keys()):
+    if not _check_expression(expression, allowed_variables=list(variables.keys())):
         raise Exception("Invalid expression [%s], only a very simple subset of Python is allowed." % expression)
     return eval(expression, globals(), variables)

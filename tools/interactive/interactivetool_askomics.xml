@@ -1,0 +1,59 @@
+<tool id="interactive_tool_askomics" tool_type="interactive" name="AskOmics" version="0.1">
+    <description>a visual SPARQL query builder</description>
+    <requirements>
+        <container type="docker">quay.io/askomics/askomics-ie:17.12_g19.09</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="AskOmics instance on $infile.display_name" requires_domain="True">
+            <port>6543</port>
+            <url>/login_api_gie?key=abcd</url>
+        </entry_point>
+    </entry_points>
+    <environment_variables>
+        <environment_variable name="GALAXY_URL">${__app__.config.galaxy_infrastructure_url}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
+        <environment_variable name="API_KEY" strip="True">
+            #if $__user__:
+                #for $api_key in $__user__.api_keys:
+                    ${api_key.key}
+                    #break
+                #end for
+            #end if
+        </environment_variable>
+    </environment_variables>
+    <command><![CDATA[
+        #import re
+        ## ToDo: the key could be generated randomly
+        export ASKO_load_url='http://localhost:6543' &&
+        export ASKOMICS_API_KEY='abcd' &&
+        export ASKO_files_dir='/tmp/askomics-ie'  &&
+        export VIRT_Parameters_NumberOfBuffers='10000'  &&
+        export VIRT_Parameters_MaxDirtyBuffers='6000'  &&
+
+        #set link_name = re.sub('[^\w_]', '_', $infile.element_identifier)
+        #if $infile.ext == 'tabular':
+            #set link_name = $link_name + '.tsv'
+        #elif $infile.ext == 'interval':
+            #set link_name = $link_name + '.bed'
+        #else:
+            #set link_name = $link_name + '.' + $infile.ext
+        #end if
+
+        mkdir -p /import &&
+        ln -s '$infile' '/import/$link_name' &&
+
+        bash /start.sh
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="tabular,gff,gff3,bed,interval" label="A datasets with genomic coordinates"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+        AskOmics is a visual SPARQL query interface supporting both intuitive data integration and
+        querying while shielding the user from most of the technical difficulties underlying RDF and SPARQL.
+    </help>
+</tool>

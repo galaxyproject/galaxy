@@ -1,7 +1,7 @@
-<tool id="wig_to_bigWig" name="Wig/BedGraph-to-bigWig" version="1.1.0">
+<tool id="wig_to_bigWig" name="Wig/BedGraph-to-bigWig" version="1.1.1">
   <description>converter</description>
   <requirements>
-    <requirement type="package">ucsc_tools</requirement>
+    <requirement type="package" version="357">ucsc-wigtobigwig</requirement>
   </requirements>
   <stdio>
       <!-- Anything other than zero is an error -->
@@ -11,7 +11,7 @@
   </stdio>
   <command>
       <![CDATA[
-      grep -v "^track" $input1 | wigToBigWig stdin $chromInfo $out_file1
+      grep -v "^track" '$input1' | wigToBigWig stdin '$chromInfo' '$out_file1'
     #if $settings.settingsType == "full":
       -blockSize=${settings.blockSize} -itemsPerSlot=${settings.itemsPerSlot} ${settings.clip} ${settings.unc}
     #else:
@@ -31,8 +31,8 @@
       </param>
       <when value="preset" />
       <when value="full">
-        <param name="blockSize" size="4" type="integer" value="256" label="Items to bundle in r-tree" help="Default is 256 (blockSize)" />
-        <param name="itemsPerSlot" size="4" type="integer" value="1024" label="Data points bundled at lowest level" help="Default is 1024 (itemsPerSlot)" />
+        <param name="blockSize" type="integer" value="256" label="Items to bundle in r-tree" help="Default is 256 (blockSize)" />
+        <param name="itemsPerSlot" type="integer" value="1024" label="Data points bundled at lowest level" help="Default is 1024 (itemsPerSlot)" />
         <param name="clip" type="boolean" truevalue="-clip" falsevalue="" checked="True" label="Clip chromosome positions" help="Issue warning messages rather than dying if wig file contains items off end of chromosome. (clip)"/>
         <param name="unc" type="boolean" truevalue="-unc" falsevalue="" checked="False" label="Do not use compression" help="(unc)"/>
       </when>
@@ -57,9 +57,9 @@
       <output name="out_file1" file="2.bigwig"/>
     </test>
     <test>
-      <param name="input1" value="1.bedgraph" dbkey="hg19" ftype="bedgraph"/>
+      <param name="input1" value="1.bedgraph" dbkey="hg17" ftype="bedgraph"/>
       <param name="settingsType" value="preset" />
-      <output name="out_file1" file="3.bigwig"/>
+      <output name="out_file1" file="3.bigwig" compare="sim_size"/>
     </test>
   </tests>
   <help>

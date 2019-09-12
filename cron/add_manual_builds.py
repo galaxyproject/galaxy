@@ -6,6 +6,7 @@ Adds Manually created builds and chrom info to Galaxy's info tables
 Usage:
 python add_manual_builds.py input_file builds.txt chrom_length_dir
 """
+from __future__ import print_function
 
 import os
 import sys
@@ -19,7 +20,7 @@ def add_manual_builds(input_file, build_file, chr_dir):
             if line.startswith("#"):
                 continue
             existing_builds.append(line.replace("\n", "").replace("\r", "").split("\t")[0])
-        except:
+        except Exception:
             continue
     build_file_out = open(build_file, 'a')
     for line in open(input_file):
@@ -31,15 +32,15 @@ def add_manual_builds(input_file, build_file, chr_dir):
             name = fields.pop(0)
             try:  # get chrom lens if included in file, otherwise still add build
                 chrs = fields.pop(0).split(",")
-            except:
+            except Exception:
                 chrs = []
-            print>>build_file_out, build + "\t" + name + " (" + build + ")"
+            print(build + "\t" + name + " (" + build + ")", file=build_file_out)
             if chrs:  # create len file if provided chrom lens
                 chr_len_out = open(os.path.join(chr_dir, build + ".len"), 'w')
                 for chr in chrs:
-                    print>>chr_len_out, chr.replace("=", "\t")
+                    print(chr.replace("=", "\t"), file=chr_len_out)
                 chr_len_out.close()
-        except:
+        except Exception:
             continue
     build_file_out.close()
 

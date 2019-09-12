@@ -9,7 +9,7 @@ The contents of the tool panel are defined by the following configuration files.
 
 Local tools
 ~~~~~~~~~~~
-In the past, the file named by your ``tool_config_file`` configuration setting in your ``config/galaxy.ini`` file was the only file used to populate your Galaxy tool panel. The default name for this file is ``tool_conf.xml``. Since this was the only file involved in populating your Galaxy tool panel, it defined the items (tools, workflows, sections and labels) that would be displayed and the way in which they would be arranged.
+In the past, the file named by your ``tool_config_file`` configuration setting in your ``config/galaxy.yml`` file was the only file used to populate your Galaxy tool panel. The default name for this file is ``tool_conf.xml``. Since this was the only file involved in populating your Galaxy tool panel, it defined the items (tools, workflows, sections and labels) that would be displayed and the way in which they would be arranged.
 
 Tool Shed tools
 ~~~~~~~~~~~~~~~
@@ -23,7 +23,7 @@ Layout
 ------
 
 The 3 or more files described in the previous section (``tool_conf.xml``, one or more ``shed_tool_conf.xml`` files, and ``migrated_tools_conf.xml``) are all used to load tool panel items (tools, sections, labels and workflows). A file named ``integrated_tool_panel.xml`` defines the arrangement for displaying these loaded items in your Galaxy tool panel.
-If this file does not exist in your Galaxy installation directory, it will be automatically created and populated when you start your Galaxy server. It is initially populated based on the order in which the tool panel items are loaded. The items are loaded as each tool panel configuration file is parsed and its items are loaded. The order in which these configuration files are parsed is the order of the comma-separated list of files defined in your ``tool_config_file`` setting in your ``config/galaxy.ini`` configuration file. The ``migrated_tools_conf.xml`` file is always parsed and loaded last. Let's look at an example to help clarify how this works.
+If this file does not exist in your Galaxy installation directory, it will be automatically created and populated when you start your Galaxy server. It is initially populated based on the order in which the tool panel items are loaded. The items are loaded as each tool panel configuration file is parsed and its items are loaded. The order in which these configuration files are parsed is the order of the comma-separated list of files defined in your ``tool_config_file`` setting in your ``config/galaxy.yml`` configuration file. The ``migrated_tools_conf.xml`` file is always parsed and loaded last. Let's look at an example to help clarify how this works.
 
 If you uninstall a repository that contains tools, entries for those tools will automatically be removed from the shed-related tool panel config file and the integrated_tool_panel.xml file.
 
@@ -37,7 +37,7 @@ Sections & Labels
 .. code-block:: xml
 
     <?xml version="1.0"?>
-    <toolbox tool_path="../shed_tools">
+    <toolbox tool_path="database/shed_tools">
         <section id="mts" name="MTS" version="">
           <tool file="toolshed.g2.bx.psu.edu/repos/devteam/fastqc/a00a6402d09a/fastqc/rgFastQC.xml" guid="toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.67" labels="new">
               <tool_shed>toolshed.g2.bx.psu.edu</tool_shed>

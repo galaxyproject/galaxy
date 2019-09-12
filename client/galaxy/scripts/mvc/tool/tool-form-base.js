@@ -1,312 +1,333 @@
 /**
     This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 */
-define( [ 'utils/utils', 'utils/deferred', 'mvc/ui/ui-misc', 'mvc/form/form-view', 'mvc/citation/citation-model', 'mvc/citation/citation-view' ],
-    function( Utils, Deferred, Ui, FormBase, CitationModel, CitationView ) {
-    return FormBase.extend({
-        initialize: function( options ) {
-            var self = this;
-            this.deferred = new Deferred();
-            FormBase.prototype.initialize.call( this, options );
-            if ( this.model.get( 'inputs' ) ) {
-                this._buildForm( this.model.attributes );
-            } else {
-                this.deferred.execute( function( process ) {
-                    self._buildModel( process, self.model.attributes, true );
-                });
-            }
-            // listen to history panel
-            if ( this.model.get( 'listen_to_history' ) && parent.Galaxy && parent.Galaxy.currHistoryPanel ) {
-                this.listenTo( parent.Galaxy.currHistoryPanel.collection, 'change', function() {
-                    self.model.get( 'onchange' )();
-                });
-            }
-            // destroy dom elements
-            this.$el.on( 'remove', function() { self._destroy() } );
-        },
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import _l from "utils/localization";
+// import Utils from "utils/utils";
+import Deferred from "utils/deferred";
+import Ui from "mvc/ui/ui-misc";
+import FormBase from "mvc/form/form-view";
+import Webhooks from "mvc/webhooks";
+import Citations from "components/Citations.vue";
+import xrefs from "components/xrefs.vue";
+import Vue from "vue";
+import axios from "axios";
 
-        /** Wait for deferred build processes before removal */
-        _destroy: function() {
-            var self = this;
-            this.$el.off().hide();
-            this.deferred.execute( function() {
-                FormBase.prototype.remove.call( self );
-                Galaxy.emit.debug( 'tool-form-base::_destroy()', 'Destroy view.' );
+export default FormBase.extend({
+    initialize: function(options) {
+        const Galaxy = getGalaxyInstance();
+        var self = this;
+        this.deferred = new Deferred();
+        FormBase.prototype.initialize.call(this, options);
+
+        // optional model update
+        this._update(this.model.get("initialmodel"));
+
+        // listen to history panel
+        if (this.model.get("listen_to_history") && Galaxy.currHistoryPanel) {
+            this.listenTo(Galaxy.currHistoryPanel.collection, "change", () => {
+                self.model.get("onchange")();
             });
-        },
+        }
+        // destroy dom elements
+        this.$el.on("remove", () => {
+            self._destroy();
+        });
+    },
 
-        /** Build form */
-        _buildForm: function( options ) {
-            var self = this;
-            this.model.set( options );
-            this.model.set({
-                title       : options.title || '<b>' + options.name + '</b> ' + options.description + ' (Galaxy Version ' + options.version + ')',
-                operations  : !this.model.get( 'hide_operations' ) && this._operations(),
-                onchange    : function() {
-                    self.deferred.reset();
-                    self.deferred.execute( function ( process ) {
-                        self.model.get( 'postchange' )( process, self );
+    /** Allows tool form variation to update tool model */
+    _update: function(callback) {
+        var self = this;
+        callback = callback || this.model.get("buildmodel");
+        if (callback) {
+            this.deferred.reset();
+            this.deferred.execute(process => {
+                callback(process, self);
+                process.then(() => {
+                    self._render();
+                });
+            });
+        } else {
+            this._render();
+        }
+    },
+
+    /** Wait for deferred build processes before removal */
+    _destroy: function() {
+        var self = this;
+        this.$el.off().hide();
+        this.deferred.execute(() => {
+            FormBase.prototype.remove.call(self);
+            const Galaxy = getGalaxyInstance();
+            Galaxy.emit.debug("tool-form-base::_destroy()", "Destroy view.");
+        });
+    },
+
+    /** Build form */
+    _render: function() {
+        var self = this;
+        var options = this.model.attributes;
+        this.model.set({
+            title:
+                options.fixed_title ||
+                `<b>${options.name}</b> ${options.description} (Galaxy Version ${options.version})`,
+            operations: !options.hide_operations && this._operations(),
+            onchange: function() {
+                self.deferred.reset();
+                self.deferred.execute(process => {
+                    self.model.get("postchange")(process, self);
+                });
+            }
+        });
+        this.render();
+        if (!this.model.get("collapsible")) {
+            this.$el.append(
+                $("<div/>")
+                    .addClass("mt-2")
+                    .append(this._footer())
+            );
+        }
+        options.tool_errors &&
+            this.message.update({
+                status: "danger",
+                message: options.tool_errors,
+                persistent: true
+            });
+        this.show_message &&
+            this.message.update({
+                status: "success",
+                message: `Now you are using '${options.name}' version ${options.version}, id '${options.id}'.`,
+                persistent: false
+            });
+        this.show_message = true;
+    },
+
+    /** Create tool operation menu */
+    _operations: function() {
+        var self = this;
+        var options = this.model.attributes;
+        const Galaxy = getGalaxyInstance();
+
+        // Buttons for adding and removing favorite.
+        const in_favorites = Galaxy.user.getFavorites().tools.indexOf(options.id) >= 0;
+        var favorite_button = new Ui.Button({
+            icon: "fa-star-o",
+            title: options.narrow ? null : "Favorite",
+            tooltip: "Add to favorites",
+            visible: !Galaxy.user.isAnonymous() && !in_favorites,
+            onclick: () => {
+                axios
+                    .put(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, { object_id: options.id })
+                    .then(response => {
+                        favorite_button.hide();
+                        remove_favorite_button.show();
+                        Galaxy.user.updateFavorites("tools", response.data);
                     });
-                }
-            });
-            this.model.get( 'customize' ) && this.model.get( 'customize' )( this );
-            this.render();
-            if ( !this.model.get( 'collapsible' ) ) {
-                this.$el.append( $( '<div/>' ).addClass( 'ui-margin-top-large' ).append( this._footer() ) );
             }
-        },
+        });
 
-        /** Builds a new model through api call and recreates the entire form */
-        _buildModel: function( process, new_options, hide_message ) {
-            var self = this;
-            var options = this.model.attributes;
-            options.version = new_options.version;
-            options.id = new_options.id;
-
-            // build request url
-            var build_url = '';
-            var build_data = {};
-            var job_id = '';
-            // When re-running a job the job_id is found in the new_options object.
-            // When re-running a job and requesting a new tool_version,
-            // the job_id is in the options object.
-            if ( new_options.job_id ) {
-                job_id = new_options.job_id;
-            } else if (options.job_id) {
-                job_id = options.job_id;
-            }
-            if ( job_id ) {
-                build_url = Galaxy.root + 'api/jobs/' + job_id + '/build_for_rerun';
-            } else {
-                build_url = Galaxy.root + 'api/tools/' + options.id + '/build';
-                build_data = $.extend( {}, Galaxy.params );
-                build_data[ 'tool_id' ] && ( delete build_data[ 'tool_id' ] );
-            }
-            options.version && ( build_data[ 'tool_version' ] = options.version );
-
-            // get initial model
-            Utils.get({
-                url     : build_url,
-                data    : build_data,
-                success : function( data ) {
-                    if( !data.display ) {
-                        window.location = Galaxy.root;
-                        return;
-                    }
-                    self._buildForm( data );
-                    !hide_message && self.message.update({
-                        status      : 'success',
-                        message     : 'Now you are using \'' + options.name + '\' version ' + options.version + ', id \'' + options.id + '\'.',
-                        persistent  : false
+        var remove_favorite_button = new Ui.Button({
+            icon: "fa-star",
+            title: options.narrow ? null : "Added",
+            tooltip: "Remove from favorites",
+            visible: !Galaxy.user.isAnonymous() && in_favorites,
+            onclick: () => {
+                axios
+                    .delete(
+                        `${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools/${encodeURIComponent(options.id)}`
+                    )
+                    .then(response => {
+                        remove_favorite_button.hide();
+                        favorite_button.show();
+                        Galaxy.user.updateFavorites("tools", response.data);
                     });
-                    Galaxy.emit.debug('tool-form-base::_buildModel()', 'Initial tool model ready.', data);
-                    process.resolve();
-                },
-                error   : function( response, status ) {
-                    var error_message = ( response && response.err_msg ) || 'Uncaught error.';
-                    if ( status == 401 ) {
-                        window.location = Galaxy.root + 'user/login?' + $.param({ redirect : Galaxy.root + '?tool_id=' + options.id });
-                    } else if ( self.$el.is( ':empty' ) ) {
-                        self.$el.prepend( ( new Ui.Message({
-                            message     : error_message,
-                            status      : 'danger',
-                            persistent  : true,
-                            large       : true
-                        }) ).$el );
-                    } else {
-                        Galaxy.modal && Galaxy.modal.show({
-                            title   : 'Tool request failed',
-                            body    : error_message,
-                            buttons : {
-                                'Close' : function() {
-                                    Galaxy.modal.hide();
-                                }
-                            }
-                        });
-                    }
-                    Galaxy.emit.debug( 'tool-form-base::_buildModel()', 'Initial tool model request failed.', response );
-                    process.reject();
-                }
-            });
-        },
-
-        /** Create tool operation menu */
-        _operations: function() {
-            var self = this;
-            var options = this.model.attributes;
-
-            // button for version selection
-            var versions_button = new Ui.ButtonMenu({
-                icon    : 'fa-cubes',
-                title   : ( !options.narrow && 'Versions' ) || null,
-                tooltip : 'Select another tool version'
-            });
-            if ( !options.sustain_version && options.versions && options.versions.length > 1 ) {
-                for ( var i in options.versions ) {
-                    var version = options.versions[ i ];
-                    if ( version != options.version ) {
-                        versions_button.addMenu({
-                            title   : 'Switch to ' + version,
-                            version : version,
-                            icon    : 'fa-cube',
-                            onclick : function() {
-                                // here we update the tool version (some tools encode the version also in the id)
-                                var id = options.id.replace( options.version, this.version );
-                                var version = this.version;
-                                // queue model request
-                                self.deferred.reset();
-                                self.deferred.execute( function( process ) {
-                                    self._buildModel( process, { id : id, version : version } )
-                                });
-                            }
-                        });
-                    }
-                }
-            } else {
-                versions_button.$el.hide();
             }
+        });
 
-            // button for options e.g. search, help
-            var menu_button = new Ui.ButtonMenu({
-                icon    : 'fa-caret-down',
-                title   : ( !options.narrow && 'Options' ) || null,
-                tooltip : 'View available options'
-            });
-            if ( options.biostar_url ) {
-                menu_button.addMenu({
-                    icon    : 'fa-question-circle',
-                    title   : 'Question?',
-                    onclick : function() {
-                        window.open( options.biostar_url + '/p/new/post/' );
-                    }
-                });
-                menu_button.addMenu({
-                    icon    : 'fa-search',
-                    title   : 'Search',
-                    onclick : function() {
-                        window.open( options.biostar_url + '/local/search/page/?q=' + options.name );
-                    }
-                });
-            };
-            menu_button.addMenu({
-                icon    : 'fa-share',
-                title   : 'Share',
-                onclick : function() {
-                    prompt( 'Copy to clipboard: Ctrl+C, Enter', window.location.origin + Galaxy.root + 'root?tool_id=' + options.id );
-                }
-            });
+        // button for version selection
+        var versions_button = new Ui.ButtonMenu({
+            icon: "fa-cubes",
+            title: options.narrow ? null : "Versions",
+            tooltip: "Select another tool version"
+        });
 
-            // add admin operations
-            if ( Galaxy.user && Galaxy.user.get( 'is_admin' ) ) {
-                menu_button.addMenu({
-                    icon    : 'fa-download',
-                    title   : 'Download',
-                    onclick : function() {
-                        window.location.href = Galaxy.root + 'api/tools/' + options.id + '/download';
-                    }
-                });
-                menu_button.addMenu({
-                    icon    : 'fa-refresh',
-                    title   : 'Reload XML',
-                    onclick : function() {
-                        Utils.get({
-                            url     : Galaxy.root + 'api/tools/' + options.id + '/reload',
-                            success : function( response ) {
-                                self.message.update( { persistent : false, message : 'Tool XML has been reloaded.', status : 'success' } );
-                            },
-                            error   : function( response ) {
-                                self.message.update( { persistent : false, message : response.err_msg, status : 'danger' } );
-                            }
-                        });
-                    }
-                });
-            }
-
-            // button for version selection
-            if ( options.requirements && options.requirements.length > 0 ) {
-                menu_button.addMenu({
-                    icon    : 'fa-info-circle',
-                    title   : 'Requirements',
-                    onclick : function() {
-                        if ( !this.requirements_visible || self.portlet.collapsed ) {
-                            this.requirements_visible = true;
-                            self.portlet.expand();
-                            self.message.update( { persistent : true, message : self._templateRequirements( options ), status : 'info' } );
-                        } else {
-                            this.requirements_visible = false;
-                            self.message.update( { message : '' } );
+        if (!options.sustain_version && options.versions && options.versions.length > 1) {
+            for (var i in options.versions) {
+                var version = options.versions[i];
+                if (version != options.version) {
+                    versions_button.addMenu({
+                        title: `Switch to ${version}`,
+                        version: version,
+                        icon: "fa-cube",
+                        onclick: function() {
+                            // here we update the tool version (some tools encode the version also in the id)
+                            self.model.set("id", options.id.replace(options.version, this.version));
+                            self.model.set("version", this.version);
+                            self._update();
                         }
-                    }
-                });
+                    });
+                }
             }
+        } else {
+            versions_button.$el.hide();
+        }
 
-            // add toolshed url
-            if ( options.sharable_url ) {
-                menu_button.addMenu({
-                    icon    : 'fa-external-link',
-                    title   : 'See in Tool Shed',
-                    onclick : function() {
-                        window.open( options.sharable_url );
-                    }
-                });
+        // button for options e.g. search, help
+        var menu_button = new Ui.ButtonMenu({
+            id: "options",
+            icon: "fa-caret-down",
+            title: options.narrow ? null : "Options",
+            tooltip: "View available options"
+        });
+        menu_button.addMenu({
+            icon: "fa-share",
+            title: _l("Share"),
+            onclick: function() {
+                prompt(
+                    "Copy to clipboard: Ctrl+C, Enter",
+                    `${window.location.origin + getAppRoot()}root?tool_id=${options.id}`
+                );
             }
+        });
 
-            // add tool menu webhooks
-            $.getJSON('/api/webhooks/tool-menu/all', function(webhooks) {
-                _.each(webhooks, function(webhook) {
+        // add admin operations
+        if (Galaxy.user && Galaxy.user.get("is_admin")) {
+            menu_button.addMenu({
+                icon: "fa-download",
+                title: _l("Download"),
+                onclick: function() {
+                    window.location.href = `${getAppRoot()}api/tools/${options.id}/download`;
+                }
+            });
+        }
+
+        // button for version selection
+        if (options.requirements && options.requirements.length > 0) {
+            menu_button.addMenu({
+                icon: "fa-info-circle",
+                title: _l("Requirements"),
+                onclick: function() {
+                    if (!this.requirements_visible || self.portlet.collapsed) {
+                        this.requirements_visible = true;
+                        self.portlet.expand();
+                        self.message.update({
+                            persistent: true,
+                            message: self._templateRequirements(options),
+                            status: "info"
+                        });
+                    } else {
+                        this.requirements_visible = false;
+                        self.message.update({ message: "" });
+                    }
+                }
+            });
+        }
+
+        // add toolshed url
+        if (options.sharable_url) {
+            menu_button.addMenu({
+                icon: "fa-external-link",
+                title: _l("See in Tool Shed"),
+                onclick: function() {
+                    window.open(options.sharable_url);
+                }
+            });
+        }
+
+        // add tool menu webhooks
+        Webhooks.load({
+            type: "tool-menu",
+            callback: function(webhooks) {
+                webhooks.each(model => {
+                    var webhook = model.toJSON();
                     if (webhook.activate && webhook.config.function) {
                         menu_button.addMenu({
-                            icon    : webhook.config.icon,
-                            title   : webhook.config.title,
-                            onclick : function() {
-                                var func = new Function('options', webhook.config.function);
+                            icon: webhook.config.icon,
+                            title: webhook.config.title,
+                            onclick: function() {
+                                var func = new Function("options", webhook.config.function);
                                 func(options);
                             }
                         });
                     }
                 });
-            });
-
-            return {
-                menu        : menu_button,
-                versions    : versions_button
             }
-        },
+        });
 
-        /** Create footer */
-        _footer: function() {
-            var options = this.model.attributes;
-            var $el = $( '<div/>' ).append( this._templateHelp( options ) );
-            if ( options.citations ) {
-                var $citations = $( '<div/>' );
-                var citations = new CitationModel.ToolCitationCollection();
-                citations.tool_id = options.id;
-                var citation_list_view = new CitationView.CitationListView({ el: $citations, collection: citations });
-                citation_list_view.render();
-                citations.fetch();
-                $el.append( $citations );
-            }
-            return $el;
-        },
+        return {
+            menu: menu_button,
+            versions: versions_button,
+            favorite: favorite_button,
+            remove_favorite: remove_favorite_button
+        };
+    },
 
-        /** Templates */
-        _templateHelp: function( options ) {
-            var $tmpl = $( '<div/>' ).addClass( 'ui-form-help' ).append( options.help );
-            $tmpl.find( 'a' ).attr( 'target', '_blank' );
-            return $tmpl;
-        },
-
-        _templateRequirements: function( options ) {
-            var nreq = options.requirements.length;
-            if ( nreq > 0 ) {
-                var requirements_message = 'This tool requires ';
-                _.each( options.requirements, function( req, i ) {
-                    requirements_message += req.name + ( req.version ? ' (Version ' + req.version + ')' : '' ) + ( i < nreq - 2 ? ', ' : ( i == nreq - 2 ? ' and ' : '' ) );
-                });
-                var requirements_link = $( '<a/>' ).attr( 'target', '_blank' ).attr( 'href', 'https://galaxyproject.org/tools/requirements/' ).text( 'here' );
-                return $( '<span/>' ).append( requirements_message + '. Click ' ).append( requirements_link ).append( ' for more information.' );
-            }
-            return 'No requirements found.';
+    /** Create footer */
+    _footer: function() {
+        var options = this.model.attributes;
+        var $el = $("<div/>").append(this._templateHelp(options));
+        if (options.citations) {
+            var citationInstance = Vue.extend(Citations);
+            var vm = document.createElement("div");
+            $el.append(vm);
+            new citationInstance({
+                propsData: {
+                    id: options.id,
+                    source: "tools"
+                }
+            }).$mount(vm);
         }
-    });
+        if (options.xrefs && options.xrefs.length) {
+            var xrefInstance = Vue.extend(xrefs);
+            vm = document.createElement("div");
+            $el.append(vm);
+            new xrefInstance({
+                propsData: {
+                    id: options.id,
+                    source: "tools"
+                }
+            }).$mount(vm);
+        }
+        return $el;
+    },
+
+    /** Templates */
+    _templateHelp: function(options) {
+        var $tmpl = $("<div/>")
+            .addClass("form-help form-text mt-4")
+            .append(options.help);
+        $tmpl.find("a").attr("target", "_blank");
+        $tmpl.find("img").each(function() {
+            var img_src = $(this).attr("src");
+            if (img_src.indexOf("admin_toolshed") !== -1) {
+                $(this).attr("src", getAppRoot() + img_src);
+            }
+        });
+        return $tmpl;
+    },
+
+    _templateRequirements: function(options) {
+        var nreq = options.requirements.length;
+        if (nreq > 0) {
+            var requirements_message = "This tool requires ";
+            _.each(options.requirements, (req, i) => {
+                requirements_message +=
+                    req.name +
+                    (req.version ? ` (Version ${req.version})` : "") +
+                    (i < nreq - 2 ? ", " : i == nreq - 2 ? " and " : "");
+            });
+            var requirements_link = $("<a/>")
+                .attr("target", "_blank")
+                .attr("href", "https://galaxyproject.org/tools/requirements/")
+                .text("here");
+            return $("<span/>")
+                .append(`${requirements_message}. Click `)
+                .append(requirements_link)
+                .append(" for more information.");
+        }
+        return "No requirements found.";
+    }
 });

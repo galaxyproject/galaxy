@@ -1,6 +1,5 @@
 import tempfile
 import time
-
 from contextlib import contextmanager
 from os import path
 from shutil import rmtree
@@ -21,13 +20,14 @@ def test_watcher():
         tool_watcher = watcher.get_tool_watcher(toolbox, bunch.Bunch(
             watch_tools=True
         ))
+        tool_watcher.start()
         time.sleep(1)
         tool_watcher.watch_file(tool_path, "cool_tool")
         assert not toolbox.was_reloaded("cool_tool")
         open(tool_path, "w").write("b")
         wait_for_reload(lambda: toolbox.was_reloaded("cool_tool"))
         tool_watcher.shutdown()
-        assert not tool_watcher.observer.is_alive()
+        assert tool_watcher.observer is None
 
 
 def test_tool_conf_watcher():
@@ -37,6 +37,7 @@ def test_tool_conf_watcher():
 
     callback = CallbackRecorder()
     conf_watcher = watcher.get_tool_conf_watcher(callback.call)
+    conf_watcher.start()
 
     with __test_directory() as t:
         tool_conf_path = path.join(t, "test_conf.xml")
@@ -46,7 +47,7 @@ def test_tool_conf_watcher():
         open(tool_conf_path, "w").write("b")
         wait_for_reload(lambda: callback.called)
         conf_watcher.shutdown()
-        assert not conf_watcher.thread.is_alive()
+        assert conf_watcher.thread is None
 
 
 def wait_for_reload(check):
@@ -64,11 +65,11 @@ class Toolbox(object):
     def __init__(self):
         self.reloaded = {}
 
-    def reload_tool_by_id( self, tool_id ):
-        self.reloaded[ tool_id ] = True
+    def reload_tool_by_id(self, tool_id):
+        self.reloaded[tool_id] = True
 
     def was_reloaded(self, tool_id):
-        return self.reloaded.get( tool_id, False )
+        return self.reloaded.get(tool_id, False)
 
 
 class CallbackRecorder(object):
