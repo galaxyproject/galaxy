@@ -7,22 +7,25 @@
             :loading="loading"
             @onToolshed="setToolshed"
         />
-        <Repositories
-            :query="query"
-            :scrolled="scrolled"
-            :toolshedUrl="toolshedUrl"
-            @onError="setError"
-            v-if="!queryEmpty"
-        />
-        <Categories
-            :toolshedUrl="toolshedUrl"
-            :loading="loading"
-            @onCategory="setQuery"
-            @onTotal="setTotal"
-            @onError="setError"
-            @onLoading="setLoading"
-            v-show="queryEmpty"
-        />
+        <div v-if="error" class="alert alert-danger">{{ error }}</div>
+        <div v-else>
+            <Repositories
+                :query="query"
+                :scrolled="scrolled"
+                :toolshedUrl="toolshedUrl"
+                @onError="setError"
+                v-if="!queryEmpty"
+            />
+            <Categories
+                :toolshedUrl="toolshedUrl"
+                :loading="loading"
+                @onCategory="setQuery"
+                @onTotal="setTotal"
+                @onError="setError"
+                @onLoading="setLoading"
+                v-show="queryEmpty"
+            />
+        </div>
     </div>
 </template>
 <script>
@@ -68,12 +71,13 @@ export default {
             }
         },
         setError(error) {
-            this.$emit("onError", error);
+            this.error = error;
         },
         setQuery(query) {
             this.$emit("onQuery", query);
         },
         setToolshed(url) {
+            this.error = null;
             this.toolshedUrl = url;
         },
         setTotal(total) {

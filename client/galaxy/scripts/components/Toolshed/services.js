@@ -39,7 +39,7 @@ export class Services {
             const data = response.data;
             const table = Object.keys(data).map(key => data[key]);
             if (table.length === 0) {
-                throw "Repository does not contain any installable revisions."
+                throw "Repository does not contain any installable revisions.";
             }
             table.sort((a, b) => b.numeric_revision - a.numeric_revision);
             table.forEach(x => {
