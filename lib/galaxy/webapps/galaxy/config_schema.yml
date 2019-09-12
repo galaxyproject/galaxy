@@ -106,7 +106,7 @@ mapping:
           documentation is included here for completeness.
 
       slow_query_log_threshold:
-        type: float
+        type: any
         default: 0
         required: false
         desc: |
