@@ -1,12 +1,18 @@
 <template>
     <div class="overflow-auto h-100 p-1" @scroll="onScroll">
-        <b-input
-            class="mb-3"
-            placeholder="search repositories"
-            v-model="queryInput"
-            @input="delayQuery"
-            @change="setQuery"
-        />
+        <b-input-group class="mb-3">
+            <b-input
+                placeholder="search repositories"
+                v-model="queryInput"
+                @input="delayQuery"
+                @change="setQuery"
+            />
+            <b-input-group-append>
+                <b-btn :disabled="!queryInput" @click="setQuery()">
+                    <i class="fa fa-times"/>
+                </b-btn>
+            </b-input-group-append>
+        </b-input-group>
         <serverselection
             :toolshedUrl="toolshedUrl"
             :toolshedUrls="toolshedUrls"
@@ -111,7 +117,7 @@ export default {
         setLoading(loading) {
             this.loading = loading;
         },
-        onScroll: function({ target: { scrollTop, clientHeight, scrollHeight } }) {
+        onScroll({ target: { scrollTop, clientHeight, scrollHeight } }) {
             this.scrolled = scrollTop + clientHeight >= scrollHeight;
         }
     }
