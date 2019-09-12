@@ -5,6 +5,7 @@
                 <b-link href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
                     {{ row.item.name }}
                 </b-link>
+                <p>{{ row.item.description }}</p>
             </template>
             <template slot="row-details" slot-scope="row">
                 <RepositoryDetails :repo="row.item" :toolshedUrl="toolshedUrl" />
@@ -35,7 +36,6 @@ export default {
             repositories: [],
             fields: [
                 { key: "name" },
-                { key: "description" },
                 { key: "last_updated", label: "Updated" },
                 { key: "owner", label: "Owner" },
                 { key: "times_downloaded", label: "Downloaded" }
