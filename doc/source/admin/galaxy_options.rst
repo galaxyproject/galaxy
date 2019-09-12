@@ -121,8 +121,8 @@
     below will be logged to debug.  A value of '0' is disabled.  For
     example, you would set this to .005 to log all queries taking
     longer than 5 milliseconds.
-:Default: ``0``
-:Type: int
+:Default: ``0.0``
+:Type: float
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
