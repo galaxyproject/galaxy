@@ -39,7 +39,7 @@ def _parse_ldap_options(options_unparsed):
         try:
             key, value = opt.split("=")
         except ValueError:
-            log.warning("LDAP authenticate: Invalid syntax '%s' inside <ldap-options> element. Syntax should be option1=value1,option2=value2" % opt)
+            log.warning("LDAP authenticate: Invalid syntax '%s' inside <ldap-options> element. Syntax should be option1=value1,option2=value2", opt)
             continue
 
         if not key.startswith(prefix):
@@ -161,8 +161,8 @@ class LDAP(AuthProvider):
                     log.warning('LDAP authenticate: search returned no results')
                     return (failure_mode, None)
                 dn, attrs = suser[0]
-                log.debug(("LDAP authenticate: dn is %s" % dn))
-                log.debug(("LDAP authenticate: search attributes are %s" % attrs))
+                log.debug("LDAP authenticate: dn is %s", dn)
+                log.debug("LDAP authenticate: search attributes are %s", attrs)
                 if hasattr(attrs, 'has_key'):
                     for attr in attributes:
                         if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip brackets
@@ -177,7 +177,6 @@ class LDAP(AuthProvider):
                     raise ConfigurationError("Missing or mismatching LDAP parameters for %s. Make sure the %s is "
                                              "included in the 'search-fields'." %
                                              (self.role_search_option, self.role_search_attribute))
-                log.critical(params)
                 params['dn'] = dn
             except Exception:
                 log.exception('LDAP authenticate: search exception')
@@ -190,10 +189,10 @@ class LDAP(AuthProvider):
         See abstract method documentation.
         """
         if not options['redact_username_in_logs']:
-            log.debug("LDAP authenticate: email is %s" % email)
-            log.debug("LDAP authenticate: username is %s" % username)
+            log.debug("LDAP authenticate: email is %s", email)
+            log.debug("LDAP authenticate: username is %s", username)
 
-        log.debug("LDAP authenticate: options are %s" % options)
+        log.debug("LDAP authenticate: options are %s", options)
 
         failure_mode, params = self.ldap_search(email, username, options)
         if not params:
@@ -217,7 +216,6 @@ class LDAP(AuthProvider):
         """
         Do the actual authentication by binding as the user to check their credentials
         """
-        import ldap
         try:
             l = ldap.initialize(_get_subs(options, 'server', params))
             l.protocol_version = 3
@@ -230,11 +228,10 @@ class LDAP(AuthProvider):
                 # The "Who am I?" extended operation is not supported by this LDAP server
                 pass
             else:
-                if not options['redact_username_in_logs']:
-                    log.debug("LDAP authenticate: whoami is %s", whoami)
-
                 if whoami is None:
                     raise RuntimeError('LDAP authenticate: anonymous bind')
+                if not options['redact_username_in_logs']:
+                    log.debug("LDAP authenticate: whoami is %s", whoami)
         except Exception:
             log.warning('LDAP authenticate: bind exception', exc_info=True)
             return False

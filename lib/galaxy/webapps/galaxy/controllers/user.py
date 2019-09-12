@@ -22,7 +22,6 @@ from galaxy.managers import users
 from galaxy.queue_worker import send_local_control_task
 from galaxy.security.validate_user_input import (
     validate_email,
-    validate_password,
     validate_publicname
 )
 from galaxy.web import expose_api_anonymous_and_sessionless
@@ -309,12 +308,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if message:
             return self.message_exception(trans, message)
         return {"message": "Reset link has been sent to your email."}
-
-    def __validate(self, trans, email, password, confirm, username):
-        message = "\n".join([validate_email(trans, email),
-                             validate_password(trans, password, confirm),
-                             validate_publicname(trans, username)]).rstrip()
-        return message
 
     def __get_redirect_url(self, redirect):
         if not redirect or redirect == "None":

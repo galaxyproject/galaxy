@@ -123,13 +123,9 @@ class UsersController(BaseAPIController):
         return user_dict
 
     def __validate(self, trans, email, password, confirm, username):
-        if not username:
-            return "A public user name is required in the Tool Shed."
         if username in ['repos']:
-            return "The term <b>%s</b> is a reserved word in the Tool Shed, so it cannot be used as a public user name." % username
-        message = validate_email(trans, email)
-        if not message:
-            message = validate_password(trans, password, confirm)
-        if not message and username:
-            message = validate_publicname(trans, username)
+            return "The term '%s' is a reserved word in the Tool Shed, so it cannot be used as a public user name." % username
+        message = "\n".join([validate_email(trans, email),
+                             validate_password(trans, password, confirm),
+                             validate_publicname(trans, username)]).rstrip()
         return message
