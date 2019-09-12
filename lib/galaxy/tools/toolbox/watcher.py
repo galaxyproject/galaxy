@@ -163,7 +163,8 @@ class ToolWatcher(BaseWatcher):
         self.monitored_dirs = {}
 
     def monitor(self, dir):
-        self.observer.schedule(self.event_handler, dir, recursive=False)
+        if self.observer is not None:
+            self.observer.schedule(self.event_handler, dir, recursive=False)
 
     def watch_file(self, tool_file, tool_id):
         tool_file = os.path.abspath(tool_file)

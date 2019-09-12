@@ -97,7 +97,8 @@ class Watcher(BaseWatcher):
         self.event_handler = event_handler_class(self)
 
     def monitor(self, dir, recursive=False):
-        self.observer.schedule(self.event_handler, dir, recursive=recursive)
+        if self.observer is not None:
+            self.observer.schedule(self.event_handler, dir, recursive=recursive)
 
     def watch_file(self, file_path, callback=None):
         file_path = os.path.abspath(file_path)
