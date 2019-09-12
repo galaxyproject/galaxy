@@ -6,7 +6,7 @@
     The directory that will be prepended to relative paths in options
     specifying other Galaxy config files (e.g. datatypes_config_file).
     Defaults to the directory in which galaxy.yml is located.
-:Default: ``false``
+:Default: ``None``
 :Type: str
 
 
@@ -19,7 +19,7 @@
     specifying Galaxy data/cache directories and files (such as the
     default SQLite database, file_path, etc.). Defaults to `database/`
     if running Galaxy from source or `<config_dir>/data` otherwise.
-:Default: ``false``
+:Default: ``None``
 :Type: str
 
 
@@ -108,7 +108,7 @@
     on an existing template database. This will set that. This is
     probably only useful for testing but documentation is included
     here for completeness.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -560,7 +560,7 @@
     container resolvers to use when discovering containers for Galaxy.
     If this is set to None, the default containers loaded is
     determined by enable_mulled_containers.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1015,7 +1015,7 @@
     needs to send mail through an SMTP server, which you may define
     here (host:port). Galaxy will automatically try STARTTLS but will
     continue upon failure.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1027,7 +1027,7 @@
     If your SMTP server requires a username and password, you can
     provide them here (password in cleartext here, but if your server
     supports STARTTLS it will be sent over the network encrypted).
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1039,7 +1039,7 @@
     If your SMTP server requires a username and password, you can
     provide them here (password in cleartext here, but if your server
     supports STARTTLS it will be sent over the network encrypted).
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1077,7 +1077,7 @@
     disabled if no address is set.  Also this email is shown as a
     contact to user in case of Galaxy misconfiguration and other
     events user may encounter.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1091,7 +1091,7 @@
     resets. We recommend using string in the following format: Galaxy
     Project <galaxy-no-reply@example.com> If not configured, '<galaxy-
     no-reply@HOSTNAME>' will be used.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1202,7 +1202,7 @@
 :Description:
     You can enter tracking code here to track visitor's behavior
     through your Google Analytics account.  Example: UA-XXXXXXXX-Y
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1284,7 +1284,7 @@
 
 :Description:
     Show a message box under the masthead.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1305,7 +1305,7 @@
 
 :Description:
     Append "/{brand}" to the "Galaxy" text in the masthead.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1412,7 +1412,7 @@
 
 :Description:
     The URL linked by the "Galaxy Help" link in the "Help" menu.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1496,7 +1496,7 @@
     The URL linked by the "Terms and Conditions" link in the "Help"
     menu, as well as on the user registration and login forms and in
     the activation emails.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1649,7 +1649,7 @@
     Redirect.  This should be set to the path defined in the nginx
     config as an internal redirect with access to Galaxy's data files
     (see documentation linked above).
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1692,7 +1692,7 @@
     explained in detail in the documentation linked above.  The upload
     store is a temporary directory in which files uploaded by the
     upload module will be placed.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1704,7 +1704,7 @@
     This value overrides the action set on the file upload form, e.g.
     the web path where the nginx_upload_module has been configured to
     intercept upload requests.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1717,7 +1717,7 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1730,7 +1730,7 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1888,7 +1888,7 @@
     Galaxy instead of a JSON or SQLite file for IPC. If you do not
     specify this, it will be set randomly for you. You should set this
     if you are managing the proxy manually.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2061,7 +2061,7 @@
     beginning and ending with /. E.g.
     mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/ See:
     https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2199,7 +2199,7 @@
     middleware and errors will be sent to the indicated sentry
     instance.  This connection string is available in your sentry
     instance under <project_name> -> Settings -> API Keys.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2282,7 +2282,7 @@
 :Description:
     Add an option to the library upload form which allows
     administrators to upload a directory of files.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2297,7 +2297,7 @@
     admin user's Galaxy login ( email ).  The non-admin user is
     restricted to uploading files or sub-directories of files
     contained in their directory.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2325,7 +2325,7 @@
     *any* user with library import permissions can import from
     anywhere in these directories (assuming they are able to create
     symlinks to them).
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2565,7 +2565,7 @@
     method just returns bare usernames, set a default mail domain to
     be appended to usernames, to become your Galaxy usernames (email
     addresses).
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2607,7 +2607,7 @@
 :Description:
     If use_remote_user is enabled, you can set this to a URL that will
     log your users out.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2647,7 +2647,7 @@
     the Admin section of the server, and will have access to create
     users, groups, roles, libraries, and more.  For more information,
     see:   https://galaxyproject.org/admin/
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2827,7 +2827,9 @@
 
 :Description:
     Enable beta workflow modules that should not yet be considered
-    part of Galaxy's stable API.
+    part of Galaxy's stable API. (The module state definitions may
+    change and workflows built using  these modules may not function
+    in the future.)
 :Default: ``false``
 :Type: bool
 
@@ -3002,7 +3004,7 @@
     actually having a defined admin user in the database/config.  Only
     set this if you need to bootstrap Galaxy, you probably do not want
     to set this on public servers.
-:Default: ``changethis``
+:Default: ``None``
 :Type: str
 
 
@@ -3076,7 +3078,7 @@
     following two options. This should point to a directory containing
     subdirectories matching users' identifier (defaults to e-mail),
     where Galaxy will look for files.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -3087,7 +3089,7 @@
 :Description:
     This should be the hostname of your FTP server, which will be
     provided to users in the help text.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -3513,7 +3515,7 @@
     environment prior to running tools.  This can be especially useful
     for running jobs as the actual user, to remove the need to
     configure each user's environment individually.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
