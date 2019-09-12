@@ -5,6 +5,7 @@ Created on 15/07/2014
 """
 
 import logging
+import re
 
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import string_as_bool
@@ -23,6 +24,10 @@ def _get_subs(d, k, params):
     if k not in d or not d[k]:
         raise ConfigurationError("Missing '%s' parameter in LDAP options" % k)
     return str(d[k]).format(**params)
+
+
+def _clean_register_username(displayname):
+    return re.sub('[^a-z0-9]+', '_', displayname.lower())
 
 
 def _parse_ldap_options(options_unparsed):
@@ -151,6 +156,12 @@ class LDAP(AuthProvider):
                 # setup search
                 attributes = [_.strip().format(**params)
                               for _ in options['search-fields'].split(',')]
+                if string_as_bool(options.get('ldap-autogenerate', False)):
+                    if str(username).lower() == 'none':
+		        attributes.append('displayName')
+                    else:
+                        attributes.append('mail')
+
                 suser = l.search_ext_s(_get_subs(options, 'search-base', params),
                     ldap.SCOPE_SUBTREE,
                     _get_subs(options, 'search-filter', params), attributes,
@@ -177,7 +188,7 @@ class LDAP(AuthProvider):
                     raise ConfigurationError("Missing or mismatching LDAP parameters for %s. Make sure the %s is "
                                              "included in the 'search-fields'." %
                                              (self.role_search_option, self.role_search_attribute))
-                log.critical(params)
+                log.debug(params)
                 params['dn'] = dn
             except Exception:
                 log.exception('LDAP authenticate: search exception')
@@ -208,9 +219,23 @@ class LDAP(AuthProvider):
         attributes = {}
         if self.auto_create_roles_or_groups:
             attributes['roles'] = params[self.role_search_option]
+
+        if string_as_bool(options.get('ldap-autogenerate', False)):
+            if str(username) == 'None':
+                register_username = params['displayName']
+                register_email = _get_subs(options, 'auto-register-email', params)
+            else:
+                register_username = _get_subs(options, 'auto-register-username', params)
+                register_email = params['mail']
+        else:
+	    register_email = _get_subs(options, 'auto-register-email', params)
+            register_username = _get_subs(options, 'auto-register-username', params)
+
+        register_username = _clean_register_username(register_username)
+
         return (True,
-                _get_subs(options, 'auto-register-email', params),
-                _get_subs(options, 'auto-register-username', params),
+                register_email,
+                register_username,
                 attributes)
 
     def _authenticate(self, params, options):
