@@ -209,10 +209,10 @@ var MapViewer = (function(mv) {
             const sourceVec = new Vector({ format: formatType, url: filePath, wrapX: false });
             mv.createMap(filePath, sourceVec, options, chart, styleFunction, target);
         } else if (fileType === "shp") {
-			axios.get(filePath, {responseType: 'arraybuffer'}).then(
-                shpfile => {
-                    console.debug(shpfile);
-                    shp(shpfile.data).then(geojson => {
+            axios.get(filePath, { responseType: "arraybuffer" }).then(shpfile => {
+                console.debug(shpfile);
+                shp(shpfile.data).then(
+                    geojson => {
                         const url = window.URL.createObjectURL(
                             new Blob([JSON.stringify(geojson)], { type: "application/json" })
                         );
@@ -221,8 +221,9 @@ var MapViewer = (function(mv) {
                     },
                     failure => {
                         console.debug("FAILURE!", failure);
-                    });
-                });
+                    }
+                );
+            });
         }
     };
 
