@@ -462,7 +462,6 @@ mapping:
 
       involucro_path:
         type: str
-        default: database/dependencies/involucro
         required: false
         desc: |
           involucro is a tool used to build Docker or Singularity containers for tools from Conda
@@ -470,6 +469,9 @@ mapping:
           the location of involucro on the Galaxy host. This is ignored if the relevant
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
+
+          Sample default 'database/dependencies/involucro' where 'database/dependencies' is the
+          resolved default value of the 'tool_dependency_dir' option.
 
       involucro_auto_init:
         type: bool

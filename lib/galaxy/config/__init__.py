@@ -424,14 +424,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             containers_resolvers_config_file = os.path.join(self.root, containers_resolvers_config_file)
         self.containers_resolvers_config_file = containers_resolvers_config_file
 
-        involucro_path = kwargs.get('involucro_path', None)
-        if involucro_path is None:
-            target_dir = kwargs.get("tool_dependency_dir", "dependencies")
-            if target_dir == "none":
-                target_dir = "dependencies"
-            target_dir = os.path.join(self.data_dir, target_dir)
-            involucro_path = os.path.join(target_dir, "involucro")
-        self.involucro_path = os.path.join(self.root, involucro_path)
+        if self.involucro_path is None:
+            self.involucro_path = os.path.join(self.data_dir, self.tool_dependency_dir, "involucro")
+        self.involucro_path = os.path.join(self.root, self.involucro_path)
+
         if self.mulled_channels:
             self.mulled_channels = [c.strip() for c in self.mulled_channels.split(',')]
         else:
