@@ -471,7 +471,7 @@ mapping:
           involucro_auto_init is set to false.
 
           Sample default 'database/dependencies/involucro' where 'database/dependencies' is the
-          resolved default value of the 'tool_dependency_dir' option.
+          default value of the 'tool_dependency_dir' option.
 
       involucro_auto_init:
         type: bool
@@ -571,17 +571,21 @@ mapping:
 
       builds_file_path:
         type: str
-        default: tool-data/shared/ucsc/builds.txt
         required: false
         desc: |
-          File containing old-style genome builds
+          File containing old-style genome builds.
+
+          Sample default 'tool-data/shared/ucsc/builds.txt' where 'tool-data' is the default value
+          of the 'tool_data_path' option.
 
       len_file_path:
         type: str
-        default: tool-data/shared/ucsc/chrom
         required: false
         desc: |
           Directory where chrom len files are kept, currently mainly used by trackster
+
+          Sample default 'tool-data/shared/ucsc/chrom' where 'tool-data' is the default value of the
+          'tool_data_path' option.
 
       datatypes_config_file:
         type: str
@@ -602,7 +606,6 @@ mapping:
           on a per-datatype basis in the datatypes_conf.xml file.
           With this option set to false the compressed datatypes will be unpacked
           before sniffing.
-
 
       datatypes_disable_auto:
         type: bool
