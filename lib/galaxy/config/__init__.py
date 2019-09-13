@@ -336,7 +336,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.template_path = os.path.join(self.root, kwargs.get("template_path", "templates"))
         self.template_cache = os.path.join(self.data_dir, self.template_cache_path)
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
-        self.cluster_files_directory = self.resolve_path(kwargs.get("cluster_files_directory", os.path.join(self.data_dir, "pbs")))
+        self.cluster_files_directory = self.resolve_path(kwargs.get("cluster_files_directory"), os.path.join(self.data_dir, "pbs"))
 
         # Fall back to legacy job_working_directory config variable if set.
         self.jobs_directory = os.path.join(self.data_dir, kwargs.get("jobs_directory", self.job_working_directory))
@@ -348,7 +348,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # should probably drop the backward compatiblity to save the path check.
         self.container_image_cache_path = os.path.join(self.data_dir, kwargs.get("container_image_cache_path", "container_images"))
         if not os.path.exists(self.container_image_cache_path):
-            self.container_image_cache_path = self.resolve_path(kwargs.get("container_image_cache_path", os.path.join(self.data_dir, "container_cache")))
+            self.container_image_cache_path = self.resolve_path(kwargs.get("container_image_cache_path"), os.path.join(self.data_dir, "container_cache"))
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
         # activation_email was used until release_15.03
         activation_email = kwargs.get('activation_email', None)
