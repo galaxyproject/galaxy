@@ -300,7 +300,7 @@ def invocation_job_source_iter(sa_session, invocation_id):
         model.WorkflowInvocation
     )
     statement = select(
-        [model.WorkflowInvocationStep.job_id, model.WorkflowInvocationStep.implicit_collection_jobs_id]
+        [model.WorkflowInvocationStep.job_id, model.WorkflowInvocationStep.implicit_collection_jobs_id, model.WorkflowInvocationStep.state]
     ).select_from(
         join
     ).where(
@@ -308,9 +308,9 @@ def invocation_job_source_iter(sa_session, invocation_id):
     )
     for row in sa_session.execute(statement):
         if row[0]:
-            yield ('Job', row[0])
+            yield ('Job', row[0], row[2])
         if row[1]:
-            yield ('ImplicitCollectionJobs', row[1])
+            yield ('ImplicitCollectionJobs', row[1], row[2])
 
 
 def fetch_job_states(sa_session, job_source_ids, job_source_types):
@@ -318,6 +318,7 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
     job_ids = set()
     implicit_collection_job_ids = set()
     workflow_invocations_job_sources = {}
+    workflow_invocation_states = {}  # should be set before we walk step states to be conservative on whether things are done expanding yet
 
     for job_source_id, job_source_type in zip(job_source_ids, job_source_types):
         if job_source_type == "Job":
@@ -325,13 +326,15 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
         elif job_source_type == "ImplicitCollectionJobs":
             implicit_collection_job_ids.add(job_source_id)
         elif job_source_type == "WorkflowInvocation":
+            invocation_state = sa_session.query(model.WorkflowInvocation).get(job_source_id).state
+            workflow_invocation_states[job_source_id] = invocation_state
             workflow_invocation_job_sources = []
-            for (invocation_source_type, invocation_source_id) in invocation_job_source_iter(sa_session, job_source_id):
-                workflow_invocation_job_sources.append((invocation_source_type, invocation_source_id))
-                if invocation_source_type == "Job":
-                    job_ids.add(invocation_source_id)
-                elif invocation_source_type == "ImplicitCollectionJobs":
-                    implicit_collection_job_ids.add(invocation_source_id)
+            for (invocation_step_source_type, invocation_step_source_id, invocation_step_state) in invocation_job_source_iter(sa_session, job_source_id):
+                workflow_invocation_job_sources.append((invocation_step_source_type, invocation_step_source_id, invocation_step_state))
+                if invocation_step_source_type == "Job":
+                    job_ids.add(invocation_step_source_id)
+                elif invocation_step_source_type == "ImplicitCollectionJobs":
+                    implicit_collection_job_ids.add(invocation_step_source_id)
             workflow_invocations_job_sources[job_source_id] = workflow_invocation_job_sources
         else:
             raise RequestParameterInvalidException("Invalid job source type %s found." % job_source_type)
@@ -351,20 +354,36 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
         elif job_source_type == "ImplicitCollectionJobs":
             rval.append(implicit_collection_jobs_summaries[job_source_id])
         else:
+            invocation_state = workflow_invocation_states[job_source_id]
             invocation_job_summaries = []
             invocation_implicit_collection_job_summaries = []
-            for (invocation_job_source_type, invocation_job_source_id) in workflow_invocations_job_sources[job_source_id]:
-                if invocation_job_source_type == "Job":
-                    invocation_job_summaries.append(job_summaries[invocation_job_source_id])
+            invocation_step_states = []
+            for (invocation_step_source_type, invocation_step_source_id, invocation_step_state) in workflow_invocations_job_sources[job_source_id]:
+                invocation_step_states.append(invocation_step_state)
+                if invocation_step_source_type == "Job":
+                    invocation_job_summaries.append(job_summaries[invocation_step_source_id])
                 else:
-                    invocation_implicit_collection_job_summaries.append(implicit_collection_jobs_summaries[invocation_job_source_id])
-            rval.append(summarize_invocation_jobs(job_source_id, invocation_job_summaries, invocation_implicit_collection_job_summaries))
+                    invocation_implicit_collection_job_summaries.append(implicit_collection_jobs_summaries[invocation_step_source_id])
+            rval.append(summarize_invocation_jobs(job_source_id, invocation_job_summaries, invocation_implicit_collection_job_summaries, invocation_state, invocation_step_states))
+
     return rval
 
 
-def summarize_invocation_jobs(invocation_id, job_summaries, implicit_collection_job_summaries):
+def summarize_invocation_jobs(invocation_id, job_summaries, implicit_collection_job_summaries, invocation_state, invocation_step_states):
     states = {}
-    populated_state = "ok"
+    if invocation_state == "scheduled":
+        all_scheduled = True
+        for invocation_step_state in invocation_step_states:
+            all_scheduled = all_scheduled and invocation_step_state == "scheduled"
+        if all_scheduled:
+            populated_state = "ok"
+        else:
+            populated_state = "new"
+    elif invocation_state in ["cancelled", "failed"]:
+        populated_state = "failed"
+    else:
+        # call new, ready => new
+        populated_state = "new"
 
     def merge_states(component_states):
         for key, value in component_states.items():
