@@ -912,18 +912,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.__encode_invocation_step(trans, invocation_step)
 
     @expose_api_anonymous_and_sessionless
-    def invocation_step_jobs_summary(self, trans, workflow_id, invocation_id, **kwd):
+    def invocation_step_jobs_summary(self, trans, invocation_id, **kwd):
         """
         * GET /api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary
+          GET /api/invocations/{invocation_id}/step_jobs_summary
             return job state summary info aggregated across per step of the workflow invocation
 
         Warning: We allow anyone to fetch job state information about any object they
         can guess an encoded ID for - it isn't considered protected data. This keeps
         polling IDs as part of state calculation for large histories and collections as
         efficient as possible.
-
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
 
         :param  invocation_id:    the invocation id (required)
         :type   invocation_id:    str
@@ -940,18 +938,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)]
 
     @expose_api_anonymous_and_sessionless
-    def invocation_jobs_summary(self, trans, workflow_id, invocation_id, **kwd):
+    def invocation_jobs_summary(self, trans, invocation_id, **kwd):
         """
         * GET /api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary
+          GET /api/invocations/{invocation_id}/jobs_summary
             return job state summary info aggregated across all current jobs of workflow invocation
 
         Warning: We allow anyone to fetch job state information about any object they
         can guess an encoded ID for - it isn't considered protected data. This keeps
         polling IDs as part of state calculation for large histories and collections as
         efficient as possible.
-
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
 
         :param  invocation_id:    the invocation id (required)
         :type   invocation_id:    str
