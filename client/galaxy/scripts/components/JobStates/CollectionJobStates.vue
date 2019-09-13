@@ -3,40 +3,42 @@
         {{ simpleDescription }}
     </div>
     <div v-else-if="!jobStatesSummary || !jobStatesSummary.hasDetails()">
-        <div class="progress state-progress">
-            <span class="note"
-                >Loading job data for {{ collectionTypeDescription }}.<span class="blinking">..</span></span
-            >
-            <div class="progress-bar info" style="width:100%"></div>
-        </div>
+        <progress-bar :note="loadingNote" :loading="true" :infoProgress="1" />
     </div>
     <div v-else-if="isNew">
-        <div class="progress state-progress">
-            <span class="note">Creating jobs.<span class="blinking">..</span></span>
-            <div class="progress-bar info" style="width:100%"></div>
-        </div>
+        <progress-bar note="Creating jobs" :loading="true" :infoProgress="1" />
     </div>
     <div v-else-if="isErrored">
         {{ errorDescription }}
     </div>
     <div v-else>
-        <div class="progress state-progress">
-            <span class="note">{{ jobsStr }} generating a {{ collectionTypeDescription }}</span>
-            <div class="progress-bar ok" v-bind:style="okStyle"></div>
-            <div class="progress-bar running" v-bind="runningStyle"></div>
-            <div class="progress-bar new" v-bind:style="otherStyle"></div>
-        </div>
+        <progress-bar
+            :note="generatingNote"
+            :okProgress="okPercent"
+            :runningProgress="runningPercent"
+            :newProgress="otherPercent"
+        />
     </div>
 </template>
 <script>
 import DC_VIEW from "mvc/collection/collection-view";
+import ProgressBar from "components/ProgressBar";
 
 export default {
     props: {
         collection: { type: Object, required: true }, // backbone model
         jobStatesSummary: { required: true }
     },
+    components: {
+        ProgressBar
+    },
     computed: {
+        loadingNote() {
+            return `Loading job data for ${this.collectionTypeDescription}}`;
+        },
+        generatingNote() {
+            return `${this.jobsStr} generating a ${this.collectionTypeDescription}`;
+        },
         jobSourceType() {
             return this.collection.get("job_source_type");
         },
@@ -77,15 +79,6 @@ export default {
         },
         otherPercent() {
             return 1.0 - this.okPercent - this.runningPercent;
-        },
-        okStyle() {
-            return { width: `${this.okPercent * 100}%` };
-        },
-        runningStyle() {
-            return { width: `${this.runningPercent * 100}%` };
-        },
-        otherStyle() {
-            return { width: `${this.otherPercent * 100}%` };
         }
     }
 };
