@@ -6,6 +6,7 @@
                 v-model="queryInput"
                 @input="delayQuery"
                 @change="setQuery"
+                @keydown.esc="setQuery()"
             />
             <b-input-group-append>
                 <b-btn :disabled="!queryInput" @click="setQuery()">
