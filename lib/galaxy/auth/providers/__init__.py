@@ -33,9 +33,10 @@ class AuthProvider(object):
         :param  options: options provided in auth_config_file
         :type   options: dict
         :returns:   True: accept user, False: reject user and None: reject user
-            and don't try any other providers.  str, str is the email and
-            username to register with if accepting
-        :rtype:     (bool, str, str)
+            and don't try any other providers.  str, str are the email and
+            username to register with if accepting. The optional dict may
+            contain other attributes, e.g. roles to assign when autoregistering.
+        :rtype:     (bool, str, str) or (bool, str, str, dict)
         """
 
     @abc.abstractmethod

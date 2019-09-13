@@ -69,9 +69,7 @@ class AuthManager(object):
                         raise
                     return auth_return
                 elif auth_results[0] is None:
-                    auto_email = str(auth_results[1]).lower()
-                    auto_username = str(auth_results[2]).lower()
-                    log.debug("Email: %s, Username %s, stopping due to failed non-continue" % (auto_email, auto_username))
+                    log.debug("Login: '%s', stopping due to failed non-continue", login)
                     break  # end authentication (skip rest)
         return auth_return
 
