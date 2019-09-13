@@ -20,7 +20,6 @@ from tempfile import NamedTemporaryFile
 from xml.etree import ElementTree
 
 import requests
-import traceback
 
 from galaxy import util
 from galaxy.util.dictifiable import Dictifiable
@@ -158,8 +157,7 @@ class ToolDataTableManager(object):
                                                      from_shed_config=True)
         except Exception as e:
             error_message = 'Error attempting to parse file %s: %s' % (str(os.path.split(config_filename)[1]), util.unicodify(e))
-            log.debug(error_message)
-            log.debug(traceback.format_exc())
+            log.debug(error_message, exc_info=True)
             table_elems = []
         if persist:
             # Persist Galaxy's version of the changed tool_data_table_conf.xml file.
