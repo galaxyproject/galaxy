@@ -2,6 +2,7 @@
 Support for generating the options for a SelectToolParameter dynamically (based
 on the values of other parameters or other aspects of the current state)
 """
+from collections import OrderedDict
 import copy
 import logging
 import os
@@ -159,11 +160,14 @@ class DataMetaFilter(Filter):
         return self.ref_name
 
     def filter_options(self, options, trans, other_values):
-        def _add_meta( meta_value, m ):
+        def _add_meta(meta_value, m):
             if isinstance(m, list):
                 meta_value |= set(m)
+            elif isinstance(m, dict) or isinstance(m, OrderedDict):
+                meta_value |= set([ "%s,%s" %(k, v) for k, v in m.iteritems() ])
             else:
                 meta_value.add(m)
+
         def compare_meta_value(file_value, dataset_value):
             if isinstance(dataset_value, set):
                 if self.multiple:
@@ -200,6 +204,7 @@ class DataMetaFilter(Filter):
         else:
             if ref.metadata.element_is_set(self.key):
                 _add_meta(meta_value, ref.metadata.get(self.key))
+        log.error("meta_value %s" % str(meta_value))
         # if no meta data value could be determined just return a copy
         # of the original options
         if len(meta_value) == 0:
