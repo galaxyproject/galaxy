@@ -813,8 +813,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             # Get all invocation if user is admin
             user_id = None
 
+        include_terminal = util.string_as_bool(kwd.get("include_terminal", True))
         invocations = self.workflow_manager.build_invocations_query(
-            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id
+            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id, include_terminal=include_terminal
         )
         return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
 

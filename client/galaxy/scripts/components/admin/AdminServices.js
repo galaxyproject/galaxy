@@ -15,3 +15,9 @@ export function reloadDisplayApplications(ids) {
     const url = `${getAppRoot()}api/display_applications/reload`;
     return axios.post(url, { ids: ids });
 }
+
+export function getActiveInvocations() {
+    const params = {include_terminal: "false"};
+    const url = `${getAppRoot()}api/invocations`;
+    return axios.get(url, {params: params});
+}
