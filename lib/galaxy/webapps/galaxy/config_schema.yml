@@ -550,11 +550,10 @@ mapping:
 
       shed_tool_data_path:
         type: str
-        default: tool-data
         required: false
         desc: |
-          Directory where Tool Data Table related files will be placed
-          when installed from a ToolShed. Defaults to tool_data_path.
+          Directory where Tool Data Table related files will be placed when installed from a
+          ToolShed. Defaults to the value of the 'tool_data_path' option.
 
       watch_tool_data_dir:
         type: str

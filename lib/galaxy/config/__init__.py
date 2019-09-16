@@ -296,11 +296,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
-        self.shed_tool_data_path = kwargs.get("shed_tool_data_path", None)
         if self.shed_tool_data_path:
             self.shed_tool_data_path = os.path.join(self.root, self.shed_tool_data_path)
         else:
             self.shed_tool_data_path = self.tool_data_path
+
         self.running_functional_tests = string_as_bool(kwargs.get('running_functional_tests', False))
         self.enable_tool_shed_check = string_as_bool(kwargs.get('enable_tool_shed_check', False))
         if isinstance(self.hours_between_check, string_types):
