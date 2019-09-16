@@ -621,7 +621,6 @@ mapping:
           Visualizations config directory: where to look for individual visualization
           plugins.  The path is relative to the Galaxy root dir.  To use an absolute
           path begin the path with '/'.  This is a comma separated list.
-          Defaults to "config/plugins/visualizations".
 
       interactive_environment_plugins_directory:
         type: str
@@ -632,8 +631,7 @@ mapping:
           config/plugins/interactive_environments to load Galaxy's stock plugins.
           These will require Docker to be configured and have security considerations,
           so proceed with caution. The path is relative to the Galaxy root dir.  To use
-          an absolute path begin the path with '/'.  This is a comma
-          separated list.
+          an absolute path begin the path with '/'.  This is a comma separated list.
 
       tour_config_dir:
         type: str
