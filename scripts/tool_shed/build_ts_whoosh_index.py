@@ -2,7 +2,7 @@
 Build indexes for searching the Tool Shed.
 Run this script from the root folder, example:
 
-$ python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.ini
+$ python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.ini --hgweb var/hgweb_config_dir/
 
 Make sure you adjusted your config to:
  * turn on searching via toolshed_search_on
@@ -14,7 +14,10 @@ from __future__ import print_function
 
 import logging
 import os
+import shutil
 import sys
+import tempfile
+from distutils.dir_util import copy_tree
 from optparse import OptionParser
 
 from mercurial import hg, ui
@@ -46,14 +49,19 @@ def build_index(sa_session, whoosh_index_dir, path_to_repositories, hgweb_config
     Build the search indexes. One for repositories and another for tools within.
     """
     #  Rare race condition exists here and below
+    tool_index_dir = os.path.join(whoosh_index_dir, 'tools')
     if not os.path.exists(whoosh_index_dir):
         os.makedirs(whoosh_index_dir)
-    tool_index_dir = os.path.join(whoosh_index_dir, 'tools')
-    if not os.path.exists(tool_index_dir):
         os.makedirs(tool_index_dir)
+        work_repo_dir = whoosh_index_dir
+        work_tool_dir = tool_index_dir
+    else:
+        # Index exists, prevent in-place index regeneration
+        work_repo_dir = tempfile.mkdtemp(prefix="tmp-whoosh-repo")
+        work_tool_dir = tempfile.mkdtemp(prefix="tmp-whoosh-tool")
 
-    repo_index_storage = FileStorage(whoosh_index_dir)
-    tool_index_storage = FileStorage(tool_index_dir)
+    repo_index_storage = FileStorage(work_repo_dir)
+    tool_index_storage = FileStorage(work_tool_dir)
 
     repo_index = repo_index_storage.create_index(repo_schema)
     tool_index = tool_index_storage.create_index(tool_schema)
@@ -101,6 +109,15 @@ def build_index(sa_session, whoosh_index_dir, path_to_repositories, hgweb_config
     print("TOTAL repos indexed: ", repos_indexed)
     print("TOTAL tools indexed: ", tools_indexed)
 
+    # Copy the built indexes if we were working in a tmp folder
+    if work_repo_dir is not whoosh_index_dir:
+        shutil.rmtree(whoosh_index_dir)
+        os.makedirs(whoosh_index_dir)
+        os.makedirs(tool_index_dir)
+        copy_tree(work_repo_dir, whoosh_index_dir)
+        copy_tree(work_tool_dir, tool_index_dir)
+        shutil.rmtree(work_repo_dir)
+
 
 def get_repos(sa_session, path_to_repositories, hgweb_config_dir):
     """
@@ -113,7 +130,7 @@ def get_repos(sa_session, path_to_repositories, hgweb_config_dir):
         category_names = []
         for rca in sa_session.query(model.RepositoryCategoryAssociation).filter(model.RepositoryCategoryAssociation.repository_id == repo.id):
             for category in sa_session.query(model.Category).filter(model.Category.id == rca.category.id):
-                category_names.append(category.name)
+                category_names.append(category.name.lower())
         categories = (",").join(category_names)
         repo_id = repo.id
         name = repo.name
@@ -129,7 +146,7 @@ def get_repos(sa_session, path_to_repositories, hgweb_config_dir):
         repo_owner_username = ''
         if repo.user_id is not None:
             user = sa_session.query(model.User).filter(model.User.id == repo.user_id).one()
-            repo_owner_username = user.username
+            repo_owner_username = user.username.lower()
 
         approved = 'no'
         for review in repo.reviews:

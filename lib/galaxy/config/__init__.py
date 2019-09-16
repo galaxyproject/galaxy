@@ -55,18 +55,13 @@ log = logging.getLogger(__name__)
 GALAXY_APP_NAME = 'galaxy'
 GALAXY_CONFIG_SCHEMA_PATH = 'lib/galaxy/webapps/galaxy/config_schema.yml'
 LOGGING_CONFIG_DEFAULT = {
+    'disable_existing_loggers': False,
     'version': 1,
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': 'DEBUG',
     },
     'loggers': {
-        'galaxy': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': 0,
-            'qualname': 'galaxy',
-        },
         'paste.httpserver.ThreadPool': {
             'level': 'WARN',
             'qualname': 'paste.httpserver.ThreadPool',

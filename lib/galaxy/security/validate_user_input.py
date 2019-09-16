@@ -7,6 +7,8 @@ user inputs - so these methods do not need to be escaped.
 import logging
 import re
 
+from sqlalchemy import func
+
 log = logging.getLogger(__name__)
 
 # Email validity parameters
@@ -35,8 +37,8 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
         message = "The format of the email address is not correct."
     elif len(email) > EMAIL_MAX_LEN:
         message = "Email address cannot be more than %d characters in length." % EMAIL_MAX_LEN
-    elif check_dup and trans.sa_session.query(trans.app.model.User).filter_by(email=email).first():
-        message = "User with that email already exists."
+    elif check_dup and trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == email.lower()).first():
+        message = "User with email '%s' already exists." % email
     #  If the blacklist is not empty filter out the disposable domains.
     elif trans.app.config.blacklist_content is not None:
         domain = email.split('@')[1]
