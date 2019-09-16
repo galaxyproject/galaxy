@@ -5071,7 +5071,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         for output_dataset_assoc in self.output_datasets:
             outputs.append(output_dataset_assoc)
         for output_dataset_collection_assoc in self.output_dataset_collections:
-            outputs.append(output_dataset_collection_assoc.dataset_collection)
+            outputs.append(output_dataset_collection_assoc)
         return outputs
 
     @property
