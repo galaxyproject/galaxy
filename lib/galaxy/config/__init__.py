@@ -354,16 +354,16 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         activation_email = kwargs.get('activation_email', None)
         self.email_from = kwargs.get('email_from', activation_email)
         self.myexperiment_target_url = kwargs.get('my_experiment_target_url', 'www.myexperiment.org')
+
         #  Get the disposable email domains blacklist file and its contents
-        self.blacklist_location = kwargs.get('blacklist_file', None)
         self.blacklist_content = None
-        if self.blacklist_location is not None:
-            self.blacklist_file = os.path.join(self.root, kwargs.get('blacklist_file', None))
-            try:
-                with open(self.blacklist_file) as blacklist:
-                    self.blacklist_content = [line.rstrip() for line in blacklist.readlines()]
-            except IOError:
-                log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str(self.blacklist_file))
+        self.blacklist_file = os.path.join(self.root, self.blacklist_file)
+        try:
+            with open(self.blacklist_file) as f:
+                self.blacklist_content = [line.rstrip() for line in f]
+        except IOError:
+            log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str(self.blacklist_file))
+
         self.persistent_communication_rooms = listify(kwargs.get("persistent_communication_rooms", []), do_strip=True)
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool(kwargs.get('enable_beta_job_managers', 'False'))
