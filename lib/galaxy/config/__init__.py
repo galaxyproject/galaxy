@@ -291,8 +291,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.user_tool_section_filters = listify(kwargs.get("user_tool_section_filters", []), do_strip=True)
         self.has_user_tool_filters = bool(self.user_tool_filters or self.user_tool_label_filters or self.user_tool_section_filters)
 
-        self.tour_config_dir = os.path.join(self.root, kwargs.get("tour_config_dir", "config/plugins/tours"))
-        self.webhooks_dirs = os.path.join(self.root, kwargs.get("webhooks_dir", "config/plugins/webhooks"))
+        self.tour_config_dir = os.path.join(self.root, self.tour_config_dir)
+        self.webhooks_dirs = os.path.join(self.root, self.webhooks_dir)
 
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
