@@ -669,11 +669,14 @@ mapping:
 
       cluster_files_directory:
         type: str
-        default: database/pbs
+        default: pbs
         required: false
         desc: |
           If using a cluster, Galaxy will write job scripts and stdout/stderr to this
           directory.
+
+          Default value will be resolved to 'database/pbs' where 'database' is the
+          default value of the 'data_dir' option).
 
       template_cache_path:
         type: str
