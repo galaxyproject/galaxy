@@ -364,7 +364,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                     self.blacklist_content = [line.rstrip() for line in blacklist.readlines()]
             except IOError:
                 log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str(self.blacklist_file))
-        self.smtp_ssl = kwargs.get('smtp_ssl', None)
         self.persistent_communication_rooms = listify(kwargs.get("persistent_communication_rooms", []), do_strip=True)
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool(kwargs.get('enable_beta_job_managers', 'False'))
