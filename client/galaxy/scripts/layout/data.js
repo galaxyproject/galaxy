@@ -8,20 +8,20 @@ import { getAppRoot } from "onload/loadConfig";
 // This should be moved more centrally (though still hanging off Galaxy for
 // external use?), and populated from the store; just using this as a temporary
 // interface.
-function getCurrentGalaxyHistory() {
+async function getCurrentGalaxyHistory() {
     const galaxy = getGalaxyInstance();
     if (galaxy.currHistoryPanel && galaxy.currHistoryPanel.model.id) {
         // TODO: use central store (vuex) for this.
         return galaxy.currHistoryPanel.model.id;
     } else {
         // Otherwise manually fetch the current history json and use that id.
-        axios
+        return axios
             .get(`${getAppRoot()}history/current_history_json`)
             .then(response => {
                 return response.data.id;
             })
             .catch(err => {
-                console.debug("Error fetching current user history:", err);
+                console.error("Error fetching current user history:", err);
                 return null;
             });
     }
@@ -34,18 +34,21 @@ function getCurrentGalaxyHistory() {
 export function dialog(callback, options = {}) {
     const galaxy = getGalaxyInstance();
     const host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
-    Object.assign(options, {
-        callback: callback,
-        history: getCurrentGalaxyHistory(),
-        root: galaxy.root,
-        host: host
+    getCurrentGalaxyHistory().then(history_id => {
+        Object.assign(options, {
+            callback: callback,
+            history: history_id,
+            root: galaxy.root,
+            host: host
+        });
+        console.debug(options);
+        const instance = Vue.extend(DataDialog);
+        const vm = document.createElement("div");
+        $("body").append(vm);
+        new instance({
+            propsData: options
+        }).$mount(vm);
     });
-    const instance = Vue.extend(DataDialog);
-    const vm = document.createElement("div");
-    $("body").append(vm);
-    new instance({
-        propsData: options
-    }).$mount(vm);
 }
 
 /**
