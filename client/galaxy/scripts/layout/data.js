@@ -3,6 +3,29 @@ import DataDialog from "components/DataDialog/DataDialog.vue";
 import Vue from "vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
+import axios from "axios";
+
+// This should be moved more centrally (though still hanging off Galaxy for
+// external use?), and populated from the store; just using this as a temporary
+// interface.
+function getCurrentGalaxyHistory() {
+    const galaxy = getGalaxyInstance();
+    if (galaxy.currHistoryPanel && galaxy.currHistoryPanel.model.id) {
+        // TODO: use central store (vuex) for this.
+        return galaxy.currHistoryPanel.model.id;
+    } else {
+        // Otherwise manually fetch the current history json and use that id.
+        axios
+            .get(`${getAppRoot()}history/current_history_json`)
+            .then(response => {
+                return response.data.id;
+            })
+            .catch(err => {
+                console.debug("Error fetching current user history:", err);
+                return null;
+            });
+    }
+}
 
 export default class Data {
     /**
@@ -14,7 +37,7 @@ export default class Data {
         const host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
         Object.assign(options, {
             callback: callback,
-            history: galaxy.currHistoryPanel && galaxy.currHistoryPanel.model.id,
+            history: getCurrentGalaxyHistory(),
             root: galaxy.root,
             host: host
         });
@@ -33,8 +56,8 @@ export default class Data {
         const Galaxy = getGalaxyInstance();
         const history_panel = Galaxy.currHistoryPanel;
         let history_id = options.history_id;
-        if (!history_id && history_panel) {
-            history_id = history_panel.model.get("id");
+        if (!history_id) {
+            history_id = getCurrentGalaxyHistory();
         }
         $.uploadpost({
             url: `${getAppRoot()}api/tools`,
