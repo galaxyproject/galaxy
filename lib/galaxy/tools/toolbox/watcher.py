@@ -115,7 +115,12 @@ class ToolConfWatcher(object):
                         else:
                             continue
                     new_mod_time = os.path.getmtime(path)
-                    if new_mod_time > mod_time:
+                    # mod_time can be None if a non-required config was just created
+                    if not mod_time:
+                        self.paths[path] = new_mod_time
+                        log.debug("The file '%s' has been created.", path)
+                        do_reload = True
+                    elif new_mod_time > mod_time:
                         new_hash = md5_hash_file(path)
                         if hashes[path] != new_hash:
                             self.paths[path] = new_mod_time

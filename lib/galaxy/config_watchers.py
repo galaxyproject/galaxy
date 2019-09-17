@@ -117,9 +117,6 @@ class ConfigWatchers(object):
         tool_config_paths = []
         if hasattr(self.app.config, 'tool_configs'):
             tool_config_paths = self.app.config.tool_configs
-        if hasattr(self.app.config, 'migrated_tools_config'):
-            if self.app.config.migrated_tools_config not in tool_config_paths:
-                tool_config_paths.append(self.app.config.migrated_tools_config)
         return tool_config_paths
 
     @property

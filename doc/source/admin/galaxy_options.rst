@@ -231,8 +231,28 @@
     Tool config files, defines what tools are available in Galaxy.
     Tools can be locally developed or installed from Galaxy tool
     sheds. (config/tool_conf.xml.sample will be used if left unset and
-    config/tool_conf.xml does not exist).
-:Default: ``config/tool_conf.xml,config/shed_tool_conf.xml``
+    config/tool_conf.xml does not exist). Can be a single file, a list
+    of files, or (for backwards compatibility) a comma-separated list
+    of files.
+:Default: ``config/tool_conf.xml``
+:Type: list or str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``shed_tool_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Tool config file for tools installed from the Galaxy Tool Shed.
+    Must be writable by Galaxy and generally should not be edited by
+    hand. In older Galaxy releases, this file was part of the
+    tool_config_file option. It is still possible to specify this file
+    (and other shed-enabled tool config files) in tool_config_file,
+    but in the standard case of a single shed-enabled tool config,
+    this option is preferable. This file will be created automatically
+    upon tool installation, whereas Galaxy will fail to start if any
+    files in tool_config_file cannot be read.
+:Default: ``config/shed_tool_conf.xml``
 :Type: str
 
 
