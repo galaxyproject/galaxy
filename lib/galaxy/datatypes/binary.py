@@ -1378,7 +1378,7 @@ class SQlite(Binary):
         except Exception:
             return False
 
-    def sniff_tables_names(self, filename, table_names):
+    def sniff_table_names(self, filename, table_names):
         try:
             conn = sqlite.connect(filename)
             c = conn.cursor()
@@ -1456,7 +1456,8 @@ class GeminiSQLite(SQlite):
         if super(GeminiSQLite, self).sniff(filename):
             table_names = ["gene_detailed", "gene_summary", "resources", "sample_genotype_counts",
                            "sample_genotypes", "samples", "variant_impacts", "variants", "version"]
-            return self.sniff_tables_names(filename, table_names)
+            return self.sniff_table_names(filename, table_names)
+        return False
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -1518,7 +1519,8 @@ class CuffDiffSQlite(SQlite):
         if super(CuffDiffSQlite, self).sniff(filename):
             # These tables should be in any CuffDiff SQLite output.
             table_names = ['CDS', 'genes', 'isoforms', 'replicates', 'runInfo', 'samples', 'TSS']
-            return self.sniff_tables_names(filename, table_names)
+            return self.sniff_table_names(filename, table_names)
+        return False
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -1546,7 +1548,8 @@ class MzSQlite(SQlite):
         if super(MzSQlite, self).sniff(filename):
             table_names = ["DBSequence", "Modification", "Peaks", "Peptide", "PeptideEvidence",
                            "Score", "SearchDatabase", "Source", "SpectraData", "Spectrum", "SpectrumIdentification"]
-            return self.sniff_tables_names(filename, table_names)
+            return self.sniff_table_names(filename, table_names)
+        return False
 
 
 class BlibSQlite(SQlite):
@@ -1570,7 +1573,8 @@ class BlibSQlite(SQlite):
         if super(BlibSQlite, self).sniff(filename):
             table_names = ['IonMobilityTypes', 'LibInfo', 'Modifications', 'RefSpectra',
                            'RefSpectraPeakAnnotations', 'RefSpectraPeaks', 'ScoreTypes', 'SpectrumSourceFiles']
-            return self.sniff_tables_names(filename, table_names)
+            return self.sniff_table_names(filename, table_names)
+        return False
 
 
 class DlibSQlite(SQlite):
@@ -1605,7 +1609,8 @@ class DlibSQlite(SQlite):
     def sniff(self, filename):
         if super(DlibSQlite, self).sniff(filename):
             table_names = ['entries', 'metadata', 'peptidetoprotein']
-            return self.sniff_tables_names(filename, table_names)
+            return self.sniff_table_names(filename, table_names)
+        return False
 
 
 class ElibSQlite(SQlite):
@@ -1641,7 +1646,7 @@ class ElibSQlite(SQlite):
         if super(ElibSQlite, self).sniff(filename):
             table_names = ['entries', 'fragmentquants', 'metadata', 'peptidelocalizations', 'peptidequants',
                            'peptidescores', 'peptidetoprotein', 'proteinscores', 'retentiontimes']
-            if self.sniff_tables_names(filename, table_names):
+            if self.sniff_table_names(filename, table_names):
                 try:
                     conn = sqlite.connect(filename)
                     c = conn.cursor()
@@ -1650,7 +1655,7 @@ class ElibSQlite(SQlite):
                     return int(count) > 0
                 except Exception as e:
                     log.warning('%s, sniff Exception: %s', self, e)
-            return False
+        return False
 
 
 class IdpDB(SQlite):
@@ -1674,7 +1679,8 @@ class IdpDB(SQlite):
         if super(IdpDB, self).sniff(filename):
             table_names = ["About", "Analysis", "AnalysisParameter", "PeptideSpectrumMatch",
                            "Spectrum", "SpectrumSource"]
-            return self.sniff_tables_names(filename, table_names)
+            return self.sniff_table_names(filename, table_names)
+        return False
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -1715,7 +1721,8 @@ class GAFASQLite(SQlite):
     def sniff(self, filename):
         if super(IdpDB, self).sniff(filename):
             table_names = frozenset(['gene', 'gene_family', 'gene_family_member', 'meta', 'transcript'])
-            return self.sniff_tables_names(filename, table_names)
+            return self.sniff_table_names(filename, table_names)
+        return False
 
 
 class Xlsx(Binary):
