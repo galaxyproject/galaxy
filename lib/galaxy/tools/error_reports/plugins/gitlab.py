@@ -90,6 +90,10 @@ class GitLabPlugin(BaseGitPlugin):
 
                 # Find the repo inside the ToolShed
                 ts_repourl = self._get_gitrepo_from_ts(job, ts_url)
+                
+                # Remove .git from the repository URL if this was specified
+                if ts_repourl.endswith(".git"):
+                    ts_repourl = ts_repourl[:-4]
 
                 log.info("GitLab error reporting - Determine ToolShed Repository URL: %s", ts_repourl)
 
@@ -131,8 +135,20 @@ class GitLabPlugin(BaseGitPlugin):
 
                 log.info(error_title in self.issue_cache[issue_cache_key])
                 if error_title not in self.issue_cache[issue_cache_key]:
-                    # Create a new issue.
-                    self._create_issue(issue_cache_key, error_title, error_message, gl_project, gl_userid=gl_userid)
+                    try:
+                        # Create a new issue.
+                        self._create_issue(issue_cache_key, error_title, error_message, gl_project, gl_userid=gl_userid)
+                    except gitlab.GitlabOwnershipError:
+                        gitlab_projecturl = "/".join([self.git_default_repo_owner, self.git_default_repo_name])
+                        gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)
+                        # Make sure we are always logged in, then retrieve the GitLab project if it isn't cached.
+                        self.gitlab.auth()
+                        if gitlab_projecturl not in self.git_project_cache:
+                            self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
+                        gl_project = self.git_project_cache[gitlab_projecturl]
+                        
+                        # Submit issue to default project
+                        self._create_issue(issue_cache_key, error_title, error_message, gl_project, gl_userid=gl_userid)
                 else:
                     # Add a comment to an issue...
                     self._append_issue(issue_cache_key, error_title, error_message, gitlab_urlencodedpath=gitlab_urlencodedpath)
