@@ -2,13 +2,20 @@
     <div class="overflow-auto h-100 p-1" @scroll="onScroll">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <b-input
-                class="mb-3"
-                placeholder="Search Repositories"
-                v-model="queryInput"
-                @input="delayQuery"
-                @change="setQuery"
-            />
+            <b-input-group class="mb-3">
+                <b-input
+                    placeholder="Search Repositories"
+                    v-model="queryInput"
+                    @input="delayQuery"
+                    @change="setQuery"
+                    @keydown.esc="setQuery()"
+                />
+                <b-input-group-append>
+                    <b-btn :disabled="!queryInput" @click="setQuery()">
+                        <i class="fa fa-times"/>
+                    </b-btn>
+                </b-input-group-append>
+            </b-input-group>
             <b-form-radio-group class="mb-3" v-model="tabValue" :options="tabOptions" />
             <div v-if="tabValue">
                 <SearchList :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
@@ -76,9 +83,10 @@ export default {
             this.clearTimer();
             this.query = this.queryInput = query;
         },
-        onScroll: function({ target: { scrollTop, clientHeight, scrollHeight } }) {
+        onScroll({ target: { scrollTop, clientHeight, scrollHeight } }) {
             this.scrolled = scrollTop + clientHeight >= scrollHeight;
         }
     }
 };
 </script>
+
