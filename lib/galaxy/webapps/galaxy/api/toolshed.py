@@ -335,6 +335,9 @@ class ToolShedController(BaseAPIController):
                 pathspec.append(params.pop("id"))
             if "action" in params:
                 pathspec.append(params.pop("action"))
-            return json.loads(util.url_get(tool_shed_url, params=dict(params), pathspec=pathspec))
+            try:
+                return json.loads(util.url_get(tool_shed_url, params=dict(params), pathspec=pathspec))
+            except Exception as e:
+                raise MessageException("Invalid server response. %s." % str(e))
         else:
             raise MessageException("Invalid toolshed url.")

@@ -11,10 +11,10 @@
             />
             <b-form-radio-group class="mb-3" v-model="tabValue" :options="tabOptions" />
             <div v-if="tabValue">
-                <searchlist :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
+                <SearchList :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
             </div>
             <div v-else>
-                <installedlist :filter="queryInput" />
+                <InstalledList :filter="queryInput" />
             </div>
         </div>
     </div>
@@ -25,8 +25,8 @@ import SearchList from "./SearchList/Index.vue";
 import InstalledList from "./InstalledList/Index.vue";
 export default {
     components: {
-        searchlist: SearchList,
-        installedlist: InstalledList
+        SearchList,
+        InstalledList
     },
     data() {
         return {
