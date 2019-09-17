@@ -2,9 +2,9 @@
 <%namespace file="/display_common.mako" import="render_message" />
 
 <%!
+    import markupsafe
     from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
     from galaxy.web import form_builder
-    import cgi
 %>
 
 <%def name="stylesheets()">
@@ -64,7 +64,7 @@
                     <i>select at runtime</i>
                 %endif
             %else:
-                ${cgi.escape( param.value_to_display_text( value ) or 'Unavailable.' )}
+                ${markupsafe.escape( param.value_to_display_text( value ) or 'Unavailable.' )}
             %endif
         </div>
         %if hasattr( step, 'upgrade_messages' ) and step.upgrade_messages and param.name in step.upgrade_messages:

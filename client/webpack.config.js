@@ -19,7 +19,8 @@ let buildconfig = {
         generic: ["polyfills", "bundleEntries", "entry/generic"]
     },
     output: {
-        path: path.join(__dirname, "../", "static/scripts/bundled"),
+        path: path.join(__dirname, "../", "lib/galaxy/web/framework/static/scripts/bundled"),
+        publicPath: "/static/scripts/bundled/",
         filename: "[name].bundled.js",
         chunkFilename: "[name].chunk.js"
     },
@@ -43,7 +44,7 @@ let buildconfig = {
                 },
                 libs: {
                     name: "libs",
-                    test: /(node_modules|galaxy\/scripts\/(?!entry)).*\.(vue|js)$/, // .*\.(vue|js)$
+                    test: /node_modules[\\/](?!(handsontable|pikaday|moment)[\\/])|galaxy\/scripts\/libs/,
                     chunks: "all",
                     priority: -10
                 }
@@ -161,7 +162,10 @@ let buildconfig = {
                         loader: "sass-loader",
                         options: { 
                             sourceMap: true,
-                            includePaths: ["galaxy/style/scss"]
+                            includePaths: [
+                                "galaxy/style/scss", 
+                                path.resolve(__dirname, './node_modules') 
+                            ]
                         }
                     }
                 ]

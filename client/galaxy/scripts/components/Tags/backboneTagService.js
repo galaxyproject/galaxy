@@ -12,7 +12,7 @@ export class BackboneTagService extends TagService {
     }
 
     async save(rawTag) {
-        let tag = createTag(rawTag);
+        const tag = createTag(rawTag);
         if (!tag.valid) {
             throw new Error("Invalid tag");
         }
@@ -27,7 +27,7 @@ export class BackboneTagService extends TagService {
     }
 
     async delete(rawTag) {
-        let tag = createTag(rawTag);
+        const tag = createTag(rawTag);
 
         let tags = new Set(this.model.attributes.tags);
         tags.delete(tag.text);

@@ -82,10 +82,10 @@ class TagHandlerTestCase(BaseTestCase):
 
     def test_remove_tag_from_list(self):
         hda = self._create_vanilla_hda()
-        tags = ['tag1', 'tag2']
+        tags = ['tag1', 'tag2', 'tag3']
         self.tag_handler.set_tags_from_list(self.user, hda, tags)
         self._check_tag_list(hda.tags, tags)
-        self.tag_handler.remove_tags_from_list(self.user, hda, ['tag1'])
+        self.tag_handler.remove_tags_from_list(self.user, hda, ['tag1', 'tag3'])
         self._check_tag_list(hda.tags, ['tag2'])
 
     def test_delete_item_tags(self):

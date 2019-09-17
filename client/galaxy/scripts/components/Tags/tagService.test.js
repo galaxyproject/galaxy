@@ -132,7 +132,7 @@ describe("Tags/tagService.js", () => {
             );
 
             // spam a bunch of key inputs
-            for (var i = 0; i < spamCount; i++) svc.autocompleteSearchText = new String(Math.random());
+            for (let i = 0; i < spamCount; i++) svc.autocompleteSearchText = new String(Math.random());
             svc.autocompleteSearchText = searchString;
         });
     });

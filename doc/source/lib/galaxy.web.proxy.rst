@@ -1,5 +1,5 @@
-galaxy\.web\.proxy package
-==========================
+galaxy.web.proxy package
+========================
 
 .. automodule:: galaxy.web.proxy
     :members:

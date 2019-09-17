@@ -59,7 +59,7 @@ class WorkflowsManager(object):
     def __init__(self, app):
         self.app = app
 
-    def get_stored_workflow(self, trans, workflow_id):
+    def get_stored_workflow(self, trans, workflow_id, by_stored_id=True):
         """ Use a supplied ID (UUID or encoded stored workflow ID) to find
         a workflow.
         """
@@ -70,10 +70,16 @@ class WorkflowsManager(object):
                 trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
                 trans.app.model.Workflow.uuid == workflow_uuid
             ))
-        else:
+        elif by_stored_id:
             workflow_id = decode_id(self.app, workflow_id)
             workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).\
                 filter(trans.app.model.StoredWorkflow.id == workflow_id)
+        else:
+            workflow_id = decode_id(self.app, workflow_id)
+            workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(and_(
+                trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
+                trans.app.model.Workflow.id == workflow_id
+            ))
         stored_workflow = workflow_query.options(joinedload('annotations'),
                                                  joinedload('tags'),
                                                  subqueryload('latest_workflow').joinedload('steps').joinedload('*')).first()
@@ -81,11 +87,11 @@ class WorkflowsManager(object):
             raise exceptions.ObjectNotFound("No such workflow found.")
         return stored_workflow
 
-    def get_stored_accessible_workflow(self, trans, workflow_id):
+    def get_stored_accessible_workflow(self, trans, workflow_id, by_stored_id=True):
         """ Get a stored workflow from a encoded stored workflow id and
         make sure it accessible to the user.
         """
-        stored_workflow = self.get_stored_workflow(trans, workflow_id)
+        stored_workflow = self.get_stored_workflow(trans, workflow_id, by_stored_id=by_stored_id)
 
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin and not stored_workflow.published:
@@ -270,9 +276,6 @@ class WorkflowContentsManager(UsesAnnotations):
 
         workflow_class = as_dict.get("class", None)
         if workflow_class == "GalaxyWorkflow" or "$graph" in as_dict or "yaml_content" in as_dict:
-            if not self.app.config.enable_beta_workflow_format:
-                raise exceptions.ConfigDoesNotAllowException("Format2 workflows not enabled.")
-
             # Format 2 Galaxy workflow.
             galaxy_interface = Format2ConverterGalaxyInterface()
             import_options = ImportOptions()
@@ -391,6 +394,9 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow = model.Workflow()
         workflow.name = name
 
+        if 'report' in data:
+            workflow.reports_config = data['report']
+
         # Assume no errors until we find a step that has some
         workflow.has_errors = False
         # Create each step
@@ -444,8 +450,6 @@ class WorkflowContentsManager(UsesAnnotations):
         """
 
         def to_format_2(wf_dict, **kwds):
-            if not trans.app.config.enable_beta_workflow_format:
-                raise exceptions.ConfigDoesNotAllowException("Format2 workflows not enabled.")
             return from_galaxy_native(wf_dict, None, **kwds)
 
         if version == '':
@@ -453,6 +457,8 @@ class WorkflowContentsManager(UsesAnnotations):
         if version is not None:
             version = int(version)
         workflow = stored.get_internal_version(version)
+        if style == "export":
+            style = self.app.config.default_workflow_export_format
         if style == "editor":
             wf_dict = self._workflow_to_dict_editor(trans, stored, workflow)
         elif style == "legacy":
@@ -467,8 +473,10 @@ class WorkflowContentsManager(UsesAnnotations):
         elif style == "format2_wrapped_yaml":
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
             wf_dict = to_format_2(wf_dict, json_wrapper=True)
-        else:
+        elif style == "ga":
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
+        else:
+            raise exceptions.RequestParameterInvalidException('Unknown workflow style [%s]' % style)
         if version:
             wf_dict['version'] = version
         else:
@@ -581,6 +589,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data['name'] = workflow.name
         data['steps'] = {}
         data['upgrade_messages'] = {}
+        data['report'] = workflow.reports_config
         input_step_types = set(workflow.input_step_types)
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
@@ -646,6 +655,10 @@ class WorkflowContentsManager(UsesAnnotations):
                         output_name=pja.output_name,
                         action_arguments=pja.action_arguments
                     )
+                    if pja.action_type == 'ChangeDatatypeAction':
+                        for output in step_dict['outputs']:
+                            if output['name'] == pja.output_name:
+                                output['force_datatype'] = [pja.action_arguments['newtype']]
                 step_dict['post_job_actions'] = pja_dict
 
             # workflow outputs

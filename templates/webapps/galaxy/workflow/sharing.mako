@@ -145,7 +145,7 @@
                             ${"/".join( url_parts[:-1] )}/<span id='item-identifier'>${url_parts[-1]}</span>
                         </span>
 
-                        <a href="#" id="edit-identifier"><img src="${h.url_for('/static/images/fugue/pencil.png')}"/></a>
+                        <a href="javascript:void(0)" role="button" id="edit-identifier"><img src="${h.url_for('/static/images/fugue/pencil.png')}"/></a>
                     </blockquote>
 
                     %if item.published:

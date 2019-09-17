@@ -10,25 +10,27 @@ import galaxy.model.security
 import galaxy.queues
 import galaxy.quota
 import galaxy.security
-from galaxy import config, jobs
+from galaxy import config, job_metrics, jobs
+from galaxy.config_watchers import ConfigWatchers
 from galaxy.containers import build_container_interfaces
-from galaxy.jobs import metrics as job_metrics
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.tools import DynamicToolManager
+from galaxy.model.database_heartbeat import DatabaseHeartbeat
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.tool_util.deps.views import DependencyResolversView
+from galaxy.tool_util.verify import test_data
 from galaxy.tools.cache import (
     ToolCache,
     ToolShedRepositoryCache
 )
 from galaxy.tools.data_manager.manager import DataManagers
-from galaxy.tools.deps.views import DependencyResolversView
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.tools.special_tools import load_lib_tools
-from galaxy.tools.verify import test_data
 from galaxy.tours import ToursRegistry
 from galaxy.util import (
     ExecutionTimer,
@@ -39,8 +41,7 @@ from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.web import url_for
 from galaxy.web.proxy import ProxyManager
-from galaxy.web.stack import application_stack_instance
-from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
+from galaxy.web_stack import application_stack_instance
 from galaxy.webhooks import WebhooksRegistry
 from tool_shed.galaxy_install import (
     installed_repository_manager,
@@ -74,9 +75,9 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_whitelist(explicit='sanitize_whitelist_file' in kwargs)
         self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
-        # control_worker *can* be initialized with a queue, but here we don't
+        # queue_worker *can* be initialized with a queue, but here we don't
         # want to and we'll allow postfork to bind and start it.
-        self.control_worker = GalaxyQueueWorker(self)
+        self.queue_worker = GalaxyQueueWorker(self)
 
         self._configure_tool_shed_registry()
         self._configure_object_store(fsmon=True)
@@ -85,7 +86,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
         check_migrate_tools = self.config.check_migrate_tools
-        self._configure_models(check_migrate_databases=True, check_migrate_tools=check_migrate_tools, config_file=config_file)
+        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, check_migrate_tools=check_migrate_tools, config_file=config_file)
 
         # Manage installed tool shed repositories.
         self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager(self)
@@ -183,7 +184,9 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
 
         if self.config.enable_oidc:
             from galaxy.authnz import managers
-            self.authnz_manager = managers.AuthnzManager(self, self.config.oidc_config, self.config.oidc_backends_config)
+            self.authnz_manager = managers.AuthnzManager(self,
+                                                         self.config.oidc_config,
+                                                         self.config.oidc_backends_config)
 
         self.sentry_client = None
         if self.config.sentry_dsn:
@@ -220,11 +223,19 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
                 containers_conf=self.config.containers_conf
             )
 
+        self.interactivetool_manager = InteractiveToolManager(self)
+
         # Configure handling of signals
         handlers = {}
         if self.heartbeat:
             handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
         self._configure_signal_handlers(handlers)
+
+        self.database_heartbeat = DatabaseHeartbeat(
+            application_stack=self.application_stack
+        )
+        self.database_heartbeat.add_change_callback(self.watchers.change_state)
+        self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
         # Start web stack message handling
         self.application_stack.register_postfork_function(self.application_stack.start)
@@ -242,10 +253,20 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         log.debug('Shutting down')
         exception = None
         try:
+            self.queue_worker.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown control worker cleanly")
+        try:
             self.watchers.shutdown()
         except Exception as e:
             exception = exception or e
             log.exception("Failed to shutdown configuration watchers cleanly")
+        try:
+            self.database_heartbeat.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown database heartbeat cleanly")
         try:
             self.workflow_scheduling_manager.shutdown()
         except Exception as e:
@@ -272,12 +293,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         except Exception as e:
             exception = exception or e
             log.exception("Failed to shutdown update repository manager cleanly")
-
-        try:
-            self.control_worker.shutdown()
-        except Exception as e:
-            exception = exception or e
-            log.exception("Failed to shutdown control worker cleanly")
 
         try:
             self.model.engine.dispose()

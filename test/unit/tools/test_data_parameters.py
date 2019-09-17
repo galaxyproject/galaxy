@@ -1,5 +1,5 @@
 from galaxy import model
-from .test_parameter_parsing import BaseParameterTestCase
+from .util import BaseParameterTestCase
 from ..unittest_utils import galaxy_mock
 
 

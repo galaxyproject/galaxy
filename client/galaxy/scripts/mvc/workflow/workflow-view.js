@@ -47,6 +47,7 @@ function reset_tool_search(initValue) {
 
         // Reset search input.
         tool_menu_frame.find("#search-spinner").hide();
+        tool_menu_frame.find("#search-clear-btn").show();
         if (initValue) {
             var search_input = tool_menu_frame.find("#tool-search-query");
             search_input.val("search tools");
@@ -68,30 +69,6 @@ export default Backbone.View.extend({
         var self = (window.workflow_globals.app = this);
         this.options = options;
         this.urls = (options && options.urls) || {};
-        var close_editor = () => {
-            self.workflow.check_changes_in_active_form();
-            if (self.workflow && self.workflow.has_changes) {
-                var do_close = () => {
-                    window.onbeforeunload = undefined;
-                    window.document.location = self.urls.workflow_index;
-                };
-                show_modal(
-                    "Close workflow editor",
-                    "There are unsaved changes to your workflow which will be lost.",
-                    {
-                        Cancel: hide_modal,
-                        "Save Changes": function() {
-                            save_current_workflow(null, do_close);
-                        }
-                    },
-                    {
-                        "Don't Save": do_close
-                    }
-                );
-            } else {
-                window.document.location = self.urls.workflow_index;
-            }
-        };
         var workflow_index = self.urls.workflow_index;
         var save_current_workflow = (eventObj, success_callback) => {
             show_message("Saving workflow", "progress");
@@ -179,6 +156,7 @@ export default Backbone.View.extend({
                     }
                     // Start a new ajax-request in X ms
                     $("#search-spinner").show();
+                    $("#search-clear-btn").hide();
                     this.timer = window.setTimeout(() => {
                         $.get(
                             self.urls.tool_search,
@@ -233,6 +211,7 @@ export default Backbone.View.extend({
                                     $("#search-no-results").show();
                                 }
                                 $("#search-spinner").hide();
+                                $("#search-clear-btn").show();
                             },
                             "json"
                         );
@@ -272,8 +251,8 @@ export default Backbone.View.extend({
         this.type_to_type = this.datatypes_mapping.class_to_classes;
 
         this.get_workflow_versions = function() {
-            let _workflow_version_dropdown = {};
-            let workflow_versions = JSON.parse(
+            const _workflow_version_dropdown = {};
+            const workflow_versions = JSON.parse(
                 $.ajax({
                     url: `${getAppRoot()}api/workflows/${self.options.id}/versions`,
                     async: false
@@ -281,8 +260,8 @@ export default Backbone.View.extend({
             );
 
             for (let i = 0; i < workflow_versions.length; i++) {
-                let current_wf = workflow_versions[i];
-                let version_text = `Version ${current_wf["version"]}, ${current_wf["steps"]} steps`;
+                const current_wf = workflow_versions[i];
+                let version_text = `Version ${current_wf.version}, ${current_wf.steps} steps`;
                 let selected = false;
                 if (i == self.workflow.workflow_version) {
                     version_text = `${version_text} (active)`;
@@ -297,7 +276,7 @@ export default Backbone.View.extend({
         };
 
         this.build_version_select = function() {
-            let versions = this.get_workflow_versions();
+            const versions = this.get_workflow_versions();
             $("#workflow-version-switch").empty();
             $.each(versions, function(k, v) {
                 $("#workflow-version-switch").append(
@@ -311,7 +290,9 @@ export default Backbone.View.extend({
                 $("#workflow-version-switch").unbind("change");
                 if (this.value != self.workflow.workflow_version) {
                     if (self.workflow && self.workflow.has_changes) {
-                        let r = confirm("There are unsaved changes to your workflow which will be lost. Continue ?");
+                        const r = window.confirm(
+                            "There are unsaved changes to your workflow which will be lost. Continue ?"
+                        );
                         if (r == false) {
                             // We rebuild the version select list, to reset the selected version
                             self.build_version_select();
@@ -378,12 +359,14 @@ export default Backbone.View.extend({
         // Load workflow definition
         this.load_workflow(self.options.id, self.options.version);
         if (make_popupmenu) {
+            $("#workflow-run-button").click(
+                () => (window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`)
+            );
+            $("#workflow-save-button").click(() => save_current_workflow());
+            $("#workflow-report-button").click(() => edit_report());
+            $("#workflow-canvas-button").click(() => edit_canvas());
             make_popupmenu($("#workflow-options-button"), {
-                Save: save_current_workflow,
                 "Save As": workflow_save_as,
-                Run: function() {
-                    window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`;
-                },
                 "Edit Attributes": function() {
                     self.workflow.clear_active_node();
                 },
@@ -391,8 +374,7 @@ export default Backbone.View.extend({
                 Download: {
                     url: `${getAppRoot()}api/workflows/${self.options.id}/download?format=json-download`,
                     action: function() {}
-                },
-                Close: close_editor
+                }
             });
         }
 
@@ -441,6 +423,16 @@ export default Backbone.View.extend({
             self.canvas_manager.draw_overview();
         }
 
+        function edit_report() {
+            $(".workflow-canvas-content").hide();
+            $(".workflow-report-content").show();
+        }
+
+        function edit_canvas() {
+            $(".workflow-canvas-content").show();
+            $(".workflow-report-content").hide();
+        }
+
         // On load, set the size to the pref stored in local storage if it exists
         var overview_size = localStorage.getItem("overview-size");
         if (overview_size !== undefined) {
@@ -473,7 +465,7 @@ export default Backbone.View.extend({
 
         // Tool menu
         $("div.toolSectionBody").hide();
-        $("div.toolSectionTitle > span").wrap("<a href='#'></a>");
+        $("div.toolSectionTitle > span").wrap("<a href='javascript:void(0)' role='button'></a>");
         var last_expanded = null;
         $("div.toolSectionTitle").each(function() {
             var body = $(this).next("div.toolSectionBody");
@@ -514,7 +506,7 @@ export default Backbone.View.extend({
         var $section = $(
             '<div class="toolSectionWrapper">' +
                 '<div class="toolSectionTitle">' +
-                '<a href="#"><span>Workflows</span></a>' +
+                '<a href="javascript:void(0)" role="button"><span>Workflows</span></a>' +
                 "</div>" +
                 '<div class="toolSectionBody">' +
                 '<div class="toolSectionBg"/>' +
@@ -528,7 +520,7 @@ export default Backbone.View.extend({
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Copy and insert individual steps"),
                     onclick: function() {
-                        let Galaxy = getGalaxyInstance();
+                        const Galaxy = getGalaxyInstance();
                         if (workflow.step_count < 2) {
                             self.copy_into_workflow(workflow.id, workflow.name);
                         } else {
@@ -550,7 +542,8 @@ export default Backbone.View.extend({
                     }
                 });
                 var $add = $("<a/>")
-                    .attr("href", "#")
+                    .attr("href", "javascript:void(0)")
+                    .attr("role", "button")
                     .html(workflow.name)
                     .on("click", () => {
                         self.add_node_for_subworkflow(workflow.latest_id, workflow.name);
@@ -716,7 +709,7 @@ export default Backbone.View.extend({
                     if (pja.action_arguments) {
                         $.each(pja.action_arguments, (k, action_argument) => {
                             if (typeof action_argument === "string") {
-                                let arg_matches = action_argument.match(parameter_re);
+                                const arg_matches = action_argument.match(parameter_re);
                                 if (arg_matches) {
                                     matches = matches.concat(arg_matches);
                                 }
@@ -754,7 +747,7 @@ export default Backbone.View.extend({
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
         var $container = $(`#${cls}`);
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (content && $container.find(`#${id}`).length === 0) {
             var $el = $(`<div id="${id}" class="${cls}"/>`);
             content.node = node;
@@ -784,7 +777,7 @@ export default Backbone.View.extend({
 
     prebuildNode: function(type, title_text, content_id) {
         var self = this;
-        var $f = $("<div class='toolForm toolFormInCanvas'/>");
+        var $f = $(`<div class='toolForm toolFormInCanvas' tabindex = '0' aria-label='Node ${title_text}'/>`);
         var $title = $(`<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</div></div>`);
         add_node_icon($title.find(".nodeTitle"), type);
         $f.append($title);
@@ -794,14 +787,19 @@ export default Backbone.View.extend({
         var node = new Node(this, { element: $f });
         node.type = type;
         node.content_id = content_id;
-        var tmp = `<div><img height='16' align='middle' src='${getAppRoot()}static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
+        var tmp = `<div><img alt="loading" height='16' align='middle' src='${getAppRoot()}static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
         $f.find(".toolFormBody").append(tmp);
         // Fix width to computed width
         // Now add floats
         var buttons = $("<div class='buttons' style='float: right;'></div>");
         if (type !== "subworkflow") {
             buttons.append(
-                $("<div/>")
+                $("<a/>")
+                    .attr({
+                        "aria-label": "clone node",
+                        role: "button",
+                        href: "javascript:void(0)"
+                    })
                     .addClass("fa-icon-button fa fa-files-o node-clone")
                     .click(e => {
                         node.clone();
@@ -809,7 +807,12 @@ export default Backbone.View.extend({
             );
         }
         buttons.append(
-            $("<div/>")
+            $("<a/>")
+                .attr({
+                    "aria-label": "destroy node",
+                    role: "button",
+                    href: "javascript:void(0)"
+                })
                 .addClass("fa-icon-button fa fa-times node-destroy")
                 .click(e => {
                     node.destroy();

@@ -4,9 +4,8 @@ import Backbone from "backbone";
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 
-var AdminPanel = Backbone.View.extend({
+const AdminPanel = Backbone.View.extend({
     initialize: function(page, options) {
-        var self = this;
         this.page = page;
         this.root = options.root;
         this.config = options.config;
@@ -39,6 +38,7 @@ var AdminPanel = Backbone.View.extend({
                     {
                         title: _l("Manage jobs"),
                         url: "admin/jobs",
+                        target: "__use_router__",
                         id: "admin-link-jobs"
                     },
                     {
@@ -62,7 +62,7 @@ var AdminPanel = Backbone.View.extend({
                         title: _l("Quotas"),
                         url: "admin/quotas",
                         target: "__use_router__",
-                        enabled: self.config.enable_quotas,
+                        enabled: this.config.enable_quotas,
                         id: "admin-link-quotas"
                     },
                     {
@@ -88,30 +88,26 @@ var AdminPanel = Backbone.View.extend({
                 title: _l("Tool Management"),
                 items: [
                     {
-                        title: _l("Install new tools"),
-                        url: "admin_toolshed/browse_tool_sheds",
-                        enabled: self.settings.is_tool_shed_installed
-                    },
-                    {
-                        title: "Install new tools (Beta)",
-                        url: "admin_toolshed/browse_toolsheds",
-                        enabled: self.settings.is_tool_shed_installed && self.config.enable_beta_ts_api_install
+                        title: _l("Install or Uninstall"),
+                        url: "admin/toolshed",
+                        target: "__use_router__",
+                        enabled: this.settings.is_tool_shed_installed
                     },
                     {
                         title: _l("Monitor installation"),
                         url: "admin_toolshed/monitor_repository_installation",
-                        enabled: self.settings.installing_repository_ids
+                        enabled: this.settings.installing_repository_ids
                     },
                     {
                         title: _l("Manage tools"),
                         url: "admin/repositories",
-                        enabled: self.settings.is_repo_installed,
+                        enabled: this.settings.is_repo_installed,
                         target: "__use_router__"
                     },
                     {
                         title: _l("Manage metadata"),
                         url: "admin_toolshed/reset_metadata_on_selected_installed_repositories",
-                        enabled: self.settings.is_repo_installed
+                        enabled: this.settings.is_repo_installed
                     },
                     {
                         title: _l("Manage whitelist"),
@@ -142,15 +138,14 @@ var AdminPanel = Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
         this.$el.empty();
         this.categories.each(category => {
-            var $section = $(self._templateSection(category.attributes));
-            var $entries = $section.find(".toolSectionBody");
+            const $section = $(this._templateSection(category.attributes));
+            const $entries = $section.find(".toolSectionBody");
             _.each(category.get("items"), item => {
                 if (item.enabled === undefined || item.enabled) {
-                    var $link = $("<a/>")
-                        .attr({ href: self.root + item.url })
+                    const $link = $("<a/>")
+                        .attr({ href: this.root + item.url })
                         .text(_l(item.title));
                     if (item.id) {
                         $link.attr("id", item.id);
@@ -158,7 +153,7 @@ var AdminPanel = Backbone.View.extend({
                     if (item.target == "__use_router__") {
                         $link.on("click", e => {
                             e.preventDefault();
-                            self.page.router.push(item.url);
+                            this.page.router.push(item.url);
                         });
                     } else {
                         $link.attr("target", "galaxy_main");
@@ -170,13 +165,13 @@ var AdminPanel = Backbone.View.extend({
                     );
                 }
             });
-            self.$el.append($section);
+            this.$el.append($section);
         });
     },
 
     _templateSection: function(options) {
         return `<div class="toolSectionWrapper">
-                    <div class="toolSectionTitle">${_l(options.title)}</div>
+                    <div class="toolSectionTitle px-3">${_l(options.title)}</div>
                     <div class="toolSectionBody"/>
                 </div>`;
     },

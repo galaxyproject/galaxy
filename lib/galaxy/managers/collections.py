@@ -1,10 +1,9 @@
+from __future__ import absolute_import
+
 import logging
+from collections import OrderedDict
 
 from galaxy import model
-from galaxy.dataset_collections import builder
-from galaxy.dataset_collections.matching import MatchingCollections
-from galaxy.dataset_collections.registry import DatasetCollectionTypesRegistry
-from galaxy.dataset_collections.type_description import CollectionTypeDescriptionFactory
 from galaxy.exceptions import (
     ItemAccessibilityException,
     MessageException,
@@ -17,8 +16,11 @@ from galaxy.managers import (
 )
 from galaxy.managers.collections_util import validate_input_element_identifiers
 from galaxy.model import tags
+from galaxy.model.dataset_collections import builder
+from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_REGISTRY
+from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
 from galaxy.util import (
-    odict,
     validation
 )
 
@@ -36,8 +38,8 @@ class DatasetCollectionManager(object):
     ELEMENTS_UNINITIALIZED = object()
 
     def __init__(self, app):
-        self.type_registry = DatasetCollectionTypesRegistry(app)
-        self.collection_type_descriptions = CollectionTypeDescriptionFactory(self.type_registry)
+        self.type_registry = DATASET_COLLECTION_TYPES_REGISTRY
+        self.collection_type_descriptions = COLLECTION_TYPE_DESCRIPTION_FACTORY
         self.model = app.model
         self.security = app.security
 
@@ -239,9 +241,7 @@ class DatasetCollectionManager(object):
         return dataset_collection
 
     def collection_builder_for(self, dataset_collection):
-        collection_type = dataset_collection.collection_type
-        collection_type_description = self.collection_type_descriptions.for_collection_type(collection_type)
-        return builder.BoundCollectionBuilder(dataset_collection, collection_type_description)
+        return builder.BoundCollectionBuilder(dataset_collection)
 
     def delete(self, trans, instance_type, id, recursive=False, purge=False):
         dataset_collection_instance = self.get_dataset_collection_instance(trans, instance_type, id, check_ownership=True)
@@ -360,7 +360,7 @@ class DatasetCollectionManager(object):
         if elements is self.ELEMENTS_UNINITIALIZED:
             return
 
-        new_elements = odict.odict()
+        new_elements = OrderedDict()
         for key, element in elements.items():
             if isinstance(element, model.DatasetCollection):
                 continue
@@ -369,7 +369,7 @@ class DatasetCollectionManager(object):
                 continue
 
             # element is a dict with src new_collection and
-            # and odict of named elements
+            # and OrderedDict of named elements
             collection_type = element.get("collection_type", None)
             sub_elements = element["elements"]
             collection = self.create_dataset_collection(
@@ -383,7 +383,7 @@ class DatasetCollectionManager(object):
         elements.update(new_elements)
 
     def __load_elements(self, trans, element_identifiers, hide_source_items=False, copy_elements=False):
-        elements = odict.odict()
+        elements = OrderedDict()
         for element_identifier in element_identifiers:
             elements[element_identifier["name"]] = self.__load_element(trans,
                                                                        element_identifier=element_identifier,
@@ -479,7 +479,7 @@ class DatasetCollectionManager(object):
 
     def _build_elements_from_rule_data(self, collection_type_description, rule_set, data, sources, handle_dataset):
         identifier_columns = rule_set.identifier_columns
-        elements = odict.odict()
+        elements = OrderedDict()
         for data_index, row_data in enumerate(data):
             # For each row, find place in depth for this element.
             collection_type_at_depth = collection_type_description
@@ -510,7 +510,7 @@ class DatasetCollectionManager(object):
                         sub_collection = {}
                         sub_collection["src"] = "new_collection"
                         sub_collection["collection_type"] = collection_type_at_depth.collection_type
-                        sub_collection["elements"] = odict.odict()
+                        sub_collection["elements"] = OrderedDict()
                         elements_at_depth[identifier] = sub_collection
                         elements_at_depth = sub_collection["elements"]
 

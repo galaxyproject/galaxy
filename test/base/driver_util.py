@@ -19,16 +19,23 @@ import nose.config
 import nose.core
 import nose.loader
 import nose.plugins.manager
+import yaml
 from paste import httpserver
 from six.moves import (
     http_client,
     shlex_quote
 )
 from six.moves.urllib.parse import urlparse
+from sqlalchemy_utils import (
+    create_database,
+    database_exists,
+)
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT
-from galaxy.tools.verify.interactor import GalaxyInteractorApi, verify_tool
+from galaxy.model import mapping
+from galaxy.model.tool_shed_install import mapping as toolshed_mapping
+from galaxy.tool_util.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
@@ -53,6 +60,17 @@ MIGRATED_TOOL_PANEL_CONFIG = 'config/migrated_tools_conf.xml'
 INSTALLED_TOOL_PANEL_CONFIGS = [
     os.environ.get('GALAXY_TEST_SHED_TOOL_CONF', 'config/shed_tool_conf.xml')
 ]
+REALTIME_PROXY_TEMPLATE = string.Template(r"""
+uwsgi:
+  realtime_map: $tempdir/realtime_map.sqlite
+  python-raw: scripts/realtime/key_type_token_mapping.py
+  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(realtime\.$test_host:$test_port)$ goto:realtime
+  route-run: goto:endendend
+  route-label: realtime
+  route-host: ^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\.(realtime\.$test_host:$test_port)$ rpcvar:TARGET_HOST rtt_key_type_token_mapper_cached $2 $1 $3 $4 $0 5
+  route-if-not: empty:${TARGET_HOST} httpdumb:${TARGET_HOST}
+  route-label: endendend
+""")
 
 DEFAULT_LOCALES = "en"
 
@@ -129,7 +147,8 @@ def setup_galaxy_config(
     prefer_template_database=False,
     log_format=None,
     conda_auto_init=False,
-    conda_auto_install=False
+    conda_auto_install=False,
+    use_shared_connection_for_amqp=False,
 ):
     """Setup environment and build config for test Galaxy instance."""
     # For certain docker operations this needs to be evaluated out - e.g. for cwltool.
@@ -160,12 +179,16 @@ def setup_galaxy_config(
     if tool_dependency_dir is None:
         tool_dependency_dir = tempfile.mkdtemp(dir=tmpdir, prefix="tool_dependencies")
     tool_data_table_config_path = _tool_data_table_config_path(default_tool_data_table_config_path)
-    default_data_manager_config = 'config/data_manager_conf.xml.sample'
+    default_data_manager_config = None
     for data_manager_config in ['config/data_manager_conf.xml', 'data_manager_conf.xml']:
         if os.path.exists(data_manager_config):
             default_data_manager_config = data_manager_config
-    data_manager_config_file = "%s,test/functional/tools/sample_data_manager_conf.xml" % default_data_manager_config
+    data_manager_config_file = "test/functional/tools/sample_data_manager_conf.xml"
+    if default_data_manager_config is not None:
+        data_manager_config_file = "%s,%s" % (default_data_manager_config, data_manager_config_file)
     master_api_key = get_master_api_key()
+    cleanup_job = 'never' if ("GALAXY_TEST_NO_CLEANUP" in os.environ or
+                              "TOOL_SHED_TEST_NO_CLEANUP" in os.environ) else 'onsuccess'
 
     # Data Manager testing temp path
     # For storing Data Manager outputs and .loc files so that real ones don't get clobbered
@@ -183,8 +206,6 @@ def setup_galaxy_config(
         tool_conf = "%s,%s" % (tool_conf, shed_tool_conf)
 
     shed_tool_data_table_config = default_shed_tool_data_table_config
-    if shed_tool_data_table_config is None:
-        shed_tool_data_table_config = 'config/shed_tool_data_table_conf.xml'
 
     config = dict(
         admin_users='test@bx.psu.edu',
@@ -198,10 +219,10 @@ def setup_galaxy_config(
         conda_prefix=conda_prefix,
         conda_auto_init=conda_auto_init,
         conda_auto_install=conda_auto_install,
-        cleanup_job='onsuccess',
+        cleanup_job=cleanup_job,
+        retry_metadata_internally=False,
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
-        enable_beta_workflow_format=True,
         expose_dataset_path=True,
         file_path=file_path,
         ftp_upload_purge=False,
@@ -229,9 +250,43 @@ def setup_galaxy_config(
         webhooks_dir=TEST_WEBHOOKS_DIR,
         logging=LOGGING_CONFIG_DEFAULT,
         monitor_thread_join_timeout=5,
+        object_store_store_by="uuid",
     )
+    if not use_shared_connection_for_amqp:
+        config["amqp_internal_connection"] = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(tmpdir, "control.sqlite")
+
     config.update(database_conf(tmpdir, prefer_template_database=prefer_template_database))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
+    if asbool(os.environ.get("GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE")):
+        object_store_config = os.path.join(tmpdir, "object_store_conf.yml")
+        with open(object_store_config, "w") as f:
+            contents = """
+type: hierarchical
+backends:
+   - id: files1
+     type: disk
+     weight: 1
+     files_dir: "${temp_directory}/files1"
+     extra_dirs:
+     - type: temp
+       path: "${temp_directory}/tmp1"
+     - type: job_work
+       path: "${temp_directory}/job_working_directory1"
+   - id: files2
+     type: disk
+     weight: 1
+     files_dir: "${temp_directory}/files2"
+     extra_dirs:
+     - type: temp
+       path: "${temp_directory}/tmp2"
+     - type: job_work
+       path: "${temp_directory}/job_working_directory2"
+"""
+            contents_template = string.Template(contents)
+            expanded_contents = contents_template.safe_substitute(temp_directory=tmpdir)
+            f.write(expanded_contents)
+        config["object_store_config_file"] = object_store_config
+
     if datatypes_conf is not None:
         config['datatypes_config_file'] = datatypes_conf
     if enable_tool_shed_check:
@@ -250,7 +305,7 @@ def _tool_data_table_config_path(default_tool_data_table_config_path=None):
     if tool_data_table_config_path is None:
         # ... otherise find whatever Galaxy would use as the default and
         # the sample data for fucntional tests to that.
-        default_tool_data_config = 'config/tool_data_table_conf.xml.sample'
+        default_tool_data_config = 'lib/galaxy/config/sample/tool_data_table_conf.xml.sample'
         for tool_data_config in ['config/tool_data_table_conf.xml', 'tool_data_table_conf.xml']:
             if os.path.exists(tool_data_config):
                 default_tool_data_config = tool_data_config
@@ -311,6 +366,7 @@ def copy_database_template(source, db_path):
 def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
     """Find (and populate if needed) Galaxy database connection."""
     database_auto_migrate = False
+    check_migrate_databases = True
     dburi_var = "%s_TEST_DBURI" % prefix
     template_name = None
     if dburi_var in os.environ:
@@ -323,6 +379,12 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
             actual_db = "gxtest" + ''.join(random.choice(string.ascii_uppercase) for _ in range(10))
             actual_database_parsed = database_template_parsed._replace(path="/%s" % actual_db)
             database_connection = actual_database_parsed.geturl()
+            if not database_exists(database_connection):
+                # We pass by migrations and instantiate the current table
+                create_database(database_connection)
+                mapping.init('/tmp', database_connection, create_tables=True, map_install_models=True)
+                toolshed_mapping.init(database_connection, create_tables=True)
+                check_migrate_databases = False
     else:
         default_db_filename = "%s.sqlite" % prefix.lower()
         template_var = "%s_TEST_DB_TEMPLATE" % prefix
@@ -337,6 +399,7 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
             database_auto_migrate = True
         database_connection = 'sqlite:///%s' % db_path
     config = {
+        "check_migrate_databases": check_migrate_databases,
         "database_connection": database_connection,
         "database_auto_migrate": database_auto_migrate
     }
@@ -509,7 +572,7 @@ def build_galaxy_app(simple_kwargs):
     """
     log.info("Galaxy database connection: %s", simple_kwargs["database_connection"])
     simple_kwargs['global_conf'] = get_webapp_global_conf()
-    simple_kwargs['global_conf']['__file__'] = "config/galaxy.yml.sample"
+    simple_kwargs['global_conf']['__file__'] = "lib/galaxy/config/sample/galaxy.yml.sample"
     simple_kwargs = load_app_properties(
         kwds=simple_kwargs
     )
@@ -667,10 +730,26 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
     config = {}
     config["galaxy"] = kwargs.copy()
 
+    enable_realtime_mapping = getattr(config_object, "enable_realtime_mapping", False)
+    if enable_realtime_mapping:
+        config["galaxy"]["realtime_prefix"] = "realtime"
+        config["galaxy"]["realtime_map"] = os.path.join(tempdir, "realtime_map.sqlite")
+
     yaml_config_path = os.path.join(tempdir, "galaxy.yml")
     with open(yaml_config_path, "w") as f:
-        import yaml
         yaml.dump(config, f)
+
+    if enable_realtime_mapping:
+        # Avoid YAML.dump configuration since uwsgi doesn't like real YAML :( -
+        # though maybe it would work?
+        with open(yaml_config_path, "r") as f:
+            old_contents = f.read()
+        with open(yaml_config_path, "w") as f:
+            test_port = str(port) if port else r"[0-9]+"
+            test_host = host or "localhost"
+            uwsgi_section = REALTIME_PROXY_TEMPLATE.safe_substitute(test_host=test_host, test_port=test_port, tempdir=tempdir)
+            f.write(uwsgi_section)
+            f.write(old_contents)
 
     def attempt_port_bind(port):
         uwsgi_command = [
@@ -730,7 +809,8 @@ def launch_server(app, webapp_factory, kwargs, prefix=DEFAULT_CONFIG_PREFIX, con
         kwargs['global_conf'],
         app=app,
         use_translogger=False,
-        static_enabled=True
+        static_enabled=True,
+        register_shutdown_at_exit=False
     )
     server, port = serve_webapp(
         webapp,
@@ -882,11 +962,17 @@ class GalaxyTestDriver(TestDriver):
                         log_format=self.log_format,
                         conda_auto_init=getattr(config_object, "conda_auto_init", False),
                         conda_auto_install=getattr(config_object, "conda_auto_install", False),
+                        use_shared_connection_for_amqp=getattr(config_object, "use_shared_connection_for_amqp", False)
                     )
                     galaxy_config = setup_galaxy_config(
                         galaxy_db_path,
                         **setup_galaxy_config_kwds
                     )
+
+                    isolate_galaxy_config = getattr(config_object, "isolate_galaxy_config", False)
+                    if isolate_galaxy_config:
+                        galaxy_config["config_dir"] = tempdir
+
                     self._saved_galaxy_config = galaxy_config
 
             if galaxy_config is not None:

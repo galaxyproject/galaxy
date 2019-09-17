@@ -150,6 +150,11 @@
     "message": "Tool execution failed due to an internal server error."
    },
    {
+    "name": "INVALID_FILE_FORMAT",
+    "code": 500005,
+    "message": "File format not supported for this operation."
+   },
+   {
     "name": "NOT_IMPLEMENTED",
     "code": 501001,
     "message": "Method is not implemented."

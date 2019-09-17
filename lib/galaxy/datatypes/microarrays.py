@@ -1,6 +1,7 @@
 import logging
 
 from galaxy.datatypes import data
+from galaxy.datatypes.binary import Cel  # noqa: F401
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (

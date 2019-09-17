@@ -7,7 +7,6 @@ import BASE_MVC from "mvc/base-mvc";
 import baseCreator from "mvc/collection/base-creator";
 import UI_MODAL from "mvc/ui/ui-modal";
 import _l from "utils/localization";
-import RuleCollectionBuilder from "components/RuleCollectionBuilder.vue";
 import Vue from "vue";
 import { getGalaxyInstance } from "app";
 
@@ -60,7 +59,7 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
         [
             '<a class="name" title="',
             _l("Click to rename"),
-            '" href="javascript:void(0)">',
+            '" href="javascript:void(0)" role="button">',
             "<%- element.name %>",
             "</a>",
             '<button class="discard btn btn-sm" title="',
@@ -523,9 +522,9 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         createList: function(name) {
             if (!this.workingElements.length) {
                 var message = `${_l("No valid elements for final list")}. `;
-                message += `<a class="cancel-create" href="javascript:void(0);">${_l("Cancel")}</a> `;
+                message += `<a class="cancel-create" href="javascript:void(0);" role="button">${_l("Cancel")}</a> `;
                 message += _l("or");
-                message += ` <a class="reset" href="javascript:void(0);">${_l("start over")}</a>.`;
+                message += ` <a class="reset" href="javascript:void(0);" role="button">${_l("start over")}</a>.`;
                 this._showAlert(message);
                 return;
             }
@@ -779,11 +778,11 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
             header: _.template(
                 [
                     '<div class="main-help well clear">',
-                    '<a class="more-help" href="javascript:void(0);">',
+                    '<a class="more-help" href="javascript:void(0);" role="button">',
                     _l("More help"),
                     "</a>",
                     '<div class="help-content">',
-                    '<a class="less-help" href="javascript:void(0);">',
+                    '<a class="less-help" href="javascript:void(0);" role="button">',
                     _l("Less"),
                     "</a>",
                     "</div>",
@@ -802,13 +801,13 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
             middle: _.template(
                 [
                     '<div class="collection-elements-controls">',
-                    '<a class="reset" href="javascript:void(0);" ',
+                    '<a class="reset" href="javascript:void(0);" role="button" ',
                     'title="',
                     _l("Undo all reordering and discards"),
                     '">',
                     _l("Start over"),
                     "</a>",
-                    '<a class="clear-selected" href="javascript:void(0);" ',
+                    '<a class="clear-selected" href="javascript:void(0);" role="button" ',
                     'title="',
                     _l("De-select all selected datasets"),
                     '">',
@@ -852,14 +851,14 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     _l("Create a different kind of collection"),
                     ' <span class="caret"></span>',
                     "</button>",
-                    '<ul class="dropdown-menu" role="menu">',
-                    '<li><a href="#">',
+                    '<div class="dropdown-menu" role="menu">',
+                    '<a class="dropdown-item" href="javascript:void(0)" role="button">',
                     _l("Create a <i>single</i> pair"),
-                    "</a></li>",
-                    '<li><a href="#">',
+                    "</a>",
+                    '<a class="dropdown-item" href="javascript:void(0)" role="button">',
                     _l("Create a list of <i>unpaired</i> datasets"),
-                    "</a></li>",
-                    "</ul>",
+                    "</a>",
+                    "</div>",
                     "</div>",
                     "</div>",
 
@@ -954,7 +953,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     '<li class="no-elements-left-message">',
                     _l("No elements left! "),
                     _l("Would you like to "),
-                    '<a class="reset" href="javascript:void(0)">',
+                    '<a class="reset" href="javascript:void(0)" role="button">',
                     _l("start over"),
                     "</a>?",
                     "</li>"
@@ -981,7 +980,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     _l("At least one element is needed for the collection"),
                     ". ",
                     _l("You may need to "),
-                    '<a class="cancel-create" href="javascript:void(0)">',
+                    '<a class="cancel-create" href="javascript:void(0)" role="button">',
                     _l("cancel"),
                     "</a> ",
                     _l("and reselect new elements"),
@@ -1012,7 +1011,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
 const collectionCreatorModalSetup = function _collectionCreatorModalSetup(options) {
     const deferred = jQuery.Deferred();
-    let Galaxy = getGalaxyInstance();
+    const Galaxy = getGalaxyInstance();
     const modal = Galaxy.modal || new UI_MODAL.View();
 
     const creatorOptions = _.defaults(options || {}, {
@@ -1077,24 +1076,28 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
         title: title
     });
     const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options); // eslint-disable-line no-unused-vars
-    var ruleCollectionBuilderInstance = Vue.extend(RuleCollectionBuilder);
-    var vm = document.createElement("div");
-    showEl(vm);
-    new ruleCollectionBuilderInstance({
-        propsData: {
-            initialElements: elements,
-            elementsType: elementsType,
-            importType: importType,
-            ftpUploadSite: options.ftpUploadSite,
-            creationFn: options.creationFn,
-            oncancel: options.oncancel,
-            oncreate: options.oncreate,
-            defaultHideSourceItems: options.defaultHideSourceItems,
-            saveRulesFn: options.saveRulesFn,
-            initialRules: options.initialRules
+    return import(/* webpackChunkName: "ruleCollectionBuilder" */ "components/RuleCollectionBuilder.vue").then(
+        module => {
+            var ruleCollectionBuilderInstance = Vue.extend(module.default);
+            var vm = document.createElement("div");
+            showEl(vm);
+            new ruleCollectionBuilderInstance({
+                propsData: {
+                    initialElements: elements,
+                    elementsType: elementsType,
+                    importType: importType,
+                    ftpUploadSite: options.ftpUploadSite,
+                    creationFn: options.creationFn,
+                    oncancel: options.oncancel,
+                    oncreate: options.oncreate,
+                    defaultHideSourceItems: options.defaultHideSourceItems,
+                    saveRulesFn: options.saveRulesFn,
+                    initialRules: options.initialRules
+                }
+            }).$mount(vm);
+            return deferred;
         }
-    }).$mount(vm);
-    return deferred;
+    );
 };
 
 /** List collection flavor of collectionCreatorModal. */

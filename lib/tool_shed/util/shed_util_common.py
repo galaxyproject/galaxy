@@ -8,7 +8,7 @@ import string
 import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, true
 
-import galaxy.tools.deps.requirements
+import galaxy.tool_util.deps.requirements
 from galaxy import util
 from galaxy.util import checkers
 from galaxy.web import url_for
@@ -149,6 +149,13 @@ def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, t
             trans.install_model.context.flush()
 
 
+def count_repositories_in_category(app, category_id):
+    sa_session = app.model.context.current
+    return sa_session.query(app.model.RepositoryCategoryAssociation) \
+                     .filter(app.model.RepositoryCategoryAssociation.table.c.category_id == app.security.decode_id(category_id)) \
+                     .count()
+
+
 def generate_tool_guid(repository_clone_url, tool):
     """
     Generate a guid for the installed tool.  It is critical that this guid matches the guid for
@@ -224,7 +231,7 @@ def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_
 
 
 def get_requirements_from_tools(tools):
-    return {tool['id']: galaxy.tools.deps.requirements.ToolRequirements.from_list(tool['requirements']) for tool in tools}
+    return {tool['id']: galaxy.tool_util.deps.requirements.ToolRequirements.from_list(tool['requirements']) for tool in tools}
 
 
 def get_requirements_from_repository(repository):

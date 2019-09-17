@@ -117,7 +117,7 @@ var CurrentHistoryView = _super.extend(
 
         /** loads a history & contents w/ details and makes them the current history */
         switchToHistory: function(historyId, attributes) {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             if (Galaxy.user.isAnonymous()) {
                 this.trigger("error", _l("You must be logged in to switch histories"), _l("Anonymous user"));
                 return $.when();
@@ -129,7 +129,7 @@ var CurrentHistoryView = _super.extend(
 
         /** creates a new history on the server and sets it as the user's current history */
         createNewHistory: function(attributes) {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             if (Galaxy.user.isAnonymous()) {
                 this.trigger("error", _l("You must be logged in to create histories"), _l("Anonymous user"));
                 return $.when();
@@ -344,7 +344,7 @@ var CurrentHistoryView = _super.extend(
         events: _.extend(_.clone(_super.prototype.events), {
             // the two links in the empty message
             "click .uploader-link": function(ev) {
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
                 Galaxy.upload.show(ev);
             },
             "click .get-data-link": function(ev) {
@@ -384,7 +384,7 @@ var CurrentHistoryView = _super.extend(
                 // when the center panel is given a new view, clear the current indicator
                 "center-panel:load": function(view) {
                     try {
-                        let hdaId = view.model.attributes.dataset_id || null;
+                        const hdaId = view.model.attributes.dataset_id || null;
                         if (hdaId === null) {
                             throw "Invalid id";
                         }

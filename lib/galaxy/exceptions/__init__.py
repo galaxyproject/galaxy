@@ -203,8 +203,12 @@ class NotImplemented(MessageException):
     err_code = error_codes.NOT_IMPLEMENTED
 
 
-# non-web exceptions
+class InvalidFileFormatError(MessageException):
+    status_code = 500
+    err_code = error_codes.INVALID_FILE_FORMAT
 
+
+# non-web exceptions
 
 class ContainerCLIError(Exception):
     def __init__(self, msg=None, stdout=None, stderr=None, returncode=None,

@@ -17,8 +17,7 @@ from optparse import OptionParser
 
 
 def stop_err(msg):
-    sys.stderr.write("%s\n" % msg)
-    sys.exit()
+    sys.exit(msg)
 
 
 def main():
@@ -39,21 +38,24 @@ def main():
         header_lines = options.header_lines
         key = [" -k" + k for k in options.key]
 
-        # sed header
-        if header_lines > 0:
-            sed_header = "sed -n '1,%dp' %s > %s" % (header_lines, input, output)
-            subprocess.call(sed_header, shell=True)
+        with open(output, 'w') as out:
+            # sed header
+            if header_lines > 0:
+                sed_header = ['sed', '-n', "1,%dp" % header_lines, input]
+                subprocess.check_call(sed_header, stdout=out)
 
-        # grep comments
-        grep_comments = "(grep '^#' %s) >> %s" % (input, output)
-        subprocess.call(grep_comments, shell=True)
+            # grep comments
+            grep_comments = ['grep', '^#', input]
+            exit_code = subprocess.call(grep_comments, stdout=out)
+            if exit_code not in [0, 1]:
+                stop_err('Searching for comment lines failed')
 
-        # grep and sort columns
-        sed_header_restore = ""
-        if header_lines > 0:
-            sed_header_restore = "sed '1,%dd' | " % (header_lines)
-        sort_columns = "(cat %s | %s grep '^[^#]' | sort -f -t '\t' %s) >> %s" % (input, sed_header_restore, ' '.join(key), output)
-        subprocess.call(sort_columns, shell=True)
+            # grep and sort columns
+            sed_header_restore = ""
+            if header_lines > 0:
+                sed_header_restore = "sed '1,%dd' | " % (header_lines)
+            sort_columns = "(cat %s | %s grep '^[^#]' | sort -f -t '\t' %s)" % (input, sed_header_restore, ' '.join(key))
+            subprocess.check_call(sort_columns, stdout=out, shell=True)
 
     except Exception as ex:
         stop_err('Error running sorter.py\n' + str(ex))

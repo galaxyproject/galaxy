@@ -12,6 +12,7 @@ import pkg_resources
 from six import iteritems
 from six.moves.urllib.parse import unquote
 
+from galaxy.util.getargspec import getfullargspec
 from galaxy.util.properties import NicerConfigParser
 
 
@@ -58,11 +59,11 @@ def fix_type_error(exc_info, callable, varargs, kwargs):
     if exc_info is None:
         exc_info = sys.exc_info()
     if (exc_info[0] != TypeError or
-            str(exc_info[1]).find('arguments') == -1 or
+            str(exc_info[1]).find('argument') == -1 or
             getattr(exc_info[1], '_type_error_fixed', False)):
         return exc_info
     exc_info[1]._type_error_fixed = True
-    argspec = inspect.formatargspec(*inspect.getargspec(callable))
+    argspec = inspect.formatargspec(*getfullargspec(callable))
     args = ', '.join(map(_short_repr, varargs))
     if kwargs and args:
         args += ', '

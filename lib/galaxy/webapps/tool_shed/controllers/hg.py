@@ -4,7 +4,7 @@ from mercurial.hgweb.hgwebdir_mod import hgwebdir
 from mercurial.hgweb.request import wsgiapplication
 
 from galaxy import web
-from galaxy.web.base.controller import BaseUIController
+from galaxy.webapps.base.controller import BaseUIController
 from tool_shed.util.repository_util import get_repository_by_name_and_owner
 
 log = logging.getLogger(__name__)

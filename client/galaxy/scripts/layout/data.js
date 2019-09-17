@@ -1,5 +1,5 @@
 import $ from "jquery";
-import DataDialog from "components/DataDialog.vue";
+import DataDialog from "components/DataDialog/DataDialog.vue";
 import Vue from "vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
@@ -10,9 +10,16 @@ export default class Data {
      * @param {function} callback - Result function called with selection
      */
     dialog(callback, options = {}) {
-        options.callback = callback;
-        var instance = Vue.extend(DataDialog);
-        var vm = document.createElement("div");
+        const galaxy = getGalaxyInstance();
+        const host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
+        Object.assign(options, {
+            callback: callback,
+            history: galaxy.currHistoryPanel && galaxy.currHistoryPanel.model.id,
+            root: galaxy.root,
+            host: host
+        });
+        const instance = Vue.extend(DataDialog);
+        const vm = document.createElement("div");
         $("body").append(vm);
         new instance({
             propsData: options
@@ -23,8 +30,8 @@ export default class Data {
      * Creates a history dataset by submitting an upload request
      */
     create(options) {
-        let Galaxy = getGalaxyInstance();
-        let history_panel = Galaxy.currHistoryPanel;
+        const Galaxy = getGalaxyInstance();
+        const history_panel = Galaxy.currHistoryPanel;
         let history_id = options.history_id;
         if (!history_id && history_panel) {
             history_id = history_panel.model.get("id");

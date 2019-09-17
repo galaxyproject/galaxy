@@ -306,7 +306,7 @@ test_data:
 """, history_id=history_id)
 
         content = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEquals(content, "hello world\nhello world 2\n")
+        self.assertEqual(content, "hello world\nhello world 2\n")
 
     def test_workflow_import_tool(self):
         history_id = self.dataset_populator.new_history()
@@ -321,7 +321,7 @@ test_data:
             history_id=history_id
         )
         content = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEquals(content, "hello world\nhello world 2\n")
+        self.assertEqual(content, "hello world\nhello world 2\n")
 
     def _steps_by_label(self, workflow_as_dict):
         by_label = {}

@@ -24,10 +24,6 @@
         <div class="annotation">${item.annotation}</div>
         %endif
     </div>
-    ##<div class='summary-content'>
-        ## currently, no summary content for visualization
-        ## could do the title or caption, whatever...
-    ##</div>
     <div class='expanded-content'>
         <div class='item-content'>
         </div>

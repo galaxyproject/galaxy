@@ -10,7 +10,7 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname
 )
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 class UsersController(BaseAPIController):
     """RESTful controller for interactions with users in the Tool Shed."""
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def create(self, trans, payload, **kwd):
         """
@@ -75,7 +75,7 @@ class UsersController(BaseAPIController):
         value_mapper = {'id' : trans.security.encode_id}
         return value_mapper
 
-    @web.expose_api_anonymous
+    @web.legacy_expose_api_anonymous
     def index(self, trans, deleted=False, **kwd):
         """
         GET /api/users
@@ -95,7 +95,7 @@ class UsersController(BaseAPIController):
             user_dicts.append(user_dict)
         return user_dicts
 
-    @web.expose_api_anonymous
+    @web.legacy_expose_api_anonymous
     def show(self, trans, id, **kwd):
         """
         GET /api/users/{encoded_user_id}
@@ -123,13 +123,9 @@ class UsersController(BaseAPIController):
         return user_dict
 
     def __validate(self, trans, email, password, confirm, username):
-        if not username:
-            return "A public user name is required in the Tool Shed."
         if username in ['repos']:
-            return "The term <b>%s</b> is a reserved word in the Tool Shed, so it cannot be used as a public user name." % username
-        message = validate_email(trans, email)
-        if not message:
-            message = validate_password(trans, password, confirm)
-        if not message and username:
-            message = validate_publicname(trans, username)
+            return "The term '%s' is a reserved word in the Tool Shed, so it cannot be used as a public user name." % username
+        message = "\n".join([validate_email(trans, email),
+                             validate_password(trans, password, confirm),
+                             validate_publicname(trans, username)]).rstrip()
         return message

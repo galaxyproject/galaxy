@@ -1,11 +1,7 @@
 from unittest import TestCase
-from xml.etree.ElementTree import XML
 
-from galaxy import model
-from galaxy.tools.parameters import basic
 from galaxy.tools.parameters.meta import process_key
-from galaxy.util import bunch
-from ..tools_support import UsesApp
+from .util import BaseParameterTestCase
 
 
 class ProcessKeyTestCase(TestCase):
@@ -44,22 +40,6 @@ class ProcessKeyTestCase(TestCase):
             'directory_content': []
         }
         self.assertEqual(nested_dict, expected_dict)
-
-
-class BaseParameterTestCase(TestCase, UsesApp):
-
-    def setUp(self):
-        self.setup_app()
-        self.mock_tool = bunch.Bunch(
-            app=self.app,
-            tool_type="default",
-            valid_input_states=model.Dataset.valid_input_states,
-        )
-
-    def _parameter_for(self, **kwds):
-        content = kwds["xml"]
-        param_xml = XML(content)
-        return basic.ToolParameter.build(self.mock_tool, param_xml)
 
 
 class ParameterParsingTestCase(BaseParameterTestCase):

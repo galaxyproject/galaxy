@@ -2,13 +2,10 @@
 <!-- A job config for testing the Pulsar embedded runner -->
 <job_conf>
     <plugins>
-        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="4"/>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="1"/>
         <plugin id="pulsar_embed" type="runner" load="galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner">
         </plugin>
     </plugins>
-    <handlers>
-        <handler id="main"/>
-    </handlers>
     <destinations default="pulsar_embed">
         <destination id="local" runner="local">
         </destination>

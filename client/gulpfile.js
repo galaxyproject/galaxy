@@ -2,20 +2,26 @@ const path = require("path");
 const fs = require("fs");
 const del = require("del");
 const { src, dest, series, parallel } = require("gulp");
-const uglify = require("gulp-uglify-es").default;
-const babel = require("gulp-babel");
+const spawn = require("child_process").spawnSync;
+const glob = require("glob");
 
 const paths = {
     node_modules: "./node_modules",
-    scripts: [
-        "galaxy/scripts/**/*.js",
-        "!galaxy/scripts/qunit/**/*",
-        "!galaxy/scripts/entry/**/*",
-        "!galaxy/scripts/libs/**/*"
-    ],
     plugin_dirs: [
         "../config/plugins/{visualizations,interactive_environments}/*/static/**/*",
         "../config/plugins/{visualizations,interactive_environments}/*/*/static/**/*"
+    ],
+    /*
+     * We'll want a flexible glob down the road, but for now there are no
+     * un-built visualizations in the repository; for performance and
+     * simplicity just add them one at a time until we upgrade older viz's.
+     */
+    //plugin_build_dirs: [
+    //    "../config/plugins/{visualizations,interactive_environments}/*/package.json",
+    //    "../config/plugins/{visualizations,interactive_environments}/*/*/package.json"
+    //],
+    plugin_build_dirs: [
+        "../config/plugins/visualizations/{annotate_image,openlayers}/package.json",
     ],
     lib_locs: {
         // This is a stepping stone towards having all this staged
@@ -59,39 +65,34 @@ function fonts() {
     );
 }
 
-// TODO: Remove script and lib tasks (for 19.05) once we are sure there are no
-// external accessors (via require or explicit inclusion in templates)
-function scripts() {
-    return src(paths.scripts)
-        .pipe(
-            babel({
-                plugins: ["transform-es2015-modules-amd"]
-            })
-        )
-        .pipe(uglify())
-        .pipe(dest("../static/scripts/"));
-}
-
-function libs() {
-    return src(paths.libs)
-        .pipe(uglify())
-        .pipe(dest("../static/scripts/libs/"));
-}
-
-function plugins() {
+function stagePlugins() {
     return src(paths.plugin_dirs).pipe(dest("../static/plugins/"));
 }
 
-function clean() {
-    //Wipe out all scripts that aren't handled by webpack
-    return del(["../static/scripts/**/*.js", "!../static/scripts/bundled/**.*.js"], { force: true });
+function buildPlugins(callback){
+    /*
+     * Walk plugin build glob and attempt to build anything with a package.json 
+     * */
+    paths.plugin_build_dirs.map( build_dir => {
+        glob(build_dir, {}, (er, files) => {
+            files.map( file => {
+                const f = path.join(process.cwd(), file).slice(0, -12);
+                console.log("Building ", f);
+                spawn('yarn', [], { cwd: f, stdio: 'inherit' });
+                spawn('yarn', ['build'], { cwd: f, stdio: 'inherit' });
+            });
+        });
+    });
+    return callback();
+}
+
+function cleanPlugins() {
+    return del(["../static/plugins/{visualizations,interactive_environments}/*"], { force: true });
 }
 
 module.exports.fonts = fonts;
-module.exports.libs = libs;
-module.exports.scripts = scripts;
-module.exports.clean = clean;
 module.exports.stageLibs = stageLibs;
-module.exports.plugins = plugins;
-module.exports.staging = parallel(stageLibs, fonts, plugins);
-module.exports.default = series(libs, scripts);
+module.exports.cleanPlugins = cleanPlugins;
+module.exports.buildPlugins = buildPlugins;
+module.exports.plugins = series(cleanPlugins, buildPlugins, stagePlugins);
+module.exports.default = parallel(stageLibs, fonts, module.exports.plugins);

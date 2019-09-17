@@ -29,19 +29,14 @@
 <html>
 <head>
     ${ ie.load_default_js() }
+    ${ ie.load_default_app() }
 </head>
 <body>
 <script type="text/javascript">
 
     ${ ie.default_javascript_variables() }
     var url = '${ url }';
-    ${ ie.plugin_require_config() }
-
-
-    requirejs(['galaxy.interactive_environments', 'plugin/hicbrowser'], function (IES) {
-        window.IES = IES;
-        load_hicexplorer(url);
-    });
+    load_hicexplorer(url);
 
 </script>
 <div id="main" width="100%" height="100%">

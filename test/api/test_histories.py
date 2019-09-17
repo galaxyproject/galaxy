@@ -10,7 +10,6 @@ from base import api  # noqa: I100,I202
 from base.populators import (  # noqa: I100
     DatasetCollectionPopulator,
     DatasetPopulator,
-    wait_on
 )
 
 
@@ -184,12 +183,15 @@ class HistoriesApiTestCase(api.ApiTestCase):
         self.dataset_populator.new_dataset(history_id, content="1 2 3")
         deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
         self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
+        deleted_details = self.dataset_populator.get_history_dataset_details(history_id, id=deleted_hda["id"])
+        assert deleted_details["deleted"]
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2)
 
         def upload_job_check(job):
             assert job["tool_id"] == "upload1"
 
         def check_discarded(hda):
+            assert hda["deleted"]
             assert hda["state"] == "discarded", hda
             assert hda["purged"] is True
 
@@ -247,7 +249,7 @@ class HistoriesApiTestCase(api.ApiTestCase):
         # The cleanup() method of the __IMPORT_HISTORY__ job (which is executed
         # after the job has entered its final state):
         # - creates a new dataset with 'ok' state and adds it to the history
-        # - starts a __SET_METADATA__ job to regerenate the dataset metadata, if
+        # - starts a __SET_METADATA__ job to regenerate the dataset metadata, if
         #   needed
         # We need to wait a bit for the creation of the __SET_METADATA__ job.
         time.sleep(1)
@@ -260,9 +262,6 @@ class HistoriesApiTestCase(api.ApiTestCase):
         assert len(bai_response.content) > 4
 
     def test_import_export_collection(self):
-        from nose.plugins.skip import SkipTest
-        raise SkipTest("Collection import/export not yet implemented")
-
         history_name = "for_export_with_collections"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_collection_populator.create_list_in_history(history_id, contents=["Hello", "World"], direct_upload=True)
@@ -284,54 +283,40 @@ class HistoriesApiTestCase(api.ApiTestCase):
 
         self._check_imported_collection(imported_history_id, hid=1, collection_type="list", elements_checker=check_elements)
 
+    def test_import_export_nested_collection(self):
+        history_name = "for_export_with_nested_collections"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        self.dataset_collection_populator.create_list_of_pairs_in_history(history_id)
+
+        imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=3)
+        self._assert_history_length(imported_history_id, 3)
+
+        def check_elements(elements):
+            assert len(elements) == 1
+            element0 = elements[0]["object"]
+            self._assert_has_keys(element0, "elements", "collection_type")
+
+            child_elements = element0["elements"]
+
+            assert len(child_elements) == 2
+            assert element0["collection_type"] == "paired"
+
+        self._check_imported_collection(imported_history_id, hid=1, collection_type="list:paired", elements_checker=check_elements)
+
     def _reimport_history(self, history_id, history_name, wait_on_history_length=None, export_kwds={}):
         # Ensure the history is ready to go...
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
-        # Export the history.
-        download_path = self.dataset_populator.export_url(history_id, export_kwds, check_download=True)
-
-        # Create download for history
-        full_download_url = "%s%s?key=%s" % (self.url, download_path, self.galaxy_interactor.api_key)
-
-        import_data = dict(archive_source=full_download_url, archive_type="url")
-
-        return self._import_history_and_wait(import_data, history_name, wait_on_history_length=wait_on_history_length)
+        return self.dataset_populator.reimport_history(
+            history_id, history_name, wait_on_history_length=wait_on_history_length, export_kwds=export_kwds, url=self.url, api_key=self.galaxy_interactor.api_key
+        )
 
     def _import_history_and_wait(self, import_data, history_name, wait_on_history_length=None):
 
-        def history_names():
-            history_index = self._get("histories")
-            return dict((h["name"], h) for h in history_index.json())
-
-        import_name = "imported from archive: %s" % history_name
-        assert import_name not in history_names()
-
-        files = {}
-        archive_file = import_data.pop("archive_file", None)
-        if archive_file:
-            files["archive_file"] = archive_file
-        import_response = self._post("histories", data=import_data, files=files)
-
-        self._assert_status_code_is(import_response, 200)
-
-        def has_history_with_name():
-            histories = history_names()
-            return histories.get(import_name, None)
-
-        imported_history = wait_on(has_history_with_name, desc="import history")
-        imported_history_id = imported_history["id"]
-        self.dataset_populator.wait_for_history(imported_history_id)
+        imported_history_id = self.dataset_populator.import_history_and_wait_for_name(import_data, history_name)
 
         if wait_on_history_length:
-
-            def history_has_length():
-                contents_response = self._get("histories/%s/contents" % imported_history_id)
-                self._assert_status_code_is(contents_response, 200)
-                contents = contents_response.json()
-                return None if len(contents) != wait_on_history_length else True
-
-            wait_on(history_has_length, desc="import history population")
+            self.dataset_populator.wait_on_history_length(imported_history_id, wait_on_history_length)
 
         return imported_history_id
 

@@ -6,9 +6,25 @@ from __future__ import print_function
 import datetime
 import logging
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT, Unicode
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table,
+    TEXT,
+    Unicode
+)
 
 from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    create_table,
+    drop_column,
+    drop_table
+)
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
@@ -107,9 +123,6 @@ ImplicitlyCreatedDatasetCollectionInput_table = Table("implicitly_created_datase
                                                       Column("input_dataset_collection_id", Integer, ForeignKey("history_dataset_collection_association.id"), index=True),
                                                       Column("name", Unicode(255)))
 
-# TODO: Find a better name for this column...
-HiddenBeneathCollection_column = Column("hidden_beneath_collection_instance_id", Integer, ForeignKey("history_dataset_collection_association.id"), nullable=True)
-
 
 TABLES = [
     DatasetCollection_table,
@@ -129,44 +142,23 @@ TABLES = [
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     for table in TABLES:
-        __create(table)
+        create_table(table)
 
-    try:
-        hda_table = Table("history_dataset_association", metadata, autoload=True)
-        HiddenBeneathCollection_column.create(hda_table)
-    except Exception:
-        log.exception("Creating HDA column failed.")
+    # TODO: Find a better name for this column...
+    HiddenBeneathCollection_column = Column("hidden_beneath_collection_instance_id", Integer, ForeignKey("history_dataset_collection_association.id"), nullable=True)
+    add_column(HiddenBeneathCollection_column, 'history_dataset_association', metadata)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    try:
-        hda_table = Table("history_dataset_association", metadata, autoload=True)
-        hidden_beneath_collection_instance_id_col = hda_table.c.hidden_beneath_collection_instance_id
-        hidden_beneath_collection_instance_id_col.drop()
-    except Exception:
-        log.exception("Dropping HDA column failed.")
+    drop_column('hidden_beneath_collection_instance_id', 'history_dataset_association', metadata)
 
     for table in reversed(TABLES):
-        __drop(table)
-
-
-def __create(table):
-    try:
-        table.create()
-    except Exception:
-        log.exception("Creating %s table failed.", table.name)
-
-
-def __drop(table):
-    try:
-        table.drop()
-    except Exception:
-        log.exception("Dropping %s table failed.", table.name)
+        drop_table(table)

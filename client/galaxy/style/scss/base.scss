@@ -10,18 +10,8 @@
 $fa-font-path: "../../../node_modules/font-awesome/fonts/";
 @import "../../../node_modules/font-awesome/scss/font-awesome.scss";
 
-.fa-icon {
-    // TODO: remove fa-icon and replace with fa
-    @extend .fa;
-}
-
 @import "select2.scss";
 @import "jquery.rating.scss";
-
-/* fix for zero width select2 - remove when fixed there */
-.select2-minwidth {
-    min-width: 256px;
-}
 
 // galaxy sub-components
 @import "reports";
@@ -36,25 +26,32 @@ $fa-font-path: "../../../node_modules/font-awesome/fonts/";
 @import "flex.scss";
 @import "charts.scss";
 @import "message.scss";
+@import "toolshed.scss";
 
-// Mixins
+// ==== Select2 ====
+/* fix for zero width select2 - remove when fixed there */
+.select2-minwidth {
+    min-width: 256px;
+}
+.select2-drop-active,
+.select2-drop-above.select2-drop-active {
+    border: $border-default;
+    .select2-search {
+        @extend .pt-1;
+    }
+}
+.select2-drop {
+    background: $body-bg;
+    color: $text-color;
+}
+
+// ==== Mixins ====
 @mixin user-select($select) {
     -webkit-touch-callout: #{$select};
     @each $pre in -webkit-, -moz-, -ms-, -o-, -khtml- {
         #{$pre + user-select}: #{$select};
     }
     #{user-select}: #{$select};
-}
-
-.unselectable {
-    @include user-select(none);
-}
-
-.parent-width {
-    //TODO: check out box-sizing w/ bs4
-    //@include box-sizing(border-box);
-    width: 100%;
-    *width: 90%;
 }
 
 @mixin border-radius($radius) {
@@ -64,119 +61,119 @@ $fa-font-path: "../../../node_modules/font-awesome/fonts/";
     border-radius: $radius;
 }
 
-// ==== Real (basic) styles ====
+// ==== Basic styles ====
+
+body {
+    @extend .m-2;
+}
+
+.unselectable {
+    @include user-select(none);
+}
+
+.parent-width {
+    @extend .w-100;
+}
 
 .clear {
     @include clearfix();
 }
 
-body {
+// ==== Page layout styles ====
+
+.full-content {
+    @extend .m-0;
+    @extend .p-0;
+    @extend .w-100;
+    @extend .h-100;
+    @extend .overflow-hidden;
+    @extend .position-absolute;
     background: $body-bg;
     color: $text-color;
-    margin: 10px;
+}
 
-    // For panel layout pages
-    &.full-content {
-        overflow: hidden;
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-    }
+.full-message {
+    @extend .w-100;
+    @extend .overflow-hidden;
+    height: $panel-message-height !important;
+    border-bottom: solid $border-color 1px;
+    font-size: 90%;
+    display: none;
+}
+
+#everything {
+    @extend .d-flex;
+    @extend .flex-column;
+    @extend .full-content;
+    top: 0px;
+    left: 0px;
+}
+
+#columns {
+    @extend .position-relative;
+    flex: 1;
+}
+
+#background {
+    @extend .full-content;
+    z-index: -1;
+}
+
+// Used for dragging panels, popup menus, to deal with capturing clicks in iframes
+#dd-helper {
+    @extend .full-content;
+    opacity: 0;
+    z-index: 900; // Bootstrap elements start at 1000
+    display: none;
 }
 
 // ==== Panel layout styles ====
 
-// Layout the paneled UI using flexbox.
-
-#everything {
-    display: flex;
-    flex-direction: column;
-    position: absolute;
-    top: 0;
-    left: 0;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-}
-
-#columns {
-    // Fill extra space in parent
-    flex: 1;
-    // Allow columns to be absolutely positioned inside
-    position: relative;
-}
-
-#background {
-    position: absolute;
-    background: #fff;
-    z-index: -1;
-    top: 0;
-    left: 0;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-}
-
-#messagebox {
-    width: 100%;
-    height: $panel-message-height !important;
-    overflow: hidden;
-    border-bottom: solid $border-default-color 1px;
-    font-size: 90%;
-    display: none;
-}
-
-#inactivebox {
-    width: 100%;
-    height: $panel-message-height !important;
-    overflow: hidden;
-    border-bottom: solid $border-default-color 1px;
-    font-size: 90%;
-    display: none;
-}
-
-// Panels
-
 #left,
 #center,
 #right {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    overflow: hidden;
-    background: #fff;
+    @extend .position-absolute;
+    @extend .h-100;
+    @extend .overflow-hidden;
 }
 #left {
+    @extend .unified-panel;
     left: 0px;
     width: $panel-width;
-    z-index: 200;
     border-right: $layout-border;
 }
+#right {
+    @extend .unified-panel;
+    right: 0px;
+    width: $panel-width;
+    border-left: $layout-border;
+}
+#right > .unified-panel-footer {
+    .drag {
+        left: 0;
+    }
+}
 #center {
+    @extend .overflow-hidden;
     left: $panel-width;
     right: $panel-width;
-    overflow: hidden;
-    z-index: 1;
     .center-container {
-        position: absolute;
-        width: 100%;
-        height: 100%;
+        @extend .position-absolute;
+        @extend .w-100;
+        @extend .h-100;
         .center-panel {
+            @extend .position-absolute;
+            @extend .w-100;
+            @extend .h-100;
+            @extend .overflow-auto;
             display: none;
-            position: absolute;
-            width: 100%;
-            height: 100%;
             padding: $margin-h $margin-v;
-            overflow: auto;
-            background: $brand-white;
+            background: $white;
         }
         .center-frame {
-            position: absolute;
-            width: 100%;
-            height: 100%;
+            @extend .position-absolute;
+            @extend .w-100;
+            @extend .h-100;
         }
     }
     // Replaces unnecessary if/then logic in base_panels.mako
@@ -188,50 +185,34 @@ body {
     }
 }
 
-#right {
-    width: $panel-width;
-    right: 0px;
-    z-index: 200;
-    border-left: $layout-border;
-}
+// ==== Unified panel styles ====
 
-#left,
-#right,
 .unified-panel {
-    background: $panel-bg-color;
     display: flex;
-    flex-direction: column;
-}
-
-#left,
-#right,
-.unified-panel {
+    @extend .flex-column;
     background: $panel-bg-color;
-    display: flex;
-    flex-direction: column;
 }
-
 .unified-panel-header {
     @extend .unselectable;
-    @extend .mx-3;
+    @extend .px-3;
+    @extend .d-flex;
     height: $panel_header_height;
-    z-index: 1000;
     font-size: 1rem;
     font-weight: bold;
-    display: flex;
     align-items: center;
     color: $panel-header-text-color;
+    background: $panel-bg-header-color;
     a {
         color: $panel-header-text-color;
     }
     .unified-panel-header-inner {
-        width: 100%;
+        @extend .w-100;
         align-items: center;
         justify-content: space-between;
     }
     .panel-header-buttons {
+        @extend .float-right;
         order: 9999;
-        float: right;
         .panel-header-button {
             text-align: center;
             &:not(:last-child) {
@@ -243,18 +224,25 @@ body {
         }
     }
 }
-
 .unified-panel-controls {
     @extend .px-3;
 }
-
+.unified-panel-body {
+    @extend .p-0;
+    @extend .w-100;
+    @extend .h-100;
+    @extend .overflow-auto;
+    flex: 1;
+}
+.unified-panel-body-background {
+    background: none repeat scroll 0 0 $panel-bg-color;
+}
 .unified-panel-footer {
     @extend .unselectable;
     position: relative;
     height: $panel_footer_height;
     line-height: $panel_footer_height;
     width: 100%;
-    z-index: 1000; // Above #dd-helper
     border-top: $layout-border;
     background: $panel-footer-bg-color;
     color: $panel-header-text-color;
@@ -276,80 +264,51 @@ body {
     }
 }
 
-#right > .unified-panel-footer {
-    .drag {
-        left: 0;
-    }
-}
-
 // Needs to be outside panel to show when hidden
 .panel-collapse {
-    @extend .unified-panel-footer;
+    @extend .fa;
+    $border-color: darken($panel-footer-bg-color, 20%);
     font-size: 4/3em;
-    @extend .fa-icon;
-    &:before {
-        content: "\f053";
-    }
-    &.hidden:before {
-        content: "\f054";
-    }
-    z-index: 201;
     cursor: pointer;
     display: block;
     position: fixed;
-    left: 0;
-    top: inherit;
-    bottom: 0;
-    padding: 0 5px;
     text-align: center;
     height: $panel_footer_height;
     line-height: $panel_footer_height;
-    width: $panel_footer_height - 5;
-    background: none;
-    border-right: $layout-border;
-    border-top: $layout-border;
+    width: $panel_footer_height;
     background: $panel-footer-bg-color;
+    border: solid $panel-footer-bg-color 1px;
+    z-index: 1;
     &.right {
-        left: inherit;
         right: 0;
-        border-right: none;
-        border-left: $layout_border;
-        &.right:before {
+        border-top-left-radius: $border-radius-base;
+        line-height: inherit;
+        &:before {
             content: "\f054";
         }
-        &.right.hidden:before {
+        &.hidden:before {
             content: "\f053";
         }
+        &.hidden {
+            border-top-color: $border-color;
+            border-left-color: $border-color;
+        }
     }
-}
-
-.menu-bg {
-    background: whiteSmoke top repeat-x;
-}
-
-div.unified-panel-body {
-    width: 100%;
-    height: 100%;
-    padding: 0px;
-    flex: 1;
-    overflow: auto;
-}
-
-div.unified-panel-body-background {
-    background: none repeat scroll 0 0 $panel-bg-color;
-}
-
-// Used for dragging panels, popup menus, to deal with capturing clicks in iframes
-#dd-helper {
-    background: white;
-    opacity: 0;
-    z-index: 900; // Bootstrap elements start at 1000
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: none;
+    &.left {
+        left: 0;
+        border-top-right-radius: $border-radius-base;
+        line-height: inherit;
+        &:before {
+            content: "\f053";
+        }
+        &.hidden:before {
+            content: "\f054";
+        }
+        &.hidden {
+            border-top-color: $border-color;
+            border-right-color: $border-color;
+        }
+    }
 }
 
 // Messages for message box, slightly different style
@@ -387,10 +346,11 @@ div.unified-panel-body-background {
     }
 }
 
-// Masthead
+// ==== Masthead ====
+
 #masthead {
-    padding: 0;
-    margin-bottom: 0px;
+    @extend .p-0;
+    @extend .mb-0;
     background-color: $brand-dark;
     height: $masthead-height;
     .navbar-nav {
@@ -403,48 +363,47 @@ div.unified-panel-body-background {
             align-items: center;
             &.active {
                 background: darken($brand-dark, 10%);
+                .nav-link {
+                    color: $white;
+                }
             }
             .nav-link {
                 cursor: pointer;
                 text-decoration: none;
+                color: $gray-300;
                 &:hover {
-                    color: $dropdown-link-active-color;
+                    color: $brand-toggle;
                 }
                 &.nav-icon {
                     font-size: 1.7em;
                 }
                 &.toggle {
-                    color: $dropdown-link-active-color;
+                    color: $brand-toggle;
                 }
             }
             .nav-note {
-                font-weight: bold;
-                font-size: 10px;
-                position: relative;
-                right: 5px;
-                top: 10px;
-                color: $dropdown-link-active-color;
-                width: 0px;
+                @extend .font-weight-bold;
+                @extend .position-relative;
+                right: 0.4rem;
+                top: 0.7rem;
+                font-size: 0.7rem;
+                color: $brand-toggle;
+                width: 0;
             }
         }
     }
     .navbar-brand {
-        position: absolute;
-        left: 0;
-        // top: 0;
+        @extend .position-absolute;
+        @extend .font-weight-bold;
+        left: 0.3rem;
+        top: 0;
         font-family: verdana;
-        font-weight: bold;
-        font-size: 20px;
-        // line-height: 1;
-        color: $white;
-        // Override margin and padding due to shorter navbar height
-        padding: 5px 20px 12px;
-        margin-left: -15px;
+        font-size: 1.25rem;
+        color: $gray-300;
         text-decoration: none;
         .navbar-brand-image {
             display: inline;
             width: 26px;
-            // vertical-align: top;
             margin-left: 0.35em;
             border: none;
         }
@@ -454,9 +413,10 @@ div.unified-panel-body-background {
     }
 }
 
+// ==== Quota meter styles ====
+
 .quota-meter-container {
     position: absolute;
-    // top: 0;
     right: 0;
     height: 32px;
 }
@@ -500,6 +460,7 @@ div.unified-panel-body-background {
         @extend .text-dark;
         font-size: 12px;
         text-decoration: none;
+        display: block;
     }
 }
 
@@ -535,11 +496,11 @@ div.metadataFormBody div.metadataFormTitle {
 
 div.metadataFormDisabled div.metadataFormTitle {
     background: #eee;
-    border-color: $border-default-color;
+    border-color: $border-color;
 }
 
 div.metadataFormDisabled {
-    border-color: $border-default-color;
+    border-color: $border-color;
 }
 
 div.metadataHelpBody {
@@ -559,11 +520,11 @@ div.toolFormBody div.toolFormTitle {
 
 div.toolFormDisabled div.toolFormTitle {
     background: #f5f5f5;
-    border-color: $border-default-color;
+    border-color: $border-color;
 }
 
 div.toolFormDisabled {
-    border-color: $border-default-color;
+    border-color: $border-color;
 }
 
 div.toolHelp {
@@ -683,6 +644,11 @@ div.form-row-input label {
     margin-top: 5px;
 }
 
+#run-workflow {
+    @extend .float-right;
+    @extend .mt-3;
+}
+
 .workflow-right {
     background: $white;
 }
@@ -695,19 +661,6 @@ div.form-row-input label {
     margin-bottom: 10px;
 }
 
-// Selects
-select {
-    padding: 2px;
-    font-size: $font-size-base;
-    line-height: $line-height-base;
-}
-
-select,
-input,
-textarea {
-    font: inherit;
-}
-
 .form-row {
     select,
     textarea,
@@ -718,72 +671,6 @@ textarea {
         max-width: 90%;
     }
     display: block;
-}
-
-textarea,
-input[type="text"],
-input[type="password"] {
-    font-size: $font-size-base;
-    line-height: $line-height-base;
-}
-
-// Always style buttons and submits as bootstrap buttons
-input[type="submit"],
-button {
-    @extend .btn;
-    @extend .btn-secondary;
-    &.btn-primary {
-        @extend .btn-primary;
-    }
-}
-
-.search-query {
-    display: inline-block;
-    padding: 4px;
-    font-size: $font-size-base;
-    line-height: $line-height-base;
-    color: $text-color;
-    border: 1px solid $border-default-color;
-    padding-left: 14px !important;
-    padding-right: 14px;
-    margin-bottom: 0;
-    @include border-radius(14px);
-    max-width: auto;
-    background: $brand-white;
-}
-.search-query:focus {
-    border-color: darken(rgba(82, 168, 236, 0.8), 15%);
-    $shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
-    @include box-shadow($shadow);
-    outline: 0;
-    outline: thin dotted \9; /* IE6-8 */
-}
-
-.search-spinner {
-    position: absolute;
-    display: none;
-    right: 6px;
-    top: 5px;
-    font-size: 1.4em;
-    color: #888;
-}
-
-#tool-search {
-    position: relative;
-    @extend .mb-2;
-    #search-clear-btn {
-        position: absolute;
-        right: 6px;
-        top: 6px;
-        display: block;
-        font-size: 1.4em !important;
-        text-decoration: none;
-        color: #888;
-        @extend .fa-icon;
-        &:before {
-            content: "\f057";
-        }
-    }
 }
 
 // Messages
@@ -843,8 +730,6 @@ button {
     padding: 5px;
     padding-left: 25px;
     min-height: 15px;
-    //border: 1px solid $error_message_border;
-    //background-color: $error_message_bg;
     background-image: url(../../images/error_small.png);
     background-repeat: no-repeat;
     background-position: 5px 6px;
@@ -974,55 +859,49 @@ div.debug {
 }
 
 // Data grid style
-
 .grid-table {
-    width: 100%;
+    @extend .w-100;
 }
 .grid-header {
-    padding-bottom: 1em;
-}
-.grid-header h2 {
-    margin: 0;
-    margin-bottom: 0.5em;
+    @extend .mb-2;
 }
 .grid-header .title {
-    font-weight: bold;
+    @extend .font-weight-bold;
 }
 .grid {
-    padding-top: 1em;
+    @extend .pt-2;
+    @extend .w-100;
     border-collapse: collapse;
-    width: 100%;
 }
 .grid tbody td {
-    line-height: $line-height-base;
-    border-top: solid #dddddd 1px;
-    border-bottom: solid #dddddd 1px;
-    padding: 5px;
+    @extend .border-top;
+    @extend .border-bottom;
+    @extend .p-1;
 }
 .grid tbody td:empty {
-    padding: 0;
+    @extend .p-0;
 }
 .grid thead tr {
     height: 2em;
 }
 .grid thead th {
+    @extend .p-1;
+    @extend .border-top;
+    @extend .border-bottom;
     line-height: $line-height-base;
-    background: $table-heading-bg;
-    color: contrast($table-heading-bg);
-    border-top: solid $table-border-color 1px;
-    border-bottom: solid $table-border-color 1px;
-    padding: 5px;
+    background: $brand-light;
+    color: $text-color;
     text-align: left;
     white-space: nowrap;
 }
 .grid tfoot td {
-    background-color: #f8f8f8;
-    border-top: solid #dddddd 1px;
-    border-bottom: solid #dddddd 1px;
-    padding: 5px;
+    @extend .border-top;
+    @extend .border-bottom;
+    @extend .p-1;
+    background-color: $brand-light;
 }
 .grid .current {
-    background-color: #eeeeff;
+    background-color: lighten($brand-success, 20%);
 }
 
 // Pulled out of grid base
@@ -1128,32 +1007,25 @@ ul.manage-table-actions li {
 }
 
 .state-progress {
-    border: 1px solid gray;
-    position: relative;
-
-    margin-top: 2px;
-    margin-bottom: 1px;
-
+    @extend .position-relative;
+    @extend .m-1;
+    border: $border-default;
     .info {
-        color: $black;
-        background: $white;
+        color: $text-color;
+        background: $body-bg;
     }
-
     .new {
         background: $state-default-bg;
     }
-
     .running {
         background: $state-running-bg;
     }
-
     .ok {
         background: $state-success-bg;
     }
-
     .note {
-        margin-left: 1em;
-        position: absolute;
+        @extend .position-absolute;
+        @extend .ml-2;
     }
 }
 
@@ -1221,6 +1093,7 @@ a.btn {
 }
 a.action-button {
     color: $btn-default-color;
+    background: $btn-default-bg;
     text-decoration: none;
 }
 .action-button > img {
@@ -1323,34 +1196,11 @@ div.popmenu-wrapper {
     top: 100%;
     z-index: 20000;
 
-    ul.dropdown-menu {
+    .dropdown-menu {
         // Since our menus are contained in a positioned div, need to override some styles
         display: block;
         position: relative;
         float: none;
-    }
-}
-
-// For all dropdowns, define some additional item types
-ul.dropdown-menu {
-    a {
-        text-decoration: none;
-    }
-    li.head > a {
-        // From nav-list nav-header
-        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
-        font-size: 11px;
-        font-weight: bold;
-        line-height: $line-height-base;
-        color: $text-color;
-        text-transform: uppercase;
-    }
-    li.head > a:hover {
-        background: inherit;
-        border-color: transparent;
-    }
-    li > a {
-        @extend .dropdown-item;
     }
 }
 
@@ -1373,8 +1223,6 @@ div.permissionContainer {
 .text-content {
     hr {
         display: block;
-        background: black;
-        color: black;
         width: 100%;
         height: 1px;
         border: none;
@@ -1446,7 +1294,7 @@ div.permissionContainer {
 
 .editable-text:hover {
     cursor: text;
-    border: dotted $border-default-color 1px;
+    border: dotted $border-color 1px;
 }
 
 .icon-button.multiinput {
@@ -1502,87 +1350,63 @@ div.permissionContainer {
 @import "ui/error-modal.scss";
 
 // ==== Tool menu styles
-
 .toolMenuContainer {
     color: $panel-text-color;
     a {
         color: $panel-text-color;
-        // text-decoration: none;
     }
     background: $panel-bg-color;
     min-height: 100%;
-    @extend .m-3;
-}
-
-div.toolSectionPad {
-    margin: 0;
-    padding: 0;
-    height: 5px;
-    font-size: 0px;
-}
-
-div.toolSectionWrapper {
-    margin-bottom: 5px;
-}
-
-div.toolSectionDetailsInner {
-    margin-left: 5px;
-    margin-right: 5px;
+    .tool-old-link {
+        font-weight: bold;
+    }
 }
 
 div.toolSectionTitle {
     font-weight: 500;
-    font-size: 1rem;
+    font-size: $h4-font-size;
 }
 
 div.toolPanelLabel {
-    padding-top: 10px;
-    padding-bottom: 5px;
+    @extend .pb-1;
+    @extend .pt-2;
+    @extend .px-3;
     font-weight: bold;
-    color: gray;
+    font-size: $h5-font-size;
+    color: $text-light;
     text-transform: uppercase;
 }
 
-div.toolTitle {
-    margin-left: 10px;
-    margin-right: 10px;
+
+div.toolSectionTitle,
+div.toolTitle,
+div.toolTitleNoSection {
     display: block;
     .labels {
         float: right;
-        margin-left: 2px;
+    }
+    a {
+        @extend .px-3;
+        @extend .py-1;
+        text-decoration: none;
+        display: block;
+        &:hover {
+            background: darken($panel-bg-color, 5%);
+        }
+    }
+    &.text-muted a {
+        &:hover {
+            background: inherit;
+        }
     }
 }
 
-div a.tool-link {
-    text-decoration: none;
-    display: block;
-    padding-top: 5px;
-    padding-bottom: 5px;
-
-    span.tool-old-link {
-        text-decoration: underline;
-    }
-
-    &:hover {
-        background: darken($panel-bg-color, 5%);
+div.toolSectionWrapper {
+    div.toolTitle a {
+        @extend .pl-4;
+        font-size: inherit;
     }
 }
-
-div.toolSectionBody div.toolPanelLabel {
-    padding-top: 5px;
-    padding-bottom: 5px;
-    margin-left: 16px;
-    margin-right: 10px;
-    display: list-item;
-    list-style: none outside;
-}
-
-div.toolTitleNoSection {
-    padding-bottom: 5px;
-    font-weight: bold;
-}
-
-// Dataset Display Styles
 
 #loading_indicator {
     position: fixed;
@@ -1860,7 +1684,7 @@ div.toolTitleNoSection {
     @extend .fa;
     @extend .fa-circle;
     @extend .mt-1;
-    color: $white;
+    color: $brand-light;
     position: absolute;
     z-index: 1500;
     > icon {
@@ -1883,8 +1707,11 @@ div.toolTitleNoSection {
         color: $brand-success;
     }
 }
-.input-terminal-active > icon {
+.input-terminal-active.can-accept > icon {
     color: $brand-success;
+}
+.input-terminal-active.cannot-accept > icon {
+    color: $brand-warning;
 }
 .drag-terminal {
     @extend .fa;
@@ -1895,7 +1722,7 @@ div.toolTitleNoSection {
 }
 .mark-terminal {
     cursor: pointer;
-    color: darken($border-default-color, 20%);
+    color: $text-muted;
     &.mark-terminal-active {
         color: $brand-success;
     }
@@ -1940,7 +1767,8 @@ div.toolTitleNoSection {
 }
 
 /* Toolshed, reports custom styles from mako templates */
-body.toolshed {
+body.toolshed,
+body.reports {
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -1952,15 +1780,6 @@ body.toolshed {
     }
     .toolMenu {
         margin-left: 10px;
-    }
-}
-
-body.reports {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    #left {
-        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
     }
 }
 

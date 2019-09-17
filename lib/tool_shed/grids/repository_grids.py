@@ -364,10 +364,9 @@ class MatchedRepositoryGrid(grids.Grid):
         if match_tuples:
             for match_tuple in match_tuples:
                 repository_id, changeset_revision = match_tuple
-                clause_list.append("%s=%d and %s='%s'" % (model.RepositoryMetadata.table.c.repository_id,
-                                                          int(repository_id),
-                                                          model.RepositoryMetadata.table.c.changeset_revision,
-                                                          changeset_revision))
+                clause_list.append(and_(
+                    model.RepositoryMetadata.repository_id == int(repository_id),
+                    model.RepositoryMetadata.changeset_revision == changeset_revision))
             return trans.sa_session.query(model.RepositoryMetadata) \
                                    .join(model.Repository) \
                                    .filter(and_(model.Repository.table.c.deleted == false(),

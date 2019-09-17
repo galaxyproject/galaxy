@@ -9,6 +9,6 @@ import _l from "utils/localization";
 Vue.filter("localize", value => _l(value));
 
 export const mountVueComponent = ComponentDefinition => (propsData, el) => {
-    let component = Vue.extend(ComponentDefinition);
+    const component = Vue.extend(ComponentDefinition);
     return new component({ store, propsData, el });
 };

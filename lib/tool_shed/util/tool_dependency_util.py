@@ -207,14 +207,14 @@ def get_tool_dependency_ids(as_string=False, **kwd):
 def get_tool_dependency_install_dir(app, repository_name, repository_owner, repository_changeset_revision, tool_dependency_type,
                                     tool_dependency_name, tool_dependency_version):
     if tool_dependency_type == 'package':
-        return os.path.abspath(os.path.join(app.config.tool_dependency_dir,
+        return os.path.abspath(os.path.join(app.tool_dependency_dir,
                                             tool_dependency_name,
                                             tool_dependency_version,
                                             repository_owner,
                                             repository_name,
                                             repository_changeset_revision))
     if tool_dependency_type == 'set_environment':
-        return os.path.abspath(os.path.join(app.config.tool_dependency_dir,
+        return os.path.abspath(os.path.join(app.tool_dependency_dir,
                                             'environment_settings',
                                             tool_dependency_name,
                                             repository_owner,

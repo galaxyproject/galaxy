@@ -2,11 +2,12 @@
 Provides utilities for working with GFF files.
 """
 import copy
+from collections import OrderedDict
 
 from bx.intervals.io import GenomicInterval, GenomicIntervalReader, MissingFieldError, NiceReaderWrapper, ParseError
 from bx.tabular.io import Comment, Header
 
-from galaxy.util.odict import odict
+from galaxy.util import unicodify
 
 FASTA_DIRECTIVE = '##FASTA'
 
@@ -33,15 +34,17 @@ class GFFInterval(GenomicInterval):
 
         # Handle feature, score column.
         self.feature_col = feature_col
-        if self.feature_col >= self.nfields:
+        if self.nfields <= self.feature_col:
             raise MissingFieldError("No field for feature_col (%d)" % feature_col)
         self.feature = self.fields[self.feature_col]
         self.score_col = score_col
-        if self.score_col >= self.nfields:
+        if self.nfields <= self.score_col:
             raise MissingFieldError("No field for score_col (%d)" % score_col)
         self.score = self.fields[self.score_col]
 
         # GFF attributes.
+        if self.nfields < 9:
+            raise MissingFieldError("No field for attribute column (8)")
         self.attributes = parse_gff_attributes(fields[8])
 
     def copy(self):
@@ -169,7 +172,7 @@ class GFFReaderWrapper(NiceReaderWrapper):
             self.skipped += 1
             # no reason to stuff an entire bad file into memmory
             if self.skipped < 10:
-                self.skipped_lines.append((self.linenum, self.current_line, str(e)))
+                self.skipped_lines.append((self.linenum, self.current_line, unicodify(e)))
 
             # For debugging, uncomment this to propogate parsing exceptions up.
             # I.e. the underlying reason for an unexpected StopIteration exception
@@ -424,7 +427,7 @@ def read_unordered_gtf(iterator, strict=False):
             return fields[0] + '_' + get_transcript_id(fields)
 
     # Aggregate intervals by transcript_id and collect comments.
-    feature_intervals = odict()
+    feature_intervals = OrderedDict()
     comments = []
     for count, line in enumerate(iterator):
         if line.startswith('#'):

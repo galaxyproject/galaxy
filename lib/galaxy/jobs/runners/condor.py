@@ -12,6 +12,7 @@ it at this time.
 """
 import logging
 import os
+import subprocess
 
 from galaxy import model
 from galaxy.jobs.runners import (
@@ -190,6 +191,11 @@ class CondorJobRunner(AsynchronousJobRunner):
                 cjs.fail_message = "Cluster could not complete job"
                 self.work_queue.put((self.fail_job, cjs))
                 continue
+
+            if job_running:
+                # If running, check for entry points...
+                cjs.job_wrapper.check_for_entry_points()
+
             if job_running and not cjs.running:
                 log.debug("(%s/%s) job is now running" % (galaxy_id_tag, job_id))
                 cjs.job_wrapper.change_state(model.Job.states.RUNNING)
@@ -219,9 +225,41 @@ class CondorJobRunner(AsynchronousJobRunner):
         """Attempts to delete a job from the DRM queue"""
         job = job_wrapper.get_job()
         external_id = job.job_runner_external_id
-        failure_message = condor_stop(external_id)
-        if failure_message:
-            log.debug("(%s). Failed to stop condor %s" % (external_id, failure_message))
+        galaxy_id_tag = job_wrapper.get_id_tag()
+        if job.container:
+            try:
+                log.info("stop_job(): %s: trying to stop container .... (%s)" % (job.id, external_id))
+                # self.watched = [cjs for cjs in self.watched if cjs.job_id != external_id]
+                new_watch_list = list()
+                cjs = None
+                for tcjs in self.watched:
+                    if tcjs.job_id != external_id:
+                        new_watch_list.append(tcjs)
+                    else:
+                        cjs = tcjs
+                        break
+                self.watched = new_watch_list
+                self._stop_container(job_wrapper)
+                # self.watched.append(cjs)
+                if cjs.job_wrapper.get_state() != model.Job.states.DELETED:
+                    external_metadata = not asbool(cjs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
+                    if external_metadata:
+                        self._handle_metadata_externally(cjs.job_wrapper, resolve_requirements=True)
+                    log.debug("(%s/%s) job has completed" % (galaxy_id_tag, external_id))
+                    self.work_queue.put((self.finish_job, cjs))
+            except Exception as e:
+                log.warning("stop_job(): %s: trying to stop container failed. (%s)" % (job.id, e))
+                try:
+                    self._kill_container(job_wrapper)
+                except Exception as e:
+                    log.warning("stop_job(): %s: trying to kill container failed. (%s)" % (job.id, e))
+                    failure_message = condor_stop(external_id)
+                    if failure_message:
+                        log.debug("(%s). Failed to stop condor %s" % (external_id, failure_message))
+        else:
+            failure_message = condor_stop(external_id)
+            if failure_message:
+                log.debug("(%s). Failed to stop condor %s" % (external_id, failure_message))
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
@@ -246,3 +284,35 @@ class CondorJobRunner(AsynchronousJobRunner):
             log.debug("(%s/%s) is still in DRM queued state, adding to the DRM queue" % (job.id, job.job_runner_external_id))
             cjs.running = False
             self.monitor_queue.put(cjs)
+
+    def _stop_container(self, job_wrapper):
+        return self._run_container_command(job_wrapper, 'stop')
+
+    def _kill_container(self, job_wrapper):
+        return self._run_container_command(job_wrapper, 'kill')
+
+    def _run_container_command(self, job_wrapper, command):
+        job = job_wrapper.get_job()
+        external_id = job.job_runner_external_id
+        if job:
+            cont = job.container
+            if cont:
+                if cont.container_type == 'docker':
+                    return self._run_command(cont.container_info['commands'][command], external_id)[0]
+
+    def _run_command(self, command, external_job_id):
+        command = 'condor_ssh_to_job %s %s' % (external_job_id, command)
+
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, close_fds=True, preexec_fn=os.setpgrp)
+        stdout, stderr = p.communicate()
+        exit_code = p.returncode
+        ret = None
+        if exit_code == 0:
+            ret = stdout.strip()
+        else:
+            log.debug(stderr)
+        # exit_code = subprocess.call(command,
+        #                            shell=True,
+        #                            preexec_fn=os.setpgrp)
+        log.debug('_run_command(%s) exit code (%s) and failure: %s', command, exit_code, stderr)
+        return (exit_code, ret)

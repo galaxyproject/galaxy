@@ -3,9 +3,10 @@ import subprocess
 import unittest
 
 from galaxy import model
-from galaxy.jobs.datasets import DatasetPath
+from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
+from galaxy.util import safe_makedirs
 from .. import tools_support
 
 
@@ -143,14 +144,15 @@ class MetadataTestCase(unittest.TestCase, tools_support.UsesApp, tools_support.U
             f.write(contents)
 
     def metadata_command(self, output_datasets):
-        metadata_compute_strategy = get_metadata_compute_strategy(self.app, self.job.id)
+        metadata_compute_strategy = get_metadata_compute_strategy(self.app.config, self.job.id)
         self.metadata_compute_strategy = metadata_compute_strategy
 
         exec_dir = None
         dataset_files_path = self.app.model.Dataset.file_path
         config_root = self.app.config.root
         config_file = None
-        datatypes_config = os.path.join(self.job_working_directory, 'registry.xml')
+        datatypes_config = os.path.join(self.job_working_directory, 'metadata', 'registry.xml')
+        safe_makedirs(os.path.join(self.job_working_directory, 'metadata'))
         self.app.datatypes_registry.to_xml_file(path=datatypes_config)
         job_metadata = os.path.join(self.tool_working_directory, self.tool.provided_metadata_file)
         output_fnames = [DatasetPath(o.dataset.id, o.dataset.file_name, None) for o in output_datasets.values()]

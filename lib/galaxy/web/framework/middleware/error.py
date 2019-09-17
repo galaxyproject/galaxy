@@ -9,10 +9,10 @@ Error handler middleware
 When an exception is thrown from the wrapper application, this logs
 the exception and displays an error page.
 """
-import cgi
 import sys
 import traceback
 
+import markupsafe
 import six
 from paste import (
     request,
@@ -449,7 +449,7 @@ def send_report(rep, exc_data, html=True):
 
             <pre>%s</pre>
             </p>""" % (
-                cgi.escape(str(rep)), output.getvalue())
+                markupsafe.escape(str(rep)), output.getvalue())
         else:
             return (
                 "Additionally an error occurred while sending the "

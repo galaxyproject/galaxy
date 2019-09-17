@@ -22,7 +22,7 @@ Vue.use(BootstrapVue);
 
 export default {
     data() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         return {
             token: Galaxy.params.token,
             user: Galaxy.params.expired_user,
@@ -40,7 +40,7 @@ export default {
     },
     methods: {
         submit: function(ev) {
-            let urlRoot = getAppRoot();
+            const urlRoot = getAppRoot();
             ev.preventDefault();
             axios
                 .post(`${urlRoot}user/change_password`, {
@@ -55,7 +55,7 @@ export default {
                 })
                 .catch(error => {
                     this.messageVariant = "danger";
-                    let message = error.response.data && error.response.data.err_msg;
+                    const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Password change failed for an unknown reason.";
                 });
         }

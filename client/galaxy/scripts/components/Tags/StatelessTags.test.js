@@ -1,6 +1,7 @@
 import { mount, createLocalVue } from "@vue/test-utils";
 import StatelessTags from "./StatelessTags";
 import _l from "utils/localization";
+import Vue from "vue";
 
 describe("Tags/StatelessTags.vue", () => {
     const localVue = createLocalVue();
@@ -9,12 +10,13 @@ describe("Tags/StatelessTags.vue", () => {
     let testTags = ["abc", "def", "ghi"];
     let wrapper, emitted;
 
-    beforeEach(function() {
+    beforeEach(async () => {
         wrapper = mount(StatelessTags, { localVue });
         wrapper.setProps({
             value: testTags
         });
         emitted = wrapper.emitted();
+        await Vue.nextTick();
     });
 
     it("should render a div for each tag", () => {

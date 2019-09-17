@@ -1,5 +1,5 @@
 FROM ubuntu:16.04
-MAINTAINER John Chilton <jmchilton@gmail.com>
+LABEL maintainer="John Chilton <jmchilton@gmail.com>"
 
 ARG CHROME_VERSION="google-chrome-beta"
 ARG CHROME_DRIVER_VERSION="2.38"
@@ -79,7 +79,7 @@ RUN cd $GALAXY_ROOT && \
 RUN for VENV in $GALAXY_VIRTUAL_ENV_3 $GALAXY_VIRTUAL_ENV_2; do \
         export GALAXY_VIRTUAL_ENV=$VENV && \
         . $GALAXY_VIRTUAL_ENV/bin/activate && \
-        pip install psycopg2; done && \
+        pip install psycopg2-binary; done && \
     cd $GALAXY_ROOT && \
     echo "Prepopulating postgres database" && \
     su -c '/usr/lib/postgresql/${POSTGRES_MAJOR}/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres && \
@@ -156,8 +156,8 @@ USER root
 
 ADD run_test_wrapper.sh /usr/local/bin/run_test_wrapper.sh
 
-EXPOSE :9009
-EXPOSE :8080
-EXPOSE :80
+EXPOSE 9009
+EXPOSE 8080
+EXPOSE 80
 
 ENTRYPOINT ["/bin/bash", "/usr/local/bin/run_test_wrapper.sh"]

@@ -39,13 +39,13 @@
         .annotation-display {
             display: none;
             margin-bottom: 8px;
+            color: $text-muted;
             .prompt {
                 display: block;
                 margin: 0px;
                 padding: 0px;
                 font-size: 90%;
                 font-weight: normal;
-                color: #555;
             }
             .prompt:after {
                 content: ":";
@@ -66,7 +66,7 @@
                 top: -4px;
                 font-size: 10px;
                 font-style: italic;
-                color: grey;
+                color: $text-muted;
                 //TODO: move out for localization
                 content: "Click here to edit annotation";
             }
@@ -77,13 +77,11 @@
                 width: 100%;
             }
         }
-
         .list-pagination {
             width: 100%;
             text-align: center;
             margin: 0;
             border-top: 1px solid $btn-default-border;
-
             button {
                 margin: 0;
                 padding: 0;
@@ -98,7 +96,6 @@
                 -moz-appearance: none;
                 -webkit-appearance: none;
                 appearance: none;
-
                 margin: 0;
                 padding: 0;
                 width: 48%;
@@ -107,7 +104,6 @@
                 box-shadow: none;
                 text-align: center;
                 text-align-last: center;
-
                 &:focus {
                     outline: none;
                 }
@@ -123,7 +119,7 @@
                 border-radius: 0px;
                 background: transparent;
                 &.pages {
-                    color: grey;
+                    color: $text-muted;
                     text-decoration: underline;
                 }
                 &:hover,
@@ -135,7 +131,6 @@
                     text-decoration: none;
                 }
             }
-
             &:hover > *:not([disabled]) {
                 color: $btn-default-color;
             }
@@ -145,7 +140,7 @@
     // the help text that appears above the drop target
     .history-drop-target-help {
         margin: 10px 10px 4px 10px;
-        color: grey;
+        color: $text-muted;
         font-size: 80%;
         font-style: italic;
         text-align: center;
@@ -163,7 +158,7 @@
         overflow-y: auto;
 
         &:not(:empty) {
-            border-top: 1px solid $border-default-color;
+            border-top: 1px solid $border-color;
         }
         &:empty {
             flex-grow: 0 !important;
@@ -183,7 +178,7 @@
         width: 100%;
         padding: 16px;
         text-align: center;
-        color: grey;
+        color: $text-color;
     }
 
     .history-content.dataset,
@@ -363,7 +358,7 @@
     $mph-column_width: 312px;
     $mph-border_width: 1px;
     $mph-column_gap: 8px;
-    $mph-header_height: 29px;
+    $mph-header_height: 40px;
     $mph-footer_height: 0;
     $mph-controls_height: 20px;
 
@@ -427,14 +422,15 @@
     & > .header,
     & > .footer {
         width: 100%;
-        background-color: lightgrey;
-        .btn {
-            height: 21px;
-        }
+        background-color: $white;
     }
     & > .header {
         min-height: $mph-header_height;
         max-height: $mph-header_height;
+        .search-control {
+            width: 300px;
+            float: left;
+        }
         // popover containing sorting and filters
         .more-options {
             .btn {
@@ -466,24 +462,8 @@
     // the header/footers controls
     .control-column {
         margin-top: 4px;
-
         .btn {
             @extend .btn-sm;
-        }
-        .search-control {
-            display: inline-block;
-            width: 40%;
-
-            .search-clear,
-            .search-loading {
-                margin-top: -22px;
-            }
-        }
-        input.search-query {
-            font-size: 90%;
-            height: 21px;
-            line-height: normal;
-            padding: 2px 2px 1px 2px;
         }
         .open-more-options {
             padding: 2px 6px 2px 6px;
@@ -492,9 +472,8 @@
         .header-info {
             display: inline-block;
             padding: 2px 4px 2px 4px;
-            color: grey;
+            color: $text-muted;
         }
-
         &.control-column-right,
         &.control-column-left {
             margin-right: 8px;
@@ -514,7 +493,6 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            max-height: 22px;
         }
         &.control-column-right {
             text-align: right;
@@ -528,7 +506,7 @@
     .middle {
         min-width: 100%;
         margin: 0px 0px 0px 0px;
-        background-color: white;
+        background-color: $white;
         padding: $mph-column_gap 0px;
     }
 
@@ -540,7 +518,7 @@
         &:first-child {
             position: fixed;
             z-index: 10;
-            background-color: white;
+            background-color: $white;
             width: $mph-column_width + $mph-column_gap;
             padding-left: $mph-column_gap;
 
@@ -560,7 +538,7 @@
         .panel-controls {
             width: 100%;
             height: ($mph-controls_height + 4);
-            background-color: white;
+            background-color: $white;
 
             .btn {
                 @extend .btn-sm;
@@ -573,20 +551,17 @@
             }
             .current-label {
                 display: inline-block;
-                color: grey;
+                color: $text-muted;
                 padding-left: 2px;
                 margin-top: 2px;
             }
         }
         .history-panel {
             width: 100%;
-
             border: $mph-border_width solid grey;
             border-radius: 3px 3px 0px 0px;
             background-color: $panel-bg-color;
-
             overflow: auto;
-
             & > .controls .subtitle {
                 min-height: 15px;
                 margin: -4px 0px 8px;
@@ -594,7 +569,6 @@
                     content: ", ";
                 }
             }
-
             & > .controls .list-pagination {
                 // text a bit smaller for all
                 font-size: 90%;
@@ -613,7 +587,7 @@
         transform-origin: left top 0;
         margin-left: 16px;
         white-space: nowrap;
-        color: grey;
+        color: $text-muted;
         span {
             // space btwn icon and text
             margin-right: 8px;

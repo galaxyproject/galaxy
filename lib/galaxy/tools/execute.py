@@ -10,9 +10,9 @@ import six
 import six.moves
 
 from galaxy import model
-from galaxy.dataset_collections.structure import get_structure, tool_output_to_structure
+from galaxy.model.dataset_collections.structure import get_structure, tool_output_to_structure
+from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.actions import filter_output, on_text_for_names, ToolExecutionCache
-from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.util import ExecutionTimer
 
 log = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class PartialJobExecution(Exception):
 MappingParameters = collections.namedtuple("MappingParameters", ["param_template", "param_combinations"])
 
 
-def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, invocation_step=None, max_num_jobs=None, job_callback=None, completed_jobs=None, workflow_resource_parameters=None):
+def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, invocation_step=None, max_num_jobs=None, job_callback=None, completed_jobs=None, workflow_resource_parameters=None, validate_outputs=False):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
@@ -61,6 +61,8 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params['__workflow_resource_params__']
+        if validate_outputs:
+            params['__validate_outputs__'] = True
         job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job, collection_info)
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
@@ -314,7 +316,9 @@ class ExecutionTracker(object):
                     implicit_collection_jobs = implicit_collection.implicit_collection_jobs
                     implicit_collection_jobs.populated_state = "ok"
                     trans.sa_session.add(implicit_collection_jobs)
-                implicit_collection.collection.finalize()
+                implicit_collection.collection.finalize(
+                    collection_type_description=self.collection_info.structure.collection_type_description
+                )
                 trans.sa_session.add(implicit_collection.collection)
         trans.sa_session.flush()
 

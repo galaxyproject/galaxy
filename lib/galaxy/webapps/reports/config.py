@@ -48,7 +48,7 @@ class Configuration(object):
         self.blog_url = kwargs.get('blog_url', None)
         self.screencasts_url = kwargs.get('screencasts_url', None)
         self.log_events = False
-        self.cookie_path = kwargs.get("cookie_path", "/")
+        self.cookie_path = kwargs.get("cookie_path", None)
         # Error logging with sentry
         self.sentry_dsn = kwargs.get('sentry_dsn', None)
 

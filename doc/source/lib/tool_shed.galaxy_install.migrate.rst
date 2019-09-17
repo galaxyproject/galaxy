@@ -1,24 +1,31 @@
-tool\_shed\.galaxy\_install\.migrate package
-============================================
+tool\_shed.galaxy\_install.migrate package
+==========================================
 
 .. automodule:: tool_shed.galaxy_install.migrate
     :members:
     :undoc-members:
     :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+    tool_shed.galaxy_install.migrate.versions
+
 Submodules
 ----------
 
-tool\_shed\.galaxy\_install\.migrate\.check module
---------------------------------------------------
+tool\_shed.galaxy\_install.migrate.check module
+-----------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.migrate.check
     :members:
     :undoc-members:
     :show-inheritance:
 
-tool\_shed\.galaxy\_install\.migrate\.common module
----------------------------------------------------
+tool\_shed.galaxy\_install.migrate.common module
+------------------------------------------------
 
 .. automodule:: tool_shed.galaxy_install.migrate.common
     :members:

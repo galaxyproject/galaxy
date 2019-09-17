@@ -1,4 +1,4 @@
-<tool id="collection_paired_test" name="paired_test" version="0.1.0">
+<tool id="collection_paired_test" name="collection_paired_test" version="0.1.0">
   <command>
     cat $f1.forward $f1['reverse'] >> $out1;
   </command>
