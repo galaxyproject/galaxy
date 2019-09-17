@@ -14,7 +14,7 @@
                             id="workflow-search"
                             class="m-1"
                             name="query"
-                            placeholder="search workflows"
+                            placeholder="Search Workflows"
                             autocomplete="off"
                             type="text"
                             v-model="filter"
