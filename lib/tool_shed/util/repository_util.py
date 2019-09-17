@@ -1047,7 +1047,7 @@ def validate_repository_name(app, name, user):
     if name in ['None', None, '']:
         return 'Enter the required repository name.'
     if name in ['repos']:
-        return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a repository name." % name
+        return "The term '%s' is a reserved word in the Tool Shed, so it cannot be used as a repository name." % name
     check_existing = get_repository_by_name_and_owner(app, name, user.username)
     if check_existing is not None:
         if check_existing.deleted:

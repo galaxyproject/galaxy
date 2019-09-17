@@ -11,6 +11,7 @@ from galaxy import (
 from galaxy.security.validate_user_input import (
     transform_publicname,
     validate_email,
+    validate_password,
     validate_publicname
 )
 from galaxy.web import url_for
@@ -454,9 +455,9 @@ class User(BaseUser):
                                        active_view="user")
 
     def __validate(self, trans, email, password, confirm, username):
-        # If coming from the tool shed webapp, we'll require a public user name
-        if not username:
-            return "A public user name is required in the tool shed."
         if username in ['repos']:
-            return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a public user name." % escape(username)
-        return super(User, self).__validate(trans, email, password, confirm, username)
+            return "The term '%s' is a reserved word in the Tool Shed, so it cannot be used as a public user name." % username
+        message = "\n".join([validate_email(trans, email),
+                             validate_password(trans, password, confirm),
+                             validate_publicname(trans, username)]).rstrip()
+        return message
