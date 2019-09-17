@@ -95,11 +95,12 @@ export default {
                 name: {
                     sortable: true
                 },
-                tags: {},
+                tags: {
+                    sortable: true
+                },
                 bookmark: {},
                 execute: {
-                    label: "",
-                    sortable: false
+                    label: ""
                 }
             },
             filter: "",
