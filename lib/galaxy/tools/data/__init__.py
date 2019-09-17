@@ -675,15 +675,15 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
             rval = ""
             for line in reader:
                 if line.lstrip().startswith(self.comment_char):
-                    rval += line.encode('utf-8')
+                    rval += line
                 else:
                     line_s = line.rstrip("\n\r")
                     if line_s:
                         fields = line_s.split(self.separator)
                         if fields != values:
-                            rval += line.encode('utf-8')
+                            rval += line
 
-        with open(loc_file, 'wb') as writer:
+        with open(loc_file, 'w') as writer:
             writer.write(rval)
 
         return rval
