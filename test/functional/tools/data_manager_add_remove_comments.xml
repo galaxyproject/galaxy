@@ -1,6 +1,6 @@
-<tool id="data_manager_add" name="Test Data Manager Add" tool_type="manage_data" version="0.0.1">
+<tool id="data_manager_add_remove_comments" name="Test Data Manager Add Remove Comments" tool_type="manage_data" version="0.0.1">
     <configfiles>
-        <configfile name="static_test_data">{"data_tables": {"testbeta": { "add": [{"value": "newvalue", "path": "newvalue.txt"}]}}}</configfile>
+        <configfile name="static_test_data">{"data_tables": {"testbeta_comments": { "add": [{"value": "newvalue", "path": "newvalue.txt"}, {"value": "newvalue2", "path": "newvalue2.txt"}], "remove": [{"value": "newvalue", "path": "newvalue.txt"}]}}}</configfile>
     </configfiles>
     <command>
         mkdir $out_file.files_path ;

@@ -1,6 +1,6 @@
-<tool id="data_manager_add" name="Test Data Manager Add" tool_type="manage_data" version="0.0.1">
+<tool id="data_manager_comments" name="Test Data Manager Comments" tool_type="manage_data" version="0.0.1">
     <configfiles>
-        <configfile name="static_test_data">{"data_tables": {"testbeta": { "add": [{"value": "newvalue", "path": "newvalue.txt"}]}}}</configfile>
+        <configfile name="static_test_data">{"data_tables": {"testbeta_comments": [{"value": "newvalue", "path": "newvalue.txt"}]}}</configfile>
     </configfiles>
     <command>
         mkdir $out_file.files_path ;
@@ -12,5 +12,5 @@
     </inputs>
     <outputs>
         <data name="out_file" format="data_manager_json"/>
-    </outputs>
+    </outputs>    
 </tool>

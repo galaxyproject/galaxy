@@ -1,0 +1,18 @@
+<!-- Comment here -->
+<tables>
+  <!-- Test Alpha Comment -->
+  <table name="testalpha_comments" comment_char="#">
+    <columns>value, name, path</columns>
+    <file path="${__HERE__}/testalpha_comments.loc" />
+  </table>
+  <!-- Test Beta Comment -->
+  <table name="testbeta_comments" comment_char="#">
+    <columns>value, path</columns>
+    <file path="${__HERE__}/testbeta_comments.loc" />
+  </table>
+  <!-- Test Fasta Indexes comment  -->
+  <table name="test_fasta_indexes_comments" comment_char="#">
+    <columns>value, dbkey, name, path</columns>
+    <file path="${__HERE__}/fasta_indexes_comments.loc" />
+  </table>
+</tables>
