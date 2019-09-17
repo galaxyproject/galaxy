@@ -1567,7 +1567,7 @@ class BlibSQlite(SQlite):
             log.warning('%s, set_meta Exception: %s', self, e)
 
     def sniff(self, filename):
-        if super(BlibSQlite, self).sniff_tables_names(filename):
+        if super(BlibSQlite, self).sniff(filename):
             table_names = ['IonMobilityTypes', 'LibInfo', 'Modifications', 'RefSpectra',
                            'RefSpectraPeakAnnotations', 'RefSpectraPeaks', 'ScoreTypes', 'SpectrumSourceFiles']
             return self.sniff_tables_names(filename, table_names)
@@ -1605,7 +1605,7 @@ class DlibSQlite(SQlite):
     def sniff(self, filename):
         if super(DlibSQlite, self).sniff(filename):
             table_names = ['entries', 'metadata', 'peptidetoprotein']
-            return super(DlibSQlite, self).sniff_tables_names(filename, table_names)
+            return self.sniff_tables_names(filename, table_names)
 
 
 class ElibSQlite(SQlite):
