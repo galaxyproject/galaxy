@@ -27,7 +27,6 @@
     </div>
 </template>
 <script>
-import { getGalaxyInstance } from "app";
 import SearchList from "./SearchList/Index.vue";
 import InstalledList from "./InstalledList/Index.vue";
 export default {
