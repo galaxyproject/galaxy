@@ -62,11 +62,10 @@
     </div>
 </template>
 <script>
-import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import { cancelWorkflowScheduling, getInvocationJobsSummary } from "./services";
+import { cancelWorkflowScheduling } from "./services";
 
 import { getRootFromIndexLink } from "onload";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
@@ -96,18 +95,16 @@ export default {
     },
     data() {
         return {
-            jobStatesSummary: null,
             stepStatesInterval: null,
             jobStatesInterval: null
         };
     },
     created: function() {
-        const invocationId = this.invocationId;
         this.pollStepStatesUntilTerminal();
         this.pollJobStatesUntilTerminal();
     },
     computed: {
-        ...mapGetters(["getInvocationById"]),
+        ...mapGetters(["getInvocationById", "getInvocationJobsSummaryById"]),
         invocationState: function() {
             const invocation = this.getInvocationById(this.invocationId);
             const state = invocation ? invocation.state : "new";
@@ -182,10 +179,14 @@ export default {
         },
         runningMessage() {
             return `${this.runningCount} jobs currently running`;
+        },
+        jobStatesSummary() {
+            const jobsSummary = this.getInvocationJobsSummaryById(this.invocationId);
+            return ! jobsSummary ? null : new JOB_STATES_MODEL.JobStatesSummary(jobsSummary);
         }
     },
     methods: {
-        ...mapActions(["fetchInvocationForId"]),
+        ...mapActions(["fetchInvocationForId", "fetchInvocationJobsSummaryForId"]),
         pollStepStatesUntilTerminal: function() {
             clearInterval(this.stepStatesInterval);
             if (!this.invocationSchedulingTerminal) {
@@ -194,14 +195,9 @@ export default {
             }
         },
         pollJobStatesUntilTerminal: function() {
-            getInvocationJobsSummary(this.invocationId)
-                .then(this.updateJobStates)
-                .catch(this.onError);
-        },
-        updateJobStates: function(response) {
-            this.jobStatesSummary = new JOB_STATES_MODEL.JobStatesSummary(response.data);
             clearInterval(this.jobStatesInterval);
             if (!this.jobStatesTerminal) {
+                this.fetchInvocationJobsSummaryForId(this.invocationId);
                 this.jobStatesInterval = setInterval(this.pollJobStatesUntilTerminal, 3000);
             }
         },
