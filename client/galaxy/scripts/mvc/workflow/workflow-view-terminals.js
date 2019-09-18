@@ -3,6 +3,7 @@ import _ from "underscore";
 import Backbone from "backbone";
 import Terminals from "mvc/workflow/workflow-terminals";
 import Connector from "mvc/workflow/workflow-connector";
+import ariaAlert from "utils/ariaAlert"
 
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
@@ -210,7 +211,7 @@ var BaseOutputTerminalView = TerminalView.extend({
         const terminal = this.terminalForOutput(output);
         this.setupMappingView(terminal);
         this.el.terminal = terminal;
-        this.$el.attr("aria-label", `connect node ${name}`);
+        this.$el.attr("aria-label", `connect output ${name} from ${node.name} to input. Press space to see a list of available inputs`);
         this.$el.attr("output-name", name);
         this.$el.attr("id", id);
         this.$el.attr("tabindex", "0");
@@ -225,11 +226,10 @@ var BaseOutputTerminalView = TerminalView.extend({
         drag: "onDrag",
         dragstart: "onDragStart",
         dragend: "onDragEnd",
-        keydown: "keyDown"
+        keydown: "screenReaderSelectOutputNode"
     },
 
-    keyDown: function(e) {
-        console.log("keydown");
+    screenReaderSelectOutputNode: function(e) {
         const inputChoiceKeyDown = (e) => {
             e.stopPropagation();
             const currentItem = e.currentTarget;
@@ -237,11 +237,11 @@ var BaseOutputTerminalView = TerminalView.extend({
             const nextItem = currentItem.nextSibling;
             const inputTerminal = currentItem.input.context.terminal;
 
-            const switchActiveItem = (currentActive, newActive ) => {
+           const switchActiveItem = (currentActive, newActive ) => {
                 newActive.classList.add("active");
                 newActive.focus();
                 currentActive.classList.remove("active");
-            }
+           }
 
             const removeMenu = () => {
                 $(currentItem.parentNode).remove();
@@ -268,22 +268,22 @@ var BaseOutputTerminalView = TerminalView.extend({
                         switchActiveItem(currentItem, currentItem.parentNode.lastChild);
                     }
                     break;
-                case 13 : // Enter
                 case 32 : // Space
                     removeMenu();
                     new Connector(this.el.terminal, inputTerminal).redraw();
+                    ariaAlert("Node connected");
 
                     if (inputTerminal.connectors.length > 0) {
                         const t = $("<div/>")
                             .addClass("delete-terminal")
                             .attr("tabindex", "0")
-                            .keydown( e => {
-                                console.log("kkkkk");
-                                if (e.keyCode === 32) { //Space
-                                    console.log("keycodespace");
+                            .attr("aria-label", "delete terminal")
+                            .on("keydown click", e => {
+                                if (e.keyCode === 32 || e.type === "click") { //Space or Click
                                     $.each(inputTerminal.connectors, (_, x) => {
                                         if (x) {
                                             x.destroy();
+                                            ariaAlert("Connection destroyed");
                                         }
                                     });
                                     t.remove();
@@ -294,16 +294,17 @@ var BaseOutputTerminalView = TerminalView.extend({
                             .append(t);
                     }
                     break;
-                case 27 : // Escape
-                case 9  : // Tab
-                    $(currentItem.parentNode).remove();
-                    removeMenu();
-                    break;
             }
         };
-
-        if (e.keyCode === 32) { //Space
+        const buildInputChoicesMenu = () => {
             const inputChoicesMenu = document.createElement("ul");
+            $(inputChoicesMenu).focusout((e) =>  {
+                /* focus is still inside child element of menu so don't hide */
+                if (inputChoicesMenu.contains(e.relatedTarget)) {
+                    return;
+                }
+                $(inputChoicesMenu).hide();
+            });
             inputChoicesMenu.id = "input-choices-menu";
             inputChoicesMenu.className = "list-group";
             inputChoicesMenu.setAttribute('role', 'menu');
@@ -316,7 +317,7 @@ var BaseOutputTerminalView = TerminalView.extend({
                 const connectionAcceptable = inputTerminal.canAccept(this.el.terminal);
                 if (connectionAcceptable.canAccept) {
                     const inputChoiceItem = document.createElement('li');
-                    inputChoiceItem.appendChild(document.createTextNode(inputTerminal.label));
+                    inputChoiceItem.textContent = `${inputTerminal.name} in ${inputTerminal.node.name} node`;
                     inputChoiceItem.tabIndex = -1;
                     inputChoiceItem.input= input;
                     inputChoiceItem.onkeydown = inputChoiceKeyDown;
@@ -334,6 +335,11 @@ var BaseOutputTerminalView = TerminalView.extend({
             else {
                 //alert user that there are no available inputs to connect to for this output
             }
+        };
+
+        if (e.keyCode === 32) { //Space
+            ariaAlert("Node selected");
+            buildInputChoicesMenu();
         }
     },
     onDrag: function(e, d) {
