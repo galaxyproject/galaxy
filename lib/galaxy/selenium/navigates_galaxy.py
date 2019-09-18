@@ -441,6 +441,7 @@ class NavigatesGalaxy(HasDriver):
         if assert_valid:
             # self.wait_for_selector_visible(".donemessage")
             self.home()
+            self.wait_for_logged_in()
             self.click_masthead_user()
             # Make sure the user menu was dropped down
             user_menu = self.components.masthead.user_menu.wait_for_visible()
@@ -461,15 +462,20 @@ class NavigatesGalaxy(HasDriver):
 
     def wait_for_logged_in(self):
         try:
-            self.wait_for_visible(self.navigation.masthead.selectors.logged_in_only)
+            self.components.masthead.logged_in_only.wait_for_visible()
         except self.TimeoutException as e:
+            ui_logged_out = self.components.masthead.logged_out_only.is_displayed
+            if ui_logged_out:
+                dom_message = "Element a.loggedout-only is present in DOM, indicating Login or Register button still in masthead."
+            else:
+                dom_message = "Element a.loggedout-only is *not* present in DOM."
             user_info = self.api_get("users/current")
             if "username" in user_info:
-                template = "Failed waiting for masthead to update for login, but user API response indicates [%s] is logged in. This seems to be a bug in Galaxy. API response was [%s]. "
-                message = template % (user_info["username"], user_info)
+                template = "Failed waiting for masthead to update for login, but user API response indicates [%s] is logged in. This seems to be a bug in Galaxy. %s logged API response was [%s]. "
+                message = template % (user_info["username"], dom_message, user_info)
                 raise self.prepend_timeout_message(e, message)
             else:
-                raise NotLoggedInException(e, user_info)
+                raise NotLoggedInException(e, user_info, dom_message)
 
     def click_center(self):
         action_chains = self.action_chains()
@@ -1468,9 +1474,9 @@ class NavigatesGalaxy(HasDriver):
 
 class NotLoggedInException(TimeoutException):
 
-    def __init__(self, timeout_exception, user_info):
-        template = "Waiting for UI to reflect user logged in but it did not occur. API indicates no user is currently logged in. API response was [%s]. %s"
-        msg = template % (user_info, timeout_exception.msg)
+    def __init__(self, timeout_exception, user_info, dom_message):
+        template = "Waiting for UI to reflect user logged in but it did not occur. API indicates no user is currently logged in. %s API response was [%s]. %s"
+        msg = template % (dom_message, user_info, timeout_exception.msg)
         super(NotLoggedInException, self).__init__(
             msg=msg,
             screen=timeout_exception.screen,
