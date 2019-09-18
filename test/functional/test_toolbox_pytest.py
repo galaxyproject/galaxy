@@ -7,12 +7,9 @@ sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "te
 import pytest
 from base import driver_util
 
-SKIPTEST = os.path.join(os.path.dirname(__file__), 'known_broken_tools.txt')
-TEST_PREFIX = 'TestForTool_'
 TEST_TYPE = sys.argv[sys.argv.index("-m")+1]
-# Run data manager tests
-if TEST_TYPE == 'data_manager':
-    TEST_PREFIX = 'TestForDataManagerTool_'
+SKIPTEST = os.path.join(os.path.dirname(__file__), 'known_broken_tools.txt')
+TEST_PREFIX = 'TestForTool_' if TEST_TYPE != 'data_manager' else 'TestForDataManagerTool_'
 
 
 class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
