@@ -67,6 +67,7 @@
     "build-charts": "webpack -p --config ../config/plugins/visualizations/charts/webpack.config.js",
     "build-scatterplot": "NODE_PATH=./node_modules webpack -p --config ../config/plugins/visualizations/scatterplot/webpack.config.js",
     "prettier": "prettier --write 'galaxy/style/scss/**/*.scss' 'galaxy/scripts/**/{*.js,*.vue}' '!galaxy/scripts/libs/**'",
+    "prettier-check": "prettier --check 'galaxy/style/scss/**/*.scss' 'galaxy/scripts/**/{*.js,*.vue}' '!galaxy/scripts/libs/**'",
     "styleguide": "vue-styleguidist server",
     "styleguide:build": "vue-styleguidist build",
     "test": "npm run test-mocha && npm run test-qunit",

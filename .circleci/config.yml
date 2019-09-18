@@ -188,16 +188,7 @@ jobs:
       - run: cd client && yarn install --frozen-lockfile
       - *save_yarn_cache
       - run: cd client && yarn run eslint
-  js_formatted:
-    docker:
-      - image: circleci/node:10-browsers
-    <<: *set_workdir
-    steps:
-      - *restore_yarn_cache
-      - run: cd client && yarn install --frozen-lockfile
-      - *save_yarn_cache
-      - run: cd client && yarn run prettier
-      - run: git diff --exit-code -- client
+      - run: cd client && yarn run prettier-check
 workflows:
   version: 2
   get_code_and_test:
@@ -226,6 +217,4 @@ workflows:
       - js_unit:
           <<: *requires_get_code
       - js_lint:
-          <<: *requires_get_code
-      - js_formatted:
           <<: *requires_get_code
