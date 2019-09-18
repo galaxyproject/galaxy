@@ -1379,6 +1379,7 @@ class SQlite(Binary):
             return False
 
     def sniff_table_names(self, filename, table_names):
+        # All table names should be in the schema
         try:
             conn = sqlite.connect(filename)
             c = conn.cursor()
