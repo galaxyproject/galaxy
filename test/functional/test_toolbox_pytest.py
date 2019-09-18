@@ -9,6 +9,10 @@ from base import driver_util
 
 SKIPTEST = os.path.join(os.path.dirname(__file__), 'known_broken_tools.txt')
 TEST_PREFIX = 'TestForTool_'
+TEST_TYPE = sys.argv[sys.argv.index("-m")+1]
+# Run data manager tests
+if TEST_TYPE == 'data_manager':
+    TEST_PREFIX = 'TestForDataManagerTool_'
 
 
 class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
@@ -22,7 +26,15 @@ class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
 
     def build_tests(self):
         """Build framework tool test methods."""
-        return self.build_tool_tests(return_test_classes=True)
+        if TEST_TYPE == 'data_manager':
+            from .test_data_managers import DataManagerToolTestCase
+            return self.build_tool_tests(return_test_classes=True, data_manager_data={
+                'name_prefix': "TestForDataManagerTool_",
+                'baseclass': DataManagerToolTestCase,
+                'contains': 'data_manager'
+            })
+        else:
+            return self.build_tool_tests(return_test_classes=True)
 
 
 def get_skiplist():
@@ -66,7 +78,7 @@ def cases():
             test = (test_instance.tool_id + "_test_%d" % (index + 1), test_instance, index)
             marks = []
             marks.append(pytest.mark.skipif(test_instance.tool_id in skiplist, reason="tool in skiplist"))
-            if 'data_manager_' in test_instance.tool_id:
+            if 'data_manager' in test_instance.tool_id:
                 marks.append(pytest.mark.data_manager(test))
             else:
                 marks.append(pytest.mark.tool(test))

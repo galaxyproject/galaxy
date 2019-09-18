@@ -12,5 +12,15 @@
     </inputs>
     <outputs>
         <data name="out_file" format="data_manager_json"/>
-    </outputs>    
+    </outputs>
+    <tests>
+        <test>
+            <param name="ignored_value" value=""/>
+            <output name="out_file">
+                <assert_contents>
+                    <has_text text="newvalue" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
 </tool>

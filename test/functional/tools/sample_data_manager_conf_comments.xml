@@ -1,6 +1,8 @@
+<!-- Starting comment -->
 <data_managers tool_path="test/functional/tools">
-  <data_manager tool_file="data_manager.xml" id="test_data_manager" version="1.0">
-    <data_table name="testbeta">
+  <!-- Basic comment -->
+  <data_manager tool_file="data_manager_comments.xml" id="test_data_manager_comments" version="1.0">
+    <data_table name="testbeta_comments">
       <output>
         <column name="value" />
         <column name="path" output_ref="out_file" >
@@ -13,8 +15,8 @@
       </output>
     </data_table>
   </data_manager>
-  <data_manager tool_file="data_manager_add.xml" id="test_data_manager_add" version="1.0">
-    <data_table name="testbeta">
+  <data_manager tool_file="data_manager_add_comments.xml" id="test_data_manager_add_comments" version="1.0">
+    <data_table name="testbeta_comments">
       <output>
         <column name="value" />
         <column name="path" output_ref="out_file" >
@@ -27,8 +29,8 @@
       </output>
     </data_table>
   </data_manager>
-  <data_manager tool_file="data_manager_remove.xml" id="test_data_manager_remove" version="1.0">
-    <data_table name="testbeta">
+  <data_manager tool_file="data_manager_remove_comments.xml" id="test_data_manager_remove_comments" version="1.0">
+    <data_table name="testbeta_comments">
       <output>
         <column name="value" />
         <column name="path" output_ref="out_file" >
@@ -41,8 +43,8 @@
       </output>
     </data_table>
   </data_manager>
-  <data_manager tool_file="data_manager_add_remove.xml" id="test_data_manager_add_remove" version="1.0">
-    <data_table name="testbeta">
+  <data_manager tool_file="data_manager_add_remove_comments.xml" id="test_data_manager_add_remove_comments" version="1.0">
+    <data_table name="testbeta_comments">
       <output>
         <column name="value" />
         <column name="path" output_ref="out_file" >

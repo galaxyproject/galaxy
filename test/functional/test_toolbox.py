@@ -74,7 +74,7 @@ def build_tests(app=None,
 
     # Eliminate all previous tests from G.
     for key, val in G.copy().items():
-        if key.startswith('TestForTool_'):
+        if key.startswith(name_prefix):
             del G[key]
 
     tests_summary = galaxy_interactor.get_tests_summary()

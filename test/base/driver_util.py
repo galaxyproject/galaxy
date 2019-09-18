@@ -183,7 +183,7 @@ def setup_galaxy_config(
     for data_manager_config in ['config/data_manager_conf.xml', 'data_manager_conf.xml']:
         if os.path.exists(data_manager_config):
             default_data_manager_config = data_manager_config
-    data_manager_config_file = "test/functional/tools/sample_data_manager_conf.xml"
+    data_manager_config_file = "test/functional/tools/sample_data_manager_conf.xml,test/functional/tools/sample_data_manager_conf_comments.xml"
     if default_data_manager_config is not None:
         data_manager_config_file = "%s,%s" % (default_data_manager_config, data_manager_config_file)
     master_api_key = get_master_api_key()
@@ -309,7 +309,7 @@ def _tool_data_table_config_path(default_tool_data_table_config_path=None):
         for tool_data_config in ['config/tool_data_table_conf.xml', 'tool_data_table_conf.xml']:
             if os.path.exists(tool_data_config):
                 default_tool_data_config = tool_data_config
-        tool_data_table_config_path = '%s,test/functional/tool-data/sample_tool_data_tables.xml' % default_tool_data_config
+        tool_data_table_config_path = '%s,test/functional/tool-data/sample_tool_data_tables.xml,test/functional/tool-data/sample_tool_data_tables_comments.xml' % default_tool_data_config
     return tool_data_table_config_path
 
 
@@ -1017,7 +1017,7 @@ class GalaxyTestDriver(TestDriver):
             testing_installed_tools
         )
 
-    def build_tool_tests(self, testing_shed_tools=None, return_test_classes=False):
+    def build_tool_tests(self, testing_shed_tools=None, return_test_classes=False, data_manager_data=None):
         if self.app is None:
             return
 
@@ -1031,12 +1031,23 @@ class GalaxyTestDriver(TestDriver):
         import functional.test_toolbox
         functional.test_toolbox.toolbox = self.app.toolbox
         # When testing data managers, do not test toolbox.
-        test_classes = functional.test_toolbox.build_tests(
-            app=self.app,
-            testing_shed_tools=testing_shed_tools,
-            master_api_key=get_master_api_key(),
-            user_api_key=get_user_api_key(),
-        )
+        if data_manager_data is None:
+            test_classes = functional.test_toolbox.build_tests(
+                app=self.app,
+                testing_shed_tools=testing_shed_tools,
+                master_api_key=get_master_api_key(),
+                user_api_key=get_user_api_key(),
+            )
+        else:
+            test_classes = functional.test_toolbox.build_tests(
+                app=self.app,
+                testing_shed_tools=testing_shed_tools,
+                master_api_key=get_master_api_key(),
+                user_api_key=get_user_api_key(),
+                name_prefix=data_manager_data['name_prefix'],
+                baseclass=data_manager_data['baseclass'],
+                contains=data_manager_data['contains'],
+            )
         if return_test_classes:
             return test_classes
         return functional.test_toolbox
