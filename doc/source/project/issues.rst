@@ -110,6 +110,7 @@ particular domain, as well as more organized release notes.
 - ``area/cleanup`` - General code cleanup
 - ``area/client-build``
 - ``area/compliance``
+- ``area/configuration`` - Galaxy's configuration system
 - ``area/cwl`` - changes related to supporting the common workflow language in Galaxy
 - ``area/database`` - Change requires a modification to Galaxy's database
 - ``area/dataset-collections``
