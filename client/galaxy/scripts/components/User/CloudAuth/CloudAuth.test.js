@@ -28,6 +28,9 @@ describe("CloudAuth component", () => {
     beforeEach(async () => {
         const creds = listCredentials.map(Credential.create);
         stub = sinon.stub(mockSvc, "listCredentials").resolves(creds);
+        /* https://github.com/vuejs/vue-test-utils/issues/829 for more info
+         * regarding the sync option used here.
+         */
         wrapper = shallowMount(CloudAuth, { sync: false, localVue });
         await flushPromises();
     });
