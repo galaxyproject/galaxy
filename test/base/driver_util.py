@@ -183,7 +183,7 @@ def setup_galaxy_config(
     for data_manager_config in ['config/data_manager_conf.xml', 'data_manager_conf.xml']:
         if os.path.exists(data_manager_config):
             default_data_manager_config = data_manager_config
-    data_manager_config_file = "test/functional/tools/sample_data_manager_conf.xml,test/functional/tools/sample_data_manager_conf_comments.xml"
+    data_manager_config_file = "test/functional/tools/sample_data_manager_conf.xml,test/functional/tools/sample_data_manager_comments_conf.xml"
     if default_data_manager_config is not None:
         data_manager_config_file = "%s,%s" % (default_data_manager_config, data_manager_config_file)
     master_api_key = get_master_api_key()
