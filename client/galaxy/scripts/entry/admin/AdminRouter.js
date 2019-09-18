@@ -16,6 +16,7 @@ import ErrorStack from "components/admin/ErrorStack.vue";
 import DisplayApplications from "components/admin/DisplayApplications.vue";
 import Toolshed from "components/Toolshed/Index.vue";
 import Vue from "vue";
+import store from "store";
 
 export const getAdminRouter = (Galaxy, options) => {
     const galaxyRoot = getAppRoot();
@@ -114,7 +115,7 @@ export const getAdminRouter = (Galaxy, options) => {
             const instance = Vue.extend(component);
             const vm = document.createElement("div");
             this.page.display(vm);
-            new instance(props).$mount(vm);
+            new instance({ store, props }).$mount(vm);
         },
 
         show_data_tables: function() {

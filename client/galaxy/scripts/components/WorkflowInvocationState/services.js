@@ -12,8 +12,3 @@ export function cancelWorkflowScheduling(invocationId) {
     const url = getUrl(`api/invocations/${invocationId}`);
     return axios.delete(url);
 }
-
-export function getInvocation(invocationId) {
-    const url = getUrl(`api/invocations/${invocationId}`);
-    return axios.get(url);
-}

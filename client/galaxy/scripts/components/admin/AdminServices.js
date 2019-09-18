@@ -19,5 +19,5 @@ export function reloadDisplayApplications(ids) {
 export function getActiveInvocations() {
     const params = {include_terminal: "false"};
     const url = `${getAppRoot()}api/invocations`;
-    return axios.get(url, {params: params});
+    return axios.get(url, { params: params });
 }

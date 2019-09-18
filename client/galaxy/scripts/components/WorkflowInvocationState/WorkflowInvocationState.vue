@@ -66,12 +66,14 @@ import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import Vue from "vue";
 
-import { cancelWorkflowScheduling, getInvocationJobsSummary, getInvocation } from "./services";
+import { cancelWorkflowScheduling, getInvocationJobsSummary } from "./services";
 
 import { getRootFromIndexLink } from "onload";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import mixin from "components/JobStates/mixin";
 import ProgressBar from "components/ProgressBar";
+
+import { mapGetters, mapActions } from "vuex";
 
 const getUrl = path => getRootFromIndexLink() + path;
 
@@ -94,10 +96,6 @@ export default {
     },
     data() {
         return {
-            stepCount: null,
-            invocationState: "new",
-            createdTime: null,
-            stepStates: {},
             jobStatesSummary: null,
             stepStatesInterval: null,
             jobStatesInterval: null
@@ -109,6 +107,39 @@ export default {
         this.pollJobStatesUntilTerminal();
     },
     computed: {
+        ...mapGetters(["getInvocationById"]),
+        invocationState: function() {
+            const invocation = this.getInvocationById(this.invocationId);
+            const state = invocation ? invocation.state : "new";
+            return state;
+        },
+        createdTime: function() {
+            const invocation = this.getInvocationById(this.invocationId);
+            return invocation ? this.getInvocationById(this.invocationId).create_time : null;
+        },
+        stepCount: function() {
+            const invocation = this.getInvocationById(this.invocationId);
+            if (invocation) {
+                return invocation.steps.length;
+            } else {
+                return null;
+            }
+        },
+        stepStates: function() {
+            const stepStates = {};
+            const invocation = this.getInvocationById(this.invocationId);
+            if (!invocation) {
+                return {};
+            }
+            for (const step of invocation.steps) {
+                if (!stepStates[step.state]) {
+                    stepStates[step.state] = 1;
+                } else {
+                    stepStates[step.state] += 1;
+                }
+            }
+            return stepStates;
+        },
         invocationLink: function() {
             return getUrl(`workflows/invocations/report?id=${this.invocationId}`);
         },
@@ -154,35 +185,18 @@ export default {
         }
     },
     methods: {
+        ...mapActions(["fetchInvocationForId"]),
         pollStepStatesUntilTerminal: function() {
-            getInvocation(this.invocationId)
-                .then(this.updateStepStates)
-                .catch(this.onError);
+            clearInterval(this.stepStatesInterval);
+            if (!this.invocationSchedulingTerminal) {
+                this.fetchInvocationForId(this.invocationId);
+                this.stepStatesInterval = setInterval(this.pollStepStatesUntilTerminal, 3000);
+            }
         },
         pollJobStatesUntilTerminal: function() {
             getInvocationJobsSummary(this.invocationId)
                 .then(this.updateJobStates)
                 .catch(this.onError);
-        },
-        updateStepStates: function(response) {
-            const invocation = response.data;
-            this.invocationState = invocation.state;
-            this.createdTime = invocation.create_time;
-            const stepStates = {}
-            for (const step of invocation.steps) {
-                if (!stepStates[step.state]) {
-                    stepStates[step.state] = 1;
-                } else {
-                    stepStates[step.state] += 1;
-                }
-            }
-            this.stepStates = stepStates;
-            this.stepCount = invocation.steps.length;
-            clearInterval(this.stepStatesInterval);
-            if (!this.invocationSchedulingTerminal) {
-
-                this.stepStatesInterval = setInterval(this.pollStepStatesUntilTerminal, 3000);
-            }
         },
         updateJobStates: function(response) {
             this.jobStatesSummary = new JOB_STATES_MODEL.JobStatesSummary(response.data);
