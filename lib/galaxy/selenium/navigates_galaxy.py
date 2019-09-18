@@ -1282,10 +1282,18 @@ class NavigatesGalaxy(HasDriver):
     def logout_if_needed(self):
         if self.is_logged_in():
             self.home()
-            self.click_masthead_user()
-            self.wait_for_and_click(self.navigation.masthead.labels.logout)
-            self.sleep_for(WAIT_TYPES.UX_TRANSITION)
-            assert not self.is_logged_in()
+            self.logout()
+
+    def logout(self):
+        self.components.masthead.logged_in_only.wait_for_visible()
+        self.click_masthead_user()
+        self.components.masthead.logout.wait_for_and_click()
+        try:
+            self.components.masthead.logged_out_only.wait_for_visible()
+        except self.TimeoutException as e:
+            message = "Clicked logout button but waiting for 'Login or Registration' button failed, perhaps the logout button was clicked before the handler was setup?"
+            raise self.prepend_timeout_message(e, message)
+        assert not self.is_logged_in(), "Clicked to logged out and UI reflects a logout, but API still thinks a user is logged in."
 
     def run_tour(self, path, skip_steps=None, sleep_on_steps=None, tour_callback=None):
         skip_steps = skip_steps or []
