@@ -512,7 +512,6 @@ var ToolFormView = Backbone.View.extend({
 
 // TODO: move into relevant views
 var templates = {
-
     // the tool form for entering tool parameters, viewing help and executing the tool
     // loaded when a tool link is clicked in the tool panel
     tool_form: _.template(
