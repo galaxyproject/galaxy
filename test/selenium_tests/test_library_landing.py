@@ -10,6 +10,7 @@ class LibraryLandingTestCase(SeleniumTestCase):
     requires_admin = True
 
     def setup_with_driver(self):
+        super(LibraryLandingTestCase, self).setup_with_driver()
         self.admin_login()
         self.libraries_open()
 
