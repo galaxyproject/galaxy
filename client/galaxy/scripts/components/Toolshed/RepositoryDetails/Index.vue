@@ -95,7 +95,7 @@ export default {
     },
     created() {
         this.services = new Services();
-        this.loadDetails();
+        this.load();
     },
     destroyed() {
         this.clearTimeout();
@@ -106,7 +106,7 @@ export default {
                 clearTimeout(this.timeout);
             }
         },
-        loadDetails() {
+        load() {
             this.services
                 .getRepository(this.toolshedUrl, this.repo.id)
                 .then(response => {
