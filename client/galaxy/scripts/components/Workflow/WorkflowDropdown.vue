@@ -45,7 +45,7 @@ export default {
     computed: {
         icon() {
             if (this.workflow.shared) {
-                return "fa fa-share-alt-square";
+                return "fa fa-share-alt";
             }
             return null;
         }
