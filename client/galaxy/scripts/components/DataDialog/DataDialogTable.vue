@@ -57,17 +57,20 @@ export default {
     data() {
         return {
             currentPage: 1,
-            fields: {
-                label: {
+            fields: [
+                {
+                    key: 'label',
                     sortable: true
                 },
-                details: {
+                {
+                    key: 'details',
                     sortable: true
                 },
-                time: {
+                {
+                    key: 'time',
                     sortable: true
                 }
-            },
+            ],
             nItems: 0,
             perPage: 100
         };
