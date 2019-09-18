@@ -53,7 +53,6 @@ describe("RepositoryTools", () => {
         expect($third.find("td:last-child").text()).to.equal("");
         const $link = wrapper.find("a");
         $link.trigger("click");
-
         const $elExpanded = wrapper.findAll("tr");
         expect($elExpanded.length).to.equal(4);
         const $thirdExpanded = $elExpanded.at(3);
@@ -64,7 +63,6 @@ describe("RepositoryTools", () => {
         expect($forthExpanded.find("td:last-child").text()).to.equal("");
         const $linkExpanded = wrapper.find("a");
         $linkExpanded.trigger("click");
-
         const $elCollapsed = wrapper.findAll("tr");
         expect($elCollapsed.length).to.equal(3);
         const $thirdCollapsed = $elCollapsed.at(2);

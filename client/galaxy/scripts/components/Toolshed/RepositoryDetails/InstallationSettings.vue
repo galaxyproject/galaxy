@@ -50,8 +50,12 @@
     </b-modal>
 </template>
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
-import { Services } from "../services.js";
+
+Vue.use(BootstrapVue);
+
 export default {
     props: ["repo", "changesetRevision", "requiresPanel", "toolshedUrl"],
     data() {
@@ -79,8 +83,7 @@ export default {
         }
     },
     created() {
-        this.services = new Services();
-        this.loadConfig();
+        this.load();
     },
     methods: {
         findSection: function(name) {
@@ -97,7 +100,7 @@ export default {
             }
             return result;
         },
-        loadConfig: function() {
+        load: function() {
             const galaxy = getGalaxyInstance();
             const sections = galaxy.config.toolbox_in_panel;
             this.toolSections = sections.filter(x => x.model_class == "ToolSection");
@@ -111,24 +114,18 @@ export default {
         },
         onOk: function() {
             const [sectionId, sectionLabel] = this.findSection(this.toolSection);
-            this.services
-                .installRepository({
-                    tool_shed_url: this.toolshedUrl,
-                    name: this.repo.name,
-                    owner: this.repo.owner,
-                    changeset_revision: this.changesetRevision,
-                    new_tool_panel_section_label: sectionLabel,
-                    tool_panel_section_id: sectionId,
-                    shed_tool_conf: this.toolConfig,
-                    install_resolver_dependencies: this.installResolverDependencies,
-                    install_tool_dependencies: this.installToolDependencies,
-                    install_repository_dependencies: this.installRepositoryDependencies
-                })
-                .then(response => {
-                    window.console.log(response);
-                    this.$emit("ok");
-                })
-                .catch(error => {});
+            this.$emit("ok", {
+                tool_shed_url: this.toolshedUrl,
+                name: this.repo.name,
+                owner: this.repo.owner,
+                changeset_revision: this.changesetRevision,
+                new_tool_panel_section_label: sectionLabel,
+                tool_panel_section_id: sectionId,
+                shed_tool_conf: this.toolConfig,
+                install_resolver_dependencies: this.installResolverDependencies,
+                install_tool_dependencies: this.installToolDependencies,
+                install_repository_dependencies: this.installRepositoryDependencies
+            });
         },
         onHide: function() {
             this.$emit("hide");

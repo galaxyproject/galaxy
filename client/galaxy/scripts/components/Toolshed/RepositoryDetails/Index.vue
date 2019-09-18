@@ -149,8 +149,13 @@ export default {
                     this.loading = false;
                 });
         },
-        onOk: function() {
-            this.showSettings = false;
+        onOk: function(details) {
+            this.services
+                .installRepository(details)
+                .then(response => {
+                    this.showSettings = false;
+                })
+                .catch(error => {});
         },
         onHide: function() {
             this.showSettings = false;
