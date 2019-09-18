@@ -137,10 +137,10 @@ class NamedAjaxQueue extends AjaxQueue {
 
     /** add the obj.fn to the queue if obj.name hasn't been used before */
     add(obj) {
-        if (!(obj.hasOwnProperty("name") && obj.hasOwnProperty("fn"))) {
+        if (!(Object.prototype.hasOwnProperty.call(obj, "name") && Object.prototype.hasOwnProperty.call(obj, "fn"))) {
             throw new Error(`NamedAjaxQueue.add requires an object with both "name" and "fn": ${JSON.stringify(obj)}`);
         }
-        if (this.names.hasOwnProperty(obj.name)) {
+        if (Object.prototype.hasOwnProperty.call(this.names, obj.name)) {
             //console.warn( 'name has been used:', obj.name );
             return;
         }

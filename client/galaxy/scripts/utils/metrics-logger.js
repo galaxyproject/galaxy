@@ -99,8 +99,8 @@ MetricsLogger.prototype._init = function _init(options) {
     var self = this;
     self.options = {};
     for (var k in MetricsLogger.defaultOptions) {
-        if (MetricsLogger.defaultOptions.hasOwnProperty(k)) {
-            self.options[k] = options.hasOwnProperty(k) ? options[k] : MetricsLogger.defaultOptions[k];
+        if (Object.prototype.hasOwnProperty.call(MetricsLogger.defaultOptions, k)) {
+            self.options[k] = Object.prototype.hasOwnProperty.call(options, k) ? options[k] : MetricsLogger.defaultOptions[k];
         }
     }
     self.options.logLevel = self._parseLevel(self.options.logLevel);
@@ -140,7 +140,7 @@ MetricsLogger.prototype._parseLevel = function _parseLevel(level) {
     }
     if (type === "string") {
         var upper = level.toUpperCase();
-        if (MetricsLogger.hasOwnProperty(upper)) {
+        if (Object.prototype.hasOwnProperty.call(MetricsLogger, upper)) {
             return MetricsLogger[upper];
         }
     }
