@@ -7,7 +7,7 @@ sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "te
 import pytest
 from base import driver_util
 
-TEST_TYPE = sys.argv[sys.argv.index("-m")+1]
+TEST_TYPE = sys.argv[sys.argv.index("-m") + 1]
 SKIPTEST = os.path.join(os.path.dirname(__file__), 'known_broken_tools.txt')
 TEST_PREFIX = 'TestForTool_' if TEST_TYPE != 'data_manager' else 'TestForDataManagerTool_'
 
