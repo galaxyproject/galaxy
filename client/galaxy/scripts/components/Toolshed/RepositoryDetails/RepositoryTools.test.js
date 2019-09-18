@@ -1,6 +1,5 @@
 import { mount } from "@vue/test-utils";
 import RepositoryTools from "./RepositoryTools";
-import Vue from "vue";
 
 describe("RepositoryTools", () => {
     it("test tool version list in repository details", () => {

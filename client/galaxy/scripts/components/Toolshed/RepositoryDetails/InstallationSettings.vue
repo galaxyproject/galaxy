@@ -1,14 +1,14 @@
 <template>
     <b-modal v-model="modalShow" @ok="onOk" @hide="onHide">
         <template slot="modal-header">
-            <h4 class="m-0">
+            <h4 class="title m-0">
                 {{ modalTitle }}
             </h4>
         </template>
-        <div class="mb-1">
+        <div class="description mb-1">
             {{ repo.long_description || repo.description }}
         </div>
-        <div class="text-muted small mb-3">{{ repo.owner }} rev. {{ changesetRevision }}</div>
+        <div class="revision text-muted small mb-3">{{ repo.owner }} rev. {{ changesetRevision }}</div>
         <b-form-group
             v-if="requiresPanel"
             label="Target Section:"
@@ -103,7 +103,9 @@ export default {
         load: function() {
             const galaxy = getGalaxyInstance();
             const sections = galaxy.config.toolbox_in_panel;
-            this.toolSections = sections.filter(x => x.model_class == "ToolSection");
+            if (sections) {
+                this.toolSections = sections.filter(x => x.model_class == "ToolSection");
+            }
             this.toolConfigs = galaxy.config.tool_dynamic_configs || [];
             if (this.toolConfigs.length > 0) {
                 this.toolConfig = this.toolConfigs[0];

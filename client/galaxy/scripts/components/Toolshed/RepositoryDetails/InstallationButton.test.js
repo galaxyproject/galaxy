@@ -1,6 +1,5 @@
 import { mount } from "@vue/test-utils";
 import InstallationButton from "./InstallationButton";
-import Vue from "vue";
 
 describe("InstallationButton", () => {
     it("test installed repository revision", () => {
