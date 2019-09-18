@@ -427,19 +427,14 @@ class NavigatesGalaxy(HasDriver):
             confirm=confirm
         ))
         self.wait_for_and_click(self.navigation.registration.selectors.submit)
-        # Give the browser a bit of time to submit the request.
-        # It would be good to eliminate this sleep, but it can't be because Galaxy
-        # doesn't swap the "User" menu automatically after it registers a user and
-        # and the donemessage visible comment below doesn't work when using Selenium.
-        # Something about the Selenium session or quickness of registering causes the
-        # following in the Galaxy logs which gets propaged to the GUI as a generic error:
-        # /api/histories/cfc05ccec54895e2/contents?keys=type_id%2Celement_count&order=hid&v=dev&q=history_content_type&q=deleted&q=purged&q=visible&qv=dataset_collection&qv=False&qv=False&qv=True HTTP/1.1" 403 - "http://localhost:8080/"
-        # Like the logged in user doesn't have permission to the previously anonymous user's
-        # history, it is odd but I cannot replicate this outside of Selenium.
-        time.sleep(1.35)
+        if assert_valid is False:
+            self.assert_error_message()
+        elif assert_valid:
+            self.wait_for_logged_in()
 
-        if assert_valid:
-            # self.wait_for_selector_visible(".donemessage")
+            # Code below previously was needed because there was a bug that would prevent the masthead from changing,
+            # the bug seems maybe to be fixed though - so we could consider eliminating these extra checks to speed
+            # up tests.
             self.home()
             self.wait_for_logged_in()
             self.click_masthead_user()
