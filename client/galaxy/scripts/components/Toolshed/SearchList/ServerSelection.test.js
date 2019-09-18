@@ -17,5 +17,9 @@ describe("ServerSelection", () => {
         expect($options.at(1).text()).to.equal("url_0");
         expect($options.at(2).text()).to.equal("url_1");
         expect(wrapper.vm.showDropdown).to.be.true;
+        const $link = wrapper.find(".dropdown-item:last-child");
+        $link.trigger("click");
+        expect(wrapper.emitted().onToolshed[0]).to.contain("url_1");
+
     });
 });
