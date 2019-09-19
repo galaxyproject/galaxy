@@ -426,6 +426,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             containers_resolvers_config_file = os.path.join(self.root, containers_resolvers_config_file)
         self.containers_resolvers_config_file = containers_resolvers_config_file
 
+        # tool_dependency_dir can be "none" (in old configs). If so, set it to schema default
+        if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
+            self.tool_dependency_dir = self.appschema['tool_dependency_dir'].get('default')
+
         if self.involucro_path is None:
             self.involucro_path = os.path.join(self.data_dir, self.tool_dependency_dir, "involucro")
         self.involucro_path = os.path.join(self.root, self.involucro_path)
