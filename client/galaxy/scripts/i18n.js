@@ -3,7 +3,7 @@
  * Released under MIT license, http://github.com/requirejs/i18n/LICENSE
  */
 /*jslint regexp: true */
-/*global require: false, navigator: false, define: false */
+/*global define: false */
 
 /**
  * This plugin handles i18n! prefixed modules. It does the following:

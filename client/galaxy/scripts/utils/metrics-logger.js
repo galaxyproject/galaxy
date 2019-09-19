@@ -1,4 +1,3 @@
-/*global window, jQuery, console */
 /*=============================================================================
 TODO:
     while anon: logs saved to 'logs-null' - this will never post
@@ -27,6 +26,8 @@ TODO:
  *      > panel.metric( 'something weird with window', { window : window })
  *      !'Metrics logger could not stringify logArguments: ...'
  */
+import jQuery from "jquery";
+
 function MetricsLogger(options) {
     options = options || {};
     var self = this;
@@ -280,7 +281,7 @@ MetricsLogger.prototype._postCache = function _postCache(options) {
 MetricsLogger.prototype._delayPost = function _delayPost() {
     //TODO: this won't work between pages
     var self = this;
-    self._waiting = setTimeout(() => {
+    self._waiting = window.setTimeout(() => {
         self._waiting = null;
     }, self.options.delayPostInMs);
 };
