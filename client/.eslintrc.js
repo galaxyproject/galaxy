@@ -7,6 +7,10 @@ module.exports = {
         node: true,
         mocha: true
     },
+    parserOptions: {
+        parser: "babel-eslint",
+        sourceType: "module"
+    },
     plugins: ["html"],
     rules: {
         "no-console": "off",
