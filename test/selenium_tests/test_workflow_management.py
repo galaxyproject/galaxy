@@ -1,3 +1,5 @@
+from base.populators import skip_if_github_down
+
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -108,6 +110,7 @@ class WorkflowManagementTestCase(SeleniumTestCase):
     def _assert_showing_n_workflows(self, n):
         self.assertEqual(len(self.workflow_index_table_elements()), n)
 
+    @skip_if_github_down
     def _workflow_import_from_url(self):
         self.workflow_index_click_import()
         url = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test/base/data/test_workflow_1.ga"
