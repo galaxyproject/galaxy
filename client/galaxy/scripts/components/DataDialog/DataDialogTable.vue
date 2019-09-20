@@ -59,15 +59,15 @@ export default {
             currentPage: 1,
             fields: [
                 {
-                    key: 'label',
+                    key: "label",
                     sortable: true
                 },
                 {
-                    key: 'details',
+                    key: "details",
                     sortable: true
                 },
                 {
-                    key: 'time',
+                    key: "time",
                     sortable: true
                 }
             ],

@@ -143,7 +143,7 @@ describe("DataDialog.vue", () => {
     });
 
     it("loads correctly, shows alert", () => {
-        wrapper.vm.$nextTick().then(() =>{
+        wrapper.vm.$nextTick().then(() => {
             expect(wrapper.classes()).contain("data-dialog-modal");
             expect(wrapper.find(".fa-spinner").text()).to.equals("");
             expect(wrapper.contains(".fa-spinner")).to.equals(true);
@@ -155,7 +155,7 @@ describe("DataDialog.vue", () => {
     });
 
     it("loads correctly, shows datasets and folders", () => {
-        wrapper.vm.$nextTick().then(() =>{
+        wrapper.vm.$nextTick().then(() => {
             expect(wrapper.classes()).contain("data-dialog-modal");
             expect(wrapper.find(".fa-spinner").text()).to.equals("");
             expect(wrapper.contains(".fa-spinner")).to.equals(true);
