@@ -5,7 +5,7 @@
             <span>Loading categories...</span>
         </div>
         <b-table v-else striped :items="categories" :fields="fields">
-            <template slot="name" slot-scope="data">
+            <template v-slot:cell(name)="data">
                 <b-link
                     href="javascript:void(0)"
                     role="button"
