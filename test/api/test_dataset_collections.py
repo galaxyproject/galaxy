@@ -2,7 +2,7 @@ import json
 import tarfile
 
 from base import api
-from base.populators import DatasetCollectionPopulator, DatasetPopulator
+from base.populators import DatasetCollectionPopulator, DatasetPopulator, skip_if_github_down
 from six import BytesIO
 
 
@@ -233,6 +233,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         element0 = hdca["elements"][0]
         assert element0["element_identifier"] == "samp1"
 
+    @skip_if_github_down
     def test_upload_collection_from_url(self):
         elements = [{"src": "url", "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed", "info": "my cool bed"}]
         targets = [{

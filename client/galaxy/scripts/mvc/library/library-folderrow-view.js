@@ -81,7 +81,7 @@ var FolderRowView = Backbone.View.extend({
         if (container) {
             const str_tags = this.model.get("tags");
             if (typeof str_tags === "string") {
-                this.model.set({ tags: str_tags.split(', ') });
+                this.model.set({ tags: str_tags.split(", ") });
             }
             const { id, model_class, tags } = this.model.attributes;
             const storeKey = `${model_class}-${id}`;

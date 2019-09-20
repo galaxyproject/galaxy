@@ -75,11 +75,11 @@ postgresql:///mydatabase?host=/var/run/postgresql
 
 For more hints on available options for the database URL, see the [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls).
 
-#### Deprecated MySQL support
+#### MySQL database server (unsupported)
 
-Postgres database backend is more used and better tested, please use it if you can.
+Postgres database backend is far more used and better tested, please use it if you can.
 
-In the past Galaxy supported [MySQL](https://dev.mysql.com/) but currently there are nontrivial problems associated with it so expect amount of troubleshooting when using it.
+In the past Galaxy supported [MySQL](https://dev.mysql.com/), but currently there may be nontrivial problems associated with it, so expect some amount of troubleshooting when using it.
 
 Connection string example:
 ```

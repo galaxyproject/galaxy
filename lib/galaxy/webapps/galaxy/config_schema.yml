@@ -28,7 +28,6 @@ mapping:
 
       config_dir:
         type: str
-        default: 'false'
         required: false
         desc: |
           The directory that will be prepended to relative paths in options specifying
@@ -37,7 +36,6 @@ mapping:
 
       data_dir:
         type: str
-        default: 'false'
         required: false
         desc: |
           The directory that will be prepended to relative paths in options specifying
@@ -101,7 +99,6 @@ mapping:
 
       database_template:
         type: str
-        default: ''
         required: false
         desc: |
           If auto-creating a postgres database on startup - it can be based on an existing
@@ -109,8 +106,8 @@ mapping:
           documentation is included here for completeness.
 
       slow_query_log_threshold:
-        type: int
-        default: 0
+        type: float
+        default: 0.0
         required: false
         desc: |
           Slow query logging.  Queries slower than the threshold indicated below will
@@ -186,14 +183,30 @@ mapping:
           nodes that will run Galaxy jobs, unless using Pulsar.
 
       tool_config_file:
-        type: str
-        default: config/tool_conf.xml,config/shed_tool_conf.xml
+        type: any
+        default: config/tool_conf.xml
         required: false
         desc: |
           Tool config files, defines what tools are available in Galaxy.
           Tools can be locally developed or installed from Galaxy tool sheds.
           (config/tool_conf.xml.sample will be used if left unset and
-          config/tool_conf.xml does not exist).
+          config/tool_conf.xml does not exist). Can be a single file, a list of
+          files, or (for backwards compatibility) a comma-separated list of files.
+
+      shed_tool_config_file:
+        type: str
+        default: config/shed_tool_conf.xml
+        required: false
+        desc: |
+          Tool config file for tools installed from the Galaxy Tool Shed. Must
+          be writable by Galaxy and generally should not be edited by hand. In
+          older Galaxy releases, this file was part of the tool_config_file
+          option. It is still possible to specify this file (and other
+          shed-enabled tool config files) in tool_config_file, but in the
+          standard case of a single shed-enabled tool config, this option is
+          preferable. This file will be created automatically upon tool
+          installation, whereas Galaxy will fail to start if any files in
+          tool_config_file cannot be read.
 
       check_migrate_tools:
         type: bool
@@ -423,7 +436,6 @@ mapping:
 
       containers_resolvers_config_file:
         type: str
-        default: ''
         required: false
         desc: |
           Container resolvers configuration (beta). Set up a file describing
@@ -750,7 +762,6 @@ mapping:
 
       smtp_server:
         type: str
-        default: ''
         required: false
         desc: |
           Galaxy sends mail for various things: subscribing users to the mailing list
@@ -761,7 +772,6 @@ mapping:
 
       smtp_username:
         type: str
-        default: ''
         required: false
         desc: |
           If your SMTP server requires a username and password, you can provide them
@@ -770,7 +780,6 @@ mapping:
 
       smtp_password:
         type: str
-        default: ''
         required: false
         desc: |
           If your SMTP server requires a username and password, you can provide them
@@ -795,7 +804,6 @@ mapping:
 
       error_email_to:
         type: str
-        default: ''
         required: false
         desc: |
           Datasets in an error state include a link to report the error.  Those reports
@@ -805,7 +813,6 @@ mapping:
 
       email_from:
         type: str
-        default: ''
         required: false
         desc: |
           Email address to use in the 'From' field when sending emails for
@@ -888,7 +895,6 @@ mapping:
 
       ga_code:
         type: str
-        default: ''
         required: false
         desc: |
           You can enter tracking code here to track visitor's behavior
@@ -954,7 +960,6 @@ mapping:
 
       message_box_content:
         type: str
-        default: ''
         required: false
         reloadable: true
         desc: |
@@ -970,7 +975,6 @@ mapping:
 
       brand:
         type: str
-        default: ''
         required: false
         desc: |
           Append "/{brand}" to the "Galaxy" text in the masthead.
@@ -1053,7 +1057,6 @@ mapping:
 
       helpsite_url:
         type: str
-        default: ''
         required: false
         desc: |
           The URL linked by the "Galaxy Help" link in the "Help" menu.
@@ -1110,7 +1113,6 @@ mapping:
 
       terms_url:
         type: str
-        default: ''
         required: false
         desc: |
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
@@ -1224,7 +1226,6 @@ mapping:
 
       nginx_x_accel_redirect_base:
         type: str
-        default: ''
         required: false
         desc: |
           The same download handling can be done by nginx using X-Accel-Redirect.  This
@@ -1256,7 +1257,6 @@ mapping:
 
       nginx_upload_store:
         type: str
-        default: ''
         required: false
         desc: |
           nginx can also handle file uploads (user-to-Galaxy) via nginx_upload_module.
@@ -1266,7 +1266,6 @@ mapping:
 
       nginx_upload_path:
         type: str
-        default: ''
         required: false
         desc: |
           This value overrides the action set on the file upload form, e.g. the web
@@ -1275,7 +1274,6 @@ mapping:
 
       nginx_upload_job_files_store:
         type: str
-        default: ''
         required: false
         desc: |
           Galaxy can also use nginx_upload_module to receive files staged out upon job
@@ -1285,7 +1283,6 @@ mapping:
 
       nginx_upload_job_files_path:
         type: str
-        default: ''
         required: false
         desc: |
           Galaxy can also use nginx_upload_module to receive files staged out upon job
@@ -1400,7 +1397,6 @@ mapping:
 
       dynamic_proxy_golang_api_key:
         type: str
-        default: ''
         required: false
         desc: |
           The golang proxy uses a RESTful HTTP API for communication with Galaxy
@@ -1520,7 +1516,6 @@ mapping:
 
       allowed_origin_hostnames:
         type: str
-        default: ''
         required: false
         desc: |
           Return a Access-Control-Allow-Origin response header that matches the Origin
@@ -1622,7 +1617,6 @@ mapping:
 
       sentry_dsn:
         type: str
-        default: ''
         required: false
         desc: |
           Log to Sentry
@@ -1689,7 +1683,6 @@ mapping:
 
       library_import_dir:
         type: str
-        default: ''
         required: false
         desc: |
           Add an option to the library upload form which allows administrators to
@@ -1697,7 +1690,6 @@ mapping:
 
       user_library_import_dir:
         type: str
-        default: ''
         required: false
         desc: |
           Add an option to the library upload form which allows authorized
@@ -1716,7 +1708,6 @@ mapping:
 
       user_library_import_symlink_whitelist:
         type: str
-        default: ''
         required: false
         desc: |
           For security reasons, users may not import any files that actually lie
@@ -1906,7 +1897,6 @@ mapping:
 
       remote_user_maildomain:
         type: str
-        default: ''
         required: false
         desc: |
           If use_remote_user is enabled and your external authentication
@@ -1938,7 +1928,6 @@ mapping:
 
       remote_user_logout_href:
         type: str
-        default: ''
         required: false
         desc: |
           If use_remote_user is enabled, you can set this to a URL that will log your
@@ -1965,7 +1954,6 @@ mapping:
 
       admin_users:
         type: str
-        default: ''
         required: false
         reloadable: true
         desc: |
@@ -2114,7 +2102,8 @@ mapping:
         required: false
         desc: |
           Enable beta workflow modules that should not yet be considered part of Galaxy's
-          stable API.
+          stable API. (The module state definitions may change and workflows built using 
+          these modules may not function in the future.)
 
       default_workflow_export_format:
         type: str
@@ -2237,7 +2226,6 @@ mapping:
 
       master_api_key:
         type: str
-        default: changethis
         required: false
         desc: |
           Master key that allows many API admin actions to be used without actually
@@ -2289,7 +2277,6 @@ mapping:
 
       ftp_upload_dir:
         type: str
-        default: ''
         required: false
         desc: |
           Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
@@ -2300,7 +2287,6 @@ mapping:
 
       ftp_upload_site:
         type: str
-        default: ''
         required: false
         desc: |
           This should be the hostname of your FTP server, which will be provided to
@@ -2413,6 +2399,8 @@ mapping:
 
       dependency_resolvers:
         type: seq
+        sequence:
+          - type: any
         desc: |
           Rather than specifying a dependency_resolvers_config_file, the definition of the
           resolvers to enable can be embedded into Galaxy's config with this option.
@@ -2439,6 +2427,7 @@ mapping:
             default: '<tool_dependency_cache_dir>/_cache'
             desc: See description of 'tool_dependency_cache_dir'.
           default_base_path:
+            type: str
             default: database/dependencies
             desc: See description of 'tool_dependency_dir'.
           resolvers:
@@ -2616,7 +2605,6 @@ mapping:
 
       environment_setup_file:
         type: str
-        default: ''
         required: false
         desc: |
           File to source to set up the environment when running jobs.  By default, the

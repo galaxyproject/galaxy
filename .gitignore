@@ -84,6 +84,7 @@ job_metrics_conf.xml
 workflow_schedulers_conf.xml
 config/*
 config/plugins/interactive_environments/**/*.ini
+config/plugins/**/.cache
 !config/plugins
 static/welcome.html.*
 static/welcome.html
@@ -172,3 +173,6 @@ packages/*/*.egg-info
 .DS_Store
 *.rej
 *~
+
+# Plugin build artifacts -- TODO make this more generic as a part of the standard plugin interface
+config/plugins/visualizations/**/static/script.js

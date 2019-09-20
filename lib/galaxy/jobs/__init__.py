@@ -168,6 +168,10 @@ def job_config_xml_to_dict(config, root):
         environment["metrics"] = metrics_to_dict
 
         params = JobConfiguration.get_params(config, destination)
+        # Handle legacy XML enabling sudo when using docker by default.
+        if "docker_sudo" not in params:
+            params["docker_sudo"] = "true"
+
         # TODO: handle enabled/disabled in configure_from
         environment['params'] = params
         environment['env'] = JobConfiguration.get_envs(destination)

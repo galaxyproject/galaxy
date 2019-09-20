@@ -249,8 +249,8 @@ tool_form:
 workflows:
 
   selectors:
-    new_button: '#new-workflow'
-    import_button: '#import-workflow'
+    new_button: '#workflow-create'
+    import_button: '#workflow-import'
 
 workflow_run:
 
