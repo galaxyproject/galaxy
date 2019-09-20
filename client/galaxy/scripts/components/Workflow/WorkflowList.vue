@@ -41,7 +41,7 @@
                     :filter="filter"
                     @filtered="filtered"
                 >
-                    <template slot="name" slot-scope="row">
+                    <template v-slot:cell(name)="row">
                         <workflowdropdown
                             :workflow="row.item"
                             @onAdd="onAdd"
@@ -51,13 +51,15 @@
                             @onError="onError"
                         />
                     </template>
-                    <template slot="tags" slot-scope="row">
+                    <template v-slot:cell(tags)="row">
                         <workflowtags :workflow="row.item" @onError="onError" />
                     </template>
-                    <template slot="bookmark" slot-scope="row">
+
+                    <template v-slot:cell(bookmark)="row">
                         <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
                     </template>
-                    <template slot="execute" slot-scope="row">
+
+                    <template v-slot:cell(execute)="row">
                         <b-button
                             v-b-tooltip.hover.bottom
                             title="Run Workflow"
@@ -91,18 +93,23 @@ export default {
     data() {
         return {
             error: null,
-            fields: {
-                name: {
+            fields: [
+                {
+                    key: "name",
                     sortable: true
                 },
-                tags: {
+                {
+                    key: "tags",
                     sortable: true
                 },
-                bookmark: {},
-                execute: {
+                {
+                    key: "bookmark"
+                },
+                {
+                    key: "execute",
                     label: ""
                 }
-            },
+            ],
             filter: "",
             loading: true,
             message: null,
