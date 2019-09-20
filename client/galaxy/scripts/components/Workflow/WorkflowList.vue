@@ -91,18 +91,23 @@ export default {
     data() {
         return {
             error: null,
-            fields: {
-                name: {
+            fields: [
+                {
+                    key: "name",
                     sortable: true
                 },
-                tags: {
+                {
+                    key: "tags",
                     sortable: true
                 },
-                bookmark: {},
-                execute: {
+                {
+                    key: "bookmark"
+                },
+                {
+                    key: "execute",
                     label: ""
                 }
-            },
+            ],
             filter: "",
             loading: true,
             message: null,
