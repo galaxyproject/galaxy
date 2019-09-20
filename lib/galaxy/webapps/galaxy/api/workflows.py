@@ -888,6 +888,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
         generator_plugin_type = kwd.get("generator_plugin_type")
         runtime_report_config_json = kwd.get("runtime_report_config_json")
+        invocation_markdown = kwd.get("invocation_markdown", None)
+        if invocation_markdown:
+            runtime_report_config_json = {"markdown": invocation_markdown}
         return generate_report_json(
             trans, workflow_invocation, runtime_report_config_json=runtime_report_config_json, plugin_type=generator_plugin_type
         )
