@@ -82,7 +82,6 @@ class AdminAppTestCase(SeleniumTestCase):
             job_id = run_response.json()["jobs"][0]["id"]
             self.dataset_populator.wait_for_tool_run(history_id=history_id,
                                                      run_response=run_response,
-                                                     timeout=5,
                                                      assert_ok=False)
 
         admin_component.dm_jobs_button(data_manager="test-data-manager").wait_for_and_click()
