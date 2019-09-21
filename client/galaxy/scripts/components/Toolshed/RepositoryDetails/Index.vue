@@ -15,20 +15,20 @@
                 </b-alert>
                 <div v-else class="border rounded">
                     <b-table borderless :items="repoTable" :fields="repoFields" class="text-center m-0">
-                        <template slot="numeric_revision" slot-scope="data">
+                        <template v-slot:cell(numeric_revision)="data">
                             <span class="font-weight-bold">{{ data.value }}</span>
                         </template>
-                        <template slot="tools" slot-scope="data">
+                        <template v-slot:cell(tools)="data">
                             <RepositoryTools :tools="data.value" />
                         </template>
-                        <template slot="profile" slot-scope="data">
+                        <template v-slot:cell(profile)="data">
                             {{ data.value ? `+${data.value}` : "-" }}
                         </template>
-                        <template slot="missing_test_components" slot-scope="data">
+                        <template v-slot:cell(missing_test_components)="data">
                             <span v-if="!data.value" :class="repoChecked" />
                             <span v-else :class="repoUnchecked" />
                         </template>
-                        <template slot="actions" slot-scope="row">
+                        <template v-slot:cell(actions)="row">
                             <InstallationButton
                                 :installed="row.item.installed"
                                 :status="row.item.status"
@@ -70,23 +70,13 @@ export default {
             selectedChangeset: null,
             selectedRequiresPanel: false,
             repoTable: [],
-            repoFields: {
-                numeric_revision: {
-                    label: "Revision"
-                },
-                tools: {
-                    label: "Tools and Versions"
-                },
-                profile: {
-                    label: "Requires"
-                },
-                missing_test_components: {
-                    label: "Tests"
-                },
-                actions: {
-                    label: ""
-                }
-            },
+            repoFields: [
+                { key: "numeric_revision", label: "Revision" },
+                { key: "tools", label: "Tools and Versions" },
+                { key: "profile", label: "Requires" },
+                { key: "missing_test_components", label: "Tests" },
+                { key: "actions", label: "" }
+            ],
             showSettings: false,
             error: null,
             loading: true,

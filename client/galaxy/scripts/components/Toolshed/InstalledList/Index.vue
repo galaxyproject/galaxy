@@ -19,7 +19,7 @@
                     :filter="filter"
                     @filtered="filtered"
                 >
-                    <template slot="name" slot-scope="row">
+                    <template v-slot:cell(name)="row">
                         <b-link href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
                             {{ row.item.name }}
                         </b-link>
@@ -53,14 +53,16 @@ export default {
     data() {
         return {
             error: null,
-            fields: {
-                name: {
+            fields: [
+                {
+                    key: "name",
                     sortable: true
                 },
-                owner: {
+                {
+                    key: "owner",
                     sortable: true
                 }
-            },
+            ],
             loading: true,
             message: null,
             messageVariant: null,

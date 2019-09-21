@@ -683,7 +683,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                         if fields != values:
                             rval += line
 
-        with open(loc_file, 'wb') as writer:
+        with open(loc_file, 'w') as writer:
             writer.write(rval)
 
         return rval

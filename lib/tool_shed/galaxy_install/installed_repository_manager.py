@@ -40,8 +40,6 @@ class InstalledRepositoryManager(object):
         self.install_model = self.app.install_model
         self.context = self.install_model.context
         self.tool_configs = self.app.config.tool_configs
-        if self.app.config.migrated_tools_config not in self.tool_configs:
-            self.tool_configs.append(self.app.config.migrated_tools_config)
 
         self.tool_trees = []
         for tool_config in self.tool_configs:

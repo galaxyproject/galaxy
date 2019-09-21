@@ -31,7 +31,7 @@ describe("Tags/Tags.vue", () => {
         }
     };
 
-    // Run bef  oreEach as async so the lifecycle methods can run
+    // Run before each as async so the lifecycle methods can run
     beforeEach(async () => {
         // TODO: this mocking mechanism is no good.
 

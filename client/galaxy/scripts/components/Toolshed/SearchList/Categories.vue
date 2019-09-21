@@ -5,7 +5,7 @@
             <span>Loading categories...</span>
         </div>
         <b-table v-else striped :items="categories" :fields="fields">
-            <template slot="name" slot-scope="data">
+            <template v-slot:cell(name)="data">
                 <b-link
                     href="javascript:void(0)"
                     role="button"
@@ -25,18 +25,11 @@ export default {
     data() {
         return {
             categories: [],
-            fields: {
-                name: {
-                    label: "Category",
-                    sortable: true
-                },
-                description: {
-                    sortable: false
-                },
-                repositories: {
-                    sortable: true
-                }
-            }
+            fields: [
+                { key: "name", label: "Category", sortable: true },
+                { key: "description", sortable: false },
+                { key: "repositories", sortable: true }
+            ]
         };
     },
     created() {

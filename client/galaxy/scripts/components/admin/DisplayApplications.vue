@@ -21,7 +21,7 @@
             :fields="applicationsAttributes"
             :items="applications"
         >
-            <template slot="reload" slot-scope="data">
+            <template v-slot:cell(reload)="data">
                 <b-button
                     size="sm"
                     title="Reload display application"
@@ -31,7 +31,7 @@
                     <span class="fa fa-refresh" />
                 </b-button>
             </template>
-            <template slot="links" slot-scope="data">
+            <template v-slot:cell(links)="data">
                 <li v-for="link in data.item.links" :key="link.name">{{ link.name }}</li>
             </template>
         </b-table>
