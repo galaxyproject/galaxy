@@ -45,11 +45,3 @@ image = qiaoy/iobio-bundle.bam-iobio:1.0-ondemand
 # which ports it needs to connect. With this option you can specify the port number
 # inside your container to which Galaxy should connect the UI.
 #docker_connect_port = None
-
-# To run containers in Docker Swarm mode on (an existing swarm), set the
-# following option to True *and*:
-# - set docker_connect_port above. For qiaoy/iobio-bundle.bam-iobio the port
-#   should most likely be 8000.
-# - If command_inject is uncommented and includes `--sig-proxy`, that option should
-#   be removed.
-#swarm_mode = False

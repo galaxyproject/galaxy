@@ -479,22 +479,6 @@ galaxy:
   # path with '/'.  This is a comma separated list.
   #interactive_environment_plugins_directory: null
 
-  # To run interactive environment containers in Docker Swarm mode (on
-  # an existing swarm), set this option to true and set
-  # `docker_connect_port` in the IE plugin config (ini) file(s) of any
-  # IE plugins you have enabled and ensure that you are not using any
-  # `docker run`-specific options in your plugins' `command_inject`
-  # options (swarm mode services run using `docker service create`,
-  # which has a different and more limited set of options). This option
-  # can be overridden on a per-plugin basis by using the `swarm_mode`
-  # option in the plugin's ini config file.
-  #interactive_environment_swarm_mode: false
-
-  # Galaxy can run a "swarm manager" service that will monitor
-  # utilization of the swarm and provision/deprovision worker nodes as
-  # necessary. The service has its own configuration file.
-  #swarm_manager_config_file: config/swarm_manager_conf.yml
-
   # Interactive tour directory: where to store interactive tour
   # definition files. Galaxy ships with several basic interface tours
   # enabled, though a different directory with custom tours can be
