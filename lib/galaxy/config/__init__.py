@@ -357,12 +357,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
         #  Get the disposable email domains blacklist file and its contents
         self.blacklist_content = None
-        self.blacklist_file = os.path.join(self.root, self.blacklist_file)
-        try:
-            with open(self.blacklist_file) as f:
-                self.blacklist_content = [line.rstrip() for line in f]
-        except IOError:
-            log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str(self.blacklist_file))
+        if self.blacklist_file:
+            self.blacklist_file = os.path.join(self.root, self.blacklist_file)
+            try:
+                with open(self.blacklist_file) as f:
+                    self.blacklist_content = [line.rstrip() for line in f]
+            except IOError:
+                log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str(self.blacklist_file))
 
         self.persistent_communication_rooms = listify(kwargs.get("persistent_communication_rooms", []), do_strip=True)
         # The transfer manager and deferred job queue

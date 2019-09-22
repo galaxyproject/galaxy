@@ -845,7 +845,6 @@ mapping:
 
       blacklist_file:
         type: str
-        default: config/disposable_email_blacklist.conf
         required: false
         desc: |
           E-mail domains blacklist is used for filtering out users that are using
