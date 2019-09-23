@@ -263,7 +263,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.openid_consumer_cache_path = os.path.join(self.data_dir, self.openid_consumer_cache_path)
         self.cookie_path = kwargs.get("cookie_path", None)
         self.tool_path = os.path.join(self.root, self.tool_path)
-        self.tool_data_path = os.path.join(os.getcwd(), self.tool_data_path)
+        self.tool_data_path = os.path.join(self.root, self.tool_data_path)
         if not running_from_source and kwargs.get("tool_data_path", None) is None:
             self.tool_data_path = os.path.join(self.data_dir, "tool-data")
         if self.builds_file_path is None:
