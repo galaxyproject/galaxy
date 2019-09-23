@@ -578,8 +578,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         elif ie_dirs:
             self.visualization_plugins_directory += ",%s" % ie_dirs
 
-        self.gie_swarm_mode = string_as_bool(kwargs.get('interactive_environment_swarm_mode', False))
-
         self.proxy_session_map = resolve_path(kwargs.get("dynamic_proxy_session_map", "session_map.sqlite"), self.data_dir)
         self.manage_dynamic_proxy = string_as_bool(kwargs.get("dynamic_proxy_manage", "True"))  # Set to false if being launched externally
 
