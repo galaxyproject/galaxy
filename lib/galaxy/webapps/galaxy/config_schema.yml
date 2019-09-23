@@ -568,19 +568,18 @@ mapping:
 
       builds_file_path:
         type: str
+        default: shared/ucsc/builds.txt
         required: false
         desc: |
-          File containing old-style genome builds.
-
-          Example value '<tool_data_path>/shared/ucsc/builds.txt'
+          File containing old-style genome builds. Value will be resolved to
+          '<tool_data_path>/shared/ucsc/builds.txt'.
 
       len_file_path:
         type: str
         required: false
         desc: |
-          Directory where chrom len files are kept, currently mainly used by trackster
-
-          Example value '<tool_data_path>/shared/ucsc/chrom'
+          Directory where chrom len files are kept, currently mainly used by trackster. Value will
+          be resolved to '<tool_data_path>/shared/ucsc/chrom'.
 
       datatypes_config_file:
         type: str
