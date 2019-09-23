@@ -36,13 +36,13 @@ const AdminPanel = Backbone.View.extend({
                         id: "admin-link-display-applications"
                     },
                     {
-                        title: _l("Manage jobs"),
+                        title: _l("Jobs"),
                         url: "admin/jobs",
                         target: "__use_router__",
                         id: "admin-link-jobs"
                     },
                     {
-                        title: _l("Manage workflow invocations"),
+                        title: _l("Workflow invocations"),
                         url: "admin/invocations",
                         target: "__use_router__",
                         id: "admin-link-invocations"
