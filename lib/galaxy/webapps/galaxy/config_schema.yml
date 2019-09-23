@@ -52,7 +52,7 @@ mapping:
           instead.  This string takes many options which are explained in detail in the
           config file documentation.
 
-          Sample default 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
+          Example value 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
           where './database' is the resolved default value of the 'data_dir' option).
 
       database_engine_option_pool_size:
@@ -137,7 +137,7 @@ mapping:
           separate the tool shed install database (all other options listed above
           but prefixed with install_ are also available).
 
-          Sample default 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
+          Example value 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
           where './database' is the resolved default value of the 'data_dir' option).
 
       database_auto_migrate:
@@ -295,7 +295,7 @@ mapping:
           conda_prefix is the location on the filesystem where Conda packages and environments are
           installed.
 
-          Sample default '<tool_dependency_dir>/_conda'
+          Example value '<tool_dependency_dir>/_conda'
 
       conda_exec:
         type: str
@@ -376,7 +376,7 @@ mapping:
           By default the tool_dependency_cache_dir is the _cache directory
           of the tool dependency directory.
 
-          Sample default '<tool_dependency_dir>/_cache'
+          Example value '<tool_dependency_dir>/_cache'
 
       precache_dependencies:
         type: bool
@@ -470,7 +470,7 @@ mapping:
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
 
-          Sample default 'database/dependencies/involucro' where 'database/dependencies' is the
+          Example value 'database/dependencies/involucro' where 'database/dependencies' is the
           default value of the 'tool_dependency_dir' option.
 
       involucro_auto_init:
@@ -487,7 +487,7 @@ mapping:
         desc: |
           Conda channels to use when building Docker or Singularity containers using involucro.
 
-          Sample default 'conda-forge,bioconda'
+          Example value 'conda-forge,bioconda'
 
       enable_tool_shed_check:
         type: bool
@@ -574,7 +574,7 @@ mapping:
         desc: |
           File containing old-style genome builds.
 
-          Sample default 'tool-data/shared/ucsc/builds.txt' where 'tool-data' is the default value
+          Example value 'tool-data/shared/ucsc/builds.txt' where 'tool-data' is the default value
           of the 'tool_data_path' option.
 
       len_file_path:
@@ -583,7 +583,7 @@ mapping:
         desc: |
           Directory where chrom len files are kept, currently mainly used by trackster
 
-          Sample default 'tool-data/shared/ucsc/chrom' where 'tool-data' is the default value of the
+          Example value 'tool-data/shared/ucsc/chrom' where 'tool-data' is the default value of the
           'tool_data_path' option.
 
       datatypes_config_file:
@@ -813,7 +813,7 @@ mapping:
           is the address used to subscribe to the list. Uncomment and leave empty if you
           want to remove this option from the user registration form.
 
-          Sample default 'galaxy-announce-join@bx.psu.edu'
+          Example value 'galaxy-announce-join@bx.psu.edu'
 
       error_email_to:
         type: str
@@ -841,7 +841,7 @@ mapping:
           URL of the support resource for the galaxy instance.  Used in activation
           emails.
 
-          Sample default 'https://galaxyproject.org/'
+          Example value 'https://galaxyproject.org/'
 
       blacklist_file:
         type: str
@@ -1636,7 +1636,7 @@ mapping:
           Heartbeat log filename. Can accept the template variables {server_name} and
           {pid}
 
-          Sample default 'heartbeat_{server_name}.log'
+          Example value 'heartbeat_{server_name}.log'
 
       sentry_dsn:
         type: str
@@ -2591,7 +2591,7 @@ mapping:
           (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
           this script is used to run the job script Galaxy generates for a tool execution.
 
-          Sample default 'sudo -E scripts/drmaa_external_runner.py --assign_all_groups'
+          Example value 'sudo -E scripts/drmaa_external_runner.py --assign_all_groups'
 
       drmaa_external_killjob_script:
         type: str
@@ -2602,7 +2602,7 @@ mapping:
           this script is used to kill such jobs by Galaxy (e.g. if the user cancels
           the job).
 
-          Sample default 'sudo -E scripts/drmaa_external_killer.py'
+          Example value 'sudo -E scripts/drmaa_external_killer.py'
 
       external_chown_script:
         type: str
@@ -2613,7 +2613,7 @@ mapping:
           this script is used transfer permissions back and forth between the Galaxy user
           and the user that is running the job.
 
-          Sample default 'sudo -E scripts/external_chown_script.py'
+          Example value 'sudo -E scripts/external_chown_script.py'
 
       real_system_username:
         type: str
