@@ -801,6 +801,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  history_id:       an encoded history id to restrict query to
         :type   history_id:       str
 
+        :param  user_id:          an encoded user id to restrict query to, must be own id if not admin user
+        :type   user_id:          str
+
         :param  view:             level of detail to return per invocation 'element' or 'collection'.
         :type   view:             str
 
@@ -821,16 +824,27 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         else:
             history_id = None
 
+        encoded_user_id = kwd.get("user_id", None)
+        if encoded_user_id:
+            target_user_id = self.decode_id(encoded_user_id)
+        else:
+            target_user_id = None
+
         if not trans.user_is_admin:
             # We restrict the query to the current users' invocations
             user_id = trans.user.id
+            if target_user_id and user_id != target_user_id:
+                raise exceptions.AdminRequiredException("Only admins can index the invocations of others")
         else:
             # Get all invocation if user is admin
-            user_id = None
+            user_id = target_user_id
 
         include_terminal = util.string_as_bool(kwd.get("include_terminal", True))
+        limit = kwd.get("limit", None)
+        if limit is not None:
+            limit = int(limit)
         invocations = self.workflow_manager.build_invocations_query(
-            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id, include_terminal=include_terminal
+            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id, include_terminal=include_terminal, limit=limit
         )
         return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
 

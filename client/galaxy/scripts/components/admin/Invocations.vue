@@ -3,17 +3,15 @@
         <h2 class="mb-3">
             <span id="invocations-title">Workflow Invocations</span>
         </h2>
-        <b-alert variant="info" show>
-            <p>
-                Workflow invocations that are still being scheduled are displayed on this page.
-            </p>
+        <b-alert variant="info" show v-if="headerMessage">
+            {{ headerMessage }}
         </b-alert>
         <b-alert v-if="loading" variant="info" show>
             <loading-span message="Loading workflow invocation job data" />
         </b-alert>
         <div v-else>
             <b-alert v-if="!invocationItemsComputed.length" variant="secondary" show>
-                There are no scheduling workflow invocations to show currently.
+                {{ noInvocationsMessage }}
             </b-alert>
             <b-table
                 v-else
@@ -44,7 +42,6 @@
 
 <script>
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
-import { getActiveInvocations } from "./AdminServices";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
@@ -52,9 +49,15 @@ export default {
         WorkflowInvocationState,
         LoadingSpan
     },
+    props: {
+        invocationItems: { type: Array, default: [] },
+        busy: { type: Boolean, default: true },
+        loading: { type: Boolean, default: true },
+        noInvocationsMessage: { type: String },
+        headerMessage: { type: String, default: '' }
+    },
     data() {
         return {
-            invocationItems: [],
             invocationItemsModel: [],
             invocationFields: [
                 { key: "id", label: "Invocation ID", sortable: true },
@@ -64,17 +67,12 @@ export default {
                 { key: "create_time", label: "Invocation Time", sortable: true }
             ],
             status: "",
-            loading: true,
-            busy: true
         };
     },
     computed: {
         invocationItemsComputed() {
             return this.computeItems(this.invocationItems);
         }
-    },
-    created() {
-        this.update();
     },
     methods: {
         computeItems(items) {
@@ -87,16 +85,6 @@ export default {
                     _showDetails: false
                 };
             });
-        },
-        update() {
-            this.busy = true;
-            getActiveInvocations()
-                .then(response => {
-                    this.invocationItems = response.data;
-                    this.loading = false;
-                    this.busy = false;
-                })
-                .catch(this.handleError);
         },
         showRowDetails(row, index, e) {
             if (e.target.nodeName != "A") {
