@@ -294,7 +294,8 @@ def _remap_galaxy_markdown_containers(func, markdown):
         from_markdown = new_markdown[searching_from:]
         match = re.search(GALAXY_FENCED_BLOCK, from_markdown)
         if match is not None:
-            (replacement, whole_block) = func(match.group(1))
+            replace = match.group(1)
+            (replacement, whole_block) = func(replace)
             if whole_block:
                 start_pos = match.start()
                 end_pos = match.end()
@@ -305,7 +306,7 @@ def _remap_galaxy_markdown_containers(func, markdown):
             end_pos = end_pos + searching_from
 
             new_markdown = new_markdown[:start_pos] + replacement + new_markdown[end_pos:]
-            searching_from = end_pos
+            searching_from = start_pos + len(replacement)
         else:
             break
 

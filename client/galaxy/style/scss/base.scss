@@ -1024,6 +1024,9 @@ ul.manage-table-actions li {
     .ok {
         background: $state-success-bg;
     }
+    .error {
+        background: $state-danger-bg;
+    }
     .note {
         @extend .position-absolute;
         @extend .ml-2;

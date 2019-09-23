@@ -1527,6 +1527,30 @@ text_input:
             elements0 = elements[0]
             assert elements0["element_identifier"] == "el1"
 
+            self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+
+            jobs_summary_response = self._get("workflows/%s/invocations/%s/jobs_summary" % (workflow_id, invocation_id))
+            self._assert_status_code_is(jobs_summary_response, 200)
+            jobs_summary = jobs_summary_response.json()
+            assert 'states' in jobs_summary
+
+            invocation_states = jobs_summary['states']
+            assert invocation_states and 'ok' in invocation_states, jobs_summary
+            assert invocation_states['ok'] == 2, jobs_summary
+            assert jobs_summary['model'] == 'WorkflowInvocation', jobs_summary
+
+            jobs_summary_response = self._get("workflows/%s/invocations/%s/step_jobs_summary" % (workflow_id, invocation_id))
+            self._assert_status_code_is(jobs_summary_response, 200)
+            jobs_summary = jobs_summary_response.json()
+            assert len(jobs_summary) == 1
+            collection_summary = jobs_summary[0]
+            assert 'states' in collection_summary
+
+            collection_states = collection_summary['states']
+            assert collection_states and 'ok' in collection_states, collection_states
+            assert collection_states['ok'] == 2, collection_summary
+            assert collection_summary['model'] == 'ImplicitCollectionJobs', collection_summary
+
     def test_workflow_run_input_mapping_with_subworkflows(self):
         with self.dataset_populator.test_history() as history_id:
             test_data = """
