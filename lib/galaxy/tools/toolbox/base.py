@@ -1161,6 +1161,8 @@ class BaseGalaxyToolBox(AbstractToolBox):
         app_config_dict = self.app.config.config_dict
         conf_file = app_config_dict.get("dependency_resolvers_config_file")
         default_tool_dependency_dir = self.app.config.get('tool_dependency_dir')
+        if default_tool_dependency_dir:  # resolve if there's a value; we need to preseve None otherwise
+            default_tool_dependency_dir = os.path.join(self.app.config.data_dir, default_tool_dependency_dir)
         self.dependency_manager = build_dependency_manager(app_config_dict=app_config_dict, conf_file=conf_file,
                                                            default_tool_dependency_dir=default_tool_dependency_dir)
 
