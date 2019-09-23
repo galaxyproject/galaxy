@@ -617,7 +617,7 @@ mapping:
         desc: |
           Visualizations config directory: where to look for individual visualization
           plugins.  The path is relative to the Galaxy root dir.  To use an absolute
-          path begin the path with '/'.  This is a comma separated list.
+          path begin the path with '/'.  This is a comma-separated list.
 
       interactive_environment_plugins_directory:
         type: str
@@ -1541,7 +1541,7 @@ mapping:
         desc: |
           Return a Access-Control-Allow-Origin response header that matches the Origin
           header of the request if that Origin hostname matches one of the strings or
-          regular expressions listed here. This is a comma separated list of hostname
+          regular expressions listed here. This is a comma-separated list of hostname
           strings or regular expressions beginning and ending with /.
           E.g. mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/
           See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
@@ -2088,7 +2088,7 @@ mapping:
           prevent users making requests to services which the administrator did not
           intend to expose. Previously, you could request any network service that
           Galaxy might have had access to, even if the user could not normally access it.
-          It should be a comma separated list of IP addresses or IP address/mask, e.g.
+          It should be a comma-separated list of IP addresses or IP address/mask, e.g.
           10.10.10.10,10.0.1.0/24,fd00::/8
 
       enable_beta_gdpr:
