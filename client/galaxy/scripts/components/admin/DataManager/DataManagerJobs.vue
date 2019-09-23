@@ -42,7 +42,7 @@
             >
                 <!-- Enable cell formatting for the command line column -->
                 <span slot="html" slot-scope="data" v-html="data.value"> </span>
-                <template slot="actions" slot-scope="row">
+                <template v-slot:cell(actions)="row">
                     <b-button-group>
                         <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
                             <span class="fa fa-refresh" />
