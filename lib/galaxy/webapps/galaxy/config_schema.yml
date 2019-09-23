@@ -470,8 +470,7 @@ mapping:
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
 
-          Example value 'database/dependencies/involucro' where 'database/dependencies' is the
-          default value of the 'tool_dependency_dir' option.
+          Example value '<tool_dependency_dir>/involucro'
 
       involucro_auto_init:
         type: bool
@@ -574,8 +573,7 @@ mapping:
         desc: |
           File containing old-style genome builds.
 
-          Example value 'tool-data/shared/ucsc/builds.txt' where 'tool-data' is the default value
-          of the 'tool_data_path' option.
+          Example value '<tool_data_path>/shared/ucsc/builds.txt'
 
       len_file_path:
         type: str
@@ -583,8 +581,7 @@ mapping:
         desc: |
           Directory where chrom len files are kept, currently mainly used by trackster
 
-          Example value 'tool-data/shared/ucsc/chrom' where 'tool-data' is the default value of the
-          'tool_data_path' option.
+          Example value '<tool_data_path>/shared/ucsc/chrom'
 
       datatypes_config_file:
         type: str
@@ -631,7 +628,7 @@ mapping:
           config/plugins/interactive_environments to load Galaxy's stock plugins.
           These will require Docker to be configured and have security considerations,
           so proceed with caution. The path is relative to the Galaxy root dir.  To use
-          an absolute path begin the path with '/'.  This is a comma separated list.
+          an absolute path begin the path with '/'.  This is a comma-separated list.
 
       tour_config_dir:
         type: str
@@ -850,6 +847,8 @@ mapping:
           E-mail domains blacklist is used for filtering out users that are using
           disposable email address during the registration.  If their address domain
           matches any domain in the blacklist, they are refused the registration.
+
+          Example value 'config/disposable_email_blacklist.conf'
 
       registration_warning_message:
         type: str
