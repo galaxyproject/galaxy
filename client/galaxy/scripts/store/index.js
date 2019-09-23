@@ -9,6 +9,7 @@ import createCache from "vuex-cache";
 import { gridSearchStore } from "./gridSearchStore";
 import { tagStore } from "./tagStore";
 import { jobMetricsStore } from "./jobMetricsStore";
+import { invocationStore } from "./invocationStore";
 
 Vue.use(Vuex);
 
@@ -17,6 +18,7 @@ export default new Vuex.Store({
     modules: {
         gridSearch: gridSearchStore,
         tags: tagStore,
-        jobMetrics: jobMetricsStore
+        jobMetrics: jobMetricsStore,
+        invocations: invocationStore
     }
 });

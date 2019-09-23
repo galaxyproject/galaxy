@@ -24,7 +24,7 @@ export default {
     },
     created: function() {
         const invocationId = this.invocationId;
-        const url = getAppRoot() + `api/workflows/foobar/invocations/${invocationId}/report`;
+        const url = getAppRoot() + `api/invocations/${invocationId}/report`;
         this.ajaxCall(url);
     },
     methods: {
