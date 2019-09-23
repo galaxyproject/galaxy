@@ -482,11 +482,10 @@ mapping:
 
       mulled_channels:
         type: str
+        default: 'conda-forge,bioconda'
         required: false
         desc: |
           Conda channels to use when building Docker or Singularity containers using involucro.
-
-          Example value 'conda-forge,bioconda'
 
       enable_tool_shed_check:
         type: bool
