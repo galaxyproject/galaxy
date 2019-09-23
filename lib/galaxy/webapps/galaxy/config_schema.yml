@@ -576,6 +576,7 @@ mapping:
 
       len_file_path:
         type: str
+        default: shared/ucsc/chrom
         required: false
         desc: |
           Directory where chrom len files are kept, currently mainly used by trackster. Value will
