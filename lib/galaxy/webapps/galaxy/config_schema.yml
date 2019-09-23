@@ -293,8 +293,7 @@ mapping:
         required: false
         desc: |
           conda_prefix is the location on the filesystem where Conda packages and environments are
-          installed IMPORTANT: Due to a current limitation in conda, the total length of the
-          conda_prefix and the job_working_directory path should be less than 50 characters!
+          installed.
 
           Sample default '<tool_dependency_dir>/_conda'
 
