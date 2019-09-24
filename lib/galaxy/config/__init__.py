@@ -258,21 +258,20 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self.thread_local_log = threading.local()
 
         # Install database related configuration (if different).
-        self.install_database_connection = kwargs.get("install_database_connection", None)
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
 
         # Where dataset files are stored
-        self.file_path = resolve_path(kwargs.get("file_path", "files"), self.data_dir)
+        self.file_path = resolve_path(self.file_path, self.data_dir)
         # new_file_path and legacy_home_dir can be overridden per destination in job_conf.
-        self.new_file_path = resolve_path(kwargs.get("new_file_path", "tmp"), self.data_dir)
+        self.new_file_path = resolve_path(self.new_file_path, self.data_dir)
         override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
         if override_tempdir:
             tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir", None)
-        self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "openid_consumer_cache"), self.data_dir)
+        self.openid_consumer_cache_path = resolve_path(self.openid_consumer_cache_path, self.data_dir)
         self.cookie_path = kwargs.get("cookie_path", None)
-        self.tool_path = resolve_path(kwargs.get("tool_path", "tools"), self.root)
-        self.tool_data_path = resolve_path(kwargs.get("tool_data_path", "tool-data"), os.getcwd())
+        self.tool_path = resolve_path(self.tool_path, self.root)
+        self.tool_data_path = resolve_path(self.tool_data_path, os.getcwd())
         if not running_from_source and kwargs.get("tool_data_path", None) is None:
             self.tool_data_path = resolve_path("tool-data", self.data_dir)
         self.builds_file_path = resolve_path(kwargs.get("builds_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'builds.txt')), self.root)
@@ -287,7 +286,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self.integrated_tool_panel_tracking_directory = resolve_path(integrated_tool_panel_tracking_directory, self.root)
         else:
             self.integrated_tool_panel_tracking_directory = None
-        self.toolbox_filter_base_modules = listify(kwargs.get("toolbox_filter_base_modules", "galaxy.tools.filters,galaxy.tools.toolbox.filters"))
+        self.toolbox_filter_base_modules = listify(self.toolbox_filter_base_modules)
         self.tool_filters = listify(kwargs.get("tool_filters", []), do_strip=True)
         self.tool_label_filters = listify(kwargs.get("tool_label_filters", []), do_strip=True)
         self.tool_section_filters = listify(kwargs.get("tool_section_filters", []), do_strip=True)
@@ -340,13 +339,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             if len(ip.strip()) > 0
         ]
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
-        self.template_cache = resolve_path(kwargs.get("template_cache_path", "compiled_templates"), self.data_dir)
+        self.template_cache = resolve_path(self.template_cache_path, self.data_dir)
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
         self.cluster_files_directory = self.resolve_path(kwargs.get("cluster_files_directory", os.path.join(self.data_dir, "pbs")))
 
         # Fall back to legacy job_working_directory config variable if set.
-        default_jobs_directory = kwargs.get("job_working_directory", "jobs_directory")
-        self.jobs_directory = resolve_path(kwargs.get("jobs_directory", default_jobs_directory), self.data_dir)
+        self.jobs_directory = resolve_path(kwargs.get("jobs_directory", self.job_working_directory), self.data_dir)
         if self.preserve_python_environment not in ["legacy_only", "legacy_and_local", "always"]:
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             self.preserve_python_environment = "legacy_only"
@@ -361,7 +359,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         activation_email = kwargs.get('activation_email', None)
         self.email_from = kwargs.get('email_from', activation_email)
         self.myexperiment_target_url = kwargs.get('my_experiment_target_url', 'www.myexperiment.org')
-        self.instance_resource_url = kwargs.get('instance_resource_url', None)
         #  Get the disposable email domains blacklist file and its contents
         self.blacklist_location = kwargs.get('blacklist_file', None)
         self.blacklist_content = None
@@ -393,10 +390,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "")
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "")
         self.pbs_stage_path = kwargs.get('pbs_stage_path', "")
-        self.drmaa_external_runjob_script = kwargs.get('drmaa_external_runjob_script', None)
-        self.drmaa_external_killjob_script = kwargs.get('drmaa_external_killjob_script', None)
-        self.external_chown_script = kwargs.get('external_chown_script', None)
-        self.heartbeat_log = kwargs.get('heartbeat_log', None)
         self.sanitize_whitelist_file = resolve_path(kwargs.get('sanitize_whitelist_file', "config/sanitize_whitelist.txt"), self.root)
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(kwargs)
         if "trust_jupyter_notebook_conversion" in kwargs:
@@ -446,9 +439,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             target_dir = resolve_path(target_dir, self.data_dir)
             involucro_path = os.path.join(target_dir, "involucro")
         self.involucro_path = resolve_path(involucro_path, self.root)
-        mulled_channels = kwargs.get('mulled_channels')
-        if mulled_channels:
-            self.mulled_channels = [c.strip() for c in mulled_channels.split(',')]
+        if self.mulled_channels:
+            self.mulled_channels = [c.strip() for c in self.mulled_channels.split(',')]
         else:
             self.mulled_channels = DEFAULT_CHANNELS
 
@@ -579,6 +571,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             self.visualization_plugins_directory += ",%s" % ie_dirs
 
         self.proxy_session_map = resolve_path(kwargs.get("dynamic_proxy_session_map", "session_map.sqlite"), self.data_dir)
+
         self.manage_dynamic_proxy = string_as_bool(kwargs.get("dynamic_proxy_manage", "True"))  # Set to false if being launched externally
 
         # InteractiveTools propagator mapping file
@@ -586,8 +579,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.interactivetool_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
         self.interactivetools_enable = string_as_bool(kwargs.get('interactivetools_enable', False))
 
-        self.citation_cache_data_dir = resolve_path(kwargs.get("citation_cache_data_dir", "citations/data"), self.data_dir)
-        self.citation_cache_lock_dir = resolve_path(kwargs.get("citation_cache_lock_dir", "citations/locks"), self.data_dir)
+        self.citation_cache_data_dir = resolve_path(self.citation_cache_data_dir, self.data_dir)
+        self.citation_cache_lock_dir = resolve_path(self.citation_cache_lock_dir, self.data_dir)
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 
