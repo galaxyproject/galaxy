@@ -1,9 +1,9 @@
 import json
 
 from base import rules_test_data
-from base.populators import flakey, load_data_dict
-from galaxy_selenium.navigates_galaxy import retry_call_during_transitions
+from base.populators import flakey, load_data_dict, skip_if_github_down
 
+from galaxy.selenium.navigates_galaxy import retry_call_during_transitions
 from .framework import (
     managed_history,
     retry_assertion_during_transitions,
@@ -185,6 +185,7 @@ class LoggedInToolFormTestCase(SeleniumTestCase):
 
     @selenium_test
     @managed_history
+    @skip_if_github_down
     def test_run_apply_rules_tutorial(self):
         self.home()
         self.upload_rule_start()

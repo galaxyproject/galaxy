@@ -14,6 +14,7 @@ import os.path
 import re
 import string
 import time
+from collections import OrderedDict
 from glob import glob
 from tempfile import NamedTemporaryFile
 from xml.etree import ElementTree
@@ -22,7 +23,6 @@ import requests
 
 from galaxy import util
 from galaxy.util.dictifiable import Dictifiable
-from galaxy.util.odict import odict
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 
 log = logging.getLogger(__name__)
@@ -157,7 +157,7 @@ class ToolDataTableManager(object):
                                                      from_shed_config=True)
         except Exception as e:
             error_message = 'Error attempting to parse file %s: %s' % (str(os.path.split(config_filename)[1]), util.unicodify(e))
-            log.debug(error_message)
+            log.debug(error_message, exc_info=True)
             table_elems = []
         if persist:
             # Persist Galaxy's version of the changed tool_data_table_conf.xml file.
@@ -251,7 +251,7 @@ class ToolDataTable(object):
         self.empty_field_values = {}
         self.allow_duplicate_entries = util.asbool(config_element.get('allow_duplicate_entries', True))
         self.here = filename and os.path.dirname(filename)
-        self.filenames = odict()
+        self.filenames = OrderedDict()
         self.tool_data_path = tool_data_path
         self.tool_data_path_files = tool_data_path_files
         self.missing_index_file = None
@@ -683,7 +683,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                         if fields != values:
                             rval += line
 
-        with open(loc_file, 'wb') as writer:
+        with open(loc_file, 'w') as writer:
             writer.write(rval)
 
         return rval

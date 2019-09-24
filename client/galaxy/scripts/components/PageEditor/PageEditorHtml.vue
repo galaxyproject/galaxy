@@ -164,7 +164,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
         }
         show_modal(
             "Create Link",
-            `<div><div><label id='link_attribute_label'>URL <span style='float: right; font-size: 90%'><a href='#' id='set_link_id'>Create in-page anchor</a></span></label><br><input type='text' class='wym_href' value='${curURL}' size='40' /></div><div><label>Title</label><br><input type='text' class='wym_title' value='${curTitle}' size='40' /></div><div>`,
+            `<div><div><label id='link_attribute_label'>URL <span style='float: right; font-size: 90%'><a href='javascript:void(0)' role="button" id='set_link_id'>Create in-page anchor</a></span></label><br><input type='text' class='wym_href' value='${curURL}' size='40' /></div><div><label>Title</label><br><input type='text' class='wym_title' value='${curTitle}' size='40' /></div><div>`,
             {
                 "Make link": function() {
                     // Get URL, name/title.
@@ -576,7 +576,7 @@ function renderEditorWithContent(pageId, content) {
     // Containers, Galaxy style
     //
     var containers_menu = $(
-        "<div class='galaxy-page-editor-button'><a id='insert-galaxy-link' class='action-button popup' href='#'>Paragraph type</a></div>"
+        "<div class='galaxy-page-editor-button'><a id='insert-galaxy-link' class='action-button popup' href='javascript:void(0)' role='button'>Paragraph type</a></div>"
     );
     $(".wym_area_top").append(containers_menu);
 
@@ -596,7 +596,7 @@ function renderEditorWithContent(pageId, content) {
 
     // Add menu button.
     var insert_link_menu_button = $(
-        "<div><a id='insert-galaxy-link' class='action-button popup' href='#'>Insert Link to Galaxy Object</a></div>"
+        "<div><a id='insert-galaxy-link' class='action-button popup' href='javascript:void(0)' role='button'>Insert Link to Galaxy Object</a></div>"
     ).addClass("galaxy-page-editor-button");
     $(".wym_area_top").append(insert_link_menu_button);
 
@@ -625,7 +625,7 @@ function renderEditorWithContent(pageId, content) {
 
     // Add menu button.
     var embed_object_button = $(
-        "<div><a id='embed-galaxy-object' class='action-button popup' href='#'>Embed Galaxy Object</a></div>"
+        "<div><a id='embed-galaxy-object' class='action-button popup' href='javascript:void(0)' role=''button'>Embed Galaxy Object</a></div>"
     ).addClass("galaxy-page-editor-button");
     $(".wym_area_top").append(embed_object_button);
 

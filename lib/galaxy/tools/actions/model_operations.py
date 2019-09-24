@@ -1,11 +1,11 @@
 import logging
+from collections import OrderedDict
 
 from galaxy.tools.actions import (
     DefaultToolAction,
     OutputCollections,
     ToolExecutionCache,
 )
-from galaxy.util.odict import odict
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class ModelOperationToolAction(DefaultToolAction):
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming)
 
-        out_data = odict()
+        out_data = OrderedDict()
         input_collections = dict((k, v[0][0]) for k, v in inp_dataset_collections.items())
         output_collections = OutputCollections(
             trans,

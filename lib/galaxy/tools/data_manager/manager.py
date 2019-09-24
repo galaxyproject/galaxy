@@ -2,15 +2,12 @@ import errno
 import json
 import logging
 import os
+from collections import OrderedDict
 
 from six import string_types
 
 from galaxy import util
-from galaxy.queue_worker import (
-    send_control_task
-)
 from galaxy.tools.data import TabularToolDataTable
-from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from tool_shed.util import (
     common_util,
@@ -27,8 +24,8 @@ DEFAULT_VALUE_TRANSLATION_TYPE = 'template'
 class DataManagers(object):
     def __init__(self, app, xml_filename=None):
         self.app = app
-        self.data_managers = odict()
-        self.managed_data_tables = odict()
+        self.data_managers = OrderedDict()
+        self.managed_data_tables = OrderedDict()
         self.tool_path = None
         self._reload_count = 0
         self.filename = xml_filename or self.app.config.data_manager_config_file
@@ -131,7 +128,7 @@ class DataManager(object):
         self.version = self.DEFAULT_VERSION
         self.guid = None
         self.tool = None
-        self.data_tables = odict()
+        self.data_tables = OrderedDict()
         self.output_ref_by_data_table = {}
         self.move_by_data_table_column = {}
         self.value_translation_by_data_table_column = {}
@@ -213,7 +210,7 @@ class DataManager(object):
             data_table_name = data_table_elem.get("name")
             assert data_table_name is not None, "A name is required for a data table entry"
             if data_table_name not in self.data_tables:
-                self.data_tables[data_table_name] = odict()
+                self.data_tables[data_table_name] = OrderedDict()
             output_elem = data_table_elem.find('output')
             if output_elem is not None:
                 for column_elem in output_elem.findall('column'):
@@ -307,8 +304,26 @@ class DataManager(object):
 
         data_tables_dict = data_manager_dict.get('data_tables', {})
         for data_table_name in self.data_tables.keys():
-            data_table_values = data_tables_dict.pop(data_table_name, None)
-            if not data_table_values:
+            data_table_values = None
+            data_table_remove_values = None
+            # Add/Remove option for data tables
+            if isinstance(data_tables_dict.get(data_table_name), dict):
+
+                data_table_data = data_tables_dict.get(data_table_name, None)
+                # Validate results
+                if not data_table_data:
+                    log.warning('Data table seems invalid: "%s".' % data_table_name)
+                    continue
+
+                data_table_values = data_table_data.pop('add', None)
+                data_table_remove_values = data_table_data.pop('remove', None)
+
+                # Remove it as well here
+                data_tables_dict.pop(data_table_name, None)
+            else:
+                data_table_values = data_tables_dict.pop(data_table_name, None)
+
+            if not data_table_values and not data_table_remove_values:
                 log.warning('No values for data table "%s" were returned by the data manager "%s".' % (data_table_name, self.id))
                 continue  # next data table
             data_table = self.data_managers.app.tool_data_tables.get(data_table_name, None)
@@ -326,7 +341,9 @@ class DataManager(object):
                     output_ref_values[data_table_column] = output_ref_dataset
 
             if not isinstance(data_table_values, list):
-                data_table_values = [data_table_values]
+                data_table_values = [data_table_values] if data_table_values else []
+            if not isinstance(data_table_remove_values, list):
+                data_table_remove_values = [data_table_remove_values] if data_table_remove_values else []
             for data_table_row in data_table_values:
                 data_table_value = dict(**data_table_row)  # keep original values here
                 for name, value in data_table_row.items():  # FIXME: need to loop through here based upon order listed in data_manager config
@@ -334,10 +351,16 @@ class DataManager(object):
                         self.process_move(data_table_name, name, output_ref_values[name].extra_files_path, **data_table_value)
                         data_table_value[name] = self.process_value_translation(data_table_name, name, **data_table_value)
                 data_table.add_entry(data_table_value, persist=True, entry_source=self)
-            send_control_task(self.data_managers.app,
-                              'reload_tool_data_tables',
-                              noop_self=True,
-                              kwargs={'table_name': data_table_name})
+            # Removes data table entries
+            for data_table_row in data_table_remove_values:
+                data_table_value = dict(**data_table_row)  # keep original values here
+                data_table.remove_entry(list(data_table_value.values()))
+
+            self.data_managers.app.queue_worker.send_control_task(
+                'reload_tool_data_tables',
+                noop_self=True,
+                kwargs={'table_name': data_table_name}
+            )
         if self.undeclared_tables and data_tables_dict:
             # We handle the data move, by just moving all the data out of the extra files path
             # moving a directory and the target already exists, we move the contents instead
@@ -356,9 +379,11 @@ class DataManager(object):
                         if name in path_column_names:
                             data_table_value[name] = os.path.abspath(os.path.join(self.data_managers.app.config.galaxy_data_manager_data_path, value))
                     data_table.add_entry(data_table_value, persist=True, entry_source=self)
-                send_control_task(self.data_managers.app, 'reload_tool_data_tables',
-                                  noop_self=True,
-                                  kwargs={'table_name': data_table_name})
+                self.data_managers.app.queue_worker.send_control_task(
+                    'reload_tool_data_tables',
+                    noop_self=True,
+                    kwargs={'table_name': data_table_name}
+                )
         else:
             for data_table_name, data_table_values in data_tables_dict.items():
                 # tool returned extra data table entries, but data table was not declared in data manager

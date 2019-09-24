@@ -25,4 +25,12 @@ galaxy.datatypes.util.gff\_util module
     :undoc-members:
     :show-inheritance:
 
+galaxy.datatypes.util.maf\_utilities module
+-------------------------------------------
+
+.. automodule:: galaxy.datatypes.util.maf_utilities
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

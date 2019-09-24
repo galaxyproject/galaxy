@@ -331,7 +331,7 @@ var LibraryListView = Backbone.View.extend({
                     <% if(length === 0) { %> style="display:none;" <% }%> >
                     <thead>
                         <th style="width:30%;">
-                            <a class="sort-libraries-link" title="Click to reverse order" href="#">
+                            <a class="sort-libraries-link" title="Click to reverse order" href="javascript:void(0)" role="button">
                                 Name
                             </a>
                             <span title="Sorted alphabetically" class="fa fa-sort-alpha-<%- order %>"></span>

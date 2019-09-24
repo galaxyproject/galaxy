@@ -21,7 +21,6 @@ except ImportError:
     can_watch = False
 
 from galaxy.util.hash_util import md5_hash_file
-from .web_compat import register_postfork_function
 
 log = logging.getLogger(__name__)
 
@@ -66,27 +65,46 @@ def get_watcher(config, config_name, default="False", monitor_what_str=None, wat
         return NullWatcher()
 
 
-class Watcher(object):
+class BaseWatcher(object):
+
+    def __init__(self, observer_class, even_handler_class, **kwargs):
+        self.observer = None
+        self.observer_class = observer_class
+        self.event_handler = even_handler_class(self)
+        self.monitored_dirs = {}
+
+    def start(self):
+        if self.observer is None:
+            self.observer = self.observer_class()
+            self.observer.start()
+            self.resume_watching()
+
+    def monitor(self, dir_path, recursive=False):
+        self.monitored_dirs[dir_path] = recursive
+        if self.observer is not None:
+            self.observer.schedule(self.event_handler, dir_path, recursive=recursive)
+
+    def resume_watching(self):
+        for dir_path, recursive in self.monitored_dirs.items():
+            self.monitor(dir_path, recursive)
+
+    def shutdown(self):
+        if self.observer is not None:
+            self.observer.stop()
+            self.observer.join()
+            self.observer = None
+
+
+class Watcher(BaseWatcher):
 
     def __init__(self, observer_class, event_handler_class, **kwargs):
-        self.monitored_dirs = {}
+        super(Watcher, self).__init__(observer_class, event_handler_class, **kwargs)
         self.path_hash = {}
         self.file_callbacks = {}
         self.dir_callbacks = {}
         self.ignore_extensions = {}
-        self.observer = observer_class()
+        self.require_extensions = {}
         self.event_handler = event_handler_class(self)
-        self.start()
-
-    def start(self):
-        register_postfork_function(self.observer.start)
-
-    def shutdown(self):
-        self.observer.stop()
-        self.observer.join()
-
-    def monitor(self, dir, recursive=False):
-        self.observer.schedule(self.event_handler, dir, recursive=recursive)
 
     def watch_file(self, file_path, callback=None):
         file_path = os.path.abspath(file_path)
@@ -94,18 +112,18 @@ class Watcher(object):
         if dir_path not in self.monitored_dirs:
             if callback is not None:
                 self.file_callbacks[file_path] = callback
-            self.monitored_dirs[dir_path] = dir_path
             self.monitor(dir_path)
             log.debug("Watching for changes to file: %s", file_path)
 
-    def watch_directory(self, dir_path, callback=None, recursive=False, ignore_extensions=None):
+    def watch_directory(self, dir_path, callback=None, recursive=False, ignore_extensions=None, require_extensions=None):
         dir_path = os.path.abspath(dir_path)
         if dir_path not in self.monitored_dirs:
             if callback is not None:
                 self.dir_callbacks[dir_path] = callback
             if ignore_extensions:
                 self.ignore_extensions[dir_path] = ignore_extensions
-            self.monitored_dirs[dir_path] = dir_path
+            if require_extensions:
+                self.require_extensions[dir_path] = require_extensions
             self.monitor(dir_path, recursive=recursive)
             log.debug("Watching for changes in directory%s: %s", ' (recursively)' if recursive else '', dir_path)
 
@@ -119,6 +137,9 @@ class EventHandler(FileSystemEventHandler):
         self._handle(event)
 
     def _extension_check(self, key, path):
+        required_extensions = self.watcher.require_extensions.get(key)
+        if required_extensions:
+            return any(filter(path.endswith, required_extensions))
         return not any(filter(path.endswith, self.watcher.ignore_extensions.get(key, [])))
 
     def _handle(self, event):
@@ -127,7 +148,7 @@ class EventHandler(FileSystemEventHandler):
         # look at dest if it exists else use src.
         path = getattr(event, 'dest_path', None) or event.src_path
         path = os.path.abspath(path)
-        callback = self.watcher.file_callbacks.get(path, None)
+        callback = self.watcher.file_callbacks.get(path)
         if os.path.basename(path).startswith('.'):
             return
         if callback:

@@ -1,6 +1,5 @@
 """
 Galaxy Metadata
-
 """
 
 import copy
@@ -11,6 +10,7 @@ import shutil
 import sys
 import tempfile
 import weakref
+from collections import OrderedDict
 from os.path import abspath
 
 from six import string_types
@@ -26,7 +26,6 @@ from galaxy.util import (
 )
 from galaxy.util.json import safe_dumps
 from galaxy.util.object_wrapper import sanitize_lists_to_string
-from galaxy.util.odict import odict
 
 log = logging.getLogger(__name__)
 
@@ -194,6 +193,10 @@ class MetadataCollection(object):
             dataset._metadata[name] = value
         if '__extension__' in JSONified_dict:
             dataset.extension = JSONified_dict['__extension__']
+        if '__validated_state__' in JSONified_dict:
+            dataset.validated_state = JSONified_dict['__validated_state__']
+        if '__validated_state_message__' in JSONified_dict:
+            dataset.validated_state_message = JSONified_dict['__validated_state_message__']
 
     def to_JSON_dict(self, filename=None):
         # galaxy.model.customtypes.json_encoder.encode()
@@ -204,6 +207,10 @@ class MetadataCollection(object):
                 meta_dict[name] = spec.param.to_external_value(dataset_meta_dict[name])
         if '__extension__' in dataset_meta_dict:
             meta_dict['__extension__'] = dataset_meta_dict['__extension__']
+        if '__validated_state__' in dataset_meta_dict:
+            meta_dict['__validated_state__'] = dataset_meta_dict['__validated_state__']
+        if '__validated_state_message__' in dataset_meta_dict:
+            meta_dict['__validated_state_message__'] = dataset_meta_dict['__validated_state_message__']
         if filename is None:
             return json.dumps(meta_dict)
         json.dump(meta_dict, open(filename, 'wt+'))
@@ -214,29 +221,28 @@ class MetadataCollection(object):
         return None
 
 
-class MetadataSpecCollection(odict):
+class MetadataSpecCollection(OrderedDict):
     """
-    A simple extension of dict which allows cleaner access to items
+    A simple extension of OrderedDict which allows cleaner access to items
     and allows the values to be iterated over directly as if it were a
     list.  append() is also implemented for simplicity and does not
     "append".
     """
 
-    def __init__(self, dict=None):
-        odict.__init__(self, dict=None)
+    def __init__(self, *args, **kwds):
+        super(MetadataSpecCollection, self).__init__(*args, **kwds)
 
     def append(self, item):
         self[item.name] = item
 
-    def iter(self):
-        return iter(self.values())
-
     def __getattr__(self, name):
+        if name not in self:
+            raise AttributeError
         return self.get(name)
 
     def __repr__(self):
         # force elements to draw with __str__ for sphinx-apidoc
-        return ', '.join([item.__str__() for item in self.iter()])
+        return ', '.join(item.__str__() for item in self.values())
 
 
 class MetadataParameter(object):

@@ -15,7 +15,10 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 
-from galaxy.model.migrate.versions.util import create_table, drop_table
+from galaxy.model.migrate.versions.util import (
+    create_table,
+    drop_table
+)
 from galaxy.model.orm.now import now
 
 log = logging.getLogger(__name__)

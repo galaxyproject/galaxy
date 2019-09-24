@@ -1,6 +1,5 @@
 import os
 
-import galaxy.queue_worker
 from galaxy import (
     exceptions,
     web
@@ -42,9 +41,11 @@ class ToolData(BaseAPIController):
         decoded_tool_data_id = id
         data_table = trans.app.tool_data_tables.data_tables.get(decoded_tool_data_id)
         data_table.reload_from_files()
-        galaxy.queue_worker.send_control_task(trans.app, 'reload_tool_data_tables',
-                                              noop_self=True,
-                                              kwargs={'table_name': decoded_tool_data_id})
+        trans.app.queue_worker.send_control_task(
+            'reload_tool_data_tables',
+            noop_self=True,
+            kwargs={'table_name': decoded_tool_data_id}
+        )
         return self._data_table(decoded_tool_data_id).to_dict(view='element')
 
     @web.require_admin
@@ -87,9 +88,11 @@ class ToolData(BaseAPIController):
             return "Invalid data table item ( %s ) specified. Wrong number of columns (%s given, %s required)." % (str(values), str(len(split_values)), str(len(data_table.get_column_name_list())))
 
         data_table.remove_entry(split_values)
-        galaxy.queue_worker.send_control_task(trans.app, 'reload_tool_data_tables',
-                                              noop_self=True,
-                                              kwargs={'table_name': decoded_tool_data_id})
+        trans.app.queue_worker.send_control_task(
+            'reload_tool_data_tables',
+            noop_self=True,
+            kwargs={'table_name': decoded_tool_data_id}
+        )
         return self._data_table(decoded_tool_data_id).to_dict(view='element')
 
     @web.require_admin

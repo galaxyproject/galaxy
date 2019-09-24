@@ -61,7 +61,8 @@ class ToolRunner(BaseUIController):
                                                         redirect=redirect))
         if not tool.allow_user_access(trans.user):
             return __tool_404__()
-        if tool.tool_type == 'default':
+        # FIXME: Tool class should define behavior
+        if tool.tool_type in ['default', 'interactivetool']:
             return trans.response.send_redirect(url_for(controller='root', tool_id=tool_id))
 
         # execute tool without displaying form (used for datasource tools)

@@ -6,6 +6,7 @@ import { getGalaxyInstance } from "app";
 import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_dataset_view from "mvc/library/library-dataset-view";
+import { mountNametags } from "components/Nametags";
 
 var FolderRowView = Backbone.View.extend({
     events: {
@@ -69,7 +70,23 @@ var FolderRowView = Backbone.View.extend({
             })
         );
         this.$el.show();
+
+        this._mountNametags("initialize");
+
         return this;
+    },
+
+    _mountNametags(context) {
+        const container = this.$el.find(".nametags")[0];
+        if (container) {
+            const str_tags = this.model.get("tags");
+            if (typeof str_tags === "string") {
+                this.model.set({ tags: str_tags.split(", ") });
+            }
+            const { id, model_class, tags } = this.model.attributes;
+            const storeKey = `${model_class}-${id}`;
+            mountNametags({ storeKey, tags }, container);
+        }
     },
 
     /**
@@ -270,6 +287,7 @@ var FolderRowView = Backbone.View.extend({
                         <textarea rows="4" class="form-control input_folder_description" placeholder="description" ><%- content_item.get("description") %></textarea>
                     </td>
                 <% } %>
+                <td></td>
                 <td>folder</td>
                 <td></td>
                 <td>
@@ -325,6 +343,7 @@ var FolderRowView = Backbone.View.extend({
                     <a>
                 </td>
                 <td><%- content_item.get("message") %></td>
+                <td><div class="nametags"><!-- Nametags mount here --></div></td>
                 <td><%= _.escape(content_item.get("file_ext")) %></td>
                 <td><%= _.escape(content_item.get("file_size")) %></td>
                 <td><%= _.escape(content_item.get("update_time")) %></td>
@@ -372,6 +391,9 @@ var FolderRowView = Backbone.View.extend({
                 </td>
                 <td>
                     <%- content_item.get("message") %>
+                </td>
+                <td>
+                    <div class="nametags"><!-- Nametags mount here --></div>
                 </td>
                 <td>
                     <%= _.escape(content_item.get("file_ext")) %>
@@ -422,6 +444,7 @@ var FolderRowView = Backbone.View.extend({
                 <% } else { %>
                     <td></td>
                 <% } %>
+                <td></td>
                 <td>
                     folder
                 </td>

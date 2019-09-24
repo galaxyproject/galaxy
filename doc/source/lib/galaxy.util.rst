@@ -14,6 +14,7 @@ Subpackages
     galaxy.util.logging
     galaxy.util.pastescript
     galaxy.util.path
+    galaxy.util.tool_shed
 
 Submodules
 ----------

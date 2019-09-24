@@ -24,7 +24,8 @@ class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIte
     @expose_api
     def index(self, trans, **kwd):
         """
-        *GET /api/folders/
+        GET /api/folders/
+
         This would normally display a list of folders. However, that would
         be across multiple libraries, so it's not implemented.
         """
@@ -33,8 +34,7 @@ class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIte
     @expose_api
     def show(self, trans, id, **kwd):
         """
-        show( self, trans, id, **kwd )
-        *GET /api/folders/{encoded_folder_id}
+        GET /api/folders/{encoded_folder_id}
 
         Displays information about a folder.
 
@@ -52,8 +52,9 @@ class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIte
     @expose_api
     def create(self, trans, encoded_parent_folder_id, payload=None, **kwd):
         """
-        *POST /api/folders/{encoded_parent_folder_id}
-            Create a new folder object underneath the one specified in the parameters.
+        POST /api/folders/{encoded_parent_folder_id}
+
+        Create a new folder object underneath the one specified in the parameters.
 
         :param  encoded_parent_folder_id:      (required) the parent folder's id
         :type   encoded_parent_folder_id:      an encoded id string (should be prefixed by 'F')
@@ -81,7 +82,7 @@ class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIte
     @expose_api
     def get_permissions(self, trans, encoded_folder_id, **kwd):
         """
-        * GET /api/folders/{id}/permissions
+        GET /api/folders/{id}/permissions
 
         Load all permissions for the given folder id and return it.
 
@@ -132,8 +133,9 @@ class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIte
     @expose_api
     def set_permissions(self, trans, encoded_folder_id, payload=None, **kwd):
         """
-        *POST /api/folders/{encoded_folder_id}/permissions
-            Set permissions of the given folder to the given role ids.
+        POST /api/folders/{encoded_folder_id}/permissions
+
+        Set permissions of the given folder to the given role ids.
 
         :param  encoded_folder_id:      the encoded id of the folder to set the permissions of
         :type   encoded_folder_id:      an encoded id string
@@ -224,9 +226,10 @@ class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIte
     @expose_api
     def delete(self, trans, encoded_folder_id, **kwd):
         """
-        delete( self, trans, encoded_folder_id, **kwd )
-        * DELETE /api/folders/{encoded_folder_id}
-            marks the folder with the given ``encoded_folder_id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)
+        DELETE /api/folders/{encoded_folder_id}
+
+        Mark the folder with the given ``encoded_folder_id`` as `deleted`
+        (or remove the `deleted` mark if the `undelete` param is true).
 
         .. note:: Currently, only admin users can un/delete folders.
 
@@ -249,19 +252,24 @@ class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIte
     @expose_api
     def update(self, trans, encoded_folder_id, payload=None, **kwd):
         """
-        * PATCH /api/folders/{encoded_folder_id}
-           Update the folder defined by an ``encoded_folder_id`` with the data in the payload.
+        PATCH /api/folders/{encoded_folder_id}
+
+        Update the folder defined by an ``encoded_folder_id``
+        with the data in the payload.
 
        .. note:: Currently, only admin users can update library folders. Also the folder must not be `deleted`.
 
         :param  id:      the encoded id of the folder
         :type   id:      an encoded id string
+
         :param  payload: (required) dictionary structure containing::
             'name':         new folder's name, cannot be empty
             'description':  new folder's description
         :type   payload: dict
+
         :returns:   detailed folder information
         :rtype:     dict
+
         :raises: RequestParameterMissingException
         """
         decoded_folder_id = self.folder_manager.cut_and_decode(trans, encoded_folder_id)

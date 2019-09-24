@@ -1,13 +1,12 @@
 import logging
 import os
+from collections import OrderedDict
 from json import dumps, loads
 
-import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
 from galaxy.tools import global_tool_errors
 from galaxy.util.json import safe_dumps
-from galaxy.util.odict import odict
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -201,9 +200,9 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool_version = kwd.get('tool_version', None)
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
 
-        # Encode in this method to handle odict objects in tool representation.
+        # Encode in this method to handle OrderedDict objects in tool representation.
         def json_encodeify(obj):
-            if isinstance(obj, odict):
+            if isinstance(obj, OrderedDict):
                 return dict(obj)
             elif isinstance(obj, map):
                 return list(obj)
@@ -220,7 +219,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         GET /api/tools/{tool_id}/reload
         Reload specified tool.
         """
-        galaxy.queue_worker.send_control_task(trans.app, 'reload_tool', noop_self=True, kwargs={'tool_id': id})
+        trans.app.queue_worker.send_control_task('reload_tool', noop_self=True, kwargs={'tool_id': id})
         message, status = trans.app.toolbox.reload_tool_by_id(id)
         if status == 'error':
             raise exceptions.MessageException(message)
@@ -531,7 +530,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])
         rval = {'outputs': [], 'output_collections': [], 'jobs': [], 'implicit_collections': []}
-
+        rval['produces_entry_points'] = tool.produces_entry_points
         job_errors = vars.get('job_errors', [])
         if job_errors:
             # If we are here - some jobs were successfully executed but some failed.

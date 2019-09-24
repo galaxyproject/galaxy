@@ -8,6 +8,7 @@ from base.constants import (
 )
 from base.populators import (
     DatasetPopulator,
+    skip_if_site_down,
     skip_without_datatype,
     uses_test_history,
 )
@@ -484,14 +485,38 @@ class ToolsUploadTestCase(api.ApiTestCase):
             assert extra_file["path"] == "composite"
             assert extra_file["class"] == "File"
 
+    @skip_if_site_down("https://usegalaxy.org")
     def test_upload_from_invalid_url(self):
         history_id, new_dataset = self._upload('https://usegalaxy.org/bla123', assert_ok=False)
         dataset_details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=False)
         assert dataset_details['state'] == 'error', "expected dataset state to be 'error', but got '%s'" % dataset_details['state']
 
+    @skip_if_site_down("https://usegalaxy.org")
     def test_upload_from_valid_url(self):
         history_id, new_dataset = self._upload('https://usegalaxy.org/api/version')
         self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=True)
+
+    def test_upload_and_validate_invalid(self):
+        path = TestDataResolver().get_filename("1.fastqsanger")
+        with open(path, "rb") as fh:
+            metadata = self._upload_and_get_details(fh, file_type="fastqcssanger")
+        assert "validated_state" in metadata
+        assert metadata['validated_state'] == 'unknown'
+        history_id = metadata["history_id"]
+        dataset_id = metadata["id"]
+        terminal_validated_state = self.dataset_populator.validate_dataset_and_wait(history_id, dataset_id)
+        assert terminal_validated_state == 'invalid', terminal_validated_state
+
+    def test_upload_and_validate_valid(self):
+        path = TestDataResolver().get_filename("1.fastqsanger")
+        with open(path, "rb") as fh:
+            metadata = self._upload_and_get_details(fh, file_type="fastqsanger")
+        assert "validated_state" in metadata
+        assert metadata['validated_state'] == 'unknown'
+        history_id = metadata["history_id"]
+        dataset_id = metadata["id"]
+        terminal_validated_state = self.dataset_populator.validate_dataset_and_wait(history_id, dataset_id)
+        assert terminal_validated_state == 'ok', terminal_validated_state
 
     def _velvet_upload(self, history_id, extra_inputs):
         payload = self.dataset_populator.upload_payload(

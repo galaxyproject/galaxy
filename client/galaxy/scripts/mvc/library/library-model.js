@@ -74,7 +74,7 @@ var FolderAsModel = LibraryItem.extend({
 });
 
 var Folder = Backbone.Collection.extend({
-    model: LibraryItem,
+    model: LibraryItem
 });
 
 var FolderContainer = Backbone.Model.extend({

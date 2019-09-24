@@ -1,3 +1,28 @@
+~~~~~~~~~~~~~~
+``config_dir``
+~~~~~~~~~~~~~~
+
+:Description:
+    The directory that will be prepended to relative paths in options
+    specifying other Galaxy config files (e.g. datatypes_config_file).
+    Defaults to the directory in which galaxy.yml is located.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~
+``data_dir``
+~~~~~~~~~~~~
+
+:Description:
+    The directory that will be prepended to relative paths in options
+    specifying Galaxy data/cache directories and files (such as the
+    default SQLite database, file_path, etc.). Defaults to `database/`
+    if running Galaxy from source or `<config_dir>/data` otherwise.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -83,7 +108,7 @@
     on an existing template database. This will set that. This is
     probably only useful for testing but documentation is included
     here for completeness.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -96,8 +121,8 @@
     below will be logged to debug.  A value of '0' is disabled.  For
     example, you would set this to .005 to log all queries taking
     longer than 5 milliseconds.
-:Default: ``0``
-:Type: int
+:Default: ``0.0``
+:Type: float
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -206,8 +231,28 @@
     Tool config files, defines what tools are available in Galaxy.
     Tools can be locally developed or installed from Galaxy tool
     sheds. (config/tool_conf.xml.sample will be used if left unset and
-    config/tool_conf.xml does not exist).
-:Default: ``config/tool_conf.xml,config/shed_tool_conf.xml``
+    config/tool_conf.xml does not exist). Can be a single file, a list
+    of files, or (for backwards compatibility) a comma-separated list
+    of files.
+:Default: ``config/tool_conf.xml``
+:Type: any
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``shed_tool_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Tool config file for tools installed from the Galaxy Tool Shed.
+    Must be writable by Galaxy and generally should not be edited by
+    hand. In older Galaxy releases, this file was part of the
+    tool_config_file option. It is still possible to specify this file
+    (and other shed-enabled tool config files) in tool_config_file,
+    but in the standard case of a single shed-enabled tool config,
+    this option is preferable. This file will be created automatically
+    upon tool installation, whereas Galaxy will fail to start if any
+    files in tool_config_file cannot be read.
+:Default: ``config/shed_tool_conf.xml``
 :Type: str
 
 
@@ -452,11 +497,11 @@
 ~~~~~~~~~~~~~~~
 
 :Description:
-    Set to true to enable monitoring of tools and tool directories
-    listed in any tool config file specified in tool_config_file
-    option. If changes are found, tools are automatically reloaded.
-    Watchdog ( https://pypi.org/project/watchdog/ ) must be installed
-    and available to Galaxy to use this option. Other options include
+    Monitor the tools and tool directories listed in any tool config
+    file specified in tool_config_file option.  If changes are found,
+    tools are automatically reloaded. Watchdog (
+    https://pypi.org/project/watchdog/ ) must be installed and
+    available to Galaxy to use this option. Other options include
     'auto' which will attempt to watch tools if the watchdog library
     is available but won't fail to load Galaxy if it is not and
     'polling' which will use a less efficient monitoring scheme that
@@ -470,9 +515,22 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set to true to enable monitoring of dynamic job rules. If changes
-    are found, rules are automatically reloaded. Takes the same values
-    as the 'watch_tools' option.
+    Monitor dynamic job rules. If changes are found, rules are
+    automatically reloaded. Takes the same values as the 'watch_tools'
+    option.
+:Default: ``false``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``watch_core_config``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Monitor a subset of options in the core configuration file (See
+    RELOADABLE_CONFIG_OPTIONS in lib/galaxy/config/__init__.py).  If
+    changes are found, modified options are automatically reloaded.
+    Takes the same values as the 'watch_tools' option.
 :Default: ``false``
 :Type: str
 
@@ -498,18 +556,18 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_mulled_containers``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_mulled_containers``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable Galaxy to fetch Docker containers registered with quay.io
-    generated from tool requirements resolved through conda. These
+    Enable Galaxy to fetch containers registered with quay.io
+    generated from tool requirements resolved through Conda. These
     containers (when available) have been generated using mulled -
-    https://github.com/mulled . These containers are highly beta and
-    availability will vary by tool. This option will additionally only
-    be used for job destinations with Docker enabled.
-:Default: ``false``
+    https://github.com/mulled. Container availability will vary by
+    tool, this option will only be used for job destinations with
+    Docker or Singularity enabled.
+:Default: ``true``
 :Type: bool
 
 
@@ -521,8 +579,8 @@
     Container resolvers configuration (beta). Set up a file describing
     container resolvers to use when discovering containers for Galaxy.
     If this is set to None, the default containers loaded is
-    determined by enable_beta_mulled_containers.
-:Default: ````
+    determined by enable_mulled_containers.
+:Default: ``None``
 :Type: str
 
 
@@ -661,10 +719,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set to true to enable monitoring of the tool_data and
-    shed_tool_data_path directories. If changes in tool data table
-    files are found, the tool data tables for that data manager are
-    automatically reloaded. Watchdog (
+    Monitor the tool_data and shed_tool_data_path directories. If
+    changes in tool data table files are found, the tool data tables
+    for that data manager are automatically reloaded. Watchdog (
     https://pypi.org/project/watchdog/ ) must be installed and
     available to Galaxy to use this option. Other options include
     'auto' which will attempt to use the watchdog library if it is
@@ -759,36 +816,6 @@
     relative to the Galaxy root dir.  To use an absolute path begin
     the path with '/'.  This is a comma separated list.
 :Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``interactive_environment_swarm_mode``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    To run interactive environment containers in Docker Swarm mode (on
-    an existing swarm), set this option to true and set
-    `docker_connect_port` in the IE plugin config (ini) file(s) of any
-    IE plugins you have enabled and ensure that you are not using any
-    `docker run`-specific options in your plugins' `command_inject`
-    options (swarm mode services run using `docker service create`,
-    which has a different and more limited set of options). This
-    option can be overridden on a per-plugin basis by using the
-    `swarm_mode` option in the plugin's ini config file.
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``swarm_manager_config_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Galaxy can run a "swarm manager" service that will monitor
-    utilization of the swarm and provision/deprovision worker nodes as
-    necessary. The service has its own configuration file.
-:Default: ``config/swarm_manager_conf.yml``
 :Type: str
 
 
@@ -978,7 +1005,7 @@
     needs to send mail through an SMTP server, which you may define
     here (host:port). Galaxy will automatically try STARTTLS but will
     continue upon failure.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -990,7 +1017,7 @@
     If your SMTP server requires a username and password, you can
     provide them here (password in cleartext here, but if your server
     supports STARTTLS it will be sent over the network encrypted).
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1002,7 +1029,7 @@
     If your SMTP server requires a username and password, you can
     provide them here (password in cleartext here, but if your server
     supports STARTTLS it will be sent over the network encrypted).
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1040,7 +1067,7 @@
     disabled if no address is set.  Also this email is shown as a
     contact to user in case of Galaxy misconfiguration and other
     events user may encounter.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1054,7 +1081,7 @@
     resets. We recommend using string in the following format: Galaxy
     Project <galaxy-no-reply@example.com> If not configured, '<galaxy-
     no-reply@HOSTNAME>' will be used.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1165,7 +1192,7 @@
 :Description:
     You can enter tracking code here to track visitor's behavior
     through your Google Analytics account.  Example: UA-XXXXXXXX-Y
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1211,6 +1238,26 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``interactivetools_enable``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable InteractiveTools.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``visualizations_visible``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Show visualization tab and list in masthead.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``message_box_visible``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -1227,7 +1274,7 @@
 
 :Description:
     Show a message box under the masthead.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1248,7 +1295,7 @@
 
 :Description:
     Append "/{brand}" to the "Galaxy" text in the masthead.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1355,7 +1402,7 @@
 
 :Description:
     The URL linked by the "Galaxy Help" link in the "Help" menu.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1439,7 +1486,7 @@
     The URL linked by the "Terms and Conditions" link in the "Help"
     menu, as well as on the user registration and login forms and in
     the activation emails.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1592,7 +1639,7 @@
     Redirect.  This should be set to the path defined in the nginx
     config as an internal redirect with access to Galaxy's data files
     (see documentation linked above).
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1635,7 +1682,7 @@
     explained in detail in the documentation linked above.  The upload
     store is a temporary directory in which files uploaded by the
     upload module will be placed.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1647,7 +1694,7 @@
     This value overrides the action set on the file upload form, e.g.
     the web path where the nginx_upload_module has been configured to
     intercept upload requests.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1660,7 +1707,7 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1673,7 +1720,7 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -1831,7 +1878,7 @@
     Galaxy instead of a JSON or SQLite file for IPC. If you do not
     specify this, it will be set randomly for you. You should set this
     if you are managing the proxy manually.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2004,7 +2051,7 @@
     beginning and ending with /. E.g.
     mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/ See:
     https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2142,7 +2189,7 @@
     middleware and errors will be sent to the indicated sentry
     instance.  This connection string is available in your sentry
     instance under <project_name> -> Settings -> API Keys.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2225,7 +2272,7 @@
 :Description:
     Add an option to the library upload form which allows
     administrators to upload a directory of files.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2240,7 +2287,7 @@
     admin user's Galaxy login ( email ).  The non-admin user is
     restricted to uploading files or sub-directories of files
     contained in their directory.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2268,7 +2315,7 @@
     *any* user with library import permissions can import from
     anywhere in these directories (assuming they are able to create
     symlinks to them).
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2508,7 +2555,7 @@
     method just returns bare usernames, set a default mail domain to
     be appended to usernames, to become your Galaxy usernames (email
     addresses).
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2550,7 +2597,7 @@
 :Description:
     If use_remote_user is enabled, you can set this to a URL that will
     log your users out.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2590,7 +2637,7 @@
     the Admin section of the server, and will have access to create
     users, groups, roles, libraries, and more.  For more information,
     see:   https://galaxyproject.org/admin/
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -2770,7 +2817,9 @@
 
 :Description:
     Enable beta workflow modules that should not yet be considered
-    part of Galaxy's stable API.
+    part of Galaxy's stable API. (The module state definitions may
+    change and workflows built using  these modules may not function
+    in the future.)
 :Default: ``false``
 :Type: bool
 
@@ -2945,7 +2994,7 @@
     actually having a defined admin user in the database/config.  Only
     set this if you need to bootstrap Galaxy, you probably do not want
     to set this on public servers.
-:Default: ``changethis``
+:Default: ``None``
 :Type: str
 
 
@@ -3019,7 +3068,7 @@
     following two options. This should point to a directory containing
     subdirectories matching users' identifier (defaults to e-mail),
     where Galaxy will look for files.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -3030,7 +3079,7 @@
 :Description:
     This should be the hostname of your FTP server, which will be
     provided to users in the help text.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -3456,7 +3505,7 @@
     environment prior to running tools.  This can be especially useful
     for running jobs as the actual user, to remove the need to
     configure each user's environment individually.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -3502,6 +3551,17 @@
     mappings via these files could be implemented but haven't yet -
     for instance using workflow tags to do the mapping).
 :Default: ``config/workflow_resource_mapper_conf.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_schedulers_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optional configuration file similar to `job_config_file` to
+    specify which Galaxy processes should schedule workflows.
+:Default: ``config/workflow_schedulers_conf.xml``
 :Type: str
 
 

@@ -1,21 +1,28 @@
 <template>
     <div class="overflow-auto h-100 p-1" @scroll="onScroll">
-        <div v-if="error" class="alert alert-danger">{{ error }}</div>
-        <div v-else>
+        <b-input-group class="mb-3">
             <b-input
-                class="mb-3"
                 placeholder="search repositories"
                 v-model="queryInput"
                 @input="delayQuery"
                 @change="setQuery"
+                @keydown.esc="setQuery()"
             />
-            <serverselection
-                :toolshedUrl="toolshedUrl"
-                :toolshedUrls="toolshedUrls"
-                :total="total"
-                :loading="loading"
-                @onToolshed="setToolshed"
-            />
+            <b-input-group-append>
+                <b-btn :disabled="!queryInput" @click="setQuery()">
+                    <i class="fa fa-times" />
+                </b-btn>
+            </b-input-group-append>
+        </b-input-group>
+        <serverselection
+            :toolshedUrl="toolshedUrl"
+            :toolshedUrls="toolshedUrls"
+            :total="total"
+            :loading="loading"
+            @onToolshed="setToolshed"
+        />
+        <div v-if="error" class="alert alert-danger">{{ error }}</div>
+        <div v-else>
             <repositories
                 :query="query"
                 :scrolled="scrolled"
@@ -102,6 +109,7 @@ export default {
             this.query = this.queryInput = query;
         },
         setToolshed(url) {
+            this.error = null;
             this.toolshedUrl = url;
         },
         setTotal(total) {
@@ -110,7 +118,7 @@ export default {
         setLoading(loading) {
             this.loading = loading;
         },
-        onScroll: function({ target: { scrollTop, clientHeight, scrollHeight } }) {
+        onScroll({ target: { scrollTop, clientHeight, scrollHeight } }) {
             this.scrolled = scrollTop + clientHeight >= scrollHeight;
         }
     }

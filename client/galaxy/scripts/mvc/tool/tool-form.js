@@ -11,6 +11,8 @@ import Ui from "mvc/ui/ui-misc";
 import Modal from "mvc/ui/ui-modal";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import Webhooks from "mvc/webhooks";
+import Vue from "vue";
+import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 
 const View = Backbone.View.extend({
     initialize: function(options) {
@@ -230,6 +232,19 @@ const View = Backbone.View.extend({
             success: response => {
                 callback && callback();
                 this.$el.children().hide();
+                if (response.produces_entry_points) {
+                    for (const job of response.jobs) {
+                        const toolEntryPointsInstance = Vue.extend(ToolEntryPoints);
+                        const vm = document.createElement("div");
+                        this.$el.append(vm);
+                        const instance = new toolEntryPointsInstance({
+                            propsData: {
+                                jobId: job.id
+                            }
+                        });
+                        instance.$mount(vm);
+                    }
+                }
                 this.$el.append(this._templateSuccess(response, job_def));
                 this.$el.parent().scrollTop(0);
                 // Show Webhook if job is running

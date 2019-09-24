@@ -36,10 +36,16 @@ const AdminPanel = Backbone.View.extend({
                         id: "admin-link-display-applications"
                     },
                     {
-                        title: _l("Manage jobs"),
+                        title: _l("Jobs"),
                         url: "admin/jobs",
                         target: "__use_router__",
                         id: "admin-link-jobs"
+                    },
+                    {
+                        title: _l("Workflow invocations"),
+                        url: "admin/invocations",
+                        target: "__use_router__",
+                        id: "admin-link-invocations"
                     },
                     {
                         title: _l("Local data"),
@@ -171,7 +177,7 @@ const AdminPanel = Backbone.View.extend({
 
     _templateSection: function(options) {
         return `<div class="toolSectionWrapper">
-                    <div class="toolSectionTitle">${_l(options.title)}</div>
+                    <div class="toolSectionTitle px-3">${_l(options.title)}</div>
                     <div class="toolSectionBody"/>
                 </div>`;
     },

@@ -231,9 +231,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
         if "job_metrics_config_file" not in conf:
             conf["job_metrics"] = self.app.job_metrics
         if "staging_directory" not in conf:
-            conf["staging_directory"] = "database/pulsar_staging"
+            conf["staging_directory"] = os.path.join(self.app.config.data_dir, "pulsar_staging")
         if "persistence_directory" not in conf:
-            conf["persistence_directory"] = "database/pulsar_persisted_data"
+            conf["persistence_directory"] = os.path.join(self.app.config.data_dir, "pulsar_persisted_data")
         if "galaxy_home" not in conf:
             conf["galaxy_home"] = galaxy_directory()
         self.pulsar_app = pulsar.core.PulsarApp(**conf)
@@ -299,6 +299,11 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
 
             remote_pulsar_app_config = job_destination.params.get("pulsar_app_config", {})
+            config_files = job_wrapper.extra_filenames
+            tool_script = os.path.join(job_wrapper.working_directory, "tool_script.sh")
+            if os.path.exists(tool_script):
+                log.debug("Registering tool_script for Pulsar transfer [%s]" % tool_script)
+                config_files.append(tool_script)
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 input_files=self.get_input_files(job_wrapper),
@@ -306,7 +311,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 working_directory=job_wrapper.tool_working_directory,
                 metadata_directory=metadata_directory,
                 tool=job_wrapper.tool,
-                config_files=job_wrapper.extra_filenames,
+                config_files=config_files,
                 dependencies_description=dependencies_description,
                 env=client.env,
                 rewrite_paths=rewrite_paths,
@@ -370,16 +375,20 @@ class PulsarJobRunner(AsynchronousJobRunner):
             remote_metadata = PulsarJobRunner.__remote_metadata(client)
             dependency_resolution = PulsarJobRunner.__dependency_resolution(client)
             metadata_kwds = self.__build_metadata_configuration(client, job_wrapper, remote_metadata, remote_job_config)
+            remote_working_directory = remote_job_config['working_directory']
+            remote_job_directory = os.path.abspath(os.path.join(remote_working_directory, os.path.pardir))
+            remote_tool_directory = os.path.abspath(os.path.join(remote_job_directory, "tool_files"))
+            # This should be remote_job_directory ideally, this patch using configs is a workaround for
+            # older Pulsar versions that didn't support writing stuff to the job directory natively.
+            script_directory = os.path.join(remote_job_directory, "configs")
             remote_command_params = dict(
                 working_directory=remote_job_config['metadata_directory'],
+                script_directory=script_directory,
                 metadata_kwds=metadata_kwds,
                 dependency_resolution=dependency_resolution,
             )
-            remote_working_directory = remote_job_config['working_directory']
-            # TODO: Following defs work for Pulsar, always worked for Pulsar but should be
+            # TODO: Following directories work for Pulsar, always worked for Pulsar - but should be
             # calculated at some other level.
-            remote_job_directory = os.path.abspath(os.path.join(remote_working_directory, os.path.pardir))
-            remote_tool_directory = os.path.abspath(os.path.join(remote_job_directory, "tool_files"))
             job_wrapper.disable_commands_in_new_shell()
             container = None
             if remote_container is None:
@@ -663,7 +672,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
         pulsar_version = packaging.version.parse(remote_job_config.get('pulsar_version', "0.6.0"))
         needed_version = packaging.version.parse("0.0.0")
         log.info("pulsar_version is %s" % pulsar_version)
-        for feature in list(check_features.keys()) + ['_default_']:
+        for feature, needed in list(check_features.items()) + [('_default_', True)]:
+            if not needed:
+                continue
             if pulsar_version < MINIMUM_PULSAR_VERSIONS[feature]:
                 needed_version = max(needed_version, MINIMUM_PULSAR_VERSIONS[feature])
         if pulsar_version < needed_version:
@@ -810,23 +821,23 @@ class PulsarMQJobRunner(PulsarJobRunner):
             # Nothing else to do? - Attempt to fail the job?
 
 
-class PulsarKubernetesCoexecutionJobRunner(PulsarMQJobRunner):
-    """Flavor of Pulsar job runner with sensible defaults for Kubernetes Pod co-execution."""
+KUBERNETES_DESTINATION_DEFAULTS = {
+    "default_file_action": "remote_transfer",
+    "rewrite_parameters": "true",
+    "jobs_directory": "/pulsar_staging",
+    "pulsar_container_image": "galaxy/pulsar-pod-staging:0.13.0",
+    "remote_container_handling": True,
+    "k8s_enabled": True,
+    "url": PARAMETER_SPECIFICATION_IGNORED,
+    "private_token": PARAMETER_SPECIFICATION_IGNORED,
+}
 
-    destination_defaults = dict(
-        default_file_action="remote_transfer",
-        rewrite_parameters="true",
-        dependency_resolution="none",
-        jobs_directory="/pulsar_staging",
-        pulsar_container_image="galaxy/pulsar-pod-staging:0.12.0",
-        remote_container_handling=True,
-        k8s_enabled=True,
-        url=PARAMETER_SPECIFICATION_IGNORED,
-        private_token=PARAMETER_SPECIFICATION_IGNORED,
-    )
+
+class PulsarKubernetesJobRunner(PulsarMQJobRunner):
+    destination_defaults = KUBERNETES_DESTINATION_DEFAULTS
 
     def _populate_parameter_defaults(self, job_destination):
-        super(PulsarKubernetesCoexecutionJobRunner, self)._populate_parameter_defaults(job_destination)
+        super(PulsarKubernetesJobRunner, self)._populate_parameter_defaults(job_destination)
         params = job_destination.params
         # Set some sensible defaults for Pulsar application that runs in staging container.
         if "pulsar_app_config" not in params:
@@ -835,9 +846,6 @@ class PulsarKubernetesCoexecutionJobRunner(PulsarMQJobRunner):
         if "staging_directory" not in pulsar_app_config:
             # coexecution always uses a fixed path for staging directory
             pulsar_app_config["staging_directory"] = params.get("jobs_directory")
-        if "manager" not in pulsar_app_config and "managers" not in pulsar_app_config:
-            # coexecution always uses coexecution manager
-            pulsar_app_config["manager"] = {"type": "coexecution"}
 
 
 class PulsarRESTJobRunner(PulsarJobRunner):

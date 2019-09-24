@@ -181,7 +181,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def index_jobs_summary(self, trans, history_id, **kwd):
         """
         * GET /api/histories/{history_id}/jobs_summary
-            return detailed information about an HDA or HDCAs jobs
+            return job state summary info for jobs, implicit groups jobs for collections or workflow invocations
 
         Warning: We allow anyone to fetch job state information about any object they
         can guess an encoded ID for - it isn't considered protected data. This keeps
@@ -189,13 +189,13 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         efficient as possible.
 
         :type   history_id: str
-        :param  history_id: encoded id string of the HDA's or the HDCA's History
+        :param  history_id: encoded id string of the target history
         :type   ids:        str[]
         :param  ids:        the encoded ids of job summary objects to return - if ids
                             is specified types must also be specified and have same length.
         :type   types:      str[]
-        :param  types:      type of object represented by elements in the ids array - either
-                            Job or ImplicitCollectionJob.
+        :param  types:      type of object represented by elements in the ids array - any of
+                            Job, ImplicitCollectionJob, or WorkflowInvocation.
 
         :rtype:     dict[]
         :returns:   an array of job summary object dictionaries.
@@ -207,9 +207,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             # TODO: ...
             pass
         else:
-            ids = util.listify(ids)
+            ids = [self.app.security.decode_id(i) for i in util.listify(ids)]
             types = util.listify(types)
-        return [self.encode_all_ids(trans, s) for s in fetch_job_states(self.app, trans.sa_session, ids, types)]
+        return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)]
 
     @expose_api_anonymous
     def show_jobs_summary(self, trans, id, history_id, **kwd):
@@ -652,7 +652,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         :type   history_id: str
         :param  history_id: encoded id string of the items's History
         :type   id:         str
-        :param  id:         the encoded id of the history to update
+        :param  id:         the encoded id of the history item to update
         :type   payload:    dict
         :param  payload:    a dictionary containing any or all the
             fields in :func:`galaxy.model.HistoryDatasetAssociation.to_dict`
@@ -672,6 +672,29 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return self.__update_dataset_collection(trans, history_id, id, payload, **kwd)
         else:
             return self.__handle_unknown_contents_type(trans, contents_type)
+
+    @expose_api_anonymous
+    def validate(self, trans, history_id, history_content_id, payload=None, **kwd):
+        """
+        update( self, trans, history_id, id, payload, **kwd )
+        * PUT /api/histories/{history_id}/contents/{id}/validate
+            updates the values for the history content item with the given ``id``
+
+        :type   history_id: str
+        :param  history_id: encoded id string of the items's History
+        :type   id:         str
+        :param  id:         the encoded id of the history item to validate
+
+        :rtype:     dict
+        :returns:   TODO
+        """
+        decoded_id = self.decode_id(history_content_id)
+        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user,
+                                                 current_history=trans.history)
+        hda = self.hda_manager.get_owned_ids([decoded_id], history=history)[0]
+        if hda:
+            self.hda_manager.set_metadata(trans, hda, overwrite=True, validate=True)
+        return {}
 
     def __update_dataset(self, trans, history_id, id, payload, **kwd):
         # anon user: ensure that history ids match up and the history is the current,

@@ -4,6 +4,8 @@ from abc import (
     ABCMeta,
     abstractmethod
 )
+from logging import getLogger
+from uuid import uuid4
 
 import six
 
@@ -21,6 +23,8 @@ from .requirements import (
     DEFAULT_CONTAINER_SHELL,
 )
 
+log = getLogger(__name__)
+
 DOCKER_CONTAINER_TYPE = "docker"
 SINGULARITY_CONTAINER_TYPE = "singularity"
 
@@ -36,8 +40,8 @@ import tarfile
 t = tarfile.TarFile("${cached_image_file}")
 meta_str = t.extractfile('repositories').read()
 meta = json.loads(meta_str)
-tag, tag_value = meta.items()[0]
-rev, rev_value = tag_value.items()[0]
+tag, tag_value = next(iter(meta.items()))
+rev, rev_value = next(iter(tag_value.items()))
 cmd = "${images_cmd}"
 proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 stdo, stde = proc.communicate()
@@ -57,16 +61,18 @@ EOF
 @six.add_metaclass(ABCMeta)
 class Container(object):
 
-    def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description):
+    def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description, container_name=None):
         self.container_id = container_id
         self.app_info = app_info
         self.tool_info = tool_info
         self.destination_info = destination_info
         self.job_info = job_info
         self.container_description = container_description
+        self.container_name = container_name or uuid4().hex
+        self.container_info = {}
 
     def prop(self, name, default):
-        destination_name = "docker_%s" % name
+        destination_name = "%s_%s" % (self.container_type, name)
         return self.destination_info.get(destination_name, default)
 
     @property
@@ -217,6 +223,10 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         )
         return docker_host_props
 
+    @property
+    def connection_configuration(self):
+        return self.docker_host_props
+
     def build_pull_command(self):
         return docker_util.build_pull_command(self.container_id, **self.docker_host_props)
 
@@ -263,13 +273,27 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             volumes_from=volumes_from,
             env_directives=env_directives,
             working_directory=working_directory,
-            net=self.prop("net", "none"),  # By default, docker instance has networking disabled
+            net=self.prop("net", None),  # By default, docker instance has networking disabled
             auto_rm=asbool(self.prop("auto_rm", docker_util.DEFAULT_AUTO_REMOVE)),
             set_user=self.prop("set_user", docker_util.DEFAULT_SET_USER),
             run_extra_arguments=self.prop("run_extra_arguments", docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
+            guest_ports=self.tool_info.guest_ports,
+            container_name=self.container_name,
             **docker_host_props
         )
-        return "%s\n%s" % (cache_command, run_command)
+        kill_command = docker_util.build_docker_simple_command("kill", container_name=self.container_name, **docker_host_props)
+        # Suppress standard error below in the kill command because it can cause jobs that otherwise would work
+        # to fail. Likely, in these cases the container has been stopped normally and so cannot be stopped again.
+        # A less hacky approach might be to check if the container is running first before trying to kill.
+        # https://stackoverflow.com/questions/34228864/stop-and-delete-docker-container-if-its-running
+        # Standard error is:
+        #    Error response from daemon: Cannot kill container: 2b0b961527574ebc873256b481bbe72e: No such container: 2b0b961527574ebc873256b481bbe72e
+        return """
+_on_exit() {
+  %s &> /dev/null
+}
+trap _on_exit 0
+%s\n%s""" % (kill_command, cache_command, run_command)
 
     def __cache_from_file_command(self, cached_image_file, docker_host_props):
         images_cmd = docker_util.build_docker_images_command(truncate=False, **docker_host_props)
@@ -312,6 +336,10 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             sudo_cmd=self.prop("sudo_cmd", singularity_util.DEFAULT_SUDO_COMMAND),
         )
 
+    @property
+    def connection_configuration(self):
+        return self.get_singularity_target_kwds()
+
     def build_mulled_singularity_pull_command(self, cache_directory, namespace="biocontainers"):
         return singularity_util.pull_mulled_singularity_command(
             docker_image_identifier=self.container_id,
@@ -349,6 +377,8 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             env=env,
             working_directory=working_directory,
             run_extra_arguments=self.prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
+            guest_ports=self.tool_info.guest_ports,
+            container_name=self.container_name,
             **self.get_singularity_target_kwds()
         )
         return run_command

@@ -5,8 +5,13 @@
             <span>Loading categories...</span>
         </div>
         <b-table v-else striped :items="categories" :fields="fields">
-            <template slot="name" slot-scope="data">
-                <b-link href="#" class="font-weight-bold" @click="onCategory(data.value)">
+            <template v-slot:cell(name)="data">
+                <b-link
+                    href="javascript:void(0)"
+                    role="button"
+                    class="font-weight-bold"
+                    @click="onCategory(data.value)"
+                >
                     {{ data.value }}
                 </b-link>
             </template>
@@ -20,18 +25,11 @@ export default {
     data() {
         return {
             categories: [],
-            fields: {
-                name: {
-                    label: "Category",
-                    sortable: true
-                },
-                description: {
-                    sortable: false
-                },
-                repositories: {
-                    sortable: true
-                }
-            }
+            fields: [
+                { key: "name", label: "Category", sortable: true },
+                { key: "description", sortable: false },
+                { key: "repositories", sortable: true }
+            ]
         };
     },
     created() {
@@ -60,7 +58,7 @@ export default {
                 });
         },
         onCategory(category) {
-            this.$emit("onCategory", category);
+            this.$emit("onCategory", `category:'${category}'`);
         }
     }
 };

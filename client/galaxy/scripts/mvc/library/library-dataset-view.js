@@ -8,6 +8,7 @@ import { Toast } from "ui/toast";
 import mod_library_model from "mvc/library/library-model";
 import mod_utils from "utils/utils";
 import mod_select from "mvc/ui/ui-select";
+import { mountNametags } from "components/Nametags";
 
 var LibraryDatasetView = Backbone.View.extend({
     el: "#center",
@@ -108,6 +109,20 @@ var LibraryDatasetView = Backbone.View.extend({
         this.$el.html(template({ item: this.model }));
         $(".peek").html(this.model.get("peek"));
         $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
+        this._mountNametags("initialize");
+    },
+
+    _mountNametags(context) {
+        const container = this.$el.find(".nametags")[0];
+        if (container) {
+            const str_tags = this.model.get("tags");
+            if (typeof str_tags === "string") {
+                this.model.set({ tags: str_tags.split(", ") });
+            }
+            const { id, model_class, tags } = this.model.attributes;
+            const storeKey = `${model_class}-${id}`;
+            mountNametags({ storeKey, tags }, container);
+        }
     },
 
     fetchVersion: function(options) {
@@ -153,6 +168,7 @@ var LibraryDatasetView = Backbone.View.extend({
         });
         $(".peek").html(this.model.get("peek"));
         $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
+        this._mountNametags("listener");
     },
 
     downloadDataset: function() {
@@ -671,7 +687,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 <% if (item.get("is_unrestricted")) { %>
                     <div>
                         This dataset is unrestricted so everybody with the link can access it.
-                        Just share <span class="copy-link-to-clipboard"><a href=""a>this page</a></span>.
+                        Just share <span class="copy-link-to-clipboard"><a href="javascript:void(0)">this page</a></span>.
                     </div>
                 <% } %>
 
@@ -766,7 +782,7 @@ var LibraryDatasetView = Backbone.View.extend({
                         <% if (item.get("tags")) { %>
                             <tr>
                                 <th scope="row">Tags</th>
-                                <td scope="row"><%= _.escape(item.get("tags")) %></td>
+                                <td scope="row"><div class="nametags"><!-- Nametags mount here --></div></td>
                             </tr>
                         <% } %>
                         <% if ( item.get("uuid") !== "ok" ) { %>
@@ -949,7 +965,7 @@ var LibraryDatasetView = Backbone.View.extend({
                         <% if (item.get("tags")) { %>
                             <tr>
                                 <th scope="row">Tags</th>
-                                <td scope="row"><%= _.escape(item.get("tags")) %></td>
+                                <td scope="row"><div class="nametags"><!-- Nametags mount here --></div></td>
                             </tr>
                         <% } %>
                     </table>
@@ -1069,7 +1085,7 @@ var LibraryDatasetView = Backbone.View.extend({
                         <% if (item.get("tags")) { %>
                             <tr>
                                 <th scope="row">Tags</th>
-                                <td scope="row"><%= _.escape(item.get("tags")) %></td>
+                                <td scope="row"><div class="nametags"><!-- Nametags mount here --></div></td>
                             </tr>
                         <% } %>
                     </table>
@@ -1159,12 +1175,12 @@ var LibraryDatasetView = Backbone.View.extend({
                     <% if (!item.get("is_unrestricted")) { %>
                         <p>
                             You can <span class="remove-restrictions">
-                            <a href="">remove all access restrictions</a></span> on this dataset.
+                            <a href="javascript:void(0)">remove all access restrictions</a></span> on this dataset.
                         </p>
                     <% } else { %>
                         <p>
                             You can <span class="make-private">
-                            <a href="">make this dataset private</a></span> to you.</p>
+                            <a href="javascript:void(0)">make this dataset private</a></span> to you.</p>
                     <% } %>
                     <h4>Roles that can access the dataset</h4>
                     <div id="access_perm" class="access_perm roles-selection"></div>
@@ -1194,7 +1210,7 @@ var LibraryDatasetView = Backbone.View.extend({
         return _.template(
             `<div>
                 <div class="library-modal-item">
-                    Select history: 
+                    Select history:
                     <select id="dataset_import_single" name="dataset_import_single"
                         style="width:50%; margin-bottom: 1em;" autofocus>
                         <% _.each(histories, function(history) { %>
@@ -1204,7 +1220,7 @@ var LibraryDatasetView = Backbone.View.extend({
                         <% }); %>
                     </select>
                 </div>
-                <div class="library-modal-item">or create new: 
+                <div class="library-modal-item">or create new:
                     <input type="text" name="history_name" value="" placeholder="name of the new history"
                         style="width:50%;" />
                 </div>

@@ -176,6 +176,9 @@ class MockJobWrapper(object):
     def get_command_line(self):
         return self.command_line
 
+    def container_monitor_command(self, *args, **kwds):
+        return None
+
     def get_id_tag(self):
         return "1"
 

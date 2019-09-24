@@ -17,6 +17,7 @@ from cloudauthz.exceptions import (
 
 from galaxy import exceptions
 from galaxy import model
+from galaxy.util import string_as_bool
 from galaxy.util import unicodify
 from .custos_authnz import CustosAuthnz
 from .psa_authnz import (
@@ -63,7 +64,10 @@ class AuthnzManager(object):
                               " found these attributes: `{}`; skipping this node.".format(child.attrib))
                     continue
                 try:
-                    func = getattr(importlib.import_module('__builtin__'), child.get('Type'))
+                    if child.get('Type') == "bool":
+                        func = string_as_bool
+                    else:
+                        func = getattr(importlib.import_module('__builtin__'), child.get('Type'))
                 except AttributeError:
                     log.error("The value of attribute `Type`, `{}`, is not a valid built-in type;"
                               " skipping this node").format(child.get('Type'))

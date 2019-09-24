@@ -4,24 +4,21 @@ Migration script to alter the type of the tool_dependency.version column from Tr
 from __future__ import print_function
 
 import logging
-import sys
 
-from sqlalchemy import MetaData, Table
+from sqlalchemy import (
+    MetaData,
+    Table
+)
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-format = "%(name)s %(levelname)s %(asctime)s %(message)s"
-formatter = logging.Formatter(format)
-handler.setFormatter(formatter)
-log.addHandler(handler)
 metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
+
     Table("tool_dependency", metadata, autoload=True)
     # Change the tool_dependency table's version column from TrimmedString to Text.
     if migrate_engine.name in ['postgres', 'postgresql']:
@@ -46,6 +43,5 @@ def upgrade(migrate_engine):
 
 
 def downgrade(migrate_engine):
-    metadata.bind = migrate_engine
     # Not necessary to change column type Text to TrimmedString(40).
     pass

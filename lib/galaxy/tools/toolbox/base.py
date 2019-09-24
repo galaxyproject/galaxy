@@ -3,7 +3,10 @@ import logging
 import os
 import string
 import time
-from collections import namedtuple
+from collections import (
+    namedtuple,
+    OrderedDict
+)
 from errno import ENOENT
 from xml.etree.ElementTree import ParseError
 
@@ -23,7 +26,6 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
-from galaxy.util.odict import odict
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
@@ -82,7 +84,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         # In-memory dictionary that defines the layout of the tool panel.
         self._tool_panel = ToolPanelElements()
         self._index = 0
-        self.data_manager_tools = odict()
+        self.data_manager_tools = OrderedDict()
         self._lineage_map = LineageMap(app)
         # Sets self._integrated_tool_panel and self._integrated_tool_panel_config_has_contents
         self._init_integrated_tool_panel(app.config)
@@ -163,19 +165,19 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         try:
             tool_conf_source = get_toolbox_parser(config_filename)
         except (OSError, IOError) as exc:
-            for opt in ('shed_tool_conf', 'migrated_tools_config'):
-                if (config_filename == getattr(self.app.config, opt) and not
-                        getattr(self.app.config, opt + '_set') and
-                        exc.errno == errno.ENOENT):
-                    log.debug("Skipping loading missing default config file: %s", config_filename)
-                    stcd = dict(config_filename=config_filename,
-                                tool_path=self.app.config.shed_tools_dir,
-                                config_elems=[],
-                                create=SHED_TOOL_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir))
-                    self._dynamic_tool_confs.append(stcd)
-                    return
+            dynamic_confs = (self.app.config.shed_tool_config_file, self.app.config.migrated_tools_config)
+            if config_filename in dynamic_confs and exc.errno == errno.ENOENT:
+                log.info("Shed-enabled tool configuration file does not exist, but will be created on demand: %s",
+                         config_filename)
+                stcd = dict(config_filename=config_filename,
+                            tool_path=self.app.config.shed_tools_dir,
+                            config_elems=[],
+                            create=SHED_TOOL_CONF_XML.format(shed_tools_dir=self.app.config.shed_tools_dir))
+                self._dynamic_tool_confs.append(stcd)
+                return
             raise
         tool_path = tool_conf_source.parse_tool_path()
+        log.debug("Tool path for tool configuration %s is %s", config_filename, tool_path)
         parsing_shed_tool_conf = tool_conf_source.is_shed_tool_conf()
         if parsing_shed_tool_conf:
             # Keep an in-memory list of xml elements to enable persistence of the changing tool config.
@@ -1158,7 +1160,7 @@ class BaseGalaxyToolBox(AbstractToolBox):
     def _init_dependency_manager(self):
         app_config_dict = self.app.config.config_dict
         conf_file = app_config_dict.get("dependency_resolvers_config_file")
-        default_tool_dependency_dir = os.path.join(self.app.config.data_dir, "dependencies")
+        default_tool_dependency_dir = self.app.config.get('tool_dependency_dir')
         self.dependency_manager = build_dependency_manager(app_config_dict=app_config_dict, conf_file=conf_file,
                                                            default_tool_dependency_dir=default_tool_dependency_dir)
 

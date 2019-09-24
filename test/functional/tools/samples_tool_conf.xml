@@ -34,6 +34,7 @@
   <tool file="empty_datasets.xml" />
   <tool file="inputs_as_json.xml" />
   <tool file="inputs_as_json_with_paths.xml" />
+  <tool file="filter_static_regexp.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_output_action.xml" />
@@ -50,6 +51,7 @@
   <tool file="strict_shell_default_off.xml" />
   <tool file="detect_errors.xml" />
   <tool file="detect_errors_aggressive.xml" />
+  <tool file="qc_stdout.xml" />
   <tool file="md5sum.xml" />
   <tool file="checksum.xml" />
   <tool file="composite_shapefile.xml" />
@@ -163,6 +165,9 @@
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v02.xml" />
+
+  <tool file="interactivetool_simple.xml" />
+  <tool file="interactivetool_two_entry_points.xml" />
 
   <!-- Tools interesting only for building up test workflows. -->
 

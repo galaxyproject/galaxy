@@ -8,6 +8,8 @@ import subprocess
 import tempfile
 import time
 
+import pytest
+
 from base import integration_util  # noqa: I100,I202
 from base.populators import skip_without_tool
 from .test_containerized_jobs import MulledJobTestCases  # noqa: I201
@@ -96,6 +98,12 @@ def job_config(jobs_directory):
             <param id="k8s_galaxy_instance_id">gx-short-id</param>
             <param id="k8s_walltime_limit">10</param>
         </plugin>
+        <plugin id="k8s_no_cleanup" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
+            <param id="k8s_persistent_volume_claims">jobs-directory-claim:$jobs_directory,tool-directory-claim:$tool_directory</param>
+            <param id="k8s_config_path">$k8s_config_path</param>
+            <param id="k8s_galaxy_instance_id">gx-short-id</param>
+            <param id="k8s_cleanup_job">never</param>
+        </plugin>
     </plugins>
     <destinations default="k8s_destination">
         <destination id="k8s_destination" runner="k8s">
@@ -112,12 +120,20 @@ def job_config(jobs_directory):
             <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
             <env id="SOME_ENV_VAR">42</env>
         </destination>
+        <destination id="k8s_destination_no_cleanup" runner="k8s_no_cleanup">
+            <param id="limits_cpu">1.9</param>
+            <param id="limits_memory">10M</param>
+            <param id="docker_enabled">true</param>
+            <param id="docker_default_container_id">busybox:ubuntu-14.04</param>
+            <env id="SOME_ENV_VAR">42</env>
+        </destination>
         <destination id="local_dest" runner="local">
         </destination>
     </destinations>
     <tools>
         <tool id="upload1" destination="local_dest"/>
         <tool id="create_2" destination="k8s_destination_walltime_short"/>
+        <tool id="galaxy_slots_and_memory" destination="k8s_destination_no_cleanup"/>
     </tools>
 </job_conf>
 """)
@@ -173,7 +189,6 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         config["default_job_shell"] = '/bin/sh'
         # Disable tool dependency resolution.
         config["tool_dependency_dir"] = "none"
-        config["enable_beta_mulled_containers"] = "true"
 
     @skip_without_tool("job_environment_default")
     def test_job_environment(self):
@@ -222,8 +237,10 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
 
             # Wait for job to be cancelled in kubernetes
             time.sleep(2)
-            status = json.loads(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
-            assert 'active' not in status['status']
+            # The default job config removes jobs, didn't find a better way to check that the job doesn't exist anymore
+            with pytest.raises(subprocess.CalledProcessError) as excinfo:
+                subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json'], stderr=subprocess.STDOUT)
+            assert "not found" in excinfo.value.output.decode()
 
     @skip_without_tool('job_properties')
     def test_exit_code_127(self):
@@ -258,7 +275,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
 
     @skip_without_tool('galaxy_slots_and_memory')
     def test_slots_and_memory(self):
-        self.dataset_populator.run_tool(
+        running_response = self.dataset_populator.run_tool(
             'galaxy_slots_and_memory',
             {},
             self.history_id,
@@ -269,6 +286,13 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         MEM = '10'
         MEM_PER_SLOT = '5'
         assert [CPU, MEM, MEM_PER_SLOT] == dataset_content.split('\n'), dataset_content
+
+        # Tool is mapped to destination without cleanup, make sure job still exists in kubernetes API
+        job_dict = running_response["jobs"][0]
+        job = self.galaxy_interactor.get("jobs/%s" % job_dict['id'], admin=True).json()
+        external_id = job['external_id']
+        status = json.loads(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
+        assert 'active' not in status['status']
 
     @skip_without_tool('create_2')
     def test_walltime_limit(self):

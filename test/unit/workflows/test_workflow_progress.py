@@ -8,6 +8,7 @@ TEST_WORKFLOW_YAML = """
 steps:
   - type: "data_input"
     tool_inputs: {"name": "input1"}
+    label: "input1"
   - type: "data_input"
     tool_inputs: {"name": "input2"}
   - type: "tool"

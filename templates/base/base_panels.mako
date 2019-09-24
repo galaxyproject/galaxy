@@ -166,7 +166,7 @@
                 </div>
             </noscript>
         %endif
-        <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+        <div id="everything">
             
             ## Background displays first
             <div id="background"></div>

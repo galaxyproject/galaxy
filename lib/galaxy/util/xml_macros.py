@@ -173,7 +173,7 @@ def _expand_yield_statements(macro_def, expand_el):
             if macro_def_el.tag == "yield":
                 for target in expand_el_children:
                     i += 1
-                    macro_def.insert(i, deepcopy(target))
+                    macro_def.insert(i, target)
                 macro_def.remove(macro_def_el)
                 continue
 
@@ -269,7 +269,7 @@ def _xml_replace(query, targets, parent_map):
     current_index = matching_index
     for target in targets:
         current_index += 1
-        parent_el.insert(current_index, deepcopy(target))
+        parent_el.insert(current_index, target)
     parent_el.remove(query)
 
 

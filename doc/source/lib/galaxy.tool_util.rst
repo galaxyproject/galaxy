@@ -13,8 +13,10 @@ Subpackages
 
     galaxy.tool_util.cwl
     galaxy.tool_util.deps
+    galaxy.tool_util.linters
     galaxy.tool_util.locations
     galaxy.tool_util.parser
+    galaxy.tool_util.verify
 
 Submodules
 ----------
@@ -23,6 +25,14 @@ galaxy.tool\_util.fetcher module
 --------------------------------
 
 .. automodule:: galaxy.tool_util.fetcher
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy.tool\_util.lint module
+-----------------------------
+
+.. automodule:: galaxy.tool_util.lint
     :members:
     :undoc-members:
     :show-inheritance:
