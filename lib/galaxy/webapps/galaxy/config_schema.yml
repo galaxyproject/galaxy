@@ -888,7 +888,7 @@ mapping:
         default: |
           Your account has not been activated yet.  Feel free to browse around and see what's
           available, but you won't be able to upload data or run jobs until you have verified your
-          email address.  
+          email address.
         required: false
         desc: |
           Shown in warning box to users that were not activated yet.
