@@ -857,7 +857,7 @@ mapping:
         default: |
           Please register only one account - we provide this service free of charge and have limited
           computational resources. Multi-accounts are tracked and will be subjected to account
-          termination and data deletion.  
+          termination and data deletion.
         required: false
         desc: |
           Registration warning message is used to discourage people from registering
