@@ -70,6 +70,10 @@ LOGGING_CONFIG_DEFAULT = {
             'level': 'WARN',
             'qualname': 'routes.middleware',
         },
+        'amqp': {
+            'level': 'INFO',
+            'qualname': 'amqp',
+        },
     },
     'filters': {
         'stack': {
