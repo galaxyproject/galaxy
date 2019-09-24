@@ -235,7 +235,7 @@
     of files, or (for backwards compatibility) a comma-separated list
     of files.
 :Default: ``config/tool_conf.xml``
-:Type: list or str
+:Type: any
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -816,36 +816,6 @@
     relative to the Galaxy root dir.  To use an absolute path begin
     the path with '/'.  This is a comma separated list.
 :Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``interactive_environment_swarm_mode``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    To run interactive environment containers in Docker Swarm mode (on
-    an existing swarm), set this option to true and set
-    `docker_connect_port` in the IE plugin config (ini) file(s) of any
-    IE plugins you have enabled and ensure that you are not using any
-    `docker run`-specific options in your plugins' `command_inject`
-    options (swarm mode services run using `docker service create`,
-    which has a different and more limited set of options). This
-    option can be overridden on a per-plugin basis by using the
-    `swarm_mode` option in the plugin's ini config file.
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``swarm_manager_config_file``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Galaxy can run a "swarm manager" service that will monitor
-    utilization of the swarm and provision/deprovision worker nodes as
-    necessary. The service has its own configuration file.
-:Default: ``config/swarm_manager_conf.yml``
 :Type: str
 
 

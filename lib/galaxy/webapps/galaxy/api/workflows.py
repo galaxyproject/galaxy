@@ -22,6 +22,7 @@ from galaxy.managers import (
     histories,
     workflows
 )
+from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
@@ -816,19 +817,19 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             # Get all invocation if user is admin
             user_id = None
 
+        include_terminal = util.string_as_bool(kwd.get("include_terminal", True))
         invocations = self.workflow_manager.build_invocations_query(
-            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id
+            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id, include_terminal=include_terminal
         )
         return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
 
     @expose_api
-    def show_invocation(self, trans, workflow_id, invocation_id, **kwd):
+    def show_invocation(self, trans, invocation_id, **kwd):
         """
         GET /api/workflows/{workflow_id}/invocations/{invocation_id}
-        Get detailed description of workflow invocation
+        GET /api/invocations/{invocation_id}
 
-        :param  workflow_id:        the workflow id (required)
-        :type   workflow_id:        str
+        Get detailed description of workflow invocation
 
         :param  invocation_id:      the invocation id (required)
         :type   invocation_id:      str
@@ -860,13 +861,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return None
 
     @expose_api
-    def cancel_invocation(self, trans, workflow_id, invocation_id, **kwd):
+    def cancel_invocation(self, trans, invocation_id, **kwd):
         """
         DELETE /api/workflows/{workflow_id}/invocations/{invocation_id}
+        DELETE /api/invocations/{invocation_id}
         Cancel the specified workflow invocation.
-
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
 
         :param  invocation_id:      the usage id (required)
         :type   invocation_id:      str
@@ -878,9 +877,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.__encode_invocation(workflow_invocation, **kwd)
 
     @expose_api
-    def show_invocation_report(self, trans, workflow_id, invocation_id, **kwd):
+    def show_invocation_report(self, trans, invocation_id, **kwd):
         """
         GET /api/workflows/{workflow_id}/invocations/{invocation_id}/report
+        GET /api/invocations/{invocation_id}/report
 
         Get JSON summarizing invocation for reporting.
         """
@@ -893,12 +893,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         )
 
     @expose_api
-    def invocation_step(self, trans, workflow_id, invocation_id, step_id, **kwd):
+    def invocation_step(self, trans, invocation_id, step_id, **kwd):
         """
         GET /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
-
-        :param  workflow_id:        the workflow id (required)
-        :type   workflow_id:        str
+        GET /api/invocations/{invocation_id}/steps/{step_id}
 
         :param  invocation_id:      the invocation id (required)
         :type   invocation_id:      str
@@ -918,17 +916,63 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         )
         return self.__encode_invocation_step(trans, invocation_step)
 
+    @expose_api_anonymous_and_sessionless
+    def invocation_step_jobs_summary(self, trans, invocation_id, **kwd):
+        """
+        * GET /api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary
+          GET /api/invocations/{invocation_id}/step_jobs_summary
+            return job state summary info aggregated across per step of the workflow invocation
+
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+
+        :param  invocation_id:    the invocation id (required)
+        :type   invocation_id:    str
+
+        :rtype:     dict[]
+        :returns:   an array of job summary object dictionaries for each step
+        """
+        decoded_invocation_id = self.decode_id(invocation_id)
+        ids = []
+        types = []
+        for (job_source_type, job_source_id, _) in invocation_job_source_iter(trans.sa_session, decoded_invocation_id):
+            ids.append(job_source_id)
+            types.append(job_source_type)
+        return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)]
+
+    @expose_api_anonymous_and_sessionless
+    def invocation_jobs_summary(self, trans, invocation_id, **kwd):
+        """
+        * GET /api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary
+          GET /api/invocations/{invocation_id}/jobs_summary
+            return job state summary info aggregated across all current jobs of workflow invocation
+
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+
+        :param  invocation_id:    the invocation id (required)
+        :type   invocation_id:    str
+
+        :rtype:     dict
+        :returns:   a job summary object merged for all steps in workflow invocation
+        """
+        ids = [self.decode_id(invocation_id)]
+        types = ["WorkflowInvocation"]
+        return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)][0]
+
     @expose_api
-    def update_invocation_step(self, trans, workflow_id, invocation_id, step_id, payload, **kwd):
+    def update_invocation_step(self, trans, invocation_id, step_id, payload, **kwd):
         """
         PUT /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
+        PUT /api/invocations/{invocation_id}/steps/{step_id}
+
         Update state of running workflow step invocation - still very nebulous
         but this would be for stuff like confirming paused steps can proceed
         etc....
-
-
-        :param  workflow_id:      the workflow id (required)
-        :type   workflow_id:      str
 
         :param  invocation_id:      the usage id (required)
         :type   invocation_id:      str

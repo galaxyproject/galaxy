@@ -123,14 +123,6 @@ Once this is done, we can set up our INI file, ``config/helloworld.ini.sample`` 
     # container cannot or should not be used.
     #use_volumes = True
 
-    # To run containers in Docker Swarm mode on (an existing swarm), set the
-    # following option to True *and*:
-    # - set docker_connect_port above. For Nginx the # port should most likely be
-    #   80.
-    # - If command_inject is uncommented and includes `--sig-proxy`, that option should
-    #   be removed.
-    #swarm_mode = False
-
 You'll then need to create the GIE plugin YML file ``allowed_images.yml.sample``
 to specify allowed images
 .. code-block::
