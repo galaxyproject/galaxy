@@ -21,7 +21,7 @@ BACKENDS = {
     'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
     'globus': 'social_core.backends.globus.GlobusOpenIdConnect',
     'elixir': 'social_core.backends.elixir.ElixirOpenIdConnect',
-    'okta': 'social_core.backends.okta.OktaOpenIdConnect'
+    'okta': 'social_core.backends.okta_openidconnect.OktaOpenIdConnect'
 }
 
 BACKENDS_NAME = {
