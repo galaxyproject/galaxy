@@ -425,7 +425,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
         # tool_dependency_dir can be "none" (in old configs). If so, set it to schema default
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
-            self.tool_dependency_dir = self.appschema['tool_dependency_dir'].get('default')
+            self.tool_dependency_dir = None
 
         if self.involucro_path is None:
             self.involucro_path = os.path.join(self.data_dir, self.tool_dependency_dir, "involucro")
