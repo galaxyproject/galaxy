@@ -267,7 +267,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         if not running_from_source and kwargs.get("tool_data_path", None) is None:
             self.tool_data_path = os.path.join(self.data_dir, "tool-data")
         self.builds_file_path = os.path.join(self.tool_data_path, self.builds_file_path)
-        if self.len_file_path is None:
+        self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
             self.len_file_path = os.path.join(self.root, self.tool_data_path, 'shared', 'ucsc', 'chrom')
         # Galaxy OIDC settings.
         self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
