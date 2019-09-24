@@ -12,7 +12,7 @@
                 />
                 <b-input-group-append>
                     <b-btn :disabled="!queryInput" @click="setQuery()">
-                        <i class="fa fa-times"/>
+                        <i class="fa fa-times" />
                     </b-btn>
                 </b-input-group-append>
             </b-input-group>
@@ -88,4 +88,3 @@ export default {
     }
 };
 </script>
-

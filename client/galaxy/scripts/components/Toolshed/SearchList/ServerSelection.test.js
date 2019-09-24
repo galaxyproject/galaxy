@@ -20,6 +20,5 @@ describe("ServerSelection", () => {
         const $link = wrapper.find(".dropdown-item:last-child");
         $link.trigger("click");
         expect(wrapper.emitted().onToolshed[0]).to.contain("url_1");
-
     });
 });

@@ -3,11 +3,10 @@ import InstallationSettings from "./InstallationSettings";
 import { __RewireAPI__ as rewire } from "./InstallationSettings";
 
 describe("InstallationSettings", () => {
-
     beforeEach(() => {
         rewire.__Rewire__("getGalaxyInstance", () => {
             return {
-                config : {}
+                config: {}
             };
         });
     });

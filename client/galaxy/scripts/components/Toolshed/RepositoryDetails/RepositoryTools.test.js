@@ -5,11 +5,13 @@ describe("RepositoryTools", () => {
     it("test tool version list in repository details", () => {
         const wrapper = mount(RepositoryTools, {
             propsData: {
-                tools: [{
-                    guid: "guid",
-                    id: "id",
-                    version: "version"
-                }]
+                tools: [
+                    {
+                        guid: "guid",
+                        id: "id",
+                        version: "version"
+                    }
+                ]
             }
         });
         const $el = wrapper.findAll("td");
@@ -22,21 +24,23 @@ describe("RepositoryTools", () => {
     it("test collapsing tool version list in repository details", () => {
         const wrapper = mount(RepositoryTools, {
             propsData: {
-                tools: [{
-                    guid: "guid_1",
-                    id: "id_1",
-                    version: "version_1"
-                },
-                {
-                    guid: "guid_2",
-                    id: "id_2",
-                    version: "version_2"
-                },
-                {
-                    guid: "guid_3",
-                    id: "id_3",
-                    version: "version_3"
-                }]
+                tools: [
+                    {
+                        guid: "guid_1",
+                        id: "id_1",
+                        version: "version_1"
+                    },
+                    {
+                        guid: "guid_2",
+                        id: "id_2",
+                        version: "version_2"
+                    },
+                    {
+                        guid: "guid_3",
+                        id: "id_3",
+                        version: "version_3"
+                    }
+                ]
             }
         });
         const $el = wrapper.findAll("tr");
