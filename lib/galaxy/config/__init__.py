@@ -267,13 +267,15 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.tool_data_path = os.path.join(os.getcwd(), self.tool_data_path)
         if not running_from_source and kwargs.get("tool_data_path", None) is None:
             self.tool_data_path = os.path.join(self.data_dir, "tool-data")
-        self.builds_file_path = os.path.join(self.root, kwargs.get("builds_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'builds.txt')))
-        self.len_file_path = os.path.join(self.root, kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')))
+        if self.builds_file_path is None:
+            self.builds_file_path = os.path.join(self.root, self.tool_data_path, 'shared', 'ucsc', 'builds.txt')
+        if self.len_file_path is None:
+            self.len_file_path = os.path.join(self.root, self.tool_data_path, 'shared', 'ucsc', 'chrom')
         # Galaxy OIDC settings.
         self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
         self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
         self.oidc = []
-        self.integrated_tool_panel_config = os.path.join(self.mutable_config_dir, kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'))
+        self.integrated_tool_panel_config = os.path.join(self.mutable_config_dir, self.integrated_tool_panel_config)
         integrated_tool_panel_tracking_directory = kwargs.get('integrated_tool_panel_tracking_directory', None)
         if integrated_tool_panel_tracking_directory:
             self.integrated_tool_panel_tracking_directory = os.path.join(self.root, integrated_tool_panel_tracking_directory)
@@ -424,14 +426,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             containers_resolvers_config_file = os.path.join(self.root, containers_resolvers_config_file)
         self.containers_resolvers_config_file = containers_resolvers_config_file
 
-        involucro_path = kwargs.get('involucro_path', None)
-        if involucro_path is None:
-            target_dir = kwargs.get("tool_dependency_dir", "dependencies")
-            if target_dir == "none":
-                target_dir = "dependencies"
-            target_dir = os.path.join(self.data_dir, target_dir)
-            involucro_path = os.path.join(target_dir, "involucro")
-        self.involucro_path = os.path.join(self.root, involucro_path)
+        # tool_dependency_dir can be "none" (in old configs). If so, set it to schema default
+        if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
+            self.tool_dependency_dir = self.appschema['tool_dependency_dir'].get('default')
+
+        if self.involucro_path is None:
+            self.involucro_path = os.path.join(self.data_dir, self.tool_dependency_dir, "involucro")
+        self.involucro_path = os.path.join(self.root, self.involucro_path)
+
         if self.mulled_channels:
             self.mulled_channels = [c.strip() for c in self.mulled_channels.split(',')]
         else:
