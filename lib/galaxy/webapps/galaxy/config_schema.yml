@@ -259,7 +259,7 @@ mapping:
           to this path, such as the default conda prefix, default Galaxy packages path, legacy
           tool shed dependencies path, and the dependency cache directory.
 
-          Set the string to None to explicitly disable tool dependency handling.
+          Set the string to null to explicitly disable tool dependency handling.
           If this option is set to none or an invalid path, installing tools with dependencies
           from the Tool Shed or in Conda will fail.
 

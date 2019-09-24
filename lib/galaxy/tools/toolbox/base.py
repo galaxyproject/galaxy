@@ -15,7 +15,10 @@ from six import iteritems
 from six.moves.urllib.parse import urlparse
 
 from galaxy.exceptions import MessageException, ObjectNotFound
-from galaxy.tool_util.deps import build_dependency_manager
+from galaxy.tool_util.deps import (
+    build_dependency_manager,
+    NullDependencyManager
+)
 from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.util import (
     ExecutionTimer,
@@ -1158,6 +1161,9 @@ class BaseGalaxyToolBox(AbstractToolBox):
         return looks_like_a_tool(path, enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False))
 
     def _init_dependency_manager(self):
+        if self.app.name != 'galaxy':
+            self.dependency_manager = NullDependencyManager()
+            return
         app_config_dict = self.app.config.config_dict
         conf_file = app_config_dict.get("dependency_resolvers_config_file")
         default_tool_dependency_dir = os.path.join(self.app.config.data_dir, "dependencies")
