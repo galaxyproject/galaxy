@@ -94,13 +94,6 @@ LOGGING_CONFIG_DEFAULT = {
 """Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
 
-def resolve_path(path, root):
-    """If 'path' is relative make absolute by prepending 'root'"""
-    if not os.path.isabs(path):
-        path = os.path.join(root, path)
-    return path
-
-
 def find_root(kwargs):
     root = os.path.abspath(kwargs.get('root_dir', '.'))
     return root
@@ -164,13 +157,13 @@ class BaseAppConfiguration(object):
                 setattr(self, var + '_set', True)
             else:
                 for value in values:
-                    if os.path.exists(resolve_path(value, self.root)):
+                    if os.path.exists(os.path.join(self.root, value)):
                         path = value
                         break
                 else:
                     path = values[-1]
                 setattr(self, var + '_set', False)
-            setattr(self, var, resolve_path(path, self.root))
+            setattr(self, var, os.path.join(self.root, path))
 
         for var, values in listify_defaults.items():
             paths = []
@@ -180,7 +173,7 @@ class BaseAppConfiguration(object):
             else:
                 for value in values:
                     for path in listify(value):
-                        if not os.path.exists(resolve_path(path, self.root)):
+                        if not os.path.exists(os.path.join(self.root, path)):
                             break
                     else:
                         paths = listify(value)
@@ -188,7 +181,7 @@ class BaseAppConfiguration(object):
                 else:
                     paths = listify(values[-1])
                 setattr(self, var + '_set', False)
-            setattr(self, var, [resolve_path(x, self.root) for x in paths])
+            setattr(self, var, [os.path.join(self.root, x) for x in paths])
 
 
 class GalaxyAppConfiguration(BaseAppConfiguration):
@@ -248,7 +241,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # Database related configuration
         self.check_migrate_databases = kwargs.get('check_migrate_databases', True)
         self.database_connection = kwargs.get("database_connection",
-                                              "sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path("universe.sqlite", self.data_dir))
+                                              "sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(self.data_dir, "universe.sqlite"))
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get("database_create_tables", "True"))
         self.database_query_profiling_proxy = string_as_bool(kwargs.get("database_query_profiling_proxy", "False"))
@@ -261,29 +254,29 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
 
         # Where dataset files are stored
-        self.file_path = resolve_path(self.file_path, self.data_dir)
+        self.file_path = os.path.join(self.data_dir, self.file_path)
         # new_file_path and legacy_home_dir can be overridden per destination in job_conf.
-        self.new_file_path = resolve_path(self.new_file_path, self.data_dir)
+        self.new_file_path = os.path.join(self.data_dir, self.new_file_path)
         override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
         if override_tempdir:
             tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir", None)
-        self.openid_consumer_cache_path = resolve_path(self.openid_consumer_cache_path, self.data_dir)
+        self.openid_consumer_cache_path = os.path.join(self.data_dir, self.openid_consumer_cache_path)
         self.cookie_path = kwargs.get("cookie_path", None)
-        self.tool_path = resolve_path(self.tool_path, self.root)
-        self.tool_data_path = resolve_path(self.tool_data_path, os.getcwd())
+        self.tool_path = os.path.join(self.root, self.tool_path)
+        self.tool_data_path = os.path.join(os.getcwd(), self.tool_data_path)
         if not running_from_source and kwargs.get("tool_data_path", None) is None:
-            self.tool_data_path = resolve_path("tool-data", self.data_dir)
-        self.builds_file_path = resolve_path(kwargs.get("builds_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'builds.txt')), self.root)
-        self.len_file_path = resolve_path(kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')), self.root)
+            self.tool_data_path = os.path.join(self.data_dir, "tool-data")
+        self.builds_file_path = os.path.join(self.root, kwargs.get("builds_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'builds.txt')))
+        self.len_file_path = os.path.join(self.root, kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')))
         # Galaxy OIDC settings.
         self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
         self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
         self.oidc = []
-        self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'), self.mutable_config_dir)
+        self.integrated_tool_panel_config = os.path.join(self.mutable_config_dir, kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'))
         integrated_tool_panel_tracking_directory = kwargs.get('integrated_tool_panel_tracking_directory', None)
         if integrated_tool_panel_tracking_directory:
-            self.integrated_tool_panel_tracking_directory = resolve_path(integrated_tool_panel_tracking_directory, self.root)
+            self.integrated_tool_panel_tracking_directory = os.path.join(self.root, integrated_tool_panel_tracking_directory)
         else:
             self.integrated_tool_panel_tracking_directory = None
         self.toolbox_filter_base_modules = listify(self.toolbox_filter_base_modules)
@@ -296,14 +289,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.user_tool_section_filters = listify(kwargs.get("user_tool_section_filters", []), do_strip=True)
         self.has_user_tool_filters = bool(self.user_tool_filters or self.user_tool_label_filters or self.user_tool_section_filters)
 
-        self.tour_config_dir = resolve_path(kwargs.get("tour_config_dir", "config/plugins/tours"), self.root)
-        self.webhooks_dirs = resolve_path(kwargs.get("webhooks_dir", "config/plugins/webhooks"), self.root)
+        self.tour_config_dir = os.path.join(self.root, kwargs.get("tour_config_dir", "config/plugins/tours"))
+        self.webhooks_dirs = os.path.join(self.root, kwargs.get("webhooks_dir", "config/plugins/webhooks"))
 
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
         self.shed_tool_data_path = kwargs.get("shed_tool_data_path", None)
         if self.shed_tool_data_path:
-            self.shed_tool_data_path = resolve_path(self.shed_tool_data_path, self.root)
+            self.shed_tool_data_path = os.path.join(self.root, self.shed_tool_data_path)
         else:
             self.shed_tool_data_path = self.tool_data_path
         self.running_functional_tests = string_as_bool(kwargs.get('running_functional_tests', False))
@@ -338,20 +331,20 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             for ip in kwargs.get("fetch_url_whitelist", "").split(',')
             if len(ip.strip()) > 0
         ]
-        self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
-        self.template_cache = resolve_path(self.template_cache_path, self.data_dir)
+        self.template_path = os.path.join(self.root, kwargs.get("template_path", "templates"))
+        self.template_cache = os.path.join(self.data_dir, self.template_cache_path)
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
         self.cluster_files_directory = self.resolve_path(kwargs.get("cluster_files_directory", os.path.join(self.data_dir, "pbs")))
 
         # Fall back to legacy job_working_directory config variable if set.
-        self.jobs_directory = resolve_path(kwargs.get("jobs_directory", self.job_working_directory), self.data_dir)
+        self.jobs_directory = os.path.join(self.data_dir, kwargs.get("jobs_directory", self.job_working_directory))
         if self.preserve_python_environment not in ["legacy_only", "legacy_and_local", "always"]:
             log.warning("preserve_python_environment set to unknown value [%s], defaulting to legacy_only")
             self.preserve_python_environment = "legacy_only"
         self.nodejs_path = kwargs.get("nodejs_path", None)
         # Older default container cache path, I don't think anyone is using it anymore and it wasn't documented - we
         # should probably drop the backward compatiblity to save the path check.
-        self.container_image_cache_path = resolve_path(kwargs.get("container_image_cache_path", "container_images"), self.data_dir)
+        self.container_image_cache_path = os.path.join(self.data_dir, kwargs.get("container_image_cache_path", "container_images"))
         if not os.path.exists(self.container_image_cache_path):
             self.container_image_cache_path = self.resolve_path(kwargs.get("container_image_cache_path", os.path.join(self.data_dir, "container_cache")))
         self.output_size_limit = int(kwargs.get('output_size_limit', 0))
@@ -363,7 +356,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.blacklist_location = kwargs.get('blacklist_file', None)
         self.blacklist_content = None
         if self.blacklist_location is not None:
-            self.blacklist_file = resolve_path(kwargs.get('blacklist_file', None), self.root)
+            self.blacklist_file = os.path.join(self.root, kwargs.get('blacklist_file', None))
             try:
                 with open(self.blacklist_file) as blacklist:
                     self.blacklist_content = [line.rstrip() for line in blacklist.readlines()]
@@ -390,7 +383,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "")
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "")
         self.pbs_stage_path = kwargs.get('pbs_stage_path', "")
-        self.sanitize_whitelist_file = resolve_path(kwargs.get('sanitize_whitelist_file', "config/sanitize_whitelist.txt"), self.root)
+        self.sanitize_whitelist_file = os.path.join(self.root, kwargs.get('sanitize_whitelist_file', "config/sanitize_whitelist.txt"))
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(kwargs)
         if "trust_jupyter_notebook_conversion" in kwargs:
             trust_jupyter_notebook_conversion = string_as_bool(kwargs.get('trust_jupyter_notebook_conversion', False))
@@ -412,7 +405,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # not needed on production systems but useful if running many functional tests.
         self.index_tool_help = string_as_bool(kwargs.get("index_tool_help", True))
         self.tool_labels_boost = kwargs.get("tool_labels_boost", 1)
-        default_tool_test_data_directories = os.environ.get("GALAXY_TEST_FILE_DIR", resolve_path("test-data", self.root))
+        default_tool_test_data_directories = os.environ.get("GALAXY_TEST_FILE_DIR", os.path.join(self.root, "test-data"))
         self.tool_test_data_directories = kwargs.get("tool_test_data_directories", default_tool_test_data_directories)
         # Deployers may either specify a complete list of mapping files or get the default for free and just
         # specify a local mapping file to adapt and extend the default one.
@@ -428,7 +421,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.enable_mulled_containers = string_as_bool(kwargs.get('enable_mulled_containers', 'True'))
         containers_resolvers_config_file = kwargs.get('containers_resolvers_config_file', None)
         if containers_resolvers_config_file:
-            containers_resolvers_config_file = resolve_path(containers_resolvers_config_file, self.root)
+            containers_resolvers_config_file = os.path.join(self.root, containers_resolvers_config_file)
         self.containers_resolvers_config_file = containers_resolvers_config_file
 
         involucro_path = kwargs.get('involucro_path', None)
@@ -436,9 +429,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             target_dir = kwargs.get("tool_dependency_dir", "dependencies")
             if target_dir == "none":
                 target_dir = "dependencies"
-            target_dir = resolve_path(target_dir, self.data_dir)
+            target_dir = os.path.join(self.data_dir, target_dir)
             involucro_path = os.path.join(target_dir, "involucro")
-        self.involucro_path = resolve_path(involucro_path, self.root)
+        self.involucro_path = os.path.join(self.root, involucro_path)
         if self.mulled_channels:
             self.mulled_channels = [c.strip() for c in self.mulled_channels.split(',')]
         else:
@@ -474,7 +467,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.object_store_cache_size = float(kwargs.get('object_store_cache_size', -1))
         self.distributed_object_store_config_file = kwargs.get('distributed_object_store_config_file', None)
         if self.distributed_object_store_config_file is not None:
-            self.distributed_object_store_config_file = resolve_path(self.distributed_object_store_config_file, self.root)
+            self.distributed_object_store_config_file = os.path.join(self.root, self.distributed_object_store_config_file)
         self.irods_root_collection_path = kwargs.get('irods_root_collection_path', None)
         self.irods_default_resource = kwargs.get('irods_default_resource', None)
         # Heartbeat log file name override
@@ -540,7 +533,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         elif 'database_connection' in kwargs:
             self.amqp_internal_connection = "sqlalchemy+" + self.database_connection
         else:
-            self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path("control.sqlite", self.data_dir)
+            self.amqp_internal_connection = "sqlalchemy+sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(self.data_dir, "control.sqlite")
         self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
         try:
             with open(self.user_preferences_extra_conf_path, 'r') as stream:
@@ -570,8 +563,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         elif ie_dirs:
             self.visualization_plugins_directory += ",%s" % ie_dirs
 
-        self.proxy_session_map = resolve_path(kwargs.get("dynamic_proxy_session_map", "session_map.sqlite"), self.data_dir)
-
+        self.proxy_session_map = os.path.join(self.data_dir, self.dynamic_proxy_session_map)
         self.manage_dynamic_proxy = string_as_bool(kwargs.get("dynamic_proxy_manage", "True"))  # Set to false if being launched externally
 
         # InteractiveTools propagator mapping file
@@ -579,8 +571,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.interactivetool_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
         self.interactivetools_enable = string_as_bool(kwargs.get('interactivetools_enable', False))
 
-        self.citation_cache_data_dir = resolve_path(self.citation_cache_data_dir, self.data_dir)
-        self.citation_cache_lock_dir = resolve_path(self.citation_cache_lock_dir, self.data_dir)
+        self.citation_cache_data_dir = os.path.join(self.data_dir, self.citation_cache_data_dir)
+        self.citation_cache_lock_dir = os.path.join(self.data_dir, self.citation_cache_lock_dir)
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 
@@ -777,7 +769,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
     def resolve_path(self, path):
         """ Resolve a path relative to Galaxy's root.
         """
-        return resolve_path(path, self.root)
+        return os.path.join(self.root, path)
 
     @staticmethod
     def _parse_allowed_origin_hostnames(kwargs):
