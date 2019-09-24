@@ -1,3 +1,4 @@
+import collections
 from xml.etree import ElementTree
 
 try:
@@ -6,6 +7,9 @@ except ImportError:
     yaml = None
 
 from galaxy.util.submodules import import_submodules
+
+
+PluginConfigSource = collections.namedtuple('PluginConfigSource', ['type', 'source'])
 
 
 def plugins_dict(module, plugin_type_identifier):
@@ -80,9 +84,9 @@ def __load_plugins_from_dicts(plugins_dict, configs, extra_kwds, plugin_type_key
 
 def plugin_source_from_path(path):
     if path.endswith(".yaml") or path.endswith(".yml") or path.endswith(".yaml.sample") or path.endswith(".yml.sample"):
-        return ('dict', __read_yaml(path))
+        return PluginConfigSource('dict', __read_yaml(path))
     else:
-        return ('xml', ElementTree.parse(path).getroot())
+        return PluginConfigSource('xml', ElementTree.parse(path).getroot())
 
 
 def __read_yaml(path):
