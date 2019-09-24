@@ -1,5 +1,5 @@
 <template>
-    <b-modal v-model="modalShow" @ok="onOk" @hide="onHide">
+    <b-modal :static="modalStatic" v-model="modalShow" @ok="onOk" @hide="onHide">
         <template slot="modal-header">
             <h4 class="title m-0">
                 {{ modalTitle }}
@@ -57,7 +57,7 @@ import { getGalaxyInstance } from "app";
 Vue.use(BootstrapVue);
 
 export default {
-    props: ["repo", "changesetRevision", "requiresPanel", "toolshedUrl"],
+    props: ["repo", "changesetRevision", "requiresPanel", "toolshedUrl", "modalStatic"],
     data() {
         return {
             modalShow: true,

@@ -14,6 +14,7 @@ describe("InstallationSettings", () => {
     it("test tool repository installer interface", () => {
         const wrapper = mount(InstallationSettings, {
             propsData: {
+                modalStatic: true,
                 repo: {
                     long_description: "long_description",
                     description: "description",
