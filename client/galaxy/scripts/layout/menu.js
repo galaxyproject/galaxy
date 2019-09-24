@@ -72,6 +72,8 @@ const Collection = Backbone.Collection.extend({
                 title: _l("Visualize"),
                 tooltip: _l("Visualize datasets"),
                 disabled: !Galaxy.user.id,
+                attributes: { "aria-haspopup": "true", "aria-expanded": "false" },
+
                 menu: [
                     {
                         title: _l("Create Visualization"),
@@ -366,6 +368,7 @@ const Tab = Backbone.View.extend({
             .addClass(this.model.get("icon") && `nav-icon fa ${this.model.get("icon")}`)
             .addClass(this.model.get("menu") && "dropdown-toggle")
             .addClass(this.model.get("toggle") && "toggle")
+            .attr("id", this.model.get("menu") && `dropdown-button-${this.model.get("id")}`)
             .attr("target", this.model.get("target"))
             .attr("href", this.model.get("url"))
             .attr("title", this.model.get("tooltip"))
@@ -395,6 +398,7 @@ const Tab = Backbone.View.extend({
                 }
             });
             this.$menu.addClass("dropdown-menu");
+            this.$menu.attr("aria-labelledby", this.$menu.siblings(".dropdown-toggle").attr("id"));
             this.$link.append($("<b/>").addClass("caret"));
         }
         return this;
