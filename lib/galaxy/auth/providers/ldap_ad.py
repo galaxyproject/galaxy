@@ -222,7 +222,6 @@ class LDAP(AuthProvider):
         attributes = {}
         if self.auto_create_roles_or_groups:
             attributes['roles'] = params[self.role_search_option]
-
         return (True,
                 _get_subs(options, 'auto-register-email', params),
                 _clean_register_username(_get_subs(options, 'auto-register-username', params)),
