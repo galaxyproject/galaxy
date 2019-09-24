@@ -1161,7 +1161,8 @@ class BaseGalaxyToolBox(AbstractToolBox):
         return looks_like_a_tool(path, enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False))
 
     def _init_dependency_manager(self):
-        if self.app.name != 'galaxy':
+        use_tool_dependency_resolution = getattr(self.app, "use_tool_dependency_resolution", True)
+        if not use_tool_dependency_resolution:
             self.dependency_manager = NullDependencyManager()
             return
         app_config_dict = self.app.config.config_dict
