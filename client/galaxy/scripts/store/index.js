@@ -13,6 +13,7 @@ import { invocationStore } from "./invocationStore";
 import { userStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
+import { historyStore } from "./historyStore";
 
 Vue.use(Vuex);
 
@@ -32,7 +33,8 @@ export function createStore() {
             invocations: invocationStore,
             user: userStore,
             config: configStore,
-            workflows: workflowStore
+            workflows: workflowStore,
+            history: historyStore
         }
     });
 }

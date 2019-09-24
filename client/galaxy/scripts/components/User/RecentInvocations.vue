@@ -1,10 +1,11 @@
 <template>
     <invocations
-        :invocationItems="invocationItems" 
+        :invocationItems="invocationItems"
         :loading="loading"
         :busy="busy"
         headerMessage="Your most recent workflow invocations are displayed on this page."
-        noInvocationsMessage="There are no workflow invocations to show.">
+        noInvocationsMessage="There are no workflow invocations to show."
+    >
     </invocations>
 </template>
 
@@ -20,7 +21,7 @@ export default {
         return {
             invocationItems: [],
             loading: true,
-            busy: true,
+            busy: true
         };
     },
     created() {

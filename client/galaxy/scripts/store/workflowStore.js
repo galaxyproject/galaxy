@@ -1,5 +1,5 @@
 export const state = {
-    workflowsByInstanceId: {},
+    workflowsByInstanceId: {}
 };
 
 import Vue from "vue";

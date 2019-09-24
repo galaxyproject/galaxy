@@ -1,12 +1,12 @@
 <template>
     <invocations
-        :invocationItems="invocationItems" 
+        :invocationItems="invocationItems"
         :loading="loading"
         :busy="busy"
         headerMessage="Workflow invocations that are still being scheduled are displayed on this page."
         noInvocationsMessage="There are no scheduling workflow invocations to show currently."
         :ownerGrid="false"
-        >
+    >
     </invocations>
 </template>
 
@@ -22,7 +22,7 @@ export default {
         return {
             invocationItems: [],
             loading: true,
-            busy: true,
+            busy: true
         };
     },
     created() {

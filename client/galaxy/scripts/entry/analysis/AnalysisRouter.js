@@ -30,7 +30,7 @@ import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryView from "components/HistoryView.vue";
 import WorkflowInvocationReport from "components/WorkflowInvocationReport.vue";
-import RecentInvocations from "components/User/RecentInvocations.vue"
+import RecentInvocations from "components/User/RecentInvocations.vue";
 import HistoryList from "mvc/history/history-list";
 import PluginList from "components/PluginList.vue";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
@@ -96,7 +96,7 @@ export const getAnalysisRouter = Galaxy =>
             const instance = Vue.extend(component);
             const container = document.createElement("div");
             this.page.display(container);
-            return new instance({ store, props}).$mount(container);
+            return new instance({ store, props }).$mount(container);
         },
 
         show_tours: function(tour_id) {

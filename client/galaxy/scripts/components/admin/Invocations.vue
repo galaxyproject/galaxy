@@ -46,6 +46,14 @@
                         -->
                     </div>
                 </template>
+                <template v-slot:cell(history_id)="data">
+                    <div v-if="!ownerGrid || !getHistoryById(data.item.history_id)">
+                        {{ data.item.history_id }}
+                    </div>
+                    <div v-else>
+                        <history-dropdown :history="getHistoryById(data.item.history_id)" />
+                    </div>
+                </template>
             </b-table>
         </div>
     </div>
@@ -56,27 +64,29 @@ import { getRootFromIndexLink } from "onload";
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowDropdown from "components/Workflow/WorkflowDropdown";
+import HistoryDropdown from "components/HistoryDropdown";
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
-
 
 export default {
     components: {
         WorkflowInvocationState,
         LoadingSpan,
-        WorkflowDropdown
+        WorkflowDropdown,
+        HistoryDropdown
     },
     props: {
         invocationItems: { type: Array, default: [] },
         busy: { type: Boolean, default: true },
         loading: { type: Boolean, default: true },
         noInvocationsMessage: { type: String },
-        headerMessage: { type: String, default: '' },
+        headerMessage: { type: String, default: "" },
         ownerGrid: { type: Boolean, default: true }
     },
     data() {
         let fields = [
             { key: "workflow_id", label: "Workflow" },
+            { key: "history_id", label: "History" },
             { key: "id", label: "Invocation ID", sortable: true },
             { key: "state" },
             { key: "update_time", label: "Last Update", sortable: true },
@@ -85,30 +95,32 @@ export default {
         return {
             invocationItemsModel: [],
             invocationFields: fields,
-            status: "",
+            status: ""
         };
     },
     computed: {
-        ...mapGetters(["getWorkflowByInstanceId"]),
+        ...mapGetters(["getWorkflowByInstanceId", "getHistoryById"]),
         invocationItemsComputed() {
             return this.computeItems(this.invocationItems);
         }
     },
     methods: {
-        ...mapCacheActions(["fetchWorkflowForInstanceId"]),
+        ...mapCacheActions(["fetchWorkflowForInstanceId", "fetchHistoryForId"]),
         editLink(workflowId) {
-            return getRootFromIndexLink() + 'workflow/editor?id=' + this.getWorkflowByInstanceId(workflowId).id
+            return getRootFromIndexLink() + "workflow/editor?id=" + this.getWorkflowByInstanceId(workflowId).id;
         },
         computeItems(items) {
             return items.map(invocation => {
-                if( this.ownerGrid ) {
+                if (this.ownerGrid) {
                     this.fetchWorkflowForInstanceId(invocation["workflow_id"]);
+                    this.fetchHistoryForId(invocation["history_id"]);
                 }
                 return {
                     id: invocation["id"],
                     create_time: invocation["create_time"],
                     update_time: invocation["update_time"],
                     workflow_id: invocation["workflow_id"],
+                    history_id: invocation["history_id"],
                     state: invocation["state"],
                     _showDetails: false
                 };
