@@ -881,6 +881,9 @@ execution:
       resubmit:
       - condition: memory_limit_reached
         environment: bigmem
+    bigmem:
+      runner: slurm
+      native_specification: '--mem-per-cpu=256000'
     retry_on_unknown_problems:
       runner: slurm
       # Just retry the job 5 times if un-categories errors occur backing
