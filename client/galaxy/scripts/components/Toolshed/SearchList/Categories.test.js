@@ -4,21 +4,26 @@ import { __RewireAPI__ as rewire } from "./Categories";
 import Vue from "vue";
 
 describe("Categories", () => {
-
     beforeEach(() => {
-        rewire.__Rewire__("Services", class {
-            async getCategories() {
-                return [{
-                    name: "name_0",
-                    description: "description_0",
-                    repositories: "repositories_0"
-                }, {
-                    name: "name_1",
-                    description: "description_1",
-                    repositories: "repositories_1"
-                }];
+        rewire.__Rewire__(
+            "Services",
+            class {
+                async getCategories() {
+                    return [
+                        {
+                            name: "name_0",
+                            description: "description_0",
+                            repositories: "repositories_0"
+                        },
+                        {
+                            name: "name_1",
+                            description: "description_1",
+                            repositories: "repositories_1"
+                        }
+                    ];
+                }
             }
-        });
+        );
     });
 
     it("test categories loading", () => {

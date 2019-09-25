@@ -4,23 +4,28 @@ import { __RewireAPI__ as rewire } from "./Repositories";
 import Vue from "vue";
 
 describe("Repositories", () => {
-
     beforeEach(() => {
-        rewire.__Rewire__("Services", class {
-            async getRepositories() {
-                return [{
-                    name: "name_0",
-                    owner: "owner_0",
-                    last_updated: "last_updated_0",
-                    times_downloaded: "times_downloaded_0"
-                }, {
-                    name: "name_1",
-                    owner: "owner_1",
-                    last_updated: "last_updated_1",
-                    times_downloaded: "times_downloaded_1"
-                }];
+        rewire.__Rewire__(
+            "Services",
+            class {
+                async getRepositories() {
+                    return [
+                        {
+                            name: "name_0",
+                            owner: "owner_0",
+                            last_updated: "last_updated_0",
+                            times_downloaded: "times_downloaded_0"
+                        },
+                        {
+                            name: "name_1",
+                            owner: "owner_1",
+                            last_updated: "last_updated_1",
+                            times_downloaded: "times_downloaded_1"
+                        }
+                    ];
+                }
             }
-        });
+        );
     });
 
     it("test repository details loading", async () => {
