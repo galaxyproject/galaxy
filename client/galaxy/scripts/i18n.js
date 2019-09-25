@@ -3,7 +3,7 @@
  * Released under MIT license, http://github.com/requirejs/i18n/LICENSE
  */
 /*jslint regexp: true */
-/*global require: false, navigator: false, define: false */
+/*global define: false */
 
 /**
  * This plugin handles i18n! prefixed modules. It does the following:
@@ -73,7 +73,10 @@
     function mixin(target, source, force) {
         var prop;
         for (prop in source) {
-            if (source.hasOwnProperty(prop) && (!target.hasOwnProperty(prop) || force)) {
+            if (
+                Object.prototype.hasOwnProperty.call(source, prop) &&
+                (!Object.prototype.hasOwnProperty.call(target, prop) || force)
+            ) {
                 target[prop] = source[prop];
             } else if (typeof source[prop] === "object") {
                 if (!target[prop] && source[prop]) {
