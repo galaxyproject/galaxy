@@ -5,9 +5,9 @@ Created on 15/07/2014
 """
 
 import logging
-import re
 
 from galaxy.exceptions import ConfigurationError
+from galaxy.security.validate_user_input import transform_publicname
 from galaxy.util import string_as_bool
 from ..providers import AuthProvider
 
@@ -24,10 +24,6 @@ def _get_subs(d, k, params):
     if k not in d or not d[k]:
         raise ConfigurationError("Missing '%s' parameter in LDAP options" % k)
     return str(d[k]).format(**params)
-
-
-def _clean_register_username(displayname):
-    return re.sub('[^a-z0-9]+', '_', displayname.lower())
 
 
 def _parse_ldap_options(options_unparsed):
@@ -216,7 +212,7 @@ class LDAP(AuthProvider):
         # check whether the user is a member of a specified group/domain/...
         if 'search-memberof-filter' in options:
             search_filter = _get_subs(options, 'search-memberof-filter', params)
-            if not any([search_filter in ad_node_name for ad_node_name in params['memberOf']]):
+            if not any(search_filter in ad_node_name for ad_node_name in params['memberOf']):
                 return failure_mode, '', ''
 
         attributes = {}
@@ -224,7 +220,7 @@ class LDAP(AuthProvider):
             attributes['roles'] = params[self.role_search_option]
         return (True,
                 _get_subs(options, 'auto-register-email', params),
-                _clean_register_username(_get_subs(options, 'auto-register-username', params)),
+                transform_publicname(_get_subs(options, 'auto-register-username', params), check_dup=False),
                 attributes)
 
     def _authenticate(self, params, options):
