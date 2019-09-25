@@ -47,12 +47,12 @@ class JobMetrics(object):
         self.set_destination_instrumenter(destination_id, instrumenter)
 
     def set_destination_conf_element(self, destination_id, element):
-        plugin_source = ('xml', element)
+        plugin_source = plugin_config.PluginConfigSource('xml', element)
         instrumenter = JobInstrumenter(self.plugin_classes, plugin_source)
         self.set_destination_instrumenter(destination_id, instrumenter)
 
     def set_destination_conf_dicts(self, destination_id, conf_dicts):
-        plugin_source = ('dict', conf_dicts)
+        plugin_source = plugin_config.PluginConfigSource('dict', conf_dicts)
         instrumenter = JobInstrumenter(self.plugin_classes, plugin_source)
         self.set_destination_instrumenter(destination_id, instrumenter)
 
