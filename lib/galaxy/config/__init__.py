@@ -253,7 +253,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             check_exists(parent, key)
             check_type_is_str(parent, key)
             check_type_is_str(self.appschema[key], key)
-            check_is_dag()  # must be called last: walks entire graph
+        check_is_dag()  # must be called last: walks entire graph
 
     def _update_raw_config_from_kwargs(self, kwargs):
 
