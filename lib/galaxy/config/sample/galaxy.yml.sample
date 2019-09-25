@@ -1798,11 +1798,11 @@ galaxy:
   #persistent_communication_rooms: null
   
   # Galaxy tool recommendation settings
-  enable_tool_recommendations: true
+  #enable_tool_recommendations: true
   
   # Trained model (HDF5 file) path for tool recommendation.
-  # It is required to be set if 'enable_tool_recommendation' property is enabled and set to true.
-  tool_recommendation_model_path: 'database/tool_recommendation_model.hdf5'
+  # It is required to be set if 'enable_tool_recommendations' property is enabled and set to true.
+  #tool_recommendation_model_path: 'database/tool_recommendation_model.hdf5'
   
   # Enable tool recommendations to be set by Galaxy admins
   # If set to true, 'admin_tool_recommendations_path' must be set as well
