@@ -52,7 +52,7 @@ mapping:
           instead.  This string takes many options which are explained in detail in the
           config file documentation.
 
-          Sample default 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
+          Sample default 'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
 
       database_engine_option_pool_size:
         type: int
