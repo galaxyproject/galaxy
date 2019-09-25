@@ -22,18 +22,17 @@ describe("Categories", () => {
         });
     });
 
-    it("test tool loading", () => {
+    it("test categories loading", () => {
         const wrapper = mount(Categories, {
             propsData: {
                 loading: true,
                 toolshedUrl: "toolshedUrl"
             }
         });
-        console.log(wrapper.html());
         expect(wrapper.find(".loading-message").text()).to.equal("Loading categories...");
     });
 
-    it("test tool table", async () => {
+    it("test categories table", async () => {
         const wrapper = mount(Categories, {
             propsData: {
                 loading: false,
@@ -48,7 +47,6 @@ describe("Categories", () => {
         const rows = wrapper.findAll("tr");
         expect(rows.length).to.equal(3);
         const cells = rows.at(1).findAll("td");
-        console.log(cells.at(1).html());
         expect(cells.at(1).text()).to.equal("description_0");
         expect(cells.at(2).text()).to.equal("repositories_0");
     });
