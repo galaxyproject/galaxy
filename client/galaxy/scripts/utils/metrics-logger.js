@@ -101,7 +101,9 @@ MetricsLogger.prototype._init = function _init(options) {
     self.options = {};
     for (var k in MetricsLogger.defaultOptions) {
         if (Object.prototype.hasOwnProperty.call(MetricsLogger.defaultOptions, k)) {
-            self.options[k] = Object.prototype.hasOwnProperty.call(options, k) ? options[k] : MetricsLogger.defaultOptions[k];
+            self.options[k] = Object.prototype.hasOwnProperty.call(options, k)
+                ? options[k]
+                : MetricsLogger.defaultOptions[k];
         }
     }
     self.options.logLevel = self._parseLevel(self.options.logLevel);

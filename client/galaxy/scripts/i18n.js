@@ -73,7 +73,10 @@
     function mixin(target, source, force) {
         var prop;
         for (prop in source) {
-            if (Object.prototype.hasOwnProperty.call(source, prop) && (!Object.prototype.hasOwnProperty.call(target, prop) || force)) {
+            if (
+                Object.prototype.hasOwnProperty.call(source, prop) &&
+                (!Object.prototype.hasOwnProperty.call(target, prop) || force)
+            ) {
                 target[prop] = source[prop];
             } else if (typeof source[prop] === "object") {
                 if (!target[prop] && source[prop]) {
