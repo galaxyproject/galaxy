@@ -1,0 +1,34 @@
+{
+    "tools": [
+        {
+             "tool_id": "<<tool1>>",
+             "recommendations": [
+                {
+                    "tool_id": "<<recommended tool id  for tool1>>",
+                    "name": "<<recommended tool name>>",
+                    "i_extensions": ["<<list of input datatype extensions for the recommended tool>>"]
+                },
+                {
+                    "tool_id": "<<recommended tool id  for tool1>>",
+                    "name": "<<recommended tool name>>",
+                    "i_extensions": ["<<list of input datatype extensions for the recommended tool>>"]
+                }
+            ]
+        },
+        {
+             "tool_id": "<<tool2>>",
+             "recommendations": [
+                {
+                    "tool_id": "<<recommended tool id  for tool2>>",
+                    "name": "<<recommended tool name>>",
+                    "i_extensions": ["<<list of input datatype extensions for the recommended tool>>"]
+                },
+                {
+                    "tool_id": "<<recommended tool id  for tool2>>",
+                    "name": "<<recommended tool name>>",
+                    "i_extensions": ["<<list of input datatype extensions for the recommended tool>>"]
+                }
+            ]
+        }
+    ]
+}

@@ -1796,6 +1796,22 @@ galaxy:
   # persistent_communication_rooms is a comma-separated list of rooms
   # that should be always available.
   #persistent_communication_rooms: null
+  
+  # Galaxy tool recommendation settings
+  enable_tool_recommendations: true
+  
+  # Trained model (HDF5 file) path for tool recommendation.
+  # It is required to be set if 'enable_tool_recommendation' property is enabled and set to true.
+  tool_recommendation_model_path: 'database/tool_recommendation_model.hdf5'
+  
+  # Enable tool recommendations to be set by Galaxy admins
+  # If set to true, 'admin_tool_recommendations_path' must be set as well
+  # which takes the path of the additional list of tools to be recommended
+  #enable_admin_tool_recommendations: false
+
+  # Additional tool recommendations from Galaxy admin
+  # They are shown along with the recommendations using deep learning trained model
+  #admin_tool_recommendations_path: 'database/admin_tool_recommendation.json'
 
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.
   # This should normally be left enabled unless there is a specific

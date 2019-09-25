@@ -13,6 +13,10 @@ from markupsafe import escape
 from sqlalchemy import desc, false, or_, true
 from sqlalchemy.orm import joinedload
 
+import numpy as np
+import h5py
+from keras.models import model_from_json
+
 from galaxy import (
     exceptions,
     model,
@@ -54,6 +58,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         self.history_manager = histories.HistoryManager(app)
         self.workflow_manager = workflows.WorkflowsManager(app)
         self.workflow_contents_manager = workflows.WorkflowContentsManager(app)
+        self.tool_recommendation_model_path = None
+        self.admin_tool_recommendations_path = None
 
     def __get_full_shed_url(self, url):
         for name, shed_url in self.app.tool_shed_registry.tool_sheds.items():
@@ -602,6 +608,165 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'config_form'       : module.get_config_form(),
             'post_job_actions'  : module.get_post_job_actions(inputs)
         }
+
+    @expose_api
+    def get_tool_predictions(self, trans, topk=20, to_show=20, max_seq_len=25, set_admin_recommendations=False, payload={}):
+        """
+        POST /api/workflows/get_tool_predictions
+        Fetch predicted tools for a workflow
+        """
+        tool_sequence = payload.get('tool_sequence', "")
+        if 'tool_sequence' not in payload or trans.app.config.tool_recommendation_model_path is None:
+            return
+        self.enable_admin_tool_recommendations = trans.app.config.enable_admin_tool_recommendations
+        # collect tool recommendations if set by admin
+        if not self.admin_tool_recommendations_path:
+            if self.enable_admin_tool_recommendations is True or self.enable_admin_tool_recommendations == "true":
+                self.admin_tool_recommendations_path = os.path.join(os.getcwd(), trans.app.config.admin_tool_recommendations_path)
+                with open(self.admin_tool_recommendations_path) as admin_recommendations:
+                    self.admin_recommendations_list = json.loads(admin_recommendations.read())
+        # get model
+        if not self.tool_recommendation_model_path:
+            self.tool_recommendation_model_path = os.path.join(os.getcwd(), trans.app.config.tool_recommendation_model_path)
+            self.all_tools = dict()
+            # collect ids and names of all the installed tools
+            for tool_id, tool in trans.app.toolbox.tools():
+                t_id_renamed = tool_id
+                if t_id_renamed.find("/") > -1:
+                    t_id_renamed = t_id_renamed.split("/")[-2]
+                self.all_tools[t_id_renamed] = (tool_id, tool.name)
+            self.trained_model = h5py.File(self.tool_recommendation_model_path, 'r')
+            self.model_config = json.loads(self.trained_model.get('model_config').value)
+            self.loaded_model = model_from_json(self.model_config)
+            self.model_data_dictionary = json.loads(self.trained_model.get('data_dictionary').value)
+            self.compatible_tools = json.loads(self.trained_model.get('compatible_tools').value)
+            self.tool_weights = json.loads(self.trained_model.get('class_weights').value)
+            self.tool_weights_sorted = dict()
+            tool_pos_sorted = [int(key) for key in self.tool_weights.keys()]
+            for k in tool_pos_sorted:
+                self.tool_weights_sorted[k] = self.tool_weights[str(k)]
+            self.reverse_dictionary = dict((v, k) for k, v in self.model_data_dictionary.items())
+        model_weights = list()
+        weight_ctr = 0
+        while True:
+            try:
+                d_key = "weight_" + str(weight_ctr)
+                weights = self.trained_model.get(d_key).value
+                model_weights.append(weights)
+                weight_ctr += 1
+            except Exception as exception:
+                break
+        # set the model weights
+        self.loaded_model.set_weights(model_weights)
+        tool_sequence = tool_sequence.split(",")
+        tool_sequence = list(reversed(tool_sequence))
+        recommended_tools = self.__compute_tool_prediction(trans, tool_sequence, topk, to_show, max_seq_len)
+
+        return {
+            "current_tool": tool_sequence,
+            "predicted_data": recommended_tools
+        }
+
+    #
+    # -- Helper methods --
+    #
+
+    def __get_tool_extensions(self, trans, tool_id):
+        payload = {'type': 'tool', 'tool_id': tool_id, '_': 'true'}
+        inputs = payload.get('inputs', {})
+        trans.workflow_building_mode = workflow_building_modes.ENABLED
+        module = module_factory.from_dict(trans, payload)
+        if 'tool_state' not in payload:
+            module_state = {}
+            populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
+            module.recover_state(module_state)
+        inputs = module.get_all_inputs(connectable_only=True)
+        outputs = module.get_all_outputs()
+        input_extensions = list()
+        output_extensions = list()
+        for i_ext in inputs:
+            input_extensions.extend(i_ext['extensions'])
+        for o_ext in outputs:
+            output_extensions.extend(o_ext['extensions'])
+        return input_extensions, output_extensions
+
+    def __compute_tool_prediction(self, trans, tool_sequence, topk, to_show, max_seq_len):
+        prediction_data = dict()
+        prediction_data["name"] = ",".join(tool_sequence)
+        prediction_data["children"] = list()
+        try:
+            sample = np.zeros(max_seq_len)
+            last_tool_name = tool_sequence[-1]
+            # if the last tool of a sequence is not present in the model, raise exception
+            if last_tool_name not in self.model_data_dictionary:
+                raise Exception
+            # get the list of datatype extensions
+            _, last_output_extensions = self.__get_tool_extensions(trans, self.all_tools[last_tool_name][0])
+            prediction_data["o_extensions"] = list(set(last_output_extensions))
+            for idx, tool_name in enumerate(tool_sequence):
+                if tool_name.find("/") > -1:
+                    tool_name = tool_name.split("/")[-2]
+                sample[idx] = int(self.model_data_dictionary[tool_name])
+            sample = np.reshape(sample, (1, max_seq_len))
+
+            # predict next tools for a test path
+            prediction = self.loaded_model.predict(sample, verbose=0)
+            prediction = np.reshape(prediction, (prediction.shape[1],))
+
+            # normalize the predicted scores with max and sort the predictions
+            max_prediction = float(np.max(prediction))
+            if max_prediction == 0.0:
+                max_prediction = 1.0
+            prediction = prediction / max_prediction
+            prediction_pos = np.argsort(prediction, axis=-1)
+
+            # get topk prediction
+            topk_prediction_pos = prediction_pos[-topk:]
+            last_compatible_tools = self.compatible_tools[last_tool_name].split(",")
+
+            # read tool names using reverse dictionary
+            pred_tool_ids = [self.reverse_dictionary[int(tool_pos)] for tool_pos in topk_prediction_pos]
+            predicted_scores = [int(prediction[pos] * 100) for pos in topk_prediction_pos]
+
+            pred_tool_ids = list()
+            for tool_pos in topk_prediction_pos:
+                tool_name = self.reverse_dictionary[int(tool_pos)]
+                pred_tool_ids.append(tool_name)
+
+            pred_tool_ids_rev = list(reversed(pred_tool_ids))
+            predicted_scores_rev = list(reversed(predicted_scores))
+
+            # get the predicted tools
+            for child, score in zip(pred_tool_ids_rev, predicted_scores_rev):
+                c_dict = dict()
+                for t_id in self.all_tools:
+                    # select the name and tool id if it is installed in Galaxy
+                    if t_id == child and score > 0.0 and child in last_compatible_tools:
+                        full_tool_id = self.all_tools[t_id][0]
+                        pred_input_extensions, _ = self.__get_tool_extensions(trans, full_tool_id)
+                        c_dict["name"] = self.all_tools[t_id][1] + " (" + str(score) + "%)"
+                        c_dict["tool_id"] = full_tool_id
+                        c_dict["i_extensions"] = list(set(pred_input_extensions))
+                        prediction_data["children"].append(c_dict)
+                        break
+
+            # show only a few
+            prediction_data["children"] = prediction_data["children"][:to_show - 1]
+            # get a list of recommended tools set by the admin
+            if self.enable_admin_tool_recommendations is True or self.enable_admin_tool_recommendations == "true":
+                for item in self.admin_recommendations_list["tools"]:
+                    if last_tool_name == item["tool_id"]:
+                        prediction_data["children"].extend(item["recommendations"])
+                        break
+
+            # get the root name for displaying after tool run
+            for t_id in self.all_tools:
+                if t_id == last_tool_name:
+                    prediction_data["name"] = self.all_tools[t_id][1]
+                    break
+            return prediction_data
+        except Exception as exp:
+            return prediction_data
 
     #
     # -- Helper methods --
