@@ -35,9 +35,20 @@ class ContainerizedIntegrationTestCase(integration_util.IntegrationTestCase):
 
     @classmethod
     def setUpClass(cls):
-        if not which(cls.container_type):
-            raise unittest.SkipTest("Executable '%s' not found on PATH" % cls.container_type)
+        skip_if_container_type_unavailable(cls)
         super(ContainerizedIntegrationTestCase, cls).setUpClass()
+
+
+def disable_dependency_resolution(config):
+    # Disable tool dependency resolution.
+    config["tool_dependency_dir"] = "none"
+    config["conda_auto_init"] = False
+    config["conda_auto_install"] = False
+
+
+def skip_if_container_type_unavailable(cls):
+    if not which(cls.container_type):
+        raise unittest.SkipTest("Executable '%s' not found on PATH" % cls.container_type)
 
 
 class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, RunsEnvironmentJobs, MulledJobTestCases):
@@ -53,15 +64,11 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
-        # Disable tool dependency resolution.
-        config["tool_dependency_dir"] = "none"
-        config["conda_auto_init"] = False
-        config["conda_auto_install"] = False
+        disable_dependency_resolution(config)
 
     @classmethod
     def setUpClass(cls):
-        if not which(cls.container_type):
-            raise unittest.SkipTest("Executable '%s' not found on PATH" % cls.container_type)
+        skip_if_container_type_unavailable(cls)
         super(DockerizedJobsIntegrationTestCase, cls).setUpClass()
 
     def setUp(self):
@@ -109,6 +116,10 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         assert any([True for d in response if d['dependency_type'] == self.container_type])
 
 
+# Singularity 2.4 in the official Vagrant issue has some problems running this test
+# case by default because subdirectories of /tmp don't bind correctly. Overridding
+# TMPDIR can fix this.
+# TMPDIR=/home/vagrant/tmp/ pytest test/integration/test_containerized_jobs.py::SingularityJobsIntegrationTestCase
 class SingularityJobsIntegrationTestCase(DockerizedJobsIntegrationTestCase):
 
     job_config_file = SINGULARITY_JOB_CONFIG_FILE

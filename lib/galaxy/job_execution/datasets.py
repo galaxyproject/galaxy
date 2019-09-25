@@ -23,12 +23,18 @@ class DatasetPath(object):
         real_path,
         false_path=None,
         false_extra_files_path=None,
-        mutable=True
+        false_metadata_path=None,
+        mutable=True,
+        dataset_uuid=None,
+        object_store_id=None,
     ):
         self.dataset_id = dataset_id
+        self.dataset_uuid = dataset_uuid
+        self.object_store_id = object_store_id
         self.real_path = real_path
         self.false_path = false_path
         self.false_extra_files_path = false_extra_files_path
+        self.false_metadata_path = false_metadata_path
         self.mutable = mutable
 
     def __str__(self):
@@ -37,7 +43,7 @@ class DatasetPath(object):
         else:
             return self.false_path
 
-    def with_path_for_job(self, false_path, false_extra_files_path=None):
+    def with_path_for_job(self, false_path, false_extra_files_path=None, false_metadata_path=None):
         """
         Clone the dataset path but with a new false_path.
         """
@@ -48,6 +54,7 @@ class DatasetPath(object):
                 real_path=self.real_path,
                 false_path=false_path,
                 false_extra_files_path=false_extra_files_path,
+                false_metadata_path=false_metadata_path,
                 mutable=self.mutable,
             )
         return dataset_path
@@ -82,14 +89,18 @@ class OutputsToWorkingDirectoryPathRewriter(object):
     is responsible for copying these out after job is complete.
     """
 
-    def __init__(self, working_directory):
+    def __init__(self, working_directory, outputs_directory_name):
         self.working_directory = working_directory
+        self.outputs_directory_name = outputs_directory_name
 
     def rewrite_dataset_path(self, dataset, dataset_type):
         """ Keep path the same.
         """
         if dataset_type == 'output':
-            false_path = os.path.abspath(os.path.join(self.working_directory, "galaxy_dataset_%d.dat" % dataset.id))
+            base_output_directory = os.path.abspath(self.working_directory)
+            if self.outputs_directory_name is not None:
+                base_output_directory = os.path.join(base_output_directory, self.outputs_directory_name)
+            false_path = os.path.join(base_output_directory, "galaxy_dataset_%d.dat" % dataset.id)
             return false_path
         else:
             return None
