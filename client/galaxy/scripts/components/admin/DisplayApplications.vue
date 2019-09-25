@@ -21,7 +21,7 @@
             :fields="applicationsAttributes"
             :items="applications"
         >
-            <template slot="reload" slot-scope="data">
+            <template v-slot:cell(reload)="data">
                 <b-button
                     size="sm"
                     title="Reload display application"
@@ -31,7 +31,7 @@
                     <span class="fa fa-refresh" />
                 </b-button>
             </template>
-            <template slot="links" slot-scope="data">
+            <template v-slot:cell(links)="data">
                 <li v-for="link in data.item.links" :key="link.name">{{ link.name }}</li>
             </template>
         </b-table>
@@ -58,15 +58,15 @@ export default {
     },
     computed: {
         applicationsIndex: function() {
-            let result = {};
-            for (let app of this.applications) {
+            const result = {};
+            for (const app of this.applications) {
                 result[app.id] = app;
             }
             return result;
         },
         applicationsAll: function() {
-            let result = [];
-            for (let app of this.applications) {
+            const result = [];
+            for (const app of this.applications) {
                 result.push(app.id);
             }
             return result;
@@ -99,8 +99,8 @@ export default {
             this._reload([id]);
         },
         reloadAll: function() {
-            let ids = [];
-            for (let app of this.applications) {
+            const ids = [];
+            for (const app of this.applications) {
                 ids.push(app.id);
             }
             this._reload(ids);
@@ -119,15 +119,15 @@ export default {
                 });
         },
         _highlightRows: function(appList, status) {
-            for (let appIndex of appList) {
-                let app = this.applicationsIndex[appIndex];
+            for (const appIndex of appList) {
+                const app = this.applicationsIndex[appIndex];
                 if (app) {
                     app._rowVariant = status;
                 }
             }
         },
         _errorMessage: function(e) {
-            let message = e && e.response && e.response.data && e.response.data.err_msg;
+            const message = e && e.response && e.response.data && e.response.data.err_msg;
             this.messageText = message || "Request failed for an unknown reason.";
             this.messageVariant = "danger";
         }

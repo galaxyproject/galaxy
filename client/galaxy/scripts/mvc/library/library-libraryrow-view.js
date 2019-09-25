@@ -32,7 +32,7 @@ var LibraryRowView = Backbone.View.extend({
 
     render: function(library) {
         if (typeof library === "undefined") {
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
             console.log(library);
         }
@@ -122,7 +122,7 @@ var LibraryRowView = Backbone.View.extend({
     },
 
     save_library_modification: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
         var is_changed = false;
 
@@ -174,7 +174,7 @@ var LibraryRowView = Backbone.View.extend({
     },
 
     delete_library: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
         var row_view = this;
         // mark the library deleted
@@ -204,7 +204,7 @@ var LibraryRowView = Backbone.View.extend({
     },
 
     undelete_library: function() {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
         var row_view = this;
 
@@ -232,52 +232,96 @@ var LibraryRowView = Backbone.View.extend({
 
     templateRow: function() {
         return _.template(
-            [
-                '<tr class="<% if(library.get("deleted") === true) { print("active") } %>" style="display:none;" data-id="<%- library.get("id") %>">',
-                "<% if(!edit_mode) { %>",
-                '<% if(library.get("deleted")) { %>',
-                '<td style="color:grey;"><%- library.get("name") %></td>',
-                "<% } else { %>",
-                '<td><a href="#folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a></td>',
-                "<% } %>",
-                '<% if(library.get("description")) { %>',
-                '<% if( (library.get("description")).length> 80 ) { %>',
-                '<td data-toggle="tooltip" data-placement="bottom" title="<%= _.escape(library.get("description")) %>"><%= _.escape(library.get("description")).substring(0, 80) + "..." %></td>',
-                "<% } else { %>",
-                '<td><%= _.escape(library.get("description"))%></td>',
-                "<% } %>",
-                "<% } else { %>",
-                "<td></td>",
-                "<% } %>",
-                '<% if(library.get("synopsis")) { %>',
-                '<% if( (library.get("synopsis")).length> 120 ) { %>',
-                '<td data-toggle="tooltip" data-placement="bottom" title="<%= _.escape(library.get("synopsis")) %>"><%= _.escape(library.get("synopsis")).substring(0, 120) + "..." %></td>',
-                "<% } else { %>",
-                '<td><%= _.escape(library.get("synopsis"))%></td>',
-                "<% } %>",
-                "<% } else { %>",
-                "<td></td>",
-                "<% } %>",
-                "<% } else if(edit_mode){ %>",
-                '<td><textarea rows="4" class="form-control input_library_name" placeholder="name" ><%- library.get("name") %></textarea></td>',
-                '<td><textarea rows="4" class="form-control input_library_description" placeholder="description" ><%- library.get("description") %></textarea></td>',
-                '<td><textarea rows="4" class="form-control input_library_synopsis" placeholder="synopsis" ><%- library.get("synopsis") %></textarea></td>',
-                "<% } %>",
-                '<td class="right-center">',
-                '<% if( (library.get("public")) && (library.get("deleted") === false) ) { %>',
-                '<span data-toggle="tooltip" data-placement="left" title="Unrestricted library" style="color:grey;" class="fa fa-globe fa-lg"> </span>',
-                "<% }%>",
-                '<button data-toggle="tooltip" data-placement="left" title="Modify \'<%- library.get("name") %>\'" class="btn btn-sm edit_library_btn" type="button" style="<% if(button_config.edit_library_btn === false) { print("display:none;") } %>"><span class="fa fa-pencil"></span> Edit</button>',
-                '<a data-toggle="tooltip" data-placement="left" title="Permissions of \'<%- library.get("name") %>\'" href="#library/<%- library.get("id") %>/permissions"><button class="btn btn-sm permission_library_btn" type="button" style="<% if(button_config.permission_library_btn === false) { print("display:none;") } %>"><span class="fa fa-group"></span> Manage</button></a>',
-                '<button data-toggle="tooltip" data-placement="left" title="Save changes" class="btn btn-sm save_library_btn" type="button" style="<% if(button_config.save_library_btn === false) { print("display:none;") } %>"><span class="fa fa-floppy-o"></span> Save</button>',
-                '<button data-toggle="tooltip" data-placement="left" title="Discard changes" class="btn btn-sm cancel_library_btn" type="button" style="<% if(button_config.cancel_library_btn === false) { print("display:none;") } %>"><span class="fa fa-times"></span> Cancel</button>',
-                '<button data-toggle="tooltip" data-placement="left" title="Delete \'<%- library.get("name") %>\'" class="btn btn-sm delete_library_btn" type="button" style="<% if(button_config.delete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-trash-o"></span> Delete</button>',
-                // For deleted libraries
-                '<span data-toggle="tooltip" data-placement="left" title="Marked deleted" style="color:grey; <% if(button_config.undelete_library_btn === false) { print("display:none;") } %>" class="fa fa-ban fa-lg"></span>',
-                '<button data-toggle="tooltip" data-placement="left" title="Undelete \'<%- library.get("name") %>\' " class="btn btn-sm undelete_library_btn" type="button" style="<% if(button_config.undelete_library_btn === false) { print("display:none;") } %>"><span class="fa fa-unlock"></span> Undelete</button>',
-                "</td>",
-                "</tr>"
-            ].join("")
+            `<tr class="<% if(library.get("deleted") === true) { print("active") } %>"
+                style="display:none;" data-id="<%- library.get("id") %>">
+                <% if(!edit_mode) { %>
+                    <% if(library.get("deleted")) { %>
+                        <td style="color:grey;"><%- library.get("name") %></td>
+                    <% } else { %>
+                        <td>
+                            <a href="#folders/<%- library.get("root_folder_id") %>"><%- library.get("name") %></a>
+                        </td>
+                    <% } %>
+                    <% if(library.get("description")) { %>
+                        <% if( (library.get("description")).length> 80 ) { %>
+                            <td data-toggle="tooltip" data-placement="bottom"
+                                title="<%= _.escape(library.get("description")) %>">
+                                <%= _.escape(library.get("description")).substring(0, 80) + "..." %>
+                            </td>
+                        <% } else { %>
+                            <td><%= _.escape(library.get("description"))%></td>
+                        <% } %>
+                    <% } else { %>
+                        <td></td>
+                    <% } %>
+                    <% if(library.get("synopsis")) { %>
+                        <% if( (library.get("synopsis")).length> 120 ) { %>
+                            <td data-toggle="tooltip" data-placement="bottom"
+                                title="<%= _.escape(library.get("synopsis")) %>">
+                                <%= _.escape(library.get("synopsis")).substring(0, 120) + "..." %>
+                            </td>
+                        <% } else { %>
+                            <td><%= _.escape(library.get("synopsis"))%></td>
+                        <% } %>
+                    <% } else { %>
+                        <td></td>
+                    <% } %>
+                <% } else if(edit_mode){ %>
+                    <td>
+                        <textarea rows="4" class="form-control input_library_name" placeholder="name" ><%- library.get("name") %></textarea>
+                    </td>
+                    <td>
+                        <textarea rows="4" class="form-control input_library_description" placeholder="description"><%- library.get("description") %></textarea>
+                    </td>
+                    <td>
+                        <textarea rows="4" class="form-control input_library_synopsis" placeholder="synopsis"><%- library.get("synopsis") %></textarea>
+                    </td>
+                <% } %>
+                <td class="right-center">
+                    <% if( (library.get("public")) && (library.get("deleted") === false) ) { %>
+                        <span data-toggle="tooltip" data-placement="left" title="Unrestricted library"
+                            class="fa fa-globe fa-lg"></span>
+                    <% }%>
+                    <button data-toggle="tooltip" data-placement="left" title="Modify '<%- library.get("name") %>'"
+                        class="btn btn-secondary btn-sm edit_library_btn" type="button"
+                        style="<% if(button_config.edit_library_btn === false) { print("display:none;") } %>">
+                        <span class="fa fa-pencil"></span> Edit
+                    </button>
+                    <a data-toggle="tooltip" data-placement="left"
+                        title="Permissions of '<%- library.get("name") %>'"
+                        href="#library/<%- library.get("id") %>/permissions">
+                        <button class="btn btn-secondary btn-sm permission_library_btn" type="button"
+                            style="<% if(button_config.permission_library_btn === false) { print("display:none;") } %>">
+                            <span class="fa fa-group"></span> Manage
+                        </button>
+                    </a>
+                    <button data-toggle="tooltip" data-placement="left" title="Save changes"
+                        class="btn btn-secondary btn-sm save_library_btn" type="button"
+                        style="<% if(button_config.save_library_btn === false) { print("display:none;") } %>">
+                        <span class="fa fa-floppy-o"></span> Save
+                    </button>
+                    <button data-toggle="tooltip" data-placement="left" title="Discard changes"
+                        class="btn btn-secondary btn-sm cancel_library_btn" type="button"
+                        style="<% if(button_config.cancel_library_btn === false) { print("display:none;") } %>">
+                        <span class="fa fa-times"></span> Cancel
+                    </button>
+                    <button data-toggle="tooltip" data-placement="left" title="Delete '<%- library.get("name") %>'"
+                        class="btn btn-secondary btn-sm delete_library_btn" type="button"
+                        style="<% if(button_config.delete_library_btn === false) { print("display:none;") } %>">
+                        <span class="fa fa-trash-o"></span> Delete
+                    </button>
+                    <!-- For deleted libraries -->
+                    <span data-toggle="tooltip" data-placement="left" title="Marked deleted"
+                        style="color:grey; <% if(button_config.undelete_library_btn === false) { print("display:none;") } %>"
+                        class="fa fa-ban fa-lg">
+                    </span>
+                    <button data-toggle="tooltip" data-placement="left" title="Undelete '<%- library.get("name") %>' "
+                        class="btn btn-secondary btn-sm undelete_library_btn" type="button"
+                        style="<% if(button_config.undelete_library_btn === false) { print("display:none;") } %>">
+                        <span class="fa fa-unlock"></span> Undelete
+                    </button>
+                </td>
+            </tr>`
         );
     }
 });

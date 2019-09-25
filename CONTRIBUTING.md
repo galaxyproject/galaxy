@@ -112,5 +112,5 @@ If no existing Galaxy issue seems appropriate, a new issue can be opened using
   this repository - please checkout the
   [tools-iuc](https://github.com/galaxyproject/tools-iuc) repository on GitHub.
 
-  More information about tool development can be found [on the comunity
+  More information about tool development can be found [on the community
   hub](https://galaxyproject.org/develop).

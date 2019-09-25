@@ -23,12 +23,12 @@ const queue = new BehaviorSubject([]);
 export const initializations$ = queue.pipe(filter(list => list.length > 0));
 
 export const addInitialization = (...fns) => {
-    let nextInits = [...queue.getValue(), ...fns];
+    const nextInits = [...queue.getValue(), ...fns];
     queue.next(nextInits);
 };
 
 export const prependInitialization = (...fns) => {
-    let nextInits = [...fns, ...queue.getValue()];
+    const nextInits = [...fns, ...queue.getValue()];
     queue.next(nextInits);
 };
 

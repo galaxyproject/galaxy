@@ -122,15 +122,14 @@ class CustosAuthnz(IdentityProvider):
             trans.sa_session.flush()
             return True, "", disconnect_redirect_url
         except Exception as e:
-            return False, "Failed to disconnect provider {}: {}".format(provider, str(e)), None
+            return False, "Failed to disconnect provider {}: {}".format(provider, util.unicodify(e)), None
 
     def _create_oauth2_session(self, state=None, scope=None):
         client_id = self.config['client_id']
         redirect_uri = self.config['redirect_uri']
         if (redirect_uri.startswith('http://localhost')
                 and os.environ.get("OAUTHLIB_INSECURE_TRANSPORT", None) != "1"):
-            log.warn("Setting OAUTHLIB_INSECURE_TRANSPORT to '1' to "
-                     "allow plain HTTP (non-SSL) callback")
+            log.warning("Setting OAUTHLIB_INSECURE_TRANSPORT to '1' to allow plain HTTP (non-SSL) callback")
             os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = "1"
         session = OAuth2Session(client_id,
                              scope=scope,
@@ -188,7 +187,10 @@ class CustosAuthnz(IdentityProvider):
     def _get_well_known_uri_for_provider_and_realm(self, provider, realm):
         # TODO: Look up this URL from a Python library
         if provider == 'custos':
-            return "{}/realms/{}/.well-known/openid-configuration".format(self.config["url"], realm)
+            base_url = self.config["url"]
+            # Remove potential trailing slash to avoid "//realms"
+            base_url = base_url if base_url[-1] != "/" else base_url[:-1]
+            return "{}/realms/{}/.well-known/openid-configuration".format(base_url, realm)
         else:
             raise Exception("Unknown Custos provider name: {}".format(provider))
 

@@ -12,12 +12,13 @@ import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
 import Webhooks from "mvc/webhooks";
 import Citations from "components/Citations.vue";
+import xrefs from "components/xrefs.vue";
 import Vue from "vue";
 import axios from "axios";
 
 export default FormBase.extend({
     initialize: function(options) {
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         var self = this;
         this.deferred = new Deferred();
         FormBase.prototype.initialize.call(this, options);
@@ -26,7 +27,7 @@ export default FormBase.extend({
         this._update(this.model.get("initialmodel"));
 
         // listen to history panel
-        if (this.model.get("listen_to_history") && Galaxy && Galaxy.currHistoryPanel) {
+        if (this.model.get("listen_to_history") && Galaxy.currHistoryPanel) {
             this.listenTo(Galaxy.currHistoryPanel.collection, "change", () => {
                 self.model.get("onchange")();
             });
@@ -60,7 +61,7 @@ export default FormBase.extend({
         this.$el.off().hide();
         this.deferred.execute(() => {
             FormBase.prototype.remove.call(self);
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             Galaxy.emit.debug("tool-form-base::_destroy()", "Destroy view.");
         });
     },
@@ -75,15 +76,9 @@ export default FormBase.extend({
                 `<b>${options.name}</b> ${options.description} (Galaxy Version ${options.version})`,
             operations: !options.hide_operations && this._operations(),
             onchange: function() {
-                let Galaxy = getGalaxyInstance();
                 self.deferred.reset();
                 self.deferred.execute(process => {
                     self.model.get("postchange")(process, self);
-                    if (self.model.get("listen_to_history")) {
-                        process.then(() => {
-                            self.stopListening(Galaxy.currHistoryPanel.collection);
-                        });
-                    }
                 });
             }
         });
@@ -114,10 +109,10 @@ export default FormBase.extend({
     _operations: function() {
         var self = this;
         var options = this.model.attributes;
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
 
         // Buttons for adding and removing favorite.
-        let in_favorites = Galaxy.user.getFavorites().tools.indexOf(options.id) >= 0;
+        const in_favorites = Galaxy.user.getFavorites().tools.indexOf(options.id) >= 0;
         var favorite_button = new Ui.Button({
             icon: "fa-star-o",
             title: options.narrow ? null : "Favorite",
@@ -279,6 +274,17 @@ export default FormBase.extend({
             var vm = document.createElement("div");
             $el.append(vm);
             new citationInstance({
+                propsData: {
+                    id: options.id,
+                    source: "tools"
+                }
+            }).$mount(vm);
+        }
+        if (options.xrefs && options.xrefs.length) {
+            var xrefInstance = Vue.extend(xrefs);
+            vm = document.createElement("div");
+            $el.append(vm);
+            new xrefInstance({
                 propsData: {
                     id: options.id,
                     source: "tools"

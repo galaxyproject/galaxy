@@ -1,0 +1,41 @@
+<tool id="interactive_tool_neo4j" tool_type="interactive" name="Neo4j (Graph Database)" version="0.1">
+    <requirements>
+        <container type="docker">quay.io/sanbi-sa/neo_ie:3.1.9</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Neo4j on $infile.display_name" requires_domain="True">
+            <port>80</port>
+        </entry_point>
+        <!-- I get some web-socket error that 7687 is not reachable. 
+            but docker does not expose 7687?
+        -->
+    </entry_points>
+    <environment_variables>
+        <environment_variable name="USER_GID">2345</environment_variable>
+        <environment_variable name="USER_UID">2345</environment_variable>
+        <environment_variable name="MONITOR_TRAFFIC">false</environment_variable>
+    </environment_variables>
+    <command><![CDATA[
+        ##export USER_UID=2345 &&
+        ##export USER_GID=2345 &&
+        ##export MONITOR_TRAFFIC=false &&
+        mkdir -p /data/neo4jdb &&
+        unzip '$infile' -d /data/neo4jdb &&
+        ls -l /data/neo4jdb &&
+        sed -i.bak 's@/monitor_traffic.*@@g' /docker-entrypoint.sh &&
+        cd /opt/neo4j &&
+        bash /docker-entrypoint.sh neo4j
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="zip" label="Neo4J data store"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="txt" />
+    </outputs>
+    <tests>
+    </tests>
+    <help>
+        Neo4j is a highly scalable, robust native graph database.
+    </help>
+</tool>

@@ -7,29 +7,36 @@ from datetime import datetime, timedelta
 
 from markupsafe import escape
 from six.moves.urllib.parse import unquote
-from sqlalchemy import or_
+from sqlalchemy import (
+    func,
+    or_
+)
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
     util,
     web
 )
+from galaxy.exceptions import Conflict
 from galaxy.managers import users
 from galaxy.queue_worker import send_local_control_task
 from galaxy.security.validate_user_input import (
     validate_email,
-    validate_password,
     validate_publicname
 )
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.web import url_for
-from galaxy.web.base.controller import (
+from galaxy.webapps.base.controller import (
     BaseUIController,
     CreatesApiKeysMixin,
     UsesFormDefinitionsMixin
 )
 
 log = logging.getLogger(__name__)
+
+
+def _filtered_registration_params_dict(payload):
+    return {k: v for (k, v) in payload.items() if k in ['email', 'username', 'password', 'confirm', 'subscribe']}
 
 
 class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
@@ -74,40 +81,41 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 trans.log_event("Assigning role to newly created user")
                 trans.app.security_agent.associate_user_role(user, role)
 
-    def __autoregistration(self, trans, login, password, status, kwd, no_password_check=False, cntrller=None):
+    def __autoregistration(self, trans, login, password):
         """
         Does the autoregistration if enabled. Returns a message
         """
-        autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password, no_password_check=no_password_check)
+        try:
+            autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password)
+        except Conflict as conflict:
+            return "Auto-registration failed, {}".format(conflict), None
         user = None
-        success = False
         if autoreg["auto_reg"]:
-            kwd["email"] = autoreg["email"]
-            kwd["username"] = autoreg["username"]
-            message = " ".join([validate_email(trans, kwd["email"], allow_empty=True),
-                                validate_publicname(trans, kwd["username"])]).rstrip()
+            email = autoreg["email"]
+            username = autoreg["username"]
+            message = " ".join([validate_email(trans, email, allow_empty=True),
+                                validate_publicname(trans, username)]).rstrip()
             if not message:
-                message, status, user, success = self.__register(trans, **kwd)
-                if success:
-                    # The handle_user_login() method has a call to the history_set_default_permissions() method
-                    # (needed when logging in with a history), user needs to have default permissions set before logging in
-                    if not trans.user_is_admin:
-                        trans.handle_user_login(user)
-                        trans.log_event("User (auto) created a new account")
-                        trans.log_event("User logged in")
-                    if "attributes" in autoreg and "roles" in autoreg["attributes"]:
-                        self.__handle_role_and_group_auto_creation(
-                            trans, user, autoreg["attributes"]["roles"],
-                            auto_create_groups=autoreg["auto_create_groups"],
-                            auto_create_roles=autoreg["auto_create_roles"],
-                            auto_assign_roles_to_groups_only=autoreg["auto_assign_roles_to_groups_only"])
-                else:
-                    message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+                user = self.user_manager.create(email=email, username=username, password="")
+                if trans.app.config.user_activation_on:
+                    self.user_manager.send_activation_email(trans, email, username)
+                # The handle_user_login() method has a call to the history_set_default_permissions() method
+                # (needed when logging in with a history), user needs to have default permissions set before logging in
+                if not trans.user_is_admin:
+                    trans.handle_user_login(user)
+                    trans.log_event("User (auto) created a new account")
+                    trans.log_event("User logged in")
+                if "attributes" in autoreg and "roles" in autoreg["attributes"]:
+                    self.__handle_role_and_group_auto_creation(
+                        trans, user, autoreg["attributes"]["roles"],
+                        auto_create_groups=autoreg["auto_create_groups"],
+                        auto_create_roles=autoreg["auto_create_roles"],
+                        auto_assign_roles_to_groups_only=autoreg["auto_assign_roles_to_groups_only"])
             else:
                 message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
         else:
             message = "No such user or invalid password."
-        return message, status, user, success
+        return message, user
 
     @expose_api_anonymous_and_sessionless
     def login(self, trans, payload={}, **kwd):
@@ -127,13 +135,13 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if not login or not password:
             return self.message_exception(trans, "Please specify a username and password.")
         user = trans.sa_session.query(trans.app.model.User).filter(or_(
-            trans.app.model.User.table.c.email == login,
+            func.lower(trans.app.model.User.table.c.email) == login.lower(),
             trans.app.model.User.table.c.username == login
         )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if user is None:
-            message, status, user, success = self.__autoregistration(trans, login, password, status, kwd)
-            if not success:
+            message, user = self.__autoregistration(trans, login, password)
+            if message:
                 return self.message_exception(trans, message)
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
@@ -177,7 +185,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         Exposed function for use outside of the class. E.g. when user click on the resend link in the masthead.
         """
         message, status = self.resend_activation_email(trans, None, None)
-        if status == 'done':
+        if status:
             return trans.show_ok_message(message)
         else:
             return trans.show_error_message(message)
@@ -192,14 +200,12 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             username = trans.user.username
         is_activation_sent = self.user_manager.send_activation_email(trans, email, username)
         if is_activation_sent:
-            message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder.<br><a target="_top" href="%s">Return to the home page</a>.' % (escape(email), url_for('/'))
-            status = 'error'
+            message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder. <a target="_top" href="%s">Return to the home page</a>.' % (escape(email), url_for('/'))
         else:
-            message = 'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator.<br><a target="_top" href="%s">Return to the home page</a>.' % url_for('/')
-            status = 'error'
+            message = 'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator. <a target="_top" href="%s">Return to the home page</a>.' % url_for('/')
             if trans.app.config.error_email_to is not None:
-                message += '<br>Error contact: %s' % trans.app.config.error_email_to
-        return message, status
+                message += ' Error contact: %s.' % trans.app.config.error_email_to
+        return message, is_activation_sent
 
     def is_outside_grace_period(self, trans, create_time):
         """
@@ -233,7 +239,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         message = trans.check_csrf_token(payload)
         if message:
             return self.message_exception(trans, message)
-        user, message = self.user_manager.register(trans, **payload)
+        user, message = self.user_manager.register(trans, **_filtered_registration_params_dict(payload))
         if message:
             return self.message_exception(trans, message, sanitize=False)
         elif user and not trans.user_is_admin:
@@ -302,12 +308,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if message:
             return self.message_exception(trans, message)
         return {"message": "Reset link has been sent to your email."}
-
-    def __validate(self, trans, email, password, confirm, username):
-        message = "\n".join([validate_email(trans, email),
-                             validate_password(trans, password, confirm),
-                             validate_publicname(trans, username)]).rstrip()
-        return message
 
     def __get_redirect_url(self, redirect):
         if not redirect or redirect == "None":

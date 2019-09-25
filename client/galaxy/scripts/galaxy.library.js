@@ -110,7 +110,7 @@ var GalaxyLibrary = Backbone.View.extend({
 
     initialize: function() {
         // This should go upstream in the js app once available
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (Galaxy.config.ga_code) {
             ((i, s, o, g, r, a, m) => {
                 i["GoogleAnalyticsObject"] = r;

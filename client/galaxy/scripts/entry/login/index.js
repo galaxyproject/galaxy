@@ -7,10 +7,10 @@ import Vue from "vue";
 export function initLoginView(Galaxy, { options }) {
     console.log("initLoginView");
     Galaxy.page = new Page.View(options);
-    var vm = document.createElement("div");
+    const vm = document.createElement("div");
     Galaxy.display(vm);
-    var component = Galaxy.params.token || Galaxy.params.expired_user ? Password : Index;
-    var loginInstance = Vue.extend(component);
+    const component = Galaxy.params.token || Galaxy.params.expired_user ? Password : Index;
+    const loginInstance = Vue.extend(component);
     new loginInstance({ propsData: options }).$mount(vm);
 }
 

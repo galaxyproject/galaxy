@@ -4,6 +4,7 @@ $headers
 
 _galaxy_setup_environment() {
     local _use_framework_galaxy="$1"
+    _GALAXY_JOB_DIR="$working_directory"
     _GALAXY_JOB_HOME_DIR="$working_directory/home"
     _GALAXY_JOB_TMP_DIR=$tmp_dir_creation_statement
     $env_setup_commands

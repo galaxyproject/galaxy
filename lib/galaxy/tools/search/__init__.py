@@ -6,7 +6,6 @@ import logging
 import re
 import tempfile
 
-from bleach import clean
 from whoosh import analysis
 from whoosh.analysis import StandardAnalyzer
 from whoosh.fields import (
@@ -104,15 +103,15 @@ class ToolBoxSearch(object):
             add_doc_kwds['stub'] = to_unicode(id)
         if tool.labels:
             add_doc_kwds['labels'] = to_unicode(" ".join(tool.labels))
-        if index_help and tool.help:
-            try:
-                raw_html = tool.help.render(host_url="", static_path="")
-                cleantext = clean(raw_html, tags=[''], strip=True).replace('\n', ' ')
-                add_doc_kwds['help'] = to_unicode(cleantext)
-            except Exception:
-                # Don't fail to build index just because a help message
-                # won't render.
-                pass
+        if index_help:
+            raw_help = tool.raw_help
+            if raw_help:
+                try:
+                    add_doc_kwds['help'] = to_unicode(raw_help)
+                except Exception:
+                    # Don't fail to build index just because a help message
+                    # won't render.
+                    pass
         return add_doc_kwds
 
     def search(self, q, tool_name_boost, tool_section_boost, tool_description_boost, tool_label_boost, tool_stub_boost, tool_help_boost, tool_search_limit, tool_enable_ngram_search, tool_ngram_minsize, tool_ngram_maxsize):

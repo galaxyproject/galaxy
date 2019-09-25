@@ -1,12 +1,6 @@
 """
 This migration script adds the tables necessary to support tagging of histories,
 datasets, and history-dataset associations (user views of datasets).
-
-If using mysql, this script will display the following error, which is corrected in the next
-migration script:
-history_dataset_association_tag_association table failed:  (OperationalError)
-(1059, "Identifier name 'ix_history_dataset_association_tag_association_history_dataset_association_id'
-is too long)
 """
 from __future__ import print_function
 

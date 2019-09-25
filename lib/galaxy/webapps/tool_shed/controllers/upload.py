@@ -11,7 +11,7 @@ from galaxy import (
     web
 )
 from galaxy.util import checkers
-from galaxy.web.base.controller import BaseUIController
+from galaxy.webapps.base.controller import BaseUIController
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
@@ -75,7 +75,7 @@ class UploadController(BaseUIController):
                     stream = requests.get(url, stream=True)
                 except Exception as e:
                     valid_url = False
-                    message = 'Error uploading file via http: %s' % str(e)
+                    message = 'Error uploading file via http: %s' % util.unicodify(e)
                     status = 'error'
                     uploaded_file = None
                 if valid_url:

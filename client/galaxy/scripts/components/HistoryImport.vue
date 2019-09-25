@@ -36,7 +36,7 @@ export default {
             if (!this.sourceFile && !this.sourceURL) {
                 this.errorMessage = "You must provide a history archive URL or file.";
             } else {
-                let formData = new FormData();
+                const formData = new FormData();
                 formData.append("archive_file", this.sourceFile);
                 formData.append("archive_source", this.sourceURL);
                 axios
@@ -47,7 +47,7 @@ export default {
                         }&status=success`;
                     })
                     .catch(error => {
-                        let message = error.response.data && error.response.data.err_msg;
+                        const message = error.response.data && error.response.data.err_msg;
                         this.errorMessage = message || "Import failed for an unknown reason.";
                     });
             }

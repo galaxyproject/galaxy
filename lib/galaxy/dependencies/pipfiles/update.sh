@@ -1,4 +1,5 @@
 #!/bin/sh
+set -e
 
 usage() {
 cat << EOF
@@ -43,7 +44,7 @@ export PIPENV_IGNORE_VIRTUALENVS=1
 for env in $ENVS; do
     cd "$THIS_DIRECTORY/$env"
     if [ "$docker" -eq 1 ]; then
-        docker run -v `pwd`:/working -t 'galaxy/update-python-dependencies'
+        docker run -v "$(pwd):/working" -t 'galaxy/update-python-dependencies'
     else
         pipenv lock -v
         pipenv lock -r > pinned-requirements.txt
@@ -64,12 +65,16 @@ for env in $ENVS; do
                 -e "s/^futures==\([^ ;]\{1,\}\).*$/futures==\1 ; python_version == '2.6' or python_version == '2.7'/" \
                 -e "s/^monotonic==\([^ ;]\{1,\}\).*$/monotonic==\1/" \
                 -e "s/^more-itertools==\([^ ;]\{1,\}\).*$/more-itertools==\1/" \
+                -e "s/^paste==\([^ ;]\{1,\}\).*$/paste==\1/" \
                 -e "s/^py2-ipaddress==\([^ ;]\{1,\}\).*$/py2-ipaddress==\1 ; python_version < '3'/" \
                 -e "s/^pyinotify==\([^ ;]\{1,\}\).*$/pyinotify==\1 ; sys_platform != 'win32' and sys_platform != 'darwin' and sys_platform != 'sunos5'/" \
                 -e "s/^python-dateutil==\([^ ;]\{1,\}\).*$/python-dateutil==\1/" \
                 -e "s/^subprocess32==\([^ ;]\{1,\}\).*$/subprocess32==\1 ; python_version < '3.0'/" \
                 -e "s/^typing==\([^ ;]\{1,\}\).*$/typing==\1 ; python_version < '3.5'/" \
                 pinned-requirements.txt pinned-dev-requirements.txt
+    if ! grep '==' pinned-dev-requirements.txt ; then
+        rm -f pinned-dev-requirements.txt
+    fi
 done
 
 if [ "$commit" -eq 1 ]; then

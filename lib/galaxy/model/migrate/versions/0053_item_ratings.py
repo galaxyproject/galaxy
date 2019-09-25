@@ -5,15 +5,24 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, ForeignKey, Index, Integer, MetaData, Table
+from sqlalchemy import (
+    Column,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Table
+)
 
-from galaxy.model.migrate.versions.util import create_table, drop_table
+from galaxy.model.migrate.versions.util import (
+    add_index,
+    create_table,
+    drop_table
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 # Rating tables.
-
 HistoryRatingAssociation_table = Table("history_rating_association", metadata,
                                        Column("id", Integer, primary_key=True),
                                        Column("history_id", Integer, ForeignKey("history.id"), index=True),
@@ -59,11 +68,7 @@ def upgrade(migrate_engine):
         # MySQL cannot handle long index names; when we see this error, create the index name manually.
         if migrate_engine.name == 'mysql' and \
                 str(e).lower().find("identifier name 'ix_history_dataset_association_rating_association_history_dataset_association_id' is too long"):
-            i = Index("ix_hda_rating_association_hda_id", HistoryDatasetAssociationRatingAssociation_table.c.history_dataset_association_id)
-            try:
-                i.create()
-            except Exception:
-                log.exception("Adding index 'ix_hda_rating_association_hda_id' to table 'history_dataset_association_rating_association' table failed.")
+            add_index('ix_hda_rating_association_hda_id', HistoryDatasetAssociationRatingAssociation_table, 'history_dataset_association_id')
         else:
             log.exception("Creating history_dataset_association_rating_association table failed.")
 

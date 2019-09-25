@@ -9,6 +9,7 @@ from datetime import timedelta
 
 from six.moves import configparser
 
+from galaxy.config import BaseAppConfiguration
 from galaxy.util import string_as_bool
 from galaxy.version import VERSION, VERSION_MAJOR
 from galaxy.web.formatting import expand_pretty_datetime_format
@@ -27,14 +28,17 @@ class ConfigurationError(Exception):
     pass
 
 
-class Configuration(object):
+class ToolShedAppConfiguration(BaseAppConfiguration):
+    default_config_file_name = 'tool_shed.yml'
 
     def __init__(self, **kwargs):
         self.config_dict = kwargs
         self.root = kwargs.get('root_dir', '.')
 
+        self._set_config_base(kwargs)
+
         # Resolve paths of other config files
-        self.__parse_config_file_options(kwargs)
+        self.parse_config_file_options(kwargs)
 
         # Collect the umask and primary gid from the environment
         self.umask = os.umask(0o77)  # get the current umask
@@ -43,8 +47,9 @@ class Configuration(object):
         self.version_major = VERSION_MAJOR
         self.version = VERSION
         # Database related configuration
-        self.database = resolve_path(kwargs.get("database_file", "database/community.sqlite"), self.root)
         self.database_connection = kwargs.get("database_connection", False)
+        self.database_connection = kwargs.get("database_connection",
+                                              "sqlite:///%s?isolation_level=IMMEDIATE" % resolve_path("community.sqlite", self.data_dir))
         self.database_engine_options = get_database_engine_options(kwargs)
         self.database_create_tables = string_as_bool(kwargs.get("database_create_tables", "True"))
         # Repository and Tool search API
@@ -66,7 +71,7 @@ class Configuration(object):
         # Where dataset files are stored
         self.file_path = resolve_path(kwargs.get("file_path", "database/community_files"), self.root)
         self.new_file_path = resolve_path(kwargs.get("new_file_path", "database/tmp"), self.root)
-        self.cookie_path = kwargs.get("cookie_path", "/")
+        self.cookie_path = kwargs.get("cookie_path", None)
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', False))
         self.id_secret = kwargs.get("id_secret", "changethisinproductiontoo")
         # Tool stuff
@@ -168,29 +173,19 @@ class Configuration(object):
         else:
             return None
 
-    def __parse_config_file_options(self, kwargs):
-        path_list_defaults = dict(
-            auth_config_file=['config/auth_conf.xml', 'config/auth_conf.xml.sample'],
-            datatypes_config_file=['config/datatypes_conf.xml', 'datatypes_conf.xml', 'config/datatypes_conf.xml.sample'],
-            shed_tool_data_table_config=['shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml'],
+    def parse_config_file_options(self, kwargs):
+        defaults = dict(
+            auth_config_file=[self._in_config_dir('config/auth_conf.xml')],
+            datatypes_config_file=[self._in_config_dir('datatypes_conf.xml'), self._in_sample_dir('datatypes_conf.xml.sample')],
+            shed_tool_data_table_config=[self._in_mutable_config_dir('shed_tool_data_table_conf.xml')],
         )
 
-        for var, defaults in path_list_defaults.items():
-            if kwargs.get(var, None) is not None:
-                path = kwargs.get(var)
-            else:
-                for default in defaults:
-                    if os.path.exists(resolve_path(default, self.root)):
-                        path = default
-                        break
-                else:
-                    path = defaults[-1]
-            setattr(self, var, resolve_path(path, self.root))
+        self._parse_config_file_options(defaults, dict(), kwargs)
 
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file
 
-    def get(self, key, default):
+    def get(self, key, default=None):
         return self.config_dict.get(key, default)
 
     def get_bool(self, key, default):
@@ -227,6 +222,9 @@ class Configuration(object):
         """
         admin_users = self.get("admin_users", "").split(",")
         return user is not None and user.email in admin_users
+
+
+Configuration = ToolShedAppConfiguration
 
 
 def get_database_engine_options(kwargs):

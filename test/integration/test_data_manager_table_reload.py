@@ -2,7 +2,7 @@ import random
 import string
 
 from base import integration_util
-from base.populators import DatasetPopulator
+from base.populators import DatasetPopulator, skip_if_toolshed_down
 from nose.plugins.skip import SkipTest
 
 from .uses_shed import CONDA_AUTO_INSTALL_JOB_TIMEOUT, UsesShed
@@ -25,6 +25,7 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
     """Test data manager installation and table reload through the API"""
 
     framework_tool_and_types = True
+    use_shared_connection_for_amqp = True
 
     def setUp(self):
         super(DataManagerIntegrationTestCase, self).setUp()
@@ -42,6 +43,7 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase, UsesS
         cls.username = cls.get_secure_ascii_digits()
         config["admin_users"] = "%s@galaxy.org" % cls.username
 
+    @skip_if_toolshed_down
     def test_data_manager_installation_table_reload(self):
         """
         Test that we can install data managers, create a new dbkey, and use that dbkey in a downstream data manager.

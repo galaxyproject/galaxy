@@ -11,8 +11,8 @@ from collections import defaultdict
 
 import galaxy.datatypes.registry
 import galaxy.model
+from galaxy.tool_util.parser import get_tool_source
 from galaxy.tools import create_tool_from_source
-from galaxy.tools.parser import get_tool_source
 from galaxy.util.bunch import Bunch
 from .unittest_utils import galaxy_mock
 

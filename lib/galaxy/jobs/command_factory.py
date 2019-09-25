@@ -103,6 +103,10 @@ def build_command(
         # xref https://github.com/galaxyproject/galaxy/issues/3289
         commands_builder.prepend_command("rm -rf working; mkdir -p working; cd working")
 
+    container_monitor_command = job_wrapper.container_monitor_command(container)
+    if container_monitor_command:
+        commands_builder.prepend_command(container_monitor_command)
+
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 
@@ -140,10 +144,21 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         tool_commands
     )
     write_script(local_container_script, script_contents, config)
-    commands = local_container_script
-    if 'working_directory' in remote_command_params:
-        commands = "%s %s" % (shell, join(remote_command_params['working_directory'], script_name))
-    commands += " > ../tool_stdout 2> ../tool_stderr"
+    commands = "%s %s" % (shell, local_container_script)
+    # TODO: Cleanup for_pulsar hack.
+    # - Integrate Pulsar sending tool_stdout/tool_stderr back
+    #   https://github.com/galaxyproject/pulsar/pull/202
+    # *and*
+    # - Get Galaxy to write these files to an output directory so the container itself
+    #   doesn't need to mount the job directory (rw) and then eliminate this hack
+    #   (or restrict to older Pulsar versions).
+    #   https://github.com/galaxyproject/galaxy/pull/8449
+    for_pulsar = False
+    if 'script_directory' in remote_command_params:
+        commands = "%s %s" % (shell, join(remote_command_params['script_directory'], script_name))
+        for_pulsar = True
+    if not for_pulsar:
+        commands += " > ../tool_stdout 2> ../tool_stderr"
     log.info("Built script [%s] for tool command [%s]" % (local_container_script, tool_commands))
     return commands
 
@@ -204,6 +219,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         datatypes_config=datatypes_config,
         compute_tmp_dir=compute_tmp_dir,
         resolve_metadata_dependencies=resolve_metadata_dependencies,
+        use_bin=job_wrapper.use_metadata_binary,
         kwds={'overwrite': False}
     ) or ''
     metadata_command = metadata_command.strip()

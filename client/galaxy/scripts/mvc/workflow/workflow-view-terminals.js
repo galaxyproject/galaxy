@@ -143,11 +143,11 @@ var BaseInputTerminalView = TerminalView.extend({
         }
     },
     onHover: function() {
-        let element = this.el;
-        let terminal = element.terminal;
+        const element = this.el;
+        const terminal = element.terminal;
         // If connected, create a popup to allow disconnection
         if (terminal.connectors.length > 0) {
-            let t = $("<div/>")
+            const t = $("<div/>")
                 .addClass("delete-terminal")
                 .click(() => {
                     $.each(terminal.connectors, (_, x) => {
@@ -289,11 +289,11 @@ var OutputTerminalView = BaseOutputTerminalView.extend({
     terminalMappingViewClass: TerminalMappingView,
     terminalForOutput: function(output) {
         var type = output.extensions;
-        var terminal = new Terminals.OutputTerminal({
+        return new Terminals.OutputTerminal({
             element: this.el,
-            datatypes: type
+            datatypes: type,
+            force_datatype: output.force_datatype
         });
-        return terminal;
     }
 });
 
@@ -303,13 +303,13 @@ var OutputCollectionTerminalView = BaseOutputTerminalView.extend({
     terminalForOutput: function(output) {
         var collection_type = output.collection_type;
         var collection_type_source = output.collection_type_source;
-        var terminal = new Terminals.OutputCollectionTerminal({
+        return new Terminals.OutputCollectionTerminal({
             element: this.el,
             collection_type: collection_type,
             collection_type_source: collection_type_source,
-            datatypes: output.extensions
+            datatypes: output.extensions,
+            force_datatype: output.force_datatype
         });
-        return terminal;
     }
 });
 
@@ -317,11 +317,10 @@ var OutputParameterTerminalView = BaseOutputTerminalView.extend({
     terminalMappingClass: Terminals.TerminalMapping,
     terminalMappingViewClass: TerminalMappingView,
     terminalForOutput: function(output) {
-        var terminal = new Terminals.OutputCollectionTerminal({
+        return new Terminals.OutputCollectionTerminal({
             element: this.el,
             type: output.type
         });
-        return terminal;
     }
 });
 

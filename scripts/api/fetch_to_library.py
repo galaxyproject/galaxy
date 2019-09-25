@@ -13,7 +13,7 @@ def main():
                         help='file describing data library to fetch')
     args = parser.parse_args()
     with open(args.target, "r") as f:
-        target = yaml.load(f)
+        target = yaml.safe_load(f)
 
     histories_url = args.url + "/api/histories"
     new_history_response = requests.post(histories_url, data={'key': args.api_key})

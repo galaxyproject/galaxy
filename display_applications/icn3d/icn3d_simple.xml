@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<display id="icn3d_simple" version="1.0.0" name="view in iCn3D at">
+    <dynamic_links from_data_table="icn3d_simple_display" skip_startswith="#" id="value" name="name">
+        <url>${ url % {  'icn3d_file_type': $icn3d_file.ext, 'icn3d_file_url_qp': $icn3d_file.qp } }</url>
+        <param type="data" name="icn3d_file" url="galaxy_${DATASET_HASH}.${dataset.ext}" allow_cors="true" />
+    </dynamic_links>
+</display>

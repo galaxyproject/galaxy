@@ -5,8 +5,22 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import (Column, DateTime, ForeignKey, Integer, MetaData,
-                        String, Table, Text, UniqueConstraint)
+from sqlalchemy import (
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    Text,
+    UniqueConstraint
+)
+
+from galaxy.model.migrate.versions.util import (
+    create_table,
+    drop_table
+)
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -32,17 +46,11 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    try:
-        CustosAuthnzToken_table.create()
-    except Exception:
-        log.exception("Failed to create custos_authnz_token table")
+    create_table(CustosAuthnzToken_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    try:
-        CustosAuthnzToken_table.drop()
-    except Exception:
-        log.exception("Failed to drop custos_authnz_token table")
+    drop_table(CustosAuthnzToken_table)

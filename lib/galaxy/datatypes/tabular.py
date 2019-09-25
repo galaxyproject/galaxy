@@ -4,6 +4,7 @@ Tabular datatype
 from __future__ import absolute_import
 
 import abc
+import binascii
 import csv
 import logging
 import os
@@ -12,10 +13,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from cgi import escape
 from json import dumps
 
 import pysam
+from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import binary, data, metadata
@@ -23,7 +24,8 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     get_headers,
-    iter_headers
+    iter_headers,
+    validate_tabular,
 )
 from galaxy.util import compression_utils
 from . import dataproviders
@@ -128,7 +130,7 @@ class TabularData(data.Text):
             out.append('</table>')
             out = "".join(out)
         except Exception as exc:
-            out = "Can't create peek %s" % str(exc)
+            out = "Can't create peek: %s" % util.unicodify(exc)
         return out
 
     def make_html_peek_header(self, dataset, skipchars=None, column_names=None, column_number_format='%s', column_parameter_alias=None, **kwargs):
@@ -174,7 +176,7 @@ class TabularData(data.Text):
             out.append('</tr>')
         except Exception as exc:
             log.exception('make_html_peek_header failed on HDA %s', dataset.id)
-            raise Exception("Can't create peek header %s" % str(exc))
+            raise Exception("Can't create peek header: %s" % util.unicodify(exc))
         return "".join(out)
 
     def make_html_peek_rows(self, dataset, skipchars=None, **kwargs):
@@ -205,7 +207,7 @@ class TabularData(data.Text):
                         out.append('</tr>')
         except Exception as exc:
             log.exception('make_html_peek_rows failed on HDA %s', dataset.id)
-            raise Exception("Can't create peek rows %s" % str(exc))
+            raise Exception("Can't create peek rows: %s" % util.unicodify(exc))
         return "".join(out)
 
     def display_peek(self, dataset):
@@ -691,11 +693,11 @@ class BaseVcf(Tabular):
     MetadataElement(name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, optional=True, multiple=True, visible=False)
     MetadataElement(name="sample_names", default=[], desc="Sample names", readonly=True, visible=False, optional=True, no_value=[])
 
-    def sniff_prefix(self, file_prefix):
+    def _sniff(self, fname_or_file_prefix):
         # Because this sniffer is run on compressed files that might be BGZF (due to the VcfGz subclass), we should
         # handle unicode decode errors. This should ultimately be done in get_headers(), but guess_ext() currently
         # relies on get_headers() raising this exception.
-        headers = get_headers(file_prefix, '\n', count=1)
+        headers = get_headers(fname_or_file_prefix, '\n', count=1)
         return headers[0][0].startswith("##fileformat=VCF")
 
     def display_peek(self, dataset):
@@ -729,6 +731,13 @@ class BaseVcf(Tabular):
         if exit_code != 0:
             raise Exception("Error merging VCF files: %s" % stderr)
 
+    def validate(self, dataset, **kwd):
+        def validate_row(row):
+            if len(row) < 8:
+                raise Exception("Not enough columns in row %s" % row.join("\t"))
+        validate_tabular(dataset.file_name, sep='\t', validate_row=validate_row, comment_designator="#")
+        return data.DatatypeValidation.validated()
+
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory('genomic-region',
                                                    dataproviders.dataset.GenomicRegionDataProvider.settings)
@@ -745,13 +754,28 @@ class BaseVcf(Tabular):
 class Vcf(BaseVcf):
     file_ext = 'vcf'
 
+    def sniff_prefix(self, file_prefix):
+        return self._sniff(file_prefix)
+
 
 class VcfGz(BaseVcf, binary.Binary):
+    # This class name is a misnomer, should be VcfBgzip
     file_ext = 'vcf_bgzip'
     compressed = True
     compressed_format = "gzip"
 
     MetadataElement(name="tabix_index", desc="Vcf Index File", param=metadata.FileParameter, file_ext="tbi", readonly=True, no_value=None, visible=False, optional=True)
+
+    def sniff(self, filename):
+        if not self._sniff(filename):
+            return False
+        # Check that the file is compressed with bgzip (not gzip), i.e. the
+        # compressed format is BGZF, as explained in
+        # http://samtools.github.io/hts-specs/SAMv1.pdf
+        with open(filename, 'rb') as fh:
+            fh.seek(-28, 2)
+            last28 = fh.read()
+            return binascii.hexlify(last28) == b'1f8b08040000000000ff0600424302001b0003000000000000000000'
 
     def set_meta(self, dataset, **kwd):
         super(BaseVcf, self).set_meta(dataset, **kwd)
@@ -764,7 +788,7 @@ class VcfGz(BaseVcf, binary.Binary):
         try:
             pysam.tabix_index(dataset.file_name, index=index_file.file_name, preset='vcf', force=True)
         except Exception as e:
-            raise Exception('Error setting VCF.gz metadata: %s' % (str(e)))
+            raise Exception('Error setting VCF.gz metadata: %s' % (util.unicodify(e)))
         dataset.metadata.tabix_index = index_file
 
 

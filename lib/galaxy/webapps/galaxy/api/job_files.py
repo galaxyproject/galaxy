@@ -11,10 +11,10 @@ from galaxy import (
     util
 )
 from galaxy.web import (
-    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
-    _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
+    expose_api_anonymous_and_sessionless,
+    expose_api_raw_anonymous_and_sessionless,
 )
-from galaxy.web.base.controller import BaseAPIController
+from galaxy.webapps.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
@@ -99,6 +99,8 @@ class JobFilesAPIController(BaseAPIController):
         else:
             input_file = payload.get("file",
                                      payload.get("__file", None)).file
+        target_dir = os.path.dirname(path)
+        util.safe_makedirs(target_dir)
         try:
             shutil.move(input_file.name, path)
         finally:

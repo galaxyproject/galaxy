@@ -23,7 +23,7 @@ from gxformat2 import (
 from pkg_resources import resource_string
 from six import StringIO
 
-from galaxy.tools.verify.test_data import TestDataResolver
+from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util import unicodify
 from . import api_asserts
 
@@ -106,6 +106,30 @@ def skip_without_datatype(extension):
     return method_wrapper
 
 
+def skip_if_site_down(url):
+
+    def site_down():
+        try:
+            response = requests.get(url)
+            return response.status_code != 200
+        except Exception:
+            return False
+
+    def method_wrapper(method):
+        @wraps(method)
+        def wrapped_method(api_test_case, *args, **kwargs):
+            _raise_skip_if(site_down(), "Test depends on [%s] being up and it appears to be down." % url)
+            method(api_test_case, *args, **kwargs)
+
+        return wrapped_method
+
+    return method_wrapper
+
+
+skip_if_toolshed_down = skip_if_site_down("https://toolshed.g2.bx.psu.edu")
+skip_if_github_down = skip_if_site_down("https://github.com/")
+
+
 def summarize_instance_history_on_error(method):
     @wraps(method)
     def wrapped_method(api_test_case, *args, **kwds):
@@ -134,10 +158,10 @@ def uses_test_history(**test_history_kwd):
     return method_wrapper
 
 
-def _raise_skip_if(check):
+def _raise_skip_if(check, *args):
     if check:
         from nose.plugins.skip import SkipTest
-        raise SkipTest()
+        raise SkipTest(*args)
 
 
 # Deprecated mixin, use dataset populator instead.
@@ -514,6 +538,28 @@ class BaseDatasetPopulator(object):
         assert update_response.status_code == 200, update_response.content
         return update_response.json()
 
+    def validate_dataset(self, history_id, dataset_id):
+        url = "histories/%s/contents/%s/validate" % (history_id, dataset_id)
+        update_response = self.galaxy_interactor._put(url, {})
+        assert update_response.status_code == 200, update_response.content
+        return update_response.json()
+
+    def validate_dataset_and_wait(self, history_id, dataset_id):
+        self.validate_dataset(history_id, dataset_id)
+
+        def validated():
+            metadata = self.get_history_dataset_details(history_id, dataset_id=dataset_id)
+            validated_state = metadata['validated_state']
+            if validated_state == 'unknown':
+                return
+            else:
+                return validated_state
+
+        return wait_on(
+            validated,
+            "dataset validation"
+        )
+
     def export_url(self, history_id, data, check_download=True):
         url = "histories/%s/exports" % history_id
         put_response = self._put(url, data)
@@ -728,6 +774,24 @@ class BaseWorkflowPopulator(object):
         url = "workflows/%s/usage/%s" % (workflow_id, invocation_id)
         return wait_on_state(lambda: self._get(url), desc="workflow invocation state", timeout=timeout)
 
+    def history_invocations(self, history_id):
+        history_invocations_response = self._get("invocations", {"history_id": history_id})
+        api_asserts.assert_status_code_is(history_invocations_response, 200)
+        return history_invocations_response.json()
+
+    def wait_for_history_workflows(self, history_id, assert_ok=True, timeout=DEFAULT_TIMEOUT, expected_invocation_count=None):
+        if expected_invocation_count is not None:
+            def invocation_count():
+                invocations = self.history_invocations(history_id)
+                if len(invocations) == expected_invocation_count:
+                    return True
+
+            wait_on(invocation_count, "%s history invocations" % expected_invocation_count)
+        for invocation in self.history_invocations(history_id):
+            workflow_id = invocation["workflow_id"]
+            invocation_id = invocation["id"]
+            self.wait_for_workflow(workflow_id, invocation_id, history_id, timeout=timeout, assert_ok=assert_ok)
+
     def wait_for_workflow(self, workflow_id, invocation_id, history_id, assert_ok=True, timeout=DEFAULT_TIMEOUT):
         """ Wait for a workflow invocation to completely schedule and then history
         to be complete. """
@@ -757,6 +821,11 @@ class BaseWorkflowPopulator(object):
             return invocation_id
         else:
             return invocation_response
+
+    def workflow_report_json(self, workflow_id, invocation_id):
+        response = self._get("workflows/%s/invocations/%s/report" % (workflow_id, invocation_id))
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
 
     def download_workflow(self, workflow_id, style=None):
         params = {}
@@ -1292,11 +1361,13 @@ class DatasetCollectionPopulator(BaseDatasetCollectionPopulator):
 
 def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_populator):
 
-    def read_test_data(test_dict):
+    def open_test_data(test_dict, mode="rb"):
         test_data_resolver = TestDataResolver()
         filename = test_data_resolver.get_filename(test_dict["value"])
-        content = open(filename, "r").read()
-        return content
+        return open(filename, mode)
+
+    def read_test_data(test_dict):
+        return open_test_data(test_dict, mode="r").read()
 
     inputs = {}
     label_map = {}
@@ -1342,7 +1413,7 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
         elif is_dict and "type" in value:
             input_type = value["type"]
             if input_type == "File":
-                content = read_test_data(value)
+                content = open_test_data(value)
                 new_dataset_kwds = {
                     "content": content
                 }
@@ -1370,7 +1441,7 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
 def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "new", "ready"], assert_ok=False, timeout=DEFAULT_TIMEOUT):
     def get_state():
         response = state_func()
-        assert response.status_code == 200, "Failed to fetch state update while waiting."
+        assert response.status_code == 200, "Failed to fetch state update while waiting. [%s]" % response.content
         state = response.json()["state"]
         if state in skip_states:
             return None

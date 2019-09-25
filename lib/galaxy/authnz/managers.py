@@ -17,6 +17,8 @@ from cloudauthz.exceptions import (
 
 from galaxy import exceptions
 from galaxy import model
+from galaxy.util import string_as_bool
+from galaxy.util import unicodify
 from .custos_authnz import CustosAuthnz
 from .psa_authnz import (
     BACKENDS_NAME,
@@ -40,6 +42,7 @@ class AuthnzManager(object):
         :param config: sets the path for OIDC configuration
             file (e.g., oidc_backends_config.xml).
         """
+        self.app = app
         self._parse_oidc_config(oidc_config_file)
         self._parse_oidc_backends_config(oidc_backends_config_file)
 
@@ -61,7 +64,10 @@ class AuthnzManager(object):
                               " found these attributes: `{}`; skipping this node.".format(child.attrib))
                     continue
                 try:
-                    func = getattr(importlib.import_module('__builtin__'), child.get('Type'))
+                    if child.get('Type') == "bool":
+                        func = string_as_bool
+                    else:
+                        func = getattr(importlib.import_module('__builtin__'), child.get('Type'))
                 except AttributeError:
                     log.error("The value of attribute `Type`, `{}`, is not a valid built-in type;"
                               " skipping this node").format(child.get('Type'))
@@ -93,9 +99,11 @@ class AuthnzManager(object):
                 if idp in BACKENDS_NAME:
                     self.oidc_backends_config[idp] = self._parse_idp_config(child)
                     self.oidc_backends_implementation[idp] = 'psa'
+                    self.app.config.oidc.append(idp)
                 elif idp == 'custos':
                     self.oidc_backends_config[idp] = self._parse_custos_config(child)
                     self.oidc_backends_implementation[idp] = 'custos'
+                    self.app.config.oidc.append(idp)
             if len(self.oidc_backends_config) == 0:
                 raise ParseError("No valid provider configuration parsed.")
         except ImportError:
@@ -130,7 +138,7 @@ class AuthnzManager(object):
     def _unify_provider_name(self, provider):
         if provider.lower() in self.oidc_backends_config:
             return provider.lower()
-        for k, v in BACKENDS_NAME.iteritems():
+        for k, v in BACKENDS_NAME.items():
             if v == provider:
                 return k.lower()
         return None
@@ -144,7 +152,7 @@ class AuthnzManager(object):
                 return True, "", identity_provider_class(unified_provider_name, self.oidc_config, self.oidc_backends_config[unified_provider_name])
             except Exception as e:
                 log.exception('An error occurred when loading {}'.format(identity_provider_class.__name__))
-                return False, str(e), None
+                return False, unicodify(e), None
         else:
             msg = 'The requested identity provider, `{}`, is not a recognized/expected provider.'.format(provider)
             log.debug(msg)
@@ -190,7 +198,7 @@ class AuthnzManager(object):
         if qres.user_id != trans.user.id:
             msg = "The request authentication with ID `{}` is not accessible to user with ID " \
                   "`{}`.".format(trans.security.encode_id(authn_id), trans.security.encode_id(trans.user.id))
-            log.warn(msg)
+            log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
 
     @staticmethod
@@ -217,7 +225,7 @@ class AuthnzManager(object):
         if user_id != qres.user_id:
             msg = "The request authorization configuration (with ID:`{}`) is not accessible for user with " \
                   "ID:`{}`.".format(qres.id, user_id)
-            log.warn(msg)
+            log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
         return qres
 
@@ -300,10 +308,14 @@ class AuthnzManager(object):
             ca = CloudAuthz()
             log.info("Requesting credentials using CloudAuthz with config id `{}` on be half of user `{}`.".format(
                 cloudauthz.id, user_id))
-            return ca.authorize(cloudauthz.provider, config)
+            credentials = ca.authorize(cloudauthz.provider, config)
+            return credentials
         except CloudAuthzBaseException as e:
             log.info(e)
             raise exceptions.AuthenticationFailed(e)
+        except NotImplementedError as e:
+            log.info(e)
+            raise exceptions.RequestParameterInvalidException(e)
 
     def get_cloud_access_credentials_in_file(self, new_file_path, cloudauthz, sa_session, user_id, request=None):
         """

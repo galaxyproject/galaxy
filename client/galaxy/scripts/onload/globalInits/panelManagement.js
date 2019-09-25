@@ -8,7 +8,7 @@ export function panelManagement(panelConfig) {
     console.log("panelManagement");
     console.log("(looks like it's assinging some global handlers to window to manage the left and right panel views?)");
 
-    let { left_panel, right_panel, rightPanelSelector, leftPanelSelector } = panelConfig;
+    const { left_panel, right_panel, rightPanelSelector, leftPanelSelector } = panelConfig;
 
     if (left_panel) {
         var lp = new window.bundleEntries.panels.LeftPanel({

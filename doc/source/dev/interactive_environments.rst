@@ -33,7 +33,7 @@ should match ``[a-z]+``, like ``jupyter`` or ``rstudio``. Here you can see the
 configuration, ``allowed_images.yml.sample`` specifies acceptable images,
 and then ``{gie}.xml`` which outlines that it is a GIE.
 
-The static directory can hold resources such as javascript and css files. If
+The static directory can hold resources such as JavaScript and CSS files. If
 you are actively developing a GIE, you'll need to restart Galaxy after adding
 any resources to that file, before they can be accessed in the browser.
 
@@ -123,14 +123,6 @@ Once this is done, we can set up our INI file, ``config/helloworld.ini.sample`` 
     # container cannot or should not be used.
     #use_volumes = True
 
-    # To run containers in Docker Swarm mode on (an existing swarm), set the
-    # following option to True *and*:
-    # - set docker_connect_port above. For Nginx the # port should most likely be
-    #   80.
-    # - If command_inject is uncommented and includes `--sig-proxy`, that option should
-    #   be removed.
-    #swarm_mode = False
-
 You'll then need to create the GIE plugin YML file ``allowed_images.yml.sample``
 to specify allowed images
 .. code-block::
@@ -205,9 +197,10 @@ We'll continue appending to our ``helloworld.mako`` the HTML code that's actuall
 
     <html>
     <head>
-    <!-- Loads some necessary javascript libraries. Specifically jquery,
-         toastr, and requirejs -->
+    <!-- Loads core Galaxy javascript libraries for a 'generic' entrypoint. -->
     ${ ie.load_default_js() }
+    <!-- This will load code from static/main.js, often used to handle things like login  -->
+    ${ ie.load_default_app() }
     </head>
     <body>
 
@@ -217,18 +210,11 @@ We'll continue appending to our ``helloworld.mako`` the HTML code that's actuall
     var notebook_login_url = 'unused';
     var notebook_access_url = '${ notebook_access_url }';
 
-    // Load code with require.js
-    ${ ie.plugin_require_config() }
 
     // Load notebook
-    // This will load code from static/helloworld.js, often used to handle
-    // things like Login. The load_notebook function will eventually append
-    // an IFrame to the <div id="main" /> below.
-    requirejs(['galaxy.interactive_environments', 'plugin/helloworld'], function(IES){
-        window.IES = IES
-        IES.load_when_ready(ie_readiness_url, function(){
-            load_notebook(notebook_access_url);
-        });
+    // The load_notebook function will eventually append an IFrame to the <div id="main" /> below.
+    IES.load_when_ready(ie_readiness_url, function(){
+        load_notebook(notebook_access_url);
     });
     </script>
     <div id="main" width="100%" height="100%">
@@ -262,7 +248,7 @@ authentication of users, so you don't have to worry about it, and can just
 assume that only the correct user will have access to a given notebook.
 
 In the ``static/`` directory, we generally create a ``js/`` directory below that,
-and create a ``{gie}.js`` (so, ``static/js/helloworld.js``) file in there.
+and create a ``main.js`` file in there.
 That file will have a function, ``load_notebook`` which will check if the GIE is available,
 and when it is, display it to the user.
 

@@ -164,7 +164,7 @@ class LibraryActions(object):
                 if os.path.isfile(path):
                     files.append(path)
         except Exception as e:
-            message = "Unable to get file list for configured %s, error: %s" % (import_dir_desc, str(e))
+            message = "Unable to get file list for configured %s, error: %s" % (import_dir_desc, util.unicodify(e))
             response_code = 500
             return None, response_code, message
         if not files:
@@ -249,6 +249,7 @@ class LibraryActions(object):
         uploaded_dataset.to_posix_lines = params.get('to_posix_lines', None)
         uploaded_dataset.space_to_tab = params.get('space_to_tab', None)
         uploaded_dataset.tag_using_filenames = params.get('tag_using_filenames', False)
+        uploaded_dataset.tags = params.get('tags', None)
         uploaded_dataset.purge_source = getattr(trans.app.config, 'ftp_upload_purge', True)
         if in_folder:
             uploaded_dataset.in_folder = in_folder

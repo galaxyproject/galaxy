@@ -15,6 +15,7 @@
     <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true" />
     <datatype extension="fastqcssanger" type="galaxy.datatypes.sequence:FastqCSSanger" display_in_upload="true" />
     <datatype extension="fastqillumina" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true" />
+    <datatype extension="png" type="galaxy.datatypes.images:Png" mimetype="image/png" display_in_upload="true"/>
     <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
         <converter file="sam_to_unsorted_bam.xml" target_datatype="unsorted.bam"/>
         <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>
@@ -42,6 +43,7 @@
     <datatype extension="data_manager_json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
     <datatype extension="binary" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
+    <datatype extension="shp" type="galaxy.datatypes.gis:Shapefile" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true">
     </datatype>
     <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">

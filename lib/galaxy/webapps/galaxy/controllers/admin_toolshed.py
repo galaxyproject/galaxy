@@ -7,7 +7,7 @@ from sqlalchemy import or_
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import util, web
-from galaxy.tools.deps import views
+from galaxy.tool_util.deps import views
 from galaxy.util import unicodify
 from galaxy.web.form_builder import CheckboxField
 from tool_shed.galaxy_install import (
@@ -54,7 +54,7 @@ class AdminToolshed(AdminGalaxy):
             message = 'The <b>%s</b> repository has been activated.' % escape(repository.name)
             status = 'done'
         except Exception as e:
-            error_message = "Error activating repository %s: %s" % (escape(repository.name), str(e))
+            error_message = "Error activating repository %s: %s" % (escape(repository.name), unicodify(e))
             log.exception(error_message)
             message = '%s.<br/>You may be able to resolve this by uninstalling and then reinstalling the repository.  Click <a href="%s">here</a> to uninstall the repository.' \
                 % (error_message, web.url_for(controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id(repository.id)))
@@ -76,7 +76,7 @@ class AdminToolshed(AdminGalaxy):
                                    message=message,
                                    status=status)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_admin
     def browse_repositories(self, trans, **kwd):
         message = kwd.get('message', '')
@@ -158,35 +158,6 @@ class AdminToolshed(AdminGalaxy):
                                    tool_dependency=tool_dependency,
                                    message=message,
                                    status=status)
-
-    @web.expose
-    @web.require_admin
-    def browse_tool_shed(self, trans, **kwd):
-        tool_shed_url = kwd.get('tool_shed_url', '')
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
-        params = dict(galaxy_url=web.url_for('/', qualified=True))
-        url = util.build_url(tool_shed_url, pathspec=['repository', 'browse_valid_categories'], params=params)
-        return trans.response.send_redirect(url)
-
-    @web.expose
-    @web.require_admin
-    def browse_toolsheds(self, trans, **kwd):
-        app = {
-            'jscript': "adminToolshed"
-        }
-        return trans.fill_template('galaxy.panels.mako',
-                                   config={
-                                       'title': 'Galaxy Tool Sheds',
-                                       'app': app,
-                                       'bundle': 'extended'})
-
-    @web.expose
-    @web.require_admin
-    def browse_tool_sheds(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
-        return trans.fill_template('/webapps/galaxy/admin/tool_sheds.mako',
-                                   message=message,
-                                   status='error')
 
     @web.expose
     @web.require_admin
@@ -281,27 +252,44 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def find_tools_in_tool_shed(self, trans, **kwd):
-        tool_shed_url = kwd.get('tool_shed_url', '')
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
-        params = dict(galaxy_url=web.url_for('/', qualified=True))
-        url = util.build_url(tool_shed_url, pathspec=['repository', 'find_tools'], params=params)
-        return trans.response.send_redirect(url)
-
-    @web.expose
-    @web.require_admin
-    def find_workflows_in_tool_shed(self, trans, **kwd):
-        tool_shed_url = kwd.get('tool_shed_url', '')
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
-        params = dict(galaxy_url=web.url_for('/', qualified=True))
-        url = util.build_url(tool_shed_url, pathspec=['repository', 'find_workflows'], params=params)
-        return trans.response.send_redirect(url)
-
-    @web.expose
-    @web.require_admin
     def generate_workflow_image(self, trans, workflow_name, repository_id=None):
         """Return an svg image representation of a workflow dictionary created when the workflow was exported."""
         return workflow_util.generate_workflow_image(trans, workflow_name, repository_metadata_id=None, repository_id=repository_id)
+
+    @web.expose
+    @web.require_admin
+    def view_tool_metadata(self, trans, repository_id, tool_id, **kwd):
+        message = escape(kwd.get('message', ''))
+        status = kwd.get('status', 'done')
+        repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
+        repository_metadata = repository.metadata
+        shed_config_dict = repository.get_shed_config_dict(trans.app)
+        tool_metadata = {}
+        tool_lineage = []
+        tool = None
+        if 'tools' in repository_metadata:
+            for tool_metadata_dict in repository_metadata['tools']:
+                if tool_metadata_dict['id'] == tool_id:
+                    tool_metadata = tool_metadata_dict
+                    tool_config = tool_metadata['tool_config']
+                    if shed_config_dict and shed_config_dict.get('tool_path'):
+                        tool_config = os.path.join(shed_config_dict.get('tool_path'), tool_config)
+                    tool = trans.app.toolbox.get_tool(tool_id=tool_metadata['guid'], exact=True)
+                    if not tool:
+                        tool = trans.app.toolbox.load_tool(os.path.abspath(tool_config), guid=tool_metadata['guid'])
+                        if tool:
+                            tool._lineage = trans.app.toolbox._lineage_map.register(tool)
+                    if tool:
+                        tool_lineage = tool.lineage.get_version_ids(reverse=True)
+                    break
+        return trans.fill_template("/admin/tool_shed_repository/view_tool_metadata.mako",
+                                   repository=repository,
+                                   repository_metadata=repository_metadata,
+                                   tool=tool,
+                                   tool_metadata=tool_metadata,
+                                   tool_lineage=tool_lineage,
+                                   message=message,
+                                   status=status)
 
     @web.json
     @web.require_admin
@@ -524,11 +512,11 @@ class AdminToolshed(AdminGalaxy):
                     (escape(str(repository.name)), updating_to_changeset_revision)
                 self.initiate_tool_dependency_installation(trans, tool_dependencies, message=message, status=status)
         # Handle tool dependencies check box.
-        if trans.app.config.tool_dependency_dir is None:
+        if not trans.app.toolbox.dependency_manager.uses_tool_shed_dependencies:
             if tool_dependencies_dict:
                 message = ("Tool dependencies defined in this repository can be automatically installed if you set "
                            "the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file "
-                           "(galaxy.ini) and restart your Galaxy server.")
+                           "(galaxy.yml) and restart your Galaxy server.")
                 status = "warning"
             install_tool_dependencies_check_box_checked = False
         else:
@@ -577,7 +565,7 @@ class AdminToolshed(AdminGalaxy):
             tsr_ids_for_monitoring = [trans.security.encode_id(tsr.id) for tsr in tool_shed_repositories]
             return json.dumps(tsr_ids_for_monitoring)
         except install_manager.RepositoriesInstalledException as e:
-            return self.message_exception(trans, str(e))
+            return self.message_exception(trans, unicodify(e))
 
     @web.expose
     @web.require_admin
@@ -696,7 +684,7 @@ class AdminToolshed(AdminGalaxy):
                     message = 'No selected tool dependencies can be uninstalled, you may need to use the <b>Repair repository</b> feature.'
                     status = 'error'
             elif operation == "install":
-                if trans.app.config.tool_dependency_dir:
+                if trans.app.toolbox.dependency_manager.uses_tool_shed_dependencies:
                     tool_dependencies_for_installation = []
                     for tool_dependency_id in tool_dependency_ids:
                         tool_dependency = tool_dependency_util.get_tool_dependency(trans.app, tool_dependency_id)
@@ -756,7 +744,7 @@ class AdminToolshed(AdminGalaxy):
                                                                 action='browse_tool_dependency',
                                                                 **kwd))
             elif operation == "install":
-                if trans.app.config.tool_dependency_dir:
+                if trans.app.toolbox.dependency_manager.uses_tool_shed_dependencies:
                     tool_dependencies_for_installation = []
                     for tool_dependency_id in tool_dependency_ids:
                         tool_dependency = tool_dependency_util.get_tool_dependency(trans.app, tool_dependency_id)
@@ -880,7 +868,7 @@ class AdminToolshed(AdminGalaxy):
                     message = 'The updates available for the repository <b>%s</b> ' % escape(str(repository.name))
                     message += 'include newly defined repository or tool dependency definitions, and attempting '
                     message += 'to update the repository resulted in the following error.  Contact the Tool Shed '
-                    message += 'administrator if necessary.<br/>%s' % str(e)
+                    message += 'administrator if necessary.<br/>%s' % unicodify(e)
                     return trans.show_error_message(message)
                 changeset_revisions = updating_to_changeset_revision
             else:
@@ -1048,11 +1036,11 @@ class AdminToolshed(AdminGalaxy):
             # Merge all containers into a single container.
             containers_dict = dd.merge_containers_dicts_for_new_install(containers_dicts)
         # Handle tool dependencies check box.
-        if trans.app.config.tool_dependency_dir is None:
+        if not trans.app.toolbox.dependency_manager.uses_tool_shed_dependencies:
             if includes_tool_dependencies:
                 message = "Tool dependencies defined in this repository can be automatically installed if you set "
                 message += "the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file "
-                message += "(galaxy.ini) and restart your Galaxy server before installing the repository."
+                message += "(galaxy.yml) and restart your Galaxy server before installing the repository."
                 status = "warning"
             install_tool_dependencies_check_box_checked = False
         else:
@@ -1141,6 +1129,8 @@ class AdminToolshed(AdminGalaxy):
         install_repository_dependencies = CheckboxField.is_checked(kwd.get('install_repository_dependencies', ''))
         install_tool_dependencies = CheckboxField.is_checked(kwd.get('install_tool_dependencies', ''))
         install_resolver_dependencies = CheckboxField.is_checked(kwd.get('install_resolver_dependencies', ''))
+        if not suc.have_shed_tool_conf_for_install(trans.app):
+            raise Exception("No valid shed tool configuration file available, please configure one")
         shed_tool_conf, tool_path, relative_install_dir = \
             suc.get_tool_panel_config_tool_path_install_dir(trans.app, tool_shed_repository)
         repository_clone_url = common_util.generate_clone_url_for_installed_repository(trans.app, tool_shed_repository)
@@ -1429,10 +1419,10 @@ class AdminToolshed(AdminGalaxy):
         # Handle repository dependencies check box.
         install_repository_dependencies_check_box = CheckboxField('install_repository_dependencies', value=True)
         # Handle tool dependencies check box.
-        if trans.app.config.tool_dependency_dir is None:
+        if not trans.app.toolbox.dependency_manager.uses_tool_shed_dependencies:
             if includes_tool_dependencies:
                 message += "Tool dependencies defined in this repository can be automatically installed if you set the value of your <b>tool_dependency_dir</b> "
-                message += "setting in your Galaxy config file (galaxy.ini) and restart your Galaxy server before installing the repository.  "
+                message += "setting in your Galaxy config file (galaxy.yml) and restart your Galaxy server before installing the repository.  "
                 status = "warning"
             install_tool_dependencies_check_box_checked = False
         else:
@@ -1624,7 +1614,8 @@ class AdminToolshed(AdminGalaxy):
                                                               tool_shed=tool_shed_url,
                                                               name=name,
                                                               owner=owner,
-                                                              changeset_revision=changeset_revision)
+                                                              changeset_revision=changeset_revision,
+                                                              refresh=True)
         original_metadata_dict = repository.metadata
         original_repository_dependencies_dict = original_metadata_dict.get('repository_dependencies', {})
         original_repository_dependencies = original_repository_dependencies_dict.get('repository_dependencies', [])
@@ -1775,41 +1766,6 @@ class AdminToolshed(AdminGalaxy):
                                                         id=trans.security.encode_id(repository.id),
                                                         message=message,
                                                         status=status))
-
-    @web.expose
-    @web.require_admin
-    def view_tool_metadata(self, trans, repository_id, tool_id, **kwd):
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
-        repository_metadata = repository.metadata
-        shed_config_dict = repository.get_shed_config_dict(trans.app)
-        tool_metadata = {}
-        tool_lineage = []
-        tool = None
-        if 'tools' in repository_metadata:
-            for tool_metadata_dict in repository_metadata['tools']:
-                if tool_metadata_dict['id'] == tool_id:
-                    tool_metadata = tool_metadata_dict
-                    tool_config = tool_metadata['tool_config']
-                    if shed_config_dict and shed_config_dict.get('tool_path'):
-                        tool_config = os.path.join(shed_config_dict.get('tool_path'), tool_config)
-                    tool = trans.app.toolbox.get_tool(tool_id=tool_metadata['guid'], exact=True)
-                    if not tool:
-                        tool = trans.app.toolbox.load_tool(os.path.abspath(tool_config), guid=tool_metadata['guid'])
-                        if tool:
-                            tool._lineage = trans.app.toolbox._lineage_map.register(tool)
-                    if tool:
-                        tool_lineage = tool.lineage.get_version_ids(reverse=True)
-                    break
-        return trans.fill_template("/admin/tool_shed_repository/view_tool_metadata.mako",
-                                   repository=repository,
-                                   repository_metadata=repository_metadata,
-                                   tool=tool,
-                                   tool_metadata=tool_metadata,
-                                   tool_lineage=tool_lineage,
-                                   message=message,
-                                   status=status)
 
     @web.expose
     @web.require_admin

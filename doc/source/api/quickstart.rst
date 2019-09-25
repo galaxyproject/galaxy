@@ -2,8 +2,8 @@ Quickstart
 ==========
 
 Log in as your user, navigate to the API Keys page in the User menu, and
-generate a new API key.  Make a note of the API key, and then pull up a
-terminal.  Now we'll use the display.py script in your galaxy/scripts/api
+generate a new API key. Make a note of the API key, and then pull up a
+terminal.  Now we'll use the display.py script in your ``galaxy/scripts/api``
 directory for a short example, which assumes your local galaxy server is
 running on the default port 8080::
 

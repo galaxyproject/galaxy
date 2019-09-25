@@ -19,12 +19,14 @@ DEFAULTS = {
 
 BACKENDS = {
     'google': 'social_core.backends.google_openidconnect.GoogleOpenIdConnect',
-    "globus": "social_core.backends.globus.GlobusOpenIdConnect"
+    "globus": "social_core.backends.globus.GlobusOpenIdConnect",
+    'elixir': 'social_core.backends.elixir.ElixirOpenIdConnect'
 }
 
 BACKENDS_NAME = {
     'google': 'google-openidconnect',
-    "globus": "globus"
+    "globus": "globus",
+    'elixir': 'elixir'
 }
 
 AUTH_PIPELINE = (
@@ -84,13 +86,17 @@ DISCONNECT_PIPELINE = (
 class PSAAuthnz(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config):
         self.config = {'provider': provider.lower()}
-        for key, value in oidc_config.iteritems():
+        for key, value in oidc_config.items():
             self.config[setting_name(key)] = value
 
         self.config[setting_name('USER_MODEL')] = 'models.User'
         self.config['SOCIAL_AUTH_PIPELINE'] = AUTH_PIPELINE
         self.config['DISCONNECT_PIPELINE'] = DISCONNECT_PIPELINE
         self.config[setting_name('AUTHENTICATION_BACKENDS')] = (BACKENDS[provider],)
+
+        self.config["VERIFY_SSL"] = oidc_config.get("VERIFY_SSL")
+        self.config["REQUESTS_TIMEOUT"] = oidc_config.get("REQUESTS_TIMEOUT")
+        self.config["ID_TOKEN_MAX_AGE"] = oidc_config.get("ID_TOKEN_MAX_AGE")
 
         # The following config sets PSA to call the `_login_user` function for
         # logging in a user. If this setting is set to false, the `_login_user`

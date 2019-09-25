@@ -8,6 +8,8 @@ from base.workflow_fixtures import (
     WORKFLOW_RENAME_ON_REPLACEMENT_PARAM,
     WORKFLOW_RUNTIME_PARAMETER_SIMPLE,
     WORKFLOW_SIMPLE_CAT_TWICE,
+    WORKFLOW_WITH_CUSTOM_REPORT_1,
+    WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
     WORKFLOW_WITH_RULES_1,
@@ -179,13 +181,35 @@ steps:
         output_content = self.dataset_populator.get_history_collection_details(history_id, hid=6)
         rules_test_data.check_example_2(output_content, self.dataset_populator)
 
+    @selenium_test
+    @managed_history
+    def test_execution_with_custom_invocation_repoprt(self):
+        history_id, inputs = self.workflow_run_setup_inputs(WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA)
+        self.open_in_workflow_run(WORKFLOW_WITH_CUSTOM_REPORT_1)
+        self.workflow_run_specify_inputs(inputs)
+        self.workflow_run_submit()
+
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.screenshot("workflow_run_invocation_report")
+
+        self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
+
+        invocation_0 = self.workflow_populator.history_invocations(history_id)[0]
+        self.get("workflows/invocations/report?id=%s" % invocation_0["id"])
+        self.wait_for_selector_visible(".embedded-item.dataset")
+        self.screenshot("workflow_report_custom_1")
+
     def open_in_workflow_run(self, yaml_content):
         name = self.workflow_upload_yaml_with_random_name(yaml_content)
         self.workflow_run_with_name(name)
 
     def workflow_run_setup_inputs(self, content):
         history_id = self.current_history_id()
-        test_data = yaml.safe_load(content)["test_data"]
+        yaml_content = yaml.safe_load(content)
+        if "test_data" in yaml_content:
+            test_data = yaml_content["test_data"]
+        else:
+            test_data = yaml_content
         inputs, _, _ = load_data_dict(history_id, test_data, self.dataset_populator, self.dataset_collection_populator)
         self.dataset_populator.wait_for_history(history_id)
         return history_id, inputs
@@ -199,7 +223,7 @@ steps:
     def workflow_run_with_name(self, name):
         self.workflow_index_open()
         self.workflow_index_search_for(name)
-        self.workflow_index_click_option("Run")
+        self.workflow_click_option(".workflow-run")
 
     def _assert_has_3_lines_after_run(self, hid):
         self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=1)

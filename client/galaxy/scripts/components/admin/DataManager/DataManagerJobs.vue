@@ -42,7 +42,7 @@
             >
                 <!-- Enable cell formatting for the command line column -->
                 <span slot="html" slot-scope="data" v-html="data.value"> </span>
-                <template slot="actions" slot-scope="row">
+                <template v-slot:cell(actions)="row">
                     <b-button-group>
                         <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
                             <span class="fa fa-refresh" />
@@ -134,7 +134,7 @@ export default {
             ];
         },
         tableFields() {
-            let tableFields = this.fields.slice(0);
+            const tableFields = this.fields.slice(0);
             if (this.showCommandLine) {
                 tableFields.splice(5, 0, {
                     key: "commandLine",
@@ -144,9 +144,9 @@ export default {
             return tableFields;
         },
         tableItems() {
-            let tableItems = this.jobs.slice(0);
+            const tableItems = this.jobs.slice(0);
 
-            for (let item of tableItems) {
+            for (const item of tableItems) {
                 // Nicer time formatting
                 item["updateTime"] = item["updateTime"].replace("T", "\n");
 
