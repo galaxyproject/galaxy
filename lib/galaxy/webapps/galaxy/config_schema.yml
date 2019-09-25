@@ -52,8 +52,7 @@ mapping:
           instead.  This string takes many options which are explained in detail in the
           config file documentation.
 
-          Example value 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
-          where './database' is the resolved default value of the 'data_dir' option).
+          Sample default 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
 
       database_engine_option_pool_size:
         type: int
@@ -137,8 +136,7 @@ mapping:
           separate the tool shed install database (all other options listed above
           but prefixed with install_ are also available).
 
-          Example value 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
-          where './database' is the resolved default value of the 'data_dir' option).
+          Defaults to the value of the 'database_connection' option.
 
       database_auto_migrate:
         type: bool
@@ -295,7 +293,7 @@ mapping:
           conda_prefix is the location on the filesystem where Conda packages and environments are
           installed.
 
-          Example value '<tool_dependency_dir>/_conda'
+          Sample default '<tool_dependency_dir>/_conda'
 
       conda_exec:
         type: str
@@ -376,7 +374,7 @@ mapping:
           By default the tool_dependency_cache_dir is the _cache directory
           of the tool dependency directory.
 
-          Example value '<tool_dependency_dir>/_cache'
+          Sample default '<tool_dependency_dir>/_cache'
 
       precache_dependencies:
         type: bool
@@ -470,7 +468,7 @@ mapping:
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
 
-          Example value '<tool_dependency_dir>/involucro'
+          Sample default '<tool_dependency_dir>/involucro'
 
       involucro_auto_init:
         type: bool
@@ -571,8 +569,8 @@ mapping:
         default: shared/ucsc/builds.txt
         required: false
         desc: |
-          File containing old-style genome builds. Value will be resolved to
-          '<tool_data_path>/shared/ucsc/builds.txt'.
+          File containing old-style genome builds. Value will be resolved with respect to
+          '<tool_data_path>'.
 
       len_file_path:
         type: str
@@ -580,7 +578,7 @@ mapping:
         required: false
         desc: |
           Directory where chrom len files are kept, currently mainly used by trackster. Value will
-          be resolved to '<tool_data_path>/shared/ucsc/chrom'.
+          be resolved with respect to '<tool_data_path>'.
 
       datatypes_config_file:
         type: str
@@ -671,8 +669,7 @@ mapping:
           If using a cluster, Galaxy will write job scripts and stdout/stderr to this
           directory.
 
-          Default value will be resolved to 'database/pbs' where 'database' is the
-          default value of the 'data_dir' option).
+          Value will be resolved with respect to <data_dir>.
 
       template_cache_path:
         type: str
@@ -1634,7 +1631,7 @@ mapping:
           Heartbeat log filename. Can accept the template variables {server_name} and
           {pid}
 
-          Example value 'heartbeat_{server_name}.log'
+          Sample default 'heartbeat_{server_name}.log'
 
       sentry_dsn:
         type: str
