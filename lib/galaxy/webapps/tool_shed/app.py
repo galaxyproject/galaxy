@@ -64,6 +64,7 @@ class UniverseApplication(object):
         from galaxy.managers.citations import CitationsManager
         self.citations_manager = CitationsManager(self)
         # The Tool Shed makes no use of a Galaxy toolbox, but this attribute is still required.
+        self.use_tool_dependency_resolution = False
         self.toolbox = tools.ToolBox([], self.config.tool_path, self)
         # Initialize the Tool Shed security agent.
         self.security_agent = self.model.security_agent
