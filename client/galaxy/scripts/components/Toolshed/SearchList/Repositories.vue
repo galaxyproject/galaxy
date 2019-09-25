@@ -11,18 +11,23 @@
                 <RepositoryDetails :repo="row.item" :toolshedUrl="toolshedUrl" />
             </template>
         </b-table>
-        <div v-if="noResultsFound">
+        <div class="unavailable-message" v-if="noResultsFound">
             No matching repositories found.
         </div>
         <div v-if="pageLoading">
             <span class="fa fa-spinner fa-spin mb-4" />
-            <span>Loading repositories...</span>
+            <span class="loading-message">Loading repositories...</span>
         </div>
     </div>
 </template>
 <script>
-import RepositoryDetails from "components/Toolshed/RepositoryDetails/Index.vue";
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import { Services } from "../services.js";
+import RepositoryDetails from "../RepositoryDetails/Index.vue";
+
+Vue.use(BootstrapVue);
+
 const READY = 0;
 const LOADING = 1;
 const COMPLETE = 2;

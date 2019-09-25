@@ -8,7 +8,7 @@ describe("Categories", () => {
     beforeEach(() => {
         rewire.__Rewire__("Services", class {
             async getCategories() {
-                const items = [{
+                return [{
                     name: "name_0",
                     description: "description_0",
                     repositories: "repositories_0"
@@ -17,7 +17,6 @@ describe("Categories", () => {
                     description: "description_1",
                     repositories: "repositories_1"
                 }];
-                return items;
             }
         });
     });
