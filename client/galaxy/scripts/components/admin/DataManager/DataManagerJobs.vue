@@ -116,7 +116,7 @@ export default {
     },
     computed: {
         breadcrumbItems() {
-            let d = this.dataManager;
+            const d = this.dataManager;
             return [
                 {
                     text: "Data Managers",
