@@ -116,7 +116,7 @@
                             The following users will see this {{ model_class_lc }} in their {{ model_class_lc }} list
                             and will be able to view, import and run it.
                         </template>
-                        <template slot="id" slot-scope="cell">
+                        <template v-slot:cell(id)="cell">
                             <b-button
                                 class="unshare_user"
                                 size="sm"

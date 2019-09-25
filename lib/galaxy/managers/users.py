@@ -20,7 +20,11 @@ from galaxy.managers import (
     base,
     deletable
 )
-from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
+from galaxy.security.validate_user_input import (
+    validate_email,
+    validate_password,
+    validate_publicname
+)
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.web import url_for
 
@@ -490,10 +494,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 return "Failed to produce password reset token. User not found."
 
     def get_reset_token(self, trans, email):
-        reset_user = trans.sa_session.query(self.app.model.User).filter(self.app.model.User.table.c.email == email).first()
-        if not reset_user:
-            # Perform a case-insensitive check only if the user wasn't found
-            reset_user = trans.sa_session.query(self.app.model.User).filter(func.lower(self.app.model.User.table.c.email) == func.lower(email)).first()
+        reset_user = trans.sa_session.query(self.app.model.User).filter(func.lower(self.app.model.User.table.c.email) == email.lower()).first()
         if reset_user:
             prt = self.app.model.PasswordResetToken(reset_user)
             trans.sa_session.add(prt)

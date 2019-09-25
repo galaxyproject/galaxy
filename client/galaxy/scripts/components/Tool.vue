@@ -9,9 +9,11 @@
                 :class="['tool-link', tool.id]"
             >
                 <span class="labels">
-                    <span v-for="(label, index) in tool.labels"
-                          :class="['badge', 'badge-primary', `badge-${label}`]"
-                          :key="index">
+                    <span
+                        v-for="(label, index) in tool.labels"
+                        :class="['badge', 'badge-primary', `badge-${label}`]"
+                        :key="index"
+                    >
                         {{ label }}
                     </span>
                 </span>

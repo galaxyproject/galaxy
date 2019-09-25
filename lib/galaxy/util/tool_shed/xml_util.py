@@ -76,10 +76,10 @@ def create_element(tag, attributes=None, sub_elements=None):
     return None
 
 
-def parse_xml(file_name):
+def parse_xml(file_name, check_exists=True):
     """Returns a parsed xml tree with comments intact."""
     error_message = ''
-    if not os.path.exists(file_name):
+    if check_exists and not os.path.exists(file_name):
         return None, "File does not exist %s" % str(file_name)
 
     with open(file_name, 'r') as fobj:

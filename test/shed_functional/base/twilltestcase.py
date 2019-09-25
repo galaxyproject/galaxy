@@ -141,7 +141,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         except Exception:
             try:
                 # May have created the account in a previous test run...
-                self.check_page_for_string("User with that email already exists")
+                self.check_page_for_string("User with email '%s' already exists." % email)
                 previously_created = True
             except Exception:
                 try:

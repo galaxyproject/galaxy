@@ -157,7 +157,7 @@ class ToolDataTableManager(object):
                                                      from_shed_config=True)
         except Exception as e:
             error_message = 'Error attempting to parse file %s: %s' % (str(os.path.split(config_filename)[1]), util.unicodify(e))
-            log.debug(error_message)
+            log.debug(error_message, exc_info=True)
             table_elems = []
         if persist:
             # Persist Galaxy's version of the changed tool_data_table_conf.xml file.
@@ -683,7 +683,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                         if fields != values:
                             rval += line
 
-        with open(loc_file, 'wb') as writer:
+        with open(loc_file, 'w') as writer:
             writer.write(rval)
 
         return rval

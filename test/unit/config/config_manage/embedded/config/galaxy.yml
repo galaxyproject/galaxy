@@ -1,0 +1,47 @@
+uwsgi:
+  http: 127.0.0.1:8080
+  buffer-size: 16384
+  processes: 1
+  threads: 4
+  offload-threads: 2
+  static-map: /static/style=static/style/blue
+  static-map: /static=static
+  static-map: /favicon.ico=static/favicon.ico
+  master: false
+  virtualenv: .venv
+  pythonpath: lib
+  module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
+  manage-script-name: false
+  thunder-lock: false
+  die-on-term: true
+  hook-master-start: unix_signal:2 gracefully_kill_them_all
+  hook-master-start: unix_signal:15 gracefully_kill_them_all
+  py-call-osafterfork: true
+  enable-threads: true
+
+galaxy:
+  master_api_key: changethis
+  config_dir: 'false'
+  job_config:
+    runners:
+      local:
+        load: galaxy.jobs.runners.local:LocalJobRunner
+        workers: 1
+      dynamic:
+        rules_module: integration.delay_rules
+    execution:
+      default: local_dest
+      environments:
+        local_dest:
+          runner: dynamic
+          type: python
+          function: delay
+        upload_dest:
+          runner: local
+    tools:
+      - id: upload1
+        destination: upload_dest
+  dependency_resolvers:
+    - type: galaxy_packages
+    - type: galaxy_packages
+      versionless: true

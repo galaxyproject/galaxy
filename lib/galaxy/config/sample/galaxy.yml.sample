@@ -101,13 +101,13 @@ galaxy:
   # The directory that will be prepended to relative paths in options
   # specifying other Galaxy config files (e.g. datatypes_config_file).
   # Defaults to the directory in which galaxy.yml is located.
-  #config_dir: 'false'
+  #config_dir: null
 
   # The directory that will be prepended to relative paths in options
   # specifying Galaxy data/cache directories and files (such as the
   # default SQLite database, file_path, etc.). Defaults to `database/`
   # if running Galaxy from source or `<config_dir>/data` otherwise.
-  #data_dir: 'false'
+  #data_dir: null
 
   # By default, Galaxy uses a SQLite database at
   # 'database/universe.sqlite'.  You may use a SQLAlchemy connection
@@ -147,13 +147,13 @@ galaxy:
   # an existing template database. This will set that. This is probably
   # only useful for testing but documentation is included here for
   # completeness.
-  #database_template: ''
+  #database_template: null
 
   # Slow query logging.  Queries slower than the threshold indicated
   # below will be logged to debug.  A value of '0' is disabled.  For
   # example, you would set this to .005 to log all queries taking longer
   # than 5 milliseconds.
-  #slow_query_log_threshold: 0
+  #slow_query_log_threshold: 0.0
 
   # Enables a per request sql debugging option. If this is set to true,
   # append ?sql_debug=1 to web request URLs to enable detailed logging
@@ -197,8 +197,21 @@ galaxy:
   # Tool config files, defines what tools are available in Galaxy. Tools
   # can be locally developed or installed from Galaxy tool sheds.
   # (config/tool_conf.xml.sample will be used if left unset and
-  # config/tool_conf.xml does not exist).
-  #tool_config_file: config/tool_conf.xml,config/shed_tool_conf.xml
+  # config/tool_conf.xml does not exist). Can be a single file, a list
+  # of files, or (for backwards compatibility) a comma-separated list of
+  # files.
+  #tool_config_file: config/tool_conf.xml
+
+  # Tool config file for tools installed from the Galaxy Tool Shed. Must
+  # be writable by Galaxy and generally should not be edited by hand. In
+  # older Galaxy releases, this file was part of the tool_config_file
+  # option. It is still possible to specify this file (and other shed-
+  # enabled tool config files) in tool_config_file, but in the standard
+  # case of a single shed-enabled tool config, this option is
+  # preferable. This file will be created automatically upon tool
+  # installation, whereas Galaxy will fail to start if any files in
+  # tool_config_file cannot be read.
+  #shed_tool_config_file: config/shed_tool_conf.xml
 
   # Enable / disable checking if any tools defined in the above non-shed
   # tool_config_files (i.e., tool_conf.xml) have been migrated from the
@@ -355,7 +368,7 @@ galaxy:
   # container resolvers to use when discovering containers for Galaxy.
   # If this is set to None, the default containers loaded is determined
   # by enable_mulled_containers.
-  #containers_resolvers_config_file: ''
+  #containers_resolvers_config_file: null
 
   # involucro is a tool used to build Docker or Singularity containers
   # for tools from Conda dependencies referenced in tools as
@@ -466,22 +479,6 @@ galaxy:
   # path with '/'.  This is a comma separated list.
   #interactive_environment_plugins_directory: null
 
-  # To run interactive environment containers in Docker Swarm mode (on
-  # an existing swarm), set this option to true and set
-  # `docker_connect_port` in the IE plugin config (ini) file(s) of any
-  # IE plugins you have enabled and ensure that you are not using any
-  # `docker run`-specific options in your plugins' `command_inject`
-  # options (swarm mode services run using `docker service create`,
-  # which has a different and more limited set of options). This option
-  # can be overridden on a per-plugin basis by using the `swarm_mode`
-  # option in the plugin's ini config file.
-  #interactive_environment_swarm_mode: false
-
-  # Galaxy can run a "swarm manager" service that will monitor
-  # utilization of the swarm and provision/deprovision worker nodes as
-  # necessary. The service has its own configuration file.
-  #swarm_manager_config_file: config/swarm_manager_conf.yml
-
   # Interactive tour directory: where to store interactive tour
   # definition files. Galaxy ships with several basic interface tours
   # enabled, though a different directory with custom tours can be
@@ -565,17 +562,17 @@ galaxy:
   # mail through an SMTP server, which you may define here (host:port).
   # Galaxy will automatically try STARTTLS but will continue upon
   # failure.
-  #smtp_server: ''
+  #smtp_server: null
 
   # If your SMTP server requires a username and password, you can
   # provide them here (password in cleartext here, but if your server
   # supports STARTTLS it will be sent over the network encrypted).
-  #smtp_username: ''
+  #smtp_username: null
 
   # If your SMTP server requires a username and password, you can
   # provide them here (password in cleartext here, but if your server
   # supports STARTTLS it will be sent over the network encrypted).
-  #smtp_password: ''
+  #smtp_password: null
 
   # If your SMTP server requires SSL from the beginning of the
   # connection
@@ -592,14 +589,14 @@ galaxy:
   # disabled if no address is set.  Also this email is shown as a
   # contact to user in case of Galaxy misconfiguration and other events
   # user may encounter.
-  #error_email_to: ''
+  #error_email_to: null
 
   # Email address to use in the 'From' field when sending emails for
   # account activations, workflow step notifications and password
   # resets. We recommend using string in the following format: Galaxy
   # Project <galaxy-no-reply@example.com> If not configured, '<galaxy-
   # no-reply@HOSTNAME>' will be used.
-  #email_from: ''
+  #email_from: null
 
   # URL of the support resource for the galaxy instance.  Used in
   # activation emails.
@@ -645,7 +642,7 @@ galaxy:
 
   # You can enter tracking code here to track visitor's behavior through
   # your Google Analytics account.  Example: UA-XXXXXXXX-Y
-  #ga_code: ''
+  #ga_code: null
 
   # Galaxy can display data at various external browsers.  These options
   # specify which browsers should be available.  URLs and builds
@@ -683,14 +680,14 @@ galaxy:
   #message_box_visible: false
 
   # Show a message box under the masthead.
-  #message_box_content: ''
+  #message_box_content: null
 
   # Class of the message box under the masthead. Possible values are:
   # 'info' (the default), 'warning', 'error', 'done'.
   #message_box_class: info
 
   # Append "/{brand}" to the "Galaxy" text in the masthead.
-  #brand: ''
+  #brand: null
 
   # Format string used when showing date and time information. The
   # string may contain: - the directives used by Python time.strftime()
@@ -738,7 +735,7 @@ galaxy:
   #logo_url: /
 
   # The URL linked by the "Galaxy Help" link in the "Help" menu.
-  #helpsite_url: ''
+  #helpsite_url: null
 
   # The URL linked by the "Wiki" link in the "Help" menu.
   #wiki_url: https://galaxyproject.org/
@@ -765,7 +762,7 @@ galaxy:
   # The URL linked by the "Terms and Conditions" link in the "Help"
   # menu, as well as on the user registration and login forms and in the
   # activation emails.
-  #terms_url: ''
+  #terms_url: null
 
   # The URL linked by the "Galaxy Q&A" link in the "Help" menu The
   # Galaxy Q&A site is under development; when the site is done, this
@@ -834,7 +831,7 @@ galaxy:
   # Redirect.  This should be set to the path defined in the nginx
   # config as an internal redirect with access to Galaxy's data files
   # (see documentation linked above).
-  #nginx_x_accel_redirect_base: ''
+  #nginx_x_accel_redirect_base: null
 
   # If using compression in the upstream proxy server, use this option
   # to disable gzipping of library .tar.gz and .zip archives, since the
@@ -856,24 +853,24 @@ galaxy:
   # in detail in the documentation linked above.  The upload store is a
   # temporary directory in which files uploaded by the upload module
   # will be placed.
-  #nginx_upload_store: ''
+  #nginx_upload_store: null
 
   # This value overrides the action set on the file upload form, e.g.
   # the web path where the nginx_upload_module has been configured to
   # intercept upload requests.
-  #nginx_upload_path: ''
+  #nginx_upload_path: null
 
   # Galaxy can also use nginx_upload_module to receive files staged out
   # upon job completion by remote job runners (i.e. Pulsar) that
   # initiate staging operations on the remote end.  See the Galaxy nginx
   # documentation for the corresponding nginx configuration.
-  #nginx_upload_job_files_store: ''
+  #nginx_upload_job_files_store: null
 
   # Galaxy can also use nginx_upload_module to receive files staged out
   # upon job completion by remote job runners (i.e. Pulsar) that
   # initiate staging operations on the remote end.  See the Galaxy nginx
   # documentation for the corresponding nginx configuration.
-  #nginx_upload_job_files_path: ''
+  #nginx_upload_job_files_path: null
 
   # Galaxy can upload user files in chunks without using nginx. Enable
   # the chunk uploader by specifying a chunk size larger than 0. The
@@ -940,7 +937,7 @@ galaxy:
   # Galaxy instead of a JSON or SQLite file for IPC. If you do not
   # specify this, it will be set randomly for you. You should set this
   # if you are managing the proxy manually.
-  #dynamic_proxy_golang_api_key: ''
+  #dynamic_proxy_golang_api_key: null
 
   # If true, Galaxy will attempt to configure a simple root logger if a
   # "loggers" section does not appear in this configuration file.
@@ -1014,7 +1011,7 @@ galaxy:
   # and ending with /. E.g.
   # mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/ See:
   # https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
-  #allowed_origin_hostnames: ''
+  #allowed_origin_hostnames: null
 
   # Set to true to use Jupyter nbconvert to build HTML from Jupyter
   # notebooks in Galaxy histories.  This process may allow users to
@@ -1074,7 +1071,7 @@ galaxy:
   # errors will be sent to the indicated sentry instance.  This
   # connection string is available in your sentry instance under
   # <project_name> -> Settings -> API Keys.
-  #sentry_dsn: ''
+  #sentry_dsn: null
 
   # Sentry slow request logging.  Requests slower than the threshold
   # indicated below will be sent as events to the configured Sentry
@@ -1115,7 +1112,7 @@ galaxy:
 
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.
-  #library_import_dir: ''
+  #library_import_dir: null
 
   # Add an option to the library upload form which allows authorized
   # non-administrators to upload a directory of files.  The configured
@@ -1123,7 +1120,7 @@ galaxy:
   # admin user's Galaxy login ( email ).  The non-admin user is
   # restricted to uploading files or sub-directories of files contained
   # in their directory.
-  #user_library_import_dir: ''
+  #user_library_import_dir: null
 
   # If user_library_import_dir is set, this option will auto create a
   # library import directory for every user (based on their email) upon
@@ -1137,7 +1134,7 @@ galaxy:
   # user with library import permissions can import from anywhere in
   # these directories (assuming they are able to create symlinks to
   # them).
-  #user_library_import_symlink_whitelist: ''
+  #user_library_import_symlink_whitelist: null
 
   # In conjunction or alternatively, Galaxy can restrict user library
   # imports to those files that the user can read (by checking basic
@@ -1250,7 +1247,7 @@ galaxy:
   # method just returns bare usernames, set a default mail domain to be
   # appended to usernames, to become your Galaxy usernames (email
   # addresses).
-  #remote_user_maildomain: ''
+  #remote_user_maildomain: null
 
   # If use_remote_user is enabled, the header that the upstream proxy
   # provides the remote username in defaults to HTTP_REMOTE_USER (the
@@ -1270,7 +1267,7 @@ galaxy:
 
   # If use_remote_user is enabled, you can set this to a URL that will
   # log your users out.
-  #remote_user_logout_href: ''
+  #remote_user_logout_href: null
 
   # If your proxy and/or authentication source does not normalize e-mail
   # addresses or user names being passed to Galaxy - set this option to
@@ -1289,7 +1286,7 @@ galaxy:
   # Admin section of the server, and will have access to create users,
   # groups, roles, libraries, and more.  For more information, see:
   # https://galaxyproject.org/admin/
-  #admin_users: ''
+  #admin_users: null
 
   # Force everyone to log in (disable anonymous access).
   #require_login: false
@@ -1370,7 +1367,9 @@ galaxy:
   #enable_beta_containers_interface: false
 
   # Enable beta workflow modules that should not yet be considered part
-  # of Galaxy's stable API.
+  # of Galaxy's stable API. (The module state definitions may change and
+  # workflows built using  these modules may not function in the
+  # future.)
   #enable_beta_workflow_modules: false
 
   # Default format for the export of workflows. Possible values are 'ga'
@@ -1454,7 +1453,7 @@ galaxy:
   # actually having a defined admin user in the database/config.  Only
   # set this if you need to bootstrap Galaxy, you probably do not want
   # to set this on public servers.
-  #master_api_key: changethis
+  #master_api_key: null
 
   # Enable access to post-authentication options via OpenID.
   #enable_openid: false
@@ -1486,11 +1485,11 @@ galaxy:
   # options. This should point to a directory containing subdirectories
   # matching users' identifier (defaults to e-mail), where Galaxy will
   # look for files.
-  #ftp_upload_dir: ''
+  #ftp_upload_dir: null
 
   # This should be the hostname of your FTP server, which will be
   # provided to users in the help text.
-  #ftp_upload_site: ''
+  #ftp_upload_site: null
 
   # User attribute to use as subdirectory in calculating default
   # ftp_upload_dir pattern. By default this will be email so a user's
@@ -1698,7 +1697,7 @@ galaxy:
   # prior to running tools.  This can be especially useful for running
   # jobs as the actual user, to remove the need to configure each user's
   # environment individually.
-  #environment_setup_file: ''
+  #environment_setup_file: null
 
   # Optional file containing job resource data entry fields definition.
   # These fields will be presented to users in the tool forms and allow

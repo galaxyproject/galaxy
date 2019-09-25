@@ -45,6 +45,7 @@ masthead:
       selector: '//a[contains(text(), "Logged in as")]'
 
     logged_in_only: 'a.loggedin-only'
+    logged_out_only: 'a.loggedout-only'
 
   labels:
     # top-level menus
@@ -249,8 +250,8 @@ tool_form:
 workflows:
 
   selectors:
-    new_button: '#new-workflow'
-    import_button: '#import-workflow'
+    new_button: '#workflow-create'
+    import_button: '#workflow-import'
 
 workflow_run:
 

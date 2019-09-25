@@ -194,7 +194,7 @@ class WorkflowsManager(object):
         trans.sa_session.flush()
         return workflow_invocation_step
 
-    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, user_id=None):
+    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, user_id=None, include_terminal=True):
         """Get invocations owned by the current user."""
         sa_session = trans.sa_session
         invocations_query = sa_session.query(model.WorkflowInvocation)
@@ -218,6 +218,11 @@ class WorkflowsManager(object):
         if history_id is not None:
             invocations_query = invocations_query.filter(
                 model.WorkflowInvocation.table.c.history_id == history_id
+            )
+
+        if not include_terminal:
+            invocations_query = invocations_query.filter(
+                model.WorkflowInvocation.table.c.state.in_(model.WorkflowInvocation.non_terminal_states)
             )
 
         return [inv for inv in invocations_query if self.check_security(trans,

@@ -264,6 +264,8 @@
     <datatype extension="splib_noindex" type="galaxy.datatypes.proteomics:SPLibNoIndex" display_in_upload="true"/>
     <datatype extension="splib" type="galaxy.datatypes.proteomics:SPLib" display_in_upload="true"/>
     <datatype extension="blib" type="galaxy.datatypes.binary:BlibSQlite" display_in_upload="true"/>
+    <datatype extension="dlib" type="galaxy.datatypes.binary:DlibSQlite" display_in_upload="true"/>
+    <datatype extension="elib" type="galaxy.datatypes.binary:ElibSQlite" display_in_upload="true"/>
     <datatype extension="hlf" type="galaxy.datatypes.proteomics:XHunterAslFormat" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="idpdb" type="galaxy.datatypes.binary:IdpDB" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="sf3" type="galaxy.datatypes.proteomics:Sf3" display_in_upload="true"/>
@@ -781,6 +783,8 @@
     <sniffer type="galaxy.datatypes.binary:GeminiSQLite"/>
     <sniffer type="galaxy.datatypes.binary:MzSQlite"/>
     <sniffer type="galaxy.datatypes.binary:IdpDB"/>
+    <sniffer type="galaxy.datatypes.binary:ElibSQlite"/>
+    <sniffer type="galaxy.datatypes.binary:DlibSQlite"/>
     <sniffer type="galaxy.datatypes.binary:BlibSQlite"/>
     <sniffer type="galaxy.datatypes.binary:CuffDiffSQlite"/>
     <sniffer type="galaxy.datatypes.binary:GAFASQLite"/>
