@@ -426,11 +426,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # tool_dependency_dir can be "none" (in old configs). If so, set it to schema default
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
             self.tool_dependency_dir = None
-
         if self.involucro_path is None:
-            self.involucro_path = os.path.join(self.data_dir, self.tool_dependency_dir, "involucro")
+            target_dir = self.tool_dependency_dir or self.appschema['tool_dependency_dir'].get('default')
+            self.involucro_path = os.path.join(self.data_dir, target_dir, "involucro")
         self.involucro_path = os.path.join(self.root, self.involucro_path)
-
         if self.mulled_channels:
             self.mulled_channels = [c.strip() for c in self.mulled_channels.split(',')]
 
