@@ -67,15 +67,13 @@ def validate_publicname(trans, publicname, user=None):
     return ''
 
 
-def transform_publicname(trans, publicname, user=None, check_dup=True):
+def transform_publicname(trans, publicname, check_dup=True):
     """
     Transform publicname to respect the minimum and maximum string length, and
     the allowed characters.
     FILL_CHAR is used to extend or replace characters.
     """
     # TODO: Enhance to allow generation of semi-random publicnnames e.g., when valid but taken
-    if user and user.username == publicname:
-        return publicname
     if publicname not in ['None', None, '']:
         publicname = publicname.lower()
         publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
