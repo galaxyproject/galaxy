@@ -608,7 +608,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'config_form'       : module.get_config_form(),
             'post_job_actions'  : module.get_post_job_actions(inputs)
         }
-        
+
     @expose_api
     def get_tool_predictions(self, trans, payload, **kwd):
         """
