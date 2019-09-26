@@ -4,6 +4,7 @@
 See doc/source/admin/grt.rst for more detailed usage information.
 """
 import argparse
+import io
 import json
 import logging
 import os
@@ -143,7 +144,7 @@ def main(argv):
     blacklisted_tools = config['sanitization']['tools']
 
     annotate('export_jobs_start', 'Exporting Jobs')
-    handle_job = open(REPORT_BASE + '.jobs.tsv', 'w')
+    handle_job = io.open(REPORT_BASE + '.jobs.tsv', 'w', encoding='utf-8')
     handle_job.write('\t'.join(('id', 'tool_id', 'tool_version', 'state', 'create_time')) + '\n')
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
@@ -164,7 +165,7 @@ def main(argv):
                     str(job[5]) # create_time
                 ]
                 cline = unicodify('\t'.join(line) + '\n')
-                handle_job.write(cline.encode('utf-8'))
+                handle_job.write(cline)
             except Exception:
                 logging.warning("Unable to write out a 'handle_job' row. Ignoring the row.", exc_info=True)
                 continue
@@ -177,7 +178,7 @@ def main(argv):
     annotate('export_jobs_end')
 
     annotate('export_datasets_start', 'Exporting Datasets')
-    handle_datasets = open(REPORT_BASE + '.datasets.tsv', 'w')
+    handle_datasets = io.open(REPORT_BASE + '.datasets.tsv', 'w', encoding='utf-8')
     handle_datasets.write('\t'.join(('job_id', 'dataset_id', 'extension', 'file_size', 'param_name', 'type')) + '\n')
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
@@ -250,7 +251,7 @@ def main(argv):
                     str(filetype) # input/output
                 ]
                 cline = unicodify('\t'.join(line) + '\n')
-                handle_datasets.write(cline.encode('utf-8'))
+                handle_datasets.write(cline)
             except Exception:
                 logging.warning("Unable to write out a 'handle_datasets' row. Ignoring the row.", exc_info=True)
                 continue
@@ -258,7 +259,7 @@ def main(argv):
     annotate('export_datasets_end')
 
     annotate('export_metric_num_start', 'Exporting Metrics (Numeric)')
-    handle_metric_num = open(REPORT_BASE + '.metric_num.tsv', 'w')
+    handle_metric_num = io.open(REPORT_BASE + '.metric_num.tsv', 'w', encoding='utf-8')
     handle_metric_num.write('\t'.join(('job_id', 'plugin', 'name', 'value')) + '\n')
     for offset_start in range(last_job_sent, end_job_id, args.batch_size):
         logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
@@ -282,7 +283,7 @@ def main(argv):
                 ]
 
                 cline = unicodify('\t'.join(line) + '\n')
-                handle_metric_num.write(cline.encode('utf-8'))
+                handle_metric_num.write(cline)
             except Exception:
                 logging.warning("Unable to write out a 'handle_metric_num' row. Ignoring the row.", exc_info=True)
                 continue
