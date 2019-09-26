@@ -46,7 +46,7 @@ export default {
             this.$emit("onUninstall");
         },
         onCancel() {
-            if (window.confirm(`Are you sure you want cancel this process'?`)) {
+            if (window.confirm(`Are you sure you want cancel this process?`)) {
                 this.$emit("onUninstall");
             }
         }
