@@ -2,9 +2,25 @@
 
 import sys
 import json
+import os
+import subprocess
 
-from inaSpeechSegmenter import Segmenter
 from segmentation_schema import SegmentationSchema
+
+# Try to load, if it fails launch the virtual env. and re-execute the script
+try:
+     from inaSpeechSegmenter import Segmenter
+except ModuleNotFoundError as e:
+    # can't find the module!
+    if "VENV_ATTEMPT" in os.environ:
+        # we must have failed the venv bootstrap.
+        print("Cannot initialize the bootstrap")
+        exit(1)
+    # try to re-run ourselves
+    os.environ["VENV_ATTEMPT"] = "1"
+    os.chdir("/srv/amp/inaspeech")
+    r = subprocess.run(["pipenv", "run", *sys.argv])
+    exit(r.returncode)
 
 def main():
     (input_file, json_file) = sys.argv[1:3]

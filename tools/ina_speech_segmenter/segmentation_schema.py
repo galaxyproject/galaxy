@@ -23,4 +23,3 @@ class SegmentationSchemaSegment:
 			self.gender = gender
 		self.start = start
 		self.end = end
-        
