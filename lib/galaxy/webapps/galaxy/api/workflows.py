@@ -610,14 +610,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         }
 
     @expose_api
-    def get_tool_predictions(self, trans, topk=20, to_show=20, max_seq_len=25, set_admin_recommendations=False, payload={}):
+    def get_tool_predictions(self, trans, payload, topk=20, to_show=20, max_seq_len=25, set_admin_recommendations=False):
         """
         POST /api/workflows/get_tool_predictions
         Fetch predicted tools for a workflow
         """
-        tool_sequence = payload.get('tool_sequence', "")
         if 'tool_sequence' not in payload or trans.app.config.tool_recommendation_model_path is None:
             return
+        tool_sequence = payload.get('tool_sequence', "")
         self.enable_admin_tool_recommendations = trans.app.config.enable_admin_tool_recommendations
         # collect tool recommendations if set by admin
         if not self.admin_tool_recommendations_path:
