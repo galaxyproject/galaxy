@@ -145,7 +145,9 @@ export default {
                 .then(response => {
                     this.showSettings = false;
                 })
-                .catch(error => {});
+                .catch(error => {
+                    this.error = error;
+                });
         },
         onHide: function() {
             this.showSettings = false;
