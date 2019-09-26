@@ -141,7 +141,7 @@ var SessionStorageModel = Backbone.Model.extend({
 
     /** T/F whether sessionStorage contains the model's id (data is present) */
     isNew: function() {
-        return !sessionStorage.hasOwnProperty(this.id);
+        return !Object.prototype.hasOwnProperty.call(sessionStorage, this.id);
     },
 
     _log: function() {
