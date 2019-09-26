@@ -5,11 +5,11 @@
             <span v-if="loading">
                 <b-card>
                     <span class="fa fa-spinner fa-spin" />
-                    Loading installed repository details...
+                    <span class="loading-message">Loading installed repository details...</span>
                 </b-card>
             </span>
             <div v-else>
-                <repositorydetails :repo="toolshedRepository" :toolshedUrl="repo.tool_shed_url" />
+                <RepositoryDetails :repo="toolshedRepository" :toolshedUrl="repo.tool_shed_url" />
             </div>
         </div>
     </div>
@@ -22,7 +22,7 @@ import RepositoryDetails from "../RepositoryDetails/Index.vue";
 export default {
     props: ["repo"],
     components: {
-        repositorydetails: RepositoryDetails
+        RepositoryDetails
     },
     data() {
         return {
