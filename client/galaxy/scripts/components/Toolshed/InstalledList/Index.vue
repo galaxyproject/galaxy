@@ -4,11 +4,11 @@
         <div v-else>
             <span v-if="loading">
                 <span class="fa fa-spinner fa-spin" />
-                Loading installed repositories...
+                <span class="loading-message">Loading installed repositories...</span>
             </span>
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-                <div class="mt-3 mb-1 mx-1 text-muted">
+                <div class="installed-message mt-3 mb-1 mx-1 text-muted">
                     {{ repositories.length }} repositories installed on this instance.
                 </div>
                 <b-table
@@ -41,9 +41,13 @@
     </div>
 </template>
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "../services.js";
 import RepositoryDetails from "./Details.vue";
+
+Vue.use(BootstrapVue);
 
 export default {
     components: {
