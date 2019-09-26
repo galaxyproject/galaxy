@@ -9,14 +9,16 @@ describe("InstalledList", () => {
             "Services",
             class {
                 async getInstalledRepositories() {
-                    return [{
-                        name: "name_0",
-                        description: "description_0"
-                    },
-                    {
-                        name: "name_1",
-                        description: "description_1"
-                    }];
+                    return [
+                        {
+                            name: "name_0",
+                            description: "description_0"
+                        },
+                        {
+                            name: "name_1",
+                            description: "description_1"
+                        }
+                    ];
                 }
             }
         );
