@@ -32,7 +32,7 @@
                     These invocations are not finished scheduling - one or more steps are waiting on others steps to be
                     complete before the full structure of the jobs in the workflow can be determined.
                 </template>
-                <template slot="row-details" slot-scope="row">
+                <template v-slot:row-details="row">
                     <b-card>
                         <!-- set provideContext to false, since the table itself provides this information -->
                         <workflow-invocation-state :invocationId="row.item.id" :provideContext="false" />
