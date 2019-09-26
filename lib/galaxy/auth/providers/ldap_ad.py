@@ -220,7 +220,7 @@ class LDAP(AuthProvider):
             attributes['roles'] = params[self.role_search_option]
         return (True,
                 _get_subs(options, 'auto-register-email', params),
-                transform_publicname(_get_subs(options, 'auto-register-username', params), check_dup=False),
+                transform_publicname(_get_subs(options, 'auto-register-username', params)),
                 attributes)
 
     def _authenticate(self, params, options):

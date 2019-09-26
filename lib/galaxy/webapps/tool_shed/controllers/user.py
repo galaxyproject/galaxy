@@ -9,7 +9,6 @@ from galaxy import (
     web
 )
 from galaxy.security.validate_user_input import (
-    transform_publicname,
     validate_email,
     validate_password,
     validate_publicname
@@ -154,7 +153,7 @@ class User(BaseUser):
         return trans.fill_template('/webapps/tool_shed/user/register.mako',
                                    cntrller=cntrller,
                                    email=email,
-                                   username=transform_publicname(trans, username),
+                                   username=username,
                                    subscribe_checked=subscribe_checked,
                                    show_user_prepopulate_form=show_user_prepopulate_form,
                                    use_panels=use_panels,

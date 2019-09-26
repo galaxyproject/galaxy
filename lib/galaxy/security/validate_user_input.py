@@ -67,7 +67,7 @@ def validate_publicname(trans, publicname, user=None):
     return ''
 
 
-def transform_publicname(trans, publicname, check_dup=True):
+def transform_publicname(publicname):
     """
     Transform publicname to respect the minimum and maximum string length, and
     the allowed characters.
@@ -78,8 +78,6 @@ def transform_publicname(trans, publicname, check_dup=True):
         publicname = publicname.lower()
         publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
         publicname = publicname.ljust(PUBLICNAME_MIN_LEN + 1, FILL_CHAR)[:PUBLICNAME_MAX_LEN]
-    if check_dup and trans.sa_session.query(trans.app.model.User).filter_by(username=publicname).first():
-        return ''
     return publicname
 
 
