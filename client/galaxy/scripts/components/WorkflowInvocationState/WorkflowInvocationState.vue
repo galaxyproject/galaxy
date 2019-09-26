@@ -182,7 +182,7 @@ export default {
         },
         jobStatesSummary() {
             const jobsSummary = this.getInvocationJobsSummaryById(this.invocationId);
-            return ! jobsSummary ? null : new JOB_STATES_MODEL.JobStatesSummary(jobsSummary);
+            return !jobsSummary ? null : new JOB_STATES_MODEL.JobStatesSummary(jobsSummary);
         }
     },
     methods: {
