@@ -158,11 +158,11 @@ def main(argv):
 
             try:
                 line = [
-                    str(job[0]), # id
-                    job[2], # tool_id
-                    job[3], # tool_version
-                    job[4], # state
-                    str(job[5]) # create_time
+                    str(job[0]),  # id
+                    job[2],  # tool_id
+                    job[3],  # tool_version
+                    job[4],  # state
+                    str(job[5])  # create_time
                 ]
                 cline = unicodify('\t'.join(line) + '\n')
                 handle_job.write(cline)
@@ -243,12 +243,12 @@ def main(argv):
 
             try:
                 line = [
-                    str(job[0]), # Job ID
-                    str(hda_id), # HDA ID
-                    str(hdas[hda_id][1]), # Extension
-                    round_to_2sd(datasets[dataset_id][0]), # File size
-                    job[2], # Parameter name
-                    str(filetype) # input/output
+                    str(job[0]),  # Job ID
+                    str(hda_id),  # HDA ID
+                    str(hdas[hda_id][1]),  # Extension
+                    round_to_2sd(datasets[dataset_id][0]),  # File size
+                    job[2],  # Parameter name
+                    str(filetype)  # input/output
                 ]
                 cline = unicodify('\t'.join(line) + '\n')
                 handle_datasets.write(cline)
@@ -276,10 +276,10 @@ def main(argv):
 
             try:
                 line = [
-                    str(metric[0]),
-                    metric[1],
-                    metric[2],
-                    str(metric[3])
+                    str(metric[0]),  # job id
+                    metric[1],  # plugin
+                    metric[2],  # name
+                    str(metric[3])  # value
                 ]
 
                 cline = unicodify('\t'.join(line) + '\n')
