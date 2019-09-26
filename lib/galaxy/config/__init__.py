@@ -233,12 +233,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
         def check_is_dag():
             def walk(key):
-                if key:
-                    if key in visited:
-                        raise_error('Invalid schema: cycle detected')
-                    visited.add(key)
-                    next = self.appschema[key].get('path_resolves_to')
-                    walk(next)
+                if key in visited:
+                    raise_error('Invalid schema: cycle detected')
+                visited.add(key)
+                parent = self.appschema[key].get('path_resolves_to')
+                if parent:
+                    walk(parent)
 
             for key in self._paths_to_resolve:
                 visited = set()
@@ -266,9 +266,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         def strip_deprecated_dir(key, value):
             resolves_to = self.appschema[key].get('path_resolves_to')
             if resolves_to:  # value is a path that will be resolved
-                dir = value.split(os.sep)[0]  # get first directory component
-                if dir == self.deprecated_dirs[resolves_to]:  # dir is deprecated for this option
-                    ignore = dir + os.sep
+                first_dir = value.split(os.sep)[0]  # get first directory component
+                if first_dir == self.deprecated_dirs[resolves_to]:  # first_dir is deprecated for this option
+                    ignore = first_dir + os.sep
                     log.warning(
                         "Paths for the '%s' option are now relative to '%s', remove the leading '%s' "
                         "to suppress this warning: %s", key, resolves_to, ignore, value
