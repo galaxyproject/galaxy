@@ -33,7 +33,9 @@
     string to specify an external database instead.  This string takes
     many options which are explained in detail in the config file
     documentation.
-:Default: ``sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE``
+    Sample default
+    'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
+:Default: ``None``
 :Type: str
 
 
@@ -151,7 +153,8 @@
     can be used to separate the tool shed install database (all other
     options listed above but prefixed with install_ are also
     available).
-:Default: ``sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE``
+    Defaults to the value of the 'database_connection' option.
+:Default: ``None``
 :Type: str
 
 
@@ -204,10 +207,12 @@
 ~~~~~~~~~~~~~
 
 :Description:
-    Where dataset files are stored. It must accessible at the same
+    Where dataset files are stored. It must be accessible at the same
     path on any cluster nodes that will run Galaxy jobs, unless using
     Pulsar.
-:Default: ``database/files``
+    Default value will be resolved to 'database/files' where
+    'database' is the default value of the 'data_dir' option).
+:Default: ``files``
 :Type: str
 
 
@@ -216,10 +221,12 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Where temporary files are stored. It must accessible at the same
-    path on any cluster nodes that will run Galaxy jobs, unless using
-    Pulsar.
-:Default: ``database/tmp``
+    Where temporary files are stored. It must be accessible at the
+    same path on any cluster nodes that will run Galaxy jobs, unless
+    using Pulsar.
+    Default value will be resolved to 'database/tmp' where 'database'
+    is the default value of the 'data_dir' option).
+:Default: ``tmp``
 :Type: str
 
 
@@ -281,7 +288,9 @@
     migration scripts to install tools that have been migrated to the
     tool shed upon a new release, they will be added to this tool
     config file.
-:Default: ``config/migrated_tools_conf.xml``
+    Default value will be resolved to 'config/migrated_tools_conf.xml'
+    where 'config' is the default value of the 'config_dir' option).
+:Default: ``migrated_tools_conf.xml``
 :Type: str
 
 
@@ -319,11 +328,14 @@
     Various dependency resolver configuration parameters will have
     defaults set relative to this path, such as the default conda
     prefix, default Galaxy packages path, legacy tool shed
-    dependencies path, and the dependency cache directory.  Set the
-    string to None to explicitly disable tool dependency handling. If
-    this option is set to none or an invalid path, installing tools
-    with dependencies from the Tool Shed or in Conda will fail.
-:Default: ``database/dependencies``
+    dependencies path, and the dependency cache directory.
+    Set the string to null to explicitly disable tool dependency
+    handling. If this option is set to none or an invalid path,
+    installing tools with dependencies from the Tool Shed or in Conda
+    will fail.
+    Default value will be resolved to 'database/dependencies' where
+    'database' is the default value of the 'data_dir' option).
+:Default: ``dependencies``
 :Type: str
 
 
@@ -336,9 +348,9 @@
     options for how Galaxy resolves tool dependencies (requirement
     tags in Tool XML). The default ordering is to the use the Tool
     Shed for tools installed that way, use local Galaxy packages, and
-    then use Conda if available. See https://github.com/galaxyproject/
-    galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst for more
-    information on these options.
+    then use Conda if available. See
+    https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
+    for more information on these options.
 :Default: ``config/dependency_resolvers_conf.xml``
 :Type: str
 
@@ -349,11 +361,9 @@
 
 :Description:
     conda_prefix is the location on the filesystem where Conda
-    packages and environments are installed IMPORTANT: Due to a
-    current limitation in conda, the total length of the conda_prefix
-    and the job_working_directory path should be less than 50
-    characters!
-:Default: ``<tool_dependency_dir>/_conda``
+    packages and environments are installed.
+    Sample default '<tool_dependency_dir>/_conda'
+:Default: ``None``
 :Type: str
 
 
@@ -449,9 +459,10 @@
     share.  Set this option to true to cache the dependencies in a
     folder. This option is beta and should only be used if you
     experience long waiting times before a job is actually submitted
-    to your cluster.  This only affects tools where some requirements
-    can be resolved but not others, most modern best practice tools
-    can use prebuilt environments in the Conda directory.
+    to your cluster.
+    This only affects tools where some requirements can be resolved
+    but not others, most modern best practice tools can use prebuilt
+    environments in the Conda directory.
 :Default: ``false``
 :Type: bool
 
@@ -462,8 +473,9 @@
 
 :Description:
     By default the tool_dependency_cache_dir is the _cache directory
-    of the tool dependency directory
-:Default: ``<tool_dependency_dir>/_cache``
+    of the tool dependency directory.
+    Sample default '<tool_dependency_dir>/_cache'
+:Default: ``None``
 :Type: str
 
 
@@ -595,7 +607,8 @@
     the Galaxy host. This is ignored if the relevant container
     resolver isn't enabled, and will install on demand unless
     involucro_auto_init is set to false.
-:Default: ``database/dependencies/involucro``
+    Sample default '<tool_dependency_dir>/involucro'
+:Default: ``None``
 :Type: str
 
 
@@ -709,8 +722,9 @@
 
 :Description:
     Directory where Tool Data Table related files will be placed when
-    installed from a ToolShed. Defaults to tool_data_path.
-:Default: ``tool-data``
+    installed from a ToolShed. Defaults to the value of the
+    'tool_data_path' option.
+:Default: ``None``
 :Type: str
 
 
@@ -737,8 +751,9 @@
 ~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    File containing old-style genome builds
-:Default: ``tool-data/shared/ucsc/builds.txt``
+    File containing old-style genome builds. Value will be resolved
+    with respect to <tool_data_path>.
+:Default: ``shared/ucsc/builds.txt``
 :Type: str
 
 
@@ -748,8 +763,9 @@
 
 :Description:
     Directory where chrom len files are kept, currently mainly used by
-    trackster
-:Default: ``tool-data/shared/ucsc/chrom``
+    trackster. Value will be resolved with respect to
+    <tool_data_path>.
+:Default: ``shared/ucsc/chrom``
 :Type: str
 
 
@@ -798,7 +814,7 @@
     Visualizations config directory: where to look for individual
     visualization plugins.  The path is relative to the Galaxy root
     dir.  To use an absolute path begin the path with '/'.  This is a
-    comma separated list. Defaults to "config/plugins/visualizations".
+    comma-separated list.
 :Default: ``config/plugins/visualizations``
 :Type: str
 
@@ -814,7 +830,7 @@
     stock plugins. These will require Docker to be configured and have
     security considerations, so proceed with caution. The path is
     relative to the Galaxy root dir.  To use an absolute path begin
-    the path with '/'.  This is a comma separated list.
+    the path with '/'.  This is a comma-separated list.
 :Default: ``None``
 :Type: str
 
@@ -857,7 +873,9 @@
     Each job is given a unique empty directory as its current working
     directory. This option defines in what parent directory those
     directories will be created.
-:Default: ``database/jobs_directory``
+    Default value will be resolved to 'database/jobs_directory' where
+    'database' is the default value of the 'data_dir' option).
+:Default: ``jobs_directory``
 :Type: str
 
 
@@ -868,7 +886,8 @@
 :Description:
     If using a cluster, Galaxy will write job scripts and
     stdout/stderr to this directory.
-:Default: ``database/pbs``
+    Value will be resolved with respect to <data_dir>.
+:Default: ``pbs``
 :Type: str
 
 
@@ -879,7 +898,9 @@
 :Description:
     Mako templates are compiled as needed and cached for reuse, this
     directory is used for the cache
-:Default: ``database/compiled_templates``
+    Default value will be resolved to 'database/compiled_templates'
+    where 'database' is the default value of the 'data_dir' option).
+:Default: ``compiled_templates``
 :Type: str
 
 
@@ -954,7 +975,9 @@
     fetched from external sources such as https://doi.org/ by Galaxy -
     the following parameters can be used to control the caching used
     to store this information.
-:Default: ``database/citations/data``
+    Default value will be resolved to 'database/citations/data' where
+    'database' is the default value of the 'data_dir' option).
+:Default: ``citations/data``
 :Type: str
 
 
@@ -967,7 +990,9 @@
     fetched from external sources such as https://doi.org/ by Galaxy -
     the following parameters can be used to control the caching used
     to store this information.
-:Default: ``database/citations/lock``
+    Default value will be resolved to 'database/citations/locks' where
+    'database' is the default value of the 'data_dir' option).
+:Default: ``citations/locks``
 :Type: str
 
 
@@ -1053,7 +1078,8 @@
     list. This is the address used to subscribe to the list. Uncomment
     and leave empty if you want to remove this option from the user
     registration form.
-:Default: ``galaxy-announce-join@bx.psu.edu``
+    Example value 'galaxy-announce-join@bx.psu.edu'
+:Default: ``None``
 :Type: str
 
 
@@ -1092,7 +1118,8 @@
 :Description:
     URL of the support resource for the galaxy instance.  Used in
     activation emails.
-:Default: ``https://galaxyproject.org/``
+    Example value 'https://galaxyproject.org/'
+:Default: ``None``
 :Type: str
 
 
@@ -1105,7 +1132,8 @@
     using disposable email address during the registration.  If their
     address domain matches any domain in the blacklist, they are
     refused the registration.
-:Default: ``config/disposable_email_blacklist.conf``
+    Example value 'config/disposable_email_blacklist.conf'
+:Default: ``None``
 :Type: str
 
 
@@ -1204,18 +1232,19 @@
     Galaxy can display data at various external browsers.  These
     options specify which browsers should be available.  URLs and
     builds available at these browsers are defined in the specified
-    files.  If use_remote_user is set to true, display application
-    servers will be denied access to Galaxy and so displaying datasets
-    in these sites will fail. display_servers contains a list of
+    files.
+    If use_remote_user is set to true, display application servers
+    will be denied access to Galaxy and so displaying datasets in
+    these sites will fail. display_servers contains a list of
     hostnames which should be allowed to bypass security to display
     datasets.  Please be aware that there are security implications if
     this is allowed.  More details (including required changes to the
     proxy server config) are available in the Apache proxy
-    documentation on the Galaxy Community Hub.  The list of servers in
-    this sample config are for the UCSC Main, Test and Archaea
-    browsers, but the default if left commented is to not allow any
-    display sites to bypass security (you must uncomment the line
-    below to allow them).
+    documentation on the Galaxy Community Hub.
+    The list of servers in this sample config are for the UCSC Main,
+    Test and Archaea browsers, but the default if left commented is to
+    not allow any display sites to bypass security (you must uncomment
+    the line below to allow them).
 :Default: ``hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu``
 :Type: str
 
@@ -1349,11 +1378,11 @@
     URL (with schema http/https) of the Galaxy instance as accessible
     within your local network - if specified used as a default by
     pulsar file staging and Jupyter Docker container for communicating
-    back with Galaxy via the API.  If you are attempting to set up
-    GIEs on Mac OS X with Docker Desktop for Mac and your Galaxy
-    instance runs on port 8080 this should be
-    'http://host.docker.internal:8080'.  For more details see
-    https://docs.docker.com/docker-for-mac/networking/
+    back with Galaxy via the API.
+    If you are attempting to set up GIEs on Mac OS X with Docker
+    Desktop for Mac and your Galaxy instance runs on port 8080 this
+    should be 'http://host.docker.internal:8080'.  For more details
+    see https://docs.docker.com/docker-for-mac/networking/
 :Default: ``http://localhost:8080``
 :Type: str
 
@@ -1771,7 +1800,9 @@
 :Description:
     The NodeJS dynamic proxy can use an SQLite database or a JSON file
     for IPC, set that here.
-:Default: ``database/session_map.sqlite``
+    Default value will be resolved to 'database/session_map.sqlite'
+    where 'database' is the default value of the 'data_dir' option).
+:Default: ``session_map.sqlite``
 :Type: str
 
 
@@ -1949,7 +1980,7 @@
 :Description:
     Turn on logging of application events and some user events to the
     database.
-:Default: ``true``
+:Default: ``false``
 :Type: bool
 
 
@@ -1962,7 +1993,7 @@
     currently logged are grid views, tool searches, and use of
     "recently" used tools menu.  The log_events and log_actions
     functionality will eventually be merged.
-:Default: ``true``
+:Default: ``false``
 :Type: bool
 
 
@@ -2047,7 +2078,7 @@
     Return a Access-Control-Allow-Origin response header that matches
     the Origin header of the request if that Origin hostname matches
     one of the strings or regular expressions listed here. This is a
-    comma separated list of hostname strings or regular expressions
+    comma-separated list of hostname strings or regular expressions
     beginning and ending with /. E.g.
     mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/ See:
     https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
@@ -2175,7 +2206,8 @@
 :Description:
     Heartbeat log filename. Can accept the template variables
     {server_name} and {pid}
-:Default: ``heartbeat_{server_name}.log``
+    Sample default 'heartbeat_{server_name}.log'
+:Default: ``None``
 :Type: str
 
 
@@ -2540,8 +2572,8 @@
     User authentication can be delegated to an upstream proxy server
     (usually Apache).  The upstream proxy should set a REMOTE_USER
     header in the request. Enabling remote user disables regular
-    logins.  For more information, see: https://docs.galaxyproject.org
-    /en/master/admin/special_topics/apache.html
+    logins.  For more information, see:
+    https://docs.galaxyproject.org/en/master/admin/special_topics/apache.html
 :Default: ``false``
 :Type: bool
 
@@ -2741,8 +2773,9 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.  If enable_beta_gdpr is set
-    to true, then this option will be overridden and set to false.
+    username and not email, or vice versa.
+    If enable_beta_gdpr is set to true, then this option will be
+    overridden and set to false.
 :Default: ``false``
 :Type: bool
 
@@ -2758,8 +2791,9 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.  If enable_beta_gdpr is set
-    to true, then this option will be overridden and set to false.
+    username and not email, or vice versa.
+    If enable_beta_gdpr is set to true, then this option will be
+    overridden and set to false.
 :Default: ``false``
 :Type: bool
 
@@ -2775,7 +2809,7 @@
     the administrator did not intend to expose. Previously, you could
     request any network service that Galaxy might have had access to,
     even if the user could not normally access it. It should be a
-    comma separated list of IP addresses or IP address/mask, e.g.
+    comma-separated list of IP addresses or IP address/mask, e.g.
     10.10.10.10,10.0.1.0/24,fd00::/8
 :Default: ``None``
 :Type: str
@@ -2791,12 +2825,13 @@
     emails and usernames from logs and bug reports. It also causes the
     delete user admin action to permanently redact their username and
     password, but not to delete data associated with the account as
-    this is not currently easily implementable.  You are responsible
-    for removing personal data from backups.  This forces
-    expose_user_email and expose_user_name to be false, and forces
-    user_deletion to be true to support the right to erasure.  Please
-    read the GDPR section under the special topics area of the admin
-    documentation.
+    this is not currently easily implementable.
+    You are responsible for removing personal data from backups.
+    This forces expose_user_email and expose_user_name to be false,
+    and forces user_deletion to be true to support the right to
+    erasure.
+    Please read the GDPR section under the special topics area of the
+    admin documentation.
 :Default: ``false``
 :Type: bool
 
@@ -2981,7 +3016,7 @@
 :Description:
     Optional list of email addresses of API users who can make calls
     on behalf of other users.
-:Default: ````
+:Default: ``None``
 :Type: str
 
 
@@ -3014,7 +3049,9 @@
 
 :Description:
     If OpenID is enabled, consumer cache directory to use.
-:Default: ``database/openid_consumer_cache``
+    Default value will be resolved to 'database/openid_consumer_cache'
+    where 'database' is the default value of the 'data_dir' option).
+:Default: ``openid_consumer_cache``
 :Type: str
 
 
@@ -3214,8 +3251,8 @@
     you can separate Galaxy into multiple processes.  There are more
     than one way to do this, and they are explained in detail in the
     documentation:
-    https://docs.galaxyproject.org/en/master/admin/scaling.html  By
-    default, Galaxy manages and executes jobs from within a single
+      https://docs.galaxyproject.org/en/master/admin/scaling.html
+    By default, Galaxy manages and executes jobs from within a single
     process and notifies itself of new jobs via in-memory queues.
     Jobs are run locally on the system on which Galaxy is started.
     Advanced job running capabilities can be configured through the
@@ -3439,7 +3476,9 @@
     (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) this script is used to run the
     job script Galaxy generates for a tool execution.
-:Default: ``sudo -E scripts/drmaa_external_runner.py --assign_all_groups``
+    Example value 'sudo -E scripts/drmaa_external_runner.py
+    --assign_all_groups'
+:Default: ``None``
 :Type: str
 
 
@@ -3452,7 +3491,8 @@
     (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) this script is used to kill
     such jobs by Galaxy (e.g. if the user cancels the job).
-:Default: ``sudo -E scripts/drmaa_external_killer.py``
+    Example value 'sudo -E scripts/drmaa_external_killer.py'
+:Default: ``None``
 :Type: str
 
 
@@ -3466,7 +3506,8 @@
     #submitting-jobs-as-the-real-user) this script is used transfer
     permissions back and forth between the Galaxy user and the user
     that is running the job.
-:Default: ``sudo -E scripts/external_chown_script.py``
+    Example value 'sudo -E scripts/external_chown_script.py'
+:Default: ``None``
 :Type: str
 
 
@@ -3663,7 +3704,7 @@
     The base module(s) that are searched for modules for toolbox
     filtering (https://galaxyproject.org/user-defined-toolbox-
     filters/) functions.
-:Default: ``galaxy.tools.toolbox.filters,galaxy.tools.filters``
+:Default: ``galaxy.tools.filters,galaxy.tools.toolbox.filters``
 :Type: str
 
 
@@ -3676,12 +3717,13 @@
     For example, when reloading the toolbox or locking job execution,
     the process that handled that particular request will tell all
     others to also reload, lock jobs, etc. For connection examples,
-    see http://docs.celeryproject.org/projects/kombu/en/latest/usergui
-    de/connections.html  Without specifying anything here, galaxy will
-    first attempt to use your specified database_connection above.  If
-    that's not specified either, Galaxy will automatically create and
-    use a separate sqlite database located in your <galaxy>/database
-    folder (indicated in the commented out line below).
+    see
+    http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html
+    Without specifying anything here, galaxy will first attempt to use
+    your specified database_connection above.  If that's not specified
+    either, Galaxy will automatically create and use a separate sqlite
+    database located in your <galaxy>/database folder (indicated in
+    the commented out line below).
 :Default: ``sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE``
 :Type: str
 
