@@ -615,7 +615,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         POST /api/workflows/get_tool_predictions
         Fetch predicted tools for a workflow
         """
-        print(payload)
         if 'tool_sequence' not in payload or trans.app.config.tool_recommendation_model_path is None:
             return
         tool_sequence = payload.get('tool_sequence', "")
