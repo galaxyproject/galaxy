@@ -21,6 +21,7 @@ import galaxy.config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import hash_util
 from galaxy.util.script import app_properties_from_args, populate_config_args
+from galaxy.util import unicodify
 
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml.sample'))
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))
@@ -155,16 +156,15 @@ def main(argv):
                 continue
 
             try:
-                handle_job.write(str(job[0]))  # id
-                handle_job.write('\t')
-                handle_job.write(job[2])  # tool_id
-                handle_job.write('\t')
-                handle_job.write(job[3])  # tool_version
-                handle_job.write('\t')
-                handle_job.write(job[4])  # state
-                handle_job.write('\t')
-                handle_job.write(str(job[5]))  # create_time
-                handle_job.write('\n')
+                line = [
+                    str(job[0]), # id
+                    job[2], # tool_id
+                    job[3], # tool_version
+                    job[4], # state
+                    str(job[5]) # create_time
+                ]
+                cline = unicodify('\t'.join(line) + '\n')
+                handle_job.write(cline.encode('utf-8'))
             except Exception:
                 logging.warning("Unable to write out a 'handle_job' row. Ignoring the row.", exc_info=True)
                 continue
@@ -241,18 +241,16 @@ def main(argv):
                 continue
 
             try:
-                handle_datasets.write(str(job[0]))
-                handle_datasets.write('\t')
-                handle_datasets.write(str(hda_id))
-                handle_datasets.write('\t')
-                handle_datasets.write(str(hdas[hda_id][1]))
-                handle_datasets.write('\t')
-                handle_datasets.write(round_to_2sd(datasets[dataset_id][0]))
-                handle_datasets.write('\t')
-                handle_datasets.write(str(job[2]))
-                handle_datasets.write('\t')
-                handle_datasets.write(str(filetype))
-                handle_datasets.write('\n')
+                line = [
+                    str(job[0]), # Job ID
+                    str(hda_id), # HDA ID
+                    str(hdas[hda_id][1]), # Extension
+                    round_to_2sd(datasets[dataset_id][0]), # File size
+                    job[2], # Parameter name
+                    str(filetype) # input/output
+                ]
+                cline = unicodify('\t'.join(line) + '\n')
+                handle_datasets.write(cline.encode('utf-8'))
             except Exception:
                 logging.warning("Unable to write out a 'handle_datasets' row. Ignoring the row.", exc_info=True)
                 continue
@@ -276,14 +274,15 @@ def main(argv):
                 continue
 
             try:
-                handle_metric_num.write(str(metric[0]))
-                handle_metric_num.write('\t')
-                handle_metric_num.write(metric[1])
-                handle_metric_num.write('\t')
-                handle_metric_num.write(metric[2])
-                handle_metric_num.write('\t')
-                handle_metric_num.write(str(metric[3]))
-                handle_metric_num.write('\n')
+                line = [
+                    str(metric[0]),
+                    metric[1],
+                    metric[2],
+                    str(metric[3])
+                ]
+
+                cline = unicodify('\t'.join(line) + '\n')
+                handle_metric_num.write(cline.encode('utf-8'))
             except Exception:
                 logging.warning("Unable to write out a 'handle_metric_num' row. Ignoring the row.", exc_info=True)
                 continue
@@ -303,7 +302,7 @@ def main(argv):
             os.unlink(REPORT_BASE + '.' + name + '.tsv')
 
     _times.append(('job_finish', time.time() - _start_time))
-    sha = hash_util.memory_bound_hexdigest(hash_util.sha256, REPORT_BASE + ".tar.gz")
+    sha = hash_util.memory_bound_hexdigest(hash_func=hash_util.sha256, path=REPORT_BASE + ".tar.gz")
     _times.append(('hash_finish', time.time() - _start_time))
 
     # Now serialize the individual report data.
