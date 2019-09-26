@@ -608,13 +608,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'config_form'       : module.get_config_form(),
             'post_job_actions'  : module.get_post_job_actions(inputs)
         }
-
+        
     @expose_api
-    def get_tool_predictions(self, trans, payload, topk=20, to_show=20, max_seq_len=25, set_admin_recommendations=False):
+    def get_tool_predictions(self, trans, payload, **kwd):
         """
         POST /api/workflows/get_tool_predictions
         Fetch predicted tools for a workflow
         """
+        print(payload)
         if 'tool_sequence' not in payload or trans.app.config.tool_recommendation_model_path is None:
             return
         tool_sequence = payload.get('tool_sequence', "")
@@ -660,7 +661,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         self.loaded_model.set_weights(model_weights)
         tool_sequence = tool_sequence.split(",")
         tool_sequence = list(reversed(tool_sequence))
-        recommended_tools = self.__compute_tool_prediction(trans, tool_sequence, topk, to_show, max_seq_len)
+        recommended_tools = self.__compute_tool_prediction(trans, tool_sequence)
 
         return {
             "current_tool": tool_sequence,
@@ -690,7 +691,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             output_extensions.extend(o_ext['extensions'])
         return input_extensions, output_extensions
 
-    def __compute_tool_prediction(self, trans, tool_sequence, topk, to_show, max_seq_len):
+    def __compute_tool_prediction(self, trans, tool_sequence):
+        max_seq_len = 25
+        topk = 20
+        to_show = 20
         prediction_data = dict()
         prediction_data["name"] = ",".join(tool_sequence)
         prediction_data["children"] = list()

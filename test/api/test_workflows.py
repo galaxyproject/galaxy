@@ -286,6 +286,12 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
             self._assert_user_has_workflow_with_name(name)
         return upload_response
 
+    def test_get_tool_predictions(self):
+        request = {"tool_sequence": "Cut1"}
+        route = "workflows/get_tool_predictions"
+        response = self._post(route, data=request)
+        self._assert_status_code_is(response, 200)
+
     def test_update(self):
         original_workflow = self.workflow_populator.load_workflow(name="test_import")
         uuids = {}
