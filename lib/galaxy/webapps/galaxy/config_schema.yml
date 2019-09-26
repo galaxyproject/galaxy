@@ -267,7 +267,7 @@ mapping:
           to this path, such as the default conda prefix, default Galaxy packages path, legacy
           tool shed dependencies path, and the dependency cache directory.
 
-          Set the string to None to explicitly disable tool dependency handling.
+          Set the string to null to explicitly disable tool dependency handling.
           If this option is set to none or an invalid path, installing tools with dependencies
           from the Tool Shed or in Conda will fail.
 
@@ -1463,14 +1463,14 @@ mapping:
 
       log_events:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Turn on logging of application events and some user events to the database.
 
       log_actions:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Turn on logging of user actions to the database.  Actions currently logged

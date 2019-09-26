@@ -1,3 +1,4 @@
+import collections
 from xml.etree import ElementTree
 
 try:
@@ -6,6 +7,9 @@ except ImportError:
     yaml = None
 
 from galaxy.util.submodules import import_submodules
+
+
+PluginConfigSource = collections.namedtuple('PluginConfigSource', ['type', 'source'])
 
 
 def plugins_dict(module, plugin_type_identifier):
@@ -33,11 +37,10 @@ def plugins_dict(module, plugin_type_identifier):
 def load_plugins(plugins_dict, plugin_source, extra_kwds=None, plugin_type_keys=('type',)):
     if extra_kwds is None:
         extra_kwds = {}
-    source_type, source = plugin_source
-    if source_type == "xml":
-        return __load_plugins_from_element(plugins_dict, source, extra_kwds)
+    if plugin_source.type == "xml":
+        return __load_plugins_from_element(plugins_dict, plugin_source.source, extra_kwds)
     else:
-        return __load_plugins_from_dicts(plugins_dict, source, extra_kwds, plugin_type_keys=plugin_type_keys)
+        return __load_plugins_from_dicts(plugins_dict, plugin_source.source, extra_kwds, plugin_type_keys=plugin_type_keys)
 
 
 def __load_plugins_from_element(plugins_dict, plugins_element, extra_kwds):
@@ -80,9 +83,9 @@ def __load_plugins_from_dicts(plugins_dict, configs, extra_kwds, plugin_type_key
 
 def plugin_source_from_path(path):
     if path.endswith(".yaml") or path.endswith(".yml") or path.endswith(".yaml.sample") or path.endswith(".yml.sample"):
-        return ('dict', __read_yaml(path))
+        return PluginConfigSource('dict', __read_yaml(path))
     else:
-        return ('xml', ElementTree.parse(path).getroot())
+        return PluginConfigSource('xml', ElementTree.parse(path).getroot())
 
 
 def __read_yaml(path):
