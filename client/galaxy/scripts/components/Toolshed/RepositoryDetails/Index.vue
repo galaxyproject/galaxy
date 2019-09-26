@@ -151,7 +151,7 @@ export default {
                     this.showSettings = false;
                 })
                 .catch(error => {
-                    this.error = error;
+                    console.log(error);
                 });
         },
         onHide: function() {

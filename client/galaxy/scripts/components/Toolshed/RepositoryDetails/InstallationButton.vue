@@ -7,7 +7,7 @@
             <b-button v-if="uninstallState" :class="buttonClass" variant="danger" @click="onUninstall">
                 Uninstall
             </b-button>
-            <b-button v-else :class="buttonClass" @click="onUninstall">
+            <b-button v-else :class="buttonClass" @click="onCancel">
                 <span v-if="!errorState" class="fa fa-spinner fa-spin" />
                 <span>{{ status }}</span>
             </b-button>
@@ -44,6 +44,11 @@ export default {
         },
         onUninstall() {
             this.$emit("onUninstall");
+        },
+        onCancel() {
+            if (window.confirm(`Are you sure you want cancel this process'?`)) {
+                this.$emit("onUninstall");
+            }
         }
     }
 };
