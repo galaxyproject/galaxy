@@ -30,7 +30,6 @@ describe("Details", () => {
         });
         expect(wrapper.find(".loading-message").text()).to.equal("Loading installed repository details...");
         await Vue.nextTick();
-        console.log(wrapper.html());
         expect(wrapper.findAll(".alert").length).to.equal(0);
         expect(wrapper.findAll("repositorydetails-stub").length).to.equal(1);
     });

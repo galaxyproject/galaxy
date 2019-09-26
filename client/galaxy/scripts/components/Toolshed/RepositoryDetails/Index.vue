@@ -7,7 +7,7 @@
         <div>
             <span v-if="loading">
                 <span class="fa fa-spinner fa-spin" />
-                Loading repository details...
+                <span class="loading-message">Loading repository details...</span>
             </span>
             <div v-else>
                 <b-alert v-if="error" variant="danger" show>
@@ -52,10 +52,15 @@
     </b-card>
 </template>
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import { Services } from "../services.js";
 import InstallationSettings from "./InstallationSettings.vue";
 import InstallationButton from "./InstallationButton.vue";
 import RepositoryTools from "./RepositoryTools.vue";
+
+Vue.use(BootstrapVue);
+
 export default {
     components: {
         InstallationSettings,
