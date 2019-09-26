@@ -232,17 +232,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 raise_error(message)
 
         def check_is_dag():
-            def walk(key):
-                if key in visited:
-                    raise_error('Invalid schema: cycle detected')
-                visited.add(key)
-                parent = self.appschema[key].get('path_resolves_to')
-                if parent:
-                    walk(parent)
-
+            visited = set()
             for key in self._paths_to_resolve:
-                visited = set()
-                walk(key)
+                visited.clear()
+                while key:
+                    visited.add(key)
+                    key = self.appschema[key].get('path_resolves_to')
+                    if key and key in visited:
+                        raise_error('Invalid schema: cycle detected')
 
         def raise_error(message):
             log.error(message)
