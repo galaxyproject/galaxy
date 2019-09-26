@@ -1,15 +1,15 @@
 <template>
     <div>
         <div v-if="category.model_class.endsWith('ToolSection')" class="toolSectionWrapper">
-            <div class="toolSectionTitle">
-                <a @click="opened = !opened" href="javascript:void(0)">
+            <div :id="category.name" class="toolSectionTitle">
+                <a @click="toggleToolSectionMenu" href="javascript:void(0)" role="button">
                     <span>
                         {{ category.name }}
                     </span>
                 </a>
             </div>
             <transition name="slide">
-                <div v-if="opened">
+                <div v-if="opened" >
                     <template v-for="tool in category.elems">
                         <tool v-if="tool.model_class.endsWith('Tool')" :tool="tool" :key="tool.id"></tool>
                         <div v-else-if="tool.model_class === 'ToolSectionLabel'" class="toolPanelLabel" :key="tool.id">
@@ -34,6 +34,7 @@
 
 <script>
 import Tool from "./Tool.vue";
+import ariaAlert from "utils/ariaAlert"
 
 export default {
     name: "ToolSection",
@@ -48,7 +49,13 @@ export default {
             type: Boolean
         }
     },
-    methods: {},
+    methods: {
+        toggleToolSectionMenu(e) {
+            this.opened = !this.opened;
+            const currentState = this.opened ? "opened" : "closed";
+            ariaAlert(`${this.category.name} tools menu ${currentState}`);
+        }
+    },
     data() {
         return {
             opened: false
