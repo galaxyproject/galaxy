@@ -1,5 +1,5 @@
 <template>
-    <b-modal modal-class="data-dialog-modal" v-if="modalShow" visible ok-only ok-title="Close">
+    <b-modal modal-class="data-dialog-modal" v-if="modalShow" visible ok-only ok-title="Close" :static="modalStatic">
         <template slot="modal-header">
             <data-dialog-search v-model="filter" />
         </template>
@@ -79,6 +79,10 @@ export default {
         history: {
             type: String,
             required: true
+        },
+        modalStatic: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
