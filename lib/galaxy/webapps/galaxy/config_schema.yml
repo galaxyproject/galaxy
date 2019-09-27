@@ -2799,3 +2799,35 @@ mapping:
           Allow disabling pbkdf2 hashing of passwords for legacy situations.
           This should normally be left enabled unless there is a specific
           reason to disable it.
+
+      enable_tool_recommendations:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Allow the display of tool recommendations in workflow editor and after tool execution
+
+      tool_recommendation_model_path:
+        type: str
+        default: 'database/tool_recommendation_model.hdf5'
+        required: false
+        desc: |
+          Set path of the trained model (HDF5 file) for tool recommendation.
+          It is required to be set if 'enable_tool_recommendations' property is enabled and set to true.
+
+      enable_admin_tool_recommendations:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable tool recommendations to be set by Galaxy admins
+          If set to true, 'admin_tool_recommendations_path' must be set as well
+          which takes the path of the additional list of tools to be recommended
+
+      admin_tool_recommendations_path:
+        type: str
+        default: 'database/admin_tool_recommendation.json'
+        required: false
+        desc: |
+          Set path to the additional tool recommendations from Galaxy admin.
+          They are shown along with the recommendations using deep learning trained model
