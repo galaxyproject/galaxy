@@ -726,6 +726,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __compute_tool_prediction(self, trans, tool_sequence):
         """
         Compute the predicted tools for a tool sequences
+        Return a payload with the tool sequences and recommended tools
+        Return an empty payload with just the tool sequence if anything goes wrong within the try block
         """
         max_seq_len = 25
         topk = 20
@@ -742,6 +744,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             # get the list of datatype extensions of the last tool of the tool sequence
             _, last_output_extensions = self.__get_tool_extensions(trans, self.all_tools[last_tool_name][0])
             prediction_data["o_extensions"] = list(set(last_output_extensions))
+            # get tool names without slashes and create a sequence vector
             for idx, tool_name in enumerate(tool_sequence):
                 if tool_name.find("/") > -1:
                     tool_name = tool_name.split("/")[-2]
