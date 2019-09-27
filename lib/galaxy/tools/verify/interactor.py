@@ -244,7 +244,7 @@ class GalaxyInteractorApi(object):
     def wait_for_job(self, job_id, history_id, maxseconds):
         self.wait_for(lambda: not self.__job_ready(job_id, history_id), maxseconds=maxseconds)
 
-    def wait_for(self, func, **kwd):
+    def wait_for(self, func, what='Tool test run', **kwd):
         sleep_amount = 0.2
         slept = 0
         walltime_exceeded = int(kwd.get("maxseconds", DEFAULT_TOOL_TEST_WAIT))
@@ -258,7 +258,7 @@ class GalaxyInteractorApi(object):
             else:
                 return
 
-        message = 'Tool test run exceeded walltime [total %s, max %s], terminating.' % (slept, walltime_exceeded)
+        message = '%s exceeded walltime [total %s, max %s], terminating.' % (what, slept, walltime_exceeded)
         log.info(message)
         raise AssertionError(message)
 
@@ -343,7 +343,7 @@ class GalaxyInteractorApi(object):
                 })
             name = test_data['name']
         else:
-            name = fname
+            name = os.path.basename(fname)
             tool_input.update({
                 "files_0|NAME": name,
                 "files_0|type": "upload_dataset",
@@ -691,7 +691,7 @@ def _verify_composite_datatype_file_content(file_name, hda_id, base_name=None, a
         )
     except AssertionError as err:
         errmsg = 'Composite file (%s) of %s different than expected, difference:\n' % (base_name, item_label)
-        errmsg += str(err)
+        errmsg += util.unicodify(err)
         raise AssertionError(errmsg)
 
 
@@ -806,10 +806,10 @@ def verify_tool(tool_id,
                 job_data["job"] = job_stdio
             status = "success"
             if job_output_exceptions:
-                job_data["output_problems"] = [str(_) for _ in job_output_exceptions]
+                job_data["output_problems"] = [util.unicodify(_) for _ in job_output_exceptions]
                 status = "failure"
             if tool_execution_exception:
-                job_data["execution_problem"] = str(tool_execution_exception)
+                job_data["execution_problem"] = util.unicodify(tool_execution_exception)
                 status = "error"
             job_data["status"] = status
             register_job_data(job_data)
@@ -937,7 +937,7 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
                 verify_assertions(data, assertions)
             except AssertionError as err:
                 errmsg = '%s different than expected\n' % description
-                errmsg += str(err)
+                errmsg += util.unicodify(err)
                 register_exception(AssertionError(errmsg))
 
     for output_collection_def in testdef.output_collections:
@@ -1022,7 +1022,7 @@ def _format_stream(output, stream, format):
 class JobOutputsError(AssertionError):
 
     def __init__(self, output_exceptions, job_stdio):
-        big_message = "\n".join(map(str, output_exceptions))
+        big_message = "\n".join(map(util.unicodify, output_exceptions))
         super(JobOutputsError, self).__init__(big_message)
         self.job_stdio = job_stdio
         self.output_exceptions = output_exceptions
@@ -1064,7 +1064,7 @@ class ToolTestDescription(object):
         self.exception = processed_test_dict.get("exception", None)
 
         self.output_collections = map(TestCollectionOutputDef.from_dict, processed_test_dict.get("output_collections", []))
-        self.command_line = processed_test_dict.get("command", None)
+        self.command_line = processed_test_dict.get("command_line", None)
         self.stdout = processed_test_dict.get("stdout", None)
         self.stderr = processed_test_dict.get("stderr", None)
         self.expect_exit_code = processed_test_dict.get("expect_exit_code", None)

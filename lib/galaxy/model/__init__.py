@@ -289,11 +289,13 @@ class JobLike(object):
 
     def set_streams(self, tool_stdout, tool_stderr, job_stdout=None, job_stderr=None, job_messages=None):
         def shrink_and_unicodify(what, stream):
-            stream = galaxy.util.unicodify(stream) or u''
-            if (len(stream) > galaxy.util.DATABASE_MAX_STRING_SIZE):
-                stream = galaxy.util.shrink_string_by_size(tool_stdout, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-                log.info("%s for %s %d is greater than %s, only a portion will be logged to database", what, type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY)
-            return stream
+            if len(stream) > galaxy.util.DATABASE_MAX_STRING_SIZE:
+                log.info("%s for %s %d is greater than %s, only a portion will be logged to database",
+                         what,
+                         type(self),
+                         self.id,
+                         galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY)
+            return galaxy.util.shrink_and_unicodify(stream)
 
         self.tool_stdout = shrink_and_unicodify('tool_stdout', tool_stdout)
         self.tool_stderr = shrink_and_unicodify('tool_stderr', tool_stderr)
@@ -320,26 +322,27 @@ class JobLike(object):
 
         return "%s[%s,tool_id=%s]" % (self.__class__.__name__, extra, self.tool_id)
 
-    def get_stdout(self):
-        stdout = self.tool_stdout
+    @property
+    def stdout(self):
+        stdout = self.tool_stdout or ''
         if self.job_stdout:
             stdout += "\n" + self.job_stdout
         return stdout
 
-    def set_stdout(self, stdout):
+    @stdout.setter
+    def stdout(self, stdout):
         raise NotImplementedError("Attempt to set stdout, must set tool_stdout or job_stdout")
 
-    def get_stderr(self):
-        stderr = self.tool_stderr
+    @property
+    def stderr(self):
+        stderr = self.tool_stderr or ''
         if self.job_stderr:
             stderr += "\n" + self.job_stderr
         return stderr
 
-    def set_stderr(self, stderr):
+    @stderr.setter
+    def stderr(self, stderr):
         raise NotImplementedError("Attempt to set stdout, must set tool_stderr or job_stderr")
-
-    stdout = property(get_stdout, set_stdout)
-    stderr = property(get_stderr, set_stderr)
 
 
 class User(Dictifiable, RepresentById):
@@ -2400,6 +2403,14 @@ class DatasetInstance(object):
         self.parent_id = parent_id
         self.validation_errors = validation_errors
 
+    @property
+    def peek(self):
+        return self._peek
+
+    @peek.setter
+    def peek(self, peek):
+        self._peek = unicodify(peek, strip_null=True)
+
     def update(self):
         self.update_time = galaxy.model.orm.now.now()
 
@@ -3660,7 +3671,7 @@ class ImplicitlyConvertedDatasetAssociation(RepresentById):
             try:
                 os.unlink(self.file_name)
             except Exception as e:
-                log.error("Failed to purge associated file (%s) from disk: %s" % (self.file_name, e))
+                log.error("Failed to purge associated file (%s) from disk: %s" % (self.file_name, unicodify(e)))
 
 
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"

@@ -190,12 +190,12 @@ class BaseAPIController(BaseController):
                                              check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted)
 
         except exceptions.ItemDeletionException as e:
-            raise HTTPBadRequest(detail="Invalid %s id ( %s ) specified: %s" % (class_name, str(id), str(e)))
+            raise HTTPBadRequest(detail="Invalid %s id ( %s ) specified: %s" % (class_name, str(id), util.unicodify(e)))
         except exceptions.MessageException as e:
             raise HTTPBadRequest(detail=e.err_msg)
         except Exception as e:
             log.exception("Exception in get_object check for %s %s.", class_name, str(id))
-            raise HTTPInternalServerError(comment=str(e))
+            raise HTTPInternalServerError(comment=util.unicodify(e))
 
     def validate_in_users_and_groups(self, trans, payload):
         """

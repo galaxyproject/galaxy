@@ -292,6 +292,11 @@ class PulsarJobRunner(AsynchronousJobRunner):
             else:
                 metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
 
+            config_files = job_wrapper.extra_filenames
+            tool_script = os.path.join(job_wrapper.working_directory, "tool_script.sh")
+            if os.path.exists(tool_script):
+                log.debug("Registering tool_script for Pulsar transfer [%s]" % tool_script)
+                config_files.append(tool_script)
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 input_files=self.get_input_files(job_wrapper),
@@ -299,7 +304,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 working_directory=job_wrapper.tool_working_directory,
                 metadata_directory=metadata_directory,
                 tool=job_wrapper.tool,
-                config_files=job_wrapper.extra_filenames,
+                config_files=config_files,
                 dependencies_description=dependencies_description,
                 env=client.env,
                 rewrite_paths=rewrite_paths,
@@ -352,16 +357,20 @@ class PulsarJobRunner(AsynchronousJobRunner):
             remote_metadata = PulsarJobRunner.__remote_metadata(client)
             dependency_resolution = PulsarJobRunner.__dependency_resolution(client)
             metadata_kwds = self.__build_metadata_configuration(client, job_wrapper, remote_metadata, remote_job_config)
+            remote_working_directory = remote_job_config['working_directory']
+            remote_job_directory = os.path.abspath(os.path.join(remote_working_directory, os.path.pardir))
+            remote_tool_directory = os.path.abspath(os.path.join(remote_job_directory, "tool_files"))
+            # This should be remote_job_directory ideally, this patch using configs is a workaround for
+            # older Pulsar versions that didn't support writing stuff to the job directory natively.
+            script_directory = os.path.join(remote_job_directory, "configs")
             remote_command_params = dict(
                 working_directory=remote_job_config['metadata_directory'],
+                script_directory=script_directory,
                 metadata_kwds=metadata_kwds,
                 dependency_resolution=dependency_resolution,
             )
-            remote_working_directory = remote_job_config['working_directory']
-            # TODO: Following defs work for Pulsar, always worked for Pulsar but should be
+            # TODO: Following directories work for Pulsar, always worked for Pulsar - but should be
             # calculated at some other level.
-            remote_job_directory = os.path.abspath(os.path.join(remote_working_directory, os.path.pardir))
-            remote_tool_directory = os.path.abspath(os.path.join(remote_job_directory, "tool_files"))
             container = self._find_container(
                 job_wrapper,
                 compute_working_directory=remote_working_directory,

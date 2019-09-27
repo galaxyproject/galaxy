@@ -181,6 +181,8 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         has_duplicate_inputs = False
         for job_input_assoc in job.input_datasets:
             input_dataset_instance = job_input_assoc.dataset
+            if input_dataset_instance is None:
+                continue
             if input_dataset_instance.get_total_size() == 0:
                 has_empty_inputs = True
             input_instance_id = input_dataset_instance.id
@@ -322,6 +324,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             for data_assoc in job.output_datasets:
                 if not self.dataset_manager.is_accessible(data_assoc.dataset.dataset, trans.user):
                     raise exceptions.ItemAccessibilityException("You are not allowed to rerun this job.")
+        trans.sa_session.refresh(job)
         return job
 
     @expose_api

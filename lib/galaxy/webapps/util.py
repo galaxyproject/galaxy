@@ -4,6 +4,8 @@ import logging
 
 import mako.exceptions
 
+from galaxy.util import unicodify
+
 
 log = logging.getLogger(__name__)
 
@@ -71,5 +73,5 @@ def wrap_if_allowed(app, stack, wrap, name=None, args=None, kwargs=None):
     try:
         return wrap_if_allowed_or_fail(app, stack, wrap, name=name, args=args, kwargs=kwargs)
     except MiddlewareWrapUnsupported as exc:
-        log.warning(str(exc))
+        log.warning(unicodify(exc))
         return app

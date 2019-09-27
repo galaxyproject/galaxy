@@ -158,7 +158,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "sam_pileup",
     "find_diag_hits",
     "cufflinks",
-    "gops_intersect_1",
     # Tools improperly migrated to the tool shed (iuc)
     "tabular_to_dbnsfp",
     # Tools improperly migrated using Galaxy (from shed other)
@@ -175,11 +174,12 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
 # Tools that needed galaxy on the PATH in the past but no longer do along
 # with the version at which they were fixed.
 GALAXY_LIB_TOOLS_VERSIONED = {
-    "sam_to_bam": packaging.version.parse("1.1.3"),
-    "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
-    "fetchflank": packaging.version.parse("1.0.1"),
     "Extract genomic DNA 1": packaging.version.parse("3.0.0"),
+    "fetchflank": packaging.version.parse("1.0.1"),
+    "gops_intersect_1": packaging.version.parse("1.0.0"),
     "lastz_wrapper_2": packaging.version.parse("1.3"),
+    "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
+    "sam_to_bam": packaging.version.parse("1.1.3"),
 }
 
 
@@ -193,7 +193,7 @@ class ToolErrorLog(object):
             "file": file,
             "time": str(datetime.now()),
             "phase": phase,
-            "error": str(exception)
+            "error": unicodify(exception)
         })
         if len(self.error_stack) > self.max_errors:
             self.error_stack.pop()
@@ -705,6 +705,10 @@ class Tool(Dictifiable):
         self.home_target = home_target
         self.tmp_target = tmp_target
         self.docker_env_pass_through = tool_source.parse_docker_env_pass_through()
+        if self.environment_variables:
+            if not self.docker_env_pass_through:
+                self.docker_env_pass_through = []
+            self.docker_env_pass_through.extend(map(lambda x: x['name'], self.environment_variables))
 
         # Parameters used to build URL for redirection to external app
         redirect_url_params = tool_source.parse_redirect_url_params_elem()
@@ -1242,6 +1246,13 @@ class Tool(Dictifiable):
             self.__ensure_help()
         return self.__help_by_page
 
+    @property
+    def raw_help(self):
+        # may return rst (or Markdown in the future)
+        tool_source = self.__help_source
+        help_text = tool_source.parse_help()
+        return help_text
+
     def __ensure_help(self):
         with HELP_UNINITIALIZED:
             if self.__help is HELP_UNINITIALIZED:
@@ -1486,7 +1497,7 @@ class Tool(Dictifiable):
             return False, e
         except Exception as e:
             log.exception('Exception caught while attempting tool execution:')
-            message = 'Error executing tool: %s' % str(e)
+            message = 'Error executing tool: %s' % unicodify(e)
             return False, message
         if isinstance(out_data, odict):
             return job, list(out_data.items())
@@ -1933,7 +1944,7 @@ class Tool(Dictifiable):
                 if history is None:
                     raise exceptions.MessageException('History unavailable. Please specify a valid history id')
             except Exception as e:
-                raise exceptions.MessageException('[history_id=%s] Failed to retrieve history. %s.' % (history_id, str(e)))
+                raise exceptions.MessageException('[history_id=%s] Failed to retrieve history. %s.' % (history_id, unicodify(e)))
 
         # build request context
         request_context = WorkRequestContext(app=trans.app, user=trans.user, history=history, workflow_building_mode=workflow_building_mode)
@@ -1949,7 +1960,7 @@ class Tool(Dictifiable):
                 tool_message = self._compare_tool_version(job)
                 params_to_incoming(kwd, self.inputs, job_params, self.app)
             except Exception as e:
-                raise exceptions.MessageException(str(e))
+                raise exceptions.MessageException(unicodify(e))
 
         # create parameter object
         params = Params(kwd, sanitize=False)
@@ -2149,7 +2160,7 @@ class Tool(Dictifiable):
             if len(self.tool_versions) > 1 and tool_version != self.tool_versions[-1]:
                 message += 'There is a newer version of this tool available.'
         except Exception as e:
-            raise exceptions.MessageException(str(e))
+            raise exceptions.MessageException(unicodify(e))
         return message
 
     def get_default_history_by_trans(self, trans, create=False):
