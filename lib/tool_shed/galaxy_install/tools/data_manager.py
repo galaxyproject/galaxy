@@ -131,6 +131,8 @@ class DataManagerHandler(object):
                                                                       tool_path=shed_config_dict.get('tool_path', ''))
                     if data_manager:
                         rval.append(data_manager)
+                elif elem.tag is ElementTree.Comment:
+                    pass
                 else:
                     log.warning("Encountered unexpected element '%s':\n%s" % (elem.tag, xml_to_string(elem)))
                 config_elems.append(elem)
