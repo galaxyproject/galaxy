@@ -90,7 +90,7 @@ class GitLabPlugin(BaseGitPlugin):
 
                 # Find the repo inside the ToolShed
                 ts_repourl = self._get_gitrepo_from_ts(job, ts_url)
-                
+
                 # Remove .git from the repository URL if this was specified
                 if ts_repourl.endswith(".git"):
                     ts_repourl = ts_repourl[:-4]
@@ -146,7 +146,7 @@ class GitLabPlugin(BaseGitPlugin):
                         if gitlab_projecturl not in self.git_project_cache:
                             self.git_project_cache[gitlab_projecturl] = self.gitlab.projects.get(gitlab_urlencodedpath)
                         gl_project = self.git_project_cache[gitlab_projecturl]
-                        
+
                         # Submit issue to default project
                         self._create_issue(issue_cache_key, error_title, error_message, gl_project, gl_userid=gl_userid)
                 else:
