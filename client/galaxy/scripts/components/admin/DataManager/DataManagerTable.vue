@@ -13,7 +13,7 @@
             <b-row>
                 <b-col>
                     <b-card id="data-table-card" flush>
-                        <template slot="header">
+                        <template v-slot:header>
                             <b-container>
                                 <b-row align-v="center">
                                     <b-col cols="auto">

@@ -116,14 +116,14 @@
                 </template>
                 <!-- Enable cell formatting for the command line column -->
                 <span slot="html" slot-scope="data" v-html="data.value" />
-                <template v-slot:HEAD_selected>
+                <template v-slot:head(selected)="{rowSelected}">
                     <b-form-checkbox
                         v-model="allSelected"
                         :indeterminate="indeterminate"
                         @change="toggleAll"
                     ></b-form-checkbox>
                 </template>
-                <template v-slot:selected="data">
+                <template v-slot:cell(selected)="data">
                     <b-form-checkbox
                         v-model="selectedStopJobIds"
                         :checked="allSelected"
