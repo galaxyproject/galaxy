@@ -114,8 +114,6 @@
                     Unfinished Jobs: These jobs are unfinished and have had their state updated in the previous
                     {{ cutoffDisplay }} seconds.
                 </template>
-                <!-- Enable cell formatting for the command line column -->
-                <span slot="html" slot-scope="data" v-html="data.value" />
                 <template v-slot:head(selected)="{rowSelected}">
                     <b-form-checkbox
                         v-model="allSelected"
@@ -163,8 +161,6 @@
                 <template v-slot:table-caption>
                     Recent Jobs: These jobs have completed in the previous {{ cutoffDisplay }} seconds.
                 </template>
-                <!-- Enable cell formatting for the command line column -->
-                <span slot="html" slot-scope="data" v-html="data.value" />
                 <template v-slot:cell(job_info)="data">
                     <b-link :href="data.value['info_url']" target="galaxy_main">
                         {{ data.value["id"] }}
