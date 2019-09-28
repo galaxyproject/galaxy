@@ -7,6 +7,7 @@ Created on 15/07/2014
 import logging
 
 from galaxy.exceptions import ConfigurationError
+from galaxy.security.validate_user_input import transform_publicname
 from galaxy.util import string_as_bool
 from ..providers import AuthProvider
 
@@ -151,6 +152,8 @@ class LDAP(AuthProvider):
                 # setup search
                 attributes = [_.strip().format(**params)
                               for _ in options['search-fields'].split(',')]
+                if 'search-memberof-filter' in options:
+                    attributes.append('memberOf')
                 suser = l.search_ext_s(_get_subs(options, 'search-base', params),
                     ldap.SCOPE_SUBTREE,
                     _get_subs(options, 'search-filter', params), attributes,
@@ -168,6 +171,8 @@ class LDAP(AuthProvider):
                         if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip brackets
                             # keep role names as list
                             params[self.role_search_option] = attrs[attr]
+                        elif attr == 'memberOf':
+                            params[attr] = attrs[attr]
                         elif attr in attrs:
                             params[attr] = str(attrs[attr][0])
                         else:
@@ -204,12 +209,18 @@ class LDAP(AuthProvider):
             if not self._authenticate(params, options):
                 return failure_mode, '', ''
 
+        # check whether the user is a member of a specified group/domain/...
+        if 'search-memberof-filter' in options:
+            search_filter = _get_subs(options, 'search-memberof-filter', params)
+            if not any(search_filter in ad_node_name for ad_node_name in params['memberOf']):
+                return failure_mode, '', ''
+
         attributes = {}
         if self.auto_create_roles_or_groups:
             attributes['roles'] = params[self.role_search_option]
         return (True,
                 _get_subs(options, 'auto-register-email', params),
-                _get_subs(options, 'auto-register-username', params),
+                transform_publicname(_get_subs(options, 'auto-register-username', params)),
                 attributes)
 
     def _authenticate(self, params, options):

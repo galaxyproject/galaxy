@@ -77,6 +77,12 @@
             <!-- If login-use-username is True -->
 <!--        <search-filter>(&amp;(objectClass=user)(sAMAccountName={username}))</search-filter>
 -->
+            <!-- Only allow authentication when the user is a member of the given (CN, DN, ...)
+                 The given string will be searched for in each of the memberOf entries returned by
+                 the LDAP search (case sensitive). Partial hits are allowed so be as precise as
+                 possible -->
+<!--        <search-memberof-filter>galaxyGroup</search-memberof-filter>
+-->
 <!--        <search-user>jsmith@dc1.example.com</search-user>
             <search-password>mysecret</search-password>
 -->

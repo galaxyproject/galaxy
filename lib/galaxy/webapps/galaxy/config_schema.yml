@@ -52,8 +52,7 @@ mapping:
           instead.  This string takes many options which are explained in detail in the
           config file documentation.
 
-          Sample default 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
-          where './database' is the resolved default value of the 'data_dir' option).
+          Sample default 'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
 
       database_engine_option_pool_size:
         type: int
@@ -137,8 +136,7 @@ mapping:
           separate the tool shed install database (all other options listed above
           but prefixed with install_ are also available).
 
-          Sample default 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
-          where './database' is the resolved default value of the 'data_dir' option).
+          Defaults to the value of the 'database_connection' option.
 
       database_auto_migrate:
         type: bool
@@ -269,7 +267,7 @@ mapping:
           to this path, such as the default conda prefix, default Galaxy packages path, legacy
           tool shed dependencies path, and the dependency cache directory.
 
-          Set the string to None to explicitly disable tool dependency handling.
+          Set the string to null to explicitly disable tool dependency handling.
           If this option is set to none or an invalid path, installing tools with dependencies
           from the Tool Shed or in Conda will fail.
 
@@ -462,7 +460,6 @@ mapping:
 
       involucro_path:
         type: str
-        default: database/dependencies/involucro
         required: false
         desc: |
           involucro is a tool used to build Docker or Singularity containers for tools from Conda
@@ -470,6 +467,8 @@ mapping:
           the location of involucro on the Galaxy host. This is ignored if the relevant
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
+
+          Sample default '<tool_dependency_dir>/involucro'
 
       involucro_auto_init:
         type: bool
@@ -481,11 +480,10 @@ mapping:
 
       mulled_channels:
         type: str
+        default: 'conda-forge,bioconda'
         required: false
         desc: |
           Conda channels to use when building Docker or Singularity containers using involucro.
-
-          Sample default 'conda-forge,bioconda'
 
       enable_tool_shed_check:
         type: bool
@@ -548,11 +546,10 @@ mapping:
 
       shed_tool_data_path:
         type: str
-        default: tool-data
         required: false
         desc: |
-          Directory where Tool Data Table related files will be placed
-          when installed from a ToolShed. Defaults to tool_data_path.
+          Directory where Tool Data Table related files will be placed when installed from a
+          ToolShed. Defaults to the value of the 'tool_data_path' option.
 
       watch_tool_data_dir:
         type: str
@@ -569,17 +566,19 @@ mapping:
 
       builds_file_path:
         type: str
-        default: tool-data/shared/ucsc/builds.txt
+        default: shared/ucsc/builds.txt
         required: false
         desc: |
-          File containing old-style genome builds
+          File containing old-style genome builds. Value will be resolved with respect to
+          <tool_data_path>.
 
       len_file_path:
         type: str
-        default: tool-data/shared/ucsc/chrom
+        default: shared/ucsc/chrom
         required: false
         desc: |
-          Directory where chrom len files are kept, currently mainly used by trackster
+          Directory where chrom len files are kept, currently mainly used by trackster. Value will
+          be resolved with respect to <tool_data_path>.
 
       datatypes_config_file:
         type: str
@@ -601,7 +600,6 @@ mapping:
           With this option set to false the compressed datatypes will be unpacked
           before sniffing.
 
-
       datatypes_disable_auto:
         type: bool
         default: false
@@ -616,8 +614,7 @@ mapping:
         desc: |
           Visualizations config directory: where to look for individual visualization
           plugins.  The path is relative to the Galaxy root dir.  To use an absolute
-          path begin the path with '/'.  This is a comma separated list.
-          Defaults to "config/plugins/visualizations".
+          path begin the path with '/'.  This is a comma-separated list.
 
       interactive_environment_plugins_directory:
         type: str
@@ -628,8 +625,7 @@ mapping:
           config/plugins/interactive_environments to load Galaxy's stock plugins.
           These will require Docker to be configured and have security considerations,
           so proceed with caution. The path is relative to the Galaxy root dir.  To use
-          an absolute path begin the path with '/'.  This is a comma
-          separated list.
+          an absolute path begin the path with '/'.  This is a comma-separated list.
 
       tour_config_dir:
         type: str
@@ -667,11 +663,13 @@ mapping:
 
       cluster_files_directory:
         type: str
-        default: database/pbs
+        default: pbs
         required: false
         desc: |
           If using a cluster, Galaxy will write job scripts and stdout/stderr to this
           directory.
+
+          Value will be resolved with respect to <data_dir>.
 
       template_cache_path:
         type: str
@@ -808,7 +806,7 @@ mapping:
           is the address used to subscribe to the list. Uncomment and leave empty if you
           want to remove this option from the user registration form.
 
-          Sample default 'galaxy-announce-join@bx.psu.edu'
+          Example value 'galaxy-announce-join@bx.psu.edu'
 
       error_email_to:
         type: str
@@ -836,20 +834,24 @@ mapping:
           URL of the support resource for the galaxy instance.  Used in activation
           emails.
 
-          Sample default 'https://galaxyproject.org/'
+          Example value 'https://galaxyproject.org/'
 
       blacklist_file:
         type: str
-        default: config/disposable_email_blacklist.conf
         required: false
         desc: |
           E-mail domains blacklist is used for filtering out users that are using
           disposable email address during the registration.  If their address domain
           matches any domain in the blacklist, they are refused the registration.
 
+          Example value 'config/disposable_email_blacklist.conf'
+
       registration_warning_message:
         type: str
-        default: Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.
+        default: >-
+          Please register only one account - we provide this service free of charge and have limited
+          computational resources. Multi-accounts are tracked and will be subjected to account
+          termination and data deletion.
         required: false
         desc: |
           Registration warning message is used to discourage people from registering
@@ -877,7 +879,10 @@ mapping:
 
       inactivity_box_content:
         type: str
-        default: Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
+        default: >-
+          Your account has not been activated yet.  Feel free to browse around and see what's
+          available, but you won't be able to upload data or run jobs until you have verified your
+          email address.
         required: false
         desc: |
           Shown in warning box to users that were not activated yet.
@@ -1458,14 +1463,14 @@ mapping:
 
       log_events:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Turn on logging of application events and some user events to the database.
 
       log_actions:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Turn on logging of user actions to the database.  Actions currently logged
@@ -1532,7 +1537,7 @@ mapping:
         desc: |
           Return a Access-Control-Allow-Origin response header that matches the Origin
           header of the request if that Origin hostname matches one of the strings or
-          regular expressions listed here. This is a comma separated list of hostname
+          regular expressions listed here. This is a comma-separated list of hostname
           strings or regular expressions beginning and ending with /.
           E.g. mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/
           See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
@@ -2079,7 +2084,7 @@ mapping:
           prevent users making requests to services which the administrator did not
           intend to expose. Previously, you could request any network service that
           Galaxy might have had access to, even if the user could not normally access it.
-          It should be a comma separated list of IP addresses or IP address/mask, e.g.
+          It should be a comma-separated list of IP addresses or IP address/mask, e.g.
           10.10.10.10,10.0.1.0/24,fd00::/8
 
       enable_beta_gdpr:
@@ -2581,7 +2586,7 @@ mapping:
           (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
           this script is used to run the job script Galaxy generates for a tool execution.
 
-          Sample default 'sudo -E scripts/drmaa_external_runner.py --assign_all_groups'
+          Example value 'sudo -E scripts/drmaa_external_runner.py --assign_all_groups'
 
       drmaa_external_killjob_script:
         type: str
@@ -2592,7 +2597,7 @@ mapping:
           this script is used to kill such jobs by Galaxy (e.g. if the user cancels
           the job).
 
-          Sample default 'sudo -E scripts/drmaa_external_killer.py'
+          Example value 'sudo -E scripts/drmaa_external_killer.py'
 
       external_chown_script:
         type: str
@@ -2603,7 +2608,7 @@ mapping:
           this script is used transfer permissions back and forth between the Galaxy user
           and the user that is running the job.
 
-          Sample default 'sudo -E scripts/external_chown_script.py'
+          Example value 'sudo -E scripts/external_chown_script.py'
 
       real_system_username:
         type: str

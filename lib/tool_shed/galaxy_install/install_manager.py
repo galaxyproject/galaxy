@@ -725,6 +725,8 @@ class InstallRepositoryManager(object):
         new_tool_panel_section_label = install_options.get('new_tool_panel_section_label', '')
         tool_panel_section_mapping = install_options.get('tool_panel_section_mapping', {})
         shed_tool_conf = install_options.get('shed_tool_conf', None)
+        if install_tool_dependencies and self.app.tool_dependency_dir is None:
+            raise exceptions.ConfigDoesNotAllowException("Tool dependency installation is disabled in your configuration files.")
         if shed_tool_conf:
             # Get the tool_path setting.
             shed_conf_dict = self.tpm.get_shed_tool_conf_dict(shed_tool_conf)
