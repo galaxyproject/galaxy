@@ -281,7 +281,7 @@ system. Legacy Docker Swarm is supported without any special configuration,
 because the containers are still run with ``docker run`` as before. To support
 Docker Engine swarm mode, additional configuration is required. Begin by
 editing your GIE plugin's ini configuration file (e.g. ``jupyter.ini``) and set
-the ``docker_connect_port`` and ``swarm_mode options`` in addition to any other
+the ``docker_connect_port`` in addition to any other
 relevant options. Unless you are using a non-standard Docker image, the correct
 value for ``docker_connect_port`` should be suggested to you in the sample
 configuration file:
@@ -290,13 +290,6 @@ configuration file:
 
     [docker]
     docker_connect_port = 8888
-    swarm_mode = True
-
-You can also enable swarm mode for *all* GIE plugins by setting
-``interactive_environment_swarm_mode`` in ``galaxy.yml`` to ``True``. If using
-this setting, you must still set ``docker_connect_port`` in each GIE plugin's
-ini configuration file. The ``swarm_mode`` setting in individual GIE plugin
-config files will override the value set in ``galaxy.yml``.
 
 Note that your Galaxy server does not need to be a member of the swarm itself.
 It can use the method outlined above in the `Docker on Another Host`_ section
@@ -305,11 +298,3 @@ to connect as a client to a Docker daemon acting as a swarm mode manager.
 Once configured, you should see that your GIE containers are started and run as
 services, which you can inspect using the ``docker service ls`` command and
 other ``docker service`` subcommands.
-
-**Galaxy swarm manager**
-
-Galaxy will start a "swarm manager" process when the first swarm mode GIE is
-launched. You can control this daemon with the config file
-``config/swarm_mode_manager.yml``. Consult the sample configuration at
-``config/swarm_mode_manager.yml.sample`` for syntax. It will automatically shut
-down when no services or nodes remain to be managed.

@@ -13,7 +13,6 @@ import _ from "underscore";
      * So, analysis-polyfills.js, reports-polyfills.js (or analysis/polyfills)
      */
     "use strict";
-    /*globals window, clearTimeout */
 
     // ------------------------------------------------------------------ polyfills
     // console protection needed in some versions of IE (at this point (IE>=9), shouldn't be needed)
@@ -52,7 +51,7 @@ import _ from "underscore";
 
     if (!window.cancelAnimationFrame)
         window.cancelAnimationFrame = id => {
-            clearTimeout(id);
+            window.clearTimeout(id);
         };
 
     // ------------------------------------------------------------------ can't/won't polyfill

@@ -1,8 +1,8 @@
 /** deep equal of two dictionaries */
 function matches(d, d2) {
     for (var k in d2) {
-        if (d2.hasOwnProperty(k)) {
-            if (!d.hasOwnProperty(k) || d[k] !== d2[k]) {
+        if (Object.prototype.hasOwnProperty.call(d2, k)) {
+            if (!Object.prototype.hasOwnProperty.call(d, k) || d[k] !== d2[k]) {
                 return false;
             }
         }
@@ -20,7 +20,7 @@ function iterate(obj, propsOrFn) {
     var returned = [];
     var index = 0;
     for (var key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
             var value = obj[key];
             if (fn) {
                 returned.push(fn.call(value, value, key, index));
@@ -313,10 +313,10 @@ Graph.prototype.read = function(data) {
         return this;
     }
     var self = this;
-    if (data.hasOwnProperty("nodes")) {
+    if (Object.prototype.hasOwnProperty.call(data, "nodes")) {
         return self.readNodesAndLinks(data);
     }
-    if (data.hasOwnProperty("vertices")) {
+    if (Object.prototype.hasOwnProperty.call(data, "vertices")) {
         return self.readVerticesAndEdges(data);
     }
     return self;
@@ -325,7 +325,7 @@ Graph.prototype.read = function(data) {
 //TODO: the next two could be combined
 /** Create the graph using a list of nodes and a list of edges (where source and target are indeces into nodes) */
 Graph.prototype.readNodesAndLinks = function(data) {
-    if (!(data && data.hasOwnProperty("nodes"))) {
+    if (!(data && Object.prototype.hasOwnProperty.call(data, "nodes"))) {
         return this;
     }
     //console.debug( 'readNodesAndLinks:', data );
@@ -348,7 +348,7 @@ Graph.prototype.readNodesAndLinks = function(data) {
 
 /** Create the graph using a list of nodes and a list of edges (where source and target are names of nodes) */
 Graph.prototype.readVerticesAndEdges = function(data) {
-    if (!(data && data.hasOwnProperty("vertices"))) {
+    if (!(data && Object.prototype.hasOwnProperty.call(data, "vertices"))) {
         return this;
     }
     //console.debug( 'readVerticesAndEdges:', data );

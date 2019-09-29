@@ -4484,14 +4484,15 @@ class UCI(object):
 
 class StoredWorkflow(HasTags, Dictifiable, RepresentById):
 
-    dict_collection_visible_keys = ['id', 'name', 'published', 'deleted']
-    dict_element_visible_keys = ['id', 'name', 'published', 'deleted']
+    dict_collection_visible_keys = ['id', 'name', 'create_time', 'published', 'deleted']
+    dict_element_visible_keys = ['id', 'name', 'create_time', 'published', 'deleted']
 
     def __init__(self):
         self.id = None
         self.user = None
         self.name = None
         self.slug = None
+        self.create_time = None
         self.published = False
         self.latest_workflow_id = None
         self.workflows = []
@@ -4893,8 +4894,8 @@ class StoredWorkflowMenuEntry(RepresentById):
 
 
 class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
-    dict_collection_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
-    dict_element_visible_keys = ['id', 'update_time', 'workflow_id', 'history_id', 'uuid', 'state']
+    dict_collection_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
+    dict_element_visible_keys = ['id', 'update_time', 'create_time', 'workflow_id', 'history_id', 'uuid', 'state']
     states = Bunch(
         NEW='new',  # Brand new workflow invocation... maybe this should be same as READY
         READY='ready',  # Workflow ready for another iteration of scheduling.
@@ -4902,6 +4903,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         CANCELLED='cancelled',
         FAILED='failed',
     )
+    non_terminal_states = [states.NEW, states.READY]
 
     def __init__(self):
         self.subworkflow_invocations = []
@@ -5071,7 +5073,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         for output_dataset_assoc in self.output_datasets:
             outputs.append(output_dataset_assoc)
         for output_dataset_collection_assoc in self.output_dataset_collections:
-            outputs.append(output_dataset_collection_assoc.dataset_collection)
+            outputs.append(output_dataset_collection_assoc)
         return outputs
 
     @property

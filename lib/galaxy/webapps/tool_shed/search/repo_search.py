@@ -7,7 +7,7 @@ import whoosh.index
 from whoosh import scoring
 from whoosh.fields import KEYWORD, Schema, STORED, TEXT
 from whoosh.qparser import MultifieldParser
-from whoosh.query import And, Term
+from whoosh.query import And, Every, Term
 
 from galaxy import exceptions
 from galaxy.exceptions import ObjectNotFound
@@ -15,7 +15,6 @@ from galaxy.exceptions import ObjectNotFound
 if sys.version_info > (3,):
     long = int
 
-RESERVED_SEARCH_TERMS = ["category", "owner"]
 log = logging.getLogger(__name__)
 
 schema = Schema(
@@ -74,8 +73,13 @@ class RepoSearch(object):
         :param page_size: integer defining a length of one page
         :param page: integer with the number of page requested
 
-        :returns results: dictionary containing hits themselves and the number of hits
+        :returns results: dictionary containing hits themselves and the hits summary
         """
+        log.debug('raw search query: #' + str(search_term))
+        lower_search_term = search_term.lower()
+        allow_query, search_term_without_filters = self._parse_reserved_filters(lower_search_term)
+        log.debug('term without filters: #' + str(search_term_without_filters))
+
         whoosh_index_dir = trans.app.config.whoosh_index_dir
         index_exists = whoosh.index.exists_in(whoosh_index_dir)
         if index_exists:
@@ -92,11 +96,7 @@ class RepoSearch(object):
                                                         'remote_repository_url_B' : boosts.repo_remote_repository_url_boost,
                                                         'repo_owner_username_B' : boosts.repo_owner_username_boost,
                                                         'categories_B' : boosts.categories_boost})
-
                 searcher = index.searcher(weighting=repo_weighting)
-
-                allow_query, search_term_without_filters = self._parse_reserved_filters(search_term)
-
                 parser = MultifieldParser([
                     'name',
                     'description',
@@ -105,17 +105,20 @@ class RepoSearch(object):
                     'remote_repository_url',
                     'repo_owner_username',
                     'categories'], schema=schema)
-                user_query = parser.parse('*' + search_term_without_filters + '*')
 
+                # If user query has just filters prevent wildcard search.
+                if len(search_term_without_filters) < 1:
+                    user_query = Every('name')
+                    sortedby = 'name'
+                else:
+                    user_query = parser.parse('*' + search_term_without_filters + '*')
+                    sortedby = ''
                 try:
-                    hits = searcher.search_page(user_query, page, pagelen=page_size, filter=allow_query, terms=True)
+                    hits = searcher.search_page(user_query, page, pagelen=page_size, filter=allow_query, terms=True, sortedby=sortedby)
+                    log.debug('total hits: ' + str(len(hits)))
+                    log.debug('scored hits: ' + str(hits.scored_length()))
                 except ValueError:
                     raise ObjectNotFound('The requested page does not exist.')
-
-                log.debug('user search query: #' + str(search_term))
-                log.debug('term without filters: #' + str(search_term_without_filters))
-                log.debug('total hits: ' + str(len(hits)))
-                log.debug('scored hits: ' + str(hits.scored_length()))
                 results = {}
                 results['total_results'] = str(len(hits))
                 results['page'] = str(page)
@@ -155,7 +158,7 @@ class RepoSearch(object):
         :returns allow_query: whoosh Query object used for filtering
             results of searching in index
         :returns search_term_without_filters: str that represents user's
-            search phrase without the wildcards
+            search phrase without the filters
 
         >>> rs = RepoSearch()
         >>> rs._parse_reserved_filters("category:assembly")
@@ -166,6 +169,10 @@ class RepoSearch(object):
         (And([Term('categories', 'Climate Analysis')]), 'psy_maps')
         >>> rs._parse_reserved_filters("climate category:'Climate Analysis' owner:'bjoern gruening' psy_maps")
         (And([Term('categories', 'Climate Analysis'), Term('repo_owner_username', 'bjoern gruening')]), 'climate psy_maps')
+        >>> rs._parse_reserved_filters("climate category:'John Says This Fails' owner:'bjoern gruening' psy_maps")
+        (And([Term('categories', 'John Says This Fails'), Term('repo_owner_username', 'bjoern gruening')]), 'climate psy_maps')
+        >>> rs._parse_reserved_filters("climate o:'bjoern gruening' middle strings c:'John Says This Fails' psy_maps")
+        (And([Term('repo_owner_username', 'bjoern gruening'), Term('categories', 'John Says This Fails')]), 'climate middle strings psy_maps')
         >>> rs._parse_reserved_filters("abyss category:assembly")
         (And([Term('categories', 'assembly')]), 'abyss')
         >>> rs._parse_reserved_filters("abyss category:assembly greg")
@@ -177,28 +184,19 @@ class RepoSearch(object):
         >>> rs._parse_reserved_filters("meaningoflife:42")
         (None, 'meaningoflife:42')
         """
-        allow_query = None
         allow_terms = []
-        # Split query string on spaces that are not followed by <anytext>singlequote_space_
-        # to allow for quoting filtering values. Also unify double and single quotes into single quotes.
-        search_term_chunks = re.split(r"\s+(?!\w+'\s)", search_term.replace('"', "'"), re.MULTILINE)
-        reserved_terms = []
-        for term_chunk in search_term_chunks:
-            if ":" in term_chunk:
-                reserved_filter = term_chunk.split(":")[0]
-                # Remove the quotes used for delimiting values with space(s)
-                reserved_filter_value = term_chunk.split(":")[1].replace("'", "")
-                if reserved_filter in RESERVED_SEARCH_TERMS:
-                    reserved_terms.append(term_chunk)
-                    if reserved_filter == "category":
-                        allow_terms.append(Term('categories', reserved_filter_value))
-                    elif reserved_filter == "owner":
-                        allow_terms.append(Term('repo_owner_username', reserved_filter_value))
-                else:
-                    pass  # Treat unrecognized filter as normal search term.
-        if allow_terms:
-            allow_query = And(allow_terms)
-            search_term_without_filters = " ".join([chunk for chunk in search_term_chunks if chunk not in reserved_terms])
-        else:
-            search_term_without_filters = search_term
+        search_term_without_filters = None
+        search_space = search_term.replace('"', "'")
+        reserved = re.compile(r"(category|c|owner|o):(\w+|\'.*?\')")
+        while True:
+            match = reserved.search(search_space)
+            if match is None:
+                search_term_without_filters = ' '.join(search_space.split())
+                break
+            if match.groups()[0] in ["category", "c"]:
+                allow_terms.append(Term('categories', match.groups()[1].strip().replace("'", "")))
+            elif match.groups()[0] in ["owner", "o"]:
+                allow_terms.append(Term('repo_owner_username', match.groups()[1].strip().replace("'", "")))
+            search_space = search_space[0:match.start()] + search_space[match.end():]
+        allow_query = And(allow_terms) if allow_terms else None
         return allow_query, search_term_without_filters

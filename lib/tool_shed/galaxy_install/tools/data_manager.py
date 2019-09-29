@@ -59,7 +59,7 @@ class DataManagerHandler(object):
                 repository_tools_by_guid[tool_tup[1]] = dict(tool_config_filename=tool_tup[0], tool=tool_tup[2])
             # Load existing data managers.
             try:
-                tree, error_message = xml_util.parse_xml(shed_data_manager_conf_filename)
+                tree, error_message = xml_util.parse_xml(shed_data_manager_conf_filename, check_exists=False)
             except (OSError, IOError) as exc:
                 if exc.errno == errno.ENOENT:
                     with open(shed_data_manager_conf_filename, 'w') as fh:

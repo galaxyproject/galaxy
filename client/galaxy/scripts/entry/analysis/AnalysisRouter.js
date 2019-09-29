@@ -24,8 +24,8 @@ import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import EntryPointGridView from "mvc/entrypoints/view";
 import GridShared from "mvc/grid/grid-shared";
-import Workflows from "mvc/workflow/workflow";
-import WorkflowImport from "components/WorkflowImport.vue";
+import WorkflowImport from "components/Workflow/WorkflowImport.vue";
+import WorkflowList from "components/Workflow/WorkflowList.vue";
 import HistoryImport from "components/HistoryImport.vue";
 import HistoryView from "components/HistoryView.vue";
 import WorkflowInvocationReport from "components/WorkflowInvocationReport.vue";
@@ -307,7 +307,10 @@ export const getAnalysisRouter = Galaxy =>
         },
 
         show_workflows: function() {
-            this.page.display(new Workflows.View());
+            const workflowListInstance = Vue.extend(WorkflowList);
+            const vm = document.createElement("div");
+            this.page.display(vm);
+            new workflowListInstance().$mount(vm);
         },
 
         show_workflows_create: function() {

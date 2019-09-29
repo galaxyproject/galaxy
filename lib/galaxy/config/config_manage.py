@@ -15,6 +15,7 @@ from textwrap import TextWrapper
 import requests
 import six
 import yaml
+from boltons.iterutils import remap
 from six import StringIO
 
 try:
@@ -47,8 +48,8 @@ EXTRA_SERVER_MESSAGE = "Additional server section after [%s] encountered [%s], w
 MISSING_FILTER_TYPE_MESSAGE = "Missing filter type for section [%s], it will be ignored."
 UNHANDLED_FILTER_TYPE_MESSAGE = "Unhandled filter type encountered [%s] for section [%s]."
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
-YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ")
-RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ")
+YAML_COMMENT_WRAPPER = TextWrapper(initial_indent="# ", subsequent_indent="# ", break_long_words=False)
+RST_DESCRIPTION_WRAPPER = TextWrapper(initial_indent="    ", subsequent_indent="    ", break_long_words=False)
 UWSGI_SCHEMA_PATH = "lib/galaxy/webapps/uwsgi_schema.yml"
 
 App = namedtuple(
@@ -396,8 +397,9 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
     option, value = _parse_option_value(option_value)
     desc = option["desc"]
     rst.write(":Description:\n")
-    rst.write("\n".join(RST_DESCRIPTION_WRAPPER.wrap(desc)))
-    rst.write("\n")
+    # Wrap and indent desc, replacing whitespaces with a space, except
+    # for double newlines which are replaced with a single newline.
+    rst.write("\n".join("\n".join(RST_DESCRIPTION_WRAPPER.wrap(_)) for _ in desc.split("\n\n")) + "\n")
     type = option.get("type", None)
     default = option.get("default", "*null*")
     if default is True:
@@ -505,13 +507,18 @@ def _validate(args, app_desc):
     raw_config = _order_load_path(path)
     if raw_config.get(app_desc.app_name, None) is None:
         raw_config[app_desc.app_name] = {}
-        config_p = tempfile.NamedTemporaryFile(delete=False, suffix=".yml")
+        config_p = tempfile.NamedTemporaryFile('w', delete=False, suffix=".yml")
         ordered_dump(raw_config, config_p)
         config_p.flush()
         path = config_p.name
 
-    fp = tempfile.NamedTemporaryFile(delete=False, suffix=".yml")
-    ordered_dump(app_desc.schema.raw_schema, fp)
+    fp = tempfile.NamedTemporaryFile('w', delete=False, suffix=".yml")
+
+    def _clean(p, k, v):
+        return k != 'reloadable'
+
+    clean_schema = remap(app_desc.schema.raw_schema, _clean)
+    ordered_dump(clean_schema, fp)
     fp.flush()
     name = fp.name
     if Core is None:
@@ -717,8 +724,9 @@ def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False
     desc = option["desc"]
     comment = ""
     if desc and args.add_comments:
-        comment = "\n".join(YAML_COMMENT_WRAPPER.wrap(desc))
-        comment += "\n"
+        # Wrap and comment desc, replacing whitespaces with a space, except
+        # for double newlines which are replaced with a single newline.
+        comment += "\n".join("\n".join(YAML_COMMENT_WRAPPER.wrap(_)) for _ in desc.split("\n\n")) + "\n"
     as_comment_str = "#" if as_comment else ""
     if uwsgi_hack:
         if option.get("type", "str") == "bool":

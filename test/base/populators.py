@@ -106,6 +106,30 @@ def skip_without_datatype(extension):
     return method_wrapper
 
 
+def skip_if_site_down(url):
+
+    def site_down():
+        try:
+            response = requests.get(url)
+            return response.status_code != 200
+        except Exception:
+            return False
+
+    def method_wrapper(method):
+        @wraps(method)
+        def wrapped_method(api_test_case, *args, **kwargs):
+            _raise_skip_if(site_down(), "Test depends on [%s] being up and it appears to be down." % url)
+            method(api_test_case, *args, **kwargs)
+
+        return wrapped_method
+
+    return method_wrapper
+
+
+skip_if_toolshed_down = skip_if_site_down("https://toolshed.g2.bx.psu.edu")
+skip_if_github_down = skip_if_site_down("https://github.com/")
+
+
 def summarize_instance_history_on_error(method):
     @wraps(method)
     def wrapped_method(api_test_case, *args, **kwds):
@@ -134,10 +158,10 @@ def uses_test_history(**test_history_kwd):
     return method_wrapper
 
 
-def _raise_skip_if(check):
+def _raise_skip_if(check, *args):
     if check:
         from nose.plugins.skip import SkipTest
-        raise SkipTest()
+        raise SkipTest(*args)
 
 
 # Deprecated mixin, use dataset populator instead.

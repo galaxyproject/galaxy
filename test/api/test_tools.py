@@ -66,6 +66,15 @@ class ToolsTestCase(api.ApiTestCase):
         tool_ids = [_["id"] for _ in tools_index]
         assert "upload1" in tool_ids
 
+    @skip_without_tool("test_sam_to_bam_conversions")
+    def test_requirements(self):
+        requirements_response = self._get("tools/%s/requirements" % "test_sam_to_bam_conversions", admin=True)
+        self._assert_status_code_is_ok(requirements_response)
+        requirements = requirements_response.json()
+        assert len(requirements) == 1, requirements
+        requirement = requirements[0]
+        assert requirement['name'] == 'samtools', requirement
+
     @skip_without_tool("cat1")
     def test_show_repeat(self):
         tool_info = self._show_valid_tool("cat1")

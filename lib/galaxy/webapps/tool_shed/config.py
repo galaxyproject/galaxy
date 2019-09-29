@@ -185,7 +185,7 @@ class ToolShedAppConfiguration(BaseAppConfiguration):
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file
 
-    def get(self, key, default):
+    def get(self, key, default=None):
         return self.config_dict.get(key, default)
 
     def get_bool(self, key, default):

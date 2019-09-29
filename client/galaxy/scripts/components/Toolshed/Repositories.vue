@@ -1,12 +1,12 @@
 <template>
     <div>
         <b-table striped :items="repositories" :fields="fields">
-            <template slot="name" slot-scope="row">
+            <template v-slot:cell(name)="row">
                 <b-link href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
                     {{ row.item.name }}
                 </b-link>
             </template>
-            <template slot="row-details" slot-scope="row">
+            <template v-slot:row-details="row">
                 <repositorydetails :repo="row.item" :toolshedUrl="toolshedUrl" />
             </template>
         </b-table>
@@ -41,7 +41,7 @@ export default {
                 { key: "times_downloaded", label: "Downloaded" }
             ],
             page: 1,
-            pageSize: 10,
+            pageSize: 50,
             pageState: READY,
             error: null
         };
