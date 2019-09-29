@@ -460,6 +460,7 @@ mapping:
 
       involucro_path:
         type: str
+        default: involucro
         required: false
         desc: |
           involucro is a tool used to build Docker or Singularity containers for tools from Conda
@@ -468,7 +469,7 @@ mapping:
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
 
-          Sample default '<tool_dependency_dir>/involucro'
+          Value will be resolved with respect to '<tool_dependency_dir>'.
 
       involucro_auto_init:
         type: bool
