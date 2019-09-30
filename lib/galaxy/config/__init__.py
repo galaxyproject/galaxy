@@ -650,7 +650,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.interactivetool_prefix = kwargs.get("interactivetools_prefix", "interactivetool")
         self.interactivetools_enable = string_as_bool(kwargs.get('interactivetools_enable', False))
 
-        self.citation_cache_data_dir = os.path.join(self.data_dir, self.citation_cache_data_dir)
         self.citation_cache_lock_dir = os.path.join(self.data_dir, self.citation_cache_lock_dir)
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
