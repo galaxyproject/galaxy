@@ -661,12 +661,11 @@ mapping:
       cluster_files_directory:
         type: str
         default: pbs
+        path_resolves_to: data_dir
         required: false
         desc: |
           If using a cluster, Galaxy will write job scripts and stdout/stderr to this
           directory.
-
-          Value will be resolved with respect to <data_dir>.
 
       template_cache_path:
         type: str

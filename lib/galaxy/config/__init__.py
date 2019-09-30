@@ -414,7 +414,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.template_path = os.path.join(self.root, kwargs.get("template_path", "templates"))
         self.template_cache = self.template_cache_path
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
-        self.cluster_files_directory = self.resolve_path(os.path.join(self.data_dir, self.cluster_files_directory))
+        self.cluster_files_directory = self.resolve_path(self.cluster_files_directory)
 
         # Fall back to legacy job_working_directory config variable if set.
         self.jobs_directory = os.path.join(self.data_dir, kwargs.get("jobs_directory", self.job_working_directory))
