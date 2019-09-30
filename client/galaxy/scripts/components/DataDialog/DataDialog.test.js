@@ -143,17 +143,8 @@ describe("DataDialog.vue", () => {
         });
     });
 
-    it("loads correctly, shows alert", async () => {
-        expect(wrapper.classes()).contain("data-dialog-modal");
-        expect(wrapper.find(".fa-spinner").text()).to.equals("");
-        expect(wrapper.contains(".fa-spinner")).to.equals(true);
-        await Vue.nextTick();
-        expect(wrapper.findAll(".fa-folder").length).to.equals(2);
-        expect(wrapper.findAll(".fa-file-o").length).to.equals(2);
-    });
-
     it("loads correctly, shows datasets and folders", async () => {
-        expect(wrapper.classes()).contain("data-dialog-modal");
+        expect(wrapper.find(":first-child div").classes()).contain("data-dialog-modal");
         expect(wrapper.find(".fa-spinner").text()).to.equals("");
         expect(wrapper.contains(".fa-spinner")).to.equals(true);
         await Vue.nextTick();
