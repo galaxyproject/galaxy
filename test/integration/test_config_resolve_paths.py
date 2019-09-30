@@ -29,3 +29,8 @@ class ConfigResolvePathsTestCase(integration_util.IntegrationTestCase):
         schema_default = self.get_default('citation_cache_lock_dir')
         expect = os.path.join(self.data_dir, schema_default)
         assert expect == self._app.config.citation_cache_lock_dir
+
+    def test_resolve_file_path(self):
+        schema_default = self.get_default('file_path')
+        expect = os.path.join(self.data_dir, schema_default)
+        assert expect == self._app.config.file_path
