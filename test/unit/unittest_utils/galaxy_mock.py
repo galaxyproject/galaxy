@@ -109,15 +109,20 @@ class MockAppConfig(Bunch):
 
     def __init__(self, root=None, **kwargs):
         Bunch.__init__(self, **kwargs)
-        root = root or '/tmp'
+        if not root:
+            root = tempfile.mkdtemp()
+            self._remove_root = True
+        else:
+            self._remove_root = False
         self.security = idencoding.IdEncodingHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
         self.database_connection = kwargs.get('database_connection', "sqlite:///:memory:")
         self.use_remote_user = kwargs.get('use_remote_user', False)
-        self.data_dir = '/tmp'
-        self.file_path = '/tmp'
-        self.jobs_directory = '/tmp'
-        self.new_file_path = '/tmp'
-        self.tool_data_path = '/tmp'
+        self.data_dir = os.path.join(root, 'database')
+        self.file_path = os.path.join(self.data_dir, 'files')
+        self.jobs_directory = os.path.join(self.data_dir, 'jobs_directory')
+        self.new_file_path = os.path.join(self.data_dir, 'tmp')
+        self.tool_data_path = os.path.join(root, 'tool-data')
+        self.tool_dependency_dir = None
         self.metadata_strategy = 'legacy'
 
         self.object_store_config_file = ''
@@ -144,7 +149,6 @@ class MockAppConfig(Bunch):
         self.len_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'chrom')
         self.builds_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'builds.txt.sample')
 
-        self.migrated_tools_config = "/tmp/migrated_tools_conf.xml"
         self.preserve_python_environment = "always"
         self.enable_beta_gdpr = False
         self.legacy_eager_objectstore_initialization = True
@@ -165,6 +169,10 @@ class MockAppConfig(Bunch):
         if name.endswith('_file_set'):
             return False
         return super(MockAppConfig, self).__getattr__(name)
+
+    def __del__(self):
+        if self._remove_root:
+            shutil.rmtree(self.root)
 
 
 class MockWebapp(object):
