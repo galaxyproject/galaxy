@@ -67,7 +67,7 @@ class WorkflowsManager(object):
             # see if they have passed in the UUID for a workflow that is attached to a stored workflow
             workflow_uuid = uuid.UUID(workflow_id)
             workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(and_(
-                trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
+                trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
                 trans.app.model.Workflow.uuid == workflow_uuid
             ))
         elif by_stored_id:
@@ -77,7 +77,7 @@ class WorkflowsManager(object):
         else:
             workflow_id = decode_id(self.app, workflow_id)
             workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(and_(
-                trans.app.model.StoredWorkflow.latest_workflow_id == trans.app.model.Workflow.id,
+                trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
                 trans.app.model.Workflow.id == workflow_id
             ))
         stored_workflow = workflow_query.options(joinedload('annotations'),

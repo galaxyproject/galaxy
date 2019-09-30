@@ -249,7 +249,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         /** add ids to dataset objs in initial list if none */
         _ensureElementIds: function() {
             this.workingElements.forEach(element => {
-                if (!element.hasOwnProperty("id")) {
+                if (!Object.prototype.hasOwnProperty.call(element, "id")) {
                     element.id = _.uniqueId();
                 }
             });
@@ -296,7 +296,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
             var existingNames = {};
             this.workingElements.forEach(element => {
                 var currName = element.name;
-                while (existingNames.hasOwnProperty(currName)) {
+                while (Object.prototype.hasOwnProperty.call(existingNames, currName)) {
                     currName = `${element.name} (${counter})`;
                     counter += 1;
                     if (counter >= SAFETY) {

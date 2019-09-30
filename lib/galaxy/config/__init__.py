@@ -29,7 +29,6 @@ from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
 from galaxy.model import mapping
 from galaxy.model.tool_shed_install.migrate.check import create_or_verify_database as tsi_create_or_verify_database
-from galaxy.tool_util.deps.container_resolvers.mulled import DEFAULT_CHANNELS
 from galaxy.util import (
     ExecutionTimer,
     listify,
@@ -69,6 +68,10 @@ LOGGING_CONFIG_DEFAULT = {
         'routes.middleware': {
             'level': 'WARN',
             'qualname': 'routes.middleware',
+        },
+        'amqp': {
+            'level': 'INFO',
+            'qualname': 'amqp',
         },
     },
     'filters': {
@@ -264,13 +267,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.openid_consumer_cache_path = os.path.join(self.data_dir, self.openid_consumer_cache_path)
         self.cookie_path = kwargs.get("cookie_path", None)
         self.tool_path = os.path.join(self.root, self.tool_path)
-        self.tool_data_path = os.path.join(os.getcwd(), self.tool_data_path)
+        self.tool_data_path = os.path.join(self.root, self.tool_data_path)
         if not running_from_source and kwargs.get("tool_data_path", None) is None:
             self.tool_data_path = os.path.join(self.data_dir, "tool-data")
-        if self.builds_file_path is None:
-            self.builds_file_path = os.path.join(self.root, self.tool_data_path, 'shared', 'ucsc', 'builds.txt')
-        if self.len_file_path is None:
-            self.len_file_path = os.path.join(self.root, self.tool_data_path, 'shared', 'ucsc', 'chrom')
+        self.builds_file_path = os.path.join(self.tool_data_path, self.builds_file_path)
+        self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
         # Galaxy OIDC settings.
         self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
         self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
@@ -291,16 +292,16 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.user_tool_section_filters = listify(kwargs.get("user_tool_section_filters", []), do_strip=True)
         self.has_user_tool_filters = bool(self.user_tool_filters or self.user_tool_label_filters or self.user_tool_section_filters)
 
-        self.tour_config_dir = os.path.join(self.root, kwargs.get("tour_config_dir", "config/plugins/tours"))
-        self.webhooks_dirs = os.path.join(self.root, kwargs.get("webhooks_dir", "config/plugins/webhooks"))
+        self.tour_config_dir = os.path.join(self.root, self.tour_config_dir)
+        self.webhooks_dirs = os.path.join(self.root, self.webhooks_dir)
 
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
-        self.shed_tool_data_path = kwargs.get("shed_tool_data_path", None)
         if self.shed_tool_data_path:
             self.shed_tool_data_path = os.path.join(self.root, self.shed_tool_data_path)
         else:
             self.shed_tool_data_path = self.tool_data_path
+
         self.running_functional_tests = string_as_bool(kwargs.get('running_functional_tests', False))
         self.enable_tool_shed_check = string_as_bool(kwargs.get('enable_tool_shed_check', False))
         if isinstance(self.hours_between_check, string_types):
@@ -336,7 +337,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.template_path = os.path.join(self.root, kwargs.get("template_path", "templates"))
         self.template_cache = os.path.join(self.data_dir, self.template_cache_path)
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
-        self.cluster_files_directory = self.resolve_path(kwargs.get("cluster_files_directory", os.path.join(self.data_dir, "pbs")))
+        self.cluster_files_directory = self.resolve_path(os.path.join(self.data_dir, self.cluster_files_directory))
 
         # Fall back to legacy job_working_directory config variable if set.
         self.jobs_directory = os.path.join(self.data_dir, kwargs.get("jobs_directory", self.job_working_directory))
@@ -354,17 +355,17 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         activation_email = kwargs.get('activation_email', None)
         self.email_from = kwargs.get('email_from', activation_email)
         self.myexperiment_target_url = kwargs.get('my_experiment_target_url', 'www.myexperiment.org')
+
         #  Get the disposable email domains blacklist file and its contents
-        self.blacklist_location = kwargs.get('blacklist_file', None)
         self.blacklist_content = None
-        if self.blacklist_location is not None:
-            self.blacklist_file = os.path.join(self.root, kwargs.get('blacklist_file', None))
+        if self.blacklist_file:
+            self.blacklist_file = os.path.join(self.root, self.blacklist_file)
             try:
-                with open(self.blacklist_file) as blacklist:
-                    self.blacklist_content = [line.rstrip() for line in blacklist.readlines()]
+                with open(self.blacklist_file) as f:
+                    self.blacklist_content = [line.rstrip() for line in f]
             except IOError:
                 log.error("CONFIGURATION ERROR: Can't open supplied blacklist file from path: " + str(self.blacklist_file))
-        self.smtp_ssl = kwargs.get('smtp_ssl', None)
+
         self.persistent_communication_rooms = listify(kwargs.get("persistent_communication_rooms", []), do_strip=True)
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool(kwargs.get('enable_beta_job_managers', 'False'))
@@ -385,7 +386,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "")
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "")
         self.pbs_stage_path = kwargs.get('pbs_stage_path', "")
-        self.sanitize_whitelist_file = os.path.join(self.root, kwargs.get('sanitize_whitelist_file', "config/sanitize_whitelist.txt"))
+        self.sanitize_whitelist_file = os.path.join(self.root, self.sanitize_whitelist_file)
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(kwargs)
         if "trust_jupyter_notebook_conversion" in kwargs:
             trust_jupyter_notebook_conversion = string_as_bool(kwargs.get('trust_jupyter_notebook_conversion', False))
@@ -428,16 +429,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
         # tool_dependency_dir can be "none" (in old configs). If so, set it to schema default
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == 'none':
-            self.tool_dependency_dir = self.appschema['tool_dependency_dir'].get('default')
-
+            self.tool_dependency_dir = None
         if self.involucro_path is None:
-            self.involucro_path = os.path.join(self.data_dir, self.tool_dependency_dir, "involucro")
+            target_dir = self.tool_dependency_dir or self.appschema['tool_dependency_dir'].get('default')
+            self.involucro_path = os.path.join(self.data_dir, target_dir, "involucro")
         self.involucro_path = os.path.join(self.root, self.involucro_path)
-
         if self.mulled_channels:
             self.mulled_channels = [c.strip() for c in self.mulled_channels.split(',')]
-        else:
-            self.mulled_channels = DEFAULT_CHANNELS
 
         default_job_resubmission_condition = kwargs.get('default_job_resubmission_condition', '')
         if not default_job_resubmission_condition.strip():
@@ -558,11 +556,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # Statistics and profiling with statsd
         self.statsd_host = kwargs.get('statsd_host', '')
 
-        ie_dirs = kwargs.get('interactive_environment_plugins_directory', None)
+        ie_dirs = self.interactive_environment_plugins_directory
         self.gie_dirs = [d.strip() for d in (ie_dirs.split(",") if ie_dirs else [])]
-        if ie_dirs and not self.visualization_plugins_directory:
-            self.visualization_plugins_directory = ie_dirs
-        elif ie_dirs:
+        if ie_dirs:
             self.visualization_plugins_directory += ",%s" % ie_dirs
 
         self.proxy_session_map = os.path.join(self.data_dir, self.dynamic_proxy_session_map)

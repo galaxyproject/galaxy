@@ -223,6 +223,8 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         Overriding this instead of setUp will ensure debug data such as screenshots and stack traces
         are dumped if there are problems with the setup and it will be re-ran on test retries.
         """
+        if self.ensure_registered:
+            self.login()
 
     def tearDown(self):
         exception = None
@@ -297,9 +299,6 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         self.driver.set_window_size(1280, 1000)
 
         self._setup_galaxy_logging()
-
-        if self.ensure_registered:
-            self.login()
 
     def _setup_galaxy_logging(self):
         self.home()
