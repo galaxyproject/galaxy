@@ -44,6 +44,6 @@ export default {
     padding: 20px;
 
     width: 100%;
-    height: 100%;
+    height: 95%;  /* what now? this is needed or the editor overtakes workflow toolbar when too much text is added */
 }
 </style>

@@ -236,7 +236,7 @@
                 <a id="workflow-run-button" class="panel-header-button" href="javascript:void(0)" role="button" title="Run" style="display: inline-block;" aria-label="Run">
                     <span class="fa fa-play"></span>
                 </a>
-                <a id="workflow-save-button" class="panel-header-button" href="javascript:void(0)" role="button" title="Save" style="display: inline-block;" aria-label="Save">
+                <a id="workflow-save-button" class="panel-header-button workflow-canvas-content" href="javascript:void(0)" role="button" title="Save" style="display: inline-block;" aria-label="Save">
                     <span class="fa fa-floppy-o"></span>
                 </a>
                 <a id="workflow-report-button" class="panel-header-button workflow-canvas-content" href="javascript:void(0)" role="button" title="Edit Report" aria-label="Edit Report">
