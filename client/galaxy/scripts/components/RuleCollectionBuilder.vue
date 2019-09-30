@@ -469,7 +469,7 @@
             </b-button>
         </rule-modal-footer>
         <rule-modal-footer v-else-if="ruleView == 'normal'">
-            <template slot="inputs">
+            <template v-slot:inputs>
                 <div class="rule-footer-inputs">
                     <label v-if="elementsType == 'datasets'"> {{ l("Hide original elements") }}: </label>
                     <input type="checkbox" v-model="hideSourceItems" v-if="elementsType == 'datasets'" />
