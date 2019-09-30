@@ -341,8 +341,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         # Install database related configuration (if different).
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
 
-        # new_file_path and legacy_home_dir can be overridden per destination in job_conf.
-        self.new_file_path = os.path.join(self.data_dir, self.new_file_path)
         override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
         if override_tempdir:
             tempfile.tempdir = self.new_file_path

@@ -180,13 +180,11 @@ mapping:
       new_file_path:
         type: str
         default: tmp
+        path_resolves_to: data_dir
         required: false
         desc: |
           Where temporary files are stored. It must be accessible at the same path on any cluster
           nodes that will run Galaxy jobs, unless using Pulsar.
-
-          Default value will be resolved to 'database/tmp' where 'database' is the default value
-          of the 'data_dir' option).
 
       tool_config_file:
         type: any
