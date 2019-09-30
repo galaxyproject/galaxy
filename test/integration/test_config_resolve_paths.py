@@ -16,3 +16,9 @@ class ConfigResolvePathsTestCase(integration_util.IntegrationTestCase):
         schema_default = self._app.config.appschema['citation_cache_data_dir']['default']
         expected = os.path.join(data_dir, schema_default)
         assert expected == self._app.config.citation_cache_data_dir
+
+    def test_resolve_citation_cache_lock_dir(self):
+        data_dir = self._app.config.data_dir
+        schema_default = self._app.config.appschema['citation_cache_lock_dir']['default']
+        expected = os.path.join(data_dir, schema_default)
+        assert expected == self._app.config.citation_cache_lock_dir
