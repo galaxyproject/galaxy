@@ -1,6 +1,6 @@
 <template>
     <b-modal :static="modalStatic" v-model="modalShow" @ok="onOk" @hide="onHide">
-        <template slot="modal-header">
+        <template v-slot:modal-header>
             <h4 class="title m-0">
                 {{ modalTitle }}
             </h4>

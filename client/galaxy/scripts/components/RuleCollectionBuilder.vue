@@ -469,34 +469,38 @@
             </b-button>
         </rule-modal-footer>
         <rule-modal-footer v-else-if="ruleView == 'normal'">
-            <div class="rule-footer-inputs" slot="inputs">
-                <label v-if="elementsType == 'datasets'"> {{ l("Hide original elements") }}: </label>
-                <input type="checkbox" v-model="hideSourceItems" v-if="elementsType == 'datasets'" />
-                <div class="rule-footer-extension-group" v-if="extension && showFileTypeSelector">
-                    <label> {{ l("Type") }}: </label>
-                    <select2 name="extension" class="extension-select" v-model="extension">
-                        <option v-for="col in extensions" :value="col['id']" :key="col.id">{{ col["text"] }}</option>
-                    </select2>
+            <template v-slot:inputs>
+                <div class="rule-footer-inputs">
+                    <label v-if="elementsType == 'datasets'"> {{ l("Hide original elements") }}: </label>
+                    <input type="checkbox" v-model="hideSourceItems" v-if="elementsType == 'datasets'" />
+                    <div class="rule-footer-extension-group" v-if="extension && showFileTypeSelector">
+                        <label> {{ l("Type") }}: </label>
+                        <select2 name="extension" class="extension-select" v-model="extension">
+                            <option v-for="col in extensions" :value="col['id']" :key="col.id">{{
+                                col["text"]
+                            }}</option>
+                        </select2>
+                    </div>
+                    <div class="rule-footer-genome-group" v-if="genome && showGenomeSelector">
+                        <label> {{ l("Genome") }}: </label>
+                        <select2 class="genome-select" v-model="genome">
+                            <option v-for="col in genomes" :value="col['id']" :key="col.id">{{ col["text"] }}</option>
+                        </select2>
+                    </div>
+                    <label v-if="showAddNameTag"> {{ l("Add nametag for name") }}: </label>
+                    <input type="checkbox" v-model="addNameTag" v-if="showAddNameTag" />
+                    <div class="rule-footer-name-group" v-if="showCollectionNameInput">
+                        <b-input
+                            class="collection-name"
+                            :placeholder="namePlaceholder"
+                            :title="namePlaceholder"
+                            v-b-tooltip.hover
+                            v-model="collectionName"
+                        />
+                        <label> {{ l("Name") }}: </label>
+                    </div>
                 </div>
-                <div class="rule-footer-genome-group" v-if="genome && showGenomeSelector">
-                    <label> {{ l("Genome") }}: </label>
-                    <select2 class="genome-select" v-model="genome">
-                        <option v-for="col in genomes" :value="col['id']" :key="col.id">{{ col["text"] }}</option>
-                    </select2>
-                </div>
-                <label v-if="showAddNameTag"> {{ l("Add nametag for name") }}: </label>
-                <input type="checkbox" v-model="addNameTag" v-if="showAddNameTag" />
-                <div class="rule-footer-name-group" v-if="showCollectionNameInput">
-                    <b-input
-                        class="collection-name"
-                        :placeholder="namePlaceholder"
-                        :title="namePlaceholder"
-                        v-b-tooltip.hover
-                        v-model="collectionName"
-                    />
-                    <label> {{ l("Name") }}: </label>
-                </div>
-            </div>
+            </template>
 
             <b-button
                 v-b-tooltip.hover

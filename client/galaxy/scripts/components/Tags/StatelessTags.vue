@@ -26,7 +26,7 @@ upstream component or environment that is accessed through props and events -->
             @before-deleting-tag="beforeDeletingTag"
             @tags-changed="tagsChanged"
         >
-            <template slot="tag-center" slot-scope="t">
+            <template v-slot:tag-center="t">
                 <div class="tag-name" @click="$emit('tag-click', t.tag)">{{ t.tag.label }}</div>
             </template>
         </vue-tags-input>
