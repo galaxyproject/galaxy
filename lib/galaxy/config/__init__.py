@@ -226,7 +226,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
     def _create_attributes_from_raw_config(self):
         for key, value in self._raw_config.items():
             if hasattr(self, key):
-                raise ConfigurationError("Attempting to override existing attribute %s ", key)
+                raise ConfigurationError("Attempting to override existing attribute '%s'" % key)
             setattr(self, key, value)
 
     def _process_config(self, kwargs):
