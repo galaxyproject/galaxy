@@ -165,13 +165,13 @@ client-watch: node-deps ## A useful target for parallel development building.
 client-test: node-deps  ## Run JS unit tests via Karma
 	cd client && yarn run test
 
-client-eslint: node-deps  ## Run client linting
+client-eslint: node-deps # Run client linting
 	cd client && yarn run eslint
 
-client-format-check: node-deps  # Run client formatting check
+client-format-check: node-deps # Run client formatting check
 	cd client && yarn run prettier-check
 
-client-lint: client-eslint client-format-check  # ES lint and check format of client
+client-lint: client-eslint client-format-check ## ES lint and check format of client
 
 client-test-watch: client ## Watch and run qunit tests on changes via Karma
 	cd client && yarn run test-watch
