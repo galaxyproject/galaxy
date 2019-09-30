@@ -1327,13 +1327,11 @@ mapping:
       dynamic_proxy_session_map:
         type: str
         default: session_map.sqlite
+        path_resolves_to: data_dir
         required: false
         desc: |
           The NodeJS dynamic proxy can use an SQLite database or a JSON file for IPC,
           set that here.
-
-          Default value will be resolved to 'database/session_map.sqlite' where 'database' is the
-          default value of the 'data_dir' option).
 
       dynamic_proxy_bind_port:
         type: int

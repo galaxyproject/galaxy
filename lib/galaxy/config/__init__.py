@@ -638,7 +638,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         if ie_dirs:
             self.visualization_plugins_directory += ",%s" % ie_dirs
 
-        self.proxy_session_map = os.path.join(self.data_dir, self.dynamic_proxy_session_map)
+        self.proxy_session_map = self.dynamic_proxy_session_map
         self.manage_dynamic_proxy = string_as_bool(kwargs.get("dynamic_proxy_manage", "True"))  # Set to false if being launched externally
 
         # InteractiveTools propagator mapping file
