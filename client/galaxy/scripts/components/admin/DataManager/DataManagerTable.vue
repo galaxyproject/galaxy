@@ -13,24 +13,22 @@
             <b-row>
                 <b-col>
                     <b-card id="data-table-card" flush>
-                        <template slot="header">
-                            <b-container>
-                                <b-row align-v="center">
-                                    <b-col cols="auto">
-                                        <b-button
-                                            @click="reload()"
-                                            v-b-tooltip.hover
-                                            :title="'Reload ' + this.dataTable['name'] + ' tool data table'"
-                                        >
-                                            <span class="fa fa-refresh" />
-                                        </b-button>
-                                    </b-col>
-                                    <b-col>
-                                        <b>{{ this.dataTable["name"] }}</b>
-                                    </b-col>
-                                </b-row>
-                            </b-container>
-                        </template>
+                        <b-container v-slot:header>
+                            <b-row align-v="center">
+                                <b-col cols="auto">
+                                    <b-button
+                                        @click="reload()"
+                                        v-b-tooltip.hover
+                                        :title="'Reload ' + this.dataTable['name'] + ' tool data table'"
+                                    >
+                                        <span class="fa fa-refresh" />
+                                    </b-button>
+                                </b-col>
+                                <b-col>
+                                    <b>{{ this.dataTable["name"] }}</b>
+                                </b-col>
+                            </b-row>
+                        </b-container>
                         <b-table
                             :fields="fields(this.dataTable['columns'])"
                             :items="dataTable['data']"
