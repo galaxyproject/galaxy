@@ -2261,12 +2261,10 @@ mapping:
       openid_consumer_cache_path:
         type: str
         default: openid_consumer_cache
+        path_resolves_to: data_dir
         required: false
         desc: |
           If OpenID is enabled, consumer cache directory to use.
-
-          Default value will be resolved to 'database/openid_consumer_cache' where 'database' is the
-          default value of the 'data_dir' option).
 
       enable_tool_tags:
         type: bool

@@ -349,7 +349,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         if override_tempdir:
             tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir", None)
-        self.openid_consumer_cache_path = os.path.join(self.data_dir, self.openid_consumer_cache_path)
         self.cookie_path = kwargs.get("cookie_path", None)
         self.tool_path = os.path.join(self.root, self.tool_path)
         self.tool_data_path = os.path.join(self.root, self.tool_data_path)
