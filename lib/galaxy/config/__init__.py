@@ -200,6 +200,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self._validate_schema_paths()  # check that paths can be resolved
         self._update_raw_config_from_kwargs(kwargs)  # Overwrite default values passed as kwargs
         self._create_attributes_from_raw_config()  # Create attributes for LOADED properties
+
+        self.config_dict = kwargs
+        self.root = find_root(kwargs)
+        self._set_config_base(kwargs)  # must be called prior to _resolve_paths()
+
         self._resolve_paths(kwargs)  # Overwrite attributes (not _raw_config) w/resolved paths
         self._process_config(kwargs)  # Finish processing configuration
 
@@ -312,10 +317,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             resolve(key)
 
     def _process_config(self, kwargs):
-        self.config_dict = kwargs
-        self.root = find_root(kwargs)
-        self._set_config_base(kwargs)
-
         # Resolve paths of other config files
         self.parse_config_file_options(kwargs)
 
