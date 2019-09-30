@@ -671,13 +671,11 @@ mapping:
       template_cache_path:
         type: str
         default: compiled_templates
+        path_resolves_to: data_dir
         required: false
         desc: |
           Mako templates are compiled as needed and cached for reuse, this directory is
           used for the cache
-
-          Default value will be resolved to 'database/compiled_templates' where 'database' is the
-          default value of the 'data_dir' option).
 
       check_job_script_integrity:
         type: bool
