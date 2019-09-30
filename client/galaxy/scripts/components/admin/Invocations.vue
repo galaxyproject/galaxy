@@ -1,7 +1,7 @@
 <template>
     <div>
         <h2 class="mb-3">
-            <span id="invocations-title">Worklfow Invocations</span>
+            <span id="invocations-title">Workflow Invocations</span>
         </h2>
         <b-alert variant="info" show>
             <p>

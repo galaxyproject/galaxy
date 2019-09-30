@@ -380,18 +380,23 @@ class JobConfiguration(ConfiguresHandlers):
         environments = execution_dict.get("environments", [])
         enviroment_iter = map(lambda e: (e["id"], e), environments) if isinstance(environments, list) else environments.items()
         for environment_id, environment_dict in enviroment_iter:
-            metrics = environment_dict.get("metrics") or {"src": "default"}
-            metrics_src = metrics.get("src") or "default"
-            if metrics_src != "default":
-                # customized metrics for this environment.
-                if metrics_src == "disabled":
-                    job_metrics.set_destination_instrumenter(environment_id, None)
-                elif metrics_src == "xml_element":
-                    metrics_element = metrics.get("xml_element")
-                    job_metrics.set_destination_conf_element(environment_id, metrics_element)
-                elif metrics_src == "path":
-                    metrics_conf_path = self.app.config.resolve_path(metrics.get("path"))
-                    job_metrics.set_destination_conf_file(environment_id, metrics_conf_path)
+            metrics = environment_dict.get("metrics")
+            if metrics is None:
+                metrics = {"src": "default"}
+            if isinstance(metrics, list):
+                job_metrics.set_destination_conf_dicts(environment_id, metrics)
+            else:
+                metrics_src = metrics.get("src") or "default"
+                if metrics_src != "default":
+                    # customized metrics for this environment.
+                    if metrics_src == "disabled":
+                        job_metrics.set_destination_instrumenter(environment_id, None)
+                    elif metrics_src == "xml_element":
+                        metrics_element = metrics.get("xml_element")
+                        job_metrics.set_destination_conf_element(environment_id, metrics_element)
+                    elif metrics_src == "path":
+                        metrics_conf_path = self.app.config.resolve_path(metrics.get("path"))
+                        job_metrics.set_destination_conf_file(environment_id, metrics_conf_path)
 
             destination_kwds = {}
 

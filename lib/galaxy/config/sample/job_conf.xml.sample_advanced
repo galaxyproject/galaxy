@@ -13,8 +13,8 @@
         <plugin id="pbs" type="runner" load="galaxy.jobs.runners.pbs:PBSJobRunner" workers="2"/>
         <plugin id="drmaa" type="runner" load="galaxy.jobs.runners.drmaa:DRMAAJobRunner">
             <!-- Different DRMs handle successfully completed jobs differently,
-                 these options can be changed to handle such differences and
-                 are explained in detail on the Galaxy wiki. Defaults are shown -->
+                 these options can be changed to handle such differences. Defaults are
+                 shown. -->
             <param id="invalidjobexception_state">ok</param>
             <param id="invalidjobexception_retries">0</param>
             <param id="internalexception_state">ok</param>
@@ -415,11 +415,8 @@
                volumes should be exposed how based on Galaxy's settings and the
                destination - but be sure to add any library paths or data incides
                that may be needed read-only.
-          -->
-          <!--
-          <param id="docker_volumes">$defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
-          -->
-          <!-- For a stock Galaxy instance and traditional job runner $defaults will
+
+               For a stock Galaxy instance and traditional job runner $defaults will
                expand out as:
 
                $galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:rw,$default_file_path:rw
@@ -446,6 +443,9 @@
                $galaxy_root, $default_file_path, $tool_directory, $working_directory,
                are available to all jobs and $job_directory is also available for
                Pulsar jobs.
+          -->
+          <!--
+          <param id="docker_volumes">$defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
           -->
           <!-- One can run docker using volumes-from tag by setting the following
                parameter. For more information on volumes-from check out the following
@@ -477,6 +477,9 @@
           <!-- By default, a container will live on past its run. By
                adding the '\-\-rm' flag to the command line, the container
                will be removed automatically after the program is complete.
+               Galaxy does this by default to clean up the containers it runs,
+               but this can be disabled for debugging and such using the following
+               command.
           -->
           <!-- <param id="docker_auto_rm">true</param> -->
           <!-- Override which user to launch Docker container as - defaults to 
@@ -509,9 +512,8 @@
           <!-- <param id="docker_default_container_id">busybox:ubuntu-14.04</param> -->
 
           <!-- If the destination should be secured to only allow containerized jobs
-               the following parameter may be set for the job destination. Not all,
-               or even most, tools available in Galaxy core or in the Tool Shed
-               support Docker yet so this option may require a lot of extra work for
+               the following parameter may be set for the job destination. Some tools do
+               not yet support Docker so this option may require extra work for
                the deployer. -->
           <!-- <param id="require_container">true</param> -->
         </destination>
@@ -867,11 +869,7 @@
         <!-- Jobs can be re-submitted for various reasons (to the same destination or others,
              with or without a short delay). For instance, jobs that hit the walltime on one
              destination can be automatically resubmitted to another destination. Re-submission
-             is defined on a per-destination basis using ``resubmit`` tags. Re-submission only
-             happens currently in response to problems in the job runner - so for instance if a
-             job fails to allocate memory but the job runner doesn't detect this and completes
-             the job normally but the exit code indicates the error - the job failure
-             re-submission won't run yet (this will be added in the future).
+             is defined on a per-destination basis using ``resubmit`` tags.
 
              Multiple `resubmit` tags can be defined, the first resubmit condition that is true
              (i.e. evaluates to a Python truthy value) will be used for a particular job failure.
@@ -906,6 +904,9 @@
         <destination id="smallmem" runner="slurm">
             <param id="nativeSpecification">--mem-per-cpu=512</param>
             <resubmit condition="memory_limit_reached" destination="bigmem" />
+        </destination>
+        <destination id="bigmem" runner="slurm">
+            <param id="nativeSpecification">--mem-per-cpu=256000</param>
         </destination>
         <destination id="retry_on_unknown_problems" runner="slurm">
             <!-- Just retry the job 5 times if un-categories errors occur backing
