@@ -33,6 +33,11 @@ import HistoryView from "components/HistoryView.vue";
 import WorkflowInvocationReport from "components/WorkflowInvocationReport.vue";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun.vue";
 import RecentInvocations from "components/User/RecentInvocations.vue";
+<<<<<<< HEAD
+=======
+import ToolsView from "components/ToolsView.vue";
+import ToolsJson from "components/ToolsJson.vue";
+>>>>>>> 669a685171... Add tools/json page which serves json-ld data
 import HistoryList from "mvc/history/history-list";
 import PluginList from "components/PluginList.vue";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -51,6 +56,11 @@ export const getAnalysisRouter = Galaxy =>
         routes: {
             "(/)(#)(_=_)": "home",
             "(/)root*": "home",
+<<<<<<< HEAD
+=======
+            "(/)tools/view": "show_tools_view",
+            "(/)tools/json": "show_tools_json",
+>>>>>>> 669a685171... Add tools/json page which serves json-ld data
             "(/)tours(/)(:tour_id)": "show_tours",
             "(/)user(/)": "show_user",
             "(/)user(/)cloud_auth": "show_cloud_auth",
@@ -241,10 +251,15 @@ export const getAnalysisRouter = Galaxy =>
         show_histories_import: function() {
             this._display_vue_helper(HistoryImport);
         },
+
         show_tools_view: function() {
             this.page.panels.left.hide();
             this.page.panels.right.hide();
             this._display_vue_helper(ToolsView);
+        },
+
+        show_tools_json: function() {
+            this._display_vue_helper(ToolsJson);
         },
         show_histories_permissions: function() {
             this.page.display(
