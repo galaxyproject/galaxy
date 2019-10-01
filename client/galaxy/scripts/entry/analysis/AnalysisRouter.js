@@ -241,7 +241,11 @@ export const getAnalysisRouter = Galaxy =>
         show_histories_import: function() {
             this._display_vue_helper(HistoryImport);
         },
-
+        show_tools_view: function() {
+            this.page.panels.left.hide();
+            this.page.panels.right.hide();
+            this._display_vue_helper(ToolsView);
+        },
         show_histories_permissions: function() {
             this.page.display(
                 new FormWrapper.View({
