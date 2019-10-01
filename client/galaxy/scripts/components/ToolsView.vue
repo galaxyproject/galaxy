@@ -1,80 +1,49 @@
 <template>
-  <div
-    v-infinite-scroll="loadMore"
-    infinite-scroll-disabled="busy"
-  >
-    <h2 class="mb-3">
-      <span id="tools-view">Tools View</span>
-    </h2>
-    <div v-if="!loading">
-      <b-container
-        fluid
-        class="mb-4"
-      >
-        <b-row>
-          <b-col md="6">
-            <b-form-group description="Search for strings or regular expressions">
-              <b-input-group>
-                <b-form-input
-                  v-model="filter"
-                  placeholder="Type to Search"
-                  @keyup.esc.native="filter = ''"
-                />
-                <b-input-group-append>
-                  <b-btn
-                    :disabled="!filter"
-                    @click="filter = ''"
-                  >Clear (esc)</b-btn>
-                </b-input-group-append>
-              </b-input-group>
-            </b-form-group>
-          </b-col>
-        </b-row>
-      </b-container>
-      <b-card-group
-        v-for="(deck, dindex) in bufferView"
-        :key="dindex"
-        deck
-        class="mb-4"
-      >
-        <b-card
-          v-for="(info, index) in deck"
-          :key="index"
-        >
-          <div slot="header">
-            <b-link
-              :href="info['url']"
-              target="_blank"
-            >
-              <h4>{{ info['name'] }}</h4>
-            </b-link>
-            <b-badge>
-              {{ info['section'] }}
-            </b-badge>
-          </div>
-          <p class="card-text">
-            {{ info["description"] }}
-          </p>
-          <p class="card-text">
-            <b-btn v-b-modal="'modal-' + dindex + '-' + index">Info</b-btn>
-            <b-modal
-              :id="'modal-' + dindex + '-' + index"
-              centered
-              :title="info['name']"
-            >
-              <b>{{ info['version'] + ' / ' + info['id'] }}</b>
-              <p>{{ info['description'] }}</p>
-            </b-modal>
-          </p>
-          <Citations
-            simple
-            source="tools"
-            :id="info['id']"
-          />
-        </b-card>
-      </b-card-group>
+    <div v-infinite-scroll="loadMore" infinite-scroll-disabled="busy">
+        <h2 class="mb-3">
+            <span id="tools-view">Tools View</span>
+        </h2>
+        <div v-if="!loading">
+            <b-container fluid class="mb-4">
+                <b-row>
+                    <b-col md="6">
+                        <b-form-group description="Search for strings or regular expressions">
+                            <b-input-group>
+                                <b-form-input
+                                    v-model="filter"
+                                    placeholder="Type to Search"
+                                    @keyup.esc.native="filter = ''"
+                                />
+                                <b-input-group-append>
+                                    <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
+                                </b-input-group-append>
+                            </b-input-group>
+                        </b-form-group>
+                    </b-col>
+                </b-row>
+            </b-container>
+            <b-card-group v-for="(deck, dindex) in bufferView" :key="dindex" deck class="mb-4">
+                <b-card v-for="(info, index) in deck" :key="index">
+                    <div slot="header">
+                        <b-link :href="info['url']" target="_blank">
+                            <h4>{{ info["name"] }}</h4>
+                        </b-link>
+                        <b-badge>{{ info["section"] }}</b-badge>
+                    </div>
+                    <p class="card-text" v-html="helpSummary(info['help']) || info['description']" />
+                    <p class="card-text">
+                        <b-btn v-b-modal="'modal-' + dindex + '-' + index">Info</b-btn>
+                        <b-modal :id="'modal-' + dindex + '-' + index" centered :title="info['name']">
+                            <b>{{ info["version"] + " / " + info["id"] }}</b>
+                            <p>{{ info["description"] }}</p>
+                            <p v-html="info['help']"></p>
+                        </b-modal>
+                    </p>
+                    <Citations simple source="tools" :id="info['id']" />
+                </b-card>
+            </b-card-group>
+        </div>
     </div>
-  </div>
 </template>
 
 <script>
@@ -129,7 +98,8 @@ export default {
                                   section: section["name"],
                                   description: tool["description"],
                                   url: getAppRoot() + String(tool["link"]).substring(1),
-                                  version: tool["version"]
+                                  version: tool["version"],
+                                  help: tool["help"]
                               }
                           ]
                         : _acc;
@@ -142,7 +112,7 @@ export default {
                 .sort((a, b) => a[0] - b[0])
                 .map(a => a[1]);
         },
-        loadMore: function() {
+        loadMore() {
             this.busy = true;
 
             setTimeout(() => {
@@ -151,6 +121,23 @@ export default {
                 this.buffer = this.buffer.concat(this.tools.slice(start, end));
                 this.busy = false;
             }, 1000);
+        },
+        helpSummary(help) {
+            const parser = new DOMParser();
+            const helpDoc = parser.parseFromString(help, "text/html");
+            const xpath = "//strong[text()='What it does']/../following-sibling::*";
+            const match = helpDoc.evaluate(xpath, helpDoc, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null)
+                .singleNodeValue;
+            if (match) {
+                return match.innerHTML;
+            } else {
+                const helpText = helpDoc.documentElement.textContent;
+                if (helpText) {
+                    return helpText.substring(0, helpText.indexOf("\n\n"));
+                } else {
+                    return null;
+                }
+            }
         }
     },
     created() {

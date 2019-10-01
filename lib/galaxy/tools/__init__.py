@@ -1969,6 +1969,12 @@ class Tool(Dictifiable):
         # FIXME: the Tool class should declare directly, instead of ad hoc inspection
         regular_form = tool_class == Tool or isinstance(self, (DatabaseOperationTool, InteractiveTool))
         tool_dict["form_style"] = "regular" if regular_form else "special"
+        # create tool help
+        tool_help = ''
+        if self.help:
+            tool_help = self.help.render(static_path=self.app.url_for('/static'), host_url=self.app.url_for('/', qualified=True))
+            tool_help = unicodify(tool_help, 'utf-8')
+        tool_dict["help"] = tool_help
 
         return tool_dict
 
