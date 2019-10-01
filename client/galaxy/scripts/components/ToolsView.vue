@@ -23,23 +23,25 @@
                 </b-row>
             </b-container>
             <b-card-group v-for="(deck, dindex) in bufferView" :key="dindex" deck class="mb-4">
-                <b-card v-for="(info, index) in deck" :key="index">
+                <b-card v-for="(info, index) in deck" :key="index" itemscope itemtype="http://schema.org/SoftwareApplication">
+                    <meta itemprop="operatingSystem" content="Any">
+                    <meta itemprop="applicationCategory" content="Web application">
                     <div slot="header">
-                        <b-link :href="info['url']" target="_blank">
-                            <h4>{{ info["name"] }}</h4>
+                        <b-link :href="info['url']" target="_blank" itemprop="url">
+                            <h4 itemprop="name">{{ info["name"] }}</h4>
                         </b-link>
                         <b-badge>{{ info["section"] }}</b-badge>
                     </div>
-                    <p class="card-text" v-html="helpSummary(info['help']) || info['description']" />
+                    <p class="card-text" v-html="helpSummary(info['help']) || info['description']" itemprop="description"/>
                     <p class="card-text">
                         <b-btn v-b-modal="'modal-' + dindex + '-' + index">Info</b-btn>
                         <b-modal :id="'modal-' + dindex + '-' + index" centered :title="info['name']">
-                            <b>{{ info["version"] + " / " + info["id"] }}</b>
+                            <b itemprop="softwareVersion">{{ info["version"] + " / " + info["id"] }}</b>
                             <p>{{ info["description"] }}</p>
                             <p v-html="info['help']"></p>
                         </b-modal>
                     </p>
-                    <Citations simple source="tools" :id="info['id']" />
+                    <Citations simple source="tools" :id="info['id']" itemprop="citation"/>
                 </b-card>
             </b-card-group>
         </div>
