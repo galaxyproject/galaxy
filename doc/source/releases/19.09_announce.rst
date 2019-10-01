@@ -3,8 +3,60 @@
 September 2019 Galaxy Release (v 19.09)
 ===========================================================
 
+.. include:: _header.rst
 
-Schedule
+Highlights
 ===========================================================
- * Planned Freeze Date: 2019-09-02
- * Planned Release Date: 2019-09-23
+
+**Interactive Tools**
+  A new type of Galaxy tool has been implemented that allow interactive experiences like
+  Galaxy Interactive Environments (via a proxy and Docker containers) but using plugins defined with
+  Galaxy's XML tool syntax. Dan Blankenberg's slides on these new features from Galaxy
+  Community Conference can be found `here <https://static.sched.com/hosted_files/gcc2019/c1/S8A-4__Dan_Blankenberg_Tools.pdf>`__.
+  More information can be found in the original pull request including interactive tool
+  versions of all of Galaxy's bundled interactive environments `Pull Request 7494`_.
+
+**Workflow Invocation Reports**
+  Workflows may now define Markdown templates with Galaxy specific embedded syntax extensions
+  that can tie together workflow inputs, outputs, jobs, and metadata into rich reports.
+  More information on the motivation for these reports can be found in `these slides <bit.ly/gxreports19>`__,
+  implementation details and GUI enhancements are described in the original pull request
+  (`#8030 <https://github.com/galaxyproject/galaxy/pull/8030>`__), and details on the final
+  syntax selected for embedded Galaxy objects can be found in the pull request that was ultimately
+  merged (`#8543 <https://github.com/galaxyproject/galaxy/pull/8543>`__).  
+
+**New Toolshed Client Interface**
+  The march toward replacing templated backend generated HTML with modern, reactive
+  components continued in Galaxy 19.09. Galaxy's tool panel, job properties tables,
+  job management controls, and "Pages" infrastructure were all replaced with VueJS
+  components (with huge help from `@scrathat <https://github.com/scrathat>`__
+  and `@inkuzmin <https://github.com/inkuzmin>`__). Most notably, Galaxy's interface
+  to the Toolshed was also rewritten in VueJS and is now completely API driven.
+  This project drove numerous enhancements to the Toolshed API including vastly improved
+  search functionality. This interface has been completely re-imagined and feels much
+  more interactive.
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_19.09 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_19.09 && git pull --ff-only origin release_19.09
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Release Notes
+===========================================================
+
+.. include:: 19.09.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

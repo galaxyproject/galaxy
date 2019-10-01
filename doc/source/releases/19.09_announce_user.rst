@@ -1,0 +1,86 @@
+
+===========================================================
+September 2019 Galaxy Release (v 19.09)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Feature1**
+  Feature description.
+
+**Feature2**
+  Feature description.
+
+**Feature3**
+  Feature description.
+
+
+New Visualizations
+===========================================================
+
+.. visualizations
+* New visualization - free style image annotation
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 6891`_
+* New visualization - OpenLayers maps.
+  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
+  `Pull Request 7888`_
+* New visualization - hyphy-vision
+  (thanks to `@veg <https://github.com/veg>`__).
+  `Pull Request 8227`_
+* Add external display application plugin for iCn3D.
+  `Pull Request 8347`_
+
+New Datatypes
+===========================================================
+
+.. datatypes
+
+* Adding Shapefile composite datatype
+  (thanks to `@Alanamosse <https://github.com/Alanamosse>`__).
+  `Pull Request 7615`_
+* Add mcool datatype and extend h5 tool output testing
+  (thanks to `@msauria <https://github.com/msauria>`__).
+  `Pull Request 7993`_
+* Add hyphy_results.json datatype
+  (thanks to `@veg <https://github.com/veg>`__).
+  `Pull Request 8186`_
+* Add pgp and osw datatypes as used in OpenSWATH experiments
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 8458`_
+* Add ckpt datatype
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 8086`_
+* Add dada2 datatypes
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 7895`_
+* Add rDock active site datatype
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 8727`_
+* Add Kallistobus datatypes
+  (thanks to `@astrovsky01 <https://github.com/astrovsky01>`__).
+  `Pull Request 8229`_
+
+Builtin Tool Updates
+===========================================================
+
+.. tools
+
+* Various collection operation tool improvements
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 8038`_
+* Enhance unzip/zip collection collection operation to annotate output format properly
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 8239`_
+
+Release Notes
+===========================================================
+
+Please see the `full release notes <19.09_announce.html>`_ for more details.
+
+.. include:: 19.09_prs.rst
+
+.. include:: _thanks.rst
