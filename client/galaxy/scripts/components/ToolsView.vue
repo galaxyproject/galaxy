@@ -35,26 +35,21 @@
                     :key="index"
                     class="m-2"
                     style="width: 23rem;"
-                    itemscope
-                    itemtype="http://schema.org/SoftwareApplication"
                 >
-                    <meta itemprop="operatingSystem" content="Any" />
-                    <meta itemprop="applicationCategory" content="Web application" />
                     <div slot="header">
-                        <b-link :href="info['url']" target="_blank" itemprop="url">
-                            <h4 class="tools-view-name" itemprop="name">{{ info["name"] }}</h4>
+                        <b-link :href="info['url']" target="_blank">
+                            <h4 class="tools-view-name">{{ info["name"] }}</h4>
                         </b-link>
                         <b-badge class="tools-view-section">{{ info["section"] }}</b-badge>
                     </div>
                     <p
                         class="card-text"
                         v-html="helpSummary(info['help']) || info['description']"
-                        itemprop="description"
                     />
                     <p class="card-text">
                         <b-btn v-b-modal="'modal-' + '-' + index">Info</b-btn>
                         <b-modal :id="'modal-' + '-' + index" centered :title="info['name']">
-                            <b itemprop="softwareVersion">{{ info["version"] + " / " + info["id"] }}</b>
+                            <b>{{ info["version"] + " / " + info["id"] }}</b>
                             <p>{{ info["description"] }}</p>
                             <p v-html="info['help']"></p>
                         </b-modal>
