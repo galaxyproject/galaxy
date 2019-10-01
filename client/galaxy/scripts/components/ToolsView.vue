@@ -10,9 +10,10 @@
                         <b-form-group description="Search for strings or regular expressions">
                             <b-input-group>
                                 <b-form-input
-                                    v-model="filter"
+                                    v-model="filterText"
                                     placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''"
+                                    @keyup.native="filter('filterByText')"
+                                    @keyup.esc.native="filterText = ''"
                                 />
                                 <b-input-group-append>
                                     <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
@@ -22,28 +23,45 @@
                     </b-col>
                 </b-row>
             </b-container>
-            <b-card-group v-for="(deck, dindex) in bufferView" :key="dindex" deck class="mb-4">
-                <b-card v-for="(info, index) in deck" :key="index" itemscope itemtype="http://schema.org/SoftwareApplication">
-                    <meta itemprop="operatingSystem" content="Any">
-                    <meta itemprop="applicationCategory" content="Web application">
+            <isotope
+                ref="iso"
+                :options="isoOptions"
+                @filter="filterOption = arguments[2]"
+                :list="buffer"
+                style="margin: 0 auto;"
+            >
+                <b-card
+                    v-for="(info, index) in buffer"
+                    :key="index"
+                    class="m-2"
+                    style="width: 23rem;"
+                    itemscope
+                    itemtype="http://schema.org/SoftwareApplication"
+                >
+                    <meta itemprop="operatingSystem" content="Any" />
+                    <meta itemprop="applicationCategory" content="Web application" />
                     <div slot="header">
                         <b-link :href="info['url']" target="_blank" itemprop="url">
-                            <h4 itemprop="name">{{ info["name"] }}</h4>
+                            <h4 class="tools-view-name" itemprop="name">{{ info["name"] }}</h4>
                         </b-link>
-                        <b-badge>{{ info["section"] }}</b-badge>
+                        <b-badge class="tools-view-section">{{ info["section"] }}</b-badge>
                     </div>
-                    <p class="card-text" v-html="helpSummary(info['help']) || info['description']" itemprop="description"/>
+                    <p
+                        class="card-text"
+                        v-html="helpSummary(info['help']) || info['description']"
+                        itemprop="description"
+                    />
                     <p class="card-text">
-                        <b-btn v-b-modal="'modal-' + dindex + '-' + index">Info</b-btn>
-                        <b-modal :id="'modal-' + dindex + '-' + index" centered :title="info['name']">
+                        <b-btn v-b-modal="'modal-' + '-' + index">Info</b-btn>
+                        <b-modal :id="'modal-' + '-' + index" centered :title="info['name']">
                             <b itemprop="softwareVersion">{{ info["version"] + " / " + info["id"] }}</b>
                             <p>{{ info["description"] }}</p>
                             <p v-html="info['help']"></p>
                         </b-modal>
                     </p>
-                    <Citations simple source="tools" :id="info['id']" itemprop="citation"/>
+                    <Citations simple source="tools" @click.native="updateLayout()" :id="info['id']" />
                 </b-card>
-            </b-card-group>
+            </isotope>
         </div>
     </div>
 </template>
@@ -51,43 +69,50 @@
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import infiniteScroll from "vue-infinite-scroll";
+import isotope from "vueisotope";
+import Isotope from "isotope-layout";
 import axios from "axios";
 import Citations from "components/Citations.vue";
+import { setTimeout } from "timers";
 
 export default {
     components: {
-        Citations
+        Citations,
+        isotope
     },
     directives: { infiniteScroll },
     data() {
         return {
             tools: [],
             buffer: [],
-            filter: "",
+            isoOptions: {
+                masonry: {
+                    fitWidth: true
+                },
+                getFilterData: {
+                    filterByText: el => {
+                        const re = new RegExp(this.filterText, "i");
+                        console.log(this.filterText);
+                        return el["name"].match(re) || el["description"].match(re) || el["help"].match(re);
+                    }
+                }
+            },
+            filterOption: null,
+            filterText: "",
             busy: false,
             loading: true
         };
     },
-    computed: {
-        bufferView() {
-            let a = [];
-            let b = this.bufferFiltered.slice(0);
-            while (b.length) a.push(b.splice(0, 3));
-            return a;
-        },
-        bufferFiltered() {
-            let f = [];
-            let filter = this.filter;
-            if (!this.loading) {
-                f = this.buffer.filter(x => {
-                    let re = new RegExp(filter, "i");
-                    return x["name"].match(re) || x["description"].match(re);
-                });
-            }
-            return f;
-        }
-    },
     methods: {
+        updateLayout() {
+            setTimeout(() => {
+                this.$refs.iso.layout();
+            }, 500);
+        },
+        filter(key) {
+            console.log("filter here with key: ", key);
+            this.$refs.iso.filter(key);
+        },
         toolsExtracted(tools) {
             function extractSections(acc, section) {
                 function extractTools(_acc, tool) {
@@ -115,14 +140,18 @@ export default {
                 .map(a => a[1]);
         },
         loadMore() {
-            this.busy = true;
+            if (this.buffer.length < this.tools.length) {
+                this.busy = true;
 
-            setTimeout(() => {
-                const start = this.buffer.length;
-                const end = start + 20;
-                this.buffer = this.buffer.concat(this.tools.slice(start, end));
-                this.busy = false;
-            }, 1000);
+                setTimeout(() => {
+                    const start = this.buffer.length;
+                    const end = start + 10;
+                    const newItems = this.tools.slice(start, end);
+                    this.buffer = this.buffer.concat(newItems);
+
+                    this.busy = false;
+                }, 100);
+            }
         },
         helpSummary(help) {
             const parser = new DOMParser();
@@ -149,6 +178,8 @@ export default {
                 this.tools = this.toolsExtracted(response.data);
                 this.buffer = this.tools.slice(0, 20);
                 this.loading = false;
+
+                this.updateLayout();
             })
             .catch(error => {
                 console.error(error);
