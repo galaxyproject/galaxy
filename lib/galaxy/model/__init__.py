@@ -679,11 +679,18 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     _text_metric = JobMetricText
 
     states = Bunch(NEW='new',
+                   NOT_READY='not_ready',
                    RESUBMITTED='resubmitted',
                    UPLOAD='upload',
                    WAITING='waiting',
+                   LIMITED='limited',
+                   DISPATCHED='dispatched',
+                   SUBMITTED='submitted',
+                   STAGEIN='stagein',
                    QUEUED='queued',
                    RUNNING='running',
+                   STAGEOUT='stageout',
+                   FINISHING='finishing',
                    OK='ok',
                    ERROR='error',
                    FAILED='failed',
@@ -696,11 +703,18 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     #: job states where the job hasn't finished and the model may still change
     non_ready_states = [
         states.NEW,
+        states.NOT_READY,
         states.RESUBMITTED,
         states.UPLOAD,
         states.WAITING,
+        states.LIMITED,
+        states.DISPATCHED,
+        states.SUBMITTED,
+        states.STAGEIN,
         states.QUEUED,
         states.RUNNING,
+        states.STAGEOUT,
+        states.FINISHING,
     ]
 
     # Please include an accessor (get/set pair) for any new columns/members.
@@ -1151,9 +1165,16 @@ class Task(JobLike, RepresentById):
     _text_metric = TaskMetricText
 
     states = Bunch(NEW='new',
+                   NOT_READY='not_ready',
                    WAITING='waiting',
+                   LIMITED='limited',
+                   DISPATCHED='dispatched',
+                   SUBMITTED='submitted',
+                   STAGEIN='stagein',
                    QUEUED='queued',
                    RUNNING='running',
+                   STAGEOUT='stageout',
+                   FINISHING='finishing',
                    OK='ok',
                    ERROR='error',
                    DELETED='deleted')
@@ -1463,7 +1484,10 @@ class JobExportHistoryArchive(RepresentById):
 
     @property
     def preparing(self):
-        return self.job.state in [Job.states.RUNNING, Job.states.QUEUED, Job.states.WAITING]
+        return self.job.state in [
+            Job.states.RUNNING, Job.states.QUEUED, Job.states.NOT_READY, Job.states.WAITING, Job.states.LIMITED,
+            Job.states.DISPATCHED, Job.states.SUBMITTED,
+        ]
 
     @property
     def export_name(self):
@@ -2154,8 +2178,15 @@ class StorableObject(object):
 class Dataset(StorableObject, RepresentById):
     states = Bunch(NEW='new',
                    UPLOAD='upload',
+                   WAITING='waiting',
+                   LIMITED='limited',
+                   DISPATCHED='dispatched',
+                   SUBMITTED='submitted',
+                   STAGEIN='stagein',
                    QUEUED='queued',
                    RUNNING='running',
+                   STAGEOUT='stageout',
+                   FINISHING='finishing',
                    OK='ok',
                    EMPTY='empty',
                    ERROR='error',
@@ -2772,9 +2803,9 @@ class DatasetInstance(object):
         """
         Return true if the dataset is neither ready nor in error
         """
-        return self.state in (self.states.NEW, self.states.UPLOAD,
-                              self.states.QUEUED, self.states.RUNNING,
-                              self.states.SETTING_METADATA)
+        return self.state in (self.states.NEW, self.states.UPLOAD, self.states.WAITING, self.states.DISPATCHED,
+                              self.states.SUBMITTED, self.states.STAGEIN, self.states.QUEUED, self.states.RUNNING,
+                              self.states.STAGEOUT, self.states.FINISHING, self.states.SETTING_METADATA)
 
     @property
     def source_library_dataset(self):

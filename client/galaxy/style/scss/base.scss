@@ -8,8 +8,8 @@
 @import "overrides.scss";
 
 // Fontawesome configuration.
-$fa-font-path: "../../../node_modules/font-awesome/fonts/";
-@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
+$fa-font-path: "~font-awesome/fonts/";
+@import "~font-awesome/scss/font-awesome.scss";
 
 @import "select2.scss";
 @import "jquery.rating.scss";
@@ -1050,6 +1050,26 @@ ul.manage-table-actions li {
     background: $state-default-bg;
 }
 
+.state-color-waiting {
+    border-color: $state-default-border;
+    background: $state-default-bg;
+}
+
+.state-color-dispatched {
+    border-color: $state-default-border;
+    background: $state-default-bg;
+}
+
+.state-color-submitted {
+    border-color: $state-default-border;
+    background: $state-default-bg;
+}
+
+.state-color-stagein {
+    border-color: $state-default-border;
+    background: $state-default-bg;
+}
+
 .state-color-queued {
     border-color: $state-default-border;
     background: $state-default-bg;
@@ -1060,9 +1080,24 @@ ul.manage-table-actions li {
     background: $state-running-bg;
 }
 
+.state-color-stageout {
+    border-color: $state-running-border;
+    background: $state-running-bg;
+}
+
+.state-color-finishing {
+    border-color: $state-running-border;
+    background: $state-running-bg;
+}
+
 .state-color-ok {
     border-color: $state-success-border;
     background: $state-success-bg;
+}
+
+.state-color-paused {
+    border-color: $state-paused-border;
+    background: $state-paused-bg;
 }
 
 .state-color-error {

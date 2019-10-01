@@ -25,7 +25,7 @@ except ImportError as e:
 
 
 __all__ = ('ChronosJobRunner',)
-LOGGER = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class ChronosRunnerException(Exception):
@@ -41,7 +41,7 @@ def handle_exception_call(func):
         try:
             return func(*args, **kwargs)
         except chronos_exceptions as e:
-            LOGGER.error(unicodify(e))
+            log.error(str(e))
 
     return wrapper
 
@@ -129,15 +129,16 @@ class ChronosJobRunner(AsynchronousJobRunner):
 
     @handle_exception_call
     def queue_job(self, job_wrapper):
-        LOGGER.debug("Starting queue_job for job " + job_wrapper.get_id_tag())
+        log.debug("Starting queue_job for job " + job_wrapper.get_id_tag())
         if not self.prepare_job(job_wrapper, include_metadata=False,
                                 modify_command_for_container=False):
-            LOGGER.debug("Not ready " + job_wrapper.get_id_tag())
+            log.debug("Not ready " + job_wrapper.get_id_tag())
             return
         job_destination = job_wrapper.job_destination
         chronos_job_spec = self._get_job_spec(job_wrapper)
         job_name = chronos_job_spec['name']
         self._chronos_client.add(chronos_job_spec)
+        job_wrapper.change_state(model.Job.states.SUBMITTED)
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory,
                                    job_wrapper=job_wrapper,
                                    job_id=job_name,
@@ -152,34 +153,21 @@ class ChronosJobRunner(AsynchronousJobRunner):
         if job:
             msg = 'Job {name!r} is terminated'
             self._chronos_client.delete(job_name)
-            LOGGER.debug(msg.format(name=job_name))
+            log.debug(msg.format(name=job_name))
         else:
             msg = 'Job {name!r} not found. It cannot be terminated.'
-            LOGGER.error(msg.format(name=job_name))
+            log.error(msg.format(name=job_name))
 
     def recover(self, job, job_wrapper):
-        msg = ('(name!r/runner!r) is still in {state!s} state, adding to'
-               ' the runner monitor queue')
-        job_id = job.get_job_runner_external_id()
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory,
-                                   job_wrapper=job_wrapper)
-        ajs.job_id = self.JOB_NAME_PREFIX + str(job_id)
-        ajs.command_line = job.command_line
-        ajs.job_wrapper = job_wrapper
-        ajs.job_destination = job_wrapper.job_destination
-        if job.state == model.Job.states.RUNNING:
-            LOGGER.debug(msg.format(
-                name=job.id, runner=job.job_runner_external_id,
-                state='running'))
-            ajs.old_state = model.Job.states.RUNNING
-            ajs.running = True
-            self.monitor_queue.put(ajs)
-        elif job.state == model.Job.states.QUEUED:
-            LOGGER.debug(msg.format(
-                name=job.id, runner=job.job_runner_external_id,
-                state='queued'))
-            ajs.old_state = model.Job.states.QUEUED
-            ajs.running = False
+        ajs = self._recover_async_job_state(job, job_wrapper)
+        if getattr(ajs, 'fail_job', False):
+            log.error("(%s) Failing job due to job state (%s) recovery error",
+                      job.id, job.state)
+            self.mark_as_failed(ajs)
+        else:
+            ajs.job_id = self.JOB_NAME_PREFIX + str(job_wrapper.get_id_tag())
+            log.debug("(%s/%s) Job recovered in '%s' state, adding to the"
+                      " runner monitor queue", job.id, ajs.job_id, job.state)
             self.monitor_queue.put(ajs)
 
     @handle_exception_call
@@ -267,6 +255,6 @@ class ChronosJobRunner(AsynchronousJobRunner):
         job = [x for x in jobs if x['name'] == job_id]
         if len(job) > 1:
             msg = 'Multiple jobs found with name {name!r}'.format(name=job_id)
-            LOGGER.error(msg)
+            log.error(msg)
             raise ChronosRunnerException(msg)
         return job[0] if job else None

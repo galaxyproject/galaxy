@@ -536,24 +536,19 @@ class PBSJobRunner(AsynchronousJobRunner):
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
-        job_id = job.get_job_runner_external_id()
-        pbs_job_state = AsynchronousJobState()
-        pbs_job_state.output_file = "%s/%s.o" % (self.app.config.cluster_files_directory, job.id)
-        pbs_job_state.error_file = "%s/%s.e" % (self.app.config.cluster_files_directory, job.id)
-        pbs_job_state.exit_code_file = "%s/%s.ec" % (self.app.config.cluster_files_directory, job.id)
-        pbs_job_state.job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job.id)
-        pbs_job_state.job_id = str(job_id)
-        pbs_job_state.runner_url = job_wrapper.get_job_runner_url()
-        pbs_job_state.job_destination = job_wrapper.job_destination
-        job_wrapper.command_line = job.command_line
-        pbs_job_state.job_wrapper = job_wrapper
-        if job.state == model.Job.states.RUNNING:
-            log.debug("(%s/%s) is still in running state, adding to the PBS queue" % (job.id, job.get_job_runner_external_id()))
-            pbs_job_state.old_state = 'R'
-            pbs_job_state.running = True
-            self.monitor_queue.put(pbs_job_state)
-        elif job.state == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in PBS queued state, adding to the PBS queue" % (job.id, job.get_job_runner_external_id()))
-            pbs_job_state.old_state = 'Q'
-            pbs_job_state.running = False
-            self.monitor_queue.put(pbs_job_state)
+        ajs = self._recover_async_job_state(job, job_wrapper)
+        if getattr(ajs, 'fail_job', False):
+            log.error("(%s) Failing job due to job state (%s) recovery error", job.id, job.state)
+            self.mark_as_failed(ajs)
+        else:
+            log.debug("(%s/%s) Job recovered in '%s' state, adding to the runner monitor queue", job.id, ajs.job_id, job.state)
+            ajs.output_file = "%s/%s.o" % (self.app.config.cluster_files_directory, job.id)
+            ajs.error_file = "%s/%s.e" % (self.app.config.cluster_files_directory, job.id)
+            ajs.exit_code_file = "%s/%s.ec" % (self.app.config.cluster_files_directory, job.id)
+            ajs.job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job.id)
+            ajs.old_state = {
+                model.Job.states.SUBMITTED: 'Q',
+                model.Job.states.QUEUED: 'Q',
+                model.Job.states.RUNNING: 'R',
+            }[job.state]
+            self.monitor_queue.put(ajs)

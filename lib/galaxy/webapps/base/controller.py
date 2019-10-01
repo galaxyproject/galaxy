@@ -256,6 +256,7 @@ class JSAppLauncher(BaseUIController):
         self.user_serializer = users.CurrentUserSerializer(app)
         self.config_serializer = configuration.ConfigSerializer(app)
         self.admin_config_serializer = configuration.AdminConfigSerializer(app)
+        self.job_config_serializer = configuration.JobConfigSerializer(app)
 
     def _check_require_login(self, trans):
         if self.app.config.require_login and self.user_manager.is_anonymous(trans.user):
@@ -295,6 +296,7 @@ class JSAppLauncher(BaseUIController):
             'params'             : dict(trans.request.params),
             'session_csrf_token' : trans.session_csrf_token,
         }
+        js_options['config']['job'] = self._get_job_configuration(trans)
         return js_options
 
     def _get_extended_config(self, trans):
@@ -327,10 +329,17 @@ class JSAppLauncher(BaseUIController):
         """
         Return a dictionary representing Galaxy's current configuration.
         """
+        serializer = self.config_serializer
+        if self.user_manager.is_admin(trans.user, trans=trans):
+            serializer = self.admin_config_serializer
+        return self._serialize_configuration(trans, serializer)
+
+    def _get_job_configuration(self, trans):
+        serializer = self.job_config_serializer
+        return self._serialize_configuration(trans, serializer)
+
+    def _serialize_configuration(self, trans, serializer):
         try:
-            serializer = self.config_serializer
-            if self.user_manager.is_admin(trans.user, trans=trans):
-                serializer = self.admin_config_serializer
             return serializer.serialize_to_view(self.app.config, view='all')
         except Exception as exc:
             log.exception(exc)

@@ -302,7 +302,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             state_counts[hda.state] = state_counts[hda.state] + 1
         return state_counts
 
-    # TODO: remove this (is state used/useful?)
+    # TODO: remove this (is state used/useful? - currently it is used by tests to determine whether jobs failed)
     def serialize_history_state(self, history, key, **context):
         """
         Returns the history state based on the states of the HDAs it contains.
@@ -320,11 +320,18 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
         else:
             if (hda_state_counts[states.RUNNING] > 0 or
                     hda_state_counts[states.SETTING_METADATA] > 0 or
-                    hda_state_counts[states.UPLOAD] > 0):
+                    hda_state_counts[states.UPLOAD] > 0 or
+                    hda_state_counts[states.STAGEOUT] > 0 or
+                    hda_state_counts[states.FINISHING] > 0):
                 state = states.RUNNING
             # TODO: this method may be more useful if we *also* polled the histories jobs here too
             elif (hda_state_counts[states.QUEUED] > 0 or
-                    hda_state_counts[states.NEW] > 0):
+                    hda_state_counts[states.NEW] > 0 or
+                    hda_state_counts[states.WAITING] > 0 or
+                    hda_state_counts[states.LIMITED] > 0 or
+                    hda_state_counts[states.DISPATCHED] > 0 or
+                    hda_state_counts[states.SUBMITTED] > 0 or
+                    hda_state_counts[states.STAGEIN] > 0):
                 state = states.QUEUED
             elif (hda_state_counts[states.ERROR] > 0 or
                     hda_state_counts[states.FAILED_METADATA] > 0):

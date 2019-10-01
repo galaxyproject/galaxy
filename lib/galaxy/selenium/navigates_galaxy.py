@@ -1300,7 +1300,7 @@ class NavigatesGalaxy(HasDriver):
             tour_dict = yaml.safe_load(f)
         steps = tour_dict["steps"]
         for i, step in enumerate(steps):
-            title = step.get("title", None)
+            title = step.get("title", i)
             skip = False
             if skip_steps:
                 for skip_step in skip_steps:

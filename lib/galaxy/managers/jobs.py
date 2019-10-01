@@ -136,7 +136,9 @@ class JobSearch(object):
             conditions.append(
                 model.Job.state.in_([model.Job.states.NEW,
                                      model.Job.states.QUEUED,
+                                     model.Job.states.NOT_READY,
                                      model.Job.states.WAITING,
+                                     model.Job.states.LIMITED,
                                      model.Job.states.RUNNING,
                                      model.Job.states.OK])
             )

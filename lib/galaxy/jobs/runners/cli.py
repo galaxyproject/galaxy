@@ -238,22 +238,10 @@ class ShellJobRunner(AsynchronousJobRunner):
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
-        job_id = job.get_job_runner_external_id()
-        if job_id is None:
-            self.put(job_wrapper)
-            return
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
-        ajs.job_id = str(job_id)
-        ajs.command_line = job.command_line
-        ajs.job_wrapper = job_wrapper
-        ajs.job_destination = job_wrapper.job_destination
-        if job.state == model.Job.states.RUNNING:
-            log.debug("(%s/%s) is still in running state, adding to the runner monitor queue" % (job.id, job.job_runner_external_id))
-            ajs.old_state = model.Job.states.RUNNING
-            ajs.running = True
-            self.monitor_queue.put(ajs)
-        elif job.state == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in queued state, adding to the runner monitor queue" % (job.id, job.job_runner_external_id))
-            ajs.old_state = model.Job.states.QUEUED
-            ajs.running = False
+        ajs = self._recover_async_job_state(job, job_wrapper)
+        if getattr(ajs, 'fail_job', False):
+            log.error("(%s) Failing job due to job state (%s) recovery error", job.id, job.state)
+            self.mark_as_failed(ajs)
+        else:
+            log.debug("(%s/%s) Job recovered in '%s' state, adding to the runner monitor queue", job.id, ajs.job_id, job.state)
             self.monitor_queue.put(ajs)

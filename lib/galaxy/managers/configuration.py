@@ -110,3 +110,15 @@ class AdminConfigSerializer(ConfigSerializer):
             'allow_library_path_paste'          : _defaults_to(False),
             'allow_user_deletion'               : _defaults_to(False),
         })
+
+
+class JobConfigSerializer(ConfigSerializer):
+    """Job Configuration (job_conf.xml) settings viewable by all users"""
+
+    def add_serializers(self):
+        def _defaults_to(default):
+            return lambda i, k, **c: getattr(i, k, default)
+
+        self.serializers = {
+            'handler_assignment_methods'        : _defaults_to([]),
+        }

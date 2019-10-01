@@ -1406,10 +1406,10 @@ class JobWrapper(HasResourceParameters):
             dest_params, self.app.config, key, default
         )
 
-    def enqueue(self):
+    def mark_as_dispatched(self):
         job = self.get_job()
         # Change to queued state before handing to worker thread so the runner won't pick it up again
-        self.change_state(model.Job.states.QUEUED, flush=False, job=job)
+        self.change_state(model.Job.states.DISPATCHED, flush=False, job=job)
         # Persist the destination so that the job will be included in counts if using concurrency limits
         self.set_job_destination(self.job_destination, None, flush=False, job=job)
         # Set object store after job destination so can leverage parameters...

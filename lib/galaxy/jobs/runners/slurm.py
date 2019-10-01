@@ -8,7 +8,6 @@ import subprocess
 import tempfile
 import time
 
-from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
 from galaxy.util import unicodify
 from galaxy.util.logging import get_logger
@@ -126,12 +125,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                     ajs.runner_state = ajs.runner_states.WALLTIME_REACHED
                 elif slurm_state == 'NODE_FAIL':
                     log.warning('(%s/%s) Job failed due to node failure, attempting resubmission', ajs.job_wrapper.get_id_tag(), ajs.job_id)
-                    ajs.job_wrapper.change_state(model.Job.states.QUEUED, info='Job was resubmitted due to node failure')
-                    try:
-                        self.queue_job(ajs.job_wrapper)
-                        return
-                    except Exception:
-                        ajs.fail_message = "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
+                    self.mark_as_resubmitted(ajs, info='Job was resubmitted due to node failure')
                 elif slurm_state == 'OUT_OF_MEMORY':
                     log.info('(%s/%s) Job hit memory limit (SLURM state: OUT_OF_MEMORY)', ajs.job_wrapper.get_id_tag(), ajs.job_id)
                     ajs.fail_message = OUT_OF_MEMORY_MSG

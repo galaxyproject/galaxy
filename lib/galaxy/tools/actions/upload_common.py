@@ -175,7 +175,7 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
     if state:
         hda.state = state
     else:
-        hda.state = hda.states.QUEUED
+        hda.state = hda.states.NEW
     trans.sa_session.flush()
     history.add_dataset(hda, genome_build=uploaded_dataset.dbkey)
     permissions = trans.app.security_agent.history_get_default_permissions(history)
@@ -234,7 +234,7 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state
     if state:
         ldda.state = state
     else:
-        ldda.state = ldda.states.QUEUED
+        ldda.state = ldda.states.NEW
     ldda.message = library_bunch.message
     trans.sa_session.flush()
     # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset

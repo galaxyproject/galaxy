@@ -15,59 +15,6 @@
     font-size: 16px;
 }
 
-// ............................................................................ animated or composite state icons
-.state-icon-running {
-    //TODO: couldn't find a way to do this with fa/spinning.scss as mixin
-    -webkit-animation: spin 2s infinite linear;
-    -moz-animation: spin 2s infinite linear;
-    -o-animation: spin 2s infinite linear;
-    animation: spin 2s infinite linear;
-
-    @-moz-keyframes spin {
-        0% {
-            -moz-transform: rotate(0deg);
-        }
-        100% {
-            -moz-transform: rotate(359deg);
-        }
-    }
-    @-webkit-keyframes spin {
-        0% {
-            -webkit-transform: rotate(0deg);
-        }
-        100% {
-            -webkit-transform: rotate(359deg);
-        }
-    }
-    @-o-keyframes spin {
-        0% {
-            -o-transform: rotate(0deg);
-        }
-        100% {
-            -o-transform: rotate(359deg);
-        }
-    }
-    @-ms-keyframes spin {
-        0% {
-            -ms-transform: rotate(0deg);
-        }
-        100% {
-            -ms-transform: rotate(359deg);
-        }
-    }
-    @keyframes spin {
-        0% {
-            transform: rotate(0deg);
-        }
-        100% {
-            transform: rotate(359deg);
-        }
-    }
-    &:before {
-        content: $fa-var-spinner;
-    }
-}
-
 .state-icon-upload {
     overflow: hidden;
 
@@ -159,6 +106,10 @@
         }
     }
 
+    &.state-waiting,
+    &.state-dispatched,
+    &.state-submitted,
+    &.state-stagein,
     &.state-queued {
         background: $state-default-bg;
         .state-icon {
@@ -168,11 +119,57 @@
         }
     }
 
+    &.state-dispatched {
+        .state-icon {
+            &:before {
+                -webkit-text-stroke: 1px $state-default-bg;
+            }
+        }
+    }
+
+    &.state-submitted,
+    &.state-stagein {
+        // normal font weight
+    }
+
+    &.state-queued {
+        .state-icon {
+            &:before {
+                -webkit-text-stroke: 1px;
+            }
+        }
+    }
+
+    &.state-limited {
+        background: $state-paused-bg;
+        .state-icon {
+            &:before {
+                content: $fa-var-hand-paper-o;
+            }
+        }
+    }
+
     &.state-running,
+    &.state-stageout,
     &.state-setting_metadata {
         background: $state-running-bg;
         .state-icon {
-            @extend .state-icon-running;
+            @extend .fa-spin;
+            &:before {
+                content: $fa-var-spinner;
+            }
+        }
+    }
+
+    &.state-finishing {
+        background: $state-running-bg;
+        .state-icon {
+            // Fast spin!
+            -webkit-animation: fa-spin 1s infinite linear;
+            animation: fa-spin 1s infinite linear;
+            &:before {
+                content: $fa-var-spinner;
+            }
         }
     }
 
@@ -180,7 +177,7 @@
         background: $state-paused-bg;
         .state-icon {
             &:before {
-                content: $fa-var-pause;
+                content: $fa-var-pause-circle;
             }
         }
     }
@@ -211,7 +208,7 @@
         background: $state-default-bg;
         .state-icon {
             &:before {
-                content: $fa-var-clock-o;
+                content: $fa-var-file-o;
             }
         }
     }
@@ -219,7 +216,10 @@
     &.state-loading {
         background: $state-default-bg;
         .state-icon {
-            @extend .state-icon-running;
+            @extend .fa-spin;
+            &:before {
+                content: $fa-var-spinner;
+            }
         }
     }
 }

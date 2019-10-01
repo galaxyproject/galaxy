@@ -272,7 +272,9 @@ class BaseDatasetPopulator(object):
 
     def active_history_jobs(self, history_id):
         all_history_jobs = self.history_jobs(history_id)
-        active_jobs = [j for j in all_history_jobs if j["state"] in ["new", "upload", "waiting", "queued", "running"]]
+        active_states = ["new", "upload", "waiting", "dispatched", "submitted", "stagein", "queued", "running",
+                         "stageout", "finishing"]
+        active_jobs = [j for j in all_history_jobs if j["state"] in active_states]
         return active_jobs
 
     def cancel_job(self, job_id):
@@ -1438,7 +1440,7 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
     return inputs, label_map, has_uploads
 
 
-def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "new", "ready"], assert_ok=False, timeout=DEFAULT_TIMEOUT):
+def wait_on_state(state_func, desc="state", skip_states=None, assert_ok=False, timeout=DEFAULT_TIMEOUT):
     def get_state():
         response = state_func()
         assert response.status_code == 200, "Failed to fetch state update while waiting. [%s]" % response.content
@@ -1449,6 +1451,8 @@ def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "n
             if assert_ok:
                 assert state == "ok", "Final state - %s - not okay." % state
             return state
+    # ready included as a workflow invocation state
+    skip_states = skip_states or ["new", "waiting", "dispatched", "submitted", "queued", "running", "finishing", "ready"]
     try:
         return wait_on(get_state, desc=desc, timeout=timeout)
     except TimeoutAssertionError as e:

@@ -145,6 +145,7 @@ $table-border-color: $border-color;
 $state-default-bg: $gray-200;
 $state-default-border: $border-color;
 $state-paused-bg: lighten($brand-info, 50%);
+$state-paused-border: lighten($brand-info, 30%);
 $state-running-bg: lighten($brand-warning, 40%);
 $state-running-border: $border-color;
 

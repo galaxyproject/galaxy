@@ -122,7 +122,7 @@ class MockJobWrapper(object):
         self.app = app
         self.tool = tool
         self.requires_containerization = False
-        self.state = model.Job.states.QUEUED
+        self.state = model.Job.states.DISPATCHED
         self.command_line = "echo HelloWorld"
         self.environment_variables = []
         self.commands_in_new_shell = False

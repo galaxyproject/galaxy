@@ -224,8 +224,18 @@ export var DatasetListItemView = _super.extend(
         _renderSummary: function() {
             var json = this.model.toJSON();
             var summaryRenderFn = this.templates.summaries[json.state];
+            // not all handler assignment methods use the "waiting" state
+            if (json.state == STATES.NEW && ! this._usesWaitingState()) {
+                summaryRenderFn = this.templates.summaries["new-or-waiting"];
+            }
             summaryRenderFn = summaryRenderFn || this.templates.summaries.unknown;
             return summaryRenderFn(json, this);
+        },
+
+        _usesWaitingState: function() {
+            const Galaxy = getGalaxyInstance();
+            var methods = Galaxy.config.job.handler_assignment_methods;
+            return methods.indexOf("db-skip-locked") >= 0 || methods.indexOf("db-transaction-isolation") >= 0;
         },
 
         /** Render messages to be displayed only when the details are shown */
@@ -477,8 +487,18 @@ DatasetListItemView.prototype.templates = (() => {
         ],
         "dataset"
     );
+    // This is a fake state, if grabbing is not enabled and state = NEW then it's either unhandled or not ready; if is grabbing enabled and state = NEW then it's unhandled
+    summaryTemplates["new-or-waiting"] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("This dataset's job has not yet been picked up by Galaxy's job running system or not all of the input datasets needed to run it are ready yet"), "</div>"],
+        "dataset"
+    );
+    // Real dataset states
     summaryTemplates[STATES.NEW] = BASE_MVC.wrapTemplate(
-        ["<div>", _l("This is a new dataset and not all of its data are available yet"), "</div>"],
+        ["<div>", _l("This dataset's job has not yet been picked up by Galaxy's job running system"), "</div>"],
+        "dataset"
+    );
+    summaryTemplates[STATES.WAITING] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("Not all of the input datasets needed to run this dataset's job are ready yet"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.NOT_VIEWABLE] = BASE_MVC.wrapTemplate(
@@ -489,12 +509,36 @@ DatasetListItemView.prototype.templates = (() => {
         ["<div>", _l("The job creating this dataset was cancelled before completion"), "</div>"],
         "dataset"
     );
+    summaryTemplates[STATES.LIMITED] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("This dataset's job is waiting to run because the limit of concurrent queued or running jobs has been reached"), "</div>"],
+        "dataset"
+    );
+    summaryTemplates[STATES.DISPATCHED] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("This dataset's job is being prepared for submission"), "</div>"],
+        "dataset"
+    );
+    summaryTemplates[STATES.SUBMITTED] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("This dataset's job has been submitted to a compute resource for execution"), "</div>"],
+        "dataset"
+    );
+    summaryTemplates[STATES.STAGEIN] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("Input datasets are being staged in to the compute resource where this dataset's job will run"), "</div>"],
+        "dataset"
+    );
     summaryTemplates[STATES.QUEUED] = BASE_MVC.wrapTemplate(
-        ["<div>", _l("This job is waiting to run"), "</div>"],
+        ["<div>", _l("This dataset's job is queued and waiting to run"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.RUNNING] = BASE_MVC.wrapTemplate(
-        ["<div>", _l("This job is currently running"), "</div>"],
+        ["<div>", _l("This dataset's job is currently running"), "</div>"],
+        "dataset"
+    );
+    summaryTemplates[STATES.STAGEOUT] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("This dataset is being staged out from the compute resource where this dataset's job ran"), "</div>"],
+        "dataset"
+    );
+    summaryTemplates[STATES.FINISHING] = BASE_MVC.wrapTemplate(
+        ["<div>", _l("This dataset's job is currently finishing"), "</div>"],
         "dataset"
     );
     summaryTemplates[STATES.UPLOAD] = BASE_MVC.wrapTemplate(

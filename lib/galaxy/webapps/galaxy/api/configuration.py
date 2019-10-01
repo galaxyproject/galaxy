@@ -23,6 +23,7 @@ class ConfigurationController(BaseAPIController):
         super(ConfigurationController, self).__init__(app)
         self.config_serializer = configuration.ConfigSerializer(app)
         self.admin_config_serializer = configuration.AdminConfigSerializer(app)
+        self.job_config_serializer = configuration.JobConfigSerializer(app)
         self.user_manager = users.UserManager(app)
 
     @expose_api
@@ -84,6 +85,7 @@ class ConfigurationController(BaseAPIController):
             serializer = self.admin_config_serializer
 
         serialized = serializer.serialize_to_view(self.app.config, view=view, keys=keys, default_view=default_view)
+        serialized['job'] = self.job_config_serializer.serialize_to_view(self.app.job_config, view=view, keys=keys, default_view=default_view)
         return serialized
 
     @expose_api
