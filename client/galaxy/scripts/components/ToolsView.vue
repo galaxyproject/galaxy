@@ -1,11 +1,11 @@
 <template>
     <div v-infinite-scroll="loadMore" infinite-scroll-disabled="busy">
-        <h2 class="mb-3">
+        <h2 class="mb-3" style="text-align: center">
             <span id="tools-view">Tools View</span>
         </h2>
         <div v-if="!loading">
             <b-container fluid class="mb-4">
-                <b-row>
+                <b-row class="justify-content-center">
                     <b-col md="6">
                         <b-form-group description="Search for strings or regular expressions">
                             <b-input-group>
@@ -30,7 +30,7 @@
                 :list="buffer"
                 style="margin: 0 auto;"
             >
-                <b-card v-for="(info, index) in buffer" :key="index" class="m-2" style="width: 23rem;">
+                <b-card v-for="(info, index) in buffer" :key="index" ref="cards" class="m-2" style="width: 23rem;">
                     <div slot="header">
                         <b-link :href="info['url']" target="_blank">
                             <h4 class="tools-view-name">{{ info["name"] }}</h4>
@@ -50,8 +50,9 @@
                         simple
                         source="tools"
                         @rendered="layout"
-                        @shown="layout"
-                        @hidden="layout"
+                        @show="show(index)"
+                        @shown="shown(index)"
+                        @hidden="hidden(index)"
                         :id="info['id']"
                     />
                 </b-card>
@@ -64,7 +65,6 @@
 import { getAppRoot } from "onload/loadConfig";
 import infiniteScroll from "vue-infinite-scroll";
 import isotope from "vueisotope";
-import Isotope from "isotope-layout";
 import axios from "axios";
 import Citations from "components/Citations.vue";
 import { setTimeout } from "timers";
@@ -75,11 +75,26 @@ export default {
         isotope
     },
     directives: { infiniteScroll },
+    props: {
+        transitionDuration: {
+            type: Number,
+            default: 200
+        }
+    },
     data() {
         return {
             tools: [],
             buffer: [],
-            isoOptions: {
+            filterOption: null,
+            filterText: "",
+            busy: false,
+            loading: true
+        };
+    },
+    computed: {
+        isoOptions() {
+            return {
+                transitionDuration: this.transitionDuration,
                 masonry: {
                     fitWidth: true
                 },
@@ -89,14 +104,22 @@ export default {
                         return el["name"].match(re) || el["description"].match(re) || el["help"].match(re);
                     }
                 }
-            },
-            filterOption: null,
-            filterText: "",
-            busy: false,
-            loading: true
-        };
+            };
+        }
     },
     methods: {
+        show(index) {
+            this.$refs.cards[index].style.zIndex = "1";
+        },
+        shown(index) {
+            this.layout();
+            setTimeout(() => {
+                this.$refs.cards[index].style.zIndex = "auto";
+            }, 200);
+        },
+        hidden(index) {
+            this.layout();
+        },
         layout() {
             this.$refs.iso.layout();
         },
