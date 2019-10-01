@@ -26,9 +26,9 @@
             <isotope
                 ref="iso"
                 :options="isoOptions"
-                @filter="filterOption = arguments[2]"
                 :list="buffer"
                 style="margin: 0 auto;"
+                @filter="filterOption = arguments[2]"
             >
                 <b-card v-for="(info, index) in buffer" :key="index" ref="cards" class="m-2" style="width: 23rem;">
                     <div slot="header">
@@ -47,13 +47,13 @@
                         </b-modal>
                     </p>
                     <Citations
+                        :id="info['id']"
                         simple
                         source="tools"
                         @rendered="layout"
                         @show="show(index)"
                         @shown="shown(index)"
                         @hidden="hidden(index)"
-                        :id="info['id']"
                     />
                 </b-card>
             </isotope>
@@ -101,11 +101,23 @@ export default {
                 getFilterData: {
                     filterByText: el => {
                         const re = new RegExp(this.filterText, "i");
-                        return el["name"].match(re) || el["description"].match(re) || el["help"].match(re);
+                        return el.name.match(re) || el.description.match(re) || el.help.match(re);
                     }
                 }
             };
         }
+    },
+    created() {
+        axios
+            .get(`${getAppRoot()}api/tools?tool_help=True`)
+            .then(response => {
+                this.tools = this.toolsExtracted(response.data);
+                this.buffer = this.tools.slice(0, 20);
+                this.loading = false;
+            })
+            .catch(error => {
+                console.error(error);
+            });
     },
     methods: {
         show(index) {
@@ -129,26 +141,25 @@ export default {
         toolsExtracted(tools) {
             function extractSections(acc, section) {
                 function extractTools(_acc, tool) {
-                    return tool["name"]
+                    return tool.name
                         ? [
                               ..._acc,
                               {
-                                  id: tool["id"],
-                                  name: tool["name"],
-                                  section: section["name"],
-                                  description: tool["description"],
-                                  url: getAppRoot() + String(tool["link"]).substring(1),
-                                  version: tool["version"],
-                                  help: tool["help"]
+                                  id: tool.id,
+                                  name: tool.name,
+                                  section: section.name,
+                                  description: tool.description,
+                                  url: getAppRoot() + String(tool.link).substring(1),
+                                  version: tool.version,
+                                  help: tool.help
                               }
                           ]
                         : _acc;
                 }
                 if ("elems" in section) {
-                    return acc.concat(section["elems"].reduce(extractTools, []));
-                } else {
-                    return acc;
+                    return acc.concat(section.elems.reduce(extractTools, []));
                 }
+                return acc;
             }
             return tools
                 .reduce(extractSections, [])
@@ -178,27 +189,13 @@ export default {
                 .singleNodeValue;
             if (match) {
                 return match.innerHTML;
-            } else {
-                const helpText = helpDoc.documentElement.textContent;
-                if (helpText) {
-                    return helpText.substring(0, helpText.indexOf("\n\n"));
-                } else {
-                    return null;
-                }
             }
+            const helpText = helpDoc.documentElement.textContent;
+            if (helpText) {
+                return helpText.substring(0, helpText.indexOf("\n\n"));
+            }
+            return null;
         }
-    },
-    created() {
-        axios
-            .get(`${getAppRoot()}api/tools?tool_help=True`)
-            .then(response => {
-                this.tools = this.toolsExtracted(response.data);
-                this.buffer = this.tools.slice(0, 20);
-                this.loading = false;
-            })
-            .catch(error => {
-                console.error(error);
-            });
     }
 };
 </script>
