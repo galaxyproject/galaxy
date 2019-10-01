@@ -25,7 +25,11 @@ export default {
                           ]
                         : _acc;
                 }
-                return acc.concat(section["elems"].reduce(extractTools, []));
+                if ("elems" in section) {
+                    return acc.concat(section["elems"].reduce(extractTools, []));
+                } else {
+                    return acc;
+                }
             }
             return {
                 "@context": "http://schema.org",

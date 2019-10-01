@@ -38,6 +38,8 @@
       <b-collapse
         :id="id"
         class="mt-2"
+        @shown='$emit("shown")'
+        @hidden='$emit("hidden")'
       >
         <b-card>
           <p v-html="formattedReferences"></p>
@@ -89,6 +91,11 @@ export default {
                 ""
             );
         }
+    },
+    updated: function() {
+        this.$nextTick(function() {
+            this.$emit("rendered");
+        });
     },
     created: function() {
         axios

@@ -30,22 +30,14 @@
                 :list="buffer"
                 style="margin: 0 auto;"
             >
-                <b-card
-                    v-for="(info, index) in buffer"
-                    :key="index"
-                    class="m-2"
-                    style="width: 23rem;"
-                >
+                <b-card v-for="(info, index) in buffer" :key="index" class="m-2" style="width: 23rem;">
                     <div slot="header">
                         <b-link :href="info['url']" target="_blank">
                             <h4 class="tools-view-name">{{ info["name"] }}</h4>
                         </b-link>
                         <b-badge class="tools-view-section">{{ info["section"] }}</b-badge>
                     </div>
-                    <p
-                        class="card-text"
-                        v-html="helpSummary(info['help']) || info['description']"
-                    />
+                    <p class="card-text" v-html="helpSummary(info['help']) || info['description']" />
                     <p class="card-text">
                         <b-btn v-b-modal="'modal-' + '-' + index">Info</b-btn>
                         <b-modal :id="'modal-' + '-' + index" centered :title="info['name']">
@@ -54,7 +46,14 @@
                             <p v-html="info['help']"></p>
                         </b-modal>
                     </p>
-                    <Citations simple source="tools" @click.native="updateLayout()" :id="info['id']" />
+                    <Citations
+                        simple
+                        source="tools"
+                        @rendered="layout"
+                        @shown="layout"
+                        @hidden="layout"
+                        :id="info['id']"
+                    />
                 </b-card>
             </isotope>
         </div>
@@ -87,7 +86,6 @@ export default {
                 getFilterData: {
                     filterByText: el => {
                         const re = new RegExp(this.filterText, "i");
-                        console.log(this.filterText);
                         return el["name"].match(re) || el["description"].match(re) || el["help"].match(re);
                     }
                 }
@@ -99,13 +97,10 @@ export default {
         };
     },
     methods: {
-        updateLayout() {
-            setTimeout(() => {
-                this.$refs.iso.layout();
-            }, 500);
+        layout() {
+            this.$refs.iso.layout();
         },
         filter(key) {
-            console.log("filter here with key: ", key);
             this.$refs.iso.filter(key);
         },
         toolsExtracted(tools) {
@@ -126,7 +121,11 @@ export default {
                           ]
                         : _acc;
                 }
-                return acc.concat(section["elems"].reduce(extractTools, []));
+                if ("elems" in section) {
+                    return acc.concat(section["elems"].reduce(extractTools, []));
+                } else {
+                    return acc;
+                }
             }
             return tools
                 .reduce(extractSections, [])
@@ -173,8 +172,6 @@ export default {
                 this.tools = this.toolsExtracted(response.data);
                 this.buffer = this.tools.slice(0, 20);
                 this.loading = false;
-
-                this.updateLayout();
             })
             .catch(error => {
                 console.error(error);
