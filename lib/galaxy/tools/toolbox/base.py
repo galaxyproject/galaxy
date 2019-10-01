@@ -1050,24 +1050,29 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if elt:
                 yield elt
 
-    def get_tool_to_dict(self, trans, tool):
+    def get_tool_to_dict(self, trans, tool, tool_help=False):
         """Return tool's to_dict.
         Use cache if present, store to cache otherwise.
         Note: The cached tool's to_dict is specific to the calls from toolbox.
         """
+        to_dict = None
         if not trans.user_is_admin:
-            to_dict = self._tool_to_dict_cache.get(tool.id, None)
+            if not tool_help:
+                to_dict = self._tool_to_dict_cache.get(tool.id, None)
             if not to_dict:
-                to_dict = tool.to_dict(trans, link_details=True)
-                self._tool_to_dict_cache[tool.id] = to_dict
+                to_dict = tool.to_dict(trans, link_details=True, tool_help=tool_help)
+                if not tool_help:
+                    self._tool_to_dict_cache[tool.id] = to_dict
         else:
-            to_dict = self._tool_to_dict_cache_admin.get(tool.id, None)
+            if not tool_help:
+                to_dict = self._tool_to_dict_cache_admin.get(tool.id, None)
             if not to_dict:
-                to_dict = tool.to_dict(trans, link_details=True)
-                self._tool_to_dict_cache_admin[tool.id] = to_dict
+                to_dict = tool.to_dict(trans, link_details=True, tool_help=tool_help)
+                if not tool_help:
+                    self._tool_to_dict_cache_admin[tool.id] = to_dict
         return to_dict
 
-    def to_dict(self, trans, in_panel=True, **kwds):
+    def to_dict(self, trans, in_panel=True, tool_help=False, **kwds):
         """
         Create a dictionary representation of the toolbox.
         Uses primitive cache for toolbox-specific tool 'to_dict's.
@@ -1078,9 +1083,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             for elt in panel_elts:
                 # Only use cache for objects that are Tools.
                 if hasattr(elt, "tool_type"):
-                    rval.append(self.get_tool_to_dict(trans, elt))
+                    rval.append(self.get_tool_to_dict(trans, elt, tool_help=tool_help))
                 else:
-                    kwargs = dict(trans=trans, link_details=True, toolbox=self)
+                    kwargs = dict(trans=trans, link_details=True, tool_help=tool_help, toolbox=self)
                     rval.append(elt.to_dict(**kwargs))
         else:
             filter_method = self._build_filter_method(trans)

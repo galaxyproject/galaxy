@@ -142,7 +142,7 @@ export default {
     },
     created() {
         axios
-            .get(`${getAppRoot()}api/tools`)
+            .get(`${getAppRoot()}api/tools?tool_help=True`)
             .then(response => {
                 this.tools = this.toolsExtracted(response.data);
                 this.buffer = this.tools.slice(0, 20);
