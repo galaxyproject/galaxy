@@ -86,17 +86,16 @@ def verify(
         attributes = {}
 
     if filename is not None:
-        if mode == 'directory':
-            # if verifying a file inside a extra_files_path directory
-            # filename already point to a file that exists on disk
-            local_name = filename
-        else:
-            local_name = get_filename(filename)
         temp_name = make_temp_fname(fname=filename)
         with open(temp_name, 'wb') as f:
             f.write(output_content)
 
-        # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
+        # If the server's env has GALAXY_TEST_SAVE, save the output file to that
+        # directory.
+        # This needs to be done before the call to `get_filename()` because that
+        # may raise an exception if `filename` does not exist (e.g. when
+        # generating a tool output file from scratch with
+        # `planemo test --update_test_data`).
         if keep_outputs_dir:
             ofn = os.path.join(keep_outputs_dir, filename)
             out_dir = os.path.dirname(ofn)
@@ -109,6 +108,14 @@ def verify(
                 log.exception('Could not save output file %s to %s', temp_name, ofn)
             else:
                 log.debug('## GALAXY_TEST_SAVE=%s. saved %s', keep_outputs_dir, ofn)
+
+        if mode == 'directory':
+            # if verifying a file inside a extra_files_path directory
+            # filename already point to a file that exists on disk
+            local_name = filename
+        else:
+            local_name = get_filename(filename)
+
         compare = attributes.get('compare', 'diff')
         try:
             if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam', 'cram']:
