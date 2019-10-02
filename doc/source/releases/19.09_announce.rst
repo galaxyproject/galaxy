@@ -23,7 +23,7 @@ Highlights
   implementation details and GUI enhancements are described in the original pull request
   (`#8030 <https://github.com/galaxyproject/galaxy/pull/8030>`__), and details on the final
   syntax selected for embedded Galaxy objects can be found in the pull request that was ultimately
-  merged (`#8543 <https://github.com/galaxyproject/galaxy/pull/8543>`__).  
+  merged (`#8543 <https://github.com/galaxyproject/galaxy/pull/8543>`__).
 
 **New Toolshed Client Interface**
   The march toward replacing templated backend generated HTML with modern, reactive
@@ -53,8 +53,21 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
+MySQL Support Drop
+==================
+
+Going forward the MySQL database server is no longer supported and all deployers are urged to use PostgreSQL.
+
+Deprecation Notice
+==================
+
+The following Galaxy API endpoints (related to the Toolshed) are considered deprecated and staged for removal in the next release:
+
+* **api/toolshed/** { category | repository | search | show | status | tool_json }
+* **api/toolshed_repositories/** { check_for_updates | exported_workflows | get_latest_installable_revision | import_workflow | import_workflows | install | repair_repository_revision | shed_category | shed_repository | shed_search | status }
+
 Release Notes
-===========================================================
+=============
 
 .. include:: 19.09.rst
    :start-after: announce_start
