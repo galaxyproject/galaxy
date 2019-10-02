@@ -112,8 +112,9 @@ const AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: _l("Manage metadata"),
-                        url: "admin_toolshed/reset_metadata_on_selected_installed_repositories",
-                        enabled: this.settings.is_repo_installed
+                        url: "admin/reset_metadata",
+                        enabled: this.settings.is_repo_installed,
+                        target: "__use_router__"
                     },
                     {
                         title: _l("Manage whitelist"),
