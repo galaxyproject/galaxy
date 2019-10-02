@@ -6,7 +6,7 @@ September 2019 Galaxy Release (v 19.09)
 .. include:: _header.rst
 
 Highlights
-===========================================================
+==========
 
 **Interactive Tools**
   A new type of Galaxy tool has been implemented that allow interactive experiences like
@@ -52,6 +52,36 @@ To update an existing Galaxy repository run:
       $ git fetch origin && git checkout release_19.09 && git pull --ff-only origin release_19.09
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Tool configuration file handling changes
+========================================
+
+Shed tool configuration file
+-----------------------------
+
+There have been a few changes to the way that Galaxy loads tool panel configuration files (e.g. `tool_conf.xml` and `shed_tool_conf.xml`) that deployers should be aware of before upgrading.
+
+A new configuration option named `shed_tool_config_file` has been added, with a default value of `config/shed_tool_conf.xml`, and that path has been removed from the default value of the `tool_config_file` option.  This new option makes it possible for Galaxy to create the shed tool configuration file (e.g.  `shed_tool_conf.xml`) file on demand and moves us one step closer to a Galaxy installation that does not need to be run from the root of its source directory.
+
+If you make no changes to your configuration, you should not encounter any problems. However, if you are using a non-default path to your primary shed tool config file, you should modify these options to remove the path of your primary `shed_tool_conf.xml` from `tool_config_file` and set it in `shed_tool_config_file`. Although Galaxy will continue to operate properly if you do not make this change, failure to do so will result in a second shed tool panel config file being created and loaded at startup time.
+
+Although an unusual configuration, if you have multiple shed tool config files, you can still load them in `tool_config_file`, just be sure that one of them is set in `shed_tool_config_file`.
+
+Note that Galaxy will fail to start if any of the files specified in `tool_conf_file` cannot be read at startup, whereas it will only fail to start if the file specified in `shed_tool_config_file` cannot be created (if it does not already exist).
+
+Migrated tools configuration file
+---------------------------------
+
+Galaxy contains a (now unused) system for automatically installing tools from the Tool Shed that had been migrated out of the Galaxy source code after the creation of the Tool Shed. Older deployments that used this system may have tools in the migrated tools config file, `config/migrated_tools_conf.xml.sample` (by default). As of this release, an empty `migrated_tools_conf.xml` file is not created by default for new installations, but will still be read if it is found at the default path. The path can be changed with the `migrated_tools_config` option, and you can force Galaxy to fail startup if the file is missing by adding it to the `tool_config_file` option.
+
+Configuration file path defaults
+--------------------------------
+
+**Deprecated paths will no longer be searched**
+The default location for Galaxy's configuration files has been in the `config/` directory for many years, prior to which the default was the root of the Galaxy directory. As of this release, Galaxy will no longer look in the current directory for configuration files, so you will need to specify the path to `galaxy.yml` e.g. with `uwsgi --yaml /path/to/galaxy.yml`, `GALAXY_CONFIG_FILE=/path/to/galaxy.yml run.sh`, or similar means, if it is not in the default location.
+
+**Default paths to additional configuration files**
+As of this release, all other configuration files (e.g. `datatypes_conf.xml`, `job_conf.xml`) are searched for in the same directory as `galaxy.yml`. Prior to this release, the default was in the `config/` directory of the current working directory at startup (which has always been, and for the time being continues to be, the root of the Galaxy source).  This means that you do not need to individually configure the paths to these files in `galaxy.yml` if you are storing them in non-default locations.
 
 MySQL Support Drop
 ==================
