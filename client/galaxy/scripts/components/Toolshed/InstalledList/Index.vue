@@ -2,10 +2,7 @@
     <div>
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
-            <span v-if="loading">
-                <span class="fa fa-spinner fa-spin" />
-                <span class="loading-message">Loading installed repositories...</span>
-            </span>
+            <loading-span v-if="loading" message="Loading installed repositories" />
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
                 <div class="installed-message mt-3 mb-1 mx-1 text-muted">
@@ -46,11 +43,13 @@ import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "../services.js";
 import RepositoryDetails from "./Details.vue";
+import LoadingSpan from "components/LoadingSpan";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        LoadingSpan,
         RepositoryDetails
     },
     props: ["filter"],

@@ -4,8 +4,7 @@
         <div v-else>
             <span v-if="loading">
                 <b-card>
-                    <span class="fa fa-spinner fa-spin" />
-                    <span class="loading-message">Loading installed repository details...</span>
+                    <loading-span message="Loading installed repository details" />
                 </b-card>
             </span>
             <div v-else>
@@ -18,10 +17,12 @@
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "../services.js";
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
     props: ["repo"],
     components: {
+        LoadingSpan,
         RepositoryDetails
     },
     data() {

@@ -28,8 +28,13 @@ describe("Details", () => {
                 }
             }
         });
-        expect(wrapper.find(".loading-message").text()).to.equal("Loading installed repository details...");
+        expect(wrapper.findAll("loading-span-stub").length).to.equal(1);
+        expect(wrapper.find("loading-span-stub").attributes("message")).to.equal(
+            "Loading installed repository details"
+        );
+        expect(wrapper.findAll("repositorydetails-stub").length).to.equal(0);
         await Vue.nextTick();
+        expect(wrapper.findAll("loading-span-stub").length).to.equal(0);
         expect(wrapper.findAll(".alert").length).to.equal(0);
         expect(wrapper.findAll("repositorydetails-stub").length).to.equal(1);
     });
