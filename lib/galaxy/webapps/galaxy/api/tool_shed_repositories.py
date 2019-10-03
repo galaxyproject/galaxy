@@ -744,11 +744,11 @@ class ToolShedRepositoriesController(BaseAPIController):
                 except Exception:
                     failed.append(repository_id)
             if successful:
-                message = "Successful reset of metadata for %s repositories." % len(successful)
+                message = "Successful reset of metadata for %s." % len(successful)
                 if failed:
                     message += " Failed for %s." % len(failed)
             elif failed:
-                message = "Failed to reset metadata for %s repositories." % len(failed)
+                message = "Failed to reset metadata for %s." % len(failed)
             return dict(message=message, successful=successful, failed=failed)
         else:
             raise exceptions.MessageException("Please specify repository ids [repository_ids].")
