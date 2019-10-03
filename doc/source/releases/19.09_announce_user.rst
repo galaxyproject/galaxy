@@ -8,30 +8,45 @@ September 2019 Galaxy Release (v 19.09)
 Highlights
 ===========================================================
 
-**Feature1**
-  Feature description.
+**Workflow Reporting**
 
-**Feature2**
-  Feature description.
+John Chilton added embedded reports to workflows. These are reports which are automatically available upon workflow completion and can discuss the contents of a workflow, point out interesting aspects of individual outputs, and generally help you summarize the outputs in a comprenehsible way for colleagues!
 
-**Feature3**
-  Feature description.
+.. figure:: images/19.09-wf-reports.gif
+   :alt: Workflow reports
 
+**Interactive Tools**
+
+The original Galaxy Interactive Environments concept was overhauled by Dan Blankenberg, and the new Interactive Tools are now workflow compatible, and will keep running even when you close the tab.
+
+**Cleaner History Menu**
+
+Check out the new, cleaner history menu! Many of the extraneous actions were removed so you can more quickly do what you need to do:
+
+.. figure:: images/19.09-history-menu.png
+   :alt: New history menu
 
 New Visualizations
 ===========================================================
 
 .. visualizations
-* New visualization - free style image annotation
-  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
-  `Pull Request 6891`_
-* New visualization - OpenLayers maps.
-  (thanks to `@anuprulez <https://github.com/anuprulez>`__).
-  `Pull Request 7888`_
-* New visualization - hyphy-vision
+
+`@anuprulez <https://github.com/anuprulez>`__ has implemented free style image annotation, allowing you to make notes on images in Galaxy and save these annotations. `Pull Request 6891`_
+
+.. figure:: https://user-images.githubusercontent.com/3022518/47093799-3980c580-d22a-11e8-9f70-b58c624b7b4d.png
+   :alt: image nnotation demo
+
+`@anuprulez <https://github.com/anuprulez>`__ has *also* implemented an OpenLayers based map visualisation, allowing you to visualise your GIS data in Galaxy. `Pull Request 7888`_
+
+.. figure: https://user-images.githubusercontent.com/3022518/57146482-affba400-6dc5-11e9-9dcd-c0d03810ca0d.png
+   :alt: Map viz
+
+Other visualisations include:
+
+* hyphy-vision
   (thanks to `@veg <https://github.com/veg>`__).
   `Pull Request 8227`_
-* Add external display application plugin for iCn3D.
+* iCn3D
   `Pull Request 8347`_
 
 New Datatypes
@@ -39,8 +54,7 @@ New Datatypes
 
 .. datatypes
 
-* Adding Shapefile composite datatype
-  (thanks to `@Alanamosse <https://github.com/Alanamosse>`__).
+* Shapefile GIS data is now supported (thanks to `@Alanamosse <https://github.com/Alanamosse>`__).
   `Pull Request 7615`_
 * Add mcool datatype and extend h5 tool output testing
   (thanks to `@msauria <https://github.com/msauria>`__).
