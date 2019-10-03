@@ -10,7 +10,7 @@ Highlights
 
 **Workflow Reporting**
 
-John Chilton added embedded reports to workflows. These are reports which are automatically available upon workflow completion and can discuss the contents of a workflow, point out interesting aspects of individual outputs, and generally help you summarize the outputs in a comprenehsible way for colleagues!
+John Chilton added embedded reports to workflows. These are reports which are automatically available upon workflow completion and can discuss the contents of a workflow, point out interesting aspects of individual outputs, and generally help you summarize the outputs for colleagues in a comprehensible way!
 
 .. figure:: images/19.09-wf-reports.gif
    :alt: Workflow reports
@@ -21,7 +21,7 @@ The original Galaxy Interactive Environments concept was overhauled by Dan Blank
 
 **Cleaner History Menu**
 
-Check out the new, cleaner history menu! Many of the extraneous actions were removed so you can more quickly do what you need to do:
+Check out the new, cleaner history menu! Many of the extraneous actions were moved out so you can more quickly do what you need to do:
 
 .. figure:: images/19.09-history-menu.png
    :alt: New history menu
