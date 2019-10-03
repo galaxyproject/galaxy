@@ -2814,7 +2814,9 @@ mapping:
         type: str
         required: false
         desc: |
-          Define the common root domain for all subdomains associated to this
-          Galaxy instance.
+          Tell Galaxy that multiple domains sharing the same root are associated
+          to this instance and wants to share the same session cookie.
+          This allow a user to stay logged in when passing from one subdomain
+          to the other.
           This root domain will be written in the unique session cookie shared
           by all subdomains.
