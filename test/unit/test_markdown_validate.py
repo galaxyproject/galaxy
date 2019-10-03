@@ -69,3 +69,41 @@ job_metrics(job_id=THISFAKEID
 job_metrics(THISFAKEID)
 ```
 """)
+    # assert quotes are fine
+    assert_markdown_valid("""
+```galaxy
+job_metrics(output="Moo Cow")
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+job_metrics(output='Moo Cow')
+```
+""")
+    # assert spaces require quotes
+    assert_markdown_invalid("""
+```galaxy
+job_metrics(output=Moo Cow)
+```
+""")
+    # assert unmatched quotes invalid
+    assert_markdown_invalid("""
+```galaxy
+job_metrics(output="Moo Cow)
+```
+""")
+    assert_markdown_invalid("""
+```galaxy
+job_metrics(output=Moo Cow")
+```
+""")
+    assert_markdown_invalid("""
+```galaxy
+job_metrics(output='Moo Cow)
+```
+""")
+    assert_markdown_invalid("""
+```galaxy
+job_metrics(output=Moo Cow')
+```
+""")
