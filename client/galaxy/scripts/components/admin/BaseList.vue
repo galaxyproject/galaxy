@@ -3,19 +3,33 @@
         <b-alert :show="messageVisible" :variant="messageVariant"> {{ messageText }} </b-alert>
         <div v-if="itemsVisible" class="card-header">
             There are {{ itemsLength }}
-            <b-button size="sm" @click.prevent="executeAll()" :title="tooltipAll" data-placement="bottom">
+            <b-button
+                size="sm"
+                :disabled="busy"
+                @click.prevent="executeAll()"
+                :title="tooltipAll"
+                data-placement="bottom"
+            >
                 <span :class="icon" />
             </b-button>
             {{ plural }} available.
         </div>
         <b-table v-if="itemsVisible" striped :fields="fields" :items="items">
             <template v-slot:cell(execute)="data">
-                <b-button size="sm" :title="tooltip" data-placement="bottom" @click.prevent="execute([data.item.id])">
+                <b-button
+                    size="sm"
+                    :disabled="busy"
+                    :title="tooltip"
+                    data-placement="bottom"
+                    @click.prevent="execute([data.item.id])"
+                >
                     <span :class="icon" />
                 </b-button>
             </template>
             <template v-slot:cell(links)="data">
-                <li v-for="link in data.item.links" :key="link.name">{{ link.name }}</li>
+                <li v-for="link in data.item.links" :key="link.name">
+                    {{ link.name }}
+                </li>
             </template>
         </b-table>
     </div>
@@ -27,11 +41,33 @@ import BootstrapVue from "bootstrap-vue";
 Vue.use(BootstrapVue);
 
 export default {
-    props: ["icon", "tooltip", "plural", "success", "fields", "getter", "setter"],
+    props: {
+        icon: {
+            type: String
+        },
+        tooltip: {
+            type: String
+        },
+        plural: {
+            type: String
+        },
+        success: {
+            type: String
+        },
+        fields: {
+            type: Array
+        },
+        getter: {
+            type: Function
+        },
+        setter: {
+            type: Function
+        }
+    },
     data() {
         return {
             items: [],
-            itemsLoaded: false,
+            busy: false,
             messageText: null,
             messageVariant: null
         };
@@ -64,7 +100,6 @@ export default {
         this.getter()
             .then(response => {
                 this.items = response.data;
-                this.itemsLoaded = true;
                 if (!this.itemsVisible) {
                     this.messageVariant = "warning";
                     this.messageText = `No ${this.plural} available.`;
@@ -79,6 +114,7 @@ export default {
             this.execute(this.itemsAll);
         },
         execute: function(ids) {
+            this.busy = true;
             this.messageVariant = "warning";
             this.messageText = "Executing request. Please wait...";
             this._highlightRows(this.itemsAll, "default");
@@ -91,9 +127,11 @@ export default {
                         this._highlightRows(data.failed, "danger");
                         this._highlightRows(data[this.success], "success");
                     }
+                    this.busy = false;
                 })
                 .catch(e => {
                     this._errorMessage(e);
+                    this.busy = false;
                 });
         },
         _highlightRows: function(ids, status) {
