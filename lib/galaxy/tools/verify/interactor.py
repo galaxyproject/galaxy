@@ -746,15 +746,8 @@ def verify_tool(tool_id,
     if test_history is None:
         test_history = galaxy_interactor.new_history()
 
-    stage_data_in_history(galaxy_interactor,
-                          tool_id,
-                          testdef.test_data(),
-                          history=test_history,
-                          force_path_paste=force_path_paste,
-                          maxseconds=maxseconds)
-
-    # Once data is ready, run the tool and check the outputs - record API
-    # input, job info, tool run exception, as well as exceptions related to
+    # Upload data to test_history, run the tool and check the outputs - record
+    # API input, job info, tool run exception, as well as exceptions related to
     # job output checking and register they with the test plugin so it can
     # record structured information.
     tool_inputs = None
@@ -764,6 +757,12 @@ def verify_tool(tool_id,
     expected_failure_occurred = False
     begin_time = time.time()
     try:
+        stage_data_in_history(galaxy_interactor,
+                            tool_id,
+                            testdef.test_data(),
+                            history=test_history,
+                            force_path_paste=force_path_paste,
+                            maxseconds=maxseconds)
         try:
             tool_response = galaxy_interactor.run_tool(testdef, test_history, resource_parameters=resource_parameters)
             data_list, jobs, tool_inputs = tool_response.outputs, tool_response.jobs, tool_response.inputs
