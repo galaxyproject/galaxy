@@ -233,7 +233,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div class="panel-header-buttons">
-                <a id="workflow-run-button" class="panel-header-button" href="javascript:void(0)" role="button" title="Run" style="display: inline-block;" aria-label="Run">
+                <a id="workflow-run-button" class="panel-header-button workflow-canvas-content" href="javascript:void(0)" role="button" title="Run" style="display: inline-block;" aria-label="Run">
                     <span class="fa fa-play"></span>
                 </a>
                 <a id="workflow-save-button" class="panel-header-button workflow-canvas-content" href="javascript:void(0)" role="button" title="Save" style="display: inline-block;" aria-label="Save">
@@ -245,7 +245,7 @@
                 <a id="workflow-canvas-button" class="panel-header-button workflow-report-content" href="javascript:void(0)" role="button" title="Edit Workflow" aria-label="Edit Workflow">
                     <span class="fa fa-sitemap fa-rotate-270"></span>
                 </a>
-                <a id="workflow-options-button" class="panel-header-button" href="javascript:void(0)" role="button" title="Workflow options" style="display: inline-block;" aria-label="Workflow options">
+                <a id="workflow-options-button" class="panel-header-button workflow-canvas-content" href="javascript:void(0)" role="button" title="Workflow options" style="display: inline-block;" aria-label="Workflow options">
                     <span class="fa fa-cog"></span>
                 </a>
             </div>
