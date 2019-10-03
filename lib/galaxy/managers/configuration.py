@@ -89,7 +89,7 @@ class ConfigSerializer(base.ModelSerializer):
             'registration_warning_message'      : _defaults_to(None),
             'welcome_url'                       : _defaults_to(None),
             'show_welcome_with_login'           : _defaults_to(True),
-            'multidomains_root'                 : _defaults_to(None),
+            'cookie_domain'                     : _defaults_to(None),
         }
 
 

@@ -2800,7 +2800,7 @@ mapping:
           This should normally be left enabled unless there is a specific
           reason to disable it.
 
-      multidomains_root:
+      cookie_domain:
         type: str
         required: false
         desc: |

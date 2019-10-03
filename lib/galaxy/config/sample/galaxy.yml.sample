@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-#
+# 
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-#
+# 
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-#
+# 
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-#
+# 
 #   https://galaxyproject.org/admin/config
-#
+# 
 # Config hackers are encouraged to check there before asking for help.
-#
+# 
 uwsgi:
 
   # The address and port on which to listen.  By default, only listen to
@@ -1405,8 +1405,7 @@ galaxy:
 
   # Enable beta workflow modules that should not yet be considered part
   # of Galaxy's stable API. (The module state definitions may change and
-  # workflows built using  these modules may not function in the
-  # future.)
+  # workflows built using these modules may not function in the future.)
   #enable_beta_workflow_modules: false
 
   # Default format for the export of workflows. Possible values are 'ga'
@@ -1845,10 +1844,10 @@ galaxy:
   # reason to disable it.
   #use_pbkdf2: true
 
-  # Tell Galaxy that multiple domains sharing the same root are associated
-  # to this instance and wants to share the same session cookie.
-  # This allow a user to stay logged in when passing from one subdomain
-  # to the other.
-  # This root domain will be written in the unique session cookie shared
-  # by all subdomains.
-  #multidomains_root: null
+  # Tell Galaxy that multiple domains sharing the same root are
+  # associated to this instance and wants to share the same session
+  # cookie. This allow a user to stay logged in when passing from one
+  # subdomain to the other. This root domain will be written in the
+  # unique session cookie shared by all subdomains.
+  #cookie_domain: null
+
