@@ -6,29 +6,31 @@
             <b-button
                     size="sm"
                     @click.prevent="executeAll()"
-                    :title=iconTooltipAll
+                    :title=tooltipAll
                     data-placement="bottom"
                 >
-                    <span :class=iconClass />
+                    <span :class=icon />
             </b-button>
-            {{ itemsPlural }} available.
+            {{ plural }} available.
         </div>
         <b-table
-            id="items-grid"
             v-if="itemsVisible"
             striped
-            :fields="itemsAttributes"
+            :fields="fields"
             :items="items"
         >
             <template v-slot:cell(execute)="data">
                 <b-button
                     size="sm"
-                    :title=iconTooltip
+                    :title=tooltip
                     data-placement="bottom"
                     @click.prevent="execute([data.item.id])"
                 >
-                    <span :class=iconClass />
+                    <span :class=icon />
                 </b-button>
+            </template>
+            <template v-slot:cell(links)="data">
+                <li v-for="link in data.item.links" :key="link.name">{{ link.name }}</li>
             </template>
         </b-table>
     </div>
@@ -41,13 +43,13 @@ Vue.use(BootstrapVue);
 
 export default {
     props: [
-        "iconClass",
-        "iconTooltip",
-        "itemsPlural",
-        "itemsSuccess",
-        "itemsAttributes",
-        "serviceRequest",
-        "serviceExecute"
+        "icon",
+        "tooltip",
+        "plural",
+        "success",
+        "fields",
+        "getter",
+        "setter"
     ],
     data() {
         return {
@@ -58,8 +60,8 @@ export default {
         };
     },
     computed: {
-        iconTooltipAll: function() {
-            return `${this.iconTooltip} all`
+        tooltipAll: function() {
+            return `${this.tooltip} all`
         },
         itemsIndex: function() {
             return this.items.reduce((r, v) => {
@@ -82,13 +84,13 @@ export default {
     },
     created() {
         this.messageText = null;
-        this.serviceRequest()
+        this.getter()
             .then(response => {
                 this.items = response.data;
                 this.itemsLoaded = true;
                 if (!this.itemsVisible) {
                     this.messageVariant = "warning";
-                    this.messageText = `No ${this.itemsPlural} available.`;
+                    this.messageText = `No ${this.plural} available.`;
                 }
             })
             .catch(e => {
@@ -103,14 +105,14 @@ export default {
             this.messageVariant = "warning";
             this.messageText = "Executing request. Please wait...";
             this._highlightRows(this.itemsAll, "default");
-            this.serviceExecute(ids)
+            this.setter(ids)
                 .then(response => {
                     const data = response.data;
                     if (data) {
                         this.messageVariant = "info";
                         this.messageText = data.message;
                         this._highlightRows(data.failed, "danger");
-                        this._highlightRows(data[this.itemsSuccess], "success");
+                        this._highlightRows(data[this.success], "success");
                     }
                 })
                 .catch(e => {

@@ -1,12 +1,12 @@
 <template>
     <BaseList
-        :itemsAttributes=itemsAttributes
-        iconClass="fa fa-trash-o"
-        iconTooltip="Reset"
-        itemsPlural="metadata entries"
-        itemsSuccess="successful"
-        :serviceRequest="serviceRequest"
-        :serviceExecute="serviceExecute"
+        :fields=fields
+        icon="fa fa-trash-o"
+        tooltip="Reset"
+        plural="metadata entries"
+        success="successful"
+        :getter="getter"
+        :setter="setter"
     />
 </template>
 <script>
@@ -19,7 +19,7 @@ export default {
     },
     data() {
         return {
-            itemsAttributes: [
+            fields: [
                 { key: "execute", label: "Reset" },
                 { key: "name", label: "Metadata", sortable: true },
                 { key: "owner", sortable: true },
@@ -28,10 +28,10 @@ export default {
         };
     },
     methods: {
-        serviceRequest: function() {
+        getter: function() {
             return getInstalledRepositories();
         },
-        serviceExecute: function(ids) {
+        setter: function(ids) {
             return resetRepositoryMetadata(ids);
         }
     }
