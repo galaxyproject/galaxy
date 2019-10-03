@@ -242,6 +242,9 @@
                 <a id="workflow-report-button" class="panel-header-button workflow-canvas-content" href="javascript:void(0)" role="button" title="Edit Report" aria-label="Edit Report">
                     <span class="fa fa-edit"></span>
                 </a>
+                <a id="workflow-report-help-button" class="panel-header-button workflow-report-content" href="javascript:void(0)" role="button" title="Report Syntax Help" aria-label="Report Syntax Help">
+                    <span class="fa fa-question"></span>
+                </a>
                 <a id="workflow-canvas-button" class="panel-header-button workflow-report-content" href="javascript:void(0)" role="button" title="Edit Workflow" aria-label="Edit Workflow">
                     <span class="fa fa-sitemap fa-rotate-270"></span>
                 </a>
