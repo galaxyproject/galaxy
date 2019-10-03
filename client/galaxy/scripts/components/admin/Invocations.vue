@@ -1,7 +1,7 @@
 <template>
     <div>
         <h2 class="mb-3">
-            <span id="invocations-title">Worklfow Invocations</span>
+            <span id="invocations-title">Workflow Invocations</span>
         </h2>
         <b-alert variant="info" show>
             <p>
@@ -28,11 +28,11 @@
                 @row-clicked="showRowDetails"
                 :busy="busy"
             >
-                <template slot="table-caption">
+                <template v-slot:table-caption>
                     These invocations are not finished scheduling - one or more steps are waiting on others steps to be
                     complete before the full structure of the jobs in the workflow can be determined.
                 </template>
-                <template slot="row-details" slot-scope="row">
+                <template v-slot:row-details="row">
                     <b-card>
                         <!-- set provideContext to false, since the table itself provides this information -->
                         <workflow-invocation-state :invocationId="row.item.id" :provideContext="false" />

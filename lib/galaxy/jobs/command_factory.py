@@ -101,7 +101,7 @@ def build_command(
 
         # Remove the working directory incase this is for instance a SLURM re-submission.
         # xref https://github.com/galaxyproject/galaxy/issues/3289
-        commands_builder.prepend_command("rm -rf working; mkdir -p working; cd working")
+        commands_builder.prepend_command("rm -rf working outputs; mkdir -p working outputs; cd working")
 
     container_monitor_command = job_wrapper.container_monitor_command(container)
     if container_monitor_command:
@@ -158,7 +158,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
         commands = "%s %s" % (shell, join(remote_command_params['script_directory'], script_name))
         for_pulsar = True
     if not for_pulsar:
-        commands += " > ../tool_stdout 2> ../tool_stderr"
+        commands += " > ../outputs/tool_stdout 2> ../outputs/tool_stderr"
     log.info("Built script [%s] for tool command [%s]" % (local_container_script, tool_commands))
     return commands
 

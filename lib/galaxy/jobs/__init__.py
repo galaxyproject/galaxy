@@ -19,6 +19,7 @@ from abc import ABCMeta, abstractmethod
 from json import loads
 from xml.etree import ElementTree
 
+import packaging.version
 import six
 import yaml
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
@@ -379,18 +380,23 @@ class JobConfiguration(ConfiguresHandlers):
         environments = execution_dict.get("environments", [])
         enviroment_iter = map(lambda e: (e["id"], e), environments) if isinstance(environments, list) else environments.items()
         for environment_id, environment_dict in enviroment_iter:
-            metrics = environment_dict.get("metrics") or {"src": "default"}
-            metrics_src = metrics.get("src") or "default"
-            if metrics_src != "default":
-                # customized metrics for this environment.
-                if metrics_src == "disabled":
-                    job_metrics.set_destination_instrumenter(environment_id, None)
-                elif metrics_src == "xml_element":
-                    metrics_element = metrics.get("xml_element")
-                    job_metrics.set_destination_conf_element(environment_id, metrics_element)
-                elif metrics_src == "path":
-                    metrics_conf_path = self.app.config.resolve_path(metrics.get("path"))
-                    job_metrics.set_destination_conf_file(environment_id, metrics_conf_path)
+            metrics = environment_dict.get("metrics")
+            if metrics is None:
+                metrics = {"src": "default"}
+            if isinstance(metrics, list):
+                job_metrics.set_destination_conf_dicts(environment_id, metrics)
+            else:
+                metrics_src = metrics.get("src") or "default"
+                if metrics_src != "default":
+                    # customized metrics for this environment.
+                    if metrics_src == "disabled":
+                        job_metrics.set_destination_instrumenter(environment_id, None)
+                    elif metrics_src == "xml_element":
+                        metrics_element = metrics.get("xml_element")
+                        job_metrics.set_destination_conf_element(environment_id, metrics_element)
+                    elif metrics_src == "path":
+                        metrics_conf_path = self.app.config.resolve_path(metrics.get("path"))
+                        job_metrics.set_destination_conf_file(environment_id, metrics_conf_path)
 
             destination_kwds = {}
 
@@ -898,7 +904,8 @@ class JobWrapper(HasResourceParameters):
         if self._dataset_path_rewriter is None:
             outputs_to_working_directory = util.asbool(self.get_destination_configuration("outputs_to_working_directory", False))
             if outputs_to_working_directory:
-                self._dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter(self.working_directory)
+                output_directory = self.outputs_directory
+                self._dataset_path_rewriter = OutputsToWorkingDirectoryPathRewriter(self.working_directory, output_directory)
             else:
                 self._dataset_path_rewriter = NullDatasetPathRewriter()
         return self._dataset_path_rewriter
@@ -906,6 +913,17 @@ class JobWrapper(HasResourceParameters):
     @property
     def dataset_path_rewriter(self):
         return self._job_dataset_path_rewriter
+
+    @property
+    def outputs_directory(self):
+        """Default location of ``outputs_to_working_directory``.
+        """
+        return None if self.created_with_galaxy_version < packaging.version.parse("20.01") else "outputs"
+
+    @property
+    def created_with_galaxy_version(self):
+        galaxy_version = self.get_job().galaxy_version or "19.05"
+        return packaging.version.parse(galaxy_version)
 
     @property
     def dependency_shell_commands(self):
@@ -1806,11 +1824,20 @@ class JobWrapper(HasResourceParameters):
         paths = []
         for da in job.input_datasets + job.input_library_datasets:  # da is JobToInputDatasetAssociation object
             if da.dataset:
-                filenames = self.get_input_dataset_fnames(da.dataset)
-                for real_path in filenames:
-                    false_path = self.dataset_path_rewriter.rewrite_dataset_path(da.dataset, 'input')
-                    paths.append(DatasetPath(da.id, real_path=real_path, false_path=false_path, mutable=False))
+                paths.append(self.get_input_path(da.dataset))
         return paths
+
+    def get_input_path(self, dataset):
+        real_path = dataset.file_name
+        false_path = self.dataset_path_rewriter.rewrite_dataset_path(dataset, 'input')
+        return DatasetPath(
+            dataset.dataset.id,
+            real_path=real_path,
+            false_path=false_path,
+            mutable=False,
+            dataset_uuid=dataset.dataset.uuid,
+            object_store_id=dataset.dataset.object_store_id,
+        )
 
     def get_output_basenames(self):
         return [os.path.basename(str(fname)) for fname in self.get_output_fnames()]
@@ -1819,6 +1846,16 @@ class JobWrapper(HasResourceParameters):
         if self.output_paths is None:
             self.compute_outputs()
         return self.output_paths
+
+    def get_output_path(self, dataset):
+        if self.output_paths is None:
+            self.compute_outputs()
+        for (hda, dataset_path) in self.output_hdas_and_paths.values():
+            if hda == dataset:
+                return dataset_path
+        if getattr(dataset, "fake_dataset_association", False):
+            return dataset.file_name
+        raise KeyError("Couldn't find job output for [%s] in [%s]" % (dataset, self.output_hdas_and_paths.values()))
 
     def get_mutable_output_fnames(self):
         if self.output_paths is None:
@@ -2125,7 +2162,7 @@ class JobWrapper(HasResourceParameters):
     def get_output_destination(self, output_path):
         """
         Destination for outputs marked as from_work_dir. This is the normal case,
-        just copy these files directly to the ulimate destination.
+        just copy these files directly to the ultimate destination.
         """
         return output_path
 
@@ -2348,12 +2385,28 @@ class ComputeEnvironment(object):
         """ Output unqualified filenames defined by job. """
 
     @abstractmethod
-    def output_paths(self):
-        """ Output DatasetPaths defined by job. """
+    def input_path_rewrite(self, dataset):
+        """Input path for specified dataset."""
 
     @abstractmethod
-    def input_paths(self):
-        """ Input DatasetPaths defined by job. """
+    def output_path_rewrite(self, dataset):
+        """Output path for specified dataset."""
+
+    @abstractmethod
+    def input_extra_files_rewrite(self, dataset):
+        """Input extra files path rewrite for specified dataset."""
+
+    @abstractmethod
+    def output_extra_files_rewrite(self, dataset):
+        """Output extra files path rewrite for specified dataset."""
+
+    @abstractmethod
+    def input_metadata_rewrite(self, dataset, metadata_value):
+        """Input metadata path rewrite for specified dataset."""
+
+    @abstractmethod
+    def unstructured_path_rewrite(self, path):
+        """Rewrite loc file paths, etc.."""
 
     @abstractmethod
     def working_directory(self):
@@ -2381,14 +2434,6 @@ class ComputeEnvironment(object):
         """ Location of the version file for the underlying tool. """
 
     @abstractmethod
-    def unstructured_path_rewriter(self):
-        """ Return a function that takes in a value, determines if it is path
-        to be rewritten (will be passed non-path values as well - onus is on
-        this function to determine both if its input is a path and if it should
-        be rewritten.)
-        """
-
-    @abstractmethod
     def home_directory(self):
         """Home directory of target job - none if HOME should not be set."""
 
@@ -2400,13 +2445,10 @@ class ComputeEnvironment(object):
 class SimpleComputeEnvironment(object):
 
     def config_directory(self):
-        return self.working_directory()
+        return os.path.join(self.working_directory(), "configs")
 
     def sep(self):
         return os.path.sep
-
-    def unstructured_path_rewriter(self):
-        return lambda v: v
 
 
 class SharedComputeEnvironment(SimpleComputeEnvironment):
@@ -2426,8 +2468,27 @@ class SharedComputeEnvironment(SimpleComputeEnvironment):
     def output_paths(self):
         return self.job_wrapper.get_output_fnames()
 
-    def input_paths(self):
-        return self.job_wrapper.get_input_paths(self.job)
+    def input_path_rewrite(self, dataset):
+        return self.job_wrapper.get_input_path(dataset).false_path
+
+    def output_path_rewrite(self, dataset):
+        dataset_path = self.job_wrapper.get_output_path(dataset)
+        if hasattr(dataset_path, "false_path"):
+            return dataset_path.false_path
+        else:
+            return dataset_path
+
+    def input_extra_files_rewrite(self, dataset):
+        return None
+
+    def output_extra_files_rewrite(self, dataset):
+        return None
+
+    def input_metadata_rewrite(self, dataset, metadata_value):
+        return None
+
+    def unstructured_path_rewrite(self, path):
+        return None
 
     def working_directory(self):
         return self.job_wrapper.working_directory

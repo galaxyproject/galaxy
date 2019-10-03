@@ -50,8 +50,10 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
 
 
 def validate_publicname(trans, publicname, user=None):
-    # User names must be at least three characters in length and contain only lower-case
-    # letters, numbers, and the '-' character.
+    """
+    Check that publicname respects the minimum and maximum string length, the
+    allowed characters, and that the username is not taken already.
+    """
     if user and user.username == publicname:
         return ''
     if len(publicname) < PUBLICNAME_MIN_LEN:
@@ -65,24 +67,23 @@ def validate_publicname(trans, publicname, user=None):
     return ''
 
 
-def transform_publicname(trans, publicname, user=None):
-    # User names must be at least four characters in length and contain only lower-case
-    # letters, numbers, and the '-' character.
+def transform_publicname(publicname):
+    """
+    Transform publicname to respect the minimum and maximum string length, and
+    the allowed characters.
+    FILL_CHAR is used to extend or replace characters.
+    """
     # TODO: Enhance to allow generation of semi-random publicnnames e.g., when valid but taken
-    if user and user.username == publicname:
-        return publicname
-    elif publicname not in ['None', None, '']:
+    if publicname not in ['None', None, '']:
         publicname = publicname.lower()
         publicname = re.sub(VALID_PUBLICNAME_SUB, FILL_CHAR, publicname)
         publicname = publicname.ljust(PUBLICNAME_MIN_LEN + 1, FILL_CHAR)[:PUBLICNAME_MAX_LEN]
-        if not trans.sa_session.query(trans.app.model.User).filter_by(username=publicname).first():
-            return publicname
-    return ''
+    return publicname
 
 
 def validate_password(trans, password, confirm):
     if len(password) < PASSWORD_MIN_LEN:
         return "Use a password of at least %d characters." % PASSWORD_MIN_LEN
-    elif password != confirm:
+    if password != confirm:
         return "Passwords do not match."
     return ""
