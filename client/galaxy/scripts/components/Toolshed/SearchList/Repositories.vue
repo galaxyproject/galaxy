@@ -41,9 +41,9 @@ export default {
             repositories: [],
             fields: [
                 { key: "name" },
-                { key: "last_updated", label: "Updated" },
                 { key: "owner", label: "Owner" },
-                { key: "times_downloaded", label: "Downloaded" }
+                { key: "times_downloaded", label: "Downloaded" },
+                { key: "last_updated", label: "Updated" }
             ],
             page: 1,
             pageSize: 50,
