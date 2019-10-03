@@ -15,9 +15,9 @@ John Chilton added embedded reports to workflows. These are reports which are au
 .. figure:: images/19.09-wf-reports.gif
    :alt: Workflow reports
 
-**Interactive Tools**
+**Awesome Visualizations**
 
-The original Galaxy Interactive Environments concept was overhauled by Dan Blankenberg, and the new Interactive Tools are now workflow compatible, and will keep running even when you close the tab.
+The Community (that is you!) added not one, not two, but **three** new awesome visualizations in this release allowing for free style image annotation, visualizing spatial data on OpenLayers maps, and exploring HIV NGS data with hyphy-vision. Details and screenshots below. Thanks go to `@anuprulez <https://github.com/anuprulez>`__ and `@veg <https://github.com/veg>`__
 
 **Cleaner History Menu**
 
