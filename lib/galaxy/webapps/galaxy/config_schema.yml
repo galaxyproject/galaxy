@@ -2812,7 +2812,7 @@ mapping:
 
       multidomains_root:
         type: str
-        requred: false
+        required: false
         desc: |
           Define the common root domain for all subdomains associated to this
           Galaxy instance.
