@@ -44,6 +44,7 @@ export default {
             iconTooltip: "Reset",
             itemsPlural: "metadata entries",
             itemsLoaded: false,
+            itemsSuccess: "successful",
             itemsAttributes: [
                 { key: "execute", label: "Reset" },
                 { key: "name", label: "Metadata", sortable: true },
@@ -107,7 +108,7 @@ export default {
                         this.messageVariant = "info";
                         this.messageText = data.message;
                         this._highlightRows(data.failed, "danger");
-                        this._highlightRows(data.successful, "success");
+                        this._highlightRows(data[this.itemsSuccess], "success");
                     }
                 })
                 .catch(e => {
