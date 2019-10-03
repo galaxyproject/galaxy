@@ -1,6 +1,6 @@
 import Vuex from "vuex";
-import sinon from "sinon";
-import { __RewireAPI__ as rewire } from "../../store/jobMetricsStore";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import { mount, createLocalVue } from "@vue/test-utils";
 import { createStore } from "../../store";
 import JobMetrics from "./JobMetrics";
@@ -11,19 +11,15 @@ describe("JobMetrics/JobMetrics.vue", () => {
     const localVue = createLocalVue();
     localVue.use(Vuex);
 
-    let mockAxios = {
-        get: () => null
-    };
-
-    let stub, testStore;
+    let testStore, axiosMock;
 
     beforeEach(() => {
-        rewire.__Rewire__("axios", mockAxios);
+        axiosMock = new MockAdapter(axios);
         testStore = createStore();
     });
 
     afterEach(() => {
-        if (stub) stub.restore();
+        axiosMock.restore();
     });
 
     it("should not render a div if no plugins found in store", async () => {
@@ -48,16 +44,15 @@ describe("JobMetrics/JobMetrics.vue", () => {
             { plugin: "core", title: "memory", value: 146 },
             { plugin: "extended", title: "awesomeness", value: 42 }
         ];
-        const successResponse = {
-            status: 200,
-            data: metricsResponse
-        };
-        stub = sinon.stub(mockAxios, "get").resolves(successResponse);
+        axiosMock.onGet(`/api/jobs/${JOB_ID}/metrics`).reply(200, metricsResponse);
         const wrapper = mount(JobMetrics, {
             store: testStore,
             propsData,
             localVue
         });
+        // One tick for axios request.
+        await wrapper.vm.$nextTick();
+        // One tick for Vue to render.
         await wrapper.vm.$nextTick();
         expect(wrapper.vm.jobMetrics.length).to.equals(3);
         expect(wrapper.vm.jobId).to.equals(JOB_ID);
