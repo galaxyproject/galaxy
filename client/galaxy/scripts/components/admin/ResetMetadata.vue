@@ -1,6 +1,6 @@
 <template>
     <BaseList
-        :fields=fields
+        :fields="fields"
         icon="fa fa-trash-o"
         tooltip="Reset"
         plural="metadata entries"

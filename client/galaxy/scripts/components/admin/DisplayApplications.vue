@@ -1,6 +1,6 @@
 <template>
     <BaseList
-        :fields=fields
+        :fields="fields"
         icon="fa fa-refresh"
         tooltip="Refresh"
         plural="display applications"

@@ -3,30 +3,15 @@
         <b-alert :show="messageVisible" :variant="messageVariant"> {{ messageText }} </b-alert>
         <div v-if="itemsVisible" class="card-header">
             There are {{ itemsLength }}
-            <b-button
-                    size="sm"
-                    @click.prevent="executeAll()"
-                    :title=tooltipAll
-                    data-placement="bottom"
-                >
-                    <span :class=icon />
+            <b-button size="sm" @click.prevent="executeAll()" :title="tooltipAll" data-placement="bottom">
+                <span :class="icon" />
             </b-button>
             {{ plural }} available.
         </div>
-        <b-table
-            v-if="itemsVisible"
-            striped
-            :fields="fields"
-            :items="items"
-        >
+        <b-table v-if="itemsVisible" striped :fields="fields" :items="items">
             <template v-slot:cell(execute)="data">
-                <b-button
-                    size="sm"
-                    :title=tooltip
-                    data-placement="bottom"
-                    @click.prevent="execute([data.item.id])"
-                >
-                    <span :class=icon />
+                <b-button size="sm" :title="tooltip" data-placement="bottom" @click.prevent="execute([data.item.id])">
+                    <span :class="icon" />
                 </b-button>
             </template>
             <template v-slot:cell(links)="data">
@@ -42,15 +27,7 @@ import BootstrapVue from "bootstrap-vue";
 Vue.use(BootstrapVue);
 
 export default {
-    props: [
-        "icon",
-        "tooltip",
-        "plural",
-        "success",
-        "fields",
-        "getter",
-        "setter"
-    ],
+    props: ["icon", "tooltip", "plural", "success", "fields", "getter", "setter"],
     data() {
         return {
             items: [],
@@ -61,7 +38,7 @@ export default {
     },
     computed: {
         tooltipAll: function() {
-            return `${this.tooltip} all`
+            return `${this.tooltip} all`;
         },
         itemsIndex: function() {
             return this.items.reduce((r, v) => {
