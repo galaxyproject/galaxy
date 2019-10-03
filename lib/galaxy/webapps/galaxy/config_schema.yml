@@ -2800,16 +2800,6 @@ mapping:
           This should normally be left enabled unless there is a specific
           reason to disable it.
 
-      use_multidomains:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Tell Galaxy that multiple domains sharing the same root are associated
-          to this instance and wants to share the same session cookie.
-          This allow a user to stay logged in when passing from one subdomain
-          to the other.
-
       multidomains_root:
         type: str
         required: false
