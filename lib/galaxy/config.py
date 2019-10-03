@@ -88,18 +88,13 @@ PATH_LIST_DEFAULTS = dict(
 )
 
 LOGGING_CONFIG_DEFAULT = {
+    'disable_existing_loggers': False,
     'version': 1,
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': 'DEBUG',
     },
     'loggers': {
-        'galaxy': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': 0,
-            'qualname': 'galaxy',
-        },
         'paste.httpserver.ThreadPool': {
             'level': 'WARN',
             'qualname': 'paste.httpserver.ThreadPool',
@@ -107,6 +102,10 @@ LOGGING_CONFIG_DEFAULT = {
         'routes.middleware': {
             'level': 'WARN',
             'qualname': 'routes.middleware',
+        },
+        'amqp': {
+            'level': 'INFO',
+            'qualname': 'amqp',
         },
     },
     'filters': {
