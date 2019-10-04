@@ -31,5 +31,10 @@ describe("Categories", () => {
         });
         await Vue.nextTick();
         expect(wrapper.find(".card-header").text()).contains("There are 2");
+        const th = wrapper.findAll("th");
+        expect(th.length).to.equal(3);
+        expect(th.at(0).text()).to.equal("Execute");
+        expect(th.at(1).text()).to.equal("Col 0");
+        expect(th.at(2).text()).to.equal("Col 1");
     });
 });
