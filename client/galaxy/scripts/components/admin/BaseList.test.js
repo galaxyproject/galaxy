@@ -5,17 +5,20 @@ import Vue from "vue";
 describe("Categories", () => {
     const getter = async () => {
         return {
-            data: [{
-                col_0: "col_0_0",
-                col_1: "col_0_1"
-            }, {
-                col_0: "col_0_2",
-                col_1: "col_0_3"
-            }]
+            data: [
+                {
+                    col_0: "col_0_0",
+                    col_1: "col_0_1"
+                },
+                {
+                    col_0: "col_0_2",
+                    col_1: "col_0_3"
+                }
+            ]
         };
     };
     const setter = async () => {
-        return {}
+        return {};
     };
     it("test categories loading", async () => {
         const wrapper = mount(BaseList, {
