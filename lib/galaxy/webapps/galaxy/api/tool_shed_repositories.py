@@ -731,7 +731,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         if repository_ids:
             irmm = InstalledRepositoryMetadataManager(self.app)
             failed = []
-            successful =[]
+            successful = []
             for repository_id in repository_ids:
                 try:
                     repository = repository_util.get_installed_tool_shed_repository(self.app, repository_id)
