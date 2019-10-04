@@ -1,9 +1,6 @@
 <template>
     <div>
-        <div v-if="loading">
-            <span class="fa fa-spinner fa-spin mb-4 mr-1" />
-            <span>Loading categories...</span>
-        </div>
+        <loading-span v-if="loading" classes="mb-4 mr-1" message="Loading categories" />
         <b-table v-else striped :items="categories" :fields="fields">
             <template v-slot:cell(name)="data">
                 <b-link
@@ -19,9 +16,16 @@
     </div>
 </template>
 <script>
-import { Services } from "./services.js";
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+import { Services } from "../services.js";
+import LoadingSpan from "components/LoadingSpan";
+
+Vue.use(BootstrapVue);
+
 export default {
     props: ["toolshedUrl", "loading"],
+    components: { LoadingSpan },
     data() {
         return {
             categories: [],

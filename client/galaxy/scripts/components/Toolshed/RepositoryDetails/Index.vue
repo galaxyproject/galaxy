@@ -7,7 +7,7 @@
         <div>
             <span v-if="loading">
                 <span class="fa fa-spinner fa-spin" />
-                Loading repository details...
+                <span class="loading-message">Loading repository details...</span>
             </span>
             <div v-else>
                 <b-alert v-if="error" variant="danger" show>
@@ -19,7 +19,7 @@
                             <span class="font-weight-bold">{{ data.value }}</span>
                         </template>
                         <template v-slot:cell(tools)="data">
-                            <repositorytools :tools="data.value" />
+                            <RepositoryTools :tools="data.value" />
                         </template>
                         <template v-slot:cell(profile)="data">
                             {{ data.value ? `+${data.value}` : "-" }}
@@ -29,7 +29,7 @@
                             <span v-else :class="repoUnchecked" />
                         </template>
                         <template v-slot:cell(actions)="row">
-                            <installationbutton
+                            <InstallationButton
                                 :installed="row.item.installed"
                                 :status="row.item.status"
                                 @onInstall="setupRepository(row.item)"
@@ -37,7 +37,7 @@
                             />
                         </template>
                     </b-table>
-                    <installationsettings
+                    <InstallationSettings
                         v-if="showSettings"
                         :repo="repo"
                         :toolshedUrl="toolshedUrl"
@@ -52,15 +52,20 @@
     </b-card>
 </template>
 <script>
-import { Services } from "./services.js";
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+import { Services } from "../services.js";
 import InstallationSettings from "./InstallationSettings.vue";
 import InstallationButton from "./InstallationButton.vue";
 import RepositoryTools from "./RepositoryTools.vue";
+
+Vue.use(BootstrapVue);
+
 export default {
     components: {
-        installationsettings: InstallationSettings,
-        installationbutton: InstallationButton,
-        repositorytools: RepositoryTools
+        InstallationSettings,
+        InstallationButton,
+        RepositoryTools
     },
     props: ["repo", "toolshedUrl"],
     data() {
@@ -85,7 +90,7 @@ export default {
     },
     created() {
         this.services = new Services();
-        this.loadDetails();
+        this.load();
     },
     destroyed() {
         this.clearTimeout();
@@ -96,9 +101,9 @@ export default {
                 clearTimeout(this.timeout);
             }
         },
-        loadDetails() {
+        load() {
             this.services
-                .getDetails(this.toolshedUrl, this.repo.id)
+                .getRepository(this.toolshedUrl, this.repo.id)
                 .then(response => {
                     this.repoTable = response;
                     this.loadInstalledRepositories();
@@ -116,7 +121,7 @@ export default {
         },
         loadInstalledRepositories() {
             this.services
-                .getInstalledRepositories(this.repo)
+                .getInstalledRepositoriesByName(this.repo.name, this.repo.owner)
                 .then(revisions => {
                     let changed = false;
                     this.repoTable.forEach(x => {
@@ -139,8 +144,15 @@ export default {
                     this.loading = false;
                 });
         },
-        onOk: function() {
-            this.showSettings = false;
+        onOk: function(details) {
+            this.services
+                .installRepository(details)
+                .then(response => {
+                    this.showSettings = false;
+                })
+                .catch(error => {
+                    console.log(error);
+                });
         },
         onHide: function() {
             this.showSettings = false;
@@ -157,7 +169,7 @@ export default {
                 .uninstallRepository({
                     tool_shed_url: this.toolshedUrl,
                     name: this.repo.name,
-                    owner: this.repo.repo_owner_username,
+                    owner: this.repo.owner,
                     changeset_revision: details.changeset_revision
                 })
                 .catch(error => {

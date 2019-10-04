@@ -9,8 +9,7 @@
             </p>
         </b-alert>
         <b-alert v-if="loading" variant="info" show>
-            <span class="fa fa-spinner fa-spin" />
-            Loading workflow invocation job data
+            <loading-span message="Loading workflow invocation job data" />
         </b-alert>
         <div v-else>
             <b-alert v-if="!invocationItemsComputed.length" variant="secondary" show>
@@ -46,10 +45,12 @@
 <script>
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
 import { getActiveInvocations } from "./AdminServices";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
-        WorkflowInvocationState
+        WorkflowInvocationState,
+        LoadingSpan
     },
     data() {
         return {

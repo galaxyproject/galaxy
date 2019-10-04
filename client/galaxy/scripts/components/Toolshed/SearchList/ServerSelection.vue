@@ -1,6 +1,6 @@
 <template>
     <div v-if="!loading" class="m-1 text-muted">
-        {{ total }} repositories available at
+        <span class="description"> {{ total }} repositories available at </span>
         <span v-if="showDropdown" class="dropdown">
             <b-link id="dropdownToolshedUrl" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 {{ toolshedUrl }}
@@ -25,6 +25,11 @@
     </div>
 </template>
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+
+Vue.use(BootstrapVue);
+
 export default {
     props: ["toolshedUrl", "toolshedUrls", "loading", "total"],
     computed: {

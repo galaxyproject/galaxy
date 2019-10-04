@@ -11,9 +11,9 @@ log = logging.getLogger(__name__)
 
 class ToolShedRepository(object):
     dict_collection_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                    'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message']
+                                    'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'description']
     dict_element_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                 'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message']
+                                 'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message', 'description']
     installation_status = Bunch(NEW='New',
                                 CLONING='Cloning',
                                 SETTING_TOOL_VERSIONS='Setting tool versions',
