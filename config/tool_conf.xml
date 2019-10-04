@@ -23,7 +23,7 @@
   </section>
   <section id="Segmentation" name="Segmentation">
     <tool file="ina_speech_segmenter/ina_speech_segmenter.xml"/>
-    <tool file="ina_speech_segmenter/remove_silence_music.xml"/>
+    <tool file="ina_speech_segmenter/remove_silence_music_speech.xml"/>
   </section>
   <section id="collection_operations" name="Collection Operations">
     <tool file="${model_tools_path}/unzip_collection.xml" labels="new" />
