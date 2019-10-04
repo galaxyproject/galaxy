@@ -8,7 +8,7 @@ function ariaAlert(message) {
     document.body.appendChild(alert);
     setTimeout(function() {
         document.body.removeChild(alert);
-    }, 2000)
+    }, 2000);
 }
 
 //==============================================================================

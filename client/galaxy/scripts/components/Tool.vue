@@ -26,7 +26,7 @@
 
 <script>
 import { getGalaxyInstance } from "app"; // FIXME:
-import ariaAlert from "utils/ariaAlert"
+import ariaAlert from "utils/ariaAlert";
 
 export default {
     name: "Tool",

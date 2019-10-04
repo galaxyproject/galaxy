@@ -6,7 +6,7 @@ import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import ariaAlert from "utils/ariaAlert"
+import ariaAlert from "utils/ariaAlert";
 import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";

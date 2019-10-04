@@ -880,7 +880,9 @@ export default Backbone.View.extend({
     prebuildNode: function(type, title_text, content_id) {
         var self = this;
         var $f = $(`<div class='toolForm toolFormInCanvas'/>`);
-        var $title = $(`<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</span><span class="sr-only">&nbspNode</span></div>`);
+        var $title = $(
+            `<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</span><span class="sr-only">&nbspNode</span></div>`
+        );
         add_node_icon($title.find(".nodeTitle"), type);
         $f.append($title);
         $f.css("left", $(window).scrollLeft() + 20);
