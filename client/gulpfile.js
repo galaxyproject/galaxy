@@ -90,9 +90,10 @@ function cleanPlugins() {
     return del(["../static/plugins/{visualizations,interactive_environments}/*"], { force: true });
 }
 
-module.exports.fonts = fonts;
-module.exports.stageLibs = stageLibs;
-module.exports.cleanPlugins = cleanPlugins;
-module.exports.buildPlugins = buildPlugins;
-module.exports.plugins = series(cleanPlugins, buildPlugins, stagePlugins);
-module.exports.default = parallel(stageLibs, fonts, module.exports.plugins);
+client = parallel(fonts, stageLibs);
+plugins = series(cleanPlugins, buildPlugins, stagePlugins);
+
+module.exports.client = client;
+module.exports.plugins = plugins;
+
+module.exports.default = parallel(client, plugins);

@@ -7,7 +7,7 @@
             <b-button v-if="uninstallState" :class="buttonClass" variant="danger" @click="onUninstall">
                 Uninstall
             </b-button>
-            <b-button v-else :class="buttonClass" @click="onUninstall">
+            <b-button v-else :class="buttonClass" @click="onCancel">
                 <span v-if="!errorState" class="fa fa-spinner fa-spin" />
                 <span>{{ status }}</span>
             </b-button>
@@ -15,6 +15,11 @@
     </div>
 </template>
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+
+Vue.use(BootstrapVue);
+
 export default {
     props: ["installed", "status"],
     data() {
@@ -39,6 +44,11 @@ export default {
         },
         onUninstall() {
             this.$emit("onUninstall");
+        },
+        onCancel() {
+            if (window.confirm(`Are you sure you want cancel this process?`)) {
+                this.$emit("onUninstall");
+            }
         }
     }
 };

@@ -34,7 +34,6 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin(/)display_applications": "show_display_applications",
             "(/)admin(/)tool_versions": "show_tool_versions",
             "(/)admin(/)quotas": "show_quotas",
-            "(/)admin(/)repositories": "show_repositories",
             "(/)admin(/)forms": "show_forms",
             "(/)admin(/)form(/)(:form_id)": "show_form",
             "(/)admin/data_tables": "show_data_tables",
@@ -85,10 +84,6 @@ export const getAdminRouter = (Galaxy, options) => {
 
         show_groups: function() {
             this._show_grid_view("admin/groups_list");
-        },
-
-        show_repositories: function() {
-            this._show_grid_view("admin_toolshed/browse_repositories");
         },
 
         show_toolshed: function() {
