@@ -1,6 +1,5 @@
 import json
 import logging
-import re
 from time import strftime
 
 from paste.httpexceptions import (
@@ -20,14 +19,9 @@ from galaxy.webapps.base.controller import BaseAPIController
 from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
-from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
 from tool_shed.util import (
-    common_util,
-    encoding_util,
-    hg_util,
     repository_util,
-    tool_util,
-    workflow_util
+    tool_util
 )
 
 log = logging.getLogger(__name__)
@@ -349,4 +343,3 @@ class ToolShedRepositoriesController(BaseAPIController):
                                                        action='show',
                                                        id=trans.security.encode_id(tool_shed_repository.id))
         return tool_shed_repository_dict
-
