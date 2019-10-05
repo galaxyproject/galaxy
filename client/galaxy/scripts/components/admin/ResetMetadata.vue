@@ -24,16 +24,10 @@ export default {
                 { key: "name", label: "Metadata", sortable: true },
                 { key: "owner", sortable: true },
                 { key: "ctx_rev", label: "Revision" }
-            ]
+            ],
+            getter: getInstalledRepositories,
+            setter: resetRepositoryMetadata
         };
-    },
-    methods: {
-        getter: function() {
-            return getInstalledRepositories();
-        },
-        setter: function(ids) {
-            return resetRepositoryMetadata(ids);
-        }
     }
 };
 </script>

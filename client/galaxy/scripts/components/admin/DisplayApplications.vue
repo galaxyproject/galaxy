@@ -25,16 +25,10 @@ export default {
                 { key: "id", sortable: true },
                 { key: "version" },
                 { key: "links" }
-            ]
+            ],
+            getter: getDisplayApplications,
+            setter: reloadDisplayApplications
         };
-    },
-    methods: {
-        getter: function() {
-            return getDisplayApplications();
-        },
-        setter: function(ids) {
-            return reloadDisplayApplications(ids);
-        }
     }
 };
 </script>
