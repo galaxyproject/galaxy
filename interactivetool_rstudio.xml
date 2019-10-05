@@ -36,6 +36,8 @@
         ## change into the directory where the notebooks are located
         cd ./rstudio/ &&
 
+        sed -i 's|/monitor.*||g' /etc/services.d/nginx/run &&
+
         /init
 
     ]]>
