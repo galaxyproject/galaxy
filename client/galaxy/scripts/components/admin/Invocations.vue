@@ -1,7 +1,7 @@
 <template>
     <div>
         <h2 class="mb-3">
-            <span id="invocations-title">Worklfow Invocations</span>
+            <span id="invocations-title">Workflow Invocations</span>
         </h2>
         <b-alert variant="info" show>
             <p>
@@ -9,8 +9,7 @@
             </p>
         </b-alert>
         <b-alert v-if="loading" variant="info" show>
-            <span class="fa fa-spinner fa-spin" />
-            Loading workflow invocation job data
+            <loading-span message="Loading workflow invocation job data" />
         </b-alert>
         <div v-else>
             <b-alert v-if="!invocationItemsComputed.length" variant="secondary" show>
@@ -28,11 +27,11 @@
                 @row-clicked="showRowDetails"
                 :busy="busy"
             >
-                <template slot="table-caption">
+                <template v-slot:table-caption>
                     These invocations are not finished scheduling - one or more steps are waiting on others steps to be
                     complete before the full structure of the jobs in the workflow can be determined.
                 </template>
-                <template slot="row-details" slot-scope="row">
+                <template v-slot:row-details="row">
                     <b-card>
                         <!-- set provideContext to false, since the table itself provides this information -->
                         <workflow-invocation-state :invocationId="row.item.id" :provideContext="false" />
@@ -46,10 +45,12 @@
 <script>
 import { WorkflowInvocationState } from "components/WorkflowInvocationState";
 import { getActiveInvocations } from "./AdminServices";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
-        WorkflowInvocationState
+        WorkflowInvocationState,
+        LoadingSpan
     },
     data() {
         return {

@@ -312,11 +312,17 @@ then
     echo "Docker version:"
     docker --version
     echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
+    name=$(python -c 'import re; import uuid; print re.sub("-","",str(uuid.uuid4()))')
+    _on_exit() {
+        docker kill $name
+    }
+    trap _on_exit 0
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS \
         -e "BUILD_NUMBER=$BUILD_NUMBER" \
         -e "GALAXY_TEST_DATABASE_TYPE=$db_type" \
         -e "LC_ALL=C" \
         --rm \
+        --name=$name \
         -v "$(pwd)":/galaxy \
         -v "$(pwd)"/test/docker/base/run_test_wrapper.sh:/usr/local/bin/run_test_wrapper.sh "$DOCKER_IMAGE" "$@"
     exit $?

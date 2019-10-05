@@ -385,11 +385,15 @@ class ToolShedRepositoriesController(BaseAPIController):
         # Example URL: http://localhost:8763/api/tool_shed_repositories
         clause_list = []
         if 'name' in kwd:
-            clause_list.append(self.app.install_model.ToolShedRepository.table.c.name == kwd.get('name', None))
+            clause_list.append(self.app.install_model.ToolShedRepository.table.c.name == kwd.get('name'))
         if 'owner' in kwd:
-            clause_list.append(self.app.install_model.ToolShedRepository.table.c.owner == kwd.get('owner', None))
+            clause_list.append(self.app.install_model.ToolShedRepository.table.c.owner == kwd.get('owner'))
         if 'changeset' in kwd:
-            clause_list.append(self.app.install_model.ToolShedRepository.table.c.changeset_revision == kwd.get('changeset', None))
+            clause_list.append(self.app.install_model.ToolShedRepository.table.c.changeset_revision == kwd.get('changeset'))
+        if 'deleted' in kwd:
+            clause_list.append(self.app.install_model.ToolShedRepository.table.c.deleted == util.asbool(kwd.get('deleted')))
+        if 'uninstalled' in kwd:
+            clause_list.append(self.app.install_model.ToolShedRepository.table.c.uninstalled == util.asbool(kwd.get('uninstalled')))
         tool_shed_repository_dicts = []
         query = trans.install_model.context.query(self.app.install_model.ToolShedRepository) \
                                            .order_by(self.app.install_model.ToolShedRepository.table.c.name)

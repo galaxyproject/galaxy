@@ -623,7 +623,7 @@ model.Job.table = Table(
     Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True, nullable=True),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=True),
     Column("job_runner_name", String(255)),
-    Column("job_runner_external_id", String(255)),
+    Column("job_runner_external_id", String(255), index=True),
     Column("destination_id", String(255), nullable=True),
     Column("destination_params", JSONType, nullable=True),
     Column("object_store_id", TrimmedString(255), index=True),

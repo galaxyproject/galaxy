@@ -259,7 +259,7 @@ class CanvasManager {
                 } catch (error) {
                     console.debug(error);
                 }
-                if (nodeId && this.app.workflow.nodes.hasOwnProperty(nodeId)) {
+                if (nodeId && Object.prototype.hasOwnProperty.call(this.app.workflow.nodes, nodeId)) {
                     this.app.workflow.nodes[nodeId].clone();
                 }
                 e.preventDefault();

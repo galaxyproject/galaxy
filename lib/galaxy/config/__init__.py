@@ -69,6 +69,10 @@ LOGGING_CONFIG_DEFAULT = {
             'level': 'WARN',
             'qualname': 'routes.middleware',
         },
+        'amqp': {
+            'level': 'INFO',
+            'qualname': 'amqp',
+        },
     },
     'filters': {
         'stack': {
@@ -221,6 +225,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
 
     def _create_attributes_from_raw_config(self):
         for key, value in self._raw_config.items():
+            if hasattr(self, key):
+                raise ConfigurationError("Attempting to override existing attribute '%s'" % key)
             setattr(self, key, value)
 
     def _process_config(self, kwargs):
@@ -382,7 +388,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "")
         self.pbs_dataset_path = kwargs.get('pbs_dataset_path', "")
         self.pbs_stage_path = kwargs.get('pbs_stage_path', "")
-        self.sanitize_whitelist_file = os.path.join(self.root, kwargs.get('sanitize_whitelist_file', "config/sanitize_whitelist.txt"))
+        self.sanitize_whitelist_file = os.path.join(self.root, self.sanitize_whitelist_file)
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(kwargs)
         if "trust_jupyter_notebook_conversion" in kwargs:
             trust_jupyter_notebook_conversion = string_as_bool(kwargs.get('trust_jupyter_notebook_conversion', False))

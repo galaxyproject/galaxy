@@ -155,7 +155,6 @@ def setup_galaxy_config(
     tmpdir = os.path.realpath(tmpdir)
     if not os.path.exists(tmpdir):
         os.makedirs(tmpdir)
-    file_path = os.path.join(tmpdir, 'files')
     template_cache_path = tempfile.mkdtemp(prefix='compiled_templates_', dir=tmpdir)
     new_file_path = tempfile.mkdtemp(prefix='new_files_path_', dir=tmpdir)
     job_working_directory = tempfile.mkdtemp(prefix='job_working_directory_', dir=tmpdir)
@@ -175,9 +174,6 @@ def setup_galaxy_config(
         library_import_dir = None
     job_config_file = os.environ.get('GALAXY_TEST_JOB_CONFIG_FILE', default_job_config_file)
     tool_path = os.environ.get('GALAXY_TEST_TOOL_PATH', 'tools')
-    tool_dependency_dir = os.environ.get('GALAXY_TOOL_DEPENDENCY_DIR', None)
-    if tool_dependency_dir is None:
-        tool_dependency_dir = tempfile.mkdtemp(dir=tmpdir, prefix="tool_dependencies")
     tool_data_table_config_path = _tool_data_table_config_path(default_tool_data_table_config_path)
     default_data_manager_config = None
     for data_manager_config in ['config/data_manager_conf.xml', 'data_manager_conf.xml']:
@@ -221,10 +217,10 @@ def setup_galaxy_config(
         conda_auto_install=conda_auto_install,
         cleanup_job=cleanup_job,
         retry_metadata_internally=False,
+        data_dir=tmpdir,
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
         expose_dataset_path=True,
-        file_path=file_path,
         ftp_upload_purge=False,
         galaxy_data_manager_data_path=galaxy_data_manager_data_path,
         id_secret='changethisinproductiontoo',
@@ -292,11 +288,12 @@ backends:
     if enable_tool_shed_check:
         config["enable_tool_shed_check"] = enable_tool_shed_check
         config["hours_between_check"] = 0.001
+    tool_dependency_dir = os.environ.get('GALAXY_TOOL_DEPENDENCY_DIR')
     if tool_dependency_dir:
         config["tool_dependency_dir"] = tool_dependency_dir
-        # Used by shed's twill dependency stuff - todo read from
-        # Galaxy's config API.
-        os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir
+    # Used by shed's twill dependency stuff
+    # TODO: read from Galaxy's config API.
+    os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir or os.path.join(tmpdir, 'dependencies')
     return config
 
 

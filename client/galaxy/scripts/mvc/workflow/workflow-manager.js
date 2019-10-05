@@ -240,7 +240,7 @@ class Workflow {
         // First pass, nodes
         var using_workflow_outputs = false;
         wf.workflow_version = data.version;
-        wf.report = data.report;
+        wf.report = data.report || {};
         const markdownEditorInstance = Vue.extend(MarkdownEditor);
         new markdownEditorInstance({
             propsData: {

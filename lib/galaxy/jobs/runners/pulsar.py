@@ -203,8 +203,11 @@ class PulsarJobRunner(AsynchronousJobRunner):
         self._init_monitor_thread()
 
     def __init_client_manager(self):
-        pulsar_conf = self.runner_params.get('pulsar_config', None)
-        self.__init_pulsar_app(pulsar_conf)
+        pulsar_conf = self.runner_params.get('app', None)
+        pulsar_conf_file = None
+        if pulsar_conf is None:
+            pulsar_conf_file = self.runner_params.get('pulsar_config', None)
+        self.__init_pulsar_app(pulsar_conf, pulsar_conf_file)
 
         client_manager_kwargs = {}
         for kwd in 'manager', 'cache', 'transport', 'persistence_directory':
@@ -220,17 +223,18 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 client_manager_kwargs[kwd] = self.runner_params[kwd]
         self.client_manager = build_client_manager(**client_manager_kwargs)
 
-    def __init_pulsar_app(self, pulsar_conf_path):
-        if pulsar_conf_path is None and not self.default_build_pulsar_app:
+    def __init_pulsar_app(self, conf, pulsar_conf_path):
+        if conf is None and pulsar_conf_path is None and not self.default_build_pulsar_app:
             self.pulsar_app = None
             return
-        conf = {}
-        if pulsar_conf_path is None:
-            log.info("Creating a Pulsar app with default configuration (no pulsar_conf specified).")
-        else:
-            log.info("Loading Pulsar app configuration from %s" % pulsar_conf_path)
-            with open(pulsar_conf_path, "r") as f:
-                conf.update(yaml.safe_load(f) or {})
+        if conf is None:
+            conf = {}
+            if pulsar_conf_path is None:
+                log.info("Creating a Pulsar app with default configuration (no pulsar_conf specified).")
+            else:
+                log.info("Loading Pulsar app configuration from %s" % pulsar_conf_path)
+                with open(pulsar_conf_path, "r") as f:
+                    conf.update(yaml.safe_load(f) or {})
         if "job_metrics_config_file" not in conf:
             conf["job_metrics"] = self.app.job_metrics
         if "staging_directory" not in conf:
@@ -837,14 +841,20 @@ class PulsarMQJobRunner(PulsarJobRunner):
         self.client_manager.ensure_has_ack_consumers()
 
     def __async_update(self, full_status):
-        job_id = None
+        galaxy_job_id = None
         try:
-            job_id = full_status["job_id"]
-            job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id(job_id)
+            remote_job_id = full_status["job_id"]
+            if len(remote_job_id) == 32:
+                # It is a UUID - assign_ids = uuid in destination params...
+                sa_session = self.app.model.context.current
+                galaxy_job_id = sa_session.query(model.Job).filter(model.Job.job_runner_external_id == remote_job_id).one().id
+            else:
+                galaxy_job_id = remote_job_id
+            job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id(galaxy_job_id)
             job_state = self._job_state(job, job_wrapper)
             self._update_job_state_for_status(job_state, full_status["status"], full_status=full_status)
         except Exception:
-            log.exception("Failed to update Pulsar job status for job_id %s", job_id)
+            log.exception("Failed to update Pulsar job status for job_id %s", galaxy_job_id)
             raise
             # Nothing else to do? - Attempt to fail the job?
 

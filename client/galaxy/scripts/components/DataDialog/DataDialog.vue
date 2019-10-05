@@ -1,6 +1,6 @@
 <template>
-    <b-modal class="data-dialog-modal" v-if="modalShow" visible ok-only ok-title="Close">
-        <template slot="modal-header">
+    <b-modal modal-class="data-dialog-modal" v-if="modalShow" visible ok-only ok-title="Close" :static="modalStatic">
+        <template v-slot:modal-header>
             <data-dialog-search v-model="filter" />
         </template>
         <b-alert v-if="errorMessage" variant="danger" show v-html="errorMessage" />
@@ -15,23 +15,25 @@
             />
             <div v-else><span class="fa fa-spinner fa-spin" /> <span>Please wait...</span></div>
         </div>
-        <div v-if="!errorMessage" slot="modal-footer" class="w-100">
-            <b-btn size="sm" class="float-left" v-if="undoShow" @click="load()">
-                <div class="fa fa-caret-left mr-1" />
-                Back
-            </b-btn>
-            <b-btn
-                v-if="multiple"
-                size="sm"
-                class="float-right ml-1"
-                variant="primary"
-                @click="finalize"
-                :disabled="!hasValue"
-            >
-                Ok
-            </b-btn>
-            <b-btn size="sm" class="float-right" @click="modalShow = false"> Cancel </b-btn>
-        </div>
+        <template v-if="!errorMessage" v-slot:modal-footer>
+            <div class="w-100">
+                <b-btn size="sm" class="float-left" v-if="undoShow" @click="load()">
+                    <div class="fa fa-caret-left mr-1" />
+                    Back
+                </b-btn>
+                <b-btn
+                    v-if="multiple"
+                    size="sm"
+                    class="float-right ml-1"
+                    variant="primary"
+                    @click="finalize"
+                    :disabled="!hasValue"
+                >
+                    Ok
+                </b-btn>
+                <b-btn size="sm" class="float-right" @click="modalShow = false"> Cancel </b-btn>
+            </div>
+        </template>
     </b-modal>
 </template>
 
@@ -79,6 +81,10 @@ export default {
         history: {
             type: String,
             required: true
+        },
+        modalStatic: {
+            type: Boolean,
+            default: false
         }
     },
     data() {

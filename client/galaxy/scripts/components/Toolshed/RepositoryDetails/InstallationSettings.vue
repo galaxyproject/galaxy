@@ -1,14 +1,14 @@
 <template>
-    <b-modal v-model="modalShow" @ok="onOk" @hide="onHide">
-        <template slot="modal-header">
-            <h4 class="m-0">
+    <b-modal :static="modalStatic" v-model="modalShow" @ok="onOk" @hide="onHide">
+        <template v-slot:modal-header>
+            <h4 class="title m-0">
                 {{ modalTitle }}
             </h4>
         </template>
-        <div class="mb-1">
+        <div class="description mb-1">
             {{ repo.long_description || repo.description }}
         </div>
-        <div class="text-muted small mb-3">{{ repo.repo_owner_username }} rev. {{ changesetRevision }}</div>
+        <div class="revision text-muted small mb-3">{{ repo.owner }} rev. {{ changesetRevision }}</div>
         <b-form-group
             v-if="requiresPanel"
             label="Target Section:"
@@ -50,10 +50,14 @@
     </b-modal>
 </template>
 <script>
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
-import { Services } from "./services.js";
+
+Vue.use(BootstrapVue);
+
 export default {
-    props: ["repo", "changesetRevision", "requiresPanel", "toolshedUrl"],
+    props: ["repo", "changesetRevision", "requiresPanel", "toolshedUrl", "modalStatic"],
     data() {
         return {
             modalShow: true,
@@ -79,8 +83,7 @@ export default {
         }
     },
     created() {
-        this.services = new Services();
-        this.loadConfig();
+        this.load();
     },
     methods: {
         findSection: function(name) {
@@ -97,10 +100,12 @@ export default {
             }
             return result;
         },
-        loadConfig: function() {
+        load: function() {
             const galaxy = getGalaxyInstance();
             const sections = galaxy.config.toolbox_in_panel;
-            this.toolSections = sections.filter(x => x.model_class == "ToolSection");
+            if (sections) {
+                this.toolSections = sections.filter(x => x.model_class == "ToolSection");
+            }
             this.toolConfigs = galaxy.config.tool_dynamic_configs || [];
             if (this.toolConfigs.length > 0) {
                 this.toolConfig = this.toolConfigs[0];
@@ -111,24 +116,18 @@ export default {
         },
         onOk: function() {
             const [sectionId, sectionLabel] = this.findSection(this.toolSection);
-            this.services
-                .installRepository({
-                    tool_shed_url: this.toolshedUrl,
-                    name: this.repo.name,
-                    owner: this.repo.repo_owner_username,
-                    changeset_revision: this.changesetRevision,
-                    new_tool_panel_section_label: sectionLabel,
-                    tool_panel_section_id: sectionId,
-                    shed_tool_conf: this.toolConfig,
-                    install_resolver_dependencies: this.installResolverDependencies,
-                    install_tool_dependencies: this.installToolDependencies,
-                    install_repository_dependencies: this.installRepositoryDependencies
-                })
-                .then(response => {
-                    window.console.log(response);
-                    this.$emit("ok");
-                })
-                .catch(error => {});
+            this.$emit("ok", {
+                tool_shed_url: this.toolshedUrl,
+                name: this.repo.name,
+                owner: this.repo.owner,
+                changeset_revision: this.changesetRevision,
+                new_tool_panel_section_label: sectionLabel,
+                tool_panel_section_id: sectionId,
+                shed_tool_conf: this.toolConfig,
+                install_resolver_dependencies: this.installResolverDependencies,
+                install_tool_dependencies: this.installToolDependencies,
+                install_repository_dependencies: this.installRepositoryDependencies
+            });
         },
         onHide: function() {
             this.$emit("hide");

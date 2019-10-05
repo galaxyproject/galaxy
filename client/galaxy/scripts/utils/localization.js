@@ -3,7 +3,7 @@ define(["i18n!nls/locale"], function(localeStrings) {
     // =============================================================================
     /** Simple string replacement localization. Language data from galaxy/scripts/nls */
 
-    if (localeStrings.hasOwnProperty("__root")) {
+    if (Object.prototype.hasOwnProperty.call(localeStrings, "__root")) {
         //console.debug( 'amdi18n+webpack localization for ' + locale + ' loaded' );
 
         const locale = sessionStorage.getItem("currentLocale");
@@ -29,7 +29,7 @@ define(["i18n!nls/locale"], function(localeStrings) {
 
         // //TODO: conditional compile on DEBUG flag
         // // cache strings that need to be localized but haven't been?
-        // if( localize.cacheNonLocalized && !localeStrings.hasOwnProperty( strToLocalize ) ){
+        // if( localize.cacheNonLocalized && !Object.prototype.hasOwnProperty.call(localeStrings,  strToLocalize ) ){
         //     // console.debug( 'localization NOT found:', strToLocalize );
         //     // add nonCached as hash directly to this function
         //     localize.nonLocalized = localize.nonLocalized || {};
