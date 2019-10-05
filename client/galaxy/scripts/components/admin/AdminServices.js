@@ -23,7 +23,7 @@ export function getActiveInvocations() {
 }
 
 export function getInstalledRepositories() {
-    const url = `${getAppRoot()}api/tool_shed_repositories?uninstalled=True`;
+    const url = `${getAppRoot()}api/tool_shed_repositories?uninstalled=False`;
     return axios.get(url);
 }
 
