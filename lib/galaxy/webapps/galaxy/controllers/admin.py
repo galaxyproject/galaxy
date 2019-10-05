@@ -1455,10 +1455,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         current = user.get_disk_usage()
         user.calculate_and_set_disk_usage()
         new = user.get_disk_usage()
+        deleted = user.get_deleted_disk_usage()
         if new in (current, None):
-            message = 'Usage is unchanged at %s.' % nice_size(current)
+            message = 'Usage is unchanged at %s, including %s deleted, non-purged datasets.' % (nice_size(current), nice_size(deleted))
         else:
-            message = 'Usage has changed by %s to %s.' % (nice_size(new - current), nice_size(new))
+            message = 'Usage has changed by %s to %s, including %s deleted, non-purged datasets.' % (nice_size(new - current), nice_size(new), nice_size(deleted))
         return (message, 'done')
 
     def _new_user_apikey(self, trans, user_id):
