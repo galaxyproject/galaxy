@@ -26,7 +26,7 @@
     "axios": "^0.19.2",
     "backbone": "1.4.0",
     "bootstrap": "4.5.0",
-    "bootstrap-tour": "https://github.com/sorich87/bootstrap-tour.git#65a49742e131d19f41e3f5bf63588995f7b8a9e0",
+    "bootstrap-tourist": "^0.2.1",
     "bootstrap-vue": "^2.15.0",
     "citation-js": "^0.5.0-alpha.5",
     "d3": "3",

@@ -8,16 +8,10 @@ import _l from "utils/localization";
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
+import Tour from "bootstrap-tourist";
 import { getAppRoot } from "onload/loadConfig";
-import "bootstrap-tour";
 
-// bootstrap-tour configures a window.Tour object; keep a local ref.
-const Tour = window.Tour;
-
-// For buttons to show, we need to add them to bootstrap/popper's sanitizing filters.
-$.fn.tooltip.Constructor.Default.whiteList.button = ["data-role"];
-
-var gxy_root = getAppRoot();
+const gxy_root = getAppRoot();
 
 const TOURPAGE_TEMPLATE = `
     <h2>Galaxy Tours</h2>
@@ -56,12 +50,12 @@ const TOURPAGE_TEMPLATE = `
 </div>`;
 
 var tour_opts = {
+    framework: "bootstrap4",
+    debug: true,
     storage: window.sessionStorage,
     onEnd: function () {
         window.sessionStorage.removeItem("activeGalaxyTour");
-    },
-    delay: 150, // Attempts to make it look natural
-    orphan: true,
+    }
 };
 
 var hooked_tour_from_data = (data) => {
@@ -115,15 +109,14 @@ var Tours = Backbone.Collection.extend({
 
 export var ToursView = Backbone.View.extend({
     title: _l("Tours"),
-    initialize: function () {
-        var self = this;
+    initialize: function() {
         this.setElement("<div/>");
         this.model = new Tours();
         this.model.fetch({
-            success: function () {
-                self.render();
+            success: () => {
+                this.render();
             },
-            error: function () {
+            error: () => {
                 // Do something.
                 console.error("Failed to fetch tours.");
             },
@@ -208,11 +201,7 @@ export function giveTourWithData(data) {
     window.sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
     // Store tour steps in sessionStorage to easily persist w/o hackery.
     const tour = new Tour(_.extend({ steps: hookedTourData.steps }, tour_opts));
-    // Always clean restart, since this is a new, explicit execution.
-    tour.init();
-    tour.goTo(0);
     tour.restart();
-    return tour;
 }
 
 export function giveTourById(tour_id) {
@@ -240,7 +229,6 @@ export function activeGalaxyTourRunner() {
                         tour_opts
                     )
                 );
-                tour.init();
                 tour.restart();
             }
         }

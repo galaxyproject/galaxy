@@ -25,7 +25,6 @@
         )}
         ${ h.css(
             'jquery-ui/smoothness/jquery-ui',
-            'bootstrap-tour',
         )}
 
     </head>
