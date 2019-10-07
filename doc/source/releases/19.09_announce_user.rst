@@ -26,6 +26,8 @@ Check out the new, cleaner history menu! Many of the extraneous actions were mov
 .. figure:: images/19.09-history-menu.png
    :alt: New history menu
 
+Also check out the `19.09 admin/dev release notes <https://docs.galaxyproject.org/en/release_19.09/releases/19.09_announce.html>`__.
+
 New Visualizations
 ===========================================================
 
@@ -34,14 +36,14 @@ New Visualizations
 `@anuprulez <https://github.com/anuprulez>`__ has implemented free style image annotation, allowing you to make notes on images in Galaxy and save these annotations. `Pull Request 6891`_
 
 .. figure:: https://user-images.githubusercontent.com/3022518/47093799-3980c580-d22a-11e8-9f70-b58c624b7b4d.png
-   :alt: image nnotation demo
+   :alt: image annotation screenshot
 
-`@anuprulez <https://github.com/anuprulez>`__ has *also* implemented an OpenLayers based map visualisation, allowing you to visualise your GIS data in Galaxy. `Pull Request 7888`_
+`@anuprulez <https://github.com/anuprulez>`__ has *also* implemented an OpenLayers based map visualization, allowing you to visualize your GIS data in Galaxy. `Pull Request 7888`_
 
-.. figure: https://user-images.githubusercontent.com/3022518/57146482-affba400-6dc5-11e9-9dcd-c0d03810ca0d.png
-   :alt: Map viz
+.. figure:: https://user-images.githubusercontent.com/3022518/57146482-affba400-6dc5-11e9-9dcd-c0d03810ca0d.png
+   :alt: map visualization screenshot
 
-Other visualisations include:
+Other visualizations include:
 
 * hyphy-vision
   (thanks to `@veg <https://github.com/veg>`__).
