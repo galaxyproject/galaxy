@@ -26,6 +26,8 @@ Check out the new, cleaner history menu! Many of the extraneous actions were mov
 .. figure:: images/19.09-history-menu.png
    :alt: New history menu
 
+Also check out the `19.09 admin/dev release notes <https://docs.galaxyproject.org/en/release_19.09/releases/19.09_announce.html>`__.
+
 New Visualizations
 ===========================================================
 

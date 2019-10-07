@@ -36,6 +36,9 @@ Highlights
   search functionality. This interface has been completely re-imagined and feels much
   more interactive.
 
+Also check out the `19.09 user release notes <https://docs.galaxyproject.org/en/release_19.09/releases/19.09_announce_user.html>`__.
+
+
 Get Galaxy
 ==========
 
