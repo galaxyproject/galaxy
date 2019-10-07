@@ -502,10 +502,37 @@ class User(Dictifiable, RepresentById):
         """
         return self.get_disk_usage(nice_size=True)
 
+    def get_deleted_disk_usage(self, nice_size=False):
+        """
+        Return byte count of deleted disk space used by user or a human-readable
+        string if `nice_size` is `True`.
+        """
+        rval = 0
+        if self.deleted_disk_usage is not None:
+            rval = self.deleted_disk_usage
+        if nice_size:
+            rval = galaxy.util.nice_size(rval)
+        return rval
+
+    def set_deleted_disk_usage(self, bytes):
+        """
+        Manually set the disk space used by a user to `bytes`.
+        """
+        self.deleted_disk_usage = bytes
+
+    gross_deleted_disk_usage = property(get_deleted_disk_usage, set_deleted_disk_usage)
+
+    @property
+    def nice_gross_deleted_disk_usage(self):
+        """
+        Return byte count of disk space used in a human-readable string.
+        """
+        return self.get_deleted_disk_usage(nice_size=True)
+
     def calculate_disk_usage(self):
         """
-        Return byte count total of disk space used by all non-purged, non-library
-        HDAs in non-purged histories.
+        Return a disk usage tuple (disk_usage, deleted_disk_usage) counted from all
+        non-purged, non-library HDAs in non-purged histories.
         """
         # maintain a list so that we don't double count
         db_session = object_session(self)
@@ -513,7 +540,7 @@ class User(Dictifiable, RepresentById):
 
     def calculate_and_set_disk_usage(self):
         """
-        Calculates and sets user disk usage.
+        Calculates and sets both disk usage and deleted disk usage for user.
         """
         db_session = object_session(self)
         self._calculate_or_set_disk_usage(db_session, dryrun=False)
@@ -527,21 +554,34 @@ class User(Dictifiable, RepresentById):
         ctes = """
             WITH per_user_histories AS
             (
-                SELECT history.id as id
+                SELECT history.id as id, history.deleted as deleted
                 FROM history
                 WHERE history.user_id = :id
                     AND history.purged = '0'
             ),
-            per_hist_hdas AS (
+            per_hist_hdas AS
+            (
                 SELECT DISTINCT history_dataset_association.dataset_id as id
                 FROM history_dataset_association
                 WHERE history_dataset_association.purged = '0'
                     AND history_dataset_association.history_id in (SELECT id from per_user_histories)
+            ),
+            per_non_deleted_hist_hdas AS
+            (
+                SELECT DISTINCT history_dataset_association.dataset_id as id
+                FROM history_dataset_association
+                INNER JOIN per_user_histories ON history_dataset_association.history_id = per_user_histories.id
+                WHERE history_dataset_association.deleted = '0'
+                    AND per_user_histories.deleted = '0'
+                    AND history_dataset_association.purged = '0'
             )
         """
 
         sql_calc = """
-            SELECT sum(coalesce(dataset.total_size, coalesce(dataset.file_size, 0)))
+            SELECT
+                sum(coalesce(dataset.total_size, coalesce(dataset.file_size, 0))),
+                sum(CASE WHEN dataset.id in (SELECT id from per_non_deleted_hist_hdas) THEN 0
+                         ELSE coalesce(dataset.total_size, coalesce(dataset.file_size, 0)) END)
             FROM dataset
             LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
             WHERE dataset.id in (SELECT id from per_hist_hdas)
@@ -549,11 +589,11 @@ class User(Dictifiable, RepresentById):
         """
 
         sql_update = """UPDATE galaxy_user
-                        SET disk_usage = (%s)
+                        SET (disk_usage, deleted_disk_usage) = (%s)
                         WHERE id = :id""" % sql_calc
         if dryrun:
             r = sa_session.execute(ctes + sql_calc, {'id': self.id})
-            return r.fetchone()[0]
+            return r.fetchone()
         else:
             r = sa_session.execute(ctes + sql_update, {'id': self.id})
             sa_session.refresh(self)

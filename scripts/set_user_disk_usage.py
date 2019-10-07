@@ -46,17 +46,19 @@ def quotacheck(sa_session, users, engine):
         user.calculate_and_set_disk_usage()
         # And fetch
         new = user.get_disk_usage()
+        deleted = user.get_deleted_disk_usage()
     else:
-        new = user.calculate_disk_usage()
+        new, deleted = user.calculate_disk_usage()
 
-    print('old usage:', nice_size(current), 'change:', end=' ')
     if new in (current, None):
-        print('none')
+        change = 'none'
     else:
         if new > current:
-            print('+%s' % (nice_size(new - current)))
+            change = '+%s' % (nice_size(new - current))
         else:
-            print('-%s' % (nice_size(current - new)))
+            change = '-%s' % (nice_size(current - new))
+
+    print('total usage: %s (including %s deleted)\tchange: %s' % (nice_size(new), nice_size(deleted), change))
 
 
 if __name__ == '__main__':
