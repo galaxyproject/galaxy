@@ -142,5 +142,6 @@ export default {
     display: flex;
     flex-flow: column;
     height: 100%;
+    overflow: auto;
 }
 </style>
