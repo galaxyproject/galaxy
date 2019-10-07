@@ -332,7 +332,7 @@ var BaseOutputTerminalView = TerminalView.extend({
                 inputChoicesMenu.firstChild.classList.add("active");
                 inputChoicesMenu.firstChild.focus();
             } else {
-                //alert user that there are no available inputs to connect to for this output
+                ariaAlert("There are no available inputs for this selected output");
             }
         };
 
