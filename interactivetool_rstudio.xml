@@ -4,7 +4,7 @@
     </requirements>
     <entry_points>
         <entry_point name="RStudio" requires_domain="True">
-            <port>8787</port>
+            <port>80</port>
             <url>rstudio/</url>
         </entry_point>
     </entry_points>
@@ -35,9 +35,10 @@
 
         sed -i 's|/monitor.*||g' /etc/services.d/nginx/run &&
 
-        ##/init
-        rstudio-server start &&
         /etc/init.d/syslog-ng start &&
+        /init &
+        ##rstudio-server start &&
+        sleep 5 &&
         chmod 777 /tmp -R &&
         tail -f /var/log/rstudio-server/rserver.log
 
