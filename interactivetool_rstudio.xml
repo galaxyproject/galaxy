@@ -35,7 +35,11 @@
 
         sed -i 's|/monitor.*||g' /etc/services.d/nginx/run &&
 
-        /init
+        ##/init
+        rstudio-server start &&
+        /etc/init.d/syslog-ng start &&
+        chmod 777 /tmp -R &&
+        tail -f /var/log/rstudio-server/rserver.log
 
     ]]>
     </command>
