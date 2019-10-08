@@ -49,9 +49,9 @@ const TOURPAGE_TEMPLATE = `
     </div>
 </div>`;
 
-var tour_opts = {
+const DEFAULT_TOUR_OPTIONS = {
     framework: "bootstrap4",
-    debug: true,
+    showProgressBar: false,
     storage: window.sessionStorage,
     onEnd: function () {
         window.sessionStorage.removeItem("activeGalaxyTour");
@@ -200,7 +200,7 @@ export function giveTourWithData(data) {
     const hookedTourData = hooked_tour_from_data(data);
     window.sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
     // Store tour steps in sessionStorage to easily persist w/o hackery.
-    const tour = new Tour(_.extend({ steps: hookedTourData.steps }, tour_opts));
+    const tour = new Tour(_.extend({ steps: hookedTourData.steps }, DEFAULT_TOUR_OPTIONS));
     tour.restart();
 }
 
@@ -226,7 +226,7 @@ export function activeGalaxyTourRunner() {
                         {
                             steps: et.steps,
                         },
-                        tour_opts
+                        DEFAULT_TOUR_OPTIONS
                     )
                 );
                 tour.restart();
