@@ -520,8 +520,8 @@ class User(Dictifiable, RepresentById):
 
     def _calculate_or_set_disk_usage(self, sa_session, dryrun=True):
         """
-        Utility to calculate (returning a value) or just set the disk usage
-        (returning None / applying immediately)
+        Utility to calculate and return the disk usage.  If dryrun is False,
+        the new value is set immediately.
         """
 
         sql_calc = """
