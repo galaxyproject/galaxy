@@ -4,7 +4,7 @@
     </requirements>
     <entry_points>
         <entry_point name="RStudio" requires_domain="True">
-            <port>80</port>
+            <port>8787</port>
             <url>rstudio/</url>
         </entry_point>
     </entry_points>
