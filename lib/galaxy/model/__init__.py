@@ -523,25 +523,24 @@ class User(Dictifiable, RepresentById):
         Utility to calculate and return the disk usage.  If dryrun is False,
         the new value is set immediately.
         """
-
         sql_calc = """
             WITH per_user_histories AS
             (
-                SELECT history.id as id
+                SELECT id
                 FROM history
-                WHERE history.user_id = :id
-                    AND history.purged = '0'
+                WHERE user_id = :id
+                    AND NOT purged
             ),
             per_hist_hdas AS (
-                SELECT DISTINCT history_dataset_association.dataset_id as id
+                SELECT DISTINCT dataset_id
                 FROM history_dataset_association
-                WHERE history_dataset_association.purged = '0'
-                    AND history_dataset_association.history_id in (SELECT id from per_user_histories)
+                WHERE NOT purged
+                    AND history_id IN (SELECT id FROM per_user_histories)
             )
-            SELECT sum(coalesce(dataset.total_size, coalesce(dataset.file_size, 0)))
+            SELECT SUM(COALESCE(dataset.total_size, dataset.file_size, 0))
             FROM dataset
             LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
-            WHERE dataset.id in (SELECT id from per_hist_hdas)
+            WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
                 AND library_dataset_dataset_association.id IS NULL
         """
         usage = sa_session.scalar(sql_calc, {'id': self.id})
