@@ -36,6 +36,9 @@ Highlights
   search functionality. This interface has been completely re-imagined and feels much
   more interactive.
 
+Also check out the `19.09 user release notes <https://docs.galaxyproject.org/en/release_19.09/releases/19.09_announce_user.html>`__.
+
+
 Get Galaxy
 ==========
 
@@ -91,10 +94,35 @@ Going forward the MySQL database server is no longer supported and all deployers
 Deprecation Notice
 ==================
 
+API
+---
+
 The following Galaxy API endpoints (related to the Toolshed) are considered deprecated and staged for removal in the next release:
 
 * **api/toolshed/** { category | repository | search | show | status | tool_json }
 * **api/toolshed_repositories/** { check_for_updates | exported_workflows | get_latest_installable_revision | import_workflow | import_workflows | install | repair_repository_revision | shed_category | shed_repository | shed_search | status }
+
+Python
+------
+
+TL;DR Galaxy can be deployed on both Python 2 and 3 with Python3 expected to be the increasingly encouraged way of deployment.
+
+Python2 will `not be maintained <https://www.python.org/doc/sunset-python-2/>`__ past 2020 which means Galaxy 19.09 is
+the last release that officially supports Python 2.
+
+Over the past years Galaxy team has made a substantial effort
+spearheaded by `@nsoranzo <https://github.com/nsoranzo>`__ and `@mvdbeek <https://github.com/mvdbeek>`__
+to make Galaxy compatible with Python3. Thanks to this endeavor the `Galaxy Test server <https://test.galaxyproject.org>`__
+has been running on Python3 since April of this year and **Galaxy itself now fully supports Python3**.
+
+**Galaxy Tools**, that properly declare their Python2 dependency (using <requirements>), will continue to work as expected with Python2
+being provided by Conda. However tools that naively rely on implicit presence of Python2 on the PATH can fail on Python3 deployments.
+Another corner case are tools that use Python2-specific Cheetah templating syntax in their XML. We have implemented various mitigation
+approaches on the Galaxy side but some old tools using this syntax will not function correctly.
+
+*In our testing these problems should affect only a very limited number of tools and the vast majority should
+work on Python3 without a change.*
+
 
 Release Notes
 =============
