@@ -19,6 +19,7 @@ from whoosh.filedb.filestore import (
     RamStorage
 )
 from whoosh.qparser import MultifieldParser
+from whoosh.qparser import OrGroup
 from whoosh.scoring import BM25F
 
 from galaxy.util import ExecutionTimer
@@ -109,12 +110,14 @@ class ToolBoxSearch(object):
                 try:
                     add_doc_kwds['help'] = to_unicode(raw_help)
                 except Exception:
-                    # Don't fail to build index just because a help message
-                    # won't render.
+                    # Don't fail to build index just because help can't be converted.
                     pass
         return add_doc_kwds
 
-    def search(self, q, tool_name_boost, tool_section_boost, tool_description_boost, tool_label_boost, tool_stub_boost, tool_help_boost, tool_search_limit, tool_enable_ngram_search, tool_ngram_minsize, tool_ngram_maxsize):
+    def search(self, q, tool_name_boost, tool_section_boost,
+            tool_description_boost, tool_label_boost, tool_stub_boost,
+            tool_help_boost, tool_search_limit, tool_enable_ngram_search,
+            tool_ngram_minsize, tool_ngram_maxsize):
         """
         Perform search on the in-memory index. Weight in the given boosts.
         """
@@ -130,15 +133,17 @@ class ToolBoxSearch(object):
             )
         )
         # Set query to search name, description, section, help, and labels.
-        parser = MultifieldParser(['name', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema)
+        og = OrGroup.factory(0.9)
+        parser = MultifieldParser(['name', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)
+        cleaned_query = q.lower()
         # Hyphens are wildcards in Whoosh causing bad things
-        if q.find('-') != -1:
-            q = (' ').join([token.text for token in self.rex(to_unicode(q))])
+        if cleaned_query.find('-') != -1:
+            cleaned_query = (' ').join([token.text for token in self.rex(to_unicode(cleaned_query))])
         # Perform tool search with ngrams if set to true in the config file
-        if (tool_enable_ngram_search is True or tool_enable_ngram_search == "True"):
+        if tool_enable_ngram_search is True:
             hits_with_score = {}
             token_analyzer = StandardAnalyzer() | analysis.NgramFilter(minsize=int(tool_ngram_minsize), maxsize=int(tool_ngram_maxsize))
-            ngrams = [token.text for token in token_analyzer(q)]
+            ngrams = [token.text for token in token_analyzer(cleaned_query)]
             for query in ngrams:
                 # Get the tool list with respective scores for each qgram
                 curr_hits = searcher.search(parser.parse('*' + query + '*'), limit=float(tool_search_limit))
@@ -159,8 +164,9 @@ class ToolBoxSearch(object):
             # Return the tool ids
             return [item[0] for item in hits_with_score[0:int(tool_search_limit)]]
         else:
+            parsed_query = parser.parse(cleaned_query + '*')
             # Perform the search
-            hits = searcher.search(parser.parse('*' + q + '*'), limit=float(tool_search_limit))
+            hits = searcher.search(parsed_query, limit=float(tool_search_limit), sortedby='')
             return [hit['id'] for hit in hits]
 
 
