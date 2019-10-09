@@ -10,7 +10,6 @@ const View = Backbone.View.extend({
     initialize: function(options) {
         const Galaxy = getGalaxyInstance();
 
-        const self = this;
         this.options = options;
         this.setElement(this._template());
         this.$navbarBrandLink = this.$(".navbar-brand");
@@ -23,13 +22,13 @@ const View = Backbone.View.extend({
         this.collection = new Menu.Collection();
         this.collection
             .on("add", model => {
-                self.$navbarTabs.append(new Menu.Tab({ model: model }).render().$el);
+                this.$navbarTabs.append(new Menu.Tab({ model: model }).render().$el);
             })
             .on("reset", () => {
-                self.$navbarTabs.empty();
+                this.$navbarTabs.empty();
             })
             .on("dispatch", callback => {
-                self.collection.each(m => {
+                this.collection.each(m => {
                     callback(m);
                 });
             })
@@ -68,7 +67,7 @@ const View = Backbone.View.extend({
             })
             .on("beforeunload", () => {
                 let text = "";
-                self.collection.each(model => {
+                this.collection.each(model => {
                     const q = model.get("onbeforeunload") && model.get("onbeforeunload")();
                     if (q) {
                         text += `${q} `;

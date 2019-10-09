@@ -26,7 +26,6 @@ export default Backbone.View.extend({
         this.dict_format = grid_config.dict_format;
         this.title = grid_config.title;
         this.title_id = grid_config.title_id;
-        var self = this;
 
         // why is this a global?
         // Answer: autocom_tagging passes this function from python and
@@ -40,7 +39,7 @@ export default Backbone.View.extend({
                 $("#standard-search").slideToggle("fast");
                 $("#advanced-search").slideToggle("fast");
             }
-            self.add_filter_condition("tags", tag);
+            this.add_filter_condition("tags", tag);
         };
 
         // set element
@@ -53,10 +52,10 @@ export default Backbone.View.extend({
                 });
                 $.ajax({
                     url: `${grid_config.url_base}?${$.param(url_data)}`,
-                    success: function(response) {
+                    success: response => {
                         response.embedded = grid_config.embedded;
                         response.filters = grid_config.filters || {};
-                        self.init_grid(response);
+                        this.init_grid(response);
                     }
                 });
             } else {
@@ -116,10 +115,9 @@ export default Backbone.View.extend({
         // update message
         if (options.message) {
             this.$el.find("#grid-message").html(Templates.message(options));
-            var self = this;
             if (options.use_hide_message) {
                 setTimeout(() => {
-                    self.$el.find("#grid-message").html("");
+                    this.$el.find("#grid-message").html("");
                 }, 5000);
             }
         }
@@ -136,13 +134,12 @@ export default Backbone.View.extend({
     // Initialize grid controls
     init_grid_controls: function() {
         // link
-        var self = this;
 
         // Initialize grid operation button.
-        this.$el.find(".operation-button").each(function() {
-            $(this).off();
-            $(this).click(function() {
-                self.submit_operation(this);
+        this.$el.find(".operation-button").each((index, element) => {
+            $(element).off();
+            $(element).click(e => {
+                this.submit_operation(e.currentTarget);
                 return false;
             });
         });
@@ -160,38 +157,38 @@ export default Backbone.View.extend({
         });
 
         // Initialize sort links.
-        this.$el.find(".sort-link").each(function() {
-            $(this).off();
-            $(this).click(function() {
-                self.set_sort_condition($(this).attr("sort_key"));
+        this.$el.find(".sort-link").each((index, element) => {
+            $(element).off();
+            $(element).click(e => {
+                this.set_sort_condition($(e.currentTarget).attr("sort_key"));
                 return false;
             });
         });
 
         // Initialize text filters.
-        this.$el.find(".text-filter-form").each(function() {
-            $(this).off();
-            $(this).submit(function() {
-                var column_key = $(this).attr("column_key");
+        this.$el.find(".text-filter-form").each((index, element) => {
+            $(element).off();
+            $(element).submit(e => {
+                var column_key = $(e.currentTarget).attr("column_key");
                 var text_input_obj = $(`#input-${column_key}-filter`);
                 var text_input = text_input_obj.val();
                 text_input_obj.val("");
-                self.add_filter_condition(column_key, text_input);
+                this.add_filter_condition(column_key, text_input);
                 return false;
             });
         });
 
         // Initialize categorical filters.
-        this.$el.find(".text-filter-val > a").each(function() {
-            $(this).off();
-            $(this).click(function() {
+        this.$el.find(".text-filter-val > a").each((index, element) => {
+            $(element).off();
+            $(element).click(e => {
                 // Remove visible element.
-                $(this)
+                $(e.currentTarget)
                     .parent()
                     .remove();
 
                 // Remove filter condition.
-                self.remove_filter_condition($(this).attr("filter_key"), $(this).attr("filter_val"));
+                this.remove_filter_condition($(this).attr("filter_key"), $(this).attr("filter_val"));
 
                 // Return
                 return false;
@@ -199,20 +196,20 @@ export default Backbone.View.extend({
         });
 
         // Initialize categorical filters.
-        this.$el.find(".categorical-filter > a").each(function() {
-            $(this).off();
-            $(this).click(function() {
-                self.set_categorical_filter($(this).attr("filter_key"), $(this).attr("filter_val"));
+        this.$el.find(".categorical-filter > a").each((index, element) => {
+            $(element).off();
+            $(element).click(e => {
+                this.set_categorical_filter($(e.currentTarget).attr("filter_key"), $(e.currentTarget).attr("filter_val"));
                 return false;
             });
         });
 
         // Initialize standard, advanced search toggles.
-        this.$el.find(".advanced-search-toggle").each(function() {
-            $(this).off();
-            $(this).click(() => {
-                self.$el.find("#standard-search").slideToggle("fast");
-                self.$el.find("#advanced-search").slideToggle("fast");
+        this.$el.find(".advanced-search-toggle").each((index, element) => {
+            $(element).off();
+            $(element).click(() => {
+                this.$el.find("#standard-search").slideToggle("fast");
+                this.$el.find("#advanced-search").slideToggle("fast");
                 return false;
             });
         });
@@ -220,7 +217,7 @@ export default Backbone.View.extend({
         // Add event to check all box
         this.$el.find("#check_all").off();
         this.$el.find("#check_all").on("click", () => {
-            self.check_all_items();
+            this.check_all_items();
         });
     },
 
@@ -245,14 +242,13 @@ export default Backbone.View.extend({
 
         // get options
         var options = this.grid.attributes;
-        var self = this;
 
         //
         // add page click events
         //
-        this.$el.find(".page-link > a").each(function() {
-            $(this).click(function() {
-                self.set_page($(this).attr("page_num"));
+        this.$el.find(".page-link > a").each((index, element) => {
+            $(element).click(e => {
+                this.set_page($(e.currentTarget).attr("page_num"));
                 return false;
             });
         });
@@ -260,11 +256,11 @@ export default Backbone.View.extend({
         //
         // add inbound/outbound events
         //
-        this.$el.find(".use-target").each(function() {
-            $(this).click(function() {
-                self.execute({
-                    href: $(this).attr("href"),
-                    target: $(this).attr("target")
+        this.$el.find(".use-target").each((index, element) => {
+            $(element).click(e => {
+                this.execute({
+                    href: $(e.currentTarget).attr("href"),
+                    target: $(e.currentTarget).attr("target")
                 });
                 return false;
             });
@@ -278,17 +274,16 @@ export default Backbone.View.extend({
 
         // add operation popup menus
         _.each(options.items, (item, index) => {
-            var button = self.$(`#grid-${item.encode_id}-popup`).off();
+            var button = this.$(`#grid-${item.encode_id}-popup`).off();
             var popup = new PopupMenu(button);
             _.each(options.operations, operation => {
-                self._add_operation(popup, operation, item);
+                this._add_operation(popup, operation, item);
             });
         });
     },
 
     /** Add an operation to the items menu */
     _add_operation: function(popup, operation, item) {
-        var self = this;
         var settings = item.operation_config[operation.label];
         if (settings.allowed && operation.allow_popup) {
             popup.addItem({
@@ -296,13 +291,13 @@ export default Backbone.View.extend({
                 href: settings.url_args,
                 target: settings.target,
                 confirmation_text: operation.confirm,
-                func: function(e) {
+                func: e => {
                     e.preventDefault();
                     var label = $(e.target).html();
                     if (operation.onclick) {
                         operation.onclick(item.encode_id);
                     } else {
-                        self.execute(this.findItemByHtml(label));
+                        this.execute(this.findItemByHtml(label));
                     }
                 }
             });
@@ -321,13 +316,13 @@ export default Backbone.View.extend({
 
         // Add button that displays filter and provides a button to delete it.
         var t = $(Templates.filter_element(name, value));
-        var self = this;
-        t.click(function() {
+
+        t.click(e => {
             // Remove visible element.
-            $(this).remove();
+            $(e.currentTarget).remove();
 
             // Remove filter condition.
-            self.remove_filter_condition(name, value);
+            this.remove_filter_condition(name, value);
         });
 
         // append to container
@@ -384,27 +379,27 @@ export default Backbone.View.extend({
         var category_filter = this.grid.get("categorical_filters")[name];
 
         var cur_value = this.grid.get("filters")[name];
-        var self = this;
-        this.$el.find(`.${name}-filter`).each(function() {
-            var text = $.trim($(this).text());
+
+        this.$el.find(`.${name}-filter`).each((index, element) => {
+            var text = $.trim($(element).text());
             var filter = category_filter[text];
             var filter_value = filter[name];
             if (filter_value == new_value) {
                 // Remove filter link since grid will be using this filter. It is assumed that
                 // this element has a single child, a hyperlink/anchor with text.
-                $(this).empty();
-                $(this).addClass("current-filter");
-                $(this).append(text);
+                $(element).empty();
+                $(element).addClass("current-filter");
+                $(element).append(text);
             } else if (filter_value == cur_value) {
                 // Add hyperlink for this filter since grid will no longer be using this filter. It is assumed that
                 // this element has a single child, a hyperlink/anchor.
-                $(this).empty();
+                $(element).empty();
                 var t = $(`<a href="javascript:void(0)" role="button">${text}</a>`);
                 t.click(() => {
-                    self.set_categorical_filter(name, filter_value);
+                    this.set_categorical_filter(name, filter_value);
                 });
-                $(this).removeClass("current-filter");
-                $(this).append(t);
+                $(element).removeClass("current-filter");
+                $(element).append(t);
             }
         });
 
@@ -417,35 +412,34 @@ export default Backbone.View.extend({
     // Set page to view.
     set_page: function(new_page) {
         // Update page hyperlink to reflect new page.
-        var self = this;
-        this.$el.find(".page-link").each(function() {
-            var id = $(this).attr("id");
+        this.$el.find(".page-link").each((index, element) => {
+            var id = $(element).attr("id");
 
             var // Id has form 'page-link-<page_num>
                 page_num = parseInt(id.split("-")[2], 10);
 
-            var cur_page = self.grid.get("cur_page");
+            var cur_page = this.grid.get("cur_page");
             var text;
             if (page_num === new_page) {
                 // Remove link to page since grid will be on this page. It is assumed that
                 // this element has a single child, a hyperlink/anchor with text.
-                text = $(this)
+                text = $(element)
                     .children()
                     .text();
-                $(this).empty();
-                $(this).addClass("inactive-link");
-                $(this).text(text);
+                $(element).empty();
+                $(element).addClass("inactive-link");
+                $(element).text(text);
             } else if (page_num === cur_page) {
                 // Add hyperlink to this page since grid will no longer be on this page. It is assumed that
                 // this element has a single child, a hyperlink/anchor.
-                text = $(this).text();
-                $(this).empty();
-                $(this).removeClass("inactive-link");
+                text = $(element).text();
+                $(element).empty();
+                $(element).removeClass("inactive-link");
                 var t = $(`<a href="javascript:void(0)" role="button">${text}</a>`);
                 t.click(() => {
-                    self.set_page(page_num);
+                    this.set_page(page_num);
                 });
-                $(this).append(t);
+                $(element).append(t);
             }
         });
 
@@ -649,22 +643,21 @@ export default Backbone.View.extend({
 
         // Show overlay to indicate loading and prevent user actions.
         this.$el.find(".loading-elt-overlay").show();
-        var self = this;
         $.ajax({
             type: method,
-            url: self.grid.get("url_base"),
-            data: self.grid.get_url_data(),
+            url: this.grid.get("url_base"),
+            data: this.grid.get_url_data(),
             error: function() {
                 alert("Grid refresh failed");
             },
-            success: function(response_text) {
+            success: response_text => {
                 // backup
-                var embedded = self.grid.get("embedded");
-                var insert = self.grid.get("insert");
-                var advanced_search = self.$el.find("#advanced-search").is(":visible");
+                var embedded = this.grid.get("embedded");
+                var insert = this.grid.get("insert");
+                var advanced_search = this.$el.find("#advanced-search").is(":visible");
 
                 // request new configuration
-                var json = self.dict_format ? response_text : $.parseJSON(response_text);
+                var json = this.dict_format ? response_text : $.parseJSON(response_text);
 
                 // update
                 json.embedded = embedded;
@@ -672,14 +665,14 @@ export default Backbone.View.extend({
                 json.advanced_search = advanced_search;
 
                 // Initialize new grid config
-                self.init_grid(json);
+                this.init_grid(json);
 
                 // Hide loading overlay.
-                self.$el.find(".loading-elt-overlay").hide();
+                this.$el.find(".loading-elt-overlay").hide();
             },
-            complete: function() {
+            complete: () => {
                 // Clear grid of transient request attributes.
-                self.grid.set({
+                this.grid.set({
                     operation: undefined,
                     item_ids: undefined
                 });

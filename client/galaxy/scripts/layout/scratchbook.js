@@ -72,7 +72,6 @@ export default Backbone.View.extend({
 
     /** Add a dataset to the frames */
     addDataset: function(dataset_id) {
-        const self = this;
         let current_dataset = null;
         const Galaxy = getGalaxyInstance();
         if (Galaxy && Galaxy.currHistoryPanel) {
@@ -83,13 +82,13 @@ export default Backbone.View.extend({
             };
             Galaxy.currHistoryPanel.collection.each(model => {
                 if (!model.get("deleted") && model.get("visible")) {
-                    self.history_cache[history_id].dataset_ids.push(model.get("id"));
+                    this.history_cache[history_id].dataset_ids.push(model.get("id"));
                 }
             });
         }
         const _findDataset = (dataset, offset) => {
             if (dataset) {
-                const history_details = self.history_cache[dataset.get("history_id")];
+                const history_details = this.history_cache[dataset.get("history_id")];
                 if (history_details && history_details.dataset_ids) {
                     const dataset_list = history_details.dataset_ids;
                     const pos = dataset_list.indexOf(dataset.get("id"));
@@ -102,7 +101,7 @@ export default Backbone.View.extend({
         const _loadDatasetOffset = (dataset, offset, frame) => {
             const new_dataset_id = _findDataset(dataset, offset);
             if (new_dataset_id) {
-                self._loadDataset(new_dataset_id, (new_dataset, config) => {
+                this._loadDataset(new_dataset_id, (new_dataset, config) => {
                     current_dataset = new_dataset;
                     frame.model.set(config);
                 });
@@ -112,7 +111,7 @@ export default Backbone.View.extend({
         };
         this._loadDataset(dataset_id, (dataset, config) => {
             current_dataset = dataset;
-            self.add(
+            this.add(
                 _.extend(
                     {
                         menu: [
@@ -145,7 +144,6 @@ export default Backbone.View.extend({
     },
 
     _loadDataset: function(dataset_id, callback) {
-        const self = this;
         const dataset = new Dataset({ id: dataset_id });
         $.when(dataset.fetch()).then(() => {
             const is_tabular = _.find(
@@ -153,7 +151,7 @@ export default Backbone.View.extend({
                 data_type => dataset.get("data_type").indexOf(data_type) !== -1
             );
             let title = dataset.get("name");
-            const history_details = self.history_cache[dataset.get("history_id")];
+            const history_details = this.history_cache[dataset.get("history_id")];
             if (history_details) {
                 title = `${history_details.name}: ${title}`;
             }
@@ -180,7 +178,6 @@ export default Backbone.View.extend({
 
     /** Add a trackster visualization to the frames. */
     addTrackster: function(viz_id) {
-        const self = this;
         const viz = new visualization.Visualization({ id: viz_id });
         $.when(viz.fetch()).then(() => {
             const ui = new TracksterUI(getAppRoot());
@@ -219,7 +216,7 @@ export default Backbone.View.extend({
                     );
                 }
             };
-            self.add(frame_config);
+            this.add(frame_config);
         });
     },
 

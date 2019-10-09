@@ -15,7 +15,6 @@ const View = Backbone.View.extend({
     _panelids: ["left", "right"],
 
     initialize: function(options) {
-        const self = this;
         this.config = _.defaults(options.config || {}, {
             message_box_visible: false,
             message_box_content: "",
@@ -29,7 +28,7 @@ const View = Backbone.View.extend({
         // attach global objects, build mastheads
         const Galaxy = getGalaxyInstance();
         Galaxy.modal = this.modal = new Modal.View();
-        Galaxy.router = this.router = options.Router && new options.Router(self, options);
+        Galaxy.router = this.router = options.Router && new options.Router(this, options);
         Galaxy.data = this.data = new Data(this);
         this.masthead = new Masthead.View(this.config);
         this.center = new Panel.CenterPanel();
@@ -44,9 +43,9 @@ const View = Backbone.View.extend({
                 view.allow_title_display = true;
             }
             if (view.active_tab) {
-                self.masthead.highlight(view.active_tab);
+                this.masthead.highlight(view.active_tab);
             }
-            self.center.display(view);
+            this.center.display(view);
         };
 
         // build page template
@@ -75,10 +74,10 @@ const View = Backbone.View.extend({
                 const panel_class_name = panel_id.charAt(0).toUpperCase() + panel_id.slice(1);
                 const panel_class = options[panel_class_name];
                 if (panel_class) {
-                    const panel_instance = new panel_class(self, options);
-                    const panel_el = self.$(`#${panel_id}`);
-                    self[panel_instance.toString()] = panel_instance;
-                    self.panels[panel_id] = new Panel.SidePanel({
+                    const panel_instance = new panel_class(this, options);
+                    const panel_el = this.$(`#${panel_id}`);
+                    this[panel_instance.toString()] = panel_instance;
+                    this.panels[panel_id] = new Panel.SidePanel({
                         id: panel_id,
                         el: panel_el,
                         view: panel_instance
@@ -153,14 +152,13 @@ const View = Backbone.View.extend({
 
     /** Render panels */
     renderPanels: function() {
-        const self = this;
         _.each(this._panelids, panel_id => {
-            const panel = self.panels[panel_id];
+            const panel = this.panels[panel_id];
             if (panel) {
                 panel.render();
             } else {
-                self.$center.css(panel_id, 0);
-                self.$(`#${panel_id}`).hide();
+                this.$center.css(panel_id, 0);
+                this.$(`#${panel_id}`).hide();
             }
         });
         return this;

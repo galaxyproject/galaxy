@@ -4,7 +4,6 @@ import jQuery from "jquery";
 var $ = jQuery;
 //TODO: too specific to history panel
 function LoadingIndicator($where, options) {
-    var self = this;
     // defaults
     options = jQuery.extend(
         {
@@ -61,7 +60,7 @@ function LoadingIndicator($where, options) {
         return $indicator;
     }
 
-    self.show = (msg, speed, callback) => {
+    this.show = (msg, speed, callback) => {
         msg = msg || "loading...";
         speed = speed || "fast";
         // remove previous
@@ -70,21 +69,21 @@ function LoadingIndicator($where, options) {
             .find(".loading-indicator")
             .remove();
         // since position is fixed - we insert as sibling
-        self.$indicator = render().insertBefore($where);
-        self.message(msg);
-        self.$indicator.fadeIn(speed, callback);
-        return self;
+        this.$indicator = render().insertBefore($where);
+        this.message(msg);
+        this.$indicator.fadeIn(speed, callback);
+        return this;
     };
 
-    self.message = msg => {
-        self.$indicator.find("i").text(msg);
+    this.message = msg => {
+        this.$indicator.find("i").text(msg);
     };
 
-    self.hide = (speed, callback) => {
+    this.hide = (speed, callback) => {
         speed = speed || "fast";
-        if (self.$indicator && self.$indicator.length) {
-            self.$indicator.fadeOut(speed, () => {
-                self.$indicator.remove();
+        if (this.$indicator && this.$indicator.length) {
+            this.$indicator.fadeOut(speed, () => {
+                this.$indicator.remove();
                 if (callback) {
                     callback();
                 }
@@ -94,9 +93,9 @@ function LoadingIndicator($where, options) {
                 callback();
             }
         }
-        return self;
+        return this;
     };
-    return self;
+    return this;
 }
 
 const markViewAsLoading = function(view) {

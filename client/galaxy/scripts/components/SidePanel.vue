@@ -40,17 +40,16 @@ export default {
     },
     methods: {
         dragHandler(e) {
-            const self = this;
             const draggingLeft = this.side === "left";
 
             const initialX = e.pageX;
             const initialWidth = this.width;
 
-            function move(e) {
+            const move = e => {
                 const delta = e.pageX - initialX;
                 let newWidth = draggingLeft ? initialWidth + delta : initialWidth - delta;
                 newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth));
-                self.resize(newWidth);
+                this.resize(newWidth);
             }
 
             function moved() {

@@ -100,8 +100,7 @@ export default Backbone.Model.extend({
         }
 
         // Add filter arguments to data, placing "f-" in front of all arguments.
-        var self = this;
-        _.each(_.pairs(self.attributes.filters), k => {
+        _.each(_.pairs(this.attributes.filters), k => {
             url_data[`f-${k[0]}`] = k[1];
         });
         return url_data;

@@ -24,19 +24,17 @@ const SidePanel = Backbone.View.extend({
     },
 
     render: function() {
-        const self = this;
         const panel = this.view;
         const components = this.view.model.attributes || {};
 
         if (this.id === "left" && this.view && this.view.isVueWrapper) {
             const node = document.createElement("div");
             this.$el.replaceWith(node);
-
             this.view.mountVueComponent(node);
         } else {
             this.$el.html(this._templatePanel(this.id));
             _.each(components.buttons, button => {
-                self.$(".panel-header-buttons").append(button.$el);
+                this.$(".panel-header-buttons").append(button.$el);
             });
             this.$el.addClass(components.cls);
             this.$(".panel-header-text").html(_.escape(components.title));
@@ -84,19 +82,18 @@ const SidePanel = Backbone.View.extend({
     },
 
     _mousedownDragHandler: function(ev) {
-        const self = this;
         const draggingLeft = this.id === "left";
         // Save the mouse position and width of the element (panel) when the
         // drag interaction is first started
         const initialX = ev.pageX;
-        const initialWidth = self.$el.width();
+        const initialWidth = this.$el.width();
 
-        function move(e) {
+        const move = e => {
             const delta = e.pageX - initialX;
             let newWidth = draggingLeft ? initialWidth + delta : initialWidth - delta;
             // Limit range
             newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth));
-            self.resize(newWidth);
+            this.resize(newWidth);
         }
 
         // This is a page wide overlay that assists in capturing the move and
@@ -163,7 +160,7 @@ const SidePanel = Backbone.View.extend({
     // ..............................................................
     //TODO: only used in message.mako?
     /**   */
-    handle_minwidth_hint: function(hint) {
+    handle_minwidth_hint: hint => {
         const space = this.$center().width() - (this.hidden ? this.saved_size : 0);
         if (space < hint) {
             if (!this.hidden) {
@@ -176,18 +173,18 @@ const SidePanel = Backbone.View.extend({
                 this.hiddenByTool = false;
             }
         }
-        return self;
+        return this;
     },
 
     /**   */
-    force_panel: function(op) {
+    force_panel: op => {
         if (op == "show") {
             return this.show();
         }
         if (op == "hide") {
             return this.hide();
         }
-        return self;
+        return this;
     },
 
     toString: function() {
