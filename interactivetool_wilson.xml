@@ -8,10 +8,12 @@
             <port>3838</port>
         </entry_point>
     </entry_points>
+    <environment_variables>
+        <environment_variable name="WILSON_LANDING_PAGE">feature_selection</environment_variable>
+    </environment_variables>
     <command><![CDATA[
         mkdir -p /srv/shiny-server/external_data/ &&
         ln -s ${infile} /srv/shiny-server/external_data/input.clarion &&
-        export WILSON_LANDING_PAGE='feature_selection' &&
         exec shiny-server 2>&1
     ]]>
     </command>
