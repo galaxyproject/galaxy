@@ -1,7 +1,7 @@
 <tool id="interactive_tool_wilson" tool_type="interactive" name="Wilson" version="0.1">
     <description>Webbased Interactive Omics visualization</description>
     <requirements>
-        <container type="docker">loosolab/wilson:2.1.0</container>
+        <container type="docker">quay.io/bgruening/wilson-app</container>
     </requirements>
     <entry_points>
         <entry_point name="Wilson visualisation of $infile.display_name" requires_domain="True">
