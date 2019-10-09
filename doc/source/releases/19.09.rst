@@ -64,7 +64,7 @@ Enhancements
   `Pull Request 7905`_
 * Substantial progress toward refactoring and decomposing Galaxy into properly
   installable packages.
-  (with help from `@dglaetzer <https://github.com/dglaetzer>`__ and
+  (with help from `@dglaetzer <https://github.com/dglaetzer>`__,
   `@nsoranzo <https://github.com/nsoranzo>`__ and `@gmauro <https://github.com/gmauro>`__).
   `Pull Request 921`_, `Pull Request 7992`_, `Pull Request 8114`_,
   `Pull Request 8234`_, `Pull Request 8241`_, `Pull Request 8266`_,
@@ -181,13 +181,11 @@ Enhancements
   `Pull Request 8078`_
 * Allow admins to disable the visualizations tab in the masthead.
   `Pull Request 8450`_
-* Pin SQLAlchemy to ``<1.3`` and update all dependencies
-  `Pull Request 8120`_
+* Update all Python dependencies
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 8120`_, `Pull Request 8126`_
 * Enable authorization to Google Cloud Platform
   `Pull Request 8123`_
-* Update Python dependencies, unpin SQLAlchemy
-  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 8126`_
 * Update requirements and use pyuwsgi
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 8489`_
@@ -274,7 +272,7 @@ Enhancements
   `Pull Request 8439`_
 * Fix database migrations for MySQL but mention it is unsupported in the docs
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
-  `Pull Request 8640`_,  `Pull Request 8407`_, `Pull Request 8473`_
+  `Pull Request 8407`_, `Pull Request 8640`_, `Pull Request 8473`_
 * Auto convert python 2 code files using 2to3
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 8499`_
