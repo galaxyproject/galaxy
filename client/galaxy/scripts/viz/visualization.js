@@ -19,12 +19,11 @@ var CustomToJSON = {
      * Returns JSON representation of object using to_json_keys and to_json_mappers.
      */
     toJSON: function() {
-        var self = this;
         var json = {};
-        _.each(self.constructor.to_json_keys, k => {
-            var val = self.get(k);
-            if (k in self.constructor.to_json_mappers) {
-                val = self.constructor.to_json_mappers[k](val, self);
+        _.each(this.constructor.to_json_keys, k => {
+            var val = this.get(k);
+            if (k in this.constructor.to_json_mappers) {
+                val = this.constructor.to_json_mappers[k](val, this);
             }
             json[k] = val;
         });
@@ -299,9 +298,8 @@ var GenomeDataManager = Cache.extend({
         }
 
         // Put data into manager.
-        var self = this;
         _.each(entries, entry => {
-            self.set_data(entry.region, entry);
+            this.set_data(entry.region, entry);
         });
     },
 
@@ -604,13 +602,11 @@ var GenomeDataManager = Cache.extend({
     get_genome_wide_data: function(genome) {
         // -- Get all data. --
 
-        var self = this;
-
         var all_data_available = true;
 
         var //  Map chromosome info into genome data.
             gw_data = _.map(genome.get("chroms_info").chrom_info, chrom_info => {
-                var chrom_data = self.get_elt(
+                var chrom_data = this.get_elt(
                     new GenomeRegion({
                         chrom: chrom_info.chrom,
                         start: 0,
@@ -635,7 +631,7 @@ var GenomeDataManager = Cache.extend({
 
         var deferred = $.Deferred();
         $.getJSON(this.get("dataset").url(), { data_type: "genome_data" }, genome_wide_data => {
-            self.add_data(genome_wide_data.data);
+            this.add_data(genome_wide_data.data);
             deferred.resolve(genome_wide_data.data);
         });
 
@@ -993,14 +989,14 @@ var BackboneTrack = Backbone.Model.extend(CustomToJSON).extend(
         // This definition matches that produced by to_dict() methods in tracks.js
         to_json_keys: ["track_type", "dataset", "prefs", "mode", "filters", "tool_state"],
         to_json_mappers: {
-            prefs: function(p, self) {
+            prefs: function(p, context) {
                 if (_.size(p) === 0) {
                     p = {
-                        name: self
+                        name: context
                             .get("config")
                             .get("name")
                             .get("value"),
-                        color: self
+                        color: context
                             .get("config")
                             .get("color")
                             .get("value")
@@ -1088,14 +1084,14 @@ var GenomeVisualization = Visualization.extend(CustomToJSON).extend(
         to_json_keys: ["view", "viewport", "bookmarks"],
 
         to_json_mappers: {
-            view: function(dummy, self) {
+            view: function(dummy, context) {
                 return {
                     obj_type: "View",
                     prefs: {
-                        name: self.get("title"),
+                        name: context.get("title"),
                         content_visible: true
                     },
-                    drawables: self.get("drawables")
+                    drawables: context.get("drawables")
                 };
             }
         }

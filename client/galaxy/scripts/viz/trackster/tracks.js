@@ -1570,9 +1570,8 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
 
         // When drawable config changes, mark view as changed. This
         // captures most (all?) state change that needs to be saved.
-        var self = this;
         drawable.config.on("change", () => {
-            self.changed();
+            this.changed();
         });
     },
 
@@ -1871,7 +1870,6 @@ var TracksterToolView = Backbone.View.extend({
      * Render tool UI.
      */
     render: function() {
-        var self = this;
         var tool = this.model;
         var parent_div = this.$el.addClass("dynamic-tool").hide();
 
@@ -1918,10 +1916,10 @@ var TracksterToolView = Backbone.View.extend({
             .appendTo(run_tool_row);
         run_on_region_button.click(() => {
             // Run tool to create new track.
-            self.run_on_region();
+            this.run_on_region();
         });
         run_on_dataset_button.click(() => {
-            self.run_on_dataset();
+            this.run_on_dataset();
         });
 
         if (tool.is_visible()) {
@@ -3542,32 +3540,31 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         /*
         this.normal_postdraw_actions = this.postdraw_actions;
         this.postdraw_actions = function(tiles, width, w_scale, clear_after) {
-            var self = this;
 
             // Do normal postdraw init.
-            self.normal_postdraw_actions(tiles, width, w_scale, clear_after);
+            this.normal_postdraw_actions(tiles, width, w_scale, clear_after);
 
             // Tool-execution specific post-draw init:
 
             // Reset dataset check, wait time.
-            self.dataset_check_type = 'converted_datasets_state';
-            self.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
+            this.dataset_check_type = 'converted_datasets_state';
+            this.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
 
             // Reset data URL when dataset indexing has completed/when not pending.
             var ss_deferred = new util.ServerStateDeferred({
-                url: self.dataset_state_url,
-                url_params: {dataset_id : self.dataset.id, hda_ldda: self.dataset.get('hda_ldda')},
-                interval: self.data_query_wait,
+                url: this.dataset_state_url,
+                url_params: {dataset_id : this.dataset.id, hda_ldda: this.dataset.get('hda_ldda')},
+                interval: this.data_query_wait,
                 // Set up deferred to check dataset state until it is not pending.
                 success_fn: function(result) { return result !== "pending"; }
             });
-            $.when(ss_deferred.go()).then(function() {
+            $.when(ss_deferred.go()).then(() => {
                 // Dataset is indexed, so use converted data.
-                self.data_manager.set('data_type', 'data');
+                this.data_manager.set('data_type', 'data');
             });
 
             // Reset post-draw actions function.
-            self.postdraw_actions = self.normal_postdraw_actions;
+            this.postdraw_actions = this.normal_postdraw_actions;
         };
         */
     }
@@ -3982,11 +3979,10 @@ var LineTrack = function(view, container, obj_dict) {
 
     // If server has byte-range support, use BBI data manager to read directly from the BBI file.
     // FIXME: there should be a flag to wait for this check to complete before loading the track.
-    var self = this;
     $.when(supportsByteRanges(`${getAppRoot()}datasets/${this.dataset.id}/display`)).then(supportsByteRanges => {
         if (supportsByteRanges) {
-            self.data_manager = new bbi.BBIDataManager({
-                dataset: self.dataset
+            this.data_manager = new bbi.BBIDataManager({
+                dataset: this.dataset
             });
         }
     });

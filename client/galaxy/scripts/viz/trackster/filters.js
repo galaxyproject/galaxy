@@ -308,10 +308,9 @@ _.extend(NumberFilter.prototype, {
         this.high = values[1];
 
         // Set timeout to update if filter low, high are stable.
-        var self = this;
         setTimeout(() => {
-            if (values[0] === self.low && values[1] === self.high) {
-                self.manager.track.request_draw({
+            if (values[0] === this.low && values[1] === this.high) {
+                this.manager.track.request_draw({
                     force: true,
                     clear_after: true
                 });

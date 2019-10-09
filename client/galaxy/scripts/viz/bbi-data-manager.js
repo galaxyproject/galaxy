@@ -18,7 +18,6 @@ var BBIDataManager = visualization.GenomeDataManager.extend({
 
         var url = `${getAppRoot()}datasets/${this.get("dataset").id}/display`;
 
-        var self = this;
         $.when(bigwig.makeBwg(url)).then((bb, err) => {
             $.when(bb.readWigData(region.get("chrom"), region.get("start"), region.get("end"))).then(data => {
                 // Transform data into "bigwig" format for LinePainter. "bigwig" format is an array of 2-element arrays
@@ -53,7 +52,7 @@ var BBIDataManager = visualization.GenomeDataManager.extend({
                     dataset_type: "bigwig"
                 };
 
-                self.set_data(region, entry);
+                this.set_data(region, entry);
                 deferred.resolve(entry);
             });
         });

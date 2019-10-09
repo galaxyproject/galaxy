@@ -40,7 +40,6 @@ var ToolParameterTree = Backbone.Model.extend({
 
     initialize: function(options) {
         // Set up tool parameters to work with tree.
-        var self = this;
         this.get("tool")
             .get("inputs")
             .each(input => {
@@ -49,33 +48,33 @@ var ToolParameterTree = Backbone.Model.extend({
                     "change:min change:max change:num_samples",
                     input => {
                         if (input.get("in_ptree")) {
-                            self.set_tree_data();
+                            this.set_tree_data();
                         }
                     },
-                    self
+                    this
                 );
                 input.on(
                     "change:in_ptree",
                     input => {
                         if (input.get("in_ptree")) {
-                            self.add_param(input);
+                            this.add_param(input);
                         } else {
-                            self.remove_param(input);
+                            this.remove_param(input);
                         }
-                        self.set_tree_data();
+                        this.set_tree_data();
                     },
-                    self
+                    this
                 );
             });
 
         // If there is a config, use it.
         if (options.config) {
             _.each(options.config, input_config => {
-                var input = self
+                var input = this
                     .get("tool")
                     .get("inputs")
                     .find(input => input.get("name") === input_config.name);
-                self.add_param(input);
+                this.add_param(input);
                 input.set(input_config);
             });
         }
@@ -182,7 +181,6 @@ var ToolParameterTree = Backbone.Model.extend({
         }
 
         // Walk subtree starting at clicked node to get full list of settings.
-        var self = this;
 
         var get_settings = (node, settings) => {
             // Add setting for this node. Root node does not have a param,
@@ -194,7 +192,7 @@ var ToolParameterTree = Backbone.Model.extend({
             if (!node.children) {
                 // At leaf node, so return settings.
                 return new ToolInputsSettings({
-                    inputs: self.get("tool").get("inputs"),
+                    inputs: this.get("tool").get("inputs"),
                     values: settings
                 });
             } else {
@@ -407,14 +405,13 @@ var SweepsterTrackView = Backbone.View.extend({
         settings.get("inputs").each(input => {
             settings_div.append(`${input.get("label")}: ${values[input.get("name")]}<br/>`);
         });
-        var self = this;
 
         $("<button/>")
             .appendTo(settings_div)
             .text("Run on complete dataset")
             .click(() => {
                 settings_div.toggle();
-                self.trigger("run_on_dataset", settings);
+                this.trigger("run_on_dataset", settings);
             });
 
         var icon_menu = mod_icon_btn.create_icon_buttons_menu([
@@ -428,8 +425,8 @@ var SweepsterTrackView = Backbone.View.extend({
             {
                 title: _l("Remove"),
                 icon_class: "cross-circle",
-                on_click: function() {
-                    self.$el.remove();
+                on_click: () => {
+                    this.$el.remove();
                     $(".tooltip").remove();
                     // TODO: remove track from viz collection.
                 }
@@ -439,7 +436,7 @@ var SweepsterTrackView = Backbone.View.extend({
 
         // Render tile placeholders.
         this.model.get("regions").each(() => {
-            self.$el.append(
+            this.$el.append(
                 $("<td/>")
                     .addClass("tile")
                     .html($("<img/>").attr("src", `${getAppRoot()}images/loading_large_white_bg.gif`))
@@ -455,7 +452,6 @@ var SweepsterTrackView = Backbone.View.extend({
      * Draw tiles for regions.
      */
     draw_tiles: function() {
-        var self = this;
         var track = this.model.get("track");
         var regions = this.model.get("regions");
         var tile_containers = this.$el.find("td.tile");
@@ -469,12 +465,12 @@ var SweepsterTrackView = Backbone.View.extend({
         $.when(track.data_manager.data_is_ready()).then(data_ok => {
             // Draw tile for each region.
             regions.each((region, index) => {
-                var resolution = region.length() / self.TILE_LEN;
+                var resolution = region.length() / this.TILE_LEN;
                 var w_scale = 1 / resolution;
-                var mode = self.model.get("mode");
+                var mode = this.model.get("mode");
                 $.when(track.data_manager.get_data(region, mode, resolution, {})).then(tile_data => {
-                    var canvas = self.canvas_manager.new_canvas();
-                    canvas.width = self.TILE_LEN;
+                    var canvas = this.canvas_manager.new_canvas();
+                    canvas.width = this.TILE_LEN;
                     canvas.height = track.get_canvas_height(tile_data, mode, w_scale, canvas.width);
                     track.draw_tile(tile_data, canvas.getContext("2d"), mode, region, w_scale);
                     $(tile_containers[index])
@@ -532,31 +528,30 @@ var ToolInputValOrSweepView = Backbone.View.extend({
         sweep_inputs_row.insertAfter(single_input_row);
 
         // Add buttons for adding/removing parameter.
-        var self = this;
 
         var menu = mod_icon_btn.create_icon_buttons_menu(
             [
                 {
                     title: _l("Add parameter to tree"),
                     icon_class: "plus-button",
-                    on_click: function() {
+                    on_click: () => {
                         input.set("in_ptree", true);
                         single_input_row.hide();
                         sweep_inputs_row.show();
-                        $(this).hide();
-                        self.$el.find(".icon-button.toggle").show();
+                        $(e.currentTarget).hide();
+                        this.$el.find(".icon-button.toggle").show();
                     }
                 },
                 {
                     title: _l("Remove parameter from tree"),
                     icon_class: "toggle",
-                    on_click: function() {
+                    on_click: () => {
                         // Remove parameter from tree params where name matches clicked paramter.
                         input.set("in_ptree", false);
                         sweep_inputs_row.hide();
                         single_input_row.show();
-                        $(this).hide();
-                        self.$el.find(".icon-button.plus-button").show();
+                        $(e.currentTarget).hide();
+                        this.$el.find(".icon-button.plus-button").show();
                     }
                 }
             ],
@@ -568,9 +563,9 @@ var ToolInputValOrSweepView = Backbone.View.extend({
         // Show/hide input rows and icons depending on whether parameter is in the tree.
         if (input.get("in_ptree")) {
             single_input_row.hide();
-            self.$el.find(".icon-button.plus-button").hide();
+            this.$el.find(".icon-button.plus-button").hide();
         } else {
-            self.$el.find(".icon-button.toggle").hide();
+            this.$el.find(".icon-button.toggle").hide();
             sweep_inputs_row.hide();
         }
 
@@ -599,9 +594,7 @@ var ToolParameterTreeDesignView = Backbone.View.extend({
         this.$el.append(tool_form_view.$el);
 
         // Set up views for each tool input.
-        var self = this;
-
-        var inputs = self.model.get("tool").get("inputs");
+        var inputs = this.model.get("tool").get("inputs");
         this.$el
             .find(".form-row")
             .not(".form-actions")
@@ -638,8 +631,6 @@ var ToolParameterTreeView = Backbone.View.extend({
         this.width = 100 * (2 + tree_params.length);
         this.height = 15 * this.model.get_num_leaves();
 
-        var self = this;
-
         // Layout tree.
         var cluster = d3.layout.cluster().size([this.height, this.width - 160]);
 
@@ -653,7 +644,7 @@ var ToolParameterTreeView = Backbone.View.extend({
         _.each(tree_params, (param, index) => {
             var x = param_depths[index + 1];
             var center_left = $("#center").position().left;
-            self.$el.append(
+            this.$el.append(
                 $("<div>")
                     .addClass("label")
                     .text(param.get("label"))
@@ -687,7 +678,7 @@ var ToolParameterTreeView = Backbone.View.extend({
             .attr("class", "node")
             .attr("transform", d => `translate(${d.y},${d.x})`)
             .on("mouseover", a_node => {
-                var connected_node_ids = _.pluck(self.model.get_connected_nodes(a_node), "id");
+                var connected_node_ids = _.pluck(this.model.get_connected_nodes(a_node), "id");
                 // TODO: probably can use enter() to do this more easily.
                 node.filter(d => _.find(connected_node_ids, id => id === d.id) !== undefined).style("fill", "#f00");
             })
@@ -729,9 +720,8 @@ export var SweepsterVisualizationView = Backbone.View.extend({
         this.model.get("parameter_tree").on("change:tree_data", this.handle_node_clicks, this);
 
         // Each track must have a view so it has a canvas manager.
-        var self = this;
         this.model.get("tracks").each(track => {
-            track.get("track").view = self;
+            track.get("track").view = this;
         });
 
         // Set block, reverse strand block colors; these colors will be used for all tracks.
@@ -797,9 +787,8 @@ export var SweepsterVisualizationView = Backbone.View.extend({
         $("#left").append(tree_design_view.$el);
 
         // Render track collection container/view in right panel.
-        var self = this;
 
-        var regions = self.model.get("regions");
+        var regions = this.model.get("regions");
         var tr = $("<tr/>").appendTo(this.track_collection_container);
 
         regions.each(region => {
@@ -812,8 +801,8 @@ export var SweepsterVisualizationView = Backbone.View.extend({
         var tracks_div = $("<div>").addClass("tiles");
         $("#right").append(tracks_div.append(this.track_collection_container));
 
-        self.model.get("tracks").each(track => {
-            self.add_track(track);
+        this.model.get("tracks").each(track => {
+            this.add_track(track);
         });
 
         // -- Render help and tool parameter tree in center panel. --
@@ -889,8 +878,8 @@ export var SweepsterVisualizationView = Backbone.View.extend({
         var mode_mapping = {};
         _.each(modes, mode => {
             mode_mapping[mode] = () => {
-                self.model.set("default_mode", mode);
-                self.model.get("tracks").each(track => {
+                this.model.set("default_mode", mode);
+                this.model.get("tracks").each(track => {
                     track.set("mode", mode);
                 });
             };
@@ -930,31 +919,30 @@ export var SweepsterVisualizationView = Backbone.View.extend({
      * Add track to model and view.
      */
     add_track: function(pm_track) {
-        var self = this;
         var param_tree = this.model.get("parameter_tree");
 
         // Add track to model.
-        self.model.add_track(pm_track);
+        this.model.add_track(pm_track);
 
         var track_view = new SweepsterTrackView({
             model: pm_track,
-            canvas_manager: self.canvas_manager
+            canvas_manager: this.canvas_manager
         });
-        track_view.on("run_on_dataset", self.run_tool_on_dataset, self);
-        self.track_collection_container.append(track_view.$el);
+        track_view.on("run_on_dataset", this.run_tool_on_dataset, this);
+        this.track_collection_container.append(track_view.$el);
         track_view.$el.hover(
             () => {
                 var settings_leaf = param_tree.get_leaf(pm_track.get("settings").get("values"));
                 var connected_node_ids = _.pluck(param_tree.get_connected_nodes(settings_leaf), "id");
 
                 // TODO: can do faster with enter?
-                d3.select(self.tool_param_tree_view.$el[0])
+                d3.select(this.tool_param_tree_view.$el[0])
                     .selectAll("g.node")
                     .filter(d => _.find(connected_node_ids, id => id === d.id) !== undefined)
                     .style("fill", "#f00");
             },
             () => {
-                d3.select(self.tool_param_tree_view.$el[0])
+                d3.select(this.tool_param_tree_view.$el[0])
                     .selectAll("g.node")
                     .style("fill", "#000");
             }
@@ -968,7 +956,6 @@ export var SweepsterVisualizationView = Backbone.View.extend({
      */
     handle_node_clicks: function() {
         // When node clicked in tree, run tool and add tracks to model.
-        var self = this;
 
         var param_tree = this.model.get("parameter_tree");
         var regions = this.model.get("regions");
@@ -977,9 +964,9 @@ export var SweepsterVisualizationView = Backbone.View.extend({
 
         node.on("click", (d, i) => {
             // Get all settings corresponding to node.
-            var tool = self.model.get("tool");
+            var tool = this.model.get("tool");
 
-            var dataset = self.model.get("dataset");
+            var dataset = this.model.get("dataset");
             var all_settings = param_tree.get_node_settings(d);
             var run_jobs_deferred = $.Deferred();
 
@@ -987,7 +974,7 @@ export var SweepsterVisualizationView = Backbone.View.extend({
             if (all_settings.length >= 10) {
                 show_modal(
                     "Whoa there cowboy!",
-                    `You clicked on a node to try ${self.model.get("tool").get("name")} with ${
+                    `You clicked on a node to try ${this.model.get("tool").get("name")} with ${
                         all_settings.length
                     } different combinations of settings. You can only run 10 jobs at a time.`,
                     {
@@ -1012,9 +999,9 @@ export var SweepsterVisualizationView = Backbone.View.extend({
                     var pm_track = new SweepsterTrack({
                         settings: settings,
                         regions: regions,
-                        mode: self.model.get("default_mode")
+                        mode: this.model.get("default_mode")
                     });
-                    self.add_track(pm_track);
+                    this.add_track(pm_track);
                     return pm_track;
                 });
 
@@ -1036,10 +1023,10 @@ export var SweepsterVisualizationView = Backbone.View.extend({
                             // the tool parameters and parameter tree.
                             track_config.tool = null;
 
-                            track_config.prefs = self.config.to_key_value_dict();
+                            track_config.prefs = this.config.to_key_value_dict();
 
                             // Create and add track for output dataset.
-                            var track_obj = tracks.object_from_template(track_config, self, null);
+                            var track_obj = tracks.object_from_template(track_config, this, null);
                             track_obj.init_for_tool_data();
 
                             pm_track.set("track", track_obj);

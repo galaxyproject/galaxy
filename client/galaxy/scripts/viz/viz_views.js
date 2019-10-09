@@ -40,13 +40,12 @@ var TrackHeaderView = Backbone.View.extend({
     },
 
     render_action_icons: function() {
-        var self = this;
         this.icons_div = $("<div/>")
             .addClass("track-icons")
             .hide()
             .appendTo(this.$el);
         _.each(this.model.action_icons_def, icon_dict => {
-            self.add_action_icon(
+            this.add_action_icon(
                 icon_dict.name,
                 icon_dict.title,
                 icon_dict.css_class,
@@ -64,14 +63,13 @@ var TrackHeaderView = Backbone.View.extend({
      * Add an action icon to this object. Appends icon unless prepend flag is specified.
      */
     add_action_icon: function(name, title, css_class, on_click_fn, prepend, hide) {
-        var self = this;
         this.action_icons[name] = $("<a/>")
             .attr("title", title)
             .addClass("icon-button")
             .addClass(css_class)
             .tooltip()
             .click(() => {
-                on_click_fn(self.model);
+                on_click_fn(this.model);
             })
             .appendTo(this.icons_div);
         if (hide) {

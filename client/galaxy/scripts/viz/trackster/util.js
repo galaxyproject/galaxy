@@ -36,10 +36,9 @@ var ServerStateDeferred = Backbone.Model.extend({
      */
     go: function() {
         var deferred = $.Deferred();
-        var self = this;
-        var ajax_settings = self.get("ajax_settings");
-        var success_fn = self.get("success_fn");
-        var interval = self.get("interval");
+        var ajax_settings = this.get("ajax_settings");
+        var success_fn = this.get("success_fn");
+        var interval = this.get("interval");
 
         var _go = () => {
             $.ajax(ajax_settings).success(result => {
