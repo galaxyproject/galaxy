@@ -520,11 +520,11 @@ class User(Dictifiable, RepresentById):
 
     def _calculate_or_set_disk_usage(self, sa_session, dryrun=True):
         """
-        Utility to calculate (returning a value) or just set the disk usage
-        (returning None / applying immediately)
+        Utility to calculate and return the disk usage.  If dryrun is False,
+        the new value is set immediately.
         """
 
-        ctes = """
+        sql_calc = """
             WITH per_user_histories AS
             (
                 SELECT history.id as id
@@ -538,28 +538,16 @@ class User(Dictifiable, RepresentById):
                 WHERE history_dataset_association.purged = '0'
                     AND history_dataset_association.history_id in (SELECT id from per_user_histories)
             )
-        """
-
-        sql_calc = """
             SELECT sum(coalesce(dataset.total_size, coalesce(dataset.file_size, 0)))
             FROM dataset
             LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
             WHERE dataset.id in (SELECT id from per_hist_hdas)
                 AND library_dataset_dataset_association.id IS NULL
         """
-
-        sql_update = """UPDATE galaxy_user
-                        SET disk_usage = (%s)
-                        WHERE id = :id""" % sql_calc
-        if dryrun:
-            r = sa_session.execute(ctes + sql_calc, {'id': self.id})
-            return r.fetchone()[0]
-        else:
-            r = sa_session.execute(ctes + sql_update, {'id': self.id})
-            sa_session.refresh(self)
-            # There is no RETURNING clause because sqlite does not support it, so
-            # we return None
-            return None
+        usage = sa_session.scalar(sql_calc, {'id': self.id})
+        if not dryrun:
+            self.set_disk_usage(usage)
+        return usage
 
     @staticmethod
     def user_template_environment(user):
