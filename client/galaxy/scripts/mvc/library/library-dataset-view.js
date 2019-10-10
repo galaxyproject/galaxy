@@ -107,6 +107,8 @@ var LibraryDatasetView = Backbone.View.extend({
         $(".tooltip").remove();
         var template = this.templateDataset();
         this.$el.html(template({ item: this.model }));
+        // hack to force scrollbars to be shown
+        this.el.style.setProperty('overflow', 'auto', 'important');
         $(".peek").html(this.model.get("peek"));
         $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         this._mountNametags("initialize");

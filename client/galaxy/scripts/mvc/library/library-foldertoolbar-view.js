@@ -102,6 +102,8 @@ var FolderToolbarView = Backbone.View.extend({
             }
         }
         this.$el.html(toolbar_template(template_defaults));
+        // hack to force scrollbars to be shown
+        this.el.style.setProperty('overflow', 'auto', 'important');
     },
 
     /**

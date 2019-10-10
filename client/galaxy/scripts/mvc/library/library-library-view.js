@@ -87,8 +87,8 @@ var LibraryView = Backbone.View.extend({
             });
 
         $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
-        //hack to show scrollbars
-        $("#center").css("overflow", "auto");
+        // hack to force scrollbars to be shown
+        this.el.style.setProperty('overflow', 'auto', 'important');
     },
 
     _serializeRoles: function(role_list) {

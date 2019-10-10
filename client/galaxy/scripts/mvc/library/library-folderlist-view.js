@@ -138,7 +138,8 @@ var FolderListView = Backbone.View.extend({
             this.paginate();
         }
         $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
-        $("#center").css("overflow", "auto");
+        // hack to force scrollbars to be shown
+        this.el.style.setProperty('overflow', 'auto', 'important');
     },
 
     paginate: function(options) {

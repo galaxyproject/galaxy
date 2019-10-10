@@ -50,6 +50,8 @@ var LibraryToolbarView = Backbone.View.extend({
                 "without_restricted"
             );
         }
+        // hack to force scrollbars to be shown
+        this.el.style.setProperty('overflow', 'auto', 'important');
     },
 
     /**
