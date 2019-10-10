@@ -547,6 +547,7 @@ class User(Dictifiable, RepresentById):
         usage = sa_session.scalar(sql_calc, {'id': self.id})
         if not dryrun:
             self.set_disk_usage(usage)
+            sa_session.flush()
         return usage
 
     @staticmethod
