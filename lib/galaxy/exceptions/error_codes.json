@@ -27,7 +27,7 @@
    {
     "name": "USER_OBJECT_ATTRIBUTE_MISSING",
     "code": 400005,
-    "message": "Attempted to create object without required attribute."
+    "message": "Attempted to create or update object without required attribute."
     },
    {
     "name": "USER_SLUG_DUPLICATE",
@@ -108,7 +108,7 @@
     "name": "ADMIN_REQUIRED",
     "code": 403006,
     "message": "Action requires admin account."
-   },   
+   },
    {
     "name": "USER_ACTIVATION_REQUIRED",
     "code": 403007,

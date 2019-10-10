@@ -13,8 +13,8 @@ from galaxy.managers import (
     roles
 )
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous as expose_api_anonymous
+    expose_api,
+    expose_api_anonymous,
 )
 from galaxy.web.base.controller import BaseAPIController
 
@@ -295,7 +295,7 @@ class LibrariesController(BaseAPIController):
         elif action == 'remove_restrictions':
             is_public = self.library_manager.make_public(trans, library)
             if not is_public:
-                raise exceptions.InternalServerError('An error occured while making library public.')
+                raise exceptions.InternalServerError('An error occurred while making library public.')
         elif action == 'set_permissions':
 
             # ACCESS LIBRARY ROLES

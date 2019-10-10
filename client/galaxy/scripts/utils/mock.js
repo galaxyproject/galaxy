@@ -1,4 +1,4 @@
-// console.log api but does nothing
+// Applies noop to all methods for mock creation
 
 const doNothing = () => null;
 

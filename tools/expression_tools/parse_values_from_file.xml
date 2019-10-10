@@ -1,0 +1,106 @@
+<tool name="Parse parameter value" id="param_value_from_file" version="0.1.0" tool_type="expression">
+    <description>from dataset</description>
+    <expression type="ecma5.1">{
+var output;
+if ($job.remove_newlines || $job.param_type != 'text') {
+   $job.input1.contents = $job.input1.contents.trim();
+}
+if ($job.param_type == 'integer') {
+    output = parseInt($job.input1.contents);
+} else if ($job.param_type == 'float') {
+    output = parseFloat($job.input1.contents);
+} else if ($job.param_type == 'boolean') {
+    const trueValues = ['yes', 'true', '1']
+    const falseValues = ['no', 'false', '0']
+    let lowerCaseContents = $job.input1.contents.toLowerCase();
+    if (trueValues.includes(lowerCaseContents)) {
+        output = true;
+    } else if (falseValues.includes(lowerCaseContents)) {
+        output = false;
+    }
+    else {
+        return 'NOT A BOOLEAN VALUE';
+    }
+} else {
+    output = $job.input1.contents;
+}
+return {'output': output};
+    }</expression>
+    <inputs>
+        <param type="data" label="Input file containing parameter to parse out of" load_contents="64000" name="input1" />
+        <param name="param_type" type="select" label="Select type of parameter to parse">
+            <option value="text">Text</option>
+            <option value="integer">Integer</option>
+            <option value="float">Float</option>
+            <option value="boolean">Boolean</option>
+        </param>
+        <param name="remove_newlines" checked="true" type="boolean" label="Remove newlines ?" help="Uncheck this only if newlines should be preserved in parameter"/>
+    </inputs>
+    <outputs>
+        <output type="text" name="text_param" from="output">
+            <filter>param_type == 'text'</filter>
+        </output>
+        <output type="integer" name="integer_param" from="output">
+            <filter>param_type == 'integer'</filter>
+        </output>
+        <output type="float" name="float_param" from="output">
+            <filter>param_type == 'float'</filter>
+        </output>
+        <output type="boolean" name="boolean_param" from="output">
+            <filter>param_type == 'boolean'</filter>
+        </output>
+     </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input1" value="simple_line.txt"/>
+            <param name="param_type" value="text"/>
+            <param name="remove_newlines" value="true"/>
+            <output name="text_param">
+                <assert_contents>
+                    <has_line line="&quot;This is a line of text.&quot;"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input1" value="simple_line.txt"/>
+            <param name="param_type" value="text"/>
+            <param name="remove_newlines" value="false"/>
+            <output name="text_param">
+                <assert_contents>
+                    <has_line line="&quot;This is a line of text.\n&quot;"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input1" value="1.integer.txt"/>
+            <param name="param_type" value="integer"/>
+            <param name="remove_newlines" value="false"/>
+            <output name="integer_param">
+                <assert_contents>
+                    <has_line line="1"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input1" value="1.integer.txt"/>
+            <param name="param_type" value="float"/>
+            <param name="remove_newlines" value="false"/>
+            <output name="float_param">
+                <assert_contents>
+                    <has_line line="1"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input1" value="1.bool.txt"/>
+            <param name="param_type" value="boolean"/>
+            <param name="remove_newlines" value="false"/>
+            <output name="boolean_param">
+                <assert_contents>
+                    <has_line line="false"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help></help>
+</tool>

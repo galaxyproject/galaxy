@@ -139,7 +139,7 @@ def check_output(g, tagsnps):
 
     for n in tagsnps:
         for m in n.edges:
-                mysnps.append(m.name)
+            mysnps.append(m.name)
 
     mysnps = list(set(mysnps))
 

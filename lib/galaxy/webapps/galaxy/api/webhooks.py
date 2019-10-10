@@ -4,8 +4,7 @@ API Controller providing Galaxy Webhooks
 import imp
 import logging
 
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as \
-    expose_api_anonymous_and_sessionless
+from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)

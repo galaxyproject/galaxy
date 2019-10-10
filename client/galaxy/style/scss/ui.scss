@@ -105,7 +105,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
             height: 86px;
             font-size: 4em;
             padding: 20px 26px;
-            color: lighten(#25537b, 10%);
+            color: lighten($brand-primary, 10%);
         }
         .ui-thumbnails-text {
             word-wrap: break-word;
@@ -195,11 +195,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .ui-portlet {
     @extend .card;
     border: none;
-    height: 100%;
     .portlet-header:first-child {
         @extend .card-header;
         @extend .rounded;
-        background: $gray-200;
+        background: $portlet-bg-color;
         .portlet-title {
             .portlet-title-text.collapsible {
                 cursor: pointer;
@@ -239,10 +238,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
     @extend .ui-portlet;
     @extend .mb-2;
     border: none;
-    border-left: solid 3px $gray-200;
+    border-left: solid 3px $portlet-bg-color;
     border-radius: $border-radius-large;
     .portlet-header:first-child {
-        background: $gray-200;
+        background: $portlet-bg-color;
         @extend .rounded-0;
         border-top-right-radius: $border-radius-large !important;
         padding: 5px;
@@ -277,7 +276,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
     &[readonly],
     fieldset[disabled] & {
         cursor: not-allowed;
-        background-color: $gray-200;
+        background-color: $brand-light;
     }
 }
 
@@ -422,6 +421,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
             -webkit-appearance: none;
             -moz-border-radius: $border-radius-base;
             line-height: 1.5rem;
+            .select2-chosen {
+                white-space: normal;
+            }
             .select2-arrow {
                 display: none;
             }
@@ -451,8 +453,8 @@ $ui-margin-horizontal-large: $margin-v * 2;
 }
 
 .ui-select-content {
-    .ui-options {
-        @extend .float-left;
+    .btn-group {
+        @extend .d-flex;
     }
 }
 
@@ -478,7 +480,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
 // select2 adjustments
 .select2-drop-active,
 .select2-drop-above.select2-drop-active {
-    border: 1px solid $input-border;
+    border: 1px solid $border-default-color;
     .select2-search {
         @extend .pt-1;
     }

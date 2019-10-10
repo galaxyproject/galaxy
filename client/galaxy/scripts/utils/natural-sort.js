@@ -1,7 +1,7 @@
 // Alphanumeric/natural sort fn
 function naturalSort(a, b) {
     // setup temp-scope variables for comparison evauluation
-    var re = /(-?[0-9\.]+)/g;
+    var re = /(-?[0-9.]+)/g;
 
     var x = a.toString().toLowerCase() || "";
     var y = b.toString().toLowerCase() || "";

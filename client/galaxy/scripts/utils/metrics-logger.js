@@ -231,12 +231,12 @@ MetricsLogger.prototype._postCache = function _postCache(options) {
     var postSize = options.count || self._postSize;
 
     var // do not splice - remove after *successful* post
-    entries = self.cache.get(postSize);
+        entries = self.cache.get(postSize);
 
     var entriesLength = entries.length;
 
     var // use the optional getPingData to add any extra info we may want to send
-    postData = typeof self.options.getPingData === "function" ? self.options.getPingData() : {};
+        postData = typeof self.options.getPingData === "function" ? self.options.getPingData() : {};
 
     //console.debug( postSize, entriesLength );
 

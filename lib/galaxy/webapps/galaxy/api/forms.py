@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 class FormDefinitionAPIController(BaseAPIController):
 
-    @web.expose_api
+    @web.legacy_expose_api
     def index(self, trans, **kwd):
         """
         GET /api/forms
@@ -30,7 +30,7 @@ class FormDefinitionAPIController(BaseAPIController):
             rval.append(item)
         return rval
 
-    @web.expose_api
+    @web.legacy_expose_api
     def show(self, trans, id, **kwd):
         """
         GET /api/forms/{encoded_form_id}
@@ -53,7 +53,7 @@ class FormDefinitionAPIController(BaseAPIController):
         item['url'] = url_for('form', id=form_definition_id)
         return item
 
-    @web.expose_api
+    @web.legacy_expose_api
     def create(self, trans, payload, **kwd):
         """
         POST /api/forms

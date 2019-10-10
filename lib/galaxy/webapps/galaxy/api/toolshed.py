@@ -8,10 +8,11 @@ from six.moves.urllib.parse import (
 )
 
 from galaxy import (
+    exceptions,
     util,
     web
 )
-from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import expose_api
 from galaxy.web.base.controller import BaseAPIController
 from tool_shed.util import (
     common_util,
@@ -167,14 +168,17 @@ class ToolShedController(BaseAPIController):
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
         url = util.build_url(tool_shed_url, pathspec=['api', 'categories'])
         categories = []
-        for category in json.loads(util.url_get(url)):
-            api_url = web.url_for(controller='api/tool_shed',
-                                  action='category',
-                                  tool_shed_url=urlquote(tool_shed_url),
-                                  category_id=category['id'],
-                                  qualified=True)
-            category['url'] = api_url
-            categories.append(category)
+        try:
+            for category in json.loads(util.url_get(url)):
+                api_url = web.url_for(controller='api/tool_shed',
+                                      action='category',
+                                      tool_shed_url=urlquote(tool_shed_url),
+                                      category_id=category['id'],
+                                      qualified=True)
+                category['url'] = api_url
+                categories.append(category)
+        except Exception:
+            raise exceptions.ObjectNotFound("Tool Shed %s is not responding." % tool_shed_url)
         return categories
 
     @expose_api
@@ -187,10 +191,16 @@ class ToolShedController(BaseAPIController):
 
         :param tool_shed_url: the url of the toolshed to get repositories from
         :param category_id: the category to get repositories from
+        :param sort_key: the field by which the repositories should be sorted
+        :param sort_order: ascending or descending sort
+        :param page: the page number to return
         """
+        sort_order = kwd.get('sort_order', 'asc')
+        sort_key = kwd.get('sort_key', 'name')
+        page = kwd.get('page', 1)
         tool_shed_url = urlunquote(kwd.get('tool_shed_url', ''))
         category_id = kwd.get('category_id', '')
-        params = dict(installable=True)
+        params = dict(installable=True, sort_order=sort_order, sort_key=sort_key, page=page)
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
         url = util.build_url(tool_shed_url, pathspec=['api', 'categories', category_id, 'repositories'], params=params)
         repositories = []

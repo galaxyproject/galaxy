@@ -9,7 +9,7 @@ Highlights
 ==========
 
 **Galaxu UI plugins - Webhooks**
-  We introduce Galaxy Webhooks - optional plugins for the web UI that allow for better customization of your instance. See the `documentation <https://docs.galaxyproject.org/en/master/admin/webhooks.html>`__.
+  We introduce Galaxy Webhooks - optional plugins for the web UI that allow for better customization of your instance. See the :doc:`documentation <../admin/special_topics/webhooks>`.
   Includes work from `@bgruening <https://github.com/bgruening>`__, `@anatskiy <https://github.com/anatskiy>`__, and Joachim Wolff `@joachimwolff <https://github.com/joachimwolff>`__.
   Implemented in `Pull Request 3040`_.
 

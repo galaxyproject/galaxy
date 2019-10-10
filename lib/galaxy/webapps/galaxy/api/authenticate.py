@@ -21,7 +21,7 @@ from galaxy.util import (
     smart_str,
     unicodify
 )
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class AuthenticationController(BaseAPIController):
             raise exceptions.ObjectNotFound('The user does not exist.')
         elif len(user) > 1:
             # DB is inconsistent and we have more users with the same email.
-            raise exceptions.InconsistentDatabase('An error occured, please contact your administrator.')
+            raise exceptions.InconsistentDatabase('An error occurred, please contact your administrator.')
         else:
             user = user[0]
             is_valid_user = self.app.auth_manager.check_password(user, password)

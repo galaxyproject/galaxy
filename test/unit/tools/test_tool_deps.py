@@ -12,15 +12,15 @@ from shutil import rmtree
 from stat import S_IXUSR
 from subprocess import PIPE, Popen
 
-from galaxy.tools.deps import DependencyManager
-from galaxy.tools.deps.requirements import (
+from galaxy.tool_util.deps import DependencyManager
+from galaxy.tool_util.deps.requirements import (
     ToolRequirement,
     ToolRequirements
 )
-from galaxy.tools.deps.resolvers import NullDependency
-from galaxy.tools.deps.resolvers.galaxy_packages import GalaxyPackageDependency
-from galaxy.tools.deps.resolvers.lmod import LmodDependency, LmodDependencyResolver
-from galaxy.tools.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
+from galaxy.tool_util.deps.resolvers import NullDependency
+from galaxy.tool_util.deps.resolvers.galaxy_packages import GalaxyPackageDependency
+from galaxy.tool_util.deps.resolvers.lmod import LmodDependency, LmodDependencyResolver
+from galaxy.tool_util.deps.resolvers.modules import ModuleDependency, ModuleDependencyResolver
 from galaxy.util.bunch import Bunch
 
 

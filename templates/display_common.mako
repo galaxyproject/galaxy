@@ -82,8 +82,6 @@
         class_plural = "Datasets"
     elif a_class == model.FormDefinitionCurrent:
         class_plural = "Forms"
-    elif a_class == model.UserOpenID:
-        class_plural = "OpenIDs"
     else:
         class_plural = "items"
     return class_plural
@@ -116,6 +114,8 @@
             return "datasets"
         elif controller == "page":
             return "pages"
+        elif controller == "visualization":
+            return "visualizations"
         else:
             return controller
     %>

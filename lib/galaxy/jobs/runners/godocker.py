@@ -160,7 +160,6 @@ class GodockerJobRunner(AsynchronousJobRunner):
             # Create an object of AsynchronousJobState and add it to the monitor queue.
             ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_id=job_id, job_destination=job_destination)
             self.monitor_queue.put(ajs)
-        return None
 
     def check_watched_item(self, job_state):
         """ Get the job current status from GoDocker

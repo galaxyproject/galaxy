@@ -2,7 +2,7 @@ import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
-import jstree from "libs/jquery/jstree";
+import "libs/jquery/jstree";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import Utils from "utils/utils";
 import Modal from "mvc/ui/ui-modal";
@@ -25,7 +25,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
     },
 
     render: function(options) {
-        var repo_details_template = this.templateRepoDetails;
+        var repo_details_template = this.templateRepoDetails();
         var models = this.model.models[0];
         this.options = {
             repository: models.get("repository"),
@@ -45,13 +45,13 @@ var ToolShedRepositoryView = Backbone.View.extend({
         this.options.current_metadata = this.options.repository.metadata[this.options.current_changeset];
         this.options.current_metadata.tool_shed_url = this.model.tool_shed_url;
         this.options.tools = this.options.current_metadata.tools;
-        this.options.repository_dependencies_template = this.templateRepoDependencies;
-        this.options.repository_dependency_template = this.templateRepoDependency;
-        this.options.tps_template_global_select = this.templateGlobalSectionSelect;
-        this.options.tps_template_global_create = this.templateGlobalSectionCreate;
-        this.options.tps_template_tool_select = this.templateToolSectionSelect;
-        this.options.tps_template_tool_create = this.templateToolSectionCreate;
-        this.options.panel_section_options = this.templatePanelSelectOptions;
+        this.options.repository_dependencies_template = this.templateRepoDependencies();
+        this.options.repository_dependency_template = this.templateRepoDependency();
+        this.options.tps_template_global_select = this.templateGlobalSectionSelect();
+        this.options.tps_template_global_create = this.templateGlobalSectionCreate();
+        this.options.tps_template_tool_select = this.templateToolSectionSelect();
+        this.options.tps_template_tool_create = this.templateToolSectionCreate();
+        this.options.panel_section_options = this.templatePanelSelectOptions();
         this.options.tool_dependencies = models.get("tool_dependencies");
         this.options.shed_tool_conf = this.templateShedToolConf({
             shed_tool_confs: models.get("shed_conf")
@@ -376,7 +376,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
 
     toolTPSSelectionEvents: function() {
         $(".tool_panel_section_picker").on("change", ev => {
-            let element = $(ev.target);
+            const element = $(ev.target);
             var new_value = element.find("option:selected").val();
             var default_tps = $("#tool_panel_section_select")
                 .find("option:selected")
@@ -389,248 +389,248 @@ var ToolShedRepositoryView = Backbone.View.extend({
         });
     },
 
-    templateRepoDetails: _.template(
-        [
-            '<div class="unified-panel-header" id="panel_header" unselectable="on">',
-            '<div class="unified-panel-header-inner">Repository information for&nbsp;<strong><%= repository.name %></strong>&nbsp;from&nbsp;<strong><%= repository.owner %></strong><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
-            "</div>",
-            '<div class="unified-panel-body" id="repository_details" data-tsrid="<%= repository.id %>">',
-            '<form id="repository_installation" name="install_repository" method="post" action="<%= api_url %>">',
-            '<input type="hidden" id="repositories" name="<%= repository.id %>" value="ID" />',
-            '<input type="hidden" id="tool_shed_url" name="tool_shed_url" value="<%= tool_shed %>" />',
-            '<div class="toolForm">',
-            '<div class="toolFormTitle">Changeset</div>',
-            '<div class="toolFormBody changeset">',
-            '<select id="changeset" name="changeset" style="margin: 5px;">',
-            "<% _.each(Object.keys(repository.metadata), function(changeset) { %>",
-            '<% if (changeset == current_changeset) { var selected = "selected "; } else { var selected = ""; } %>',
-            '<option <%= selected %>value="<%= changeset.split(":")[1] %>"><%= changeset %></option>',
-            "<% }); %>",
-            "</select>",
-            '<input class="btn btn-primary preview-button" data-tsrid="<%= current_metadata.repository.id %>" type="submit" id="install_repository" name="install_repository" value="Install this revision now" />',
-            '<input class="btn btn-primary preview-button" type="button" id="queue_install" name="queue_install" value="Install this revision later" />',
-            '<div class="toolParamHelp" style="clear: both;">Please select a revision and review the settings below before installing.</div>',
-            "</div>",
-            "</div>",
-            "<%= shed_tool_conf %>",
-            "<% if (current_metadata.has_repository_dependencies) { %>",
-            '<div class="toolFormTitle">Repository dependencies for <strong id="current_changeset"><%= current_changeset %></strong></div>',
-            '<div class="toolFormBody">',
-            '<p id="install_repository_dependencies_checkbox">',
-            '<input type="checkbox" checked id="install_repository_dependencies" />',
-            '<label for="install_repository_dependencies">Install repository dependencies</label>',
-            "</p>",
-            "<% current_metadata.repository_dependency_template = repository_dependency_template; %>",
-            '<div class="tables container-table" id="repository_dependencies">',
-            '<div class="expandLink">',
-            '<a class="toggle_folder" data_target="repository_dependencies_table">',
-            "Repository dependencies &ndash; <em>installation of these additional repositories is required</em>",
-            "</a>",
-            "</div>",
-            "<%= repository_dependencies_template(current_metadata) %>",
-            "</div>",
-            "</div>",
-            "<% } %>",
-            "<% if (current_metadata.includes_tool_dependencies) { %>",
-            '<div class="toolFormTitle">Tool dependencies</div>',
-            '<div class="toolFormBody">',
-            '<p id="install_resolver_dependencies_checkbox">',
-            '<input type="checkbox" checked id="install_resolver_dependencies" />',
-            '<label for="install_resolver_dependencies">Install resolver dependencies</label>',
-            "</p>",
-            '<p id="install_tool_dependencies_checkbox">',
-            '<input type="checkbox" checked id="install_tool_dependencies" />',
-            '<label for="install_tool_dependencies">Install tool dependencies</label>',
-            "</p>",
-            '<div class="tables container-table" id="tool_dependencies">',
-            '<div class="expandLink">',
-            '<a class="toggle_folder" data_target="tool_dependencies_table">',
-            "Tool dependencies &ndash; <em>repository tools require handling of these dependencies</em>",
-            "</a>",
-            "</div>",
-            '<table class="tables container-table" id="tool_dependencies_table" border="0" cellpadding="2" cellspacing="2" width="100%">',
-            "<thead>",
-            '<tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rt-f9cad7b01a472135">',
-            '<th style="padding-left: 40px;">Name</th>',
-            "<th>Version</th>",
-            "<th>Type</th>",
-            "</tr>",
-            "</thead>",
-            '<tbody id="tool_deps">',
-            "<% _.each(tool_dependencies[current_changeset], function(dependency) { %>",
-            '<tr class="datasetRow tool_dependency_row" style="display: table-row;">',
-            '<td style="padding-left: 40px;">',
-            "<%= dependency.name %></td>",
-            "<td><%= dependency.version %></td>",
-            "<td><%= dependency.type %></td>",
-            "</tr>",
-            "<% }); %>",
-            "</tbody>",
-            "</table>",
-            "</div>",
-            "</div>",
-            "<% } %>",
-            "<% if (current_metadata.includes_tools_for_display_in_tool_panel) { %>",
-            '<div class="toolFormTitle">Tools &ndash; <em>click the name to preview the tool and use the pop-up menu to inspect all metadata</em></div>',
-            '<div class="toolFormBody">',
-            '<div class="tables container-table" id="tools_toggle">',
-            '<table class="tables container-table" id="valid_tools" border="0" cellpadding="2" cellspacing="2" width="100%">',
-            "<thead>",
-            '<tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rt-f9cad7b01a472135">',
-            '<th style="padding-left: 40px;">Name</th>',
-            "<th>Description</th>",
-            "<th>Version</th>",
-            "<th><%= tps_template_global_select({panel_section_dict: panel_section_dict, panel_section_options: panel_section_options}) %></tr>",
-            "</thead>",
-            '<tbody id="tools_in_repo">',
-            "<% _.each(current_metadata.tools, function(tool) { %>",
-            '<tr id="libraryItem-<%= tool.clean %>" class="tool_row" style="display: table-row;" style="width: 15%">',
-            '<td style="padding-left: 40px;">',
-            '<div id="tool-<%= tool.clean %>" class="menubutton split popup" style="float: left;">',
-            '<a class="tool_form view-info" data-toggle="modal" data-target="toolform_<%= tool.clean %>" data-clean="<%= tool.clean %>" data-guid="<%= tool.guid %>" data-name="<%= tool.name %>" data-desc="<%= tool.description %>"><%= tool["name"] %></a>',
-            "</div>",
-            "</td>",
-            "<td><%= tool.description %></td>",
-            '<td style="width: 15%"><%= tool.version %></td>',
-            '<td style="width: 35%" id="tool_tps_<%= tool.clean %>">',
-            "<%= tps_template_tool_select({tool: tool, panel_section_dict: panel_section_dict, panel_section_options: panel_section_options}) %>",
-            "</td>",
-            "</tr>",
-            "<% }); %>",
-            "</tbody>",
-            "</table>",
-            "</div>",
-            "</div>",
-            "<% } %>",
-            "</form>",
-            "</div>"
-        ].join("")
-    ),
+    templateRepoDetails: function() {
+        return _.template(
+            `<div class="unified-panel-header" id="panel_header" unselectable="on">
+            <div class="unified-panel-header-inner">Repository information for&nbsp;<strong><%= repository.name %></strong>&nbsp;from&nbsp;<strong><%= repository.owner %></strong><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>
+            </div>
+            <div class="unified-panel-body" id="repository_details" data-tsrid="<%= repository.id %>">
+            <form id="repository_installation" name="install_repository" method="post" action="<%= api_url %>">
+            <input type="hidden" id="repositories" name="<%= repository.id %>" value="ID" />
+            <input type="hidden" id="tool_shed_url" name="tool_shed_url" value="<%= tool_shed %>" />
+            <div class="toolForm">
+            <div class="toolFormTitle">Changeset</div>
+            <div class="toolFormBody changeset">
+            <select id="changeset" name="changeset" style="margin: 5px;">
+            <% _.each(Object.keys(repository.metadata), function(changeset) { %>
+            <% if (changeset == current_changeset) { var selected = "selected "; } else { var selected = ""; } %>
+            <option <%= selected %>value="<%= changeset.split(":")[1] %>"><%= changeset %></option>
+            <% }); %>
+            </select>
+            <input class="btn btn-primary preview-button" data-tsrid="<%= current_metadata.repository.id %>" type="submit" id="install_repository" name="install_repository" value="Install this revision now" />
+            <input class="btn btn-primary preview-button" type="button" id="queue_install" name="queue_install" value="Install this revision later" />
+            <div class="toolParamHelp" style="clear: both;">Please select a revision and review the settings below before installing.</div>
+            </div>
+            </div>
+            <%= shed_tool_conf %>
+            <% if (current_metadata.has_repository_dependencies) { %>
+            <div class="toolFormTitle">Repository dependencies for <strong id="current_changeset"><%= current_changeset %></strong></div>
+            <div class="toolFormBody">
+            <p id="install_repository_dependencies_checkbox">
+            <input type="checkbox" checked id="install_repository_dependencies" />
+            <label for="install_repository_dependencies">Install repository dependencies</label>
+            </p>
+            <% current_metadata.repository_dependency_template = repository_dependency_template; %>
+            <div class="tables container-table" id="repository_dependencies">
+            <div class="expandLink">
+            <a class="toggle_folder" data_target="repository_dependencies_table">
+            Repository dependencies &ndash; <em>installation of these additional repositories is required</em>
+            </a>
+            </div>
+            <%= repository_dependencies_template(current_metadata) %>
+            </div>
+            </div>
+            <% } %>
+            <% if (current_metadata.includes_tool_dependencies) { %>
+            <div class="toolFormTitle">Tool dependencies</div>
+            <div class="toolFormBody">
+            <p id="install_resolver_dependencies_checkbox">
+            <input type="checkbox" checked id="install_resolver_dependencies" />
+            <label for="install_resolver_dependencies">Install resolver dependencies</label>
+            </p>
+            <p id="install_tool_dependencies_checkbox">
+            <input type="checkbox" checked id="install_tool_dependencies" />
+            <label for="install_tool_dependencies">Install tool dependencies</label>
+            </p>
+            <div class="tables container-table" id="tool_dependencies">
+            <div class="expandLink">
+            <a class="toggle_folder" data_target="tool_dependencies_table">
+            Tool dependencies &ndash; <em>repository tools require handling of these dependencies</em>
+            </a>
+            </div>
+            <table class="tables container-table" id="tool_dependencies_table" border="0" cellpadding="2" cellspacing="2" width="100%">
+            <thead>
+            <tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rt-f9cad7b01a472135">
+            <th style="padding-left: 40px;">Name</th>
+            <th>Version</th>
+            <th>Type</th>
+            </tr>
+            </thead>
+            <tbody id="tool_deps">
+            <% _.each(tool_dependencies[current_changeset], function(dependency) { %>
+            <tr class="datasetRow tool_dependency_row" style="display: table-row;">
+            <td style="padding-left: 40px;">
+            <%= dependency.name %></td>
+            <td><%= dependency.version %></td>
+            <td><%= dependency.type %></td>
+            </tr>
+            <% }); %>
+            </tbody>
+            </table>
+            </div>
+            </div>
+            <% } %>
+            <% if (current_metadata.includes_tools_for_display_in_tool_panel) { %>
+            <div class="toolFormTitle">Tools &ndash; <em>click the name to preview the tool and use the pop-up menu to inspect all metadata</em></div>
+            <div class="toolFormBody">
+            <div class="tables container-table" id="tools_toggle">
+            <table class="tables container-table" id="valid_tools" border="0" cellpadding="2" cellspacing="2" width="100%">
+            <thead>
+            <tr style="display: table-row;" class="datasetRow" parent="0" id="libraryItem-rt-f9cad7b01a472135">
+            <th style="padding-left: 40px;">Name</th>
+            <th>Description</th>
+            <th>Version</th>
+            <th><%= tps_template_global_select({panel_section_dict: panel_section_dict, panel_section_options: panel_section_options}) %></tr>
+            </thead>
+            <tbody id="tools_in_repo">
+            <% _.each(current_metadata.tools, function(tool) { %>
+            <tr id="libraryItem-<%= tool.clean %>" class="tool_row" style="display: table-row;" style="width: 15%">
+            <td style="padding-left: 40px;">
+            <div id="tool-<%= tool.clean %>" class="menubutton split popup" style="float: left;">
+            <a class="tool_form view-info" data-toggle="modal" data-target="toolform_<%= tool.clean %>" data-clean="<%= tool.clean %>" data-guid="<%= tool.guid %>" data-name="<%= tool.name %>" data-desc="<%= tool.description %>"><%= tool["name"] %></a>
+            </div>
+            </td>
+            <td><%= tool.description %></td>
+            <td style="width: 15%"><%= tool.version %></td>
+            <td style="width: 35%" id="tool_tps_<%= tool.clean %>">
+            <%= tps_template_tool_select({tool: tool, panel_section_dict: panel_section_dict, panel_section_options: panel_section_options}) %>
+            </td>
+            </tr>
+            <% }); %>
+            </tbody>
+            </table>
+            </div>
+            </div>
+            <% } %>
+            </form>
+            </div>`
+        );
+    },
 
-    templateRepoDependencies: _.template(
-        [
-            '<div class="toolFormTitle">Repository Dependencies</div>',
-            '<div class="toolFormBody tables container-table" id="repository_dependencies">',
-            "<ul>",
-            "<li>Repository installation requires the following",
-            "<% if (has_repository_dependencies) { %>",
-            "<% _.each(repository_dependencies, function(dependency) { %>",
-            "<% dependency.repository_dependency_template = repository_dependency_template; %>",
-            "<%= repository_dependency_template(dependency) %>",
-            "<% }); %>",
-            "<% } %>",
-            "</li>",
-            "</ul>",
-            "</div>"
-        ].join("")
-    ),
+    templateRepoDependencies: function() {
+        return _.template(
+            `<div class="toolFormTitle">Repository Dependencies</div>
+            <div class="toolFormBody tables container-table" id="repository_dependencies">
+            <ul>
+            <li>Repository installation requires the following
+            <% if (has_repository_dependencies) { %>
+            <% _.each(repository_dependencies, function(dependency) { %>
+            <% dependency.repository_dependency_template = repository_dependency_template; %>
+            <%= repository_dependency_template(dependency) %>
+            <% }); %>
+            <% } %>
+            </li>
+            </ul>
+            </div>`
+        );
+    },
 
-    templateRepoDependency: _.template(
-        [
-            '<li id="metadata_<%= id %>" class="datasetRow repository_dependency_row">',
-            "Repository <b><%= repository.name %></b> revision <b><%= changeset_revision %></b> owned by <b><%= repository.owner %></b>",
-            "<% if (has_repository_dependencies) { %>",
-            '<ul class="child_dependencies">',
-            "<% _.each(repository_dependencies, function(dependency) { %>",
-            "<% dependency.repository_dependency_template = repository_dependency_template; %>",
-            "<%= repository_dependency_template(dependency) %>",
-            "<% }); %>",
-            "</ul>",
-            "<% } %>",
-            "</li>"
-        ].join("")
-    ),
+    templateRepoDependency: function() {
+        return _.template(
+            `<li id="metadata_<%= id %>" class="datasetRow repository_dependency_row">
+            Repository <b><%= repository.name %></b> revision <b><%= changeset_revision %></b> owned by <b><%= repository.owner %></b>
+            <% if (has_repository_dependencies) { %>
+            <ul class="child_dependencies">
+            <% _.each(repository_dependencies, function(dependency) { %>
+            <% dependency.repository_dependency_template = repository_dependency_template; %>
+            <%= repository_dependency_template(dependency) %>
+            <% }); %>
+            </ul>
+            <% } %>
+            </li>`
+        );
+    },
 
-    templateShedToolConf: _.template(
-        [
-            '<div class="toolFormTitle">Shed tool configuration file:</div>',
-            '<div class="toolFormBody">',
-            '<div class="form-row">',
-            '<select name="shed_tool_conf">',
-            "<% _.each(shed_tool_confs.options, function(conf) { %>",
-            '<option value="<%= conf.value %>"><%= conf.label %></option>',
-            "<% }); %>",
-            "</select>",
-            '<div class="toolParamHelp" style="clear: both;">Select the file whose <b>tool_path</b> setting you want used for installing repositories.</div>',
-            "</div>",
-            "</div>"
-        ].join("")
-    ),
+    templateShedToolConf: function() {
+        return _.template(
+            `<div class="toolFormTitle">Shed tool configuration file:</div>
+            <div class="toolFormBody">
+            <div class="form-row">
+            <select name="shed_tool_conf">
+            <% _.each(shed_tool_confs.options, function(conf) { %>
+            <option value="<%= conf.value %>"><%= conf.label %></option>
+            <% }); %>
+            </select>
+            <div class="toolParamHelp" style="clear: both;">Select the file whose <b>tool_path</b> setting you want used for installing repositories.</div>
+            </div>
+            </div>`
+        );
+    },
 
-    templateToolDependency: _.template(
-        [
-            "<% if (has_repository_dependencies) { %>",
-            "<% _.each(repository_dependencies, function(dependency) { %>",
-            "<% if (dependency.includes_tool_dependencies) { %>",
-            "<% dependency.tool_dependency_template = tool_dependency_template %>",
-            "<%= tool_dependency_template(dependency) %>",
-            "<% } %>",
-            "<% }); %>",
-            "<% } %>"
-        ].join("")
-    ),
+    // templateToolDependency: function(){
+    //     return _.template(
+    //         `<% if (has_repository_dependencies) { %>
+    //         <% _.each(repository_dependencies, function(dependency) { %>
+    //         <% if (dependency.includes_tool_dependencies) { %>
+    //         <% dependency.tool_dependency_template = tool_dependency_template %>
+    //         <%= tool_dependency_template(dependency) %>
+    //         <% } %>
+    //         <% }); %>
+    //         <% } %>`
+    //     );
+    // },
 
-    templateGlobalSectionCreate: _.template(
-        [
-            '<div id="tool_panel_section">',
-            '<div class="form-row" id="new_tps">',
-            '<input id="new_tool_panel_section" name="new_tool_panel_section" type="textfield" value="" size="40"/>',
-            '<input class="btn btn-primary global-select-tps-button" type="button" id="select_existing" value="Select existing" />',
-            '<div class="toolParamHelp" style="clear: both;">',
-            "Add a new tool panel section to contain the installed tools (optional).",
-            "</div>",
-            "</div>",
-            "</div>"
-        ].join("")
-    ),
+    templateGlobalSectionCreate: function() {
+        return _.template(
+            `<div id="tool_panel_section">
+            <div class="form-row" id="new_tps">
+            <input id="new_tool_panel_section" name="new_tool_panel_section" type="textfield" value="" size="40"/>
+            <input class="btn btn-primary global-select-tps-button" type="button" id="select_existing" value="Select existing" />
+            <div class="toolParamHelp" style="clear: both;">
+            Add a new tool panel section to contain the installed tools (optional).
+            </div>
+            </div>
+            </div>`
+        );
+    },
 
-    templateGlobalSectionSelect: _.template(
-        [
-            '<div id="tool_panel_section">',
-            '<div class="toolFormTitle">Tool Panel Section</div>',
-            '<div class="toolFormBody">',
-            '<div class="tab-pane" id="select_tps">',
-            '<select name="<%= name %>" id="<%= panel_section_dict.id %>">',
-            "<%= panel_section_options({sections: panel_section_dict.sections}) %>",
-            "</select>",
-            '<input class="btn btn-primary global-create-tps-button" type="button" id="create_new" value="Create new" />',
-            '<div class="toolParamHelp" style="clear: both;">',
-            "Select an existing tool panel section to contain the installed tools (optional).",
-            "</div>",
-            "</div>",
-            "</div>",
-            "</div>"
-        ].join("")
-    ),
+    templateGlobalSectionSelect: function() {
+        return _.template(
+            `<div id="tool_panel_section">
+            <div class="toolFormTitle">Tool Panel Section</div>
+            <div class="toolFormBody">
+            <div class="tab-pane" id="select_tps">
+            <select name="<%= name %>" id="<%= panel_section_dict.id %>">
+            <%= panel_section_options({sections: panel_section_dict.sections}) %>
+            </select>
+            <input class="btn btn-primary global-create-tps-button" type="button" id="create_new" value="Create new" />
+            <div class="toolParamHelp" style="clear: both;">
+            Select an existing tool panel section to contain the installed tools (optional).
+            </div>
+            </div>
+            </div>
+            </div>`
+        );
+    },
 
-    templateToolSectionCreate: _.template(
-        [
-            '<div id="new_tps_<%= tool.clean %>" data-clean="<%= tool.clean %>" class="form-row">',
-            '<input data-toolguid="<%= tool.guid %>" class="tool_panel_section_picker" size="40" name="new_tool_panel_section" id="new_tool_panel_section_<%= tool.clean %>" type="text">',
-            '<input id="per_tool_select_<%= tool.clean %>" class="btn btn-primary select-tps-button" data-toolguid="<%= tool.guid %>" value="Select existing" id="select_existing_<%= tool.clean %>" type="button">',
-            "</div>"
-        ].join("")
-    ),
+    templateToolSectionCreate: function() {
+        return _.template(
+            `<div id="new_tps_<%= tool.clean %>" data-clean="<%= tool.clean %>" class="form-row">
+            <input data-toolguid="<%= tool.guid %>" class="tool_panel_section_picker" size="40" name="new_tool_panel_section" id="new_tool_panel_section_<%= tool.clean %>" type="text">
+            <input id="per_tool_select_<%= tool.clean %>" class="btn btn-primary select-tps-button" data-toolguid="<%= tool.guid %>" value="Select existing" id="select_existing_<%= tool.clean %>" type="button">
+            </div>`
+        );
+    },
 
-    templateToolSectionSelect: _.template(
-        [
-            '<div id="select_tps_<%= tool.clean %>" data-clean="<%= tool.clean %>" class="tps_creator">',
-            '<select default="active" style="width: 30em;" data-toolguid="<%= tool.guid %>" class="tool_panel_section_picker" name="tool_panel_section_id" id="tool_panel_section_select_<%= tool.clean %>">',
-            "<%= panel_section_options({sections: panel_section_dict.sections}) %>",
-            "</select>",
-            '<input id="per_tool_create_<%= tool.clean %>" data-clean="<%= tool.clean %>" class="btn btn-primary create-tps-button" data-toolguid="<%= tool.guid %>" value="Create new" id="create_new_<%= tool.clean %>" type="button">',
-            '<div style="clear: both;" class="toolParamHelp"></div>',
-            "</div>"
-        ].join("")
-    ),
+    templateToolSectionSelect: function() {
+        return _.template(
+            `<div id="select_tps_<%= tool.clean %>" data-clean="<%= tool.clean %>" class="tps_creator">
+            <select default="active" style="width: 30em;" data-toolguid="<%= tool.guid %>" class="tool_panel_section_picker" name="tool_panel_section_id" id="tool_panel_section_select_<%= tool.clean %>">
+            <%= panel_section_options({sections: panel_section_dict.sections}) %>
+            </select>
+            <input id="per_tool_create_<%= tool.clean %>" data-clean="<%= tool.clean %>" class="btn btn-primary create-tps-button" data-toolguid="<%= tool.guid %>" value="Create new" id="create_new_<%= tool.clean %>" type="button">
+            <div style="clear: both;" class="toolParamHelp"></div>
+            </div>`
+        );
+    },
 
-    templatePanelSelectOptions: _.template(
-        [
-            "<% _.each(sections, function(section) { %>",
-            '<option value="<%= section.id %>"><%= section.name %></option>',
-            "<% }); %>"
-        ].join("")
-    )
+    templatePanelSelectOptions: function() {
+        return _.template(
+            `<% _.each(sections, function(section) { %>
+            <option value="<%= section.id %>"><%= section.name %></option>
+            <% }); %>`
+        );
+    }
 });
 
 export default {

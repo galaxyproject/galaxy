@@ -1,7 +1,8 @@
 <%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%def name="common_javascripts(repository)">
     <script type="text/javascript">
-        $(function(){
+        config.addInitialization(function() {
+            console.log("common.mako, common_javascripts");
 
             // --- Initialize sample trees
             $("#tree").dynatree({
@@ -73,88 +74,91 @@
 
 <%def name="container_javascripts()">
     <script type="text/javascript">
-        var store = window.bundleEntries.store;
-        var init_dependencies = function() {
-            var storage_id = "library-expand-state-${trans.security.encode_id(10000)}";
-            var restore_folder_state = function() {
-                var state = store.get(storage_id);
-                if (state) {
-                    for (var id in state) {
-                        if (state[id] === true) {
-                            var row = $("#" + id),
-                                index = row.parent().children().index(row);
-                            row.addClass("expanded").show();
-                            row.siblings().filter("tr[parent='" + index + "']").show();
-                        }
-                    }
-                }
-            };
-            var save_folder_state = function() {
-                var state = {};
-                $("tr.folderRow").each( function() {
-                    var folder = $(this);
-                    state[folder.attr("id")] = folder.hasClass("expanded");
-                });
-                store.set(storage_id, state);
-            };
-            $(".container-table").each(function() {
-                //var container_id = this.id.split( "-" )[0];
-                //alert( container_id );
-                var child_of_parent_cache = {};
-                // Recursively fill in children and descendants of each row
-                var process_row = function(q, parents) {
-                    // Find my index
-                    var parent = q.parent(),
-                        this_level = child_of_parent_cache[parent] || (child_of_parent_cache[parent] = parent.children());
-                    var index = this_level.index(q);
-                    // Find my immediate children
-                    var children = $(par_child_dict[index]);
-                    // Recursively handle them
-                    var descendants = children;
-                    children.each( function() {
-                        child_descendants = process_row( $(this), parents.add(q) );
-                        descendants = descendants.add(child_descendants);
-                    });
-                    // Set up expand / hide link
-                    var expand_fn = function() {
-                        if ( q.hasClass("expanded") ) {
-                            descendants.hide();
-                            descendants.removeClass("expanded");
-                            q.removeClass("expanded");
-                        } else {
-                            children.show();
-                            q.addClass("expanded");
-                        }
-                        save_folder_state();
-                    };
-                    $("." + q.attr("id") + "-click").click(expand_fn);
-                    // return descendants for use by parent
-                    return descendants;
-                }
-                // Initialize dict[parent_id] = rows_which_have_that_parent_id_as_parent_attr
-                var par_child_dict = {},
-                    no_parent = [];
-                $(this).find("tbody tr").each( function() {
-                    if ( $(this).attr("parent")) {
-                        var parent = $(this).attr("parent");
-                        if (par_child_dict[parent] !== undefined) {
-                            par_child_dict[parent].push(this);
-                        } else {
-                            par_child_dict[parent] = [this];
-                        }
-                    } else {
-                        no_parent.push(this);
-                    }
-                });
-                $(no_parent).each( function() {
-                    descendants = process_row( $(this), $([]) );
-                    descendants.hide();
-               });
-            });
-            restore_folder_state();
-        };
+        config.addInitialization(function() {
+            console.log("common.mako, container_javascripts");
 
-        var init_clipboard = function() {
+            var store = window.bundleEntries.store;
+            var init_dependencies = function() {
+                var storage_id = "library-expand-state-${trans.security.encode_id(10000)}";
+                var restore_folder_state = function() {
+                    var state = store.get(storage_id);
+                    if (state) {
+                        for (var id in state) {
+                            if (state[id] === true) {
+                                var row = $("#" + id),
+                                    index = row.parent().children().index(row);
+                                row.addClass("expanded").show();
+                                row.siblings().filter("tr[parent='" + index + "']").show();
+                            }
+                        }
+                    }
+                };
+                var save_folder_state = function() {
+                    var state = {};
+                    $("tr.folderRow").each( function() {
+                        var folder = $(this);
+                        state[folder.attr("id")] = folder.hasClass("expanded");
+                    });
+                    store.set(storage_id, state);
+                };
+                $(".container-table").each(function() {
+                    //var container_id = this.id.split( "-" )[0];
+                    //alert( container_id );
+                    var child_of_parent_cache = {};
+                    // Recursively fill in children and descendants of each row
+                    var process_row = function(q, parents) {
+                        // Find my index
+                        var parent = q.parent(),
+                            this_level = child_of_parent_cache[parent] || (child_of_parent_cache[parent] = parent.children());
+                        var index = this_level.index(q);
+                        // Find my immediate children
+                        var children = $(par_child_dict[index]);
+                        // Recursively handle them
+                        var descendants = children;
+                        children.each( function() {
+                            child_descendants = process_row( $(this), parents.add(q) );
+                            descendants = descendants.add(child_descendants);
+                        });
+                        // Set up expand / hide link
+                        var expand_fn = function() {
+                            if ( q.hasClass("expanded") ) {
+                                descendants.hide();
+                                descendants.removeClass("expanded");
+                                q.removeClass("expanded");
+                            } else {
+                                children.show();
+                                q.addClass("expanded");
+                            }
+                            save_folder_state();
+                        };
+                        $("." + q.attr("id") + "-click").click(expand_fn);
+                        // return descendants for use by parent
+                        return descendants;
+                    }
+                    // Initialize dict[parent_id] = rows_which_have_that_parent_id_as_parent_attr
+                    var par_child_dict = {},
+                        no_parent = [];
+                    $(this).find("tbody tr").each( function() {
+                        if ( $(this).attr("parent")) {
+                            var parent = $(this).attr("parent");
+                            if (par_child_dict[parent] !== undefined) {
+                                par_child_dict[parent].push(this);
+                            } else {
+                                par_child_dict[parent] = [this];
+                            }
+                        } else {
+                            no_parent.push(this);
+                        }
+                    });
+                    $(no_parent).each( function() {
+                        descendants = process_row( $(this), $([]) );
+                        descendants.hide();
+                    });
+                });
+                restore_folder_state();
+            };
+
+            var init_clipboard = function() {
                 %if hasattr( repository, 'clone_url' ):
                     $('#clone_clipboard').on('click', function( event ) {
                         event.preventDefault();
@@ -167,9 +171,8 @@
                         window.prompt("Copy to clipboard: Ctrl+C, Enter", "${ repository.share_url }");
                     });
                 %endif
-        };
+            };
 
-        $(function() {
             init_dependencies();
             init_clipboard();
         });

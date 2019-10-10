@@ -25,17 +25,6 @@ mapping:
     required: true
     mapping:
 
-      cookie_path:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          When running multiple Galaxy instances under separate URL prefixes on a
-          single hostname, you will want to set this to the same path as the prefix set
-          in the uWSGI "mount" configuration option above. This value becomes the "path"
-          attribute set in the cookie so the cookies from one instance will not clobber
-          those from another.
-
       database_connection:
         type: str
         default: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
@@ -113,10 +102,10 @@ mapping:
         default: false
         required: false
         desc: |
-          Enable's a per request sql debugging option. If this is set to true, append
-          ?sql_debug=1 to web request URLs to enable detailed logging on the backend of SQL
-          queries generated during that request. This is useful for debugging slow endpoints
-          during development.
+          Enables a per request sql debugging option. If this is set to true,
+          append ?sql_debug=1 to web request URLs to enable detailed logging on
+          the backend of SQL queries generated during that request. This is
+          useful for debugging slow endpoints during development.
 
       install_database_connection:
         type: str
@@ -138,6 +127,27 @@ mapping:
           Setting the following option to true will cause Galaxy to automatically
           migrate the database forward after updates. This is not recommended for production
           use.
+
+      database_wait:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Wait for database to become available instead of failing immediately.
+
+      database_wait_attempts:
+        type: int
+        default: 60
+        required: false
+        desc: |
+          Number of attempts before failing if database_wait is enabled.
+
+      database_wait_sleep:
+        type: float
+        default: 1.
+        required: false
+        desc: |
+          Time to sleep between attempts if database_wait is enabled (in seconds).
 
       file_path:
         type: str
@@ -387,9 +397,9 @@ mapping:
         default: ''
         required: false
         desc: |
-          Container resolvers configuration (beta). Setup a file describing container
-          resolvers to use when discovering containers for Galaxy. If this is set to
-          None, the default containers loaded is determined by
+          Container resolvers configuration (beta). Set up a file describing
+          container resolvers to use when discovering containers for Galaxy. If
+          this is set to None, the default containers loaded is determined by
           enable_beta_mulled_containers.
 
       involucro_path:
@@ -695,18 +705,6 @@ mapping:
           external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
-      collect_outputs_from:
-        type: str
-        default: new_file_path,job_working_directory
-        required: false
-        desc: |
-          Tools with a number of outputs not known until runtime can write these
-          outputs to a directory for collection by Galaxy when the job is done.
-          Previously, this directory was new_file_path, but using one global directory
-          can cause performance problems, so using job_working_directory ('.' or cwd
-          when a job is run) is encouraged.  By default, both are checked to avoid
-          breaking existing tools.
-
       object_store_config_file:
         type: str
         default: config/object_store_conf.xml
@@ -714,6 +712,14 @@ mapping:
         desc: |
           Configuration file for the object store
           If this is set and exists, it overrides any other objectstore settings.
+
+      object_store_store_by:
+        type: str
+        default: id
+        required: false
+        desc: |
+          What Dataset attribute is used to reference files in an ObjectStore implementation,
+          default is 'id' but can also be set to 'uuid' for more de-centralized usage.
 
       smtp_server:
         type: str
@@ -825,7 +831,6 @@ mapping:
           Activation grace period (in hours).  Activation is not forced (login is not
           disabled) until grace period has passed.  Users under grace period can't run
           jobs. Enter 0 to disable grace period.
-          Users with OpenID logins have grace period forever.
 
       inactivity_box_content:
         type: str
@@ -869,7 +874,7 @@ mapping:
         desc: |
           Galaxy can display data at various external browsers.  These options specify
           which browsers should be available.  URLs and builds available at these
-          browsers are defined in the specifield files.
+          browsers are defined in the specified files.
 
           If use_remote_user = True, display application servers will be denied access
           to Galaxy and so displaying datasets in these sites will fail.
@@ -941,6 +946,13 @@ mapping:
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
 
+      user_preferences_extra_conf_path:
+        type: str
+        default: 'config/user_preferences_extra_conf.yml'
+        required: false
+        desc: |
+          Location of the configuration file containing extra user preferences.
+
       default_locale:
         type: str
         default: auto
@@ -958,14 +970,15 @@ mapping:
         default: http://localhost:8080
         required: false
         desc: |
-          URL (with schema http/https) of the Galaxy instance as accessible within your
-          local network - if specified used as a default by pulsar file staging and
-          Jupyter Docker container for communicating back with Galaxy via the API.
+          URL (with schema http/https) of the Galaxy instance as accessible
+          within your local network - if specified used as a default by pulsar
+          file staging and Jupyter Docker container for communicating back with
+          Galaxy via the API.
 
-          If you are attempting to setup GIEs on Mac OS X with Docker for Mac - this
-          should likely be the IP address of your machine on the virtualbox network (vboxnet0)
-          setup for the Docker host VM. This can found by running ifconfig and using the
-          IP address of the network vboxnet0.
+          If you are attempting to set up GIEs on Mac OS X with Docker Desktop
+          for Mac and your Galaxy instance runs on port 8080 this should be
+          'http://host.docker.internal:8080'.  For more details see
+          https://docs.docker.com/docker-for-mac/networking/
 
       galaxy_infrastructure_web_port:
         type: int
@@ -1015,41 +1028,6 @@ mapping:
         required: false
         desc: |
           The URL linked by the "Support" link in the "Help" menu.
-
-      biostar_url:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_key_name:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_key:
-        type: str
-        default: ''
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_enable_bug_reports:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
-
-      biostar_never_authenticate:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable integration with a custom Biostar instance.
 
       citation_url:
         type: str
@@ -1315,7 +1293,7 @@ mapping:
         default: 8800
         required: false
         desc: |
-          Set the port and IP for the the dynamic proxy to bind to, this must match
+          Set the port and IP for the dynamic proxy to bind to, this must match
           the external configuration if dynamic_proxy_manage is False.
 
       dynamic_proxy_bind_ip:
@@ -1323,7 +1301,7 @@ mapping:
         default: 0.0.0.0
         required: false
         desc: |
-          Set the port and IP for the the dynamic proxy to bind to, this must match
+          Set the port and IP for the dynamic proxy to bind to, this must match
           the external configuration if dynamic_proxy_manage is False.
 
       dynamic_proxy_debug:
@@ -1553,11 +1531,11 @@ mapping:
 
       use_interactive:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Enable live debugging in your browser.  This should NEVER be enabled on a
-          public site.  Enabled in the sample config for development.
+          public site.
 
       monitor_thread_join_timeout:
         type: int
@@ -2091,12 +2069,13 @@ mapping:
           Enable beta workflow modules that should not yet be considered part of Galaxy's
           stable API.
 
-      enable_beta_workflow_format:
-        type: bool
-        default: false
+      default_workflow_export_format:
+        type: str
+        default: ga
         required: false
         desc: |
-          Enable import and export of workflows as Galaxy Format 2 workflows.
+          Default format for the export of workflows. Possible values are 'ga'
+          or 'format2'.
 
       force_beta_workflow_scheduled_min_steps:
         type: int
@@ -2171,29 +2150,6 @@ mapping:
         desc: |
           Force serial scheduling of workflows within the context of a particular history
 
-      enable_openid:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable authentication via OpenID.  Allows users to log in to their Galaxy
-          account by authenticating with an OpenID provider.
-
-      openid_config_file:
-        type: str
-        default: config/openid_conf.xml
-        required: false
-        desc: |
-          If OpenID is enabled, this configuration file specifies providers to use.
-          Falls back to the .sample variant in config if default does not exist.
-
-      openid_consumer_cache_path:
-        type: str
-        default: database/openid_consumer_cache
-        required: false
-        desc: |
-          If OpenID is enabled, consumer cache directory to use.
-
       enable_oidc:
         type: bool
         default: false
@@ -2241,6 +2197,20 @@ mapping:
           having a defined admin user in the database/config.  Only set this if you
           need to bootstrap Galaxy, you probably do not want to set this on public
           servers.
+
+      enable_openid:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable access to post-authentication options via OpenID.
+
+      openid_consumer_cache_path:
+        type: str
+        default: database/openid_consumer_cache
+        required: false
+        desc: |
+          If OpenID is enabled, consumer cache directory to use.
 
       enable_tool_tags:
         type: bool
@@ -2390,6 +2360,9 @@ mapping:
           notifies itself of new jobs via in-memory queues.  Jobs are run locally on
           the system on which Galaxy is started.  Advanced job running capabilities can
           be configured through the job configuration file.
+
+      job_config:
+        !include job_config_schema.yml
 
       default_job_resubmission_condition:
         type: str

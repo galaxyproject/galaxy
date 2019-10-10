@@ -287,7 +287,7 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         self._try_setup_with_driver()
 
     def setup_driver_and_session(self):
-        self.display = driver_factory.virtual_display_if_enabled(headless_selenium())
+        self.display = driver_factory.virtual_display_if_enabled(use_virtual_display())
         self.driver = get_driver()
         # New workflow index page does not degrade well to smaller sizes, needed
         # to increase this.
@@ -488,7 +488,20 @@ def headless_selenium():
         return False
 
     if GALAXY_TEST_SELENIUM_HEADLESS == "auto":
-        if driver_factory.is_virtual_display_available():
+        if driver_factory.is_virtual_display_available() or driver_factory.get_local_browser(GALAXY_TEST_SELENIUM_BROWSER) == "CHROME":
+            return True
+        else:
+            return False
+    else:
+        return asbool(GALAXY_TEST_SELENIUM_HEADLESS)
+
+
+def use_virtual_display():
+    if asbool(GALAXY_TEST_SELENIUM_REMOTE):
+        return False
+
+    if GALAXY_TEST_SELENIUM_HEADLESS == "auto":
+        if driver_factory.is_virtual_display_available() and not driver_factory.get_local_browser(GALAXY_TEST_SELENIUM_BROWSER) == "CHROME":
             return True
         else:
             return False
@@ -497,7 +510,10 @@ def headless_selenium():
 
 
 def get_local_driver():
-    return driver_factory.get_local_driver(GALAXY_TEST_SELENIUM_BROWSER)
+    return driver_factory.get_local_driver(
+        GALAXY_TEST_SELENIUM_BROWSER,
+        headless_selenium()
+    )
 
 
 def get_remote_driver():
@@ -516,9 +532,17 @@ class SeleniumSessionGetPostMixin(object):
         response = requests.get(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
         return response
 
-    def _post(self, route, data={}):
+    def _post(self, route, data=None, files=None):
         full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
-        response = requests.post(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
+        if data is None:
+            data = {}
+
+        if files is None:
+            files = data.get("__files", None)
+            if files is not None:
+                del data["__files"]
+
+        response = requests.post(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies(), files=files)
         return response
 
     def _delete(self, route, data={}):

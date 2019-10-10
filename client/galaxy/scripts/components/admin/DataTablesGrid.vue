@@ -1,17 +1,19 @@
 <template>
-  <base-grid :is-loaded="isLoaded" :columns="columns" id="data-tables-grid">
-    <template slot="title">
-      Current data table registry contains {{ rows.length }} data tables
-    </template>
-    <template slot="rows" v-for="(row, index) in rows">
-      <tr :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
-        <td><a href="javascript:void(0)" @click="handleTableNameClick">{{ row.name }}</a></td>
-        <td>{{ row.filename }}</td>
-        <td>{{ row.tool_data_path }}</td>
-        <td>{{ row.errors }}</td>
-      </tr>
-    </template>
-  </base-grid>
+    <base-grid :is-loaded="isLoaded" :columns="columns" id="data-tables-grid">
+        <template slot="title">
+            Current data table registry contains {{ rows.length }} data tables
+        </template>
+        <template slot="rows" v-for="(row, index) in rows">
+            <tr :key="row.id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+                <td>
+                    <a href="javascript:void(0)" @click="handleTableNameClick">{{ row.name }}</a>
+                </td>
+                <td>{{ row.filename }}</td>
+                <td>{{ row.tool_data_path }}</td>
+                <td>{{ row.errors }}</td>
+            </tr>
+        </template>
+    </base-grid>
 </template>
 
 <script>

@@ -1,7 +1,11 @@
 /**
  *  This class creates/wraps a default html select field as backbone class.
  */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import Utils from "utils/utils";
+import { keyedColorScheme } from "utils/color";
 import Buttons from "mvc/ui/ui-buttons";
 var View = Backbone.View.extend({
     initialize: function(options) {
@@ -161,7 +165,7 @@ var View = Backbone.View.extend({
             this.data2 = [];
             this.data2index = {};
             _.each(this.data, (option, index) => {
-                let d = {
+                const d = {
                     order: index,
                     id: option.value,
                     text: option.label,
@@ -197,7 +201,7 @@ var View = Backbone.View.extend({
                 },
                 formatResult: result => {
                     let extraTagWarning = "";
-                    let filteredTags = _.filter(result.tags, t => this.matched_tags.hasOwnProperty(t));
+                    const filteredTags = _.filter(result.tags, t => this.matched_tags.hasOwnProperty(t));
                     if (filteredTags.length > 5) {
                         extraTagWarning = `&nbsp;<div class="label label-warning">${filteredTags.length -
                             5} more tags</div>`;
@@ -208,9 +212,12 @@ var View = Backbone.View.extend({
                         ${_.reduce(
                             filteredTags.slice(0, 5),
                             (memo, tag) => {
-                                return `${memo}&nbsp;<div style="${Utils.generateTagStyle(
-                                    tag.slice(5)
-                                )}" class="badge badge-primary badge-tags">${_.escape(tag)}</div>`;
+                                const tagColors = keyedColorScheme(tag.slice(5));
+                                return `${memo}&nbsp;<div style="background-color: ${tagColors.primary}; color: ${
+                                    tagColors.contrasting
+                                }; border: 1px solid ${
+                                    tagColors.darker
+                                }" class="badge badge-primary badge-tags">${_.escape(tag)}</div>`;
                             },
                             ""
                         )}

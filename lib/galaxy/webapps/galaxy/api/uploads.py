@@ -6,7 +6,7 @@ import os
 import re
 
 from galaxy import exceptions
-from galaxy.web import expose_api_anonymous
+from galaxy.web import legacy_expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
@@ -16,11 +16,11 @@ class UploadsAPIController(BaseAPIController):
 
     READ_CHUNK_SIZE = 2 ** 16
 
-    @expose_api_anonymous
+    @legacy_expose_api_anonymous
     def index(self, trans, **kwd):
         raise exceptions.NotImplemented("Listing uploads is not implemented.")
 
-    @expose_api_anonymous
+    @legacy_expose_api_anonymous
     def create(self, trans, payload, **kwd):
         """
         POST /api/uploads/

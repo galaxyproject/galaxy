@@ -19,6 +19,7 @@ from datetime import datetime, timedelta
 from string import Template
 from uuid import UUID, uuid4
 
+from boltons.iterutils import remap
 from six import string_types
 from social_core.storage import AssociationMixin, CodeMixin, NonceMixin, PartialMixin, UserMixin
 from sqlalchemy import (
@@ -41,23 +42,25 @@ from sqlalchemy.orm import (
 )
 from sqlalchemy.schema import UniqueConstraint
 
+import galaxy.exceptions
 import galaxy.model.metadata
 import galaxy.model.orm.now
+import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
-from galaxy.managers import tags
-from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.item_attrs import get_item_annotation_str, UsesAnnotations
 from galaxy.model.util import pgcalc
 from galaxy.security import get_permitted_actions
 from galaxy.util import (directory_hash_id, ready_name_for_url,
                          unicodify, unique_id)
 from galaxy.util.bunch import Bunch
-from galaxy.util.dictifiable import Dictifiable
+from galaxy.util.dictifiable import dict_for, Dictifiable
+from galaxy.util.form_builder import (AddressField, CheckboxField, HistoryField,
+                                      PasswordField, SelectField, TextArea, TextField, WorkflowField,
+                                      WorkflowMappingField)
 from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
-                                     PasswordField, SelectField, TextArea, TextField, WorkflowField,
-                                     WorkflowMappingField)
 
 log = logging.getLogger(__name__)
 
@@ -148,6 +151,53 @@ class HasTags(object):
         return [t for t in self.tags if t.user_tname in AUTO_PROPAGATED_TAGS]
 
 
+class SerializationOptions(object):
+
+    def __init__(self, for_edit, serialize_dataset_objects=None, serialize_files_handler=None, strip_metadata_files=None):
+        self.for_edit = for_edit
+        if serialize_dataset_objects is None:
+            serialize_dataset_objects = for_edit
+        self.serialize_dataset_objects = serialize_dataset_objects
+        self.serialize_files_handler = serialize_files_handler
+        if strip_metadata_files is None:
+            # If we're editing datasets - keep MetadataFile(s) in tact. For pure export
+            # expect metadata tool to be rerun.
+            strip_metadata_files = not for_edit
+        self.strip_metadata_files = strip_metadata_files
+
+    def attach_identifier(self, id_encoder, obj, ret_val):
+        if self.for_edit and obj.id:
+            ret_val["id"] = obj.id
+        elif obj.id:
+            ret_val["encoded_id"] = id_encoder.encode_id(obj.id, kind='model_export')
+        else:
+            if not hasattr(obj, "temp_id"):
+                obj.temp_id = uuid4().hex
+            ret_val["encoded_id"] = obj.temp_id
+
+    def get_identifier(self, id_encoder, obj):
+        if self.for_edit and obj.id:
+            return obj.id
+        elif obj.id:
+            return id_encoder.encode_id(obj.id, kind='model_export')
+        else:
+            if not hasattr(obj, "temp_id"):
+                obj.temp_id = uuid4().hex
+            return obj.temp_id
+
+    def get_identifier_for_id(self, id_encoder, obj_id):
+        if self.for_edit and obj_id:
+            return obj_id
+        elif obj_id:
+            return id_encoder.encode_id(obj_id, kind='model_export')
+        else:
+            raise NotImplementedError()
+
+    def serialize_files(self, dataset, as_dict):
+        if self.serialize_files_handler is not None:
+            self.serialize_files_handler.serialize_files(dataset, as_dict)
+
+
 class HasName(object):
 
     def get_display_name(self):
@@ -171,6 +221,13 @@ class UsesCreateAndUpdateTime(object):
     def seconds_since_created(self):
         create_time = self.create_time or galaxy.model.orm.now.now()  # In case not yet flushed
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
+
+
+class WorkerProcess(UsesCreateAndUpdateTime):
+
+    def __init__(self, server_name, hostname):
+        self.server_name = server_name
+        self.hostname = hostname
 
 
 def cached_id(galaxy_model_object):
@@ -230,17 +287,28 @@ class JobLike(object):
         # TODO: Make iterable, concatenate with chain
         return self.text_metrics + self.numeric_metrics
 
-    def set_streams(self, stdout, stderr):
-        stdout = galaxy.util.unicodify(stdout) or u''
-        stderr = galaxy.util.unicodify(stderr) or u''
-        if (len(stdout) > galaxy.util.DATABASE_MAX_STRING_SIZE):
-            stdout = galaxy.util.shrink_string_by_size(stdout, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-            log.info("stdout for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY)
-        self.stdout = stdout
-        if (len(stderr) > galaxy.util.DATABASE_MAX_STRING_SIZE):
-            stderr = galaxy.util.shrink_string_by_size(stderr, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-            log.info("stderr for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY)
-        self.stderr = stderr
+    def set_streams(self, tool_stdout, tool_stderr, job_stdout=None, job_stderr=None, job_messages=None):
+        def shrink_and_unicodify(what, stream):
+            stream = galaxy.util.unicodify(stream) or u''
+            if (len(stream) > galaxy.util.DATABASE_MAX_STRING_SIZE):
+                stream = galaxy.util.shrink_string_by_size(tool_stdout, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+                log.info("%s for %s %d is greater than %s, only a portion will be logged to database", what, type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY)
+            return stream
+
+        self.tool_stdout = shrink_and_unicodify('tool_stdout', tool_stdout)
+        self.tool_stderr = shrink_and_unicodify('tool_stderr', tool_stderr)
+        if job_stdout is not None:
+            self.job_stdout = shrink_and_unicodify('job_stdout', job_stdout)
+        else:
+            self.job_stdout = None
+
+        if job_stderr is not None:
+            self.job_stderr = shrink_and_unicodify('job_stderr', job_stderr)
+        else:
+            self.job_stderr = None
+
+        if job_messages is not None:
+            self.job_messages = job_messages
 
     def log_str(self):
         extra = ""
@@ -251,6 +319,27 @@ class JobLike(object):
             extra += "unflushed"
 
         return "%s[%s,tool_id=%s]" % (self.__class__.__name__, extra, self.tool_id)
+
+    def get_stdout(self):
+        stdout = self.tool_stdout
+        if self.job_stdout:
+            stdout += "\n" + self.job_stdout
+        return stdout
+
+    def set_stdout(self, stdout):
+        raise NotImplementedError("Attempt to set stdout, must set tool_stdout or job_stdout")
+
+    def get_stderr(self):
+        stderr = self.tool_stderr
+        if self.job_stderr:
+            stderr += "\n" + self.job_stderr
+        return stderr
+
+    def set_stderr(self, stderr):
+        raise NotImplementedError("Attempt to set stdout, must set tool_stderr or job_stderr")
+
+    stdout = property(get_stdout, set_stdout)
+    stderr = property(get_stderr, set_stderr)
 
 
 class User(Dictifiable, RepresentById):
@@ -518,6 +607,24 @@ class PasswordResetToken(object):
         self.expiration_time = galaxy.model.orm.now.now() + timedelta(hours=24)
 
 
+class DynamicTool(Dictifiable):
+    dict_collection_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
+    dict_element_visible_keys = ('id', 'tool_id', 'tool_format', 'tool_version', 'uuid', 'active', 'hidden')
+
+    def __init__(self, tool_format=None, tool_id=None, tool_version=None,
+                 uuid=None, active=True, hidden=True, value=None):
+        self.tool_format = tool_format
+        self.tool_id = tool_id
+        self.tool_version = tool_version
+        self.active = active
+        self.hidden = hidden
+        self.value = value
+        if uuid is None:
+            self.uuid = uuid4()
+        else:
+            self.uuid = UUID(str(uuid))
+
+
 class BaseJobMetric(object):
 
     def __init__(self, plugin, metric_name, metric_value):
@@ -607,6 +714,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.imported = False
         self.handler = None
         self.exit_code = None
+        self.job_messages = None
         self._init_metrics()
         self.state_history.append(JobStateHistory(self))
 
@@ -619,6 +727,16 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             states.DELETED,
             states.DELETED_NEW,
         ]
+
+    def io_dicts(self):
+        inp_data = dict([(da.name, da.dataset) for da in self.input_datasets])
+        out_data = dict([(da.name, da.dataset) for da in self.output_datasets])
+        inp_data.update([(da.name, da.dataset) for da in self.input_library_datasets])
+        out_data.update([(da.name, da.dataset) for da in self.output_library_datasets])
+
+        out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in self.output_dataset_collection_instances])
+        out_collections.update([(obj.name, obj.dataset_collection) for obj in self.output_dataset_collections])
+        return inp_data, out_data, out_collections
 
     # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
     # for the mapper defined to the Job table.
@@ -883,14 +1001,57 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         if self.state == self.states.PAUSED:
             self.set_state(self.states.NEW)
             object_session(self).add(self)
-            for dataset in self.output_datasets:
-                dataset.info = None
+            jobs_to_resume = set()
+            for jtod in self.output_datasets:
+                jobs_to_resume.update(jtod.dataset.unpause_dependent_jobs(jobs_to_resume))
+            for job in jobs_to_resume:
+                job.resume(flush=False)
             if flush:
                 object_session(self).flush()
+
+    def serialize(self, id_encoder, serialization_options):
+        job_attrs = dict_for(self)
+        serialization_options.attach_identifier(id_encoder, self, job_attrs)
+        job_attrs['tool_id'] = self.tool_id
+        job_attrs['tool_version'] = self.tool_version
+        job_attrs['state'] = self.state
+        job_attrs['info'] = self.info
+        job_attrs['traceback'] = self.traceback
+        job_attrs['command_line'] = self.command_line
+        job_attrs['tool_stderr'] = self.tool_stderr
+        job_attrs['job_stderr'] = self.job_stderr
+        job_attrs['tool_stdout'] = self.tool_stdout
+        job_attrs['job_stdout'] = self.job_stdout
+        job_attrs['exit_code'] = self.exit_code
+        job_attrs['create_time'] = self.create_time.isoformat()
+        job_attrs['update_time'] = self.update_time.isoformat()
+
+        # Get the job's parameters
+        param_dict = self.raw_param_dict()
+        params_objects = {}
+        for key in param_dict:
+            params_objects[key] = safe_loads(param_dict[key])
+
+        def remap_objects(p, k, obj):
+            if isinstance(obj, dict) and "src" in obj and obj["src"] in ["hda", "hdca"]:
+                new_id = serialization_options.get_identifier_for_id(id_encoder, obj["id"])
+                new_obj = obj.copy()
+                new_obj["id"] = new_id
+                return (k, new_obj)
+            return (k, obj)
+
+        params_objects = remap(params_objects, remap_objects)
+
+        params_dict = {}
+        for name, value in params_objects.items():
+            params_dict[name] = value
+        job_attrs['params'] = params_dict
+        return job_attrs
 
     def to_dict(self, view='collection', system_details=False):
         rval = super(Job, self).to_dict(view=view)
         rval['tool_id'] = self.tool_id
+        rval['history_id'] = self.history_id
         if system_details:
             # System level details that only admins should have.
             rval['external_id'] = self.job_runner_external_id
@@ -980,8 +1141,6 @@ class Task(JobLike, RepresentById):
         self.task_runner_name = None
         self.task_runner_external_id = None
         self.job = job
-        self.stdout = ""
-        self.stderr = ""
         self.exit_code = None
         self.prepare_input_files_cmd = prepare_files_cmd
         self._init_metrics()
@@ -1026,12 +1185,6 @@ class Task(JobLike, RepresentById):
 
     def get_job(self):
         return self.job
-
-    def get_stdout(self):
-        return self.stdout
-
-    def get_stderr(self):
-        return self.stderr
 
     def get_prepare_input_files_cmd(self):
         return self.prepare_input_files_cmd
@@ -1108,12 +1261,6 @@ class Task(JobLike, RepresentById):
 
     def set_job(self, job):
         self.job = job
-
-    def set_stdout(self, stdout):
-        self.stdout = stdout
-
-    def set_stderr(self, stderr):
-        self.stderr = stderr
 
     def set_prepare_input_files_cmd(self, prepare_input_files_cmd):
         self.prepare_input_files_cmd = prepare_input_files_cmd
@@ -1209,6 +1356,15 @@ class ImplicitCollectionJobs(RepresentById):
     def job_list(self):
         return [icjja.job for icjja in self.jobs]
 
+    def serialize(self, id_encoder, serialization_options):
+        rval = dict_for(
+            self,
+            populated_state=self.populated_state,
+            jobs=[serialization_options.get_identifier(id_encoder, j_a.job) for j_a in self.jobs]
+        )
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
+
 
 class ImplicitCollectionJobsJobAssociation(RepresentById):
 
@@ -1254,15 +1410,16 @@ class JobExternalOutputMetadata(RepresentById):
 
 class JobExportHistoryArchive(RepresentById):
     def __init__(self, job=None, history=None, dataset=None, compressed=False,
-                 history_attrs_filename=None, datasets_attrs_filename=None,
-                 jobs_attrs_filename=None):
+                 history_attrs_filename=None):
         self.job = job
         self.history = history
         self.dataset = dataset
         self.compressed = compressed
         self.history_attrs_filename = history_attrs_filename
-        self.datasets_attrs_filename = datasets_attrs_filename
-        self.jobs_attrs_filename = jobs_attrs_filename
+
+    @property
+    def temp_directory(self):
+        return os.path.split(self.history_attrs_filename)[0]
 
     @property
     def up_to_date(self):
@@ -1558,6 +1715,21 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName, RepresentById):
     def activatable_datasets(self):
         # This needs to be a list
         return [hda for hda in self.datasets if not hda.dataset.deleted]
+
+    def serialize(self, id_encoder, serialization_options):
+
+        history_attrs = dict_for(
+            self,
+            create_time=self.create_time.__str__(),
+            update_time=self.update_time.__str__(),
+            name=unicodify(self.name),
+            hid_counter=self.hid_counter,
+            genome_build=self.genome_build,
+            annotation=unicodify(get_item_annotation_str(object_session(self), self.user, self)),
+            tags=self.make_tag_string_list(),
+        )
+        serialization_options.attach_identifier(id_encoder, self, history_attrs)
+        return history_attrs
 
     def to_dict(self, view='collection', value_mapper=None):
 
@@ -1911,8 +2083,12 @@ class DefaultHistoryPermissions(RepresentById):
 
 class StorableObject(object):
 
-    def __init__(self, id, **kwargs):
+    def __init__(self, id, uuid):
         self.id = id
+        if uuid is None:
+            self.uuid = uuid4()
+        else:
+            self.uuid = UUID(str(uuid))
 
 
 class Dataset(StorableObject, RepresentById):
@@ -1963,7 +2139,7 @@ class Dataset(StorableObject, RepresentById):
     engine = None
 
     def __init__(self, id=None, state=None, external_filename=None, extra_files_path=None, file_size=None, purgable=True, uuid=None):
-        super(Dataset, self).__init__(id=id)
+        super(Dataset, self).__init__(id=id, uuid=uuid)
         self.state = state
         self.deleted = False
         self.purged = False
@@ -1972,20 +2148,19 @@ class Dataset(StorableObject, RepresentById):
         self.external_extra_files_path = None
         self._extra_files_path = extra_files_path
         self.file_size = file_size
-        if uuid is None:
-            self.uuid = uuid4()
-        else:
-            self.uuid = UUID(str(uuid))
+        self.sources = []
+        self.hashes = []
 
     def in_ready_state(self):
         return self.state in self.ready_states
 
     def get_file_name(self):
         if not self.external_filename:
-            assert self.id is not None, "ID must be set before filename used (commit the object)"
             assert self.object_store is not None, "Object Store has not been initialized for dataset %s" % self.id
-            filename = self.object_store.get_filename(self)
-            return filename
+            if self.object_store.exists(self):
+                return self.object_store.get_filename(self)
+            else:
+                return ''
         else:
             filename = self.external_filename
         # Make filename absolute
@@ -2003,9 +2178,15 @@ class Dataset(StorableObject, RepresentById):
         # actual database column so if SA instantiates this object - the
         # attribute won't exist yet.
         if not getattr(self, "external_extra_files_path", None):
-            return self.object_store.get_filename(self, dir_only=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id)
+            if self.object_store.exists(self, dir_only=True, extra_dir=self._extra_files_rel_path):
+                return self.object_store.get_filename(self, dir_only=True, extra_dir=self._extra_files_rel_path)
+            return ''
         else:
             return os.path.abspath(self.external_extra_files_path)
+
+    def create_extra_files_path(self):
+        if not self.extra_files_path_exists():
+            self.object_store.create(self, dir_only=True, extra_dir=self._extra_files_rel_path)
 
     def set_extra_files_path(self, extra_files_path):
         if not extra_files_path:
@@ -2015,7 +2196,12 @@ class Dataset(StorableObject, RepresentById):
     extra_files_path = property(get_extra_files_path, set_extra_files_path)
 
     def extra_files_path_exists(self):
-        return self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True)
+        return self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True)
+
+    @property
+    def _extra_files_rel_path(self):
+        store_by = getattr(self.object_store, "store_by", "id")
+        return self._extra_files_path or "dataset_%s_files" % getattr(self, store_by)
 
     def _calculate_size(self):
         if self.external_filename:
@@ -2064,7 +2250,7 @@ class Dataset(StorableObject, RepresentById):
         if self.file_size is None:
             self.set_size()
         self.total_size = self.file_size or 0
-        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
+        if self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True):
             for root, dirs, files in os.walk(self.extra_files_path):
                 self.total_size += sum([os.path.getsize(os.path.join(root, file)) for file in files if os.path.exists(os.path.join(root, file))])
 
@@ -2089,11 +2275,12 @@ class Dataset(StorableObject, RepresentById):
     def full_delete(self):
         """Remove the file and extra files, marks deleted and purged"""
         # os.unlink( self.file_name )
-        self.object_store.delete(self)
-        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
-            self.object_store.delete(self, entire_dir=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True)
-        # if os.path.exists( self.extra_files_path ):
-        #     shutil.rmtree( self.extra_files_path )
+        try:
+            self.object_store.delete(self)
+        except galaxy.exceptions.ObjectNotFound:
+            pass
+        if self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True):
+            self.object_store.delete(self, entire_dir=True, extra_dir=self._extra_files_rel_path, dir_only=True)
         # TODO: purge metadata files
         self.deleted = True
         self.purged = True
@@ -2117,6 +2304,51 @@ class Dataset(StorableObject, RepresentById):
             if dp.action == trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action:
                 return True
         return False
+
+    def serialize(self, id_encoder, serialization_options):
+        # serialize Dataset objects only for jobs that can actually modify these models.
+        assert serialization_options.serialize_dataset_objects
+
+        def to_int(n):
+            return int(n) if n is not None else 0
+
+        rval = dict_for(
+            self,
+            state=self.state,
+            deleted=self.deleted,
+            purged=self.purged,
+            external_filename=self.external_filename,
+            _extra_files_path=self._extra_files_path,
+            file_size=to_int(self.file_size),
+            object_store_id=self.object_store_id,
+            total_size=to_int(self.total_size),
+            uuid=str(self.uuid or '') or None,
+            hashes=list(map(lambda h: h.serialize(id_encoder, serialization_options), self.hashes))
+        )
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
+
+
+class DatasetSource(RepresentById):
+    """ """
+
+
+class DatasetSourceHash(RepresentById):
+    """ """
+
+
+class DatasetHash(RepresentById):
+    """ """
+    def serialize(self, id_encoder, serialization_options):
+        # serialize Dataset objects only for jobs that can actually modify these models.
+        rval = dict_for(
+            self,
+            hash_function=self.hash_function,
+            hash_value=self.hash_value,
+            extra_files_path=self.extra_files_path,
+        )
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
 
 
 def datatype_for_extension(extension, datatypes_registry=None):
@@ -2191,8 +2423,10 @@ class DatasetInstance(object):
 
     def set_dataset_state(self, state):
         if self.raw_set_dataset_state(state):
-            object_session(self).add(self.dataset)
-            object_session(self).flush()  # flush here, because hda.flush() won't flush the Dataset object
+            sa_session = object_session(self)
+            if sa_session:
+                object_session(self).add(self.dataset)
+                object_session(self).flush()  # flush here, because hda.flush() won't flush the Dataset object
     state = property(get_dataset_state, set_dataset_state)
 
     def get_file_name(self):
@@ -2236,6 +2470,15 @@ class DatasetInstance(object):
         # Needs to accept a MetadataCollection, a bunch, or a dict
         self._metadata = self.metadata.make_dict_copy(bunch)
     metadata = property(get_metadata, set_metadata)
+
+    @property
+    def metadata_file_types(self):
+        meta_types = []
+        for meta_type in self.metadata.spec.keys():
+            if isinstance(self.metadata.spec[meta_type].param, galaxy.model.metadata.FileParameter):
+                meta_types.append(meta_type)
+        return meta_types
+
     # This provide backwards compatibility with using the old dbkey
     # field in the database.  That field now maps to "old_dbkey" (see mapping.py).
 
@@ -2276,6 +2519,16 @@ class DatasetInstance(object):
     def has_data(self):
         """Detects whether there is any data"""
         return self.dataset.has_data()
+
+    def get_created_from_basename(self):
+        return self.dataset.created_from_basename
+
+    def set_created_from_basename(self, created_from_basename):
+        if self.dataset.created_from_basename is not None:
+            raise Exception("Underlying dataset already has a created_from_basename set.")
+        self.dataset.created_from_basename = created_from_basename
+
+    created_from_basename = property(get_created_from_basename, set_created_from_basename)
 
     def get_raw_data(self):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
@@ -2566,6 +2819,40 @@ class DatasetInstance(object):
 
         return msg
 
+    def serialize(self, id_encoder, serialization_options, for_link=False):
+        if for_link:
+            rval = dict_for(
+                self
+            )
+            serialization_options.attach_identifier(id_encoder, self, rval)
+            return rval
+
+        metadata = _prepare_metadata_for_serialization(id_encoder, serialization_options, self.metadata)
+        rval = dict_for(
+            self,
+            create_time=self.create_time.__str__(),
+            update_time=self.update_time.__str__(),
+            name=unicodify(self.name),
+            info=unicodify(self.info),
+            blurb=self.blurb,
+            peek=self.peek,
+            extension=self.extension,
+            metadata=metadata,
+            designation=self.designation,
+            deleted=self.deleted,
+            visible=self.visible,
+            dataset_uuid=(lambda uuid: str(uuid) if uuid else None)(self.dataset.uuid),
+        )
+
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
+
+    def _handle_serialize_files(self, id_encoder, serialization_options, rval):
+        if serialization_options.serialize_dataset_objects:
+            rval["dataset"] = self.dataset.serialize(id_encoder, serialization_options)
+        else:
+            serialization_options.serialize_files(self, rval)
+
 
 class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnotations,
                                 HasName, RepresentById):
@@ -2772,6 +3059,31 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                 rval += self.get_total_size()
         return rval
 
+    def serialize(self, id_encoder, serialization_options, for_link=False):
+        if for_link:
+            rval = dict_for(
+                self
+            )
+            serialization_options.attach_identifier(id_encoder, self, rval)
+            return rval
+
+        rval = super(HistoryDatasetAssociation, self).serialize(id_encoder, serialization_options)
+        rval["hid"] = self.hid
+        rval["annotation"] = unicodify(getattr(self, 'annotation', ''))
+        rval["tags"] = self.make_tag_string_list()
+        if self.history:
+            rval["history_encoded_id"] = serialization_options.get_identifier(id_encoder, self.history)
+
+        # Handle copied_from_history_dataset_association information...
+        copied_from_history_dataset_association_chain = []
+        src_hda = self
+        while src_hda.copied_from_history_dataset_association:
+            src_hda = src_hda.copied_from_history_dataset_association
+            copied_from_history_dataset_association_chain.append(serialization_options.get_identifier(id_encoder, src_hda))
+        rval["copied_from_history_dataset_association_id_chain"] = copied_from_history_dataset_association_chain
+        self._handle_serialize_files(id_encoder, serialization_options, rval)
+        return rval
+
     def to_dict(self, view='collection', expose_dataset_path=False):
         """
         Return attributes of this HDA that are exposed using the API.
@@ -2825,6 +3137,20 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                 val = getattr(hda.datatype, name)
             rval['metadata_' + name] = val
         return rval
+
+    def unpause_dependent_jobs(self, jobs=None):
+        if self.state == self.states.PAUSED:
+            self.state = self.states.NEW
+            self.info = None
+        jobs_to_unpause = jobs or set()
+        for jtida in self.dependent_jobs:
+            if jtida.job not in jobs_to_unpause:
+                jobs_to_unpause.add(jtida.job)
+                for jtoda in jtida.job.output_datasets:
+                    jobs_to_unpause.update(
+                        jtoda.dataset.unpause_dependent_jobs(jobs=jobs_to_unpause)
+                    )
+        return jobs_to_unpause
 
     @property
     def history_content_type(self):
@@ -2889,6 +3215,19 @@ class Library(Dictifiable, HasName, RepresentById):
         self.synopsis = synopsis
         self.root_folder = root_folder
 
+    def serialize(self, id_encoder, serialization_options):
+        rval = dict_for(
+            self,
+            name=self.name,
+            description=self.description,
+            synopsis=self.synopsis,
+        )
+        if self.root_folder:
+            rval["root_folder"] = self.root_folder.serialize(id_encoder, serialization_options)
+
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
+
     def to_dict(self, view='collection', value_mapper=None):
         """
         We prepend an F to folders.
@@ -2932,12 +3271,14 @@ class Library(Dictifiable, HasName, RepresentById):
 class LibraryFolder(Dictifiable, HasName, RepresentById):
     dict_element_visible_keys = ['id', 'parent_id', 'name', 'description', 'item_count', 'genome_build', 'update_time', 'deleted']
 
-    def __init__(self, name=None, description=None, item_count=0, order_id=None):
+    def __init__(self, name=None, description=None, item_count=0, order_id=None, genome_build=None):
         self.name = name or "Unnamed folder"
         self.description = description
         self.item_count = item_count
         self.order_id = order_id
-        self.genome_build = None
+        self.genome_build = genome_build
+        self.folders = []
+        self.datasets = []
 
     def add_library_dataset(self, library_dataset, genome_build=None):
         library_dataset.folder_id = self.id
@@ -2955,6 +3296,28 @@ class LibraryFolder(Dictifiable, HasName, RepresentById):
     def activatable_library_datasets(self):
         # This needs to be a list
         return [ld for ld in self.datasets if ld.library_dataset_dataset_association and not ld.library_dataset_dataset_association.dataset.deleted]
+
+    def serialize(self, id_encoder, serialization_options):
+        rval = dict_for(
+            self,
+            name=self.name,
+            description=self.description,
+            genome_build=self.genome_build,
+            item_count=self.item_count,
+            order_id=self.order_id,
+            # update_time=self.update_time,
+            deleted=self.deleted,
+        )
+        folders = []
+        for folder in self.folders:
+            folders.append(folder.serialize(id_encoder, serialization_options))
+        rval["folders"] = folders
+        datasets = []
+        for dataset in self.datasets:
+            datasets.append(dataset.serialize(id_encoder, serialization_options))
+        rval['datasets'] = datasets
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
 
     def to_dict(self, view='collection', value_mapper=None):
         rval = super(LibraryFolder, self).to_dict(view=view, value_mapper=value_mapper)
@@ -3026,6 +3389,17 @@ class LibraryDataset(RepresentById):
     def display_name(self):
         self.library_dataset_dataset_association.display_name()
 
+    def serialize(self, id_encoder, serialization_options):
+        rval = dict_for(
+            self,
+            name=self.name,
+            info=self.info,
+            order_id=self.order_id,
+            ldda=self.library_dataset_dataset_association.serialize(id_encoder, serialization_options, for_link=True),
+        )
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
+
     def to_dict(self, view='collection'):
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
@@ -3039,6 +3413,7 @@ class LibraryDataset(RepresentById):
                     state=ldda.state,
                     name=ldda.name,
                     file_name=ldda.file_name,
+                    created_from_basename=ldda.created_from_basename,
                     uploaded_by=ldda.user.email,
                     message=ldda.message,
                     date_uploaded=ldda.create_time.isoformat(),
@@ -3097,7 +3472,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                                         copied_from_library_dataset_dataset_association=self,
                                         history=target_history)
 
-        tag_manager = tags.GalaxyTagManager(sa_session)
+        tag_manager = galaxy.model.tags.GalaxyTagHandler(sa_session)
         src_ldda_tags = tag_manager.get_tags_str(self.tags)
         tag_manager.apply_item_tags(user=self.user, item=hda, tags_str=src_ldda_tags)
 
@@ -3127,7 +3502,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                                                 copied_from_library_dataset_dataset_association=self,
                                                 folder=target_folder)
 
-        tag_manager = tags.GalaxyTagManager(sa_session)
+        tag_manager = galaxy.model.tags.GalaxyTagHandler(sa_session)
         src_ldda_tags = tag_manager.get_tags_str(self.tags)
         tag_manager.apply_item_tags(user=self.user, item=ldda, tags_str=src_ldda_tags)
 
@@ -3152,6 +3527,18 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
 
     def has_manage_permissions_roles(self, trans):
         return self.dataset.has_manage_permissions_roles(trans)
+
+    def serialize(self, id_encoder, serialization_options, for_link=False):
+        if for_link:
+            rval = dict_for(
+                self
+            )
+            serialization_options.attach_identifier(id_encoder, self, rval)
+            return rval
+
+        rval = super(LibraryDatasetDatasetAssociation, self).serialize(id_encoder, serialization_options)
+        self._handle_serialize_files(id_encoder, serialization_options, rval)
+        return rval
 
     def to_dict(self, view='collection'):
         # Since this class is a proxy to rather complex attributes we want to
@@ -3179,7 +3566,8 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, RepresentById):
                     data_type=ldda.datatype.__class__.__module__ + '.' + ldda.datatype.__class__.__name__,
                     genome_build=ldda.dbkey,
                     misc_info=ldda.info,
-                    misc_blurb=ldda.blurb)
+                    misc_blurb=ldda.blurb,
+                    created_from_basename=ldda.created_from_basename)
         if ldda.dataset.uuid is None:
             rval['uuid'] = None
         else:
@@ -3445,14 +3833,13 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
         self.populated_state = DatasetCollection.populated_states.FAILED
         self.populated_state_message = message
 
-    def finalize(self):
+    def finalize(self, collection_type_description):
         # All jobs have written out their elements - everything should be populated
         # but might not be - check that second case! (TODO)
         self.mark_as_populated()
-        if self.has_subcollections:
-            # THIS IS WRONG - SHOULD ONLY BE TO THE DEPTH OF THE MAP OVER.
+        if self.has_subcollections and collection_type_description.has_subcollections():
             for element in self.elements:
-                element.child_collection.finalize()
+                element.child_collection.finalize(collection_type_description.child_collection_type_description())
 
     @property
     def dataset_instances(self):
@@ -3533,6 +3920,16 @@ class DatasetCollection(Dictifiable, UsesAnnotations, RepresentById):
     @property
     def has_subcollections(self):
         return ":" in self.collection_type
+
+    def serialize(self, id_encoder, serialization_options):
+        rval = dict_for(
+            self,
+            type=self.collection_type,
+            populated_state=self.populated_state,
+            elements=list(map(lambda e: e.serialize(id_encoder, serialization_options), self.elements))
+        )
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
 
 
 class DatasetCollectionInstance(HasName):
@@ -3672,6 +4069,45 @@ class HistoryDatasetCollectionAssociation(DatasetCollectionInstance,
                 break
         if len(rval) > 0:
             return rval if multiple else rval[0]
+
+    def serialize(self, id_encoder, serialization_options, for_link=False):
+        if for_link:
+            rval = dict_for(
+                self
+            )
+            serialization_options.attach_identifier(id_encoder, self, rval)
+            return rval
+
+        rval = dict_for(
+            self,
+            display_name=self.display_name(),
+            state=self.state,
+            hid=self.hid,
+            collection=self.collection.serialize(id_encoder, serialization_options),
+            implicit_output_name=self.implicit_output_name,
+        )
+        if self.history:
+            rval["history_encoded_id"] = serialization_options.get_identifier(id_encoder, self.history)
+
+        implicit_input_collections = []
+        for implicit_input_collection in self.implicit_input_collections:
+            input_hdca = implicit_input_collection.input_dataset_collection
+            implicit_input_collections.append({
+                "name": implicit_input_collection.name,
+                "input_dataset_collection": serialization_options.get_identifier(id_encoder, input_hdca)
+            })
+        if implicit_input_collections:
+            rval["implicit_input_collections"] = implicit_input_collections
+
+        # Handle copied_from_history_dataset_association information...
+        copied_from_history_dataset_collection_association_chain = []
+        src_hdca = self
+        while src_hdca.copied_from_history_dataset_collection_association:
+            src_hdca = src_hdca.copied_from_history_dataset_collection_association
+            copied_from_history_dataset_collection_association_chain.append(serialization_options.get_identifier(id_encoder, src_hdca))
+        rval["copied_from_history_dataset_collection_association_id_chain"] = copied_from_history_dataset_collection_association_chain
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        return rval
 
     def to_dict(self, view='collection'):
         original_dict_value = super(HistoryDatasetCollectionAssociation, self).to_dict(view=view)
@@ -3865,6 +4301,21 @@ class DatasetCollectionElement(Dictifiable, RepresentById):
             element_identifier=self.element_identifier,
         )
         return new_element
+
+    def serialize(self, id_encoder, serialization_options):
+        rval = dict_for(
+            self,
+            element_type=self.element_type,
+            element_index=self.element_index,
+            element_identifier=self.element_identifier
+        )
+        serialization_options.attach_identifier(id_encoder, self, rval)
+        element_obj = self.element_object
+        if isinstance(element_obj, HistoryDatasetAssociation):
+            rval["hda"] = element_obj.serialize(id_encoder, serialization_options, for_link=True)
+        else:
+            rval["child_collection"] = element_obj.serialize(id_encoder, serialization_options)
+        return rval
 
 
 class Event(RepresentById):
@@ -4085,6 +4536,7 @@ class WorkflowStep(RepresentById):
         self.tool_id = None
         self.tool_inputs = None
         self.tool_errors = None
+        self.dynamic_tool = None
         self.position = None
         self.inputs = []
         self.config = None
@@ -4092,6 +4544,10 @@ class WorkflowStep(RepresentById):
         self.uuid = uuid4()
         self.workflow_outputs = []
         self._input_connections_by_name = None
+
+    @property
+    def tool_uuid(self):
+        return self.dynamic_tool and self.dynamic_tool.uuid
 
     def get_input(self, input_name):
         for step_input in self.inputs:
@@ -4441,6 +4897,9 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         return [wid for wid in query.all()]
 
     def add_output(self, workflow_output, step, output_object):
+        if step.type == 'parameter_input':
+            # TODO: these should be properly tracked.
+            return
         if output_object.history_content_type == "dataset":
             output_assoc = WorkflowInvocationOutputDatasetAssociation()
             output_assoc.workflow_invocation = self
@@ -4729,8 +5188,8 @@ class WorkflowInvocationStepOutputDatasetCollectionAssociation(Dictifiable, Repr
 
 class MetadataFile(StorableObject, RepresentById):
 
-    def __init__(self, dataset=None, name=None):
-        super(MetadataFile, self).__init__(id=None)
+    def __init__(self, dataset=None, name=None, uuid=None):
+        super(MetadataFile, self).__init__(id=None, uuid=uuid)
         if isinstance(dataset, HistoryDatasetAssociation):
             self.history_dataset = dataset
         elif isinstance(dataset, LibraryDatasetDatasetAssociation):
@@ -4739,17 +5198,21 @@ class MetadataFile(StorableObject, RepresentById):
 
     @property
     def file_name(self):
-        assert self.id is not None, "ID must be set before filename used (commit the object)"
         # Ensure the directory structure and the metadata file object exist
         try:
             da = self.history_dataset or self.library_dataset
             if self.object_store_id is None and da is not None:
                 self.object_store_id = da.dataset.object_store_id
-            if not da.dataset.object_store.exists(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id):
-                da.dataset.object_store.create(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id)
-            path = da.dataset.object_store.get_filename(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % self.id)
+            object_store = da.dataset.object_store
+            store_by = object_store.store_by
+            identifier = getattr(self, store_by)
+            alt_name = "metadata_%s.dat" % identifier
+            if not object_store.exists(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name):
+                object_store.create(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name)
+            path = object_store.get_filename(self, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name=alt_name)
             return path
         except AttributeError:
+            assert self.id is not None, "ID must be set before MetadataFile used without an HDA/LDDA (commit the object)"
             # In case we're not working with the history_dataset
             path = os.path.join(Dataset.file_path, '_metadata_files', *directory_hash_id(self.id))
             # Create directory if it does not exist
@@ -4761,6 +5224,12 @@ class MetadataFile(StorableObject, RepresentById):
                     raise
             # Return filename inside hashed directory
             return os.path.abspath(os.path.join(path, "metadata_%d.dat" % self.id))
+
+    def serialize(self, id_encoder, serialization_options):
+        as_dict = dict_for(self)
+        serialization_options.attach_identifier(id_encoder, self, as_dict)
+        as_dict["uuid"] = str(self.uuid or '') or None
+        return as_dict
 
 
 class FormDefinition(Dictifiable, RepresentById):
@@ -4840,13 +5309,6 @@ class UserAddress(RepresentById):
                 'postal_code'  : sanitize_html(self.postal_code),
                 'country'      : sanitize_html(self.country),
                 'phone'        : sanitize_html(self.phone)}
-
-
-class UserOpenID(RepresentById):
-    def __init__(self, user=None, session=None, openid=None):
-        self.user = user
-        self.session = session
-        self.openid = openid
 
 
 class PSAAssociation(AssociationMixin, RepresentById):
@@ -5056,6 +5518,21 @@ class UserAuthnzToken(UserMixin, RepresentById):
         cls.sa_session.add(instance)
         cls.sa_session.flush()
         return instance
+
+
+class CustosAuthnzToken(RepresentById):
+
+    def __init__(self, user, external_user_id, provider, access_token, id_token, refresh_token, expiration_time, refresh_expiration_time):
+        self.id = None
+        # 'user' is a backref to model.User
+        self.user = user
+        self.external_user_id = external_user_id
+        self.provider = provider
+        self.access_token = access_token
+        self.id_token = id_token
+        self.refresh_token = refresh_token
+        self.expiration_time = expiration_time
+        self.refresh_expiration_time = refresh_expiration_time
 
 
 class CloudAuthz(RepresentById):
@@ -5426,3 +5903,19 @@ def copy_list(lst, *args, **kwds):
         return lst
     else:
         return [el.copy(*args, **kwds) for el in lst]
+
+
+def _prepare_metadata_for_serialization(id_encoder, serialization_options, metadata):
+    """ Prepare metatdata for exporting. """
+    processed_metadata = {}
+    for name, value in metadata.items():
+        # Metadata files are not needed for export because they can be
+        # regenerated.
+        if isinstance(value, MetadataFile):
+            if serialization_options.strip_metadata_files:
+                continue
+            else:
+                value = value.serialize(id_encoder, serialization_options)
+        processed_metadata[name] = value
+
+    return processed_metadata

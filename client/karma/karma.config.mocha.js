@@ -1,41 +1,69 @@
 /**
  * Runs mocha tests
+ * 
+ * Individual files can be run by passing in a comma-delimited list
+ * of globs for the karma config like this:
+ * 
+ *    npm run test-watch watch-only="Tags.test.js,something.js,doodads.js" 
  */
 
 const baseKarmaConfig = require("./karma.config.base");
 
-const single_pack = (process.env.GALAXY_TEST_AS_SINGLE_PACK == "true");
-
-const testBundles = [
-    "**/unitTestBundle.js",
-    "**/mocha/test.js"
-];
-
-const separateTests = [
+// Complete list of unit tests
+const defaultFiles = [
+    // component/module tests
     "**/*.test.js",
+    // pre-existing rules definition tests
     "**/mocha/tests/*_tests.js"
 ];
 
+function getTestFiles() {
+    // check for user-supplied list
+    let userPatterns = getUserTestGlobs();
+    let patterns = userPatterns.length ? userPatterns : defaultFiles;
+    return patterns.map(pattern => ({ pattern, watched: true}));
+}
+
+// command line arg "watch-only" can be a list of file globs 
+// for karma to watch
+function getUserTestGlobs() {
+    let userGlobs = process.argv.find(s => s.startsWith("watch-only"));
+    return userGlobs ? processUserGlobs(userGlobs) : [];
+}
+
+// split command line arg into an array
+function processUserGlobs(val) {
+    let result = [];
+    let fileListString = val.split("=")[1];
+    if (fileListString) {
+        result = fileListString.split(",")
+            .map(s => s.trim())
+            .map(checkGlobPrefix);
+    }
+    return result;
+}
+
+// prefixes user-supplied glob with directory wildcard
+function checkGlobPrefix(glob) {
+    return glob.startsWith("**/") ? glob : `**/${glob}`;
+}
+
+
 module.exports = function (config) {
 
-    console.log("single_pack?", single_pack);
-
-    // pick all separate tests or the dynamic test-bundles
-    let files = single_pack
-        ? testBundles
-        : separateTests;
-
-    let preprocessors = files.reduce((result, path) => {
-        result[path] = ["webpack"];
-        return result;
-    }, {});
+    let files = [
+        "../../node_modules/@babel/polyfill/dist/polyfill.js",
+        ...getTestFiles()
+    ];
 
     let settings = Object.assign({}, baseKarmaConfig, {
-        files: files,
+        files,
+        preprocessors: {
+            "**/*.js": ["webpack"]
+        },
         exclude: ["**/qunit/*"],
-        preprocessors: preprocessors,
         reporters: ["mocha"],
-        frameworks: ["polyfill", "mocha", "chai"]
+        frameworks: ["mocha", "chai"]
     });
 
     config.set(settings);

@@ -1,3 +1,4 @@
+import os
 from contextlib import contextmanager
 
 from six.moves.urllib.parse import urlencode
@@ -7,6 +8,7 @@ from .api_asserts import (
     assert_has_keys,
     assert_not_has_keys,
     assert_status_code_is,
+    assert_status_code_is_ok,
 )
 from .api_util import (
     ADMIN_TEST_USER,
@@ -20,6 +22,12 @@ from .testcase import FunctionalTestCase
 
 
 class UsesApiTestCaseMixin(object):
+
+    def tearDown(self):
+        if os.environ.get('GALAXY_TEST_EXTERNAL') is None:
+            # Only kill running jobs after test for managed test instances
+            for job in self.galaxy_interactor.get('jobs?state=running&?user_details=true').json():
+                self._delete("jobs/%s" % job['id'])
 
     def _api_url(self, path, params=None, use_key=None, use_admin_key=None):
         if not params:
@@ -83,6 +91,9 @@ class UsesApiTestCaseMixin(object):
 
     def _patch(self, *args, **kwds):
         return self.galaxy_interactor.patch(*args, **kwds)
+
+    def _assert_status_code_is_ok(self, response):
+        assert_status_code_is_ok(response)
 
     def _assert_status_code_is(self, response, expected_status_code):
         assert_status_code_is(response, expected_status_code)

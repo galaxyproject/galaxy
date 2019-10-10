@@ -1,5 +1,5 @@
 Development Documentation
-=======================
+=========================
 
 .. toctree::
   :maxdepth: 1

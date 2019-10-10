@@ -82,5 +82,5 @@ def validate_password(trans, password, confirm):
     if len(password) < PASSWORD_MIN_LEN:
         return "Use a password of at least %d characters." % PASSWORD_MIN_LEN
     elif password != confirm:
-        return "Passwords don't match."
-    return ''
+        return "Passwords do not match."
+    return ""

@@ -61,10 +61,16 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.assert_grid_histories_are([self.history1_name, self.history3_name], False)
         self.unset_filter('tags', self.history1_tags[0])
 
+    # Trying to address an intermittent failure by injecting a small rendering
+    # sleep. to be honest, I'm not sure that the timing is the issue, because
+    # this test never fails when run on its own, only when part of a longer test
+    # run, but there's so few moving parts here, I'm not sure what else to try.
     @selenium_test
     def test_history_grid_sort_by_name(self):
         self.navigate_to_published_histories_page()
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.wait_for_and_click_selector('th#name-header > a')
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_grid_histories_are(sorted(self.all_histories))
 
     @selenium_test
@@ -89,7 +95,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         if tags is None:
             raise AssertionError('Failed to find history with name [%s]' % self.history1_name)
 
-        tag_button_selector = '.tag-area > .tag-button > .tag-name'
+        tag_button_selector = 'div.tag-name'
         tag_buttons = tags.find_elements_by_css_selector(tag_button_selector)
         tag_button_text = None
         target_tag_button_text = self.history1_tags[0]

@@ -8,6 +8,8 @@ import logging
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
 
+from galaxy.model.migrate.versions.util import create_table, drop_table
+
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -123,32 +125,27 @@ CloudProvider_table = Table("cloud_provider", metadata,
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
-    # Load existing tables
+    metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        CloudSnapshot_table.drop()
-        CloudStore_table.drop()
-        CloudInstance_table.drop()
-        UCI_table.drop()
-        CloudImage_table.drop()
-        CloudUserCredentials_table.drop()
-        CloudProvider_table.drop()
-    except Exception:
-        log.exception("Dropping cloud tables failed.")
+
+    drop_table(CloudSnapshot_table)
+    drop_table(CloudStore_table)
+    drop_table(CloudInstance_table)
+    drop_table(UCI_table)
+    drop_table(CloudImage_table)
+    drop_table(CloudUserCredentials_table)
+    drop_table(CloudProvider_table)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    try:
-        CloudProvider_table.create()
-        CloudUserCredentials_table.create()
-        CloudImage_table.create()
-        UCI_table.create()
-        CloudInstance_table.create()
-        CloudStore_table.create()
-        CloudSnapshot_table.create()
-    except Exception:
-        log.exception("Creating cloud tables failed.")
+
+    create_table(CloudProvider_table)
+    create_table(CloudUserCredentials_table)
+    create_table(CloudImage_table)
+    create_table(UCI_table)
+    create_table(CloudInstance_table)
+    create_table(CloudStore_table)
+    create_table(CloudSnapshot_table)
