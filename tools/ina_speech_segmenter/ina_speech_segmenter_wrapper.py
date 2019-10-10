@@ -16,7 +16,7 @@ def main():
 		temp_output_file = f"{tmpdir}/xxx.json"
 		shutil.copy(input_file, temp_input_file)
 
-		r = subprocess.run(["singularity run", "/srv/amp/ina-speech-tools-singularity/ina-speech-tools-singularity.sif", temp_input_file, temp_output_file])
+		r = subprocess.run(["singularity", "run", "/srv/amp/ina-speech-tools-singularity/ina-speech-tools-singularity.sif", temp_input_file, temp_output_file])
         
 		shutil.copy(temp_output_file, json_file)
 
