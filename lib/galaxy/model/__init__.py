@@ -508,17 +508,15 @@ class User(Dictifiable, RepresentById):
         HDAs in non-purged histories.
         """
         # maintain a list so that we don't double count
-        db_session = object_session(self)
-        return self._calculate_or_set_disk_usage(db_session, dryrun=True)
+        return self._calculate_or_set_disk_usage(dryrun=True)
 
     def calculate_and_set_disk_usage(self):
         """
         Calculates and sets user disk usage.
         """
-        db_session = object_session(self)
-        self._calculate_or_set_disk_usage(db_session, dryrun=False)
+        self._calculate_or_set_disk_usage(dryrun=False)
 
-    def _calculate_or_set_disk_usage(self, sa_session, dryrun=True):
+    def _calculate_or_set_disk_usage(self, dryrun=True):
         """
         Utility to calculate and return the disk usage.  If dryrun is False,
         the new value is set immediately.
@@ -543,6 +541,7 @@ class User(Dictifiable, RepresentById):
             WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
                 AND library_dataset_dataset_association.id IS NULL
         """
+        sa_session = object_session(self)
         usage = sa_session.scalar(sql_calc, {'id': self.id})
         if not dryrun:
             self.set_disk_usage(usage)
