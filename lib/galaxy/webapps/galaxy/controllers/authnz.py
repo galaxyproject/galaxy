@@ -4,24 +4,23 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 
 from __future__ import absolute_import
 
+import json
 import logging
 
-from galaxy import exceptions
 from galaxy import web
 from galaxy.web import url_for
-from galaxy.web.base.controller import JSAppLauncher
+from galaxy.web.base.controller import BaseUIController
 
 log = logging.getLogger(__name__)
 
 
-class OIDC(JSAppLauncher):
+class OIDC(BaseUIController):
 
-    @web.json
     @web.expose
     @web.require_login("list third-party identities")
     def index(self, trans, **kwargs):
         """
-        GET /authnz/
+        GET /api/authnz/
             returns a list of third-party identities associated with the user.
 
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
@@ -37,7 +36,6 @@ class OIDC(JSAppLauncher):
             rtv.append({'id': trans.app.security.encode_id(authnz.id), 'provider': authnz.provider})
         return rtv
 
-    @web.json
     @web.expose
     def login(self, trans, provider):
         if not trans.app.config.enable_oidc:
@@ -45,10 +43,7 @@ class OIDC(JSAppLauncher):
             log.debug(msg)
             return trans.show_error_message(msg)
         success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
-        if success:
-            return {"redirect_uri": redirect_uri}
-        else:
-            raise exceptions.AuthenticationFailed(message)
+        return json.dumps({"redirect_uri": redirect_uri})
 
     @web.expose
     def callback(self, trans, provider, **kwargs):
@@ -79,7 +74,18 @@ class OIDC(JSAppLauncher):
                                             "identity provider. Please try again, and if the problem persists, "
                                             "contact the Galaxy instance admin.".format(provider))
         trans.handle_user_login(user)
-        return self.client(trans)
+        return trans.fill_template('/user/login.mako',
+                                   login=user.username,
+                                   header="",
+                                   use_panels=False,
+                                   redirect_url=redirect_url,
+                                   redirect=redirect_url,
+                                   refresh_frames='refresh_frames',
+                                   message="You are now logged in as `{}.`".format(user.username),
+                                   status='done',
+                                   openid_providers=trans.app.openid_providers,
+                                   form_input_auto_focus=True,
+                                   active_view="user")
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")

@@ -1,9 +1,9 @@
+import inspect
 import logging
 import os
 import shutil
 
 from galaxy import model, util
-from galaxy.util.getargspec import getfullargspec
 
 
 log = logging.getLogger(__name__)
@@ -157,7 +157,7 @@ def do_merge(job_wrapper, task_wrappers):
                                   % (len(output_files), len(task_dirs), output_file_name))
                     # First two args to merge always output_files and path of dataset. More
                     # complicated merge methods may require more parameters. Set those up here.
-                    extra_merge_arg_names = getfullargspec(output_type.merge).args[2:]
+                    extra_merge_arg_names = inspect.getargspec(output_type.merge).args[2:]
                     extra_merge_args = {}
                     if "output_dataset" in extra_merge_arg_names:
                         extra_merge_args["output_dataset"] = output_dataset

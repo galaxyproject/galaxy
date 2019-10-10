@@ -1,6 +1,6 @@
-import _ from "underscore";
 import DATASET_LI from "mvc/dataset/dataset-li";
 import BASE_MVC from "mvc/base-mvc";
+import HISTORY_ITEM_LI from "mvc/history/history-item-li";
 import _l from "utils/localization";
 
 //==============================================================================
@@ -38,7 +38,7 @@ HDAListItemView.prototype.templates = (() => {
                 <span class="name">${_.escape(dataset.name)}</span>
             </div>
             </br>
-            <div class="nametags"></div>
+            ${HISTORY_ITEM_LI.nametagTemplate(dataset)}
         </div>
     `;
 

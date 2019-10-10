@@ -10,13 +10,6 @@ import logging
 
 from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, MetaData, String, Table, TEXT
 
-from galaxy.model.migrate.versions.util import (
-    add_column,
-    create_table,
-    drop_column,
-    drop_table
-)
-
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
 metadata = MetaData()
@@ -41,10 +34,9 @@ PageRevision_table = Table("page_revision", metadata,
 
 
 def upgrade(migrate_engine):
-    print(__doc__)
     metadata.bind = migrate_engine
+    print(__doc__)
     metadata.reflect()
-
     try:
         if migrate_engine.name == 'mysql':
             # Strip slug index prior to creation so we can do it manually.
@@ -60,16 +52,22 @@ def upgrade(migrate_engine):
             i.create()
     except Exception:
         log.exception("Could not create page table")
-    create_table(PageRevision_table)
+    try:
+        PageRevision_table.create()
+    except Exception:
+        log.exception("Could not create page_revision table")
 
+    # Add 1 column to the user table
+    User_table = Table("galaxy_user", metadata, autoload=True)
     col = Column('username', String(255), index=True, unique=True, default=False)
-    add_column(col, 'galaxy_user', metadata, index_name='ix_galaxy_user_username', unique_name='username')
+    col.create(User_table, index_name='ix_user_username', unique_name='username')
+    assert col is User_table.c.username
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-
-    drop_column('username', 'galaxy_user', metadata)
-    drop_table(PageRevision_table)
-    drop_table(Page_table)
+    Page_table.drop()
+    PageRevision_table.drop()
+    User_table = Table("galaxy_user", metadata, autoload=True)
+    User_table.c.username.drop()

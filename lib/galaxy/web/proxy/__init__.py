@@ -13,7 +13,6 @@ from galaxy.util import (
 )
 from galaxy.util.filelock import FileLock
 from galaxy.util.lazy_process import LazyProcess, NoOpLazyProcess
-from galaxy.web.framework import url_for
 
 log = logging.getLogger(__name__)
 
@@ -149,7 +148,7 @@ class GolangProxyLauncher(object):
                 config.dynamic_proxy_bind_port,
             ),
             "--listenPath", "/".join((
-                (config.cookie_path or url_for('/')),
+                config.cookie_path,
                 config.dynamic_proxy_prefix
             )),
             "--cookieName", "galaxysession",

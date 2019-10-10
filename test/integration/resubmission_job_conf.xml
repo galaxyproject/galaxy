@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+<!-- 
+    - Add ready_for_resubmission to job_wrapper.
+    - Use in the handler.
+-->
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+        <plugin id="failure_runner" type="runner" load="integration.resubmission_runners:FailsJobRunner" workers="2">
+        </plugin>
+        <plugin id="assertion_runner" type="runner" load="integration.resubmission_runners:AssertionJobRunner" workers="2">
+        </plugin>
+        <plugin id="dynamic" type="runner">
+            <param id="rules_module">integration.resubmission_rules</param>
+        </plugin>
+    </plugins>
+
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+
+    <destinations default="initial_destination">
+        <destination id="initial_destination" runner="dynamic">
+            <param id="type">python</param>
+            <param id="function">initial_destination</param>
+        </destination>
+
+        <destination id="fail_first_try" runner="failure_runner">
+            <resubmit condition="walltime_reached" destination="retry_test_more_walltime" />
+            <resubmit condition="memory_limit_reached" destination="retry_test_more_mem" />
+            <resubmit condition="unknown_error" destination="retry_unknown_error" />
+        </destination>
+
+        <destination id="fail_first_if_memory_or_walltime" runner="failure_runner">
+            <resubmit condition="walltime_reached or memory_limit_reached" destination="retry_test_generic" />
+        </destination>
+
+        <destination id="fail_first_any_failure" runner="failure_runner">
+            <resubmit condition="any_failure" destination="retry_test_generic" />
+        </destination>
+
+        <!-- This will fail twice and succeed on walltime reached and will fail twice and fail hard else. -->
+        <destination id="fail_two_attempts" runner="failure_runner">
+            <resubmit condition="attempt &lt; 3" />
+            <resubmit condition="attempt == 3 and walltime_reached" destination="retry_test_generic" />
+        </destination>
+
+        <!-- Resubmit only jobs shorter than 5 seconds. -->
+        <destination id="resubmit_if_short" runner="failure_runner">
+            <resubmit condition="seconds_running &lt; 5" destination="retry_test_generic" />
+            <resubmit condition="any_failure" destination="fails_without_resubmission" />
+        </destination>
+
+        <!-- Resubmit after a delay. -->
+        <destination id="resubmit_after_delay" runner="failure_runner">
+            <resubmit condition="any_failure" delay="5" destination="retry_after_delay" />
+        </destination>
+
+        <!-- Resubmit after a couple delays. -->
+        <destination id="resubmit_after_two_delays" runner="failure_runner">
+            <!-- Delay 1.5 seconds and then 3 seconds, then finally send off too another runner. -->
+            <resubmit condition="attempt &lt; 3" delay="attempt * 1.5" />
+            <resubmit condition="any_failure" destination="retry_after_delay" />
+        </destination>
+
+        <destination id="fails_without_resubmission" runner="failure_runner">
+        </destination>
+
+        <destination id="retry_test_more_mem" runner="assertion_runner">
+            <param id="dest_name">retry_test_more_mem</param>
+        </destination>
+
+        <destination id="retry_test_more_walltime" runner="assertion_runner">
+            <param id="dest_name">retry_test_more_walltime</param>
+        </destination>
+
+        <destination id="retry_unknown_error" runner="assertion_runner">
+            <param id="dest_name">retry_unknown_error</param>
+        </destination>
+
+        <destination id="retry_after_delay" runner="assertion_runner">
+            <param id="dest_name">retry_after_delay</param>
+        </destination>
+
+        <destination id="retry_test_generic" runner="assertion_runner">
+            <param id="dest_name">retry_test_generic</param>
+        </destination>
+
+
+        <!-- Upload destination. -->
+        <destination id="local" runner="local">
+        </destination>
+
+    </destinations>
+
+    <resources default="test">
+      <group id="upload"></group>
+      <group id="test">test_name,failure_state,initial_destination,run_for</group>
+    </resources>
+
+    <tools>
+        <tool id="upload1" destination="local" resources="upload" />
+    </tools>
+
+</job_conf>

@@ -1,7 +1,4 @@
-import $ from "jquery";
-import _ from "underscore";
-import Backbone from "backbone";
-import { Toast } from "ui/toast";
+import * as mod_toastr from "libs/toastr";
 import mod_group_model from "toolshed/groups/group-model";
 
 // toolshed group detail view
@@ -34,9 +31,9 @@ const GroupDetailView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    Toast.error(response.responseJSON.err_msg);
+                    mod_toastr.error(response.responseJSON.err_msg);
                 } else {
-                    Toast.error("An error occurred.");
+                    mod_toastr.error("An error occurred.");
                 }
             }
         });

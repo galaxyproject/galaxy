@@ -8,7 +8,7 @@ import string
 import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, true
 
-import galaxy.tool_util.deps.requirements
+import galaxy.tools.deps.requirements
 from galaxy import util
 from galaxy.util import checkers
 from galaxy.web import url_for
@@ -149,13 +149,6 @@ def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, t
             trans.install_model.context.flush()
 
 
-def count_repositories_in_category(app, category_id):
-    sa_session = app.model.context.current
-    return sa_session.query(app.model.RepositoryCategoryAssociation) \
-                     .filter(app.model.RepositoryCategoryAssociation.table.c.category_id == app.security.decode_id(category_id)) \
-                     .count()
-
-
 def generate_tool_guid(repository_clone_url, tool):
     """
     Generate a guid for the installed tool.  It is critical that this guid matches the guid for
@@ -231,7 +224,7 @@ def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_
 
 
 def get_requirements_from_tools(tools):
-    return {tool['id']: galaxy.tool_util.deps.requirements.ToolRequirements.from_list(tool['requirements']) for tool in tools}
+    return {tool['id']: galaxy.tools.deps.requirements.ToolRequirements.from_list(tool['requirements']) for tool in tools}
 
 
 def get_requirements_from_repository(repository):
@@ -608,7 +601,7 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
     return folder_contents
 
 
-def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=None, tool_id=None, tool_version=None):
+def set_image_paths(app, encoded_repository_id, text):
     """
     Handle tool help image display for tools that are contained in repositories in
     the tool shed or installed into Galaxy as well as image display in repository
@@ -616,21 +609,11 @@ def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=
     return the path to it that will enable the caller to open the file.
     """
     if text:
-        if repository_util.is_tool_shed_client(app) and encoded_repository_id:
+        if repository_util.is_tool_shed_client(app):
             route_to_images = 'admin_toolshed/static/images/%s' % encoded_repository_id
-        elif encoded_repository_id:
+        else:
             # We're in the tool shed.
             route_to_images = '/repository/static/images/%s' % encoded_repository_id
-        elif tool_shed_repository and tool_id and tool_version:
-            route_to_images = 'shed_tool_static/{shed}/{owner}/{repo}/{tool}/{version}'.format(
-                shed=tool_shed_repository.tool_shed,
-                owner=tool_shed_repository.owner,
-                repo=tool_shed_repository.name,
-                tool=tool_id,
-                version=tool_version,
-            )
-        else:
-            raise Exception("encoded_repository_id or tool_shed_repository and tool_id and tool_version must be provided")
         # We used to require $PATH_TO_IMAGES and ${static_path}, but
         # we now eliminate it if it's used.
         text = text.replace('$PATH_TO_IMAGES', '')

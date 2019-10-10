@@ -1,6 +1,5 @@
 import logging
 import tempfile
-from functools import total_ordering
 
 from six import string_types, text_type
 from six.moves import shlex_quote
@@ -68,7 +67,6 @@ class RawObjectWrapper(ToolParameterValueWrapper):
         return getattr(self.obj, key)
 
 
-@total_ordering
 class InputValueWrapper(ToolParameterValueWrapper):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.
@@ -109,18 +107,8 @@ class InputValueWrapper(ToolParameterValueWrapper):
     def __getattr__(self, key):
         return getattr(self.value, key)
 
-    def __gt__(self, other):
-        if isinstance(other, string_types):
-            return str(self) > other
-        elif isinstance(other, int):
-            return int(self) > other
-        elif isinstance(other, float):
-            return float(self) > other
-        else:
-            super(InputValueWrapper, self).__gt__(other)
-
     def __int__(self):
-        return int(float(self))
+        return int(str(self))
 
     def __float__(self):
         return float(str(self))
@@ -322,7 +310,7 @@ class HasDatasets(object):
 
     def _dataset_wrapper(self, dataset, dataset_paths, **kwargs):
         wrapper_kwds = kwargs.copy()
-        if dataset and dataset_paths:
+        if dataset:
             real_path = dataset.file_name
             if real_path in dataset_paths:
                 wrapper_kwds["dataset_path"] = dataset_paths[real_path]

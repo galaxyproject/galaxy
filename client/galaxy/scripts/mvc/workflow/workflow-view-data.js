@@ -5,7 +5,7 @@ import Backbone from "backbone";
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
 
-const DataInputView = Backbone.View.extend({
+var DataInputView = Backbone.View.extend({
     className: "form-row dataRow input-data-row",
 
     initialize: function(options) {
@@ -35,7 +35,7 @@ const DataInputView = Backbone.View.extend({
     }
 });
 
-const DataOutputView = Backbone.View.extend({
+var DataOutputView = Backbone.View.extend({
     className: "form-row dataRow",
 
     initialize: function(options) {
@@ -43,18 +43,18 @@ const DataOutputView = Backbone.View.extend({
         this.terminalElement = options.terminalElement;
         this.nodeView = options.nodeView;
 
-        const output = this.output;
-        let label = output.label || output.name;
-        const node = this.nodeView.node;
+        var output = this.output;
+        var label = output.label || output.name;
+        var node = this.nodeView.node;
 
-        const isInput = output.extensions.indexOf("input") >= 0 || output.extensions.indexOf("input_collection") >= 0;
+        var isInput = output.extensions.indexOf("input") >= 0 || output.extensions.indexOf("input_collection") >= 0;
         if (!isInput) {
-            label = `${label} (${output.force_datatype || output.extensions.join(", ")})`;
+            label = `${label} (${output.extensions.join(", ")})`;
         }
         this.$el.html(label);
         this.calloutView = null;
         if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
-            const calloutView = new OutputCalloutView({
+            var calloutView = new OutputCalloutView({
                 label: label,
                 output: output,
                 node: node
@@ -86,7 +86,7 @@ const DataOutputView = Backbone.View.extend({
     }
 });
 
-const ParameterOutputView = Backbone.View.extend({
+var ParameterOutputView = Backbone.View.extend({
     className: "form-row dataRow",
 
     initialize: function(options) {
@@ -94,20 +94,28 @@ const ParameterOutputView = Backbone.View.extend({
         this.terminalElement = options.terminalElement;
         this.nodeView = options.nodeView;
 
-        const output = this.output;
-        const label = output.label || output.name;
-        const node = this.nodeView.node;
+        var output = this.output;
+        var label = output.label || output.name;
+        var node = this.nodeView.node;
 
         this.$el.html(label);
         this.calloutView = null;
         if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
-            const calloutView = new OutputCalloutView({
+            var calloutView = new OutputCalloutView({
                 label: label,
                 output: output,
                 node: node
             });
             this.calloutView = calloutView;
             this.$el.append(calloutView.el);
+            this.$el.hover(
+                () => {
+                    calloutView.hoverImage();
+                },
+                () => {
+                    calloutView.resetImage();
+                }
+            );
         }
         this.$el.css({
             position: "absolute",
@@ -133,21 +141,21 @@ const ParameterOutputView = Backbone.View.extend({
     }
 });
 
-const OutputCalloutView = Backbone.View.extend({
+var OutputCalloutView = Backbone.View.extend({
     tagName: "div",
 
     initialize: function(options) {
         this.label = options.label;
         this.node = options.node;
         this.output = options.output;
-        const view = this;
-        const node = this.node;
+        var view = this;
+        var node = this.node;
         this.$el
             .attr("class", `callout-terminal ${this.label}`)
             .css({ display: "none" })
             .append(
                 $("<icon class='mark-terminal fa fa-asterisk'/>").click(() => {
-                    const outputName = view.output.name;
+                    var outputName = view.output.name;
                     if (node.isWorkflowOutput(outputName)) {
                         node.removeWorkflowOutput(outputName);
                         view.$("icon").removeClass("mark-terminal-active");

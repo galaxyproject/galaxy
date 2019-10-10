@@ -1,7 +1,7 @@
 /** This class enables users to export/download a chart as PNG, SVG or PDF. */
 /** PNG export */
 
-import $ from "jquery";
+/* global $ */
 
 function createPNG(options) {
     if (options.$el.find("svg").length > 0) {
@@ -12,7 +12,7 @@ function createPNG(options) {
 }
 
 function _downloadData(imageData, filename) {
-    const link = document.createElement("a");
+    let link = document.createElement("a");
     link.download = filename;
     link.href = imageData;
     link.click();
@@ -47,7 +47,7 @@ function _toImage($el, x_offset, y_offset, newContext) {
 
 /** Convert canvas to png */
 function _canvas2png(options) {
-    const $canvas = options.$el.find(".charts-viewer-canvas");
+    let $canvas = options.$el.find(".charts-viewer-canvas");
     try {
         if ($canvas.width() !== 0 && $canvas.height() !== 0) {
             var newCanvas = document.createElement("canvas");
@@ -91,7 +91,7 @@ function _svg2png(options) {
     source.src = "data:image/svg+xml;base64," + window.btoa(xml.string);
     source.onload = function() {
         context.drawImage(source, 0, 0, canvas.width, canvas.height);
-        const imageData = canvas.toDataURL("image/png");
+        let imageData = canvas.toDataURL("image/png");
         _downloadPNGData(imageData, options.title);
         $container.remove();
     };
@@ -188,9 +188,7 @@ function _inline($target) {
                     $target.find(rules[idx].selectorText).each(function(i, elem) {
                         elem.style.cssText += rules[idx].style.cssText;
                     });
-                } catch (err) {
-                    console.error(err);
-                }
+                } catch (err) {}
             }
         }
     }

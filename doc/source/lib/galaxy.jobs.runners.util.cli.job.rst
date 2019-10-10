@@ -9,14 +9,6 @@ galaxy\.jobs\.runners\.util\.cli\.job package
 Submodules
 ----------
 
-galaxy\.jobs\.runners\.util\.cli\.job\.lsf module
--------------------------------------------------
-
-.. automodule:: galaxy.jobs.runners.util.cli.job.lsf
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy\.jobs\.runners\.util\.cli\.job\.slurm module
 ---------------------------------------------------
 

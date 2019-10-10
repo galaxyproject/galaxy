@@ -17,8 +17,8 @@ import os
 import sys
 from optparse import OptionParser
 
-from mercurial import hg, ui
 from six.moves import configparser
+from whoosh.fields import Schema, STORED, TEXT
 from whoosh.filedb.filestore import FileStorage
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
@@ -31,17 +31,38 @@ from galaxy.util import (
     unicodify
 )
 from galaxy.webapps.tool_shed import config, model
-from galaxy.webapps.tool_shed.search.repo_search import schema as repo_schema
-from galaxy.webapps.tool_shed.search.tool_search import schema as tool_schema
-from galaxy.webapps.tool_shed.util.hgweb_config import HgWebConfigManager
 
 if sys.version_info > (3,):
     long = int
 
 logging.basicConfig(level='DEBUG')
 
+repo_schema = Schema(
+    id=STORED,
+    name=TEXT(stored=True),
+    description=TEXT(stored=True),
+    long_description=TEXT(stored=True),
+    homepage_url=TEXT(stored=True),
+    remote_repository_url=TEXT(stored=True),
+    repo_owner_username=TEXT(stored=True),
+    times_downloaded=STORED,
+    approved=STORED,
+    last_updated=STORED,
+    full_last_updated=STORED)
 
-def build_index(sa_session, whoosh_index_dir, path_to_repositories, hgweb_config_dir):
+tool_schema = Schema(
+    name=TEXT(stored=True),
+    description=TEXT(stored=True),
+    owner=TEXT(stored=True),
+    id=TEXT(stored=True),
+    help=TEXT(stored=True),
+    version=TEXT(stored=True),
+    repo_name=TEXT(stored=True),
+    repo_owner_username=TEXT(stored=True),
+    repo_id=STORED)
+
+
+def build_index(sa_session, whoosh_index_dir, path_to_repositories):
     """
     Build the search indexes. One for repositories and another for tools within.
     """
@@ -64,7 +85,7 @@ def build_index(sa_session, whoosh_index_dir, path_to_repositories, hgweb_config
     repos_indexed = 0
     tools_indexed = 0
 
-    for repo in get_repos(sa_session, path_to_repositories, hgweb_config_dir):
+    for repo in get_repos(sa_session, path_to_repositories):
 
         repo_index_writer.add_document(id=repo.get('id'),
                              name=unicodify(repo.get('name')),
@@ -73,12 +94,10 @@ def build_index(sa_session, whoosh_index_dir, path_to_repositories, hgweb_config
                              homepage_url=unicodify(repo.get('homepage_url')),
                              remote_repository_url=unicodify(repo.get('remote_repository_url')),
                              repo_owner_username=unicodify(repo.get('repo_owner_username')),
-                             categories=unicodify(repo.get('categories')),
                              times_downloaded=repo.get('times_downloaded'),
                              approved=repo.get('approved'),
                              last_updated=repo.get('last_updated'),
-                             full_last_updated=repo.get('full_last_updated'),
-                             repo_lineage=unicodify(repo.get('repo_lineage')))
+                             full_last_updated=repo.get('full_last_updated'))
         #  Tools get their own index
         for tool in repo.get('tools_list'):
             tool_index_writer.add_document(id=unicodify(tool.get('id')),
@@ -102,19 +121,13 @@ def build_index(sa_session, whoosh_index_dir, path_to_repositories, hgweb_config
     print("TOTAL tools indexed: ", tools_indexed)
 
 
-def get_repos(sa_session, path_to_repositories, hgweb_config_dir):
+def get_repos(sa_session, path_to_repositories):
     """
     Load repos from DB and included tools from .xml configs.
     """
-    hgwcm = HgWebConfigManager()
-    hgwcm.hgweb_config_dir = hgweb_config_dir
     results = []
     for repo in sa_session.query(model.Repository).filter_by(deleted=False).filter_by(deprecated=False).filter(model.Repository.type != 'tool_dependency_definition'):
-        category_names = []
-        for rca in sa_session.query(model.RepositoryCategoryAssociation).filter(model.RepositoryCategoryAssociation.repository_id == repo.id):
-            for category in sa_session.query(model.Category).filter(model.Category.id == rca.category.id):
-                category_names.append(category.name)
-        categories = (",").join(category_names)
+
         repo_id = repo.id
         name = repo.name
         description = repo.description
@@ -141,14 +154,6 @@ def get_repos(sa_session, path_to_repositories, hgweb_config_dir):
         last_updated = pretty_print_time_interval(repo.update_time)
         full_last_updated = repo.update_time.strftime("%Y-%m-%d %I:%M %p")
 
-        # load all changesets of the repo
-        repo_path = hgwcm.get_entry(os.path.join("repos", repo.user.username, repo.name))
-        hg_repo = hg.repository(ui.ui(), repo_path)
-        lineage = []
-        for changeset in hg_repo.changelog:
-            lineage.append(str(changeset) + ":" + str(hg_repo.changectx(changeset)))
-        repo_lineage = str(lineage)
-
         #  Parse all the tools within repo for separate index.
         tools_list = []
         path = os.path.join(path_to_repositories, *directory_hash_id(repo.id))
@@ -173,9 +178,7 @@ def get_repos(sa_session, path_to_repositories, hgweb_config_dir):
                             approved=approved,
                             last_updated=last_updated,
                             full_last_updated=full_last_updated,
-                            tools_list=tools_list,
-                            repo_lineage=repo_lineage,
-                            categories=categories))
+                            tools_list=tools_list))
     return results
 
 
@@ -215,11 +218,9 @@ def get_sa_session_and_needed_config_settings(path_to_tool_shed_config):
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-c", "--config", dest="path_to_tool_shed_config", default="config/tool_shed.ini", help="specify tool_shed.ini location")
-    parser.add_option("-r", "--hgweb", dest="hgweb_config_dir", default=".", help="specify hgweb.config location")
     (options, args) = parser.parse_args()
     path_to_tool_shed_config = options.path_to_tool_shed_config
-    hgweb_config_dir = options.hgweb_config_dir
     sa_session, config_settings = get_sa_session_and_needed_config_settings(path_to_tool_shed_config)
     whoosh_index_dir = config_settings.get('whoosh_index_dir', None)
     path_to_repositories = config_settings.get('file_path', 'database/community_files')
-    build_index(sa_session, whoosh_index_dir, path_to_repositories, hgweb_config_dir)
+    build_index(sa_session, whoosh_index_dir, path_to_repositories)

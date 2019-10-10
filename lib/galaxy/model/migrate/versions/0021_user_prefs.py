@@ -7,8 +7,6 @@ import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table, Unicode
 
-from galaxy.model.migrate.versions.util import create_table, drop_table
-
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
@@ -21,15 +19,19 @@ UserPreference_table = Table("user_preference", metadata,
 
 
 def upgrade(migrate_engine):
-    print(__doc__)
     metadata.bind = migrate_engine
+    print(__doc__)
     metadata.reflect()
-
-    create_table(UserPreference_table)
+    try:
+        UserPreference_table.create()
+    except Exception:
+        log.exception("Creating user_preference table failed.")
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-
-    drop_table(UserPreference_table)
+    try:
+        UserPreference_table.drop()
+    except Exception:
+        log.exception("Dropping user_preference table failed.")

@@ -4,7 +4,6 @@
  */
 
 import "@babel/polyfill";
-import _ from "underscore";
 
 (() => {
     /* TODO: move to modernizr or something besides us doing this...
@@ -68,9 +67,7 @@ import _ from "underscore";
             compatible: function() {
                 try {
                     return window.sessionStorage.length >= 0;
-                } catch (err) {
-                    console.debug(err);
-                }
+                } catch (err) {}
                 return false;
             }
         }

@@ -5,7 +5,7 @@ import { getGalaxyInstance } from "app";
 import QUERY_STRING from "utils/query-string-parsing";
 import Ui from "mvc/ui/ui-misc";
 
-const Router = Backbone.Router.extend({
+var Router = Backbone.Router.extend({
     // TODO: not many client routes at this point - fill and remove from server.
     // since we're at root here, this may be the last to be routed entirely on the client.
     initialize: function(page, options) {
@@ -14,7 +14,7 @@ const Router = Backbone.Router.extend({
     },
 
     executeUseRouter: function(url) {
-        const prefix = getAppRoot();
+        let prefix = getAppRoot();
         if (url.startsWith(prefix)) {
             url = url.replace(prefix, "/");
         }
@@ -28,9 +28,9 @@ const Router = Backbone.Router.extend({
             .toString(36)
             .substr(2);
         url += url.indexOf("?") == -1 ? "?" : "&";
-        const bustParam = $.param(data, true);
+        let bustParam = $.param(data, true);
         url += bustParam;
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         Galaxy.params = data;
         this.navigate(url, { trigger: true });
         window.history.replaceState(window.history.state, "", window.location.pathname.replace(bustParam, ""));
@@ -38,9 +38,9 @@ const Router = Backbone.Router.extend({
 
     /** override to parse query string into obj and send to each route */
     execute: function(callback, args, name) {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         Galaxy.debug("router execute:", callback, args, name);
-        const queryObj = QUERY_STRING.parse(args.pop());
+        var queryObj = QUERY_STRING.parse(args.pop());
         args.push(queryObj);
         if (callback) {
             if (this.authenticate(args, name)) {

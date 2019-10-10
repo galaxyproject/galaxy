@@ -30,15 +30,17 @@
 %>
 </%def>
 
-<%def name="javascript_app()">
-    ${parent.javascript_app()}
+<%def name="javascripts()">
+    ${parent.javascripts()}
     ${community_tag_js( get_controller_name( item ) )}
 </%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css(
+        "autocomplete_tagging",
         "embed_item",
+        "jquery.rating",
         "library",
         "jquery-ui/smoothness/jquery-ui"
     )}
@@ -228,11 +230,7 @@
                 ## Community tags.
                 <div>
                     Community:
-                    ${render_community_tagging_element(
-                        tagged_item=item, 
-                        tag_click_fn='community_tag_click', 
-                        use_toggle_link=False 
-                    )}
+                    ${render_community_tagging_element( tagged_item=item, tag_click_fn='community_tag_click', use_toggle_link=False )}
                     %if len ( item.tags ) == 0:
                         none
                     %endif
@@ -242,13 +240,7 @@
                     <p>
                     <div>
                         Yours:
-                        ${render_individual_tagging_element(
-                            user=trans.get_user(), 
-                            tagged_item=item, 
-                            elt_context='view.mako', 
-                            use_toggle_link=False, 
-                            tag_click_fn='community_tag_click'
-                        )}
+                        ${render_individual_tagging_element( user=trans.get_user(), tagged_item=item, elt_context='view.mako', use_toggle_link=False, tag_click_fn='community_tag_click' )}
                     </div>
                 %endif
             </div>

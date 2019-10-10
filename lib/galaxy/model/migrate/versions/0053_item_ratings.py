@@ -5,24 +5,13 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import (
-    Column,
-    ForeignKey,
-    Integer,
-    MetaData,
-    Table
-)
-
-from galaxy.model.migrate.versions.util import (
-    add_index,
-    create_table,
-    drop_table
-)
+from sqlalchemy import Column, ForeignKey, Index, Integer, MetaData, Table
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 # Rating tables.
+
 HistoryRatingAssociation_table = Table("history_rating_association", metadata,
                                        Column("id", Integer, primary_key=True),
                                        Column("history_id", Integer, ForeignKey("history.id"), index=True),
@@ -55,11 +44,15 @@ VisualizationRatingAssociation_table = Table("visualization_rating_association",
 
 
 def upgrade(migrate_engine):
-    print(__doc__)
     metadata.bind = migrate_engine
+    print(__doc__)
     metadata.reflect()
 
-    create_table(HistoryRatingAssociation_table)
+    # Create history_rating_association table.
+    try:
+        HistoryRatingAssociation_table.create()
+    except Exception:
+        log.exception("Creating history_rating_association table failed.")
 
     # Create history_dataset_association_rating_association table.
     try:
@@ -68,21 +61,63 @@ def upgrade(migrate_engine):
         # MySQL cannot handle long index names; when we see this error, create the index name manually.
         if migrate_engine.name == 'mysql' and \
                 str(e).lower().find("identifier name 'ix_history_dataset_association_rating_association_history_dataset_association_id' is too long"):
-            add_index('ix_hda_rating_association_hda_id', HistoryDatasetAssociationRatingAssociation_table, 'history_dataset_association_id')
+            i = Index("ix_hda_rating_association_hda_id", HistoryDatasetAssociationRatingAssociation_table.c.history_dataset_association_id)
+            try:
+                i.create()
+            except Exception:
+                log.exception("Adding index 'ix_hda_rating_association_hda_id' to table 'history_dataset_association_rating_association' table failed.")
         else:
             log.exception("Creating history_dataset_association_rating_association table failed.")
 
-    create_table(StoredWorkflowRatingAssociation_table)
-    create_table(PageRatingAssociation_table)
-    create_table(VisualizationRatingAssociation_table)
+    # Create stored_workflow_rating_association table.
+    try:
+        StoredWorkflowRatingAssociation_table.create()
+    except Exception:
+        log.exception("Creating stored_workflow_rating_association table failed.")
+
+    # Create page_rating_association table.
+    try:
+        PageRatingAssociation_table.create()
+    except Exception:
+        log.exception("Creating page_rating_association table failed.")
+
+    # Create visualization_rating_association table.
+    try:
+        VisualizationRatingAssociation_table.create()
+    except Exception:
+        log.exception("Creating visualization_rating_association table failed.")
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    drop_table(VisualizationRatingAssociation_table)
-    drop_table(PageRatingAssociation_table)
-    drop_table(StoredWorkflowRatingAssociation_table)
-    drop_table(HistoryDatasetAssociationRatingAssociation_table)
-    drop_table(HistoryRatingAssociation_table)
+    # Drop history_rating_association table.
+    try:
+        HistoryRatingAssociation_table.drop()
+    except Exception:
+        log.exception("Dropping history_rating_association table failed.")
+
+    # Drop history_dataset_association_rating_association table.
+    try:
+        HistoryDatasetAssociationRatingAssociation_table.drop()
+    except Exception:
+        log.exception("Dropping history_dataset_association_rating_association table failed.")
+
+    # Drop stored_workflow_rating_association table.
+    try:
+        StoredWorkflowRatingAssociation_table.drop()
+    except Exception:
+        log.exception("Dropping stored_workflow_rating_association table failed.")
+
+    # Drop page_rating_association table.
+    try:
+        PageRatingAssociation_table.drop()
+    except Exception:
+        log.exception("Dropping page_rating_association table failed.")
+
+    # Drop visualization_rating_association table.
+    try:
+        VisualizationRatingAssociation_table.drop()
+    except Exception:
+        log.exception("Dropping visualization_rating_association table failed.")

@@ -35,7 +35,7 @@ var DETAILS_MSG = _l("The following information can assist the developers in fin
 
 /** private helper that builds the modal and handles adding details */
 function _errorModal(message, title, details) {
-    const Galaxy = getGalaxyInstance();
+    let Galaxy = getGalaxyInstance();
     // create and return the modal, adding details button only if needed
     Galaxy.modal.show({
         title: title,
@@ -75,7 +75,7 @@ function errorModal(message, title, details) {
         return;
     }
 
-    const Galaxy = getGalaxyInstance();
+    let Galaxy = getGalaxyInstance();
     message = _l(message);
     title = _l(title) || _l("Error:");
     if (Galaxy && Galaxy.modal) {
@@ -113,7 +113,7 @@ function ajaxErrorModal(model, xhr, options, message, title) {
 
 /** build details which may help debugging the ajax call */
 function _ajaxDetails(model, xhr, options) {
-    const Galaxy = getGalaxyInstance();
+    let Galaxy = getGalaxyInstance();
     return {
         //TODO: still can't manage Raven id
         raven: _.result(window.Raven, "lastEventId"),

@@ -6,7 +6,6 @@ except ImportError:
     Display = None
 
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
@@ -16,18 +15,15 @@ LOGGING_PREFS = {
 }
 
 
-def get_local_browser(browser):
+def get_local_driver(browser=DEFAULT_BROWSER):
     if browser == "auto":
         if _which("chromedriver"):
-            return "CHROME"
+            browser = "CHROME"
         elif _which("geckodriver"):
-            return "FIREFOX"
+            browser = "FIREFOX"
         else:
             raise Exception("Selenium browser is 'auto' but neither geckodriver or chromedriver are found on PATH.")
 
-
-def get_local_driver(browser=DEFAULT_BROWSER, headless=False):
-    browser = get_local_browser(browser)
     assert browser in ["CHROME", "FIREFOX", "OPERA", "PHANTOMJS"]
     driver_to_class = {
         "CHROME": webdriver.Chrome,
@@ -36,12 +32,7 @@ def get_local_driver(browser=DEFAULT_BROWSER, headless=False):
         "PHANTOMJS": webdriver.PhantomJS,
     }
     driver_class = driver_to_class[browser]
-    if browser == 'CHROME' and headless:
-        options = ChromeOptions()
-        options.add_argument('--headless')
-        return driver_class(desired_capabilities={"loggingPrefs": LOGGING_PREFS}, chrome_options=options)
-    else:
-        return driver_class(desired_capabilities={"loggingPrefs": LOGGING_PREFS})
+    return driver_class(desired_capabilities={"loggingPrefs": LOGGING_PREFS})
 
 
 def get_remote_driver(

@@ -10,8 +10,7 @@
   "name": "my dynamic name",
   "ext": "txt",
   "info": "my dynamic info",
-  "dbkey": "cust1",
-  "created_from_basename": "my name.txt"
+  "dbkey": "cust1"
 }}
 </configfile>
     </configfiles>
@@ -30,7 +29,6 @@
           <metadata name="name" value="my dynamic name" />
           <metadata name="info" value="my dynamic info" />
           <metadata name="dbkey" value="cust1" />
-          <metadata name="created_from_basename" value="my name.txt" />
         </output>
       </test>
     </tests>

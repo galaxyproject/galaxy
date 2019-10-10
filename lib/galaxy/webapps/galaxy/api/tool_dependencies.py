@@ -3,9 +3,9 @@ API operations allowing clients to manage tool dependencies.
 """
 import logging
 
-from galaxy.tool_util.deps import views
+from galaxy.tools.deps import views
 from galaxy.web import (
-    expose_api,
+    _future_expose_api as expose_api,
     require_admin
 )
 from galaxy.web.base.controller import BaseAPIController

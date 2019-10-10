@@ -1,10 +1,10 @@
-import $ from "jquery";
+/* global $, jQuery */
 import _ from "underscore";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import { Toast } from "ui/toast";
+import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_utils from "utils/utils";
 import mod_select from "mvc/ui/ui-select";
@@ -29,8 +29,7 @@ var LibraryDatasetView = Backbone.View.extend({
         "click .make-private": "makeDatasetPrivate",
         "click .remove-restrictions": "removeDatasetRestrictions",
         "click .toolbtn_save_permissions": "savePermissions",
-        "click .toolbtn_save_modifications": "saveModifications",
-        "click .toolbtn_detect_datatype": "detectDatatype"
+        "click .toolbtn_save_modifications": "saveModifications"
     },
 
     // genome select
@@ -67,7 +66,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     fetchDataset: function(options) {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         this.model = new mod_library_model.Item({
             id: this.options.id
@@ -85,13 +84,13 @@ var LibraryDatasetView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    Toast.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
+                    mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
                     });
                 } else {
-                    Toast.error("An error occurred. Click this to go back.", "", {
+                    mod_toastr.error("An error occurred. Click this to go back.", "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
@@ -115,7 +114,7 @@ var LibraryDatasetView = Backbone.View.extend({
         var self = this;
         if (!this.options.ldda_id) {
             this.render();
-            Toast.error("Library dataset version requested but no id provided.");
+            mod_toastr.error("Library dataset version requested but no id provided.");
         } else {
             this.ldda = new mod_library_model.Ldda({
                 id: this.options.ldda_id
@@ -127,9 +126,9 @@ var LibraryDatasetView = Backbone.View.extend({
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        Toast.error(response.responseJSON.err_msg);
+                        mod_toastr.error(response.responseJSON.err_msg);
                     } else {
-                        Toast.error("An error occurred.");
+                        mod_toastr.error("An error occurred.");
                     }
                 }
             });
@@ -178,13 +177,13 @@ var LibraryDatasetView = Backbone.View.extend({
                 .submit()
                 .remove();
 
-            Toast.info("Your download will begin soon.");
+            mod_toastr.info("Your download will begin soon.");
         }
     },
 
     importIntoHistory: function() {
         this.refreshUserHistoriesList(self => {
-            const Galaxy = getGalaxyInstance();
+            let Galaxy = getGalaxyInstance();
             var template = self.templateBulkImportInModal();
             self.modal = Galaxy.modal;
             self.modal.show({
@@ -209,7 +208,7 @@ var LibraryDatasetView = Backbone.View.extend({
         this.histories.fetch({
             success: function(histories) {
                 if (histories.length === 0) {
-                    Toast.warning("You have to create history first. Click this to do so.", "", {
+                    mod_toastr.warning("You have to create history first. Click this to do so.", "", {
                         onclick: function() {
                             window.location = getAppRoot();
                         }
@@ -220,9 +219,9 @@ var LibraryDatasetView = Backbone.View.extend({
             },
             error: function(model, response) {
                 if (typeof response.responseJSON !== "undefined") {
-                    Toast.error(response.responseJSON.err_msg);
+                    mod_toastr.error(response.responseJSON.err_msg);
                 } else {
-                    Toast.error("An error occurred.");
+                    mod_toastr.error("An error occurred.");
                 }
             }
         });
@@ -240,7 +239,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     self.processImportToHistory(new_history.id);
                 })
                 .fail((xhr, status, error) => {
-                    Toast.error("An error occurred.");
+                    mod_toastr.error("An error occurred.");
                 })
                 .always(() => {
                     self.modal.enableButton("Import");
@@ -255,19 +254,19 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     processImportToHistory: function(history_id) {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         var historyItem = new mod_library_model.HistoryItem();
         historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
         // set the used history as current so user will see the last one
         // that he imported into in the history panel on the 'analysis' page
-        $.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
+        jQuery.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
         // save the dataset into selected history
         historyItem.save(
             { content: this.id, source: "library" },
             {
                 success: function() {
                     Galaxy.modal.hide();
-                    Toast.success("Dataset imported. Click this to start analyzing it.", "", {
+                    mod_toastr.success("Dataset imported. Click this to start analyzing it.", "", {
                         onclick: function() {
                             window.location = getAppRoot();
                         }
@@ -275,9 +274,9 @@ var LibraryDatasetView = Backbone.View.extend({
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
-                        Toast.error(`Dataset not imported. ${response.responseJSON.err_msg}`);
+                        mod_toastr.error(`Dataset not imported. ${response.responseJSON.err_msg}`);
                     } else {
-                        Toast.error("An error occurred. Dataset not imported. Please try again.");
+                        mod_toastr.error("An error occured. Dataset not imported. Please try again.");
                     }
                 }
             }
@@ -285,7 +284,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     showPermissions: function(options) {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         var template = this.templateDatasetPermissions();
         var self = this;
         this.options = _.extend(this.options, options);
@@ -311,7 +310,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 });
             })
             .fail(() => {
-                Toast.error("An error occurred while attempting to fetch dataset permissions.");
+                mod_toastr.error("An error occurred while attempting to fetch dataset permissions.");
             });
         $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         $("#center").css("overflow", "auto");
@@ -399,12 +398,6 @@ var LibraryDatasetView = Backbone.View.extend({
         return select_options;
     },
 
-    detectDatatype: function(options) {
-        const ld = this.model;
-        ld.set("file_ext", "auto");
-        this._submitModification(ld);
-    },
-
     /**
      * Save the changes made to the library dataset.
      */
@@ -417,7 +410,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 ld.set("name", new_name);
                 is_changed = true;
             } else {
-                Toast.warning("Library dataset name has to be at least 1 character long.");
+                mod_toastr.warning("Library dataset name has to be at least 1 character long.");
                 return;
             }
         }
@@ -441,29 +434,26 @@ var LibraryDatasetView = Backbone.View.extend({
             ld.set("file_ext", new_ext);
             is_changed = true;
         }
+        var dataset_view = this;
         if (is_changed) {
-            this._submitModification(ld);
-        } else {
-            this.render();
-            Toast.info("Nothing has changed.");
-        }
-    },
-
-    _submitModification(library_dataset) {
-        library_dataset.save(null, {
-            patch: true,
-            success: library_dataset => {
-                this.render();
-                Toast.success("Changes to library dataset saved.");
-            },
-            error: function(model, response) {
-                if (typeof response.responseJSON !== "undefined") {
-                    Toast.error(response.responseJSON.err_msg);
-                } else {
-                    Toast.error("An error occurred while attempting to update the library dataset.");
+            ld.save(null, {
+                patch: true,
+                success: function(ld) {
+                    dataset_view.render();
+                    mod_toastr.success("Changes to library dataset saved.");
+                },
+                error: function(model, response) {
+                    if (typeof response.responseJSON !== "undefined") {
+                        mod_toastr.error(response.responseJSON.err_msg);
+                    } else {
+                        mod_toastr.error("An error occured while attempting to update the library dataset.");
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            dataset_view.render();
+            mod_toastr.info("Nothing has changed.");
+        }
     },
 
     copyToClipboard: function(e) {
@@ -483,10 +473,10 @@ var LibraryDatasetView = Backbone.View.extend({
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
-                Toast.success("The dataset is now private to you.");
+                mod_toastr.success("The dataset is now private to you.");
             })
             .fail(() => {
-                Toast.error("An error occurred while attempting to make dataset private.");
+                mod_toastr.error("An error occurred while attempting to make dataset private.");
             });
     },
 
@@ -498,10 +488,10 @@ var LibraryDatasetView = Backbone.View.extend({
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
-                Toast.success("Access to this dataset is now unrestricted.");
+                mod_toastr.success("Access to this dataset is now unrestricted.");
             })
             .fail(() => {
-                Toast.error("An error occurred while attempting to make dataset unrestricted.");
+                mod_toastr.error("An error occurred while attempting to make dataset unrestricted.");
             });
     },
 
@@ -533,10 +523,10 @@ var LibraryDatasetView = Backbone.View.extend({
                 self.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
-                Toast.success("Permissions saved.");
+                mod_toastr.success("Permissions saved.");
             })
             .fail(() => {
-                Toast.error("An error occurred while attempting to set dataset permissions.");
+                mod_toastr.error("An error occurred while attempting to set dataset permissions.");
             });
     },
 
@@ -611,588 +601,512 @@ var LibraryDatasetView = Backbone.View.extend({
 
     templateDataset: function() {
         return _.template(
-            `<!-- CONTAINER START -->
-            <div class="library_style_container">
-                <div class="d-flex mb-2">
-                    <button data-toggle="tooltip" data-placement="top" title="Download dataset"
-                        class="btn btn-secondary toolbtn-download-dataset toolbar-item mr-1" type="button">
-                        <span class="fa fa-download"></span>
-                        &nbsp;Download
-                    </button>
-                    <button data-toggle="tooltip" data-placement="top" title="Import dataset into history"
-                        class="btn btn-secondary toolbtn-import-dataset toolbar-item mr-1" type="button">
-                        <span class="fa fa-book"></span>
-                        &nbsp;to History
-                    </button>
-                    <% if (item.get("can_user_modify")) { %>
-                        <button data-toggle="tooltip" data-placement="top" title="Modify library item"
-                            class="btn btn-secondary toolbtn_modify_dataset toolbar-item mr-1" type="button">
-                            <span class="fa fa-pencil"></span>
-                            &nbsp;Modify
-                        </button>
-                        <button data-toggle="tooltip" data-placement="top"
-                            title="Attempt to detect the format of dataset"
-                            class="btn btn-secondary toolbtn_detect_datatype toolbar-item mr-1" type="button">
-                            <span class="fa fa-undo"></span>
-                            &nbsp;Auto-detect datatype
-                        </button>
-                    <% } %>
-                    <% if (item.get("can_user_manage")) { %>
-                        <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions">
-                            <button data-toggle="tooltip" data-placement="top" title="Manage permissions"
-                                class="btn btn-secondary toolbtn_change_permissions toolbar-item mr-1"
-                                type="button">
-                                <span class="fa fa-group"></span>
-                                &nbsp;Permissions
-                            </button>
-                        </a>
-                    <% } %>
-                </div>
+            [
+                // CONTAINER START
+                '<div class="library_style_container">',
+                '<div class="d-flex mb-2">',
+                '<button data-toggle="tooltip" data-placement="top" title="Download dataset" class="btn btn-secondary toolbtn-download-dataset toolbar-item mr-1" type="button">',
+                '<span class="fa fa-download"></span>',
+                "&nbsp;Download",
+                "</button>",
+                '<button data-toggle="tooltip" data-placement="top" title="Import dataset into history" class="btn btn-secondary toolbtn-import-dataset toolbar-item mr-1" type="button">',
+                '<span class="fa fa-book"></span>',
+                "&nbsp;to History",
+                "</button>",
+                '<% if (item.get("can_user_modify")) { %>',
+                '<button data-toggle="tooltip" data-placement="top" title="Modify library item" class="btn btn-secondary toolbtn_modify_dataset toolbar-item mr-1" type="button">',
+                '<span class="fa fa-pencil"></span>',
+                "&nbsp;Modify",
+                "</button>",
+                "<% } %>",
+                '<% if (item.get("can_user_manage")) { %>',
+                '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/permissions">',
+                '<button data-toggle="tooltip" data-placement="top" title="Manage permissions" class="btn btn-secondary toolbtn_change_permissions toolbar-item mr-1" type="button">',
+                '<span class="fa fa-group"></span>',
+                "&nbsp;Permissions",
+                "</button>",
+                "</a>",
+                "<% } %>",
+                "</div>",
 
-                <!-- BREADCRUMBS -->
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item">
-                        <a title="Return to the list of libraries" href="#">Libraries</a>
-                    </li>
-                    <% _.each(item.get("full_path"), function(path_item) { %>
-                        <% if (path_item[0] != item.id) { %>
-                            <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="#/folders/<%- path_item[0] %>">
-                                    <%- path_item[1] %>
-                                </a>
-                            </li>
-                        <% } else { %>
-                            <li class="breadcrumb-item active">
-                                <span title="You are here"><%- path_item[1] %></span>
-                            </li>
-                        <% } %>
-                    <% }); %>
-                </ol>
-                <% if (item.get("is_unrestricted")) { %>
-                    <div>
-                        This dataset is unrestricted so everybody with the link can access it.
-                        Just share <span class="copy-link-to-clipboard"><a href=""a>this page</a></span>.
-                    </div>
-                <% } %>
+                // BREADCRUMBS
+                '<ol class="breadcrumb">',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                '<% _.each(item.get("full_path"), function(path_item) { %>',
+                "<% if (path_item[0] != item.id) { %>",
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                "<% } else { %>",
+                '<li class="breadcrumb-item active"><span title="You are here"><%- path_item[1] %></span></li>',
+                "<% } %>",
+                "<% }); %>",
+                "</ol>",
 
-                <!-- TABLE START -->
-                <div class="dataset_table">
-                    <table class="grid table table-striped table-sm">
-                        <tr>
-                            <th class="dataset-first-column" scope="row" id="id_row"
-                                data-id="<%= _.escape(item.get("ldda_id")) %>">
-                                Name
-                            </th>
-                            <td><%= _.escape(item.get("name")) %></td>
-                        </tr>
-                        <% if (item.get("file_ext")) { %>
-                            <tr>
-                                <th scope="row">Data type</th>
-                                <td><%= _.escape(item.get("file_ext")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (item.get("genome_build")) { %>
-                            <tr>
-                                <th scope="row">Genome build</th>
-                                <td><%= _.escape(item.get("genome_build")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (item.get("file_size")) { %>
-                            <tr>
-                                <th scope="row">Size</th>
-                                <td><%= _.escape(item.get("file_size")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (item.get("date_uploaded")) { %>
-                            <tr>
-                                <th scope="row">Date uploaded (UTC)</th>
-                                <td><%= _.escape(item.get("date_uploaded")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (item.get("uploaded_by")) { %>
-                            <tr>
-                                <th scope="row">Uploaded by</th>
-                                <td><%= _.escape(item.get("uploaded_by")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (item.get("metadata_data_lines")) { %>
-                            <tr>
-                                <th scope="row">Data Lines</th>
-                                <td scope="row"><%= _.escape(item.get("metadata_data_lines")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (item.get("metadata_comment_lines")) { %>
-                            <tr>
-                                <th scope="row">Comment Lines</th>
-                                <td scope="row"><%= _.escape(item.get("metadata_comment_lines")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (item.get("metadata_columns")) { %>
-                            <tr>
-                                <th scope="row">Number of Columns</th>
-                                <td scope="row"><%= _.escape(item.get("metadata_columns")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (item.get("metadata_column_types")) { %>
-                            <tr>
-                                <th scope="row">Column Types</th>
-                                <td scope="row"><%= _.escape(item.get("metadata_column_types")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (item.get("message")) { %>
-                            <tr>
-                                <th scope="row">Message</th>
-                                <td scope="row"><%= _.escape(item.get("message")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (item.get("misc_blurb")) { %>
-                            <tr>
-                                <th scope="row">Misc. blurb</th>
-                                <td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (item.get("misc_info")) { %>
-                            <tr>
-                                <th scope="row">Misc. info</th>
-                                <td scope="row"><%= _.escape(item.get("misc_info")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (item.get("tags")) { %>
-                            <tr>
-                                <th scope="row">Tags</th>
-                                <td scope="row"><%= _.escape(item.get("tags")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if ( item.get("uuid") !== "ok" ) { %>
-                            <tr>
-                                <th scope="row">UUID</th>
-                                <td scope="row"><%= _.escape(item.get("uuid")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if ( item.get("state") !== "ok" ) { %>
-                            <tr>
-                                <th scope="row">State</th>
-                                <td scope="row"><%= _.escape(item.get("state")) %></td>
-                            </tr>
-                        <% } %>
-                    </table>
-                    <% if (item.get("job_stderr")) { %>
-                        <h4>Job Standard Error</h4>
-                        <pre class="code">
-                            <%= _.escape(item.get("job_stderr")) %>
-                        </pre>
-                    <% } %>
-                    <% if (item.get("job_stdout")) { %>
-                        <h4>Job Standard Output</h4>
-                        <pre class="code">
-                            <%= _.escape(item.get("job_stdout")) %>
-                        </pre>
-                    <% } %>
-                    <div>
-                        <pre class="peek">
-                        </pre>
-                    </div>
-                    <% if (item.get("has_versions")) { %>
-                        <div>
-                            <h3>Expired versions:</h3>
-                            <ul>
-                                <% _.each(item.get("expired_versions"), function(version) { %>
-                                    <li>
-                                        <a title="See details of this version"
-                                            href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/versions/<%- version[0] %>">
-                                            <%- version[1] %>
-                                        </a>
-                                    </li>
-                                <% }) %>
-                            <ul>
-                        </div>
-                    <% } %>
+                '<% if (item.get("is_unrestricted")) { %>',
+                "<div>",
+                'This dataset is unrestricted so everybody with the link can access it. Just share <span class="copy-link-to-clipboard"><a href=""a>this page</a></span>.',
+                "</div>",
+                "<% } %>",
 
-                <!-- TABLE END -->
-                </div>
+                // TABLE START
+                '<div class="dataset_table">',
+                '<table class="grid table table-striped table-sm">',
+                "<tr>",
+                '<th class="dataset-first-column" scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
+                '<td><%= _.escape(item.get("name")) %></td>',
+                "</tr>",
+                '<% if (item.get("file_ext")) { %>',
+                "<tr>",
+                '<th scope="row">Data type</th>',
+                '<td><%= _.escape(item.get("file_ext")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (item.get("genome_build")) { %>',
+                "<tr>",
+                '<th scope="row">Genome build</th>',
+                '<td><%= _.escape(item.get("genome_build")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (item.get("file_size")) { %>',
+                "<tr>",
+                '<th scope="row">Size</th>',
+                '<td><%= _.escape(item.get("file_size")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (item.get("date_uploaded")) { %>',
+                "<tr>",
+                '<th scope="row">Date uploaded (UTC)</th>',
+                '<td><%= _.escape(item.get("date_uploaded")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (item.get("uploaded_by")) { %>',
+                "<tr>",
+                '<th scope="row">Uploaded by</th>',
+                '<td><%= _.escape(item.get("uploaded_by")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (item.get("metadata_data_lines")) { %>',
+                "<tr>",
+                '<th scope="row">Data Lines</th>',
+                '<td scope="row"><%= _.escape(item.get("metadata_data_lines")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (item.get("metadata_comment_lines")) { %>',
+                "<tr>",
+                '<th scope="row">Comment Lines</th>',
+                '<td scope="row"><%= _.escape(item.get("metadata_comment_lines")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (item.get("metadata_columns")) { %>',
+                "<tr>",
+                '<th scope="row">Number of Columns</th>',
+                '<td scope="row"><%= _.escape(item.get("metadata_columns")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (item.get("metadata_column_types")) { %>',
+                "<tr>",
+                '<th scope="row">Column Types</th>',
+                '<td scope="row"><%= _.escape(item.get("metadata_column_types")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (item.get("message")) { %>',
+                "<tr>",
+                '<th scope="row">Message</th>',
+                '<td scope="row"><%= _.escape(item.get("message")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (item.get("misc_blurb")) { %>',
+                "<tr>",
+                '<th scope="row">Misc. blurb</th>',
+                '<td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (item.get("misc_info")) { %>',
+                "<tr>",
+                '<th scope="row">Misc. info</th>',
+                '<td scope="row"><%= _.escape(item.get("misc_info")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (item.get("tags")) { %>',
+                "<tr>",
+                '<th scope="row">Tags</th>',
+                '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if ( item.get("uuid") !== "ok" ) { %>',
+                "<tr>",
+                '<th scope="row">UUID</th>',
+                '<td scope="row"><%= _.escape(item.get("uuid")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if ( item.get("state") !== "ok" ) { %>',
+                "<tr>",
+                '<th scope="row">State</th>',
+                '<td scope="row"><%= _.escape(item.get("state")) %></td>',
+                "</tr>",
+                "<% } %>",
+                "</table>",
 
-            <!-- CONTAINER END -->
-            </div>`
+                '<% if (item.get("job_stderr")) { %>',
+                "<h4>Job Standard Error</h4>",
+                '<pre class="code">',
+                '<%= _.escape(item.get("job_stderr")) %>',
+                "</pre>",
+                "<% } %>",
+
+                '<% if (item.get("job_stdout")) { %>',
+                "<h4>Job Standard Output</h4>",
+                '<pre class="code">',
+                '<%= _.escape(item.get("job_stdout")) %>',
+                "</pre>",
+                "<% } %>",
+
+                "<div>",
+                '<pre class="peek">',
+                "</pre>",
+                "</div>",
+
+                '<% if (item.get("has_versions")) { %>',
+                "<div>",
+                "<h3>Expired versions:</h3>",
+                "<ul>",
+                '<% _.each(item.get("expired_versions"), function(version) { %>',
+                '<li><a title="See details of this version" href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>/versions/<%- version[0] %>"><%- version[1] %></a></li>',
+                "<% }) %>",
+                "<ul>",
+                "</div>",
+                "<% } %>",
+                // TABLE END
+                "</div>",
+                // CONTAINER END
+                "</div>"
+            ].join("")
         );
     },
 
     templateVersion: function() {
         return _.template(
-            `<!-- CONTAINER START -->
-            <div class="library_style_container">
-                <div class="d-flex mb-2">
-                    <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">
-                        <button data-toggle="tooltip" data-placement="top" title="Go to latest dataset"
-                            class="btn btn-secondary toolbar-item mr-1" type="button">
-                            <span class="fa fa-caret-left fa-lg"></span>
-                            &nbsp;Latest dataset
-                        </button>
-                    </a>
-                </div>
+            [
+                // CONTAINER START
+                '<div class="library_style_container">',
+                '<div class="d-flex mb-2">',
+                '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">',
+                '<button data-toggle="tooltip" data-placement="top" title="Go to latest dataset" class="btn btn-secondary toolbar-item mr-1" type="button">',
+                '<span class="fa fa-caret-left fa-lg"></span>',
+                "&nbsp;Latest dataset",
+                "</button>",
+                "<a>",
+                "</div>",
 
-                <!-- BREADCRUMBS -->
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item">
-                        <a title="Return to the list of libraries" href="#">Libraries</a>
-                    </li>
-                    <% _.each(item.get("full_path"), function(path_item) { %>
-                        <% if (path_item[0] != item.id) { %>
-                            <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="#/folders/<%- path_item[0] %>">
-                                    <%- path_item[1] %>
-                                </a>
-                            </li>
-                        <% } else { %>
-                            <li class="breadcrumb-item active">
-                                <span title="You are here">
-                                    <%- path_item[1] %>
-                                </span>
-                            </li>
-                        <% } %>
-                    <% }); %>
-                </ol>
-                <div class="alert alert-warning">
-                    This is an expired version of the library dataset: <%= _.escape(item.get("name")) %>
-                </div>
+                // BREADCRUMBS
+                '<ol class="breadcrumb">',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                '<% _.each(item.get("full_path"), function(path_item) { %>',
+                "<% if (path_item[0] != item.id) { %>",
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                "<% } else { %>",
+                '<li class="breadcrumb-item active"><span title="You are here"><%- path_item[1] %></span></li>',
+                "<% } %>",
+                "<% }); %>",
+                "</ol>",
 
-                <!-- DATASET START -->
-                <div class="dataset_table">
-                    <table class="grid table table-striped table-sm">
-                        <tr>
-                            <th scope="row" id="id_row" data-id="<%= _.escape(ldda.id) %>">Name</th>
-                            <td><%= _.escape(ldda.get("name")) %></td>
-                        </tr>
-                        <% if (ldda.get("file_ext")) { %>
-                            <tr>
-                                <th scope="row">Data type</th>
-                                <td><%= _.escape(ldda.get("file_ext")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (ldda.get("genome_build")) { %>
-                            <tr>
-                                <th scope="row">Genome build</th>
-                                <td><%= _.escape(ldda.get("genome_build")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (ldda.get("file_size")) { %>
-                            <tr>
-                                <th scope="row">Size</th>
-                                <td><%= _.escape(ldda.get("file_size")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (ldda.get("date_uploaded")) { %>
-                            <tr>
-                                <th scope="row">Date uploaded (UTC)</th>
-                                <td><%= _.escape(ldda.get("date_uploaded")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (ldda.get("uploaded_by")) { %>
-                            <tr>
-                                <th scope="row">Uploaded by</th>
-                                <td><%= _.escape(ldda.get("uploaded_by")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (ldda.get("metadata_data_lines")) { %>
-                            <tr>
-                                <th scope="row">Data Lines</th>
-                                <td scope="row"><%= _.escape(ldda.get("metadata_data_lines")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (ldda.get("metadata_comment_lines")) { %>
-                            <tr>
-                                <th scope="row">Comment Lines</th>
-                                <td scope="row"><%= _.escape(ldda.get("metadata_comment_lines")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (ldda.get("metadata_columns")) { %>
-                            <tr>
-                                <th scope="row">Number of Columns</th>
-                                <td scope="row"><%= _.escape(ldda.get("metadata_columns")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (ldda.get("metadata_column_types")) { %>
-                            <tr>
-                                <th scope="row">Column Types</th>
-                                <td scope="row"><%= _.escape(ldda.get("metadata_column_types")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (ldda.get("message")) { %>
-                            <tr>
-                                <th scope="row">Message</th>
-                                <td scope="row"><%= _.escape(ldda.get("message")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (ldda.get("misc_blurb")) { %>
-                            <tr>
-                                <th scope="row">Miscellaneous blurb</th>
-                                <td scope="row"><%= _.escape(ldda.get("misc_blurb")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (ldda.get("misc_info")) { %>
-                            <tr>
-                                <th scope="row">Miscellaneous information</th>
-                                <td scope="row"><%= _.escape(ldda.get("misc_info")) %></td>
-                            </tr>
-                        <% } %>
-                        <% if (item.get("tags")) { %>
-                            <tr>
-                                <th scope="row">Tags</th>
-                                <td scope="row"><%= _.escape(item.get("tags")) %></td>
-                            </tr>
-                        <% } %>
-                    </table>
-                    <div>
-                        <pre class="peek">
-                        </pre>
-                    </div>
-                <!-- DATASET END -->
-                </div>
-            <!-- CONTAINER END -->
-            </div>`
+                '<div class="alert alert-warning">This is an expired version of the library dataset: <%= _.escape(item.get("name")) %></div>',
+                // DATASET START
+                '<div class="dataset_table">',
+                '<table class="grid table table-striped table-sm">',
+                "<tr>",
+                '<th scope="row" id="id_row" data-id="<%= _.escape(ldda.id) %>">Name</th>',
+                '<td><%= _.escape(ldda.get("name")) %></td>',
+                "</tr>",
+                '<% if (ldda.get("file_ext")) { %>',
+                "<tr>",
+                '<th scope="row">Data type</th>',
+                '<td><%= _.escape(ldda.get("file_ext")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (ldda.get("genome_build")) { %>',
+                "<tr>",
+                '<th scope="row">Genome build</th>',
+                '<td><%= _.escape(ldda.get("genome_build")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (ldda.get("file_size")) { %>',
+                "<tr>",
+                '<th scope="row">Size</th>',
+                '<td><%= _.escape(ldda.get("file_size")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (ldda.get("date_uploaded")) { %>',
+                "<tr>",
+                '<th scope="row">Date uploaded (UTC)</th>',
+                '<td><%= _.escape(ldda.get("date_uploaded")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (ldda.get("uploaded_by")) { %>',
+                "<tr>",
+                '<th scope="row">Uploaded by</th>',
+                '<td><%= _.escape(ldda.get("uploaded_by")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (ldda.get("metadata_data_lines")) { %>',
+                "<tr>",
+                '<th scope="row">Data Lines</th>',
+                '<td scope="row"><%= _.escape(ldda.get("metadata_data_lines")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (ldda.get("metadata_comment_lines")) { %>',
+                "<tr>",
+                '<th scope="row">Comment Lines</th>',
+                '<td scope="row"><%= _.escape(ldda.get("metadata_comment_lines")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (ldda.get("metadata_columns")) { %>',
+                "<tr>",
+                '<th scope="row">Number of Columns</th>',
+                '<td scope="row"><%= _.escape(ldda.get("metadata_columns")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (ldda.get("metadata_column_types")) { %>',
+                "<tr>",
+                '<th scope="row">Column Types</th>',
+                '<td scope="row"><%= _.escape(ldda.get("metadata_column_types")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (ldda.get("message")) { %>',
+                "<tr>",
+                '<th scope="row">Message</th>',
+                '<td scope="row"><%= _.escape(ldda.get("message")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (ldda.get("misc_blurb")) { %>',
+                "<tr>",
+                '<th scope="row">Miscellaneous blurb</th>',
+                '<td scope="row"><%= _.escape(ldda.get("misc_blurb")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (ldda.get("misc_info")) { %>',
+                "<tr>",
+                '<th scope="row">Miscellaneous information</th>',
+                '<td scope="row"><%= _.escape(ldda.get("misc_info")) %></td>',
+                "</tr>",
+                "<% } %>",
+                '<% if (item.get("tags")) { %>',
+                "<tr>",
+                '<th scope="row">Tags</th>',
+                '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
+                "</tr>",
+                "<% } %>",
+                "</table>",
+                "<div>",
+                '<pre class="peek">',
+                "</pre>",
+                "</div>",
+                // DATASET END
+                "</div>",
+                // CONTAINER END
+                "</div>"
+            ].join("")
         );
     },
 
     templateModifyDataset: function() {
         return _.template(
-            `<!-- CONTAINER START -->
-            <div class="library_style_container">
+            [
+                // CONTAINER START
+                '<div class="library_style_container">',
 
-                <!-- BREADCRUMBS -->
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item">
-                        <a title="Return to the list of libraries" href="#">Libraries</a>
-                    </li>
-                    <% _.each(item.get("full_path"), function(path_item) { %>
-                        <% if (path_item[0] != item.id) { %>
-                            <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="#/folders/<%- path_item[0] %>">
-                                    <%- path_item[1] %>
-                                </a>
-                            </li>
-                        <% } else { %>
-                            <li class="breadcrumb-item active">
-                                <span title="You are here">
-                                    <%- path_item[1] %>
-                                </span>
-                            </li>
-                        <% } %>
-                    <% }); %>
-                </ol>
-                <div class="dataset_table">
-                    <table class="grid table table-striped table-sm">
-                        <tr>
-                            <th class="dataset-first-column" scope="row" id="id_row"
-                                data-id="<%= _.escape(item.get("ldda_id")) %>">
-                                Name
-                            </th>
-                            <td>
-                                <input class="input_dataset_name form-control" type="text"
-                                    placeholder="name" value="<%= _.escape(item.get("name")) %>">
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Data type</th>
-                            <td>
-                                <span id="dataset_extension_select" class="dataset-extension-select" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Genome build</th>
-                            <td>
-                                <span id="dataset_genome_select" class="dataset-genome-select" />
-                            </td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Size</th>
-                            <td><%= _.escape(item.get("file_size")) %></td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Date uploaded (UTC)</th>
-                            <td><%= _.escape(item.get("date_uploaded")) %></td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Uploaded by</th>
-                            <td><%= _.escape(item.get("uploaded_by")) %></td>
-                        </tr>
-                        <tr scope="row">
-                            <th scope="row">Data Lines</th>
-                            <td scope="row"><%= _.escape(item.get("metadata_data_lines")) %></td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Comment Lines</th>
-                            <% if (item.get("metadata_comment_lines") === "") { %>
-                                <td scope="row"><%= _.escape(item.get("metadata_comment_lines")) %></td>
-                            <% } else { %>
-                                <td scope="row">unknown</td>
-                            <% } %>
-                        </tr>
-                        <tr>
-                            <th scope="row">Number of Columns</th>
-                            <td scope="row"><%= _.escape(item.get("metadata_columns")) %></td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Column Types</th>
-                            <td scope="row"><%= _.escape(item.get("metadata_column_types")) %></td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Message</th>
-                            <td scope="row"><input class="input_dataset_message form-control" type="text"
-                                placeholder="message" value="<%= _.escape(item.get("message")) %>"></td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Misc. blurb</th>
-                            <td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>
-                        </tr>
-                        <tr>
-                            <th scope="row">Misc. information</th>
-                            <td><input class="input_dataset_misc_info form-control" type="text"
-                                placeholder="info" value="<%= _.escape(item.get("misc_info")) %>"></td>
-                        </tr>
+                // BREADCRUMBS
+                '<ol class="breadcrumb">',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                '<% _.each(item.get("full_path"), function(path_item) { %>',
+                "<% if (path_item[0] != item.id) { %>",
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                "<% } else { %>",
+                '<li class="breadcrumb-item active"><span title="You are here"><%- path_item[1] %></span></li>',
+                "<% } %>",
+                "<% }); %>",
+                "</ol>",
 
-                        <!-- TODO: add functionality to modify tags here -->
-                        <% if (item.get("tags")) { %>
-                            <tr>
-                                <th scope="row">Tags</th>
-                                <td scope="row"><%= _.escape(item.get("tags")) %></td>
-                            </tr>
-                        <% } %>
-                    </table>
-                    <div>
-                        <pre class="peek">
-                        </pre>
-                    </div>
-                </div>
-                <div class="d-flex">
-                    <button data-toggle="tooltip" data-placement="top" title="Cancel modifications"
-                        class="btn btn-secondary toolbtn_cancel_modifications toolbar-item mr-1" type="button">
-                        <span class="fa fa-times"></span>
-                        &nbsp;Cancel
-                    </button>
-                    <button data-toggle="tooltip" data-placement="top" title="Save modifications"
-                        class="btn btn-secondary toolbtn_save_modifications toolbar-item mr-1" type="button">
-                        <span class="fa fa-floppy-o"></span>
-                        &nbsp;Save
-                    </button>
-                </div>
+                '<div class="dataset_table">',
+                '<table class="grid table table-striped table-sm">',
+                "<tr>",
+                '<th class="dataset-first-column" scope="row" id="id_row" data-id="<%= _.escape(item.get("ldda_id")) %>">Name</th>',
+                '<td><input class="input_dataset_name form-control" type="text" placeholder="name" value="<%= _.escape(item.get("name")) %>"></td>',
+                "</tr>",
+                "<tr>",
+                '<th scope="row">Data type</th>',
+                "<td>",
+                '<span id="dataset_extension_select" class="dataset-extension-select" />',
+                "</td>",
+                "</tr>",
+                "<tr>",
+                '<th scope="row">Genome build</th>',
+                "<td>",
+                '<span id="dataset_genome_select" class="dataset-genome-select" />',
+                "</td>",
+                "</tr>",
+                "<tr>",
+                '<th scope="row">Size</th>',
+                '<td><%= _.escape(item.get("file_size")) %></td>',
+                "</tr>",
+                "<tr>",
+                '<th scope="row">Date uploaded (UTC)</th>',
+                '<td><%= _.escape(item.get("date_uploaded")) %></td>',
+                "</tr>",
+                "<tr>",
+                '<th scope="row">Uploaded by</th>',
+                '<td><%= _.escape(item.get("uploaded_by")) %></td>',
+                "</tr>",
+                '<tr scope="row">',
+                '<th scope="row">Data Lines</th>',
+                '<td scope="row"><%= _.escape(item.get("metadata_data_lines")) %></td>',
+                "</tr>",
+                '<th scope="row">Comment Lines</th>',
+                '<% if (item.get("metadata_comment_lines") === "") { %>',
+                '<td scope="row"><%= _.escape(item.get("metadata_comment_lines")) %></td>',
+                "<% } else { %>",
+                '<td scope="row">unknown</td>',
+                "<% } %>",
+                "</tr>",
+                "<tr>",
+                '<th scope="row">Number of Columns</th>',
+                '<td scope="row"><%= _.escape(item.get("metadata_columns")) %></td>',
+                "</tr>",
+                "<tr>",
+                '<th scope="row">Column Types</th>',
+                '<td scope="row"><%= _.escape(item.get("metadata_column_types")) %></td>',
+                "</tr>",
+                "<tr>",
+                '<th scope="row">Message</th>',
+                '<td scope="row"><input class="input_dataset_message form-control" type="text" placeholder="message" value="<%= _.escape(item.get("message")) %>"></td>',
+                "</tr>",
+                "<tr>",
+                '<th scope="row">Misc. blurb</th>',
+                '<td scope="row"><%= _.escape(item.get("misc_blurb")) %></td>',
+                "</tr>",
+                "<tr>",
+                '<th scope="row">Misc. information</th>',
+                '<td><input class="input_dataset_misc_info form-control" type="text" placeholder="info" value="<%= _.escape(item.get("misc_info")) %>"></td>',
+                "</tr>",
+                //TODO: add functionality to modify tags here
+                '<% if (item.get("tags")) { %>',
+                "<tr>",
+                '<th scope="row">Tags</th>',
+                '<td scope="row"><%= _.escape(item.get("tags")) %></td>',
+                "</tr>",
+                "<% } %>",
+                "</table>",
+                "<div>",
+                '<pre class="peek">',
+                "</pre>",
+                "</div>",
+                "</div>",
 
-            <!-- CONTAINER END -->
-            </div>`
+                '<div class="d-flex">',
+                '<button data-toggle="tooltip" data-placement="top" title="Cancel modifications" class="btn btn-secondary toolbtn_cancel_modifications toolbar-item mr-1" type="button">',
+                '<span class="fa fa-times"></span>',
+                "&nbsp;Cancel",
+                "</button>",
+                '<button data-toggle="tooltip" data-placement="top" title="Save modifications" class="btn btn-secondary toolbtn_save_modifications toolbar-item mr-1" type="button">',
+                '<span class="fa fa-floppy-o"></span>',
+                "&nbsp;Save",
+                "</button>",
+                "</div>",
+
+                // CONTAINER END
+                "</div>"
+            ].join("")
         );
     },
 
     templateDatasetPermissions: function() {
         return _.template(
-            `<!-- CONTAINER START -->
-            <div class="library_style_container">
-                <div class="d-flex mb-2">
-                    <a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">
-                        <button data-toggle="tooltip" data-placement="top" title="Go back to dataset"
-                            class="btn btn-secondary toolbar-item mr-1" type="button">
-                            <span class="fa fa-file-o"></span>
-                            &nbsp;Dataset Details
-                        </button>
-                    </a>
-                </div>
+            [
+                // CONTAINER START
+                '<div class="library_style_container">',
+                '<div class="d-flex mb-2">',
+                '<a href="#folders/<%- item.get("folder_id") %>/datasets/<%- item.id %>">',
+                '<button data-toggle="tooltip" data-placement="top" title="Go back to dataset" class="btn btn-secondary toolbar-item mr-1" type="button">',
+                '<span class="fa fa-file-o"></span>',
+                "&nbsp;Dataset Details",
+                "</button>",
+                "<a>",
+                "</div>",
 
-                <!-- BREADCRUMBS -->
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item">
-                        <a title="Return to the list of libraries" href="#">Libraries</a>
-                    </li>
-                    <% _.each(item.get("full_path"), function(path_item) { %>
-                        <% if (path_item[0] != item.id) { %>
-                            <li class="breadcrumb-item">
-                                <a title="Return to this folder" href="#/folders/<%- path_item[0] %>">
-                                    <%- path_item[1] %>
-                                </a>
-                            </li>
-                        <% } else { %>
-                            <li class="breadcrumb-item active">
-                                <span title="You are here">
-                                    <%- path_item[1] %>
-                                </span>
-                            </li>
-                        <% } %>
-                    <% }); %>
-                </ol>
+                // BREADCRUMBS
+                '<ol class="breadcrumb">',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                '<% _.each(item.get("full_path"), function(path_item) { %>',
+                "<% if (path_item[0] != item.id) { %>",
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                "<% } else { %>",
+                '<li class="breadcrumb-item active"><span title="You are here"><%- path_item[1] %></span></li>',
+                "<% } %>",
+                "<% }); %>",
+                "</ol>",
 
-                <h1>Dataset: <%= _.escape(item.get("name")) %></h1>
-                <div class="alert alert-warning">
-                    <% if (is_admin) { %>
-                        You are logged in as an <strong>administrator</strong> therefore you can manage any dataset
-                        on this Galaxy instance. Please make sure you understand the consequences.
-                    <% } else { %>
-                        You can assign any number of roles to any of the following permission types. However please
-                        read carefully the implications of such actions.
-                    <% } %>
-                </div>
-                <div class="dataset_table">
-                    <h2>Library-related permissions</h2>
-                    <h4>Roles that can modify the library item</h4>
-                    <div id="modify_perm" class="modify_perm roles-selection"></div>
-                    <div class="alert alert-info roles-selection">
-                        User with <strong>any</strong> of these roles can modify name, metadata,
-                        and other information about this library item.
-                    </div>
-                    <hr/>
-                    <h2>Dataset-related permissions</h2>
-                    <div class="alert alert-warning">
-                        Changes made below will affect <strong>every</strong> library item that was created from
-                        this dataset and also every history this dataset is part of.
-                    </div>
-                    <% if (!item.get("is_unrestricted")) { %>
-                        <p>
-                            You can <span class="remove-restrictions">
-                            <a href="">remove all access restrictions</a></span> on this dataset.
-                        </p>
-                    <% } else { %>
-                        <p>
-                            You can <span class="make-private">
-                            <a href="">make this dataset private</a></span> to you.</p>
-                    <% } %>
-                    <h4>Roles that can access the dataset</h4>
-                    <div id="access_perm" class="access_perm roles-selection"></div>
-                    <div class="alert alert-info roles-selection">
-                        User has to have <strong>all these roles</strong> in order to access this dataset.
-                        Users without access permission <strong>cannot</strong> have other permissions on this dataset.
-                        If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>.
-                    </div>
-                    <h4>Roles that can manage permissions on the dataset</h4>
-                    <div id="manage_perm" class="manage_perm roles-selection"></div>
-                    <div class="alert alert-info roles-selection">
-                        User with <strong>any</strong> of these roles can manage permissions of this dataset.
-                        If you remove yourself you will lose the ability manage this dataset unless you are an admin.
-                    </div>
-                    <button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page"
-                        class="btn btn-secondary toolbtn_save_permissions type="button">
-                        <span class="fa fa-floppy-o"></span>
-                        &nbsp;Save
-                    </button>
-                </div>
-            <!-- CONTAINER END -->
-            </div>`
+                '<h1>Dataset: <%= _.escape(item.get("name")) %></h1>',
+                '<div class="alert alert-warning">',
+                "<% if (is_admin) { %>",
+                "You are logged in as an <strong>administrator</strong> therefore you can manage any dataset on this Galaxy instance. Please make sure you understand the consequences.",
+                "<% } else { %>",
+                "You can assign any number of roles to any of the following permission types. However please read carefully the implications of such actions.",
+                "<% } %>",
+                "</div>",
+                '<div class="dataset_table">',
+                "<h2>Library-related permissions</h2>",
+                "<h4>Roles that can modify the library item</h4>",
+                '<div id="modify_perm" class="modify_perm roles-selection"></div>',
+                '<div class="alert alert-info roles-selection">User with <strong>any</strong> of these roles can modify name, metadata, and other information about this library item.</div>',
+                "<hr/>",
+                "<h2>Dataset-related permissions</h2>",
+                '<div class="alert alert-warning">Changes made below will affect <strong>every</strong> library item that was created from this dataset and also every history this dataset is part of.</div>',
+                '<% if (!item.get("is_unrestricted")) { %>',
+                '<p>You can <span class="remove-restrictions"><a href="">remove all access restrictions</a></span> on this dataset.</p>',
+                "<% } else { %>",
+                '<p>You can <span class="make-private"><a href="">make this dataset private</a></span> to you.</p>',
+                "<% } %>",
+                "<h4>Roles that can access the dataset</h4>",
+                '<div id="access_perm" class="access_perm roles-selection"></div>',
+                '<div class="alert alert-info roles-selection">',
+                "User has to have <strong>all these roles</strong> in order to access this dataset.",
+                " Users without access permission <strong>cannot</strong> have other permissions on this dataset.",
+                " If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>.",
+                "</div>",
+                "<h4>Roles that can manage permissions on the dataset</h4>",
+                '<div id="manage_perm" class="manage_perm roles-selection"></div>',
+                '<div class="alert alert-info roles-selection">',
+                "User with <strong>any</strong> of these roles can manage permissions of this dataset. If you remove yourself you will lose the ability manage this dataset unless you are an admin.",
+                "</div>",
+                '<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-secondary toolbtn_save_permissions  type="button">',
+                '<span class="fa fa-floppy-o"></span>',
+                "&nbsp;Save",
+                "</button>",
+                "</div>",
+                // CONTAINER END
+                "</div>"
+            ].join("")
         );
     },
 
     templateBulkImportInModal: function() {
         return _.template(
-            `<div>
-                <div class="library-modal-item">
-                    Select history: 
-                    <select id="dataset_import_single" name="dataset_import_single"
-                        style="width:50%; margin-bottom: 1em;" autofocus>
-                        <% _.each(histories, function(history) { %>
-                            <option value="<%= _.escape(history.get("id")) %>">
-                                <%= _.escape(history.get("name")) %>
-                            </option>
-                        <% }); %>
-                    </select>
-                </div>
-                <div class="library-modal-item">or create new: 
-                    <input type="text" name="history_name" value="" placeholder="name of the new history"
-                        style="width:50%;" />
-                </div>
-            </div>`
+            [
+                "<div>",
+                '<div class="library-modal-item">',
+                "Select history: ",
+                '<select id="dataset_import_single" name="dataset_import_single" style="width:50%; margin-bottom: 1em; " autofocus>',
+                "<% _.each(histories, function(history) { %>",
+                '<option value="<%= _.escape(history.get("id")) %>"><%= _.escape(history.get("name")) %></option>',
+                "<% }); %>",
+                "</select>",
+                "</div>",
+                '<div class="library-modal-item">',
+                "or create new: ",
+                '<input type="text" name="history_name" value="" placeholder="name of the new history" style="width:50%;">',
+                "</input>",
+                "</div>",
+                "</div>"
+            ].join("")
         );
     }
 });

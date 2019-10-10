@@ -130,9 +130,7 @@ ModeButton.prototype.getMode = function getMode(modeKey) {
 ModeButton.prototype.hasMode = function hasMode(modeKey) {
     try {
         return !!this.getMode(modeKey);
-    } catch (err) {
-        console.debug(err);
-    }
+    } catch (err) {}
     return false;
 };
 /** set the current mode to the mode with the given name */

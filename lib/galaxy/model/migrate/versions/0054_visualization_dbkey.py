@@ -8,15 +8,14 @@ from json import loads
 
 from sqlalchemy import Column, Index, MetaData, Table, TEXT
 
-from galaxy.model.migrate.versions.util import add_column, drop_column
-
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    print(__doc__)
     metadata.bind = migrate_engine
+
+    print(__doc__)
     metadata.reflect()
 
     Visualization_table = Table("visualization", metadata, autoload=True)
@@ -24,14 +23,16 @@ def upgrade(migrate_engine):
 
     # Create dbkey columns.
     x = Column("dbkey", TEXT)
-    add_column(x, Visualization_table)
     y = Column("dbkey", TEXT)
-    add_column(y, Visualization_revision_table)
+    x.create(Visualization_table)
+    y.create(Visualization_revision_table)
     # Manually create indexes for compatability w/ mysql_length.
     xi = Index("ix_visualization_dbkey", Visualization_table.c.dbkey, mysql_length=200)
     xi.create()
     yi = Index("ix_visualization_revision_dbkey", Visualization_revision_table.c.dbkey, mysql_length=200)
     yi.create()
+    assert x is Visualization_table.c.dbkey
+    assert y is Visualization_revision_table.c.dbkey
 
     all_viz = migrate_engine.execute("SELECT visualization.id as viz_id, visualization_revision.id as viz_rev_id, visualization_revision.config FROM visualization_revision \
                     LEFT JOIN visualization ON visualization.id=visualization_revision.visualization_id")
@@ -48,5 +49,8 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    drop_column('dbkey', 'visualization', metadata)
-    drop_column('dbkey', 'visualization_revision', metadata)
+    Visualization_table = Table("visualization", metadata, autoload=True)
+    Visualization_revision_table = Table("visualization_revision", metadata, autoload=True)
+
+    Visualization_table.c.dbkey.drop()
+    Visualization_revision_table.c.dbkey.drop()

@@ -14,8 +14,8 @@ import Webhooks from "mvc/webhooks";
 
 var View = Backbone.View.extend({
     initialize: function(options) {
-        const Galaxy = getGalaxyInstance();
-        const self = this;
+        let Galaxy = getGalaxyInstance();
+        var self = this;
         this.modal = Galaxy.modal || new Modal.View();
         this.form = new ToolFormBase(
             Utils.merge(
@@ -143,14 +143,13 @@ var View = Backbone.View.extend({
 
         // remap feature
         if (options.job_id && options.job_remap) {
-            var label, help;
             if (options.job_remap === "job_produced_collection_elements") {
-                label = "Replace elements in collection ?";
-                help =
+                var label = "Replace elements in collection ?";
+                var help =
                     "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collection that were produced during the previous tool run.";
             } else {
-                label = "Resume dependencies from this job ?";
-                help =
+                var label = "Resume dependencies from this job ?";
+                var help =
                     "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
             }
             options.inputs.push({
@@ -166,7 +165,7 @@ var View = Backbone.View.extend({
         }
 
         // Job Re-use Options
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         var extra_user_preferences = {};
         if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
             extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
@@ -194,11 +193,9 @@ var View = Backbone.View.extend({
      * @param{function} callback  - Called when request has completed
      */
     submit: function(options, callback) {
-        const Galaxy = getGalaxyInstance();
-        const history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
-        const self = this;
-        const job_def = {
-            history_id: history_id,
+        let Galaxy = getGalaxyInstance();
+        var self = this;
+        var job_def = {
             tool_id: options.id,
             tool_version: options.version,
             inputs: this.form.data.create()
@@ -210,7 +207,7 @@ var View = Backbone.View.extend({
             return;
         }
         if (options.action !== `${getAppRoot()}tool_runner/index`) {
-            const $f = $("<form/>").attr({
+            var $f = $("<form/>").attr({
                 action: options.action,
                 method: options.method,
                 enctype: options.enctype
@@ -237,23 +234,20 @@ var View = Backbone.View.extend({
                 // Show Webhook if job is running
                 if (response.jobs && response.jobs.length > 0) {
                     self.$el.append($("<div/>", { id: "webhook-view" }));
-                    new Webhooks.WebhookView({
+                    var WebhookApp = new Webhooks.WebhookView({
                         type: "tool",
                         toolId: job_def.tool_id
                     });
                 }
-                if (Galaxy.currHistoryPanel) {
-                    self.form.stopListening(Galaxy.currHistoryPanel.collection);
-                    Galaxy.currHistoryPanel.refreshContents();
-                }
+                Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshContents();
             },
             error: function(response) {
                 callback && callback();
                 Galaxy.emit.debug("tool-form::submit", "Submission failed.", response);
-                let input_found = false;
+                var input_found = false;
                 if (response && response.err_data) {
-                    const error_messages = self.form.data.matchResponse(response.err_data);
-                    for (const input_id in error_messages) {
+                    var error_messages = self.form.data.matchResponse(response.err_data);
+                    for (var input_id in error_messages) {
                         self.form.highlight(input_id, error_messages[input_id]);
                         input_found = true;
                         break;
@@ -278,7 +272,7 @@ var View = Backbone.View.extend({
      * @param{dict}     job_def   - Job execution dictionary
      */
     validate: function(job_def) {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         var job_inputs = job_def.inputs;
         var batch_n = -1;
         var batch_src = null;
@@ -296,9 +290,13 @@ var View = Backbone.View.extend({
                 return false;
             }
             if (input_field.validate) {
-                const message = input_field.validate();
-                if (message) {
-                    this.form.highlight(input_id, message);
+                // wish there was a way to just reset this input field
+                const reset = () => {
+                    this.form.trigger("reset");
+                };
+                const validateObject = input_field.validate(reset);
+                if (!validateObject.valid) {
+                    this.form.highlight(input_id, validateObject.message);
                     return false;
                 }
             }
@@ -333,10 +331,10 @@ var View = Backbone.View.extend({
     _getInputs: function(job_def) {
         var inputs = [];
         var index = {};
-        for (const i in job_def.inputs) {
-            const input = job_def.inputs[i];
+        for (let i in job_def.inputs) {
+            let input = job_def.inputs[i];
             if (input && $.isArray(input.values)) {
-                for (const j of input.values) {
+                for (let j of input.values) {
                     if (j.src && !index[j.id]) {
                         inputs.push(j);
                         index[j.id] = true;
@@ -354,8 +352,8 @@ var View = Backbone.View.extend({
         });
         if (list.length > 0) {
             blurb += `<p>${title}:</p>`;
-            for (const item of list) {
-                const rowString = max > 0 ? `${item.hid}: ${_.escape(item.name)}` : "...";
+            for (let item of list) {
+                let rowString = max > 0 ? `${item.hid}: ${_.escape(item.name)}` : "...";
                 blurb += `<p class="messagerow">
                             <b>${rowString}</b>
                           </p>`;
@@ -368,7 +366,7 @@ var View = Backbone.View.extend({
     },
 
     _templateSuccess: function(response, job_def) {
-        var njobs = response && response.jobs ? response.jobs.length : 0;
+        var njobs = response.jobs.length;
         if (njobs > 0) {
             var inputs = this._getInputs(job_def);
             var ninputs = inputs.length;

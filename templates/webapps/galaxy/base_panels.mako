@@ -9,10 +9,6 @@
 ${parent.javascripts()}
 </%def>
 
-<%def name="javascript_app()">
-${parent.javascript_app()}
-</%def>
-
 <%def name="late_javascripts()">
 ${parent.late_javascripts()}
 </%def>

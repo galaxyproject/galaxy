@@ -1,5 +1,3 @@
-import $ from "jquery";
-import _ from "underscore";
 import DATASET_LI_EDIT from "mvc/dataset/dataset-li-edit";
 import HDA_LI from "mvc/history/hda-li";
 import BASE_MVC from "mvc/base-mvc";
@@ -32,7 +30,7 @@ var HDAListItemEdit = _super.extend(
                     }
                 });
             }
-            return $.when();
+            return jQuery.when();
         },
 
         /** event map */

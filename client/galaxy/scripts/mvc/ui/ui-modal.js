@@ -1,7 +1,3 @@
-import $ from "jquery";
-import _ from "underscore";
-import Backbone from "backbone";
-
 export var View = Backbone.View.extend({
     className: "ui-modal",
 
@@ -55,7 +51,6 @@ export var View = Backbone.View.extend({
                 this.hide(true);
             });
         }
-        this.$el.find(".title").focus();
     },
 
     /**
@@ -196,7 +191,7 @@ export var View = Backbone.View.extend({
             '<div class="modal-dialog">' +
             '<div class="modal-content">' +
             '<div class="modal-header">' +
-            '<h4 class="title" tabindex="0"/>' +
+            '<h4 class="title"/>' +
             "</div>" +
             '<div class="modal-body"/>' +
             '<div class="modal-footer">' +

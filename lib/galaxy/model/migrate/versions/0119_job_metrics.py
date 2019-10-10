@@ -7,8 +7,6 @@ import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Numeric, Table, Unicode
 
-from galaxy.model.migrate.versions.util import create_table, drop_table
-
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
@@ -67,12 +65,12 @@ TABLES = [
 
 
 def upgrade(migrate_engine):
-    print(__doc__)
     metadata.bind = migrate_engine
+    print(__doc__)
     metadata.reflect()
 
     for table in TABLES:
-        create_table(table)
+        __create(table)
 
 
 def downgrade(migrate_engine):
@@ -80,4 +78,18 @@ def downgrade(migrate_engine):
     metadata.reflect()
 
     for table in TABLES:
-        drop_table(table)
+        __drop(table)
+
+
+def __create(table):
+    try:
+        table.create()
+    except Exception:
+        log.exception("Creating %s table failed.", table.name)
+
+
+def __drop(table):
+    try:
+        table.drop()
+    except Exception:
+        log.exception("Dropping %s table failed.", table.name)

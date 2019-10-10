@@ -1,9 +1,7 @@
 /**
     This class creates a form input element wrapper
 */
-import $ from "jquery";
-import _ from "underscore";
-import Backbone from "backbone";
+
 export default Backbone.View.extend({
     initialize: function(app, options) {
         this.app = app;

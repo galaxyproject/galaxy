@@ -37,6 +37,7 @@ from galaxy.tools.parameters.basic import (
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
+from galaxy.workflow import modules
 from galaxy.workflow.modules import (
     is_tool_module_type,
     module_factory,
@@ -181,7 +182,7 @@ class WorkflowsManager(object):
             raise exceptions.RequestParameterInvalidException("Attempting to modify the state of an completed workflow invocation.")
 
         step = workflow_invocation_step.workflow_step
-        module = module_factory.from_workflow_step(trans, step)
+        module = modules.module_factory.from_workflow_step(trans, step)
         performed_action = module.do_invocation_step_action(step, action)
         workflow_invocation_step.action = performed_action
         trans.sa_session.add(workflow_invocation_step)
@@ -270,6 +271,9 @@ class WorkflowContentsManager(UsesAnnotations):
 
         workflow_class = as_dict.get("class", None)
         if workflow_class == "GalaxyWorkflow" or "$graph" in as_dict or "yaml_content" in as_dict:
+            if not self.app.config.enable_beta_workflow_format:
+                raise exceptions.ConfigDoesNotAllowException("Format2 workflows not enabled.")
+
             # Format 2 Galaxy workflow.
             galaxy_interface = Format2ConverterGalaxyInterface()
             import_options = ImportOptions()
@@ -441,6 +445,8 @@ class WorkflowContentsManager(UsesAnnotations):
         """
 
         def to_format_2(wf_dict, **kwds):
+            if not trans.app.config.enable_beta_workflow_format:
+                raise exceptions.ConfigDoesNotAllowException("Format2 workflows not enabled.")
             return from_galaxy_native(wf_dict, None, **kwds)
 
         if version == '':
@@ -448,8 +454,6 @@ class WorkflowContentsManager(UsesAnnotations):
         if version is not None:
             version = int(version)
         workflow = stored.get_internal_version(version)
-        if style == "export":
-            style = self.app.config.default_workflow_export_format
         if style == "editor":
             wf_dict = self._workflow_to_dict_editor(trans, stored, workflow)
         elif style == "legacy":
@@ -464,10 +468,8 @@ class WorkflowContentsManager(UsesAnnotations):
         elif style == "format2_wrapped_yaml":
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
             wf_dict = to_format_2(wf_dict, json_wrapper=True)
-        elif style == "ga":
-            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
         else:
-            raise exceptions.RequestParameterInvalidException('Unknown workflow style [%s]' % style)
+            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
         if version:
             wf_dict['version'] = version
         else:
@@ -528,7 +530,7 @@ class WorkflowContentsManager(UsesAnnotations):
             step_model = None
             if step.type == 'tool':
                 incoming = {}
-                tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid)
+                tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version)
                 params_to_incoming(incoming, tool.inputs, step.state.inputs, trans.app)
                 step_model = tool.to_json(trans, incoming, workflow_building_mode=workflow_building_modes.USE_HISTORY)
                 step_model['post_job_actions'] = [{
@@ -574,13 +576,12 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
 
-    def _workflow_to_dict_editor(self, trans, stored, workflow, tooltip=True, is_subworkflow=False):
+    def _workflow_to_dict_editor(self, trans, stored, workflow, tooltip=True):
         # Pack workflow data into a dictionary and return
         data = {}
         data['name'] = workflow.name
         data['steps'] = {}
         data['upgrade_messages'] = {}
-        input_step_types = set(workflow.input_step_types)
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
@@ -645,22 +646,17 @@ class WorkflowContentsManager(UsesAnnotations):
                         output_name=pja.output_name,
                         action_arguments=pja.action_arguments
                     )
-                    if pja.action_type == 'ChangeDatatypeAction':
-                        for output in step_dict['outputs']:
-                            if output['name'] == pja.output_name:
-                                output['force_datatype'] = [pja.action_arguments['newtype']]
                 step_dict['post_job_actions'] = pja_dict
 
             # workflow outputs
             outputs = []
             for output in step.unique_workflow_outputs:
-                if output.workflow_step.type not in input_step_types:
-                    output_label = output.label
-                    output_name = output.output_name
-                    output_uuid = str(output.uuid) if output.uuid else None
-                    outputs.append({"output_name": output_name,
-                                    "uuid": output_uuid,
-                                    "label": output_label})
+                output_label = output.label
+                output_name = output.output_name
+                output_uuid = str(output.uuid) if output.uuid else None
+                outputs.append({"output_name": output_name,
+                                "uuid": output_uuid,
+                                "label": output_label})
             step_dict['workflow_outputs'] = outputs
 
             # Encode input connections as dictionary
@@ -683,98 +679,25 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict['position'] = step.position
             # Add to return value
             data['steps'][step.order_index] = step_dict
-        if is_subworkflow:
-            data['steps'] = self._resolve_collection_type(data['steps'])
+        data['steps'] = self._resolve_collection_type_source(data['steps'])
         return data
 
-    @staticmethod
-    def get_step_map_over(current_step, steps):
+    def _resolve_collection_type_source(self, steps):
         """
-        Given a tool step and its input steps guess that maximum level of mapping over.
-        All data outputs of a step need to be mapped over to this level.
-        """
-        max_map_over = ''
-        for input_name, input_connections in current_step['input_connections'].items():
-            if isinstance(input_connections, dict):
-                # if input does not accept multiple inputs
-                input_connections = [input_connections]
-            for input_value in input_connections:
-                current_data_input = None
-                for current_input in current_step['inputs']:
-                    if current_input['name'] == input_name:
-                        current_data_input = current_input
-                        # we've got one of the tools' input data definitions
-                        break
-                input_step = steps[input_value['id']]
-                for input_step_data_output in input_step['outputs']:
-                    if input_step_data_output['name'] == input_value['output_name']:
-                        collection_type = input_step_data_output.get('collection_type')
-                        # This is the defined incoming collection type, in reality there may be additional
-                        # mapping over of the workflows' data input, but this should be taken care of by the workflow editor /
-                        # outer workflow.
-                        if collection_type:
-                            if current_data_input.get('input_type') == 'dataset' and current_data_input.get('multiple'):
-                                # We reduce the innermost collection
-                                if ':' in collection_type:
-                                    # more than one layer of nesting and multiple="true" input,
-                                    # we consume the innermost collection
-                                    collection_type = ":".join(collection_type.rsplit(':')[:-1])
-                                else:
-                                    # We've reduced a list or a pair
-                                    collection_type = None
-                            elif current_data_input.get('input_type') == 'dataset_collection':
-                                current_collection_types = current_data_input['collection_types']
-                                if not current_collection_types:
-                                    # Accepts any input dataset collection, no mapping
-                                    collection_type = None
-                                elif collection_type in current_collection_types:
-                                    # incoming collection type is an exact match, no mapping over
-                                    collection_type = None
-                                else:
-                                    outer_map_over = collection_type
-                                    for accepted_collection_type in current_data_input['collection_types']:
-                                        # need to find the lowest level of mapping over,
-                                        # for collection_type = 'list:list:list' and accepted_collection_type = ['list:list', 'list']
-                                        # it'd be outer_map_over == 'list'
-                                        if collection_type.endswith(accepted_collection_type):
-                                            _outer_map_over = collection_type[:-(len(accepted_collection_type) + 1)]
-                                            if len(_outer_map_over.split(':')) < len(outer_map_over.split(':')):
-                                                outer_map_over = _outer_map_over
-                                    collection_type = outer_map_over
-                            # If there is mapping over, we're going to assume it is linked, everything else is (probably)
-                            # too hard to display in the workflow editor. With this assumption we should be able to
-                            # set the maximum mapping over level to the most deeply nested map_over
-                            if collection_type and len(collection_type.split(':')) >= len(max_map_over.split(':')):
-                                max_map_over = collection_type
-        if max_map_over:
-            return max_map_over
-        return None
-
-    def _resolve_collection_type(self, steps):
-        """
-        Fill in collection type for step outputs.
-        This can either be via collection_type_source and / or "inherited" from the step's input.
+        Fill in collection type for step outputs that infer the collection type via collection_type_source.
 
         This information is only needed in the workflow editor.
         """
         for order_index in sorted(steps):
             step = steps[order_index]
-            if step['type'] == 'tool' and not step.get('errors'):
-                map_over = self.get_step_map_over(step, steps)
-                for step_data_output in step['outputs']:
-                    if step_data_output.get('collection_type_source') and step_data_output['collection_type'] is None:
-                        collection_type_source = step_data_output['collection_type_source']
-                        for input_connection in step['input_connections'].get(collection_type_source, []):
-                            input_step = steps[input_connection['id']]
-                            for input_step_data_output in input_step['outputs']:
-                                if input_step_data_output['name'] == input_connection['output_name']:
-                                    step_data_output['collection_type'] = input_step_data_output.get('collection_type')
-                    if map_over:
-                        collection_type = map_over
-                        step_data_output['collection'] = True
-                        if step_data_output.get('collection_type'):
-                            collection_type = "%s:%s" % (map_over, step_data_output['collection_type'])
-                        step_data_output['collection_type'] = collection_type
+            for i, step_data_output in enumerate(step['outputs']):
+                if step_data_output.get('collection_type_source') and step_data_output['collection_type'] is None:
+                    collection_type_source = step_data_output['collection_type_source']
+                    for input_connection in step['input_connections'].get(collection_type_source, []):
+                        input_step = steps[input_connection['id']]
+                        for input_step_data_output in input_step['outputs']:
+                            if input_step_data_output['name'] == input_connection['output_name']:
+                                step_data_output['collection_type'] = input_step_data_output.get('collection_type')
         return steps
 
     def _workflow_to_dict_export(self, trans, stored=None, workflow=None):
@@ -833,16 +756,6 @@ class WorkflowContentsManager(UsesAnnotations):
                         'changeset_revision': module.tool.changeset_revision,
                         'tool_shed': module.tool.tool_shed
                     }
-
-                tool_representation = None
-                dynamic_tool = step.dynamic_tool
-                if dynamic_tool:
-                    tool_representation = dynamic_tool.value
-                    step_dict['tool_representation'] = tool_representation
-                    if util.is_uuid(step_dict['content_id']):
-                        step_dict['content_id'] = None
-                        step_dict['tool_id'] = None
-
                 pja_dict = {}
                 for pja in step.post_job_actions:
                     pja_dict[pja.action_type + pja.output_name] = dict(

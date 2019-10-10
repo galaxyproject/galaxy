@@ -22,7 +22,6 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
 from galaxy.util import nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
@@ -99,66 +98,32 @@ class Idat(Binary):
 
 
 class Cel(Binary):
-    """ Cel File format described at:
-            http://media.affymetrix.com/support/developer/powertools/changelog/gcos-agcc/cel.html
-    """
 
+    """Binary data in CEL format."""
     file_ext = "cel"
     edam_format = "format_1638"
     edam_data = "data_3110"
-    MetadataElement(name="version", default="3", desc="Version", readonly=True, visible=True,
-                    optional=True, no_value="3")
 
     def sniff(self, filename):
         """
-        Try to guess if the file is a Cel file.
+        Try to guess if the file is a CEL file.
+
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('affy_v_agcc.cel')
+        >>> fname = get_test_fname('test.cel')
         >>> Cel().sniff(fname)
         True
-        >>> fname = get_test_fname('affy_v_3.cel')
-        >>> Cel().sniff(fname)
-        True
-        >>> fname = get_test_fname('affy_v_4.cel')
-        >>> Cel().sniff(fname)
-        True
-        >>> fname = get_test_fname('test.gal')
+
+        >>> fname = get_test_fname('drugbank_drugs.mz5')
         >>> Cel().sniff(fname)
         False
         """
-        with open(filename, 'rb') as handle:
-            header_bytes = handle.read(8)
-        found_cel_4 = False
-        found_cel_3 = False
-        found_cel_agcc = False
-        if struct.unpack("<ii", header_bytes[:9]) == (64, 4):
-            found_cel_4 = True
-        elif struct.unpack(">bb", header_bytes[:2]) == (59, 1):
-            found_cel_agcc = True
-        elif header_bytes.decode("utf8", errors="ignore").startswith('[CEL]'):
-            found_cel_3 = True
-        return found_cel_3 or found_cel_4 or found_cel_agcc
-
-    def set_meta(self, dataset, **kwd):
-        """
-        Set metadata for Cel file.
-        """
-        with open(dataset.file_name, 'rb') as handle:
-            header_bytes = handle.read(8)
-        if struct.unpack("<ii", header_bytes[:9]) == (64, 4):
-            dataset.metadata.version = "4"
-        elif struct.unpack(">bb", header_bytes[:2]) == (59, 1):
-            dataset.metadata.version = "agcc"
-        elif header_bytes.decode("utf8", errors="ignore").startswith('[CEL]'):
-            dataset.metadata.version = "3"
-
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.blurb = "Cel version: %s" % dataset.metadata.version
-            dataset.peek = get_file_peek(dataset.file_name)
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
+        try:
+            header = open(filename, 'rb').read(4)
+            if header == b';\x01\x00\x00':
+                return True
+            return False
+        except Exception:
+            return False
 
 
 class MashSketch(Binary):
@@ -866,27 +831,6 @@ class Loom(H5):
             log.warning('%s, set_meta Exception: %s', self, e)
 
 
-class Anndata(H5):
-    """
-    Class describing an HDF5 anndata files: http://anndata.rtfd.io
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> Anndata().sniff(get_test_fname('pbmc3k_tiny.h5ad'))
-    True
-    >>> Anndata().sniff(get_test_fname('test.mz5'))
-    False
-    """
-    file_ext = 'h5ad'
-
-    def sniff(self, filename):
-        if super(Anndata, self).sniff(filename):
-            try:
-                with h5py.File(filename) as f:
-                    return all(attr in f for attr in ['X', 'obs', 'var'])
-            except Exception:
-                return False
-        return False
-
-
 class GmxBinary(Binary):
     """
     Base class for GROMACS binary files - xtc, trr, cpt
@@ -1105,66 +1049,6 @@ class Cool(H5):
             return dataset.peek
         except Exception:
             return "Cool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
-
-
-class MCool(H5):
-    """
-    Class describing the multi-resolution cool format (https://github.com/mirnylab/cooler)
-    """
-
-    file_ext = "mcool"
-
-    def sniff(self, filename):
-        """
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('matrix.mcool')
-        >>> MCool().sniff(fname)
-        True
-        >>> fname = get_test_fname('matrix.cool')
-        >>> MCool().sniff(fname)
-        False
-        >>> fname = get_test_fname('test.mz5')
-        >>> MCool().sniff(fname)
-        False
-        >>> fname = get_test_fname('wiggle.wig')
-        >>> MCool().sniff(fname)
-        False
-        >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom2')
-        >>> MCool().sniff(fname)
-        False
-        """
-
-        MAGIC = "HDF5::Cooler"
-        URL = "https://github.com/mirnylab/cooler"
-
-        if super(MCool, self).sniff(filename):
-            keys0 = ['resolutions']
-            with h5py.File(filename, 'r') as handle:
-                if not all(name in handle.keys() for name in keys0):
-                    return False
-                res0 = list(handle['resolutions'].keys())[0]
-                keys = ['chroms', 'bins', 'pixels', 'indexes']
-                fmt = handle['resolutions'][res0].attrs.get('format', None)
-                url = handle['resolutions'][res0].attrs.get('format-url', None)
-                if fmt == MAGIC or url == URL:
-                    if not all(name in handle['resolutions'][res0].keys() for name in keys):
-                        return False
-                    return True
-        return False
-
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.peek = "Multi-resolution Cool (HDF5) file for storing genomic interaction data."
-            dataset.blurb = nice_size(dataset.get_size())
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "MCool (HDF5) file (%s)." % (nice_size(dataset.get_size()))
 
 
 class Scf(Binary):
@@ -1655,7 +1539,7 @@ class GAFASQLite(SQlite):
                 raise Exception('Multiple versions found in meta table')
             dataset.metadata.gafa_schema_version = results[0][0]
         except Exception as e:
-            log.warning("%s, set_meta Exception: %s", self, e)
+            log.warn("%s, set_meta Exception: %s", self, e)
 
     def sniff(self, filename):
         if super(GAFASQLite, self).sniff(filename):

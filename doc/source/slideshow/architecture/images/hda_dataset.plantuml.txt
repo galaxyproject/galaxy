@@ -1,0 +1,23 @@
+@startuml
+
+!include plantuml_options.txt
+
+class HistoryDatasetAssociation {
+    hid: integer
+    history_id: integer
+    dataset_id: integer
+    state: string
+    name: string
+    info: string
+}
+
+class Dataset {
+    object_store_id: string
+    external_filename: string
+    _extra_files_path: string
+    file_size: integer
+    total_size: integer
+}
+
+HistoryDatasetAssociation "*" -> "1" Dataset
+@enduml

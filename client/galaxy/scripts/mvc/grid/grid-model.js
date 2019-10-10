@@ -1,6 +1,6 @@
-import $ from "jquery";
-import _ from "underscore";
-import Backbone from "backbone";
+// dependencies
+
+// grid model
 export default Backbone.Model.extend({
     defaults: {
         url_base: "",

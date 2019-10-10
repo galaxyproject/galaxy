@@ -3,11 +3,11 @@ import _ from "underscore";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
 
-const MIN_PANEL_WIDTH = 160;
-const MAX_PANEL_WIDTH = 800;
+var MIN_PANEL_WIDTH = 160;
+var MAX_PANEL_WIDTH = 800;
 
 /** View for left/right panels used by Page view */
-const SidePanel = Backbone.View.extend({
+var SidePanel = Backbone.View.extend({
     initialize: function(options) {
         this.view = options.view;
         this.hidden = false;
@@ -24,9 +24,9 @@ const SidePanel = Backbone.View.extend({
     },
 
     render: function() {
-        const self = this;
-        const panel = this.view;
-        const components = this.view.model.attributes || {};
+        var self = this;
+        var panel = this.view;
+        var components = this.view.model.attributes || {};
         this.$el.html(this._templatePanel(this.id));
         _.each(components.buttons, button => {
             self.$(".panel-header-buttons").append(button.$el);
@@ -76,16 +76,16 @@ const SidePanel = Backbone.View.extend({
     },
 
     _mousedownDragHandler: function(ev) {
-        const self = this;
-        const draggingLeft = this.id === "left";
+        var self = this;
+        var draggingLeft = this.id === "left";
         // Save the mouse position and width of the element (panel) when the
         // drag interaction is first started
-        const initialX = ev.pageX;
-        const initialWidth = self.$el.width();
+        var initialX = ev.pageX;
+        var initialWidth = self.$el.width();
 
         function move(e) {
-            const delta = e.pageX - initialX;
-            let newWidth = draggingLeft ? initialWidth + delta : initialWidth - delta;
+            var delta = e.pageX - initialX;
+            var newWidth = draggingLeft ? initialWidth + delta : initialWidth - delta;
             // Limit range
             newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth));
             self.resize(newWidth);
@@ -116,9 +116,9 @@ const SidePanel = Backbone.View.extend({
         if (!this.hidden) {
             return;
         }
-        const self = this;
-        const animation = {};
-        const whichSide = this.id;
+        var self = this;
+        var animation = {};
+        var whichSide = this.id;
         animation[whichSide] = 0;
         self.$el
             .css(whichSide, -this.saved_size)
@@ -135,8 +135,8 @@ const SidePanel = Backbone.View.extend({
         if (this.hidden) {
             return;
         }
-        const animation = {};
-        const whichSide = this.id;
+        var animation = {};
+        var whichSide = this.id;
         this.saved_size = this.$el.width();
         animation[whichSide] = -this.saved_size;
         this.$el.animate(animation, "fast");
@@ -156,7 +156,7 @@ const SidePanel = Backbone.View.extend({
     //TODO: only used in message.mako?
     /**   */
     handle_minwidth_hint: function(hint) {
-        const space = this.$center().width() - (this.hidden ? this.saved_size : 0);
+        var space = this.$center().width() - (this.hidden ? this.saved_size : 0);
         if (space < hint) {
             if (!this.hidden) {
                 this.toggle();
@@ -189,16 +189,16 @@ const SidePanel = Backbone.View.extend({
 
 // ----------------------------------------------------------------------------
 // TODO: side should be defined by page - not here
-const LeftPanel = SidePanel.extend({
+var LeftPanel = SidePanel.extend({
     id: "left"
 });
 
-const RightPanel = SidePanel.extend({
+var RightPanel = SidePanel.extend({
     id: "right"
 });
 
 /** Center panel with the ability to switch between iframe and view */
-const CenterPanel = Backbone.View.extend({
+var CenterPanel = Backbone.View.extend({
     initialize: function(options) {
         this.setElement($(this.template()));
         this.$frame = this.$(".center-frame");
@@ -208,9 +208,9 @@ const CenterPanel = Backbone.View.extend({
 
     /** Display iframe if its target url changes, hide center panel */
     _iframeChangeHandler: function(ev) {
-        const iframe = ev.currentTarget;
-        const location = iframe.contentWindow && iframe.contentWindow.location;
-        const Galaxy = getGalaxyInstance();
+        var iframe = ev.currentTarget;
+        var location = iframe.contentWindow && iframe.contentWindow.location;
+        var Galaxy = getGalaxyInstance();
         // Adding try/catch to manage a CORS error in toolshed. Accessing
         // location.host is a CORS no-no
         try {
@@ -231,7 +231,7 @@ const CenterPanel = Backbone.View.extend({
 
     /** Display a view in the center panel, hide iframe */
     display: function(view) {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         let contentWindow = this.$frame[0].contentWindow || {};
         let message;
         try {

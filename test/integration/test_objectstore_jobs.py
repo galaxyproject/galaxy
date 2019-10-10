@@ -1,4 +1,4 @@
-"""Integration tests for job and object store interactions."""
+"""Integration tests for object stores."""
 
 import os
 import string
@@ -7,6 +7,10 @@ from base import integration_util  # noqa: I202
 from base.populators import (
     DatasetPopulator,
 )
+
+SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
+EMBEDDED_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_job_conf.xml")
+
 
 DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
 <object_store type="hierarchical">

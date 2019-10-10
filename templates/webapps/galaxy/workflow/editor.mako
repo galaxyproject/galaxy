@@ -1,6 +1,7 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 
 <%def name="title()">
+
     Workflow Editor
 </%def>
 
@@ -32,26 +33,22 @@
 %>
 </%def>
 
-<%def name="javascript_app()">
+<%def name="javascripts()">
 
-    ${parent.javascript_app()}
+    ${parent.javascripts()}
 
-    <script type="text/javascript">
-        config.addInitialization(function(galaxy, config) {
-            var editorConfig = ${h.dumps(self.editor_config)};
-            console.log("workflow/editor.mako, editorConfig", editorConfig);
-            window.bundleEntries.workflow(editorConfig);
+    <script type='text/javascript'>
+        $( function() {
+            window.bundleEntries.workflow(${h.dumps(self.editor_config)});
         });
     </script>
 
 </%def>
 
-
-
 <%def name="stylesheets()">
 
     ## Include "base.css" for styling tool menu and forms (details)
-    ${h.css("jquery-ui/smoothness/jquery-ui" )}
+    ${h.css( "base", "autocomplete_tagging", "jquery-ui/smoothness/jquery-ui" )}
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
@@ -84,9 +81,9 @@
             </div>
         %else:
             %if section:
-                <div class="toolTitle text-muted">
+                <div class="toolTitleDisabled">
             %else:
-                <div class="toolTitleNoSection text-muted">
+                <div class="toolTitleNoSectionDisabled">
             %endif
                 %if "[[" in tool.description and "]]" in tool.description:
                     ${tool.description.replace( '[[', '' % tool.id ).replace( "]]", "" )}
@@ -225,18 +222,10 @@
 <%def name="center_panel()">
 
     <div class="unified-panel-header" unselectable="on">
+        <div class="panel-header-buttons">
+            <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
+        </div>
         <div class="unified-panel-header-inner">
-            <div class="panel-header-buttons">
-                <a id="workflow-run-button" class="panel-header-button" href="#" title="Run" style="display: inline-block;" aria-label="Run">
-                    <span class="fa fa-play"></span>
-                </a>
-                <a id="workflow-save-button" class="panel-header-button" href="#" title="Save" style="display: inline-block;" aria-label="Save">
-                    <span class="fa fa-floppy-o"></span>
-                </a>
-                <a id="workflow-options-button" class="panel-header-button" href="#" title="Workflow options" style="display: inline-block;" aria-label="Workflow options">
-                    <span class="fa fa-cog"></span>
-                </a>
-            </div>
             ${h.to_unicode( stored.name ) | h}
         </div>
     </div>
@@ -290,7 +279,12 @@
                     Tags:
                 </label>
                     <div style="float: left; width: 225px; margin-right: 10px; border-style: inset; border-width: 1px; margin-left: 2px">
-                        ${render_individual_tagging_element(user=trans.get_user(), tagged_item=stored, elt_context="edit_attributes.mako", use_toggle_link=False)}
+                        <style>
+                            .tag-area {
+                                border: none;
+                            }
+                        </style>
+                        ${render_individual_tagging_element(user=trans.get_user(), tagged_item=stored, elt_context="edit_attributes.mako", use_toggle_link=False, input_size="20")}
                     </div>
                     <div class="toolParamHelp">Apply tags to make it easy to search for and find items with the same tag.</div>
                 </div>

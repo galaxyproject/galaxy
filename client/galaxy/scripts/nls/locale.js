@@ -306,9 +306,9 @@ define({
         // ---------------------------------------------------------------------------- history-list
         Histories: false,
         // ---------------------------------------------------------------------------- shed-list-view
-        "Configured Tool Sheds": false,
+        "Configured Galaxy Tool Sheds": false,
         // ---------------------------------------------------------------------------- repository-queue-view
-        "Repository Queue": false,
+        "Repository Installation Queue": false,
         // ---------------------------------------------------------------------------- repo-status-view
         "Repository Status": false,
         // ---------------------------------------------------------------------------- workflows-view

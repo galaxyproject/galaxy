@@ -1,6 +1,3 @@
-import _ from "underscore";
-import Backbone from "backbone";
-
 // toolshed group row view
 const GroupListRowView = Backbone.View.extend({
     events: {},

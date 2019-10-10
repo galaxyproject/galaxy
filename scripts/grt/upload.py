@@ -33,8 +33,9 @@ def main(argv):
         with open(args.grt_config) as handle:
             config = yaml.safe_load(handle)
     except Exception:
-        logging.exception('Could not parse GRT configuration')
-        sys.exit(1)
+        logging.warning('Using default GRT configuration')
+        with open(sample_config) as handle:
+            config = yaml.safe_load(handle)
 
     REPORT_DIR = args.report_directory
     GRT_URL = config['grt']['url'].rstrip('/') + '/'

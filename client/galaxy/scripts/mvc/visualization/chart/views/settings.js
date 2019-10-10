@@ -1,6 +1,4 @@
 /** This class renders the chart configuration form. */
-import _ from "underscore";
-import Backbone from "backbone";
 import Utils from "utils/utils";
 import Form from "mvc/form/form-view";
 import FormData from "mvc/form/form-data";

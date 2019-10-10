@@ -21,7 +21,7 @@ for p in "$@"; do
     echo $path
     PYTHONPATH=lib:$PYTHONPATH
     export PYTHONPATH
-    result=`python -c "import galaxy.tool_util.loader; import xml.etree; xml.etree.ElementTree.dump(galaxy.tool_util.loader.load_tool('$path').getroot())" | xmllint --nowarning --noout --schema "$xsd_path" - 2> "$err_tmp"`
+    result=`python -c "import galaxy.tools.loader; import xml.etree; xml.etree.ElementTree.dump(galaxy.tools.loader.load_tool('$path').getroot())" | xmllint --nowarning --noout --schema "$xsd_path" - 2> "$err_tmp"`
     if [ $? -eq 0 ]
     then
         echo "ok $count";

@@ -4,10 +4,10 @@ Containers for Tool Dependencies
 
 Galaxy tools (also called wrappers) are able to use Conda packages
 (see more information in our `Galaxy Conda documentation`_) and Docker containers as dependency resolvers.
-The IUC_ recommends to use Conda packages as the primary dependency resolver, mainly because Docker is not
+The IUC_ recommends to use Conda packages as primary dependency resolver, mainly because Docker is not
 available on every (HPC-) system. Conda on the other hand can be installed by Galaxy and maintained
-entirely in user-space. Nevertheless, Docker and containers in general have some unique features and
-there are many use-cases in the Galaxy community that make containerized tools very appealing.
+entirely in user-space. Nevertheless, Docker (Containers in general) has some unique features and
+there are many use-cases in the Galaxy community which makes containerized systems very appealing.
 
 Since 2014 Galaxy supports running tools in Docker containers via a special `container annotation`_ inside of the 
 requirement field.
@@ -41,16 +41,17 @@ is not available already.
 Automatic build of Linux containers
 -----------------------------------
 
-We utilize mulled_ with involucro_ to automatically convert all packages in Bioconda_ into Linux containers images 
-(Docker and rkt at the moment) and make them available at the `BioContainers Quay.io account`_.
+We utilize [mulled](https://github.com/mulled/mulled) with [involucro](https://github.com/involucro/involucro)
+in an automatic way. This is for example used to convert all packages in bioconda_ into Linux Containers
+(Docker and rkt at the moment) and made available at the `BioContainers Quay.io account`_.
 
-We have developed small utilities around this technology stack, which is currently included in galaxy-lib_.
+We have developed small utilities around this technology stack which is currently included in galaxy-lib_.
 Here is a short introduction:
 
 Search for containers
 ^^^^^^^^^^^^^^^^^^^^^
 
-This will search for containers in the biocontainers organization.
+This will search for containers in the biocontainers organisation.
 
 .. code-block:: bash
 
@@ -71,40 +72,40 @@ The BioConda community is building a container for every package they create wit
 Building Docker containers for local Conda packages
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Conda packages can be tested with creating a *busybox* based container for this particular package in the following way.
+Conda packages can be tested with creating a busybox based container for this particular package in the following way.
 This also demonstrates how you can build a container locally and on-the-fly.
 
-  > we modified the ``samtools`` package to version 3.0 to make it clear we are using a local version
+  > we modified the samtools package to version 3.0 to make clear we are using a local version
 
-1) Build your recipe
+1) build your recipe
 
 .. code-block:: bash
    
    $ conda build recipes/samtools
 
-2) Index your local builds
+2) index your local builds
 
 .. code-block:: bash
    
    $ conda index /home/bag/miniconda2/conda-bld/linux-64/
 
 
-3) Build a container for your local package
+3) build a container for your local package
 
 .. code-block:: bash
    
    $ mulled-build build-and-test 'samtools=3.0--0' \
       --extra-channel file://home/bag/miniconda2/conda-bld/ --test 'samtools --help'
 
-The ``--0`` indicates the build version of the conda package. It is recommended to specify this number, otherwise
+The ``--0`` indicates the build version of the conda package. It is recommended to specify this number otherwise
 you will override already existing images. For Python Conda packages this extension might look like this ``--py35_1``.
 
-Build, test, and push a conda-forge package to biocontainers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Build, test and push a conda-forge package to biocontainers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
  > You need to have write access to the biocontainers repository
 
-You can build packages from other Conda channels as well, not only from BioConda. ``pandoc`` tool is available from the
+You can build packages from other Conda channels as well, not only from BioConda. ``pandoc`` is available from the
 conda-forge channel and conda-forge is also enabled by default in Galaxy. To build ``pandoc`` and push it to biocontainrs
 you could do something along these lines.
 
@@ -122,8 +123,6 @@ you could do something along these lines.
 .. _IUC: https://galaxyproject.org/iuc/
 .. _container annotation:  https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/catDocker.xml#L4
 .. _BioContainers: https://github.com/biocontainers
-.. _mulled: https://github.com/mulled/mulled
-.. _involucro: https://github.com/involucro/involucro
-.. _Bioconda: https://bioconda.github.io/
+.. _bioconda: https://github.com/bioconda/bioconda-recipes
 .. _BioContainers Quay.io account: https://quay.io/organization/biocontainers
 .. _galaxy-lib: https://github.com/galaxyproject/galaxy-lib

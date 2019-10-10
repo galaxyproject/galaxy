@@ -14,18 +14,18 @@ def main():
 
     # index range 1-1000, current sections/tools divided between 250-750
     sectionindex = 250
-    sectionfactor = int(500 / len(root))
+    sectionfactor = int(500 / len(root.getchildren()))
 
-    for rootchild in root:
+    for rootchild in root.getchildren():
         currentsectionlabel = ""
         if (rootchild.tag == "section"):
             sectionname = rootchild.attrib['name']
             # per section tool index range 1-1000, current labels/tools
             # divided between 20 and 750
             toolindex = 250
-            toolfactor = int(500 / len(rootchild))
+            toolfactor = int(500 / len(rootchild.getchildren()))
             currentlabel = ""
-            for sectionchild in rootchild:
+            for sectionchild in rootchild.getchildren():
                 if (sectionchild.tag == "tool"):
                     addToToolDict(sectionchild, sectionname, sectionindex, toolindex, currentlabel)
                     toolindex += toolfactor

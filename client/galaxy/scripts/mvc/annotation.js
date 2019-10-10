@@ -1,5 +1,3 @@
-import _ from "underscore";
-import Backbone from "backbone";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import "ui/editable-text";

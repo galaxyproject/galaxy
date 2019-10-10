@@ -1,5 +1,3 @@
-import $ from "jquery";
-
 // This is an extension to jQuery UI draggable
 // When dragging move the parent element ("panel") relative to its parent
 // ("viewport") so that the draggable is always visible.
@@ -24,43 +22,43 @@ $.ui.plugin.add("draggable", "scrollPanel", {
         var nudge = 23;
 
         var // Legal panel range
-            p_min_x = -(panel_w - viewport_w);
+        p_min_x = -(panel_w - viewport_w);
 
         var p_min_y = -(panel_h - viewport_h);
         var p_max_x = 0;
         var p_max_y = 0;
 
         var // Visible
-            min_vis_x = -panel_pos.left;
+        min_vis_x = -panel_pos.left;
 
         var max_vis_x = min_vis_x + viewport_w;
         var min_vis_y = -panel_pos.top;
         var max_vis_y = min_vis_y + viewport_h;
 
-        // Mouse
-        var mouse_x = ui.position.left + instance.offset.click.left;
-        var mouse_y = ui.position.top + instance.offset.click.top;
+        var // Mouse
+        mouse_x = ui.position.left + instance.offset.click.left;
 
+        mouse_y = ui.position.top + instance.offset.click.top;
         // Move it
         if (panel_pos.left < p_max_x && mouse_x - close_dist < min_vis_x) {
-            const t = Math.min(nudge, p_max_x - panel_pos.left);
+            var t = Math.min(nudge, p_max_x - panel_pos.left);
             panel.css("left", panel_pos.left + t);
             moved = true;
             instance.offset.parent.left += t;
             ui.position.left -= t;
         }
         if (!moved && panel_pos.left > p_min_x && mouse_x + close_dist > max_vis_x) {
-            const t = Math.min(nudge, panel_pos.left - p_min_x);
+            var t = Math.min(nudge, panel_pos.left - p_min_x);
             panel.css("left", panel_pos.left - t);
             moved = true;
             instance.offset.parent.left -= t;
             ui.position.left += t;
         }
         if (!moved && panel_pos.top < p_max_y && mouse_y - close_dist < min_vis_y) {
-            const t = Math.min(nudge, p_max_y - panel_pos.top);
+            var t = Math.min(nudge, p_max_y - panel_pos.top);
             panel.css("top", panel_pos.top + t);
             // Firefox sometimes moves by less, so we need to check. Yuck.
-            const amount_moved = panel.position().top - panel_pos.top;
+            var amount_moved = panel.position().top - panel_pos.top;
             instance.offset.parent.top += amount_moved;
             ui.position.top -= amount_moved;
             moved = true;
@@ -69,7 +67,7 @@ $.ui.plugin.add("draggable", "scrollPanel", {
             var t = Math.min(nudge, panel_pos.top - p_min_x);
             panel.css("top", `${panel_pos.top - t}px`);
             // Firefox sometimes moves by less, so we need to check. Yuck.
-            const amount_moved = panel_pos.top - panel.position().top;
+            var amount_moved = panel_pos.top - panel.position().top;
             instance.offset.parent.top -= amount_moved;
             ui.position.top += amount_moved;
             moved = true;

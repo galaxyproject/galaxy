@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<provider id="launchpad" name="Launchpad">
+    <op_endpoint_url>http://login.launchpad.net</op_endpoint_url>
+</provider>

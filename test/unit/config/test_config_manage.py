@@ -17,7 +17,7 @@ def test_reports_conversion_1607_sample():
         config_dir.assert_is_yaml("config/reports.yml")
         config_dir.assert_moved("config/reports.ini", "config/reports.ini.backup")
         with config_dir.open("config/reports.yml") as f:
-            config = yaml.safe_load(f)
+            config = yaml.load(f)
         assert "reports" in config
         reports_config = config["reports"] or {}
         assert "use_beaker_session" not in reports_config
@@ -56,7 +56,7 @@ def test_shed_conversion_1607_prefix():
         config_dir.assert_is_yaml("config/tool_shed.yml")
         config_dir.assert_moved("config/tool_shed.ini", "config/tool_shed.ini.backup")
         with config_dir.open("config/tool_shed.yml") as f:
-            config = yaml.safe_load(f)
+            config = yaml.load(f)
         assert "uwsgi" in config
         uwsgi_config = config["uwsgi"]
         assert "module" not in uwsgi_config
@@ -70,7 +70,7 @@ def test_allow_library_path_paste_conversion():
         config_dir.assert_is_yaml("config/galaxy.yml")
         config_dir.assert_moved("config/galaxy.ini", "config/galaxy.ini.backup")
         with config_dir.open("config/galaxy.yml") as f:
-            config = yaml.safe_load(f)
+            config = yaml.load(f)
         assert "galaxy" in config
         galaxy_config = config["galaxy"]
         assert galaxy_config["allow_path_paste"] is True
@@ -106,7 +106,7 @@ class _TestConfigDirectory(object):
     def assert_is_yaml(self, path):
         self.assert_exists(path)
         with self.open(path, "r") as f:
-            return yaml.safe_load(f)
+            return yaml.load(f)
 
     def open(self, path, *args):
         return open(os.path.join(self.temp_directory, path), *args)

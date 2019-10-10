@@ -54,7 +54,7 @@ const load = options => {
 
 function filterType(data, type) {
     return data.models.filter(item => {
-        const itype = item.get("type");
+        let itype = item.get("type");
         if (itype) {
             return itype.indexOf(type) !== -1;
         } else {

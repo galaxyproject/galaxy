@@ -8,7 +8,7 @@ import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 // import mod_utils from "utils/utils";
-import { Toast } from "ui/toast";
+import mod_toastr from "libs/toastr";
 import mod_baseMVC from "mvc/base-mvc";
 // import mod_library_model from "mvc/library/library-model";
 import mod_folderlist_view from "mvc/library/library-folderlist-view";
@@ -110,7 +110,7 @@ var GalaxyLibrary = Backbone.View.extend({
 
     initialize: function() {
         // This should go upstream in the js app once available
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         if (Galaxy.config.ga_code) {
             ((i, s, o, g, r, a, m) => {
                 i["GoogleAnalyticsObject"] = r;
@@ -179,7 +179,7 @@ var GalaxyLibrary = Backbone.View.extend({
 
         this.library_router.on("route:download", (folder_id, format) => {
             if ($("#folder_list_body").find(":checked").length === 0) {
-                Toast.info("You must select at least one dataset to download");
+                mod_toastr.info("You must select at least one dataset to download");
                 Galaxy.libraries.library_router.navigate(`folders/${folder_id}`, { trigger: true, replace: true });
             } else {
                 Galaxy.libraries.folderToolbarView.download(format);

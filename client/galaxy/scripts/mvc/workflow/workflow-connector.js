@@ -1,6 +1,4 @@
-import $ from "jquery";
-
-import { Toast } from "ui/toast";
+import * as Toastr from "libs/toastr";
 
 function Connector(handle1, handle2) {
     this.canvas = null;
@@ -8,7 +6,10 @@ function Connector(handle1, handle2) {
     this.inner_color = "#FFFFFF";
     this.outer_color = "#25537b";
     if (handle1 && handle2) {
-        this.connect(handle1, handle2);
+        this.connect(
+            handle1,
+            handle2
+        );
     }
 }
 $.extend(Connector.prototype, {
@@ -32,9 +33,9 @@ $.extend(Connector.prototype, {
         $(this.canvas).remove();
     },
     destroyIfInvalid: function(warn) {
-        if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1).canAccept) {
+        if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1)) {
             if (warn) {
-                Toast.warning("Destroying a connection because collection type has changed.");
+                Toastr.warning("Destroying a connection because collection type has changed.");
             }
             this.destroy();
         }
@@ -98,20 +99,22 @@ $.extend(Connector.prototype, {
 
         // Draw the line
 
+        var c = this.canvas.getContext("2d");
+
         var start_offsets = null;
         var end_offsets = null;
         var num_offsets = 1;
         if (startRibbon) {
-            start_offsets = [-6, -3, 0, 3, 6];
+            var start_offsets = [-6, -3, 0, 3, 6];
             num_offsets = 5;
         } else {
-            start_offsets = [0];
+            var start_offsets = [0];
         }
         if (endRibbon) {
-            end_offsets = [-6, -3, 0, 3, 6];
+            var end_offsets = [-6, -3, 0, 3, 6];
             num_offsets = 5;
         } else {
-            end_offsets = [0];
+            var end_offsets = [0];
         }
         var connector = this;
         for (var i = 0; i < num_offsets; i++) {
@@ -146,9 +149,9 @@ $.extend(Connector.prototype, {
         offset_start,
         offset_end
     ) {
+        var offset_start = offset_start || 0;
+        var offset_end = offset_end || 0;
         var c = this.canvas.getContext("2d");
-        offset_start = offset_start || 0;
-        offset_end = offset_end || 0;
         c.lineCap = "round";
         c.strokeStyle = this.outer_color;
         c.lineWidth = outer_width;

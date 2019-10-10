@@ -1,18 +1,10 @@
-const path = require("path");
-const glob = require("glob");
-const merge = require("webpack-merge");
+let path = require("path");
+let glob = require("glob");
 
 let webpackConfig = require("./webpack.config.js");
 
-const fileLoaderTest = /\.(png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)(\?.*$|$)/;
-
-// Clear existing .scss rule(s) out of webpack config, we need special handling
-// here.
-// TODO: reimplement using smart merge w/ replacement strategy via webpack-merge
-webpackConfig.module.rules = webpackConfig.module.rules.filter(rule => {
-    return rule.test.toString() != /\.scss$/.toString() && rule.test.toString() != fileLoaderTest.toString();
-});
-
+// We don't use webpack for our sass files in the main app, but use it here
+// so we get rebuilds
 webpackConfig.module.rules.push({
     test: /\.scss$/,
     use: [
@@ -20,7 +12,13 @@ webpackConfig.module.rules.push({
             loader: "style-loader"
         },
         {
-            loader: "css-loader"
+            loader: "css-loader",
+            options: {
+                alias: {
+                    "../images": path.resolve(__dirname, "../static/images"),
+                    ".": path.resolve(__dirname, "../static/style/blue")
+                }
+            }
         },
         {
             loader: "sass-loader",
@@ -31,32 +29,28 @@ webpackConfig.module.rules.push({
     ]
 });
 
-const fileLoaderConfigRule = { rules: [{ test: fileLoaderTest, use: ["file-loader"] }] };
+webpackConfig.module.rules.push({ test: /\.(png|jpg|gif|eot|ttf|woff|woff2|svg)$/, use: ["file-loader"] });
 
-webpackConfig.module = merge.smart(webpackConfig.module, fileLoaderConfigRule);
-webpackConfig.output.publicPath = "";
-
-const sections = [];
+sections = []
 
 glob("./galaxy/docs/galaxy-*.md", (err, files) => {
-    files.forEach(file => {
-        const name = file.match(/galaxy-(\w+).md/)[1];
-        sections.push({ name: "Galaxy " + name, content: file });
+    files.forEach( file => {
+        name = file.match( /galaxy-(\w+).md/ )[1]
+        sections.push({ name: "Galaxy " + name, content: file })
     });
 }),
-    sections.push(
-        ...[
-            {
-                name: "Basic Bootstrap Styles",
-                content: "./galaxy/docs/bootstrap.md"
-            }
-            // This will require additional configuration
-            // {
-            //     name: 'Components',
-            //     components: './galaxy/scripts/components/*.vue'
-            // }
-        ]
-    );
+
+sections.push( ...[
+    {
+        name: "Basic Bootstrap Styles",
+        content: "./galaxy/docs/bootstrap.md"
+    },
+    // This will require additional configuration
+    // {
+    //     name: 'Components',
+    //     components: './galaxy/scripts/components/*.vue'
+    // }
+])
 
 module.exports = {
     webpackConfig,

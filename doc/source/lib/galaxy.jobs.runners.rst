@@ -113,12 +113,4 @@ galaxy\.jobs\.runners\.tasks module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.jobs\.runners\.univa module
------------------------------------
-
-.. automodule:: galaxy.jobs.runners.univa
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 

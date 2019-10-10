@@ -22,6 +22,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
+    ## ${h.js( "libs/jquery/jquery.rating" )}
     ${common_javascripts(repository)}
 </%def>
 

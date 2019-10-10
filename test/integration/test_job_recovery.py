@@ -8,7 +8,7 @@ from base.populators import (
 )
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-DELAY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "delay_job_conf.yml")
+DELAY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "delay_job_conf.xml")
 SIMPLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "simple_job_conf.xml")
 
 
@@ -18,7 +18,6 @@ class JobRecoveryBeforeHandledIntegerationTestCase(integration_util.IntegrationT
     def setUp(self):
         super(JobRecoveryBeforeHandledIntegerationTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.history_id = self.dataset_populator.new_history()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):

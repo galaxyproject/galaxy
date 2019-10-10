@@ -138,7 +138,7 @@ export var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
              *      Note: that this will return false for an anon user even if the history is theirs.
              */
             ownedByCurrUser: function() {
-                const Galaxy = getGalaxyInstance();
+                let Galaxy = getGalaxyInstance();
                 // no currUser
                 if (!Galaxy || !Galaxy.user) {
                     return false;

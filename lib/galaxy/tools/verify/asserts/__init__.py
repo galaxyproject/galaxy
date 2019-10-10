@@ -1,12 +1,12 @@
+import inspect
 import logging
 import sys
 
 from galaxy.util import unicodify
-from galaxy.util.getargspec import getfullargspec
 
 log = logging.getLogger(__name__)
 
-assertion_module_names = ['text', 'tabular', 'xml', 'hdf5', 'archive']
+assertion_module_names = ['text', 'tabular', 'xml', 'hdf5']
 
 # Code for loading modules containing assertion checking functions, to
 # create a new module of assertion functions, create the needed python
@@ -43,7 +43,7 @@ def verify_assertion(data, assertion_description):
         errmsg = "Unable to find test function associated with XML tag '%s'. Check your tool file syntax." % tag
         raise AssertionError(errmsg)
 
-    assert_function_args = getfullargspec(assert_function).args
+    assert_function_args = inspect.getargspec(assert_function).args
     args = {}
     for attribute, value in assertion_description["attributes"].items():
         if attribute in assert_function_args:

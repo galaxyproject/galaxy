@@ -1,6 +1,7 @@
 """
 Contains implementations of the authentication logic.
 """
+
 import logging
 
 from galaxy.auth.util import get_authenticators, parse_auth_results
@@ -98,12 +99,12 @@ class AuthManager(object):
                 auth_result = provider.authenticate_user(user, current_password, options)
                 if auth_result is True:
                     if string_as_bool(options.get("allow-password-change", False)):
-                        return
+                        return (True, '')  # accept user
                     else:
-                        return 'Password change not supported.'
+                        return (False, 'Password change not supported.')
                 elif auth_result is None:
                     break  # end authentication (skip rest)
-        return 'Invalid current password.'
+        return (False, 'Invalid current password.')
 
     def active_authenticators(self, email, username, password):
         """Yields AuthProvider instances for the provided configfile that match the

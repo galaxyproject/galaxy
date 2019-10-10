@@ -1,6 +1,3 @@
-import $ from "jquery";
-import { Toast } from "ui/toast";
-
 /**
  * Internal function to remove content from the main area and add the notebook.
  * Not idempotent
@@ -35,7 +32,7 @@ export function make_spin_state(
     sleep_step,
     log_attempts
 ) {
-    return {
+    var s = {
         type: typeof type !== "undefined" ? type : "GIE spin",
         ajax_timeout: typeof ajax_timeout_init !== "undefined" ? ajax_timeout_init : 2000,
         ajax_timeout_max: typeof ajax_timeout_max !== "undefined" ? ajax_timeout_max : 16000,
@@ -46,6 +43,7 @@ export function make_spin_state(
         log_attempts: typeof log_attempts !== "undefined" ? log_attempts : true,
         count: 0
     };
+    return s;
 }
 
 /* Log/display an error when spinning fails. */
@@ -53,8 +51,8 @@ export function spin_error(console_msg, user_msg, clear) {
     console.log(console_msg);
     if (clear) clear_main_area();
     if (typeof user_msg == "string") {
-        Toast.clear();
-        Toast.error(user_msg, "Error", {
+        toastr.clear();
+        toastr.error(user_msg, "Error", {
             closeButton: true,
             timeOut: 0,
             extendedTimeOut: 0,
@@ -111,7 +109,7 @@ export function spin(url, bool_response, success_callback, timeout_callback, err
                 }
             }
         };
-        if (bool_response) ajax_params.dataType = "json";
+        if (bool_response) ajax_params["dataType"] = "json";
         $.ajax(ajax_params);
     };
     console.log(`Setting up new spinner for ${spin_state.type} on ${url}`);
@@ -120,7 +118,7 @@ export function spin(url, bool_response, success_callback, timeout_callback, err
 }
 
 /*
- * Spin on a URL forever until there is an acceptable response.
+ * Spin on a URL forever until there is an acceptable response. 
  * @param {String} url: URL to test response of. Must return a 200 (302->200 is OK).
  * @param {Boolean} bool_response: If set to `true`, do not stop spinning until the response is `true`. Otherwise, stop
  *     as soon as a successful response is received.
@@ -130,7 +128,7 @@ function spin_until(url, bool_response, messages, success_callback, spin_state) 
     var message_once = (message, spin_state) => {
         if (spin_state.count == 1) {
             display_spinner();
-            Toast.info(message, null, {
+            toastr.info(message, null, {
                 closeButton: true,
                 timeOut: 0,
                 extendedTimeOut: 0,
@@ -140,22 +138,22 @@ function spin_until(url, bool_response, messages, success_callback, spin_state) 
     };
     var wrapped_success = data => {
         if (!bool_response || (bool_response && data == true)) {
-            console.log(messages.success);
+            console.log(messages["success"]);
             clear_main_area();
-            Toast.clear();
+            toastr.clear();
             success_callback();
         } else if (bool_response && data == false) {
-            message_once(messages.not_ready, spin_state);
+            message_once(messages["not_ready"], spin_state);
             return false; // keep spinning
         } else {
-            spin_error(`Invalid response to ${spin_state.type} request`, messages.invalid_response, true);
+            spin_error(`Invalid response to ${spin_state.type} request`, messages["invalid_response"], true);
         }
         return true; // stop spinning
     };
     var timeout_error = (jqxhr, status, error) => {
-        message_once(messages.waiting, spin_state);
+        message_once(messages["waiting"], spin_state);
         if (spin_state.count == warn_at) {
-            Toast.warning(messages.wait_warn, "Warning", {
+            toastr.warning(messages["wait_warn"], "Warning", {
                 closeButton: true,
                 timeOut: 0,
                 extendedTimeOut: 0,
@@ -209,50 +207,3 @@ export function load_when_ready(url, success_callback) {
     var spin_state = make_spin_state("IE container readiness");
     spin_until(url, true, messages, success_callback, spin_state);
 }
-
-/**
- * Keep the container alive by pinging `notebookAccessURL` every 10 seconds.
- * If the user leaves this site this function is not constantly pinging the
- * container, the container will terminate itself.
- */
-export function keepAlive(notebookAccessURL) {
-    var request_count = 0;
-    var interval = window.setInterval(function() {
-        $.ajax({
-            url: notebookAccessURL,
-            xhrFields: {
-                withCredentials: true
-            },
-            type: "GET",
-            timeout: 500,
-            success: function() {
-                console.log("Connected to IE, returning");
-            },
-            error: function(jqxhr, status, error) {
-                request_count++;
-                console.log("Request " + request_count);
-                if (request_count > 30) {
-                    window.clearInterval(interval);
-                    clear_main_area();
-                    Toast.error("Could not connect to IE, contact your administrator", "Error", {
-                        closeButton: true,
-                        timeOut: 20000,
-                        tapToDismiss: false
-                    });
-                }
-            }
-        });
-    }, 10000);
-}
-
-export default {
-    append_notebook,
-    clear_main_area,
-    display_spinner,
-    make_spin_state,
-    spin_error,
-    spin,
-    test_ie_availability,
-    load_when_ready,
-    keepAlive
-};

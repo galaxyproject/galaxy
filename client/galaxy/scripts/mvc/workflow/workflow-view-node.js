@@ -1,9 +1,6 @@
-import $ from "jquery";
-import _ from "libs/underscore";
-import Backbone from "backbone";
+import * as _ from "libs/underscore";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
 import DataViews from "mvc/workflow/workflow-view-data";
-
 export default Backbone.View.extend({
     initialize: function(options) {
         this.node = options.node;
@@ -84,33 +81,24 @@ export default Backbone.View.extend({
         return terminalView;
     },
 
-    terminalViewForOutput: function(output) {
-        let terminalViewClass = TerminalViews.OutputTerminalView;
+    addDataOutput: function(output) {
+        var terminalViewClass = TerminalViews.OutputTerminalView;
+        var outputViewClass = DataViews.DataOutputView;
         if (output.collection) {
             terminalViewClass = TerminalViews.OutputCollectionTerminalView;
         } else if (output.parameter) {
             terminalViewClass = TerminalViews.OutputParameterTerminalView;
+            outputViewClass = DataViews.ParameterOutputView;
         }
-        const terminalView = new terminalViewClass({
+        var terminalView = new terminalViewClass({
             node: this.node,
             output: output
-        })
-        return terminalView
-    },
-
-    outputViewforOutput: function(output, terminalView) {
-        const outputViewClass = output.parameter ? DataViews.ParameterOutputView : DataViews.DataOutputView;
-        const outputView = new outputViewClass({
+        });
+        var outputView = new outputViewClass({
             output: output,
             terminalElement: terminalView.el,
             nodeView: this
         });
-        return outputView
-    },
-
-    addDataOutput: function(output) {
-        const terminalView = this.terminalViewForOutput(output);
-        const outputView = this.outputViewforOutput(output, terminalView);
         this.outputViews[output.name] = outputView;
         this.tool_body.append(outputView.$el.append(terminalView.terminalElements()));
     },

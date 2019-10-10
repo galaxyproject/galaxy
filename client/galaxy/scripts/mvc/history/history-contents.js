@@ -394,7 +394,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     progressivelyFetchDetails: function(options) {
         // TODO: only fetch tags and annotations if specifically requested
         options = options || {};
-        const deferred = jQuery.Deferred();
+        let deferred = jQuery.Deferred();
         this._recursivelyFetch(
             options,
             HDA_MODEL.HistoryDatasetAssociation.prototype.searchAttributes.join(","),
@@ -442,8 +442,7 @@ export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
                 data: JSON.stringify({
                     content: id,
                     source: contentType,
-                    type: type,
-                    copy_elements: true
+                    type: type
                 })
             })
             .done(response => {

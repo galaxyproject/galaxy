@@ -117,7 +117,6 @@ test/unit/**.log
 
 # Project files
 *.kpf
-.idea
 .vscode
 client/**/jsconfig.json
 
@@ -143,24 +142,16 @@ doc/schema.md
 doc/source/admin/config_logging_default_yaml.rst
 doc/source/api/api.rst
 doc/source/api/ts_api.rst
-doc/source/dev/schema.md
 doc/source/dev/schema.rst
-client/styleguide
 
 # webpack stats
 client/webpack-stats.json
-
-# packages
-packages/*/build
-packages/*/dist
-packages/*/*.egg-info
 
 # Misc
 *.orig
 .DS_Store
 *.rej
 *~
-
 .idea
 .vscode
 /.project

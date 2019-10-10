@@ -9,7 +9,7 @@ from galaxy import (
     model,
     util
 )
-from galaxy.tool_util.deps.dependencies import ToolInfo
+from galaxy.tools.deps.dependencies import ToolInfo
 
 log = logging.getLogger(__name__)
 

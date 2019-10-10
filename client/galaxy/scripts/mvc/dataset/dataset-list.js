@@ -1,5 +1,6 @@
 import LIST_VIEW from "mvc/list/list-view";
 import DATASET_LI from "mvc/dataset/dataset-li";
+import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
 var logNamespace = "dataset";

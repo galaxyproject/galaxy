@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 class SearchController(BaseAPIController, SharableItemSecurityMixin):
 
-    @web.legacy_expose_api
+    @web.expose_api
     def create(self, trans, payload, **kwd):
         """
         POST /api/search

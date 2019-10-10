@@ -28,10 +28,6 @@ pre {
     border: 1px solid $border-default-color;
 }
 
-.popover .popover-body {
-    font-size: $font-size-base;
-}
-
 .dropdown-menu {
     max-width: auto;
     .dropdown-item {
@@ -46,6 +42,13 @@ input[type="radio"] {
     float: left;
 }
 
+// Override badge's few default CSS
+.badge-tags {
+    background-color: #3189a3;
+    padding: 0.2em 0.6em 0.3em;
+    border-radius: 0.15rem;
+}
+
 // Modal -- wider by default, scroll like Trello
 
 .modal-dialog {
@@ -53,8 +56,18 @@ input[type="radio"] {
     max-width: 900px; // BS4 sets this to 500px now, so width not respected.
 }
 
-// Scroll modal body.
+.pagination {
+    > .active > a {
+        background-color: #ebd9b2;
+        color: black;
+        &:hover {
+            color: black;
+            background-color: #ebd9b2;
+        }
+    }
+}
 
+// Scroll modal body.
 .modal-body {
     overflow: auto;
 }
@@ -62,7 +75,7 @@ input[type="radio"] {
 // Tabs -- border color is hardcoded in navs.scss, change to $btnBorder here
 
 .nav-tabs {
-    @extend .mb-2;
+    margin-bottom: 15px;
 }
 
 // Don't make blockquotes very large since they're often used in the toolform

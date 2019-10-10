@@ -34,13 +34,16 @@ url = ie_request.url_template('${PROXY_URL}/login_api_gie?key=' + askomics_api_k
 <html>
 <head>
 ${ ie.load_default_js() }
-${ ie.load_default_app() }
 </head>
 <body>
 <script type="text/javascript">
 ${ ie.default_javascript_variables() }
 var url = '${ url }';
-load_askomics(url);
+${ ie.plugin_require_config() }
+requirejs(['galaxy.interactive_environments', 'plugin/askomics'], function(IES){
+    window.IES = IES;
+    load_askomics(url);
+});
 </script>
 <div id="main" width="100%" height="100%">
 </div>

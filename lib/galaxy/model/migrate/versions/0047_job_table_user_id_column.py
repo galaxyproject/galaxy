@@ -9,8 +9,6 @@ import sys
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
 from sqlalchemy.exc import NoSuchTableError
 
-from galaxy.model.migrate.versions.util import add_column, drop_column
-
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
@@ -23,22 +21,30 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    print(__doc__)
     metadata.bind = migrate_engine
+    print(__doc__)
     metadata.reflect()
-
     try:
         Job_table = Table("job", metadata, autoload=True)
     except NoSuchTableError:
         Job_table = None
         log.debug("Failed loading table job")
     if Job_table is not None:
-        # SQLAlchemy Migrate has a bug when adding a column with both a ForeignKey and a index in SQLite
+
         if migrate_engine.name != 'sqlite':
-            col = Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=True)
+            try:
+                col = Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True, nullable=True)
+                col.create(Job_table, index_name='ix_job_user_id')
+                assert col is Job_table.c.user_id
+            except Exception:
+                log.exception("Adding column 'user_id' to job table failed.")
         else:
-            col = Column("user_id", Integer, nullable=True)
-        add_column(col, Job_table, index_name='ix_job_user_id')
+            try:
+                col = Column("user_id", Integer, nullable=True)
+                col.create(Job_table)
+                assert col is Job_table.c.user_id
+            except Exception:
+                log.exception("Adding column 'user_id' to job table failed.")
         try:
             cmd = "SELECT job.id AS galaxy_job_id, " \
                 + "galaxy_session.user_id AS galaxy_user_id " \
@@ -63,5 +69,9 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-
-    drop_column('user_id', 'job', metadata)
+    try:
+        Job_table = Table("job", metadata, autoload=True)
+        col = Job_table.c.user_id
+        col.drop()
+    except Exception:
+        log.exception("Dropping column 'user_id' from job table failed.")

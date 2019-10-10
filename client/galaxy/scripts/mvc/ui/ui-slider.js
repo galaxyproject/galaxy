@@ -1,9 +1,8 @@
-import Backbone from "backbone";
-
 import Utils from "utils/utils";
 
-const View = Backbone.View.extend({
+var View = Backbone.View.extend({
     initialize: function(options) {
+        var self = this;
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -24,24 +23,51 @@ const View = Backbone.View.extend({
         this.$slider = this.$(".ui-form-slider-element");
 
         // add text field event
+        var pressed = [];
         this.$text
-            .on("change", e => {
-                this.value(e.currentTarget.value);
+            .on("change", function() {
+                self.value($(this).val());
             })
-            .on("input", e => {
-                const input = e.currentTarget;
-                if (this._isParameter(input.value)) {
-                    return;
-                } else if (!this.model.get("precise")) {
-                    input.value = input.value.split(".")[0];
+            .on("keyup", e => {
+                pressed[e.which] = false;
+            })
+            .on("keydown", function(e) {
+                var v = e.which;
+                pressed[v] = true;
+                if (self.model.get("is_workflow") && pressed[16] && v == 52) {
+                    self.value("$");
+                    event.preventDefault();
+                } else if (
+                    !(
+                        v == 8 ||
+                        v == 9 ||
+                        v == 13 ||
+                        v == 37 ||
+                        v == 39 ||
+                        (v >= 48 && v <= 57) ||
+                        (v >= 96 && v <= 105) ||
+                        ((v == 190 || v == 110) &&
+                            $(this)
+                                .val()
+                                .indexOf(".") == -1 &&
+                            self.model.get("precise")) ||
+                        ((v == 189 || v == 109) &&
+                            $(this)
+                                .val()
+                                .indexOf("-") == -1) ||
+                        self._isParameter($(this).val()) ||
+                        pressed[91] ||
+                        pressed[17]
+                    )
+                ) {
+                    event.preventDefault();
                 }
-                input.value = input.value.replace(/[^0-9eE.-]/g, "");
             });
 
         // build slider, cannot be rebuild in render
-        const opts = this.model.attributes;
+        var opts = this.model.attributes;
         this.has_slider = opts.max !== null && opts.min !== null && opts.max > opts.min;
-        let step = opts.step;
+        var step = opts.step;
         if (!step) {
             if (opts.precise && this.has_slider) {
                 step = (opts.max - opts.min) / opts.split;
@@ -51,7 +77,7 @@ const View = Backbone.View.extend({
         }
         if (this.has_slider) {
             this.$slider.slider({ min: opts.min, max: opts.max, step: step }).on("slide", (event, ui) => {
-                this.value(ui.value);
+                self.value(ui.value);
             });
         }
 
@@ -61,7 +87,7 @@ const View = Backbone.View.extend({
     },
 
     render: function() {
-        const value = this.model.get("value");
+        var value = this.model.get("value");
         if (this.has_slider) {
             this.$slider.slider("value", value);
             this.$slider.show();
@@ -78,9 +104,9 @@ const View = Backbone.View.extend({
     /** Set and return the current value */
     value: function(new_val) {
         if (new_val !== undefined) {
-            const options = this.model.attributes;
-            const original_val = new_val;
-            const is_value = new_val !== null && new_val !== "" && !this._isParameter(new_val);
+            let options = this.model.attributes;
+            let original_val = new_val;
+            let is_value = new_val !== null && new_val !== "" && !this._isParameter(new_val);
             if (is_value) {
                 if (isNaN(new_val)) {
                     new_val = 0;
@@ -98,8 +124,8 @@ const View = Backbone.View.extend({
             this.model.set("value", new_val);
             this.model.trigger("change");
             options.onchange(new_val);
-            const has_changed = is_value && parseInt(original_val) !== parseInt(new_val);
-            const message = has_changed ? "This value was invalid or out-of-range. It has been auto-corrected." : null;
+            let has_changed = is_value && parseInt(original_val) !== parseInt(new_val);
+            let message = has_changed ? "This value was invalid or out-of-range. It has been auto-corrected." : null;
             this.model.trigger("error", message);
         }
         return this.model.get("value");

@@ -7,7 +7,7 @@ from sqlalchemy import or_
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import util, web
-from galaxy.tool_util.deps import views
+from galaxy.tools.deps import views
 from galaxy.util import unicodify
 from galaxy.web.form_builder import CheckboxField
 from tool_shed.galaxy_install import (
@@ -76,7 +76,7 @@ class AdminToolshed(AdminGalaxy):
                                    message=message,
                                    status=status)
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_admin
     def browse_repositories(self, trans, **kwd):
         message = kwd.get('message', '')

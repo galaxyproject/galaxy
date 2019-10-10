@@ -1,10 +1,9 @@
-import $ from "jquery";
 import _ from "underscore";
-import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import DATASET_MODEL from "mvc/dataset/dataset-model";
 import BASE_MVC from "mvc/base-mvc";
 import Utils from "utils/utils";
+import _l from "utils/localization";
 
 //==============================================================================
 /*
@@ -178,7 +177,7 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
             /** String representation. */
             toString: function() {
                 var objStr = this.get("element_identifier");
-                return `DatasetDCE(${objStr})`;
+                return `DatasetDCE({objStr})`;
             }
         }
     )
@@ -307,7 +306,7 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
                 recursive = recursive || false;
                 purge = purge || false;
                 if (this.get("deleted")) {
-                    return $.when();
+                    return jQuery.when();
                 }
                 options = Utils.merge(options, { method: "delete" });
                 return this.save({ deleted: true, recursive: recursive, purge: purge }, options);
@@ -315,7 +314,7 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
             /** save this collection, _Mark_ing it as undeleted */
             undelete: function(options) {
                 if (!this.get("deleted")) {
-                    return $.when();
+                    return jQuery.when();
                 }
                 return this.save({ deleted: false }, options);
             },

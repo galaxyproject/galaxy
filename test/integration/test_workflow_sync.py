@@ -33,7 +33,7 @@ class WorkflowSyncTestCase(integration_util.IntegrationTestCase):
         with self.workflow_populator.export_for_update(workflow_id) as workflow_object:
             workflow_object["annotation"] = "new annotation"
         with open(workflow_path, "r") as f:
-            data = yaml.safe_load(f)
+            data = yaml.load(f)
             assert data["doc"] == "new annotation"
 
     def test_sync_ga(self):

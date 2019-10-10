@@ -17,9 +17,14 @@ import sys
 
 import sphinx_rtd_theme
 # Library to make .md to slideshow
+from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
 
-# Set GALAXY_DOCS_SKIP_SOURCE=1 to skip building source information and
+source_parsers = {
+    '.md': CommonMarkParser,
+}
+
+# Set GALAXY_DOCS_SKIP_SOURCE=1 to skip building source and release information and
 # just build primary documentation. (Quicker to debug issues in most frequently updated
 # docs).
 SKIP_SOURCE = os.environ.get("GALAXY_DOCS_SKIP_SOURCE", False) == "1"
@@ -40,7 +45,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['recommonmark', 'sphinx.ext.autodoc', 'sphinx.ext.intersphinx', 'sphinx_markdown_tables']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx']
 if not SKIP_SOURCE:
     extensions += ['sphinx.ext.doctest', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.viewcode']
 
@@ -64,8 +69,6 @@ def setup(app):
     app.connect("autodoc-skip-member", dont_skip_init)
     app.add_config_value('recommonmark_config', {
         'enable_auto_doc_ref': False,
-        'enable_auto_toc_tree': False,
-        'enable_inline_math': False,  # https://github.com/rtfd/recommonmark/pull/124
     }, True)
     app.add_transform(AutoStructify)
 
@@ -105,9 +108,10 @@ release = VERSION
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['**/_*.rst']
 if SKIP_SOURCE:
-    exclude_patterns.extend(['lib'])
+    exclude_patterns = ['lib', 'releases']
+else:
+    exclude_patterns = []
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None

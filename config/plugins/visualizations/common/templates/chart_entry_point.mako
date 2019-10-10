@@ -9,16 +9,25 @@
     %endif
 </%def>
 <%def name="javascripts()">
+    <script type="text/javascript">
+        var Galaxy = Galaxy || parent.Galaxy || {
+            root    : '${h.url_for( "/" )}',
+            config  : {},
+            emit    : {
+                debug: function() {}
+            }
+        };
+    </script>
     ${h.js('libs/jquery/jquery',
            'libs/jquery/jquery-ui',
            'bundled/libs.chunk',
            'bundled/base.chunk',
-           'bundled/generic.bundled')}
+           'bundled/extended.bundled')}
     <%src_path = script_attributes.get("src") %>
     <script type="text/javascript" src="${static_url}${src_path}"></script>
     <script type="text/javascript">
-        config.addInitialization(function() {
-            let dump = ${h.dumps(config)};
+        $(function() {
+            var config = ${h.dumps(config)};
             var load = "${script_attributes.get("load")}";
             if (!bundleEntries[load]) {
                 load = "load";
@@ -30,8 +39,8 @@
                     visualization_id: ${h.dumps(visualization_id)} || undefined,
                     visualization_name: ${h.dumps(visualization_name)},
                     visualization_plugin: ${h.dumps(visualization_plugin)},
-                    dataset_id: dump.dataset_id,
-                    chart_dict: dump.chart_dict,
+                    dataset_id: config.dataset_id,
+                    chart_dict: config.chart_dict,
                     chart_load: bundleEntries[load]
                 });
                 $('body').css("overflow", "hidden")
