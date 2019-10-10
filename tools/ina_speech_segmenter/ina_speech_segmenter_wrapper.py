@@ -6,14 +6,15 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import uuid
 
 
 def main():
 	(input_file, json_file) = sys.argv[1:3]
-	
+	tmpName = str(uuid.uuid4())
 	tmpdir = "/tmp"
-	temp_input_file = f"{tmpdir}/xxx.wav"
-	temp_output_file = f"{tmpdir}/xxx.json"
+	temp_input_file = f"{tmpdir}/{tmpName}.dat"
+	temp_output_file = f"{tmpdir}/{tmpName}.json"
 	shutil.copy(input_file, temp_input_file)
 
 	r = subprocess.run(["singularity", "run", "/srv/amp/ina-speech-tools-singularity/ina-speech-tools-singularity.sif", temp_input_file, temp_output_file])
