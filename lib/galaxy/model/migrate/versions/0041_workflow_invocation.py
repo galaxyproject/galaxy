@@ -8,8 +8,6 @@ import logging
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, Table
 
-from galaxy.model.migrate.versions.util import create_table, drop_table
-
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 now = datetime.datetime.utcnow
@@ -33,12 +31,15 @@ tables = [WorkflowInvocation_table, WorkflowInvocationStep_table]
 
 
 def upgrade(migrate_engine):
-    print(__doc__)
     metadata.bind = migrate_engine
+    print(__doc__)
     metadata.reflect()
 
     for table in tables:
-        create_table(table)
+        try:
+            table.create()
+        except Exception:
+            log.warning("Failed to create table '%s', ignoring (might result in wrong schema)" % table.name)
 
 
 def downgrade(migrate_engine):
@@ -46,4 +47,4 @@ def downgrade(migrate_engine):
     metadata.reflect()
 
     for table in reversed(tables):
-        drop_table(table)
+        table.drop()

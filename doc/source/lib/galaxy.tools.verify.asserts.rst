@@ -9,14 +9,6 @@ galaxy\.tools\.verify\.asserts package
 Submodules
 ----------
 
-galaxy\.tools\.verify\.asserts\.hdf5 module
--------------------------------------------
-
-.. automodule:: galaxy.tools.verify.asserts.hdf5
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy\.tools\.verify\.asserts\.tabular module
 ----------------------------------------------
 

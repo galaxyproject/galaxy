@@ -9,10 +9,10 @@ import re
 import string
 import subprocess
 import sys
+from cgi import escape
 from itertools import islice
 
 import bx.align.maf
-from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import metadata
@@ -98,19 +98,18 @@ class Sequence(data.Text):
         """
         data_lines = 0
         sequences = 0
-        with compression_utils.get_fileobj(dataset.file_name) as fh:
-            for line in fh:
-                line = line.strip()
-                if line and line.startswith('#'):
-                    # We don't count comment lines for sequence data types
-                    continue
-                if line and line.startswith('>'):
-                    sequences += 1
-                    data_lines += 1
-                else:
-                    data_lines += 1
-            dataset.metadata.data_lines = data_lines
-            dataset.metadata.sequences = sequences
+        for line in open(dataset.file_name):
+            line = line.strip()
+            if line and line.startswith('#'):
+                # We don't count comment lines for sequence data types
+                continue
+            if line and line.startswith('>'):
+                sequences += 1
+                data_lines += 1
+            else:
+                data_lines += 1
+        dataset.metadata.data_lines = data_lines
+        dataset.metadata.sequences = sequences
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:

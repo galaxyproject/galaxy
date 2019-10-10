@@ -1,11 +1,15 @@
 <?xml version="1.0"?>
 <job_conf>
     <plugins>
-        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="1"/>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
         <plugin id="dynamic" type="runner">
             <param id="rules_module">integration.chained_dyndest_rules.module1</param>
         </plugin>
     </plugins>
+
+    <handlers>
+        <handler id="main"/>
+    </handlers>
 
     <destinations default="dyn_dest1">
         <destination id="dyn_dest1" runner="dynamic">

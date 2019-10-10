@@ -19,7 +19,6 @@ def load_with_references(path):
 
     # Collect tokens
     tokens = _macros_of_type(root, 'token', lambda el: el.text or '')
-    tokens = expand_nested_tokens(tokens)
 
     # Expand xml macros
     macro_dict = _macros_of_type(root, 'xml', lambda el: XmlMacroDef(el))
@@ -83,18 +82,8 @@ def _macros_of_type(root, type, el_func):
     return macro_dict
 
 
-def expand_nested_tokens(tokens):
-    for token_name in tokens.keys():
-        for current_token_name, current_token_value in tokens.items():
-            if token_name in current_token_value:
-                if token_name == current_token_name:
-                    raise Exception("Token '%s' cannot contain itself" % token_name)
-                tokens[current_token_name] = current_token_value.replace(token_name, tokens[token_name])
-    return tokens
-
-
 def _expand_tokens(elements, tokens):
-    if not tokens or elements is None:
+    if not tokens or not elements:
         return
 
     for element in elements:
@@ -114,11 +103,11 @@ def _expand_tokens_for_el(element, tokens):
     _expand_tokens(list(element), tokens)
 
 
-def _expand_tokens_str(s, tokens):
+def _expand_tokens_str(str, tokens):
     for key, value in tokens.items():
-        if key in s:
-            s = s.replace(key, value)
-    return s
+        if str.find(key) > -1:
+            str = str.replace(key, value)
+    return str
 
 
 def _expand_macros(elements, macros, tokens):
@@ -150,7 +139,7 @@ def _expand_macro(element, expand_el, macros, tokens):
 
     # HACK for elementtree, newer implementations (etree/lxml) won't
     # require this parent_map data structure but elementtree does not
-    # track parents or recognize .find('..').
+    # track parents or recongnize .find('..').
     # TODO fix this now that we're not using elementtree
     parent_map = dict((c, p) for p in element.iter() for c in p)
     _xml_replace(expand_el, expanded_elements, parent_map)

@@ -1,8 +1,10 @@
-import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import DC_VIEW from "mvc/collection/collection-view";
+import DC_MODEL from "mvc/collection/collection-model";
 import DC_EDIT from "mvc/collection/collection-li-edit";
-import { mountModelTags } from "components/Tags";
+import BASE_MVC from "mvc/base-mvc";
+import TAGS from "mvc/tag";
+import faIconButton from "ui/fa-icon-button";
 import _l from "utils/localization";
 import "ui/editable-text";
 
@@ -49,7 +51,7 @@ var CollectionViewEdit = _super.extend(
             }
 
             // anon users shouldn't have access to any of the following
-            const Galaxy = getGalaxyInstance();
+            let Galaxy = getGalaxyInstance();
             if (!Galaxy.user || Galaxy.user.isAnonymous()) {
                 return;
             }
@@ -77,27 +79,15 @@ var CollectionViewEdit = _super.extend(
                         }
                     }
                 });
-
-            const el = $where.find(".tags-display")[0];
-            const propsData = {
+            this.tagsEditor = new TAGS.TagsEditor({
                 model: this.model,
-                disabled: false,
-                context: "collection-view-edit"
-            };
-
-            const vm = mountModelTags(propsData, el);
-
-            const toggleEditor = () => {
-                $(vm.$el).toggleClass("active");
-                this.tagsEditorShown = $(vm.$el).hasClass("active");
-            };
-
-            if (this.tagsEditorShown) {
-                const editorIsOpen = $(vm.$el).hasClass("active");
-                if (!editorIsOpen) {
-                    toggleEditor();
-                }
-            }
+                el: $where.find(".tags-display"),
+                onshowFirstTime: function() {
+                    this.render();
+                },
+                usePrompt: false
+            });
+            this.tagsEditor.toggle(true);
         },
 
         // ........................................................................ misc

@@ -9,32 +9,29 @@
 %>
 </%def>
 
-<%def name="javascript_app()">
-    ${parent.javascript_app()}
+<%def name="javascripts()">
+    ${parent.javascripts()}
     <script type="text/javascript">
-        // Define global variables needed by galaxy.pages script.
-        // Apparently pages() relies on these variables being defined
-        // in window. 
-        config.addInitialization(function(){
-            var pagesConfig = {
-                page_id: "${trans.security.encode_id(page.id)}",
-                page_list_url: '${h.url_for( controller='pages', action='list' )}',
-                list_objects_url: "${h.url_for(controller='page', action='LIST_ACTION' )}",
-                set_accessible_url: "${h.url_for( controller='ITEM_CONTROLLER', action='set_accessible_async' )}",
-                get_name_and_link_url: "${h.url_for( controller='ITEM_CONTROLLER', action='get_name_and_link_async' )}?id=",
-                editor_base_path: "${h.url_for('/static/wymeditor')}/",
-                iframe_base_path: "${h.url_for('/static/wymeditor/iframe/galaxy')}/",
-                save_url: "${h.url_for(controller='page', action='save' )}"
-            };
-            console.log("editor.mako, javascript_app", "define variables needed by galaxy.pages script");
-            window.bundleEntries.pages(pagesConfig);
+        // Define variables needed by galaxy.pages script.
+        var page_id = "${trans.security.encode_id(page.id)}",
+            page_list_url = '${h.url_for( controller='pages', action='list' )}',
+            list_objects_url = "${h.url_for(controller='page', action='LIST_ACTION' )}",
+            set_accessible_url = "${h.url_for( controller='ITEM_CONTROLLER', action='set_accessible_async' )}",
+            get_name_and_link_url = "${h.url_for( controller='ITEM_CONTROLLER', action='get_name_and_link_async' )}?id=",
+            editor_base_path = "${h.url_for('/static/wymeditor')}/",
+            iframe_base_path = "${h.url_for('/static/wymeditor/iframe/galaxy')}/",
+            save_url = "${h.url_for(controller='page', action='save' )}";
+
+        $(function(){
+            bundleEntries.pages()
         });
+
     </script>
 </%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "base", "embed_item" )}
+    ${h.css( "base", "autocomplete_tagging", "embed_item" )}
     <style type='text/css'>
         .galaxy-page-editor-button
         {

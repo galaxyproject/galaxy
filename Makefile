@@ -1,15 +1,15 @@
-# Location of virtualenv used for development.
-VENV?=.venv
-# Source virtualenv to execute command (flake8, sphinx, twine, etc...)
-IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 RELEASE_CURR:=16.01
-RELEASE_CURR_MINOR_NEXT:=$(shell $(IN_VENV) python scripts/bootstrap_history.py --print-next-minor-version)
+RELEASE_CURR_MINOR_NEXT:=$(shell python scripts/bootstrap_history.py --print-next-minor-version)
 RELEASE_NEXT:=16.04
 # TODO: This needs to be updated with create_release_rc
 #RELEASE_NEXT_BRANCH:=release_$(RELEASE_NEXT)
 RELEASE_NEXT_BRANCH:=dev
 RELEASE_UPSTREAM:=upstream
 MY_UPSTREAM:=origin
+# Location of virtualenv used for development.
+VENV?=.venv
+# Source virtualenv to execute command (flake8, sphinx, twine, etc...)
+IN_VENV=if [ -f $(VENV)/bin/activate ]; then . $(VENV)/bin/activate; fi;
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/webapps/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 DOCS_DIR=doc
@@ -27,6 +27,7 @@ docs: ## Generate HTML documentation.
 #   $ ./scripts/common_startup.sh
 #   $ . .venv/bin/activate
 #   $ pip install -r lib/galaxy/dependencies/dev-requirements.txt
+# You also need to install pandoc separately.
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
@@ -129,14 +130,11 @@ release-check-blocking-prs: ## Check github for release blocking PRs
 release-bootstrap-history: ## bootstrap history for a new release
 	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
 
-build-dependencies-docker: ## Builds the docker container used for dependency updates
-	$(MAKE) -C lib/galaxy/dependencies/pipfiles/docker
+update-dependencies:  ## update linting + dev dependencies
+	sh lib/galaxy/dependencies/pipfiles/update.sh
 
-update-dependencies:  build-dependencies-docker ## update linting + dev dependencies
-	sh lib/galaxy/dependencies/pipfiles/update.sh -d
-
-update-and-commit-dependencies: build-dependencies-docker ## update and commit linting + dev dependencies
-	sh lib/galaxy/dependencies/pipfiles/update.sh -d -c
+update-and-commit-dependencies:  ## update and commit linting + dev dependencies
+	sh lib/galaxy/dependencies/pipfiles/update.sh -c
 
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN
@@ -162,11 +160,13 @@ client-format: node-deps ## Reformat client code
 client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
 
-client-test: node-deps  ## Run JS unit tests via Karma
-	cd client && yarn run test
+_client-test-mocha:  ## Run mocha tests via karma
+	cd client && yarn run test-mocha
 
-client-eslint: node-deps  ## Run client linting
-	cd client && yarn run eslint
+_client-test-qunit:  ## Run qunit tests via karma
+	cd client && yarn run test-qunit
+
+client-test: client _client-test-mocha _client-test-qunit ## Run JS unit tests via Karma
 
 client-test-watch: client ## Watch and run qunit tests on changes via Karma
 	cd client && yarn run test-watch

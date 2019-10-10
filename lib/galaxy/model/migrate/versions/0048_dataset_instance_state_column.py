@@ -25,10 +25,9 @@ DATASET_INSTANCE_TABLE_NAMES = ['history_dataset_association', 'library_dataset_
 
 
 def upgrade(migrate_engine):
-    print(__doc__)
     metadata.bind = migrate_engine
+    print(__doc__)
     metadata.reflect()
-
     dataset_instance_tables = []
     for table_name in DATASET_INSTANCE_TABLE_NAMES:
         try:

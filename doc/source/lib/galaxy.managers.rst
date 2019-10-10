@@ -49,14 +49,6 @@ galaxy\.managers\.cloud module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.managers\.cloudauthzs module
-------------------------------------
-
-.. automodule:: galaxy.managers.cloudauthzs
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy\.managers\.collections module
 ------------------------------------
 

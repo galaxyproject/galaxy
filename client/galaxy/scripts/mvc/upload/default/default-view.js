@@ -260,7 +260,7 @@ export default Backbone.View.extend({
 
     /** Success */
     _eventSuccess: function(index, message) {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         var it = this.collection.get(index);
         it.set({ percentage: 100, status: "success" });
         this.ui_button.model.set("percentage", this._uploadPercentage(100, it.get("file_size")));
@@ -373,7 +373,7 @@ export default Backbone.View.extend({
             this._uploadFtp();
 
             // queue remaining files
-            const Galaxy = getGalaxyInstance();
+            let Galaxy = getGalaxyInstance();
             this.uploadbox.start({
                 id: Galaxy.user.id,
                 chunk_upload_size: this.app.options.chunk_upload_size
@@ -467,7 +467,7 @@ export default Backbone.View.extend({
     _template: function() {
         return `<div class="upload-view-default">
                     <div class="upload-top">
-                        <div class="upload-top-info"/>
+                        <h6 class="upload-top-info"/>
                     </div>
                     <div class="upload-box">
                         <div class="upload-helper">

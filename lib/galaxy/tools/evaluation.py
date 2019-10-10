@@ -78,7 +78,13 @@ class ToolEvaluator(object):
         visit_input_values(self.tool.inputs, incoming, validate_inputs)
 
         # Restore input / output data lists
-        inp_data, out_data, out_collections = job.io_dicts()
+        inp_data = dict([(da.name, da.dataset) for da in job.input_datasets])
+        out_data = dict([(da.name, da.dataset) for da in job.output_datasets])
+        inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
+        out_data.update([(da.name, da.dataset) for da in job.output_library_datasets])
+
+        out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in job.output_dataset_collection_instances])
+        out_collections.update([(obj.name, obj.dataset_collection) for obj in job.output_dataset_collections])
 
         if get_special:
 
@@ -351,9 +357,7 @@ class ToolEvaluator(object):
                 param_dict[name] = DatasetFilenameWrapper(hda)
             # Provide access to a path to store additional files
             # TODO: path munging for cluster/dataset server relocatability
-            store_by = getattr(hda.dataset.object_store, "store_by", "id")
-            file_name = "dataset_%s_files" % getattr(hda.dataset, store_by)
-            param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, file_name))
+            param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, "dataset_%s_files" % (hda.dataset.id)))
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
                 # Assume the reason we lack this output is because a filter
@@ -376,7 +380,7 @@ class ToolEvaluator(object):
 
         param_dict['__tool_directory__'] = self.compute_environment.tool_directory()
         param_dict['__get_data_table_entry__'] = get_data_table_entry
-        param_dict['__local_working_directory__'] = self.local_working_directory
+
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper(self.app)
         # More convienent access to app.config.new_file_path; we don't need to
@@ -469,7 +473,7 @@ class ToolEvaluator(object):
             return
         try:
             # Substituting parameters into the command
-            command_line = fill_template(command, context=param_dict, python_template_version=self.tool.python_template_version)
+            command_line = fill_template(command, context=param_dict)
             cleaned_command_line = []
             # Remove leading and trailing whitespace from each line for readability.
             for line in command_line.split('\n'):
@@ -575,7 +579,7 @@ class ToolEvaluator(object):
 
     def __write_workdir_file(self, config_filename, content, context, is_template=True):
         if is_template:
-            value = fill_template(content, context=context, python_template_version=self.tool.python_template_version)
+            value = fill_template(content, context=context)
         else:
             value = unicodify(content)
         with io.open(config_filename, "w", encoding='utf-8') as f:

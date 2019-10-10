@@ -29,8 +29,8 @@ from galaxy.tools.parameters import populate_state
 from galaxy.util.path import full_path_permission_for_user, safe_contains, safe_relpath, unsafe_walk
 from galaxy.util.streamball import StreamBall
 from galaxy.web import (
-    expose_api,
-    expose_api_anonymous,
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous as expose_api_anonymous
 )
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
 log = logging.getLogger(__name__)
@@ -230,7 +230,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         if action == 'remove_restrictions':
             trans.app.security_agent.make_dataset_public(dataset)
             if not trans.app.security_agent.dataset_is_public(dataset):
-                raise exceptions.InternalServerError('An error occurred while making dataset public.')
+                raise exceptions.InternalServerError('An error occured while making dataset public.')
         elif action == 'make_private':
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = trans.app.security_agent.get_private_user_role(trans.user)
@@ -239,7 +239,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 trans.sa_session.flush()
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
-                raise exceptions.InternalServerError('An error occurred and the dataset is NOT private.')
+                raise exceptions.InternalServerError('An error occured and the dataset is NOT private.')
         elif action == 'set_permissions':
             # ACCESS DATASET ROLES
             valid_access_roles = []

@@ -9,14 +9,6 @@ galaxy\.web\.stack package
 Submodules
 ----------
 
-galaxy\.web\.stack\.handlers module
------------------------------------
-
-.. automodule:: galaxy.web.stack.handlers
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy\.web\.stack\.message module
 ----------------------------------
 

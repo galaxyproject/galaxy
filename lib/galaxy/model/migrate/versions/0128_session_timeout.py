@@ -5,25 +5,39 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, DateTime, MetaData
-
-from galaxy.model.migrate.versions.util import add_column, drop_column
+from sqlalchemy import Column, DateTime, MetaData, Table
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    print(__doc__)
     metadata.bind = migrate_engine
+    print(__doc__)
     metadata.reflect()
 
     lastaction_column = Column("last_action", DateTime)
-    add_column(lastaction_column, "galaxy_session", metadata)
+    __add_column(lastaction_column, "galaxy_session", metadata)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
 
-    drop_column("last_action", "galaxy_session", metadata)
+    __drop_column("last_action", "galaxy_session", metadata)
+
+
+def __add_column(column, table_name, metadata, **kwds):
+    try:
+        table = Table(table_name, metadata, autoload=True)
+        column.create(table, **kwds)
+    except Exception:
+        log.exception("Adding column %s failed.", column)
+
+
+def __drop_column(column_name, table_name, metadata):
+    try:
+        table = Table(table_name, metadata, autoload=True)
+        getattr(table.c, column_name).drop()
+    except Exception:
+        log.exception("Dropping column %s failed.", column_name)

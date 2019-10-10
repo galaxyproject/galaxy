@@ -19,11 +19,13 @@ var View = Backbone.View.extend({
     },
 
     render: function(options) {
-        var repo_queue_template = this.templateRepoQueue();
+        var repo_queue_template = this.templateRepoQueue;
         var repositories = this.model.models;
         this.$el.html(
             repo_queue_template({
+                title: _l("Repository Installation Queue"),
                 repositories: repositories,
+                empty: _l("No repositories in queue."),
                 queue: toolshed_util.queueLength()
             })
         );
@@ -33,23 +35,20 @@ var View = Backbone.View.extend({
 
     bindEvents: function() {
         $(".install_one").on("click", ev => {
-            const repository_metadata = this.loadFromQueue($(ev.target).attr("data-repokey"));
+            var repository_metadata = this.loadFromQueue($(ev.target).attr("data-repokey"));
             this.installFromQueue(repository_metadata, $(ev.target).attr("data-repokey"));
         });
         $(".remove_one").on("click", ev => {
-            const queue_key = $(ev.target).attr("data-repokey");
-            const repo_queue = JSON.parse(window.localStorage.repositories);
+            var queue_key = $(ev.target).attr("data-repokey");
+            var repo_queue = JSON.parse(window.localStorage.repositories);
             if (repo_queue.hasOwnProperty(queue_key)) {
-                this.removeRow(repo_queue[queue_key].id);
+                var repository_id = repo_queue[queue_key].repository.id;
                 delete repo_queue[queue_key];
+                $(`#queued_repository_${repository_id}`).remove();
             }
             window.localStorage.repositories = JSON.stringify(repo_queue);
         });
         $("#clear_queue").on("click", () => {
-            const repo_queue = JSON.parse(window.localStorage.repositories);
-            for (const key of Object.keys(repo_queue)) {
-                this.removeRow(repo_queue[key].id);
-            }
             window.localStorage.repositories = "{}";
         });
         $("#from_workflow").on("click", () => {
@@ -58,10 +57,6 @@ var View = Backbone.View.extend({
                 replace: true
             });
         });
-    },
-
-    removeRow: function(row_id) {
-        $(`#queued_repository_${row_id}`).remove();
     },
 
     installFromQueue: function(repository_metadata, queue_key) {
@@ -112,53 +107,48 @@ var View = Backbone.View.extend({
         return this.defaults;
     },
 
-    templateRepoQueue: function() {
-        return _.template(
-            `<div class='shed-style-container'>
-            <h2>
-            ${_l("Repository Queue")}
-            </h2>
-            <div class='tab-pane' id='panel_header' id='repository_queue'>
-            <table id='queued_repositories' class='grid' border='0' cellpadding='2' cellspacing='2' width='100%'>
-            <thead id='grid-table-header'>
-            <tr>
-            <th class='datasetRow'>Name</th>
-            <th class='datasetRow'>Owner</th>
-            <th class='datasetRow'>Revision</th>
-            <th class='datasetRow'>ToolShed</th>
-            <th class='datasetRow'>Install</th>
-            <th class='datasetRow'></th>
-            </tr>
-            </thead>
-            <tbody>
-            <% if (repositories.length > 0) { %>
-            <% _.each(repositories, function(repository) { %>
-            <tr id='queued_repository_<%= repository.get('id') %>'>
-            <td class='datasetRow'><%= repository.get('repository').name %></td>
-            <td class='datasetRow'><%= repository.get('repository').owner %></td>
-            <td class='datasetRow'><%= repository.get('changeset_revision') %></td>
-            <td class='datasetRow'><%= repository.get('tool_shed_url') %></td>
-            <td class='datasetRow'>
-            <input class='btn btn-primary install_one' data-repokey='<%= repository.get('queue_key') %>' type='submit' id='install_repository_<%= repository.get('id') %>' name='install_repository' value='Install now' />
-            </td>
-            <td class='datasetRow'>
-            <input class='btn btn-primary remove_one' data-repokey='<%= repository.get('queue_key') %>' type='submit' id='unqueue_repository_<%= repository.get('id') %>' name='unqueue_repository' value='Remove from queue' />
-            </td>
-            </tr>
-            <% }); %>
-            <% } else { %>
-            <tr><td colspan='6'>
-            ${_l("No repositories in queue.")}
-            </td></tr>
-            <% } %>
-            </tbody>
-            </table>
-            <input type='button' class='btn btn-primary' id='from_workflow' value='Add from workflow' />
-            <input class='btn btn-primary' type='submit' id='clear_queue' name='clear_queue' value='Clear queue' />
-            </div>
-            </div>`
-        );
-    }
+    templateRepoQueue: _.template(
+        [
+            '<div class="unified-panel-header" id="panel_header" unselectable="on">',
+            '<div class="unified-panel-header-inner"><%= title %><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
+            "</div>",
+            '<div class="tab-pane" id="panel_header" id="repository_queue">',
+            '<table id="queued_repositories" class="grid" border="0" cellpadding="2" cellspacing="2" width="100%">',
+            '<thead id="grid-table-header">',
+            "<tr>",
+            '<th class="datasetRow">Name</th>',
+            '<th class="datasetRow">Owner</th>',
+            '<th class="datasetRow">Revision</th>',
+            '<th class="datasetRow">ToolShed</th>',
+            '<th class="datasetRow">Install</th>',
+            '<th class="datasetRow"><input class="btn btn-primary" type="submit" id="clear_queue" name="clear_queue" value="Clear queue" /></th>',
+            "</tr>",
+            "</thead>",
+            "<tbody>",
+            "<% if (repositories.length > 0) { %>",
+            "<% _.each(repositories, function(repository) { %>",
+            '<tr id="queued_repository_<%= repository.get("id") %>">',
+            '<td class="datasetRow"><%= repository.get("repository").name %></td>',
+            '<td class="datasetRow"><%= repository.get("repository").owner %></td>',
+            '<td class="datasetRow"><%= repository.get("changeset_revision") %></td>',
+            '<td class="datasetRow"><%= repository.get("tool_shed_url") %></td>',
+            '<td class="datasetRow">',
+            '<input class="btn btn-primary install_one" data-repokey="<%= repository.get("queue_key") %>" type="submit" id="install_repository_<%= repository.get("id") %>" name="install_repository" value="Install now" />',
+            "</td>",
+            '<td class="datasetRow">',
+            '<input class="btn btn-primary remove_one" data-repokey="<%= repository.get("queue_key") %>" type="submit" id="unqueue_repository_<%= repository.get("id") %>" name="unqueue_repository" value="Remove from queue" />',
+            "</td>",
+            "</tr>",
+            "<% }); %>",
+            "<% } else { %>",
+            '<tr><td colspan="6"><%= empty %></td></tr>',
+            "<% } %>",
+            "</tbody>",
+            "</table>",
+            '<input type="button" class="btn btn-primary" id="from_workflow" value="Add from workflow" />',
+            "</div>"
+        ].join("")
+    )
 });
 
 export default {

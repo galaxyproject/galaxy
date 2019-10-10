@@ -1,20 +1,20 @@
 <template>
-    <div>
-        <Message :message="message" :status="status" />
-        <BaseGrid
-            v-if="status !== 'error'"
-            :columns="columns"
-            :rows="dataTypes"
-            :isLoaded="isDataLoaded"
-            id="data-types-grid"
-        >
-            <template slot="title">
-                <p>Current data types registry contains {{ dataTypes.length }} data types.</p>
-                <input type="checkbox" id="showAllColumns" v-model="showAllColumns" />
-                <label for="showAllColumns">Show all columns</label>
-            </template>
-        </BaseGrid>
-    </div>
+  <div>
+    <Message :message="message" :status="status" />
+    <BaseGrid v-if="status !== 'error'"
+              :columns="columns"
+              :rows="dataTypes"
+              :isLoaded="isDataLoaded"
+              id="data-types-grid">
+      <template slot="title">
+        <p>Current data types registry contains {{ dataTypes.length }} data types.</p>
+        <input type="checkbox"
+               id="showAllColumns"
+               v-model="showAllColumns">
+        <label for="showAllColumns">Show all columns</label>
+      </template>
+    </BaseGrid>
+  </div>
 </template>
 
 <script>
@@ -56,20 +56,20 @@ export default {
         // Return predefined column headers merged
         // with all other column headers returned by the api
         columns() {
-            let columns = this.prettyColumns();
+            var columns = this.prettyColumns();
             // We have keys to look at
             if (this.keys.length > 0) {
                 // Additional column headers only when option is selected
                 if (this.showAllColumns) {
-                    let keys = this.keys;
+                    var keys = this.keys;
                     // Filter out the predefined column headers
-                    for (const c of columns) {
+                    for (var c of columns) {
                         keys = keys.filter(k => k !== c["dataIndex"]);
                     }
                     // Create column headers from each remaining key and merge
                     // with predefined column headers
                     columns = keys.reduce(function(m, k) {
-                        let text = k[0].toUpperCase();
+                        var text = k[0].toUpperCase();
                         text += k.slice(1).replace(/_/g, " ");
                         m.push({
                             text: text,

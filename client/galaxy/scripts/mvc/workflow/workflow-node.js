@@ -5,8 +5,7 @@ import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 import NodeView from "mvc/workflow/workflow-view-node";
 
-// unused
-//var StepParameterTypes = ["text", "integer", "float", "boolean", "color"];
+var StepParameterTypes = ["text", "integer", "float", "boolean", "color"];
 
 var Node = Backbone.Model.extend({
     initialize: function(app, attr) {
@@ -59,23 +58,6 @@ var Node = Backbone.Model.extend({
             this.nodeView.redrawWorkflowOutputs();
         }
         return changed;
-    },
-    changeOutputDatatype: function(outputName, datatype) {
-        const output_terminal = this.output_terminals[outputName];
-        const output = this.nodeView.outputViews[outputName].output;
-        output_terminal.force_datatype = datatype;
-        output.force_datatype = datatype;
-        if (datatype) {
-            this.post_job_actions['ChangeDatatypeAction' + outputName] = {
-                action_arguments: {newtype: datatype},
-                action_type: "ChangeDatatypeAction",
-                output_name: outputName,
-            };
-        } else {
-            delete this.post_job_actions['ChangeDatatypeAction' + outputName];
-        }
-        this.markChanged();
-        output_terminal.destroyInvalidConnections();
     },
     connectedOutputTerminals: function() {
         return this._connectedTerminals(this.output_terminals);
@@ -293,10 +275,6 @@ var Node = Backbone.Model.extend({
                 // the output already exists, but the output formats may have changed.
                 // Therefore we update the datatypes and destroy invalid connections.
                 node.output_terminals[output.name].datatypes = output.extensions;
-                node.output_terminals[output.name].force_datatype = output.force_datatype;
-                if (node.type == "parameter_input") {
-                    node.output_terminals[output.name].attributes.type = output.type;
-                }
                 node.output_terminals[output.name].destroyInvalidConnections();
             }
         });

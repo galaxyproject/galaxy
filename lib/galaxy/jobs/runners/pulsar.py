@@ -12,7 +12,6 @@ from time import sleep
 
 import packaging.version
 import pulsar.core
-import six
 import yaml
 from pulsar.client import (
     build_client_manager,
@@ -36,7 +35,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
-from galaxy.tool_util.deps import dependencies
+from galaxy.tools.deps import dependencies
 from galaxy.util import (
     galaxy_directory,
     specs,
@@ -287,18 +286,12 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 unstructured_path_rewrites = compute_environment.unstructured_path_rewrites
                 output_names = compute_environment.output_names()
 
-            if self.app.config.metadata_strategy == "legacy":
-                # Drop this branch in 19.09.
-                metadata_directory = job_wrapper.working_directory
-            else:
-                metadata_directory = os.path.join(job_wrapper.working_directory, "metadata")
-
             client_job_description = ClientJobDescription(
                 command_line=command_line,
                 input_files=self.get_input_files(job_wrapper),
                 client_outputs=self.__client_outputs(client, job_wrapper),
                 working_directory=job_wrapper.tool_working_directory,
-                metadata_directory=metadata_directory,
+                metadata_directory=job_wrapper.working_directory,
                 tool=job_wrapper.tool,
                 config_files=job_wrapper.extra_filenames,
                 dependencies_description=dependencies_description,
@@ -325,9 +318,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
         self.monitor_job(pulsar_job_state)
 
     def __needed_features(self, client):
-        return {
-            'remote_metadata': PulsarJobRunner.__remote_metadata(client),
-        }
+            return {
+                'remote_metadata': PulsarJobRunner.__remote_metadata(client),
+            }
 
     def __prepare_job(self, job_wrapper, job_destination):
         """Build command-line and Pulsar client for this job."""
@@ -370,6 +363,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 compute_job_directory=remote_job_directory,
             )
             job_wrapper.disable_commands_in_new_shell()
+            metadata_directory = None
+            if remote_metadata:
+                metadata_directory = remote_job_config['metadata_directory']
 
             # Pulsar handles ``create_tool_working_directory`` and
             # ``include_work_dir_outputs`` details.
@@ -378,10 +374,10 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 job_wrapper=job_wrapper,
                 container=container,
                 include_metadata=remote_metadata,
+                metadata_directory=metadata_directory,
                 create_tool_working_directory=False,
                 include_work_dir_outputs=False,
                 remote_command_params=remote_command_params,
-                remote_job_directory=remote_job_directory,
             )
         except UnsupportedPulsarException:
             log.exception("failure running job %d, unsupported Pulsar target", job_wrapper.job_id)
@@ -450,7 +446,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         user = job_wrapper.get_job().user
         if user:
             for key, value in params.items():
-                if value and isinstance(value, six.string_types):
+                if value:
                     params[key] = model.User.expand_user_properties(user, value)
 
         env = getattr(job_wrapper.job_destination, "env", [])
@@ -538,7 +534,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         self._handle_runner_state('failure', job_state)
         if not job_state.runner_state_handled:
             job_state.job_wrapper.fail(getattr(job_state, "fail_message", message),
-                                       tool_stdout=stdout, tool_stderr=stderr, exception=exception)
+                                       stdout=stdout, stderr=stderr, exception=exception)
 
     def check_pid(self, pid):
         try:
@@ -756,8 +752,6 @@ class PulsarMQJobRunner(PulsarJobRunner):
     def _monitor(self):
         # This is a message queue driven runner, don't monitor
         # just setup required callback.
-        self._init_noop_monitor()
-
         self.client_manager.ensure_has_status_update_callback(self.__async_update)
         self.client_manager.ensure_has_ack_consumers()
 

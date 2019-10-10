@@ -3,7 +3,7 @@ from shutil import rmtree
 from string import Template
 from tempfile import mkdtemp
 
-from galaxy.tool_util.loader import load_tool, template_macro_params
+from galaxy.tools.loader import load_tool, template_macro_params
 from galaxy.util import parse_xml
 
 

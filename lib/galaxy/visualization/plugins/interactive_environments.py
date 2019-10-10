@@ -19,10 +19,7 @@ from galaxy import model, web
 from galaxy.containers import ContainerPort
 from galaxy.containers.docker_model import DockerVolume
 from galaxy.managers import api_keys
-from galaxy.util import (
-    string_as_bool_or_none,
-    unicodify
-)
+from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
 
 
@@ -91,7 +88,7 @@ class InteractiveEnvironmentRequest(object):
             self.attr.proxy_prefix = '/'.join(
                 (
                     '',
-                    trans.cookie_path.strip('/'),
+                    self.attr.galaxy_config.cookie_path.strip('/'),
                     self.attr.galaxy_config.dynamic_proxy_prefix.strip('/'),
                     self.attr.viz_id,
                 )
@@ -435,8 +432,6 @@ class InteractiveEnvironmentRequest(object):
         ))
         p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True)
         stdout, stderr = p.communicate()
-        stdout = unicodify(stdout)
-        stderr = unicodify(stderr)
         if p.returncode != 0:
             log.error("Container Launch error\n\n%s\n%s" % (stdout, stderr))
             return None

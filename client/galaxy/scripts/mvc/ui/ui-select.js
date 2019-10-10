@@ -1,5 +1,5 @@
-import Backbone from "backbone";
-import _ from "underscore";
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import Utils from "utils/utils";
 /**
  * A plugin for initializing select2 input items.
@@ -153,11 +153,11 @@ var View = Backbone.View.extend({
         if (!this.options.multiple) {
             if (this.select_data) {
                 this.select_data.map(value => {
-                    const mx = this.options.maximumTextLength + 3;
+                    let mx = this.options.maximumTextLength + 3;
                     if (value.text && value.text.length > mx) {
                         let pos = value.text.indexOf(`(${value.id})`);
                         pos = pos != -1 && pos < mx ? pos : mx;
-                        const sub = value.text.substring(0, pos).replace(/[ .]*$/, "");
+                        let sub = value.text.substring(0, pos).replace(/[\ \.]*$/, "");
                         value.text = `${sub}...(${value.id})`;
                     }
                 });

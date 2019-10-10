@@ -24,7 +24,6 @@ import os
 import re
 import shutil
 import tempfile
-import unittest
 
 from base import integration_util
 from base.api_util import (
@@ -46,12 +45,12 @@ SCRIPT_DIR = os.path.normpath(os.path.dirname(__file__))
 TEST_DATA_DIRECTORY = os.path.join(SCRIPT_DIR, os.pardir, os.pardir, "test-data")
 
 
-class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstance):
+class BaseUploadContentConfigurationTestCase(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
 
     def setUp(self):
-        super(BaseUploadContentConfigurationInstance, self).setUp()
+        super(BaseUploadContentConfigurationTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
         self.history_id = self.dataset_populator.new_history()
@@ -83,10 +82,6 @@ class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstanc
     def _ensure_directory(self, path):
         if not os.path.exists(path):
             os.makedirs(path)
-
-
-class BaseUploadContentConfigurationTestCase(BaseUploadContentConfigurationInstance, unittest.TestCase):
-    pass
 
 
 class InvalidFetchRequestsTestCase(BaseUploadContentConfigurationTestCase):

@@ -1,5 +1,5 @@
 $frame-zindex: 1000;
-$frame-default-border: $border-default-color;
+$frame-default-border: $gray-300;
 
 .galaxy-frame {
     .corner {
@@ -8,7 +8,7 @@ $frame-default-border: $border-default-color;
     }
 
     .toggle {
-        color: $dropdown-link-active-color;
+        color: gold;
     }
 
     .frame-background {
@@ -18,8 +18,8 @@ $frame-default-border: $border-default-color;
         left: 0px;
         height: 100%;
         width: 100%;
-        opacity: 0.5;
-        background: $brand-dark;
+        opacity: 0.6;
+        background: $black;
         overflow: auto;
     }
 
@@ -30,7 +30,7 @@ $frame-default-border: $border-default-color;
         top: 0px;
         left: 0px;
         opacity: 0.5;
-        background: $brand-dark;
+        background: darken($base-color, 25%);
         border: 1px solid $frame-default-border;
     }
 
@@ -41,7 +41,7 @@ $frame-default-border: $border-default-color;
         z-index: $frame-zindex + 5;
         position: absolute;
         cursor: pointer;
-        color: $dropdown-link-active-color;
+        color: gold;
         right: 10px;
     }
 
@@ -98,7 +98,7 @@ $frame-default-border: $border-default-color;
             margin: 2px;
             cursor: pointer;
             border: 1px solid $black;
-            background: $brand-dark;
+            background: $base-color-1;
             color: $white;
             .f-icon-left {
                 cursor: pointer;
@@ -146,7 +146,7 @@ $frame-default-border: $border-default-color;
             background: $white;
             width: 16px;
             height: 16px;
-            color: $brand-dark;
+            color: $base-color-1;
             right: 0px;
             bottom: 0px;
             text-align: center;

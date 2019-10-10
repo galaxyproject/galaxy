@@ -13,11 +13,10 @@ import FormBase from "mvc/form/form-view";
 import Webhooks from "mvc/webhooks";
 import Citations from "components/Citations.vue";
 import Vue from "vue";
-import axios from "axios";
 
 export default FormBase.extend({
     initialize: function(options) {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         var self = this;
         this.deferred = new Deferred();
         FormBase.prototype.initialize.call(this, options);
@@ -26,7 +25,7 @@ export default FormBase.extend({
         this._update(this.model.get("initialmodel"));
 
         // listen to history panel
-        if (this.model.get("listen_to_history") && Galaxy.currHistoryPanel) {
+        if (this.model.get("listen_to_history") && Galaxy && Galaxy.currHistoryPanel) {
             this.listenTo(Galaxy.currHistoryPanel.collection, "change", () => {
                 self.model.get("onchange")();
             });
@@ -60,7 +59,7 @@ export default FormBase.extend({
         this.$el.off().hide();
         this.deferred.execute(() => {
             FormBase.prototype.remove.call(self);
-            const Galaxy = getGalaxyInstance();
+            let Galaxy = getGalaxyInstance();
             Galaxy.emit.debug("tool-form-base::_destroy()", "Destroy view.");
         });
     },
@@ -75,9 +74,15 @@ export default FormBase.extend({
                 `<b>${options.name}</b> ${options.description} (Galaxy Version ${options.version})`,
             operations: !options.hide_operations && this._operations(),
             onchange: function() {
+                let Galaxy = getGalaxyInstance();
                 self.deferred.reset();
                 self.deferred.execute(process => {
                     self.model.get("postchange")(process, self);
+                    if (self.model.get("listen_to_history")) {
+                        process.then(() => {
+                            self.stopListening(Galaxy.currHistoryPanel.collection);
+                        });
+                    }
                 });
             }
         });
@@ -108,51 +113,13 @@ export default FormBase.extend({
     _operations: function() {
         var self = this;
         var options = this.model.attributes;
-        const Galaxy = getGalaxyInstance();
-
-        // Buttons for adding and removing favorite.
-        const in_favorites = Galaxy.user.getFavorites().tools.indexOf(options.id) >= 0;
-        var favorite_button = new Ui.Button({
-            icon: "fa-star-o",
-            title: options.narrow ? null : "Favorite",
-            tooltip: "Add to favorites",
-            visible: !Galaxy.user.isAnonymous() && !in_favorites,
-            onclick: () => {
-                axios
-                    .put(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, { object_id: options.id })
-                    .then(response => {
-                        favorite_button.hide();
-                        remove_favorite_button.show();
-                        Galaxy.user.updateFavorites("tools", response.data);
-                    });
-            }
-        });
-
-        var remove_favorite_button = new Ui.Button({
-            icon: "fa-star",
-            title: options.narrow ? null : "Added",
-            tooltip: "Remove from favorites",
-            visible: !Galaxy.user.isAnonymous() && in_favorites,
-            onclick: () => {
-                axios
-                    .delete(
-                        `${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools/${encodeURIComponent(options.id)}`
-                    )
-                    .then(response => {
-                        remove_favorite_button.hide();
-                        favorite_button.show();
-                        Galaxy.user.updateFavorites("tools", response.data);
-                    });
-            }
-        });
 
         // button for version selection
         var versions_button = new Ui.ButtonMenu({
             icon: "fa-cubes",
-            title: options.narrow ? null : "Versions",
+            title: (!options.narrow && "Versions") || null,
             tooltip: "Select another tool version"
         });
-
         if (!options.sustain_version && options.versions && options.versions.length > 1) {
             for (var i in options.versions) {
                 var version = options.versions[i];
@@ -178,9 +145,25 @@ export default FormBase.extend({
         var menu_button = new Ui.ButtonMenu({
             id: "options",
             icon: "fa-caret-down",
-            title: options.narrow ? null : "Options",
+            title: (!options.narrow && "Options") || null,
             tooltip: "View available options"
         });
+        if (options.biostar_url) {
+            menu_button.addMenu({
+                icon: "fa-question-circle",
+                title: "Question?",
+                onclick: function() {
+                    window.open(`${options.biostar_url}/p/new/post/`);
+                }
+            });
+            menu_button.addMenu({
+                icon: "fa-search",
+                title: _l("Search"),
+                onclick: function() {
+                    window.open(`${options.biostar_url}/local/search/page/?q=${options.name}`);
+                }
+            });
+        }
         menu_button.addMenu({
             icon: "fa-share",
             title: _l("Share"),
@@ -193,6 +176,7 @@ export default FormBase.extend({
         });
 
         // add admin operations
+        let Galaxy = getGalaxyInstance();
         if (Galaxy.user && Galaxy.user.get("is_admin")) {
             menu_button.addMenu({
                 icon: "fa-download",
@@ -258,9 +242,7 @@ export default FormBase.extend({
 
         return {
             menu: menu_button,
-            versions: versions_button,
-            favorite: favorite_button,
-            remove_favorite: remove_favorite_button
+            versions: versions_button
         };
     },
 

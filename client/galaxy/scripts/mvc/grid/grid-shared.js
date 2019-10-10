@@ -10,7 +10,7 @@ import LoadingIndicator from "ui/loading-indicator";
 var View = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         LoadingIndicator.markViewAsLoading(this);
         this.model = new Backbone.Model(options);
         this.item = this.model.get("item");

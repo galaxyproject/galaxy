@@ -58,14 +58,6 @@ galaxy\.tools\.deps\.conda\_util module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.tools\.deps\.container\_classes module
-----------------------------------------------
-
-.. automodule:: galaxy.tools.deps.container_classes
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy\.tools\.deps\.containers module
 --------------------------------------
 

@@ -34,17 +34,15 @@
         </input>
     </groups>
     <settings>
-        <input>
-            <name>donut_ratio</name>
+        <donut_ratio>
             <label>Donut ratio</label>
             <help>Determine how large the donut hole will be.</help>
             <type>float</type>
             <value>0.5</value>
             <max>1</max>
             <min>0</min>
-        </input>
-        <input>
-            <name>legend_visible</name>
+        </donut_ratio>
+        <donut_ratio>
             <label>Show legend</label>
             <help>Would you like to add a legend?</help>
             <type>select</type>
@@ -60,9 +58,8 @@
                     <value>false</value>
                 </data>
             </data>
-        </input>
-        <input>
-            <name>label</name>
+        </donut_ratio>
+        <label_type>
             <type>conditional</type>
             <test_param>
                 <name>type</name>
@@ -93,7 +90,7 @@
                     <value>key</value>
                     <inputs>
                         <inputs>
-                            <name>outside</name>
+                            <name>label_outside</name>
                             <label>Show outside</label>
                             <help>Would you like to show labels outside the donut?</help>
                             <type>select</type>
@@ -116,7 +113,7 @@
                     <value>percent</value>
                     <inputs>
                         <inputs>
-                            <name>outside</name>
+                            <name>label_outside</name>
                             <label>Show outside</label>
                             <help>Would you like to show labels outside the donut?</help>
                             <type>select</type>
@@ -136,6 +133,6 @@
                     </inputs>
                 </cases>
             </cases>
-        </input>
+        </label_type>
     </settings>
 </visualization>

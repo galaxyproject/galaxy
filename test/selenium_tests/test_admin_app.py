@@ -27,7 +27,8 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_display_applications")
 
         admin_component.index.jobs.wait_for_and_click()
-        admin_component.update_jobs.wait_for_visible()
+        with self.main_panel():
+            admin_component.update_jobs.wait_for_visible()
         self.screenshot("admin_manage_jobs")
 
         admin_component.index.local_data.wait_for_and_click()

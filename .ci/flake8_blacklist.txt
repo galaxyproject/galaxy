@@ -2,10 +2,6 @@
 .tox
 .venv
 .venv3
-packages/*/.venv
-packages/*/build
-packages/*/dist
-packages/venv
 node_modules
 database
 doc/build

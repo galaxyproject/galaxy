@@ -12,7 +12,7 @@ import Form from "mvc/form/form-view";
 
 var View = Backbone.View.extend({
     initialize: function() {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         this.setElement("<div/>");
         this.model = new Backbone.Model({
             dataset_id: Galaxy.params.dataset_id
@@ -48,7 +48,7 @@ var View = Backbone.View.extend({
                 var err_msg = response.responseJSON && response.responseJSON.err_msg;
                 self.message.update({
                     status: "danger",
-                    message: err_msg || "Error occurred while loading the dataset."
+                    message: err_msg || "Error occured while loading the dataset."
                 });
             }
         });
@@ -73,7 +73,7 @@ var View = Backbone.View.extend({
                 var err_msg = response.responseJSON && response.responseJSON.err_msg;
                 self.message.update({
                     status: "danger",
-                    message: err_msg || "Error occurred while editing the dataset attributes."
+                    message: err_msg || "Error occured while editing the dataset attributes."
                 });
             }
         });
@@ -214,7 +214,7 @@ var View = Backbone.View.extend({
 
     /** reload Galaxy's history after updating dataset's attributes */
     _reloadHistory: function() {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         if (Galaxy) {
             Galaxy.currHistoryPanel.loadCurrentHistory();
         }

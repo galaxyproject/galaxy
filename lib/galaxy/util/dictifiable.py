@@ -2,14 +2,6 @@ import datetime
 import uuid
 
 
-def dict_for(obj, **kwds):
-    # Create dict to represent item.
-    return dict(
-        model_class=obj.__class__.__name__,
-        **kwds
-    )
-
-
 class Dictifiable(object):
     """ Mixin that enables objects to be converted to dictionaries. This is useful
         when for sharing objects across boundaries, such as the API, tool scripts,
@@ -46,7 +38,9 @@ class Dictifiable(object):
                 return item
 
         # Create dict to represent item.
-        rval = dict_for(self)
+        rval = dict(
+            model_class=self.__class__.__name__
+        )
 
         # Fill item dict with visible keys.
         try:

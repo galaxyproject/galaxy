@@ -20,8 +20,5 @@
     },
     "scripts": {
         "build": "parcel build src/nvd3.js -d static"
-    },
-    "devDependencies": {
-        "babel-core": "^6.26.3"
     }
 }

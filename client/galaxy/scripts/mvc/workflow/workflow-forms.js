@@ -56,7 +56,7 @@ var Tool = Backbone.View.extend({
                     form.model.get("postchange")(process, form);
                 },
                 postchange: function(process, form) {
-                    const Galaxy = getGalaxyInstance();
+                    let Galaxy = getGalaxyInstance();
                     var options = form.model.attributes;
                     var current_state = {
                         tool_id: options.id,
@@ -201,7 +201,7 @@ function _visit(head, head_list, output_id, options) {
 
 function _makeRenameHelp(name_labels) {
     let help_section = `This action will rename the output dataset. Click <a href="https://galaxyproject.org/learn/advanced-workflow/variables/">here</a> for more information. Valid input variables are:`;
-    const li = `
+    let li = `
         <ul>
             ${name_labels
                 .map(
@@ -224,10 +224,10 @@ function _makeSection(output_id, label, options) {
     var node = options.node;
     var workflow = options.workflow;
 
-    for (const key in datatypes) {
+    for (var key in datatypes) {
         extensions.push({ 0: datatypes[key], 1: datatypes[key] });
     }
-    for (const key in node.input_terminals) {
+    for (var key in node.input_terminals) {
         name_label_map.push({ name: node.input_terminals[key].name, label: node.input_terminals[key].label });
     }
     var rename_help = _makeRenameHelp(name_label_map);
@@ -276,13 +276,7 @@ function _makeSection(output_id, label, options) {
                 ignore: "__empty__",
                 value: "__empty__",
                 options: extensions,
-                help: "This action will change the datatype of the output to the indicated datatype.",
-                onchange: function(new_value) {
-                    if (new_value === '__empty__') {
-                        new_value = null;
-                    }
-                    workflow.updateDatatype(node, output_id, new_value);
-                }
+                help: "This action will change the datatype of the output to the indicated value."
             },
             {
                 action: "TagDatasetAction",
@@ -385,8 +379,8 @@ function _addSections(form) {
             help:
                 "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."
         });
-        for (const output_id in node.output_terminals) {
-            const label = node.output_terminals[output_id].label || output_id;
+        for (let output_id in node.output_terminals) {
+            let label = node.output_terminals[output_id].label || output_id;
             inputs.push(_makeSection(output_id, label, options));
         }
     }

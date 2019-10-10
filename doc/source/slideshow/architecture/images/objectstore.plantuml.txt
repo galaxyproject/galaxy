@@ -1,0 +1,28 @@
+@startuml
+
+!include plantuml_options.txt
+
+abstract class ObjectStore {
+    exists(obj)
+    file_ready(obj)
+    create(obj)
+    size(obj)
+    delete(obj)
+    get_data(obj)
+    get_filename(obj)
+    update_from_file(obj)
+    get_store_usage_percent()
+}
+
+class DiskObjectStore
+abstract class NestedObjectStore
+
+ObjectStore <|-- DiskObjectStore
+ObjectStore <|-- NestedObjectStore
+ObjectStore <|-- S3ObjectStore
+DiskObjectStore <|-- IRODSObjectStore
+NestedObjectStore <|-- DistributedObjectStore
+NestedObjectStore <|-- HierarchicalObjectStore
+
+
+@enduml

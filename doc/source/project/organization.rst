@@ -97,12 +97,10 @@ Direct Commit Access
 
 A *committer* may only commit directly to the Galaxy repository (i.e. outside of
 a pull request and not following the procedures described below) the following
-four categories of changes:
+two categories of changes:
 
 * Patches for serious security vulnerabilities.
 * Cherry-picking and/or merging of existing approved commits to other branches.
-* Everything under packages/.
-* Release notes and changelogs.
 
 
 Release branches
@@ -135,6 +133,11 @@ The latter is the preferred method because it is integrated in GitHub, it allows
 tracking the moment when the review was submitted, and it sends a notification
 to subscribers.
 
+Pull requests modifying freezed and tagged release branches should be restricted
+to bug fixes. Pull requests modifying tagged release branches require at least 2
+*+1* binding votes from someone other than the author of the pull request with
+no *-1* binding votes.
+
 Pull requests changing or clarifying the *Procedure Documents* (listed above):
 
 - Must be made to the ``dev`` branch of this repository.
@@ -154,9 +157,6 @@ Pull requests changing or clarifying the *Procedure Documents* (listed above):
 Any other pull request requires at least 1 *+1* binding vote from someone other
 than the author of the pull request. A member of the *committers* group merging
 a pull request is considered an implicit +1.
-
-Pull requests modifying freezed and tagged release branches should be restricted
-to bug fixes.
 
 Pull requests marked *[WIP]* (i.e. work in progress) in the title by the
 author(s), or tagged WIP via GitHub tags, may *not* be merged without

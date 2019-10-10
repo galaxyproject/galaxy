@@ -7,7 +7,6 @@ import STATES from "mvc/dataset/states";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
-import { mountNametags } from "components/Nametags";
 
 var logNamespace = "dataset";
 /*==============================================================================
@@ -43,20 +42,6 @@ export var DatasetListItemView = _super.extend(
             this.linkTarget = attributes.linkTarget || "_blank";
         },
 
-        // mount new vue component for tags
-        render: function() {
-            const result = _super.prototype.render.apply(this, arguments);
-            this._mountVueNametags();
-            return result;
-        },
-
-        _mountVueNametags: function() {
-            const container = this.$(".nametags")[0];
-            const { id, model_class, tags } = this.model.attributes;
-            const storeKey = `${model_class}-${id}`;
-            mountNametags({ storeKey, tags }, container);
-        },
-
         /** event listeners */
         _setUpListeners: function() {
             _super.prototype._setUpListeners.call(this);
@@ -79,11 +64,11 @@ export var DatasetListItemView = _super.extend(
                             self.render();
                         });
                     } else {
-                        if (_.has(self.model.changed, "tags") && _.keys(self.model.changed).length === 2) {
-                            // If only the tags and update time have changed,
-                            // rerender specifically the titlebar region.
-                            // Otherwise default to the full render.
-                            self._mountVueNametags();
+                        if (_.has(model.changed, "tags") && _.keys(model.changed).length === 1) {
+                            // If only the tags have changed, rerender specifically
+                            // the titlebar region.  Otherwise default to the full
+                            // render.
+                            self.$(".nametags").html(self._renderNametags());
                         } else {
                             self.render();
                         }
@@ -181,7 +166,7 @@ export var DatasetListItemView = _super.extend(
                 // add frame manager option onclick event
                 var self = this;
                 displayBtnData.onclick = ev => {
-                    const Galaxy = getGalaxyInstance();
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.frame && Galaxy.frame.active) {
                         // Add dataset to frames.
                         Galaxy.frame.addDataset(self.model.get("id"));
@@ -279,7 +264,7 @@ export var DatasetListItemView = _super.extend(
                 target: this.linkTarget,
                 faIcon: "fa-info-circle",
                 onclick: function(ev) {
-                    const Galaxy = getGalaxyInstance();
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.frame && Galaxy.frame.active) {
                         Galaxy.frame.add({
                             title: _l("Dataset details"),
@@ -323,19 +308,36 @@ export var DatasetListItemView = _super.extend(
             )}">
                         <span class="fa fa-floppy-o"></span>
                     </a>
-                    <div class="dropdown-menu" role="menu">
-                        <a class="dropdown-item" href="${urls.download}">
-                            ${_l("Download dataset")}
-                        </a>
+                    <ul class="dropdown-menu" role="menu">
+                        <li>
+                            <a href="${urls.download}">
+                                ${_l("Download dataset")}
+                            </a>
+                        </li>
                         ${_.map(
                             this.model.get("meta_files"),
                             meta_file =>
-                                `<a class="dropdown-item" href="${urls.meta_download + meta_file.file_type}">
-                                    ${_l("Download")} ${meta_file.file_type}
-                                </a>`
+                                `<li>
+                                    <a href="${urls.meta_download + meta_file.file_type}">
+                                        ${_l("Download")} ${meta_file.file_type}
+                                    </a>
+                                </li>`
                         )}
-                    </div>
+                    </ul>
                 </div>`);
+        },
+
+        _renderNametags: function() {
+            var tpl = _.template(
+                [
+                    "<% _.each(_.sortBy(_.uniq(tags), function(x) { return x }), function(tag){ %>",
+                    '<% if (tag.indexOf("name:") == 0){ %>',
+                    '<span class="badge badge-primary badge-tags"><%- tag.slice(5) %></span>',
+                    "<% } %>",
+                    "<% }); %>"
+                ].join("")
+            );
+            return tpl({ tags: this.model.get("tags") });
         },
 
         // ......................................................................... misc

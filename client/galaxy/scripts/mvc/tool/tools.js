@@ -344,8 +344,6 @@ _.extend(ToolSection.prototype, VisibilityMixin);
  * query.
  */
 var ToolSearch = Backbone.Model.extend({
-    SEARCH_RESERVED_TERMS_FAVORITES: ["#favs", "#favorites", "#favourites"],
-
     defaults: {
         search_hint_string: "search tools",
         min_chars_for_search: 3,
@@ -367,7 +365,6 @@ var ToolSearch = Backbone.Model.extend({
      * Do the search and update the results.
      */
     do_search: function() {
-        const Galaxy = getGalaxyInstance();
         var query = this.attributes.query;
 
         // If query is too short, do not search.
@@ -382,31 +379,26 @@ var ToolSearch = Backbone.Model.extend({
         if (this.timer) {
             clearTimeout(this.timer);
         }
-        // Catch reserved words
-        if (this.SEARCH_RESERVED_TERMS_FAVORITES.indexOf(q) >= 0) {
-            this.set("results", Galaxy.user.getFavorites().tools);
-        } else {
-            // Start a new ajax-request in X ms
-            $("#search-clear-btn").hide();
-            $("#search-spinner").show();
-            var self = this;
-            this.timer = setTimeout(() => {
-                // log the search to analytics if present
-                if (typeof ga !== "undefined") {
-                    ga("send", "pageview", `${getAppRoot()}?q=${q}`);
-                }
-                $.get(
-                    self.urlRoot,
-                    { q: q },
-                    data => {
-                        self.set("results", data);
-                        $("#search-spinner").hide();
-                        $("#search-clear-btn").show();
-                    },
-                    "json"
-                );
-            }, 400);
-        }
+        // Start a new ajax-request in X ms
+        $("#search-clear-btn").hide();
+        $("#search-spinner").show();
+        var self = this;
+        this.timer = setTimeout(() => {
+            // log the search to analytics if present
+            if (typeof ga !== "undefined") {
+                ga("send", "pageview", `${getAppRoot()}?q=${q}`);
+            }
+            $.get(
+                self.urlRoot,
+                { q: q },
+                data => {
+                    self.set("results", data);
+                    $("#search-spinner").hide();
+                    $("#search-clear-btn").show();
+                },
+                "json"
+            );
+        }, 400);
     },
 
     clear_search: function() {
@@ -435,29 +427,21 @@ var ToolPanel = Backbone.Model.extend({
         var self = this;
 
         var // Helper to recursively parse tool panel.
-            parse_elt = elt_dict => {
-                const type = elt_dict.model_class;
-                // There are many types of tools; for now, anything that ends in 'Tool'
-                // and is not a ExpressionTool is treated as a generic tool.
-                if (type.indexOf("Tool") === type.length - 4) {
-                    const tool = self.attributes.tools.get(elt_dict.id);
-                    if (type === "ExpressionTool") {
-                        tool.hide();
-                    }
-                    return tool;
-                } else if (type === "ToolSection") {
-                    // Parse elements.
-                    const elems = _.map(elt_dict.elems, parse_elt).filter(el => el.is_visible());
-                    elt_dict.elems = elems;
-                    const section = new ToolSection(elt_dict);
-                    if (elems.length == 0) {
-                        section.hide();
-                    }
-                    return section;
-                } else if (type === "ToolSectionLabel") {
-                    return new ToolSectionLabel(elt_dict);
-                }
-            };
+        parse_elt = elt_dict => {
+            var type = elt_dict.model_class;
+            // There are many types of tools; for now, anything that ends in 'Tool'
+            // is treated as a generic tool.
+            if (type.indexOf("Tool") === type.length - 4) {
+                return self.attributes.tools.get(elt_dict.id);
+            } else if (type === "ToolSection") {
+                // Parse elements.
+                var elems = _.map(elt_dict.elems, parse_elt);
+                elt_dict.elems = elems;
+                return new ToolSection(elt_dict);
+            } else if (type === "ToolSectionLabel") {
+                return new ToolSectionLabel(elt_dict);
+            }
+        };
 
         return _.map(response, parse_elt);
     },
@@ -537,7 +521,7 @@ var ToolLinkView = BaseView.extend({
         if (this.model.id === "upload1") {
             $link.find("a").on("click", e => {
                 e.preventDefault();
-                const Galaxy = getGalaxyInstance();
+                let Galaxy = getGalaxyInstance();
                 Galaxy.upload.show();
             });
         } else if (formStyle === "regular") {
@@ -545,7 +529,7 @@ var ToolLinkView = BaseView.extend({
             var self = this;
             $link.find("a").on("click", e => {
                 e.preventDefault();
-                const Galaxy = getGalaxyInstance();
+                let Galaxy = getGalaxyInstance();
                 Galaxy.router.push("/", {
                     tool_id: self.model.id,
                     version: self.model.get("version")

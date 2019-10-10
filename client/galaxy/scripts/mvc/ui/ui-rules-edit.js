@@ -2,6 +2,7 @@ import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import _l from "utils/localization";
+// import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Vue from "vue";
 import ListCollectionCreator from "mvc/collection/list-collection-creator";
@@ -11,12 +12,15 @@ import RulesDisplay from "components/RulesDisplay.vue";
  * Bridge rule based builder and the tool form.
  */
 var View = Backbone.View.extend({
+    // initialize
     initialize: function(options) {
-        this.model = new Backbone.Model();
+        // link this
+        this.options = options;
         this.target = options.target;
+        this.reset = null;
         const view = this;
 
-        // create insert edit button
+        // create insert new list element button
         this.browse_button = new Ui.Button({
             title: _l("Edit"),
             icon: "fa fa-edit",
@@ -72,7 +76,7 @@ var View = Backbone.View.extend({
     _showRuleEditor: function(elements) {
         const elementsType = "collection_contents";
         const importType = "collections";
-        const value = this._value;
+        let value = this._value;
         const options = {
             saveRulesFn: rules => this._handleRulesSave(rules),
             initialRules: value
@@ -101,8 +105,9 @@ var View = Backbone.View.extend({
         `;
     },
 
-    /** Return/Set current value */
+    /** Return/Set currently selected genomespace filename */
     value: function(new_value) {
+        // check if new_value is defined
         if (new_value !== undefined) {
             this._setValue(new_value);
         } else {
@@ -110,31 +115,33 @@ var View = Backbone.View.extend({
         }
     },
 
-    /** Update input element options */
+    // update
     update: function(input_def) {
         this.target = input_def.target;
     },
 
-    /** Returns current value */
+    // get value
     _getValue: function() {
         return this._value;
     },
 
-    /** Sets current value */
+    // set value
     _setValue: function(new_value) {
         if (new_value) {
             if (typeof new_value == "string") {
                 new_value = JSON.parse(new_value);
             }
             this._value = new_value;
-            this.model.trigger("error", null);
             this.trigger("change");
             this.instance.inputRules = new_value;
+            if (this.reset) {
+                this.reset();
+                this.reset = null;
+            }
         }
     },
 
-    /** Validate input element value */
-    validate: function() {
+    validate: function(reset) {
         const value = this._value;
         let message = null;
         if (!value || value.rules.length === 0) {
@@ -142,14 +149,15 @@ var View = Backbone.View.extend({
         } else if (value.mapping.length === 0) {
             message = "No collection identifiers defined, specify at least one collection identifier.";
         } else {
-            for (const rule of value.rules) {
+            for (let rule of value.rules) {
                 if (rule.error) {
                     message = "One or more rules in error.";
                     break;
                 }
             }
         }
-        return message;
+        this.reset = reset;
+        return { valid: !message, message: message };
     }
 });
 

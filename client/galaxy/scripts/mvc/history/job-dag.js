@@ -1,4 +1,3 @@
-import _ from "underscore";
 import GRAPH from "utils/graph";
 import addLogging from "utils/add-logging";
 
@@ -315,7 +314,7 @@ JobDAG.prototype.weakComponentGraphArray = function() {
             }
             return 0;
         });
-        return new GRAPH.Graph(dag.directed, component);
+        return new Graph(dag.directed, component);
     });
 };
 

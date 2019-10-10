@@ -28,8 +28,8 @@ from galaxy.jobs import (
     TaskWrapper
 )
 from galaxy.jobs.mapper import JobNotReadyException
+from galaxy.util.handlers import HANDLER_ASSIGNMENT_METHODS
 from galaxy.util.monitors import Monitors
-from galaxy.web.stack.handlers import HANDLER_ASSIGNMENT_METHODS
 from galaxy.web.stack.message import JobHandlerMessage
 
 log = logging.getLogger(__name__)
@@ -107,9 +107,8 @@ class JobHandlerQueue(Monitors):
             .where(and_(
                 model.Job.table.c.handler.in_(self.app.job_config.self_handler_tags),
                 model.Job.table.c.state == model.Job.states.NEW)) \
-            .order_by(model.Job.table.c.id)
-        if self.app.job_config.handler_max_grab:
-            subq = subq.limit(self.app.job_config.handler_max_grab)
+            .order_by(model.Job.table.c.id) \
+            .limit(self.app.job_config.handler_max_grab)
         if method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
             subq = subq.with_for_update(skip_locked=True)
         self.__grab_query = model.Job.table.update() \
@@ -296,8 +295,10 @@ class JobHandlerQueue(Monitors):
                 .join(model.JobToInputLibraryDatasetAssociation) \
                 .join(model.LibraryDatasetDatasetAssociation) \
                 .join(model.Dataset) \
-                .filter(and_(model.Job.state == model.Job.states.NEW,
-                             model.Dataset.state.in_(model.Dataset.non_ready_states))).subquery()
+                .filter(and_((model.Job.state == model.Job.states.NEW),
+                        or_((model.LibraryDatasetDatasetAssociation._state != null()),
+                            (model.Dataset.state.in_(model.Dataset.non_ready_states)),
+                            ))).subquery()
             if self.app.config.user_activation_on:
                 jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
                     .outerjoin(model.User) \
@@ -360,10 +361,8 @@ class JobHandlerQueue(Monitors):
                     job.text_metrics = copied_from_job.text_metrics
                     job.dependencies = copied_from_job.dependencies
                     job.state = copied_from_job.state
-                    job.job_stderr = copied_from_job.job_stderr
-                    job.job_stdout = copied_from_job.job_stdout
-                    job.tool_stderr = copied_from_job.tool_stderr
-                    job.tool_stdout = copied_from_job.tool_stdout
+                    job.stderr = copied_from_job.stderr
+                    job.stdout = copied_from_job.stdout
                     job.command_line = copied_from_job.command_line
                     job.traceback = copied_from_job.traceback
                     job.tool_version = copied_from_job.tool_version

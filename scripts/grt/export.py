@@ -49,10 +49,7 @@ def kw_metrics(job):
 
 
 def round_to_2sd(number):
-    if number:
-        return str(int(float('%.2g' % number)))
-    else:
-        return '-1'
+    return str(int(float('%.2g' % number)))
 
 
 def main(argv):
@@ -292,15 +289,11 @@ def main(argv):
 
     # Now on to outputs.
     with tarfile.open(REPORT_BASE + '.tar.gz', 'w:gz') as handle:
-        for name in ('jobs', 'metric_num', 'datasets'):
-            path = REPORT_BASE + '.' + name + '.tsv'
-            if os.path.exists(path):
-                handle.add(path)
+        for name in ('jobs', 'metric_num', 'params', 'datasets'):
+            handle.add(REPORT_BASE + '.' + name + '.tsv')
 
-    for name in ('jobs', 'metric_num', 'datasets'):
-        path = REPORT_BASE + '.' + name + '.tsv'
-        if os.path.exists(path):
-            os.unlink(REPORT_BASE + '.' + name + '.tsv')
+    for name in ('jobs', 'metric_num', 'params', 'datasets'):
+        os.unlink(REPORT_BASE + '.' + name + '.tsv')
 
     _times.append(('job_finish', time.time() - _start_time))
     sha = hash_util.memory_bound_hexdigest(hash_util.sha256, REPORT_BASE + ".tar.gz")

@@ -9,13 +9,13 @@ import Panel from "layout/panel";
 import Modal from "mvc/ui/ui-modal";
 import Utils from "utils/utils";
 
-const View = Backbone.View.extend({
+var View = Backbone.View.extend({
     el: "body",
     className: "full-content",
     _panelids: ["left", "right"],
 
     initialize: function(options) {
-        const self = this;
+        var self = this;
         this.config = _.defaults(options.config || {}, {
             message_box_visible: false,
             message_box_content: "",
@@ -27,7 +27,7 @@ const View = Backbone.View.extend({
         });
 
         // attach global objects, build mastheads
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         Galaxy.modal = this.modal = new Modal.View();
         Galaxy.router = this.router = options.Router && new options.Router(self, options);
         Galaxy.data = this.data = new Data(this);
@@ -72,11 +72,11 @@ const View = Backbone.View.extend({
         this.panels = {};
         if (!this.config.hide_panels) {
             _.each(this._panelids, panel_id => {
-                const panel_class_name = panel_id.charAt(0).toUpperCase() + panel_id.slice(1);
-                const panel_class = options[panel_class_name];
+                var panel_class_name = panel_id.charAt(0).toUpperCase() + panel_id.slice(1);
+                var panel_class = options[panel_class_name];
                 if (panel_class) {
-                    const panel_instance = new panel_class(self, options);
-                    const panel_el = self.$(`#${panel_id}`);
+                    var panel_instance = new panel_class(self, options);
+                    var panel_el = self.$(`#${panel_id}`);
                     self[panel_instance.toString()] = panel_instance;
                     self.panels[panel_id] = new Panel.SidePanel({
                         id: panel_id,
@@ -116,8 +116,8 @@ const View = Backbone.View.extend({
     /** Render message box */
     renderMessageBox: function() {
         if (this.config.message_box_visible) {
-            const content = this.config.message_box_content || "";
-            const level = this.config.message_box_class || "info";
+            var content = this.config.message_box_content || "";
+            var level = this.config.message_box_class || "info";
             this.$el.addClass("has-message-box");
             this.$messagebox
                 .attr("class", `panel-${level}-message`)
@@ -134,8 +134,8 @@ const View = Backbone.View.extend({
     /** Render inactivity warning */
     renderInactivityBox: function() {
         if (this.config.show_inactivity_warning) {
-            const content = this.config.inactivity_box_content || "";
-            const verificationLink = $("<a/>")
+            var content = this.config.inactivity_box_content || "";
+            var verificationLink = $("<a/>")
                 .attr("href", `${getAppRoot()}user/resend_verification`)
                 .text("Resend verification");
             this.$el.addClass("has-inactivity-box");
@@ -153,9 +153,9 @@ const View = Backbone.View.extend({
 
     /** Render panels */
     renderPanels: function() {
-        const self = this;
+        var self = this;
         _.each(this._panelids, panel_id => {
-            const panel = self.panels[panel_id];
+            var panel = self.panels[panel_id];
             if (panel) {
                 panel.render();
             } else {
@@ -190,11 +190,11 @@ const View = Backbone.View.extend({
 
     /** Check if the communication server is online and show the icon otherwise hide the icon */
     _checkCommunicationServerOnline: function() {
-        const Galaxy = getGalaxyInstance();
-        const host = Galaxy.config.communication_server_host;
-        const port = Galaxy.config.communication_server_port;
-        const preferences = Galaxy.user.attributes.preferences;
-        const $chat_icon_element = $("#show-chat-online");
+        let Galaxy = getGalaxyInstance();
+        var host = Galaxy.config.communication_server_host;
+        var port = Galaxy.config.communication_server_port;
+        var preferences = Galaxy.user.attributes.preferences;
+        var $chat_icon_element = $("#show-chat-online");
         /** Check if the user has deactivated the communication in it's personal settings */
         if (preferences && ["1", "true"].indexOf(preferences.communication_server) != -1) {
             // See if the configured communication server is available

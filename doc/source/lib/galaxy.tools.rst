@@ -119,14 +119,6 @@ galaxy\.tools\.loader\_directory module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.tools\.provided\_metadata module
-----------------------------------------
-
-.. automodule:: galaxy.tools.provided_metadata
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy\.tools\.repositories module
 ----------------------------------
 

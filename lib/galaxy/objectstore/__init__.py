@@ -81,7 +81,7 @@ class ObjectStore(object):
         000/obj.id)
     """
 
-    def __init__(self, config, config_dict={}, **kwargs):
+    def __init__(self, config, **kwargs):
         """
         :type config: object
         :param config: An object, most likely populated from
@@ -95,16 +95,11 @@ class ObjectStore(object):
             * new_file_path -- Used to set the 'temp' extra_dir.
         """
         self.running = True
+        self.extra_dirs = {}
         self.config = config
         self.check_old_style = config.object_store_check_old_style
-        self.store_by = config_dict.get("store_by", None) or getattr(config, "object_store_store_by", "id")
-        assert self.store_by in ["id", "uuid"]
-        extra_dirs = {}
-        extra_dirs['job_work'] = config.jobs_directory
-        extra_dirs['temp'] = config.new_file_path
-        extra_dirs.update(dict(
-            (e['type'], e['path']) for e in config_dict.get('extra_dirs', [])))
-        self.extra_dirs = extra_dirs
+        self.extra_dirs['job_work'] = config.jobs_directory
+        self.extra_dirs['temp'] = config.new_file_path
 
     def shutdown(self):
         """Close any connections for this ObjectStore."""
@@ -232,17 +227,8 @@ class ObjectStore(object):
         return {
             'config': config_to_dict(self.config),
             'extra_dirs': extra_dirs,
-            'store_by': self.store_by,
             'type': self.store_type,
         }
-
-    def _get_object_id(self, obj):
-        if hasattr(obj, self.store_by):
-            return getattr(obj, self.store_by)
-        else:
-            # job's don't have uuids, so always use ID in this case when creating
-            # job working directories.
-            return obj.id
 
 
 class DiskObjectStore(ObjectStore):
@@ -279,21 +265,28 @@ class DiskObjectStore(ObjectStore):
         :type extra_dirs: dict
         :param extra_dirs: Keys are string, values are directory paths.
         """
-        super(DiskObjectStore, self).__init__(config, config_dict)
+        super(DiskObjectStore, self).__init__(config)
         self.file_path = config_dict.get("files_dir") or config.file_path
+        extra_dirs = dict(
+            (e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
+        self.extra_dirs.update(extra_dirs)
 
     @classmethod
     def parse_xml(clazz, config_xml):
         extra_dirs = []
-        config_dict = {}
+        file_path = None
+
         if config_xml is not None:
             for e in config_xml:
                 if e.tag == 'files_dir':
-                    config_dict["files_dir"] = e.get('path')
+                    file_path = e.get('path')
                 else:
                     extra_dirs.append({"type": e.get('type'), "path": e.get('path')})
 
-        config_dict["extra_dirs"] = extra_dirs
+        config_dict = {
+            "files_dir": file_path,
+            "extra_dirs": extra_dirs,
+        }
         return config_dict
 
     def to_dict(self):
@@ -359,7 +352,6 @@ class DiskObjectStore(ObjectStore):
         if alt_name and not safe_relpath(alt_name):
             log.warning('alt_name would locate path outside dir: %s', alt_name)
             raise ObjectInvalid("The requested object is invalid")
-        obj_id = self._get_object_id(obj)
         if old_style:
             if extra_dir is not None:
                 path = os.path.join(base, extra_dir)
@@ -367,10 +359,10 @@ class DiskObjectStore(ObjectStore):
                 path = base
         else:
             # Construct hashed path
-            rel_path = os.path.join(*directory_hash_id(obj_id))
+            rel_path = os.path.join(*directory_hash_id(obj.id))
             # Create a subdirectory for the object ID
             if obj_dir:
-                rel_path = os.path.join(rel_path, str(obj_id))
+                rel_path = os.path.join(rel_path, str(obj.id))
             # Optionally append extra_dir
             if extra_dir is not None:
                 if extra_dir_at_root:
@@ -379,8 +371,7 @@ class DiskObjectStore(ObjectStore):
                     rel_path = os.path.join(rel_path, extra_dir)
             path = os.path.join(base, rel_path)
         if not dir_only:
-            assert obj_id is not None, "The effective dataset identifier consumed by object store [%s] must be set before a path can be constructed." % (self.store_by)
-            path = os.path.join(path, alt_name if alt_name else "dataset_%s.dat" % obj_id)
+            path = os.path.join(path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
         return os.path.abspath(path)
 
     def exists(self, obj, **kwargs):
@@ -467,10 +458,7 @@ class DiskObjectStore(ObjectStore):
             # construct and return hashed path
             if os.path.exists(path):
                 return path
-        path = self._construct_path(obj, **kwargs)
-        if not os.path.exists(path):
-            raise ObjectNotFound
-        return path
+        return self._construct_path(obj, **kwargs)
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
         """`create` parameter is not used in this implementation."""
@@ -571,8 +559,7 @@ class NestedObjectStore(ObjectStore):
     def _repr_object_for_exception(self, obj):
         try:
             # there are a few objects in python that don't have __class__
-            obj_id = self._get_object_id(obj)
-            return '{}({}={})'.format(obj.__class__.__name__, self.store_by, obj_id)
+            return '{}(id={})'.format(obj.__class__.__name__, obj.id)
         except AttributeError:
             return str(obj)
 
@@ -615,7 +602,7 @@ class DistributedObjectStore(NestedObjectStore):
         :param fsmon: If True, monitor the file system for free space,
             removing backends when they get too full.
         """
-        super(DistributedObjectStore, self).__init__(config, config_dict)
+        super(DistributedObjectStore, self).__init__(config)
 
         self.backends = {}
         self.weighted_backend_ids = []
@@ -801,7 +788,7 @@ class HierarchicalObjectStore(NestedObjectStore):
 
     def __init__(self, config, config_dict, fsmon=False):
         """The default contructor. Extends `NestedObjectStore`."""
-        super(HierarchicalObjectStore, self).__init__(config, config_dict)
+        super(HierarchicalObjectStore, self).__init__(config)
 
         backends = odict()
         for order, backend_def in enumerate(config_dict["backends"]):

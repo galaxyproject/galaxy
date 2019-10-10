@@ -5,21 +5,41 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Boolean, Column, MetaData
-
-from galaxy.model.migrate.versions.util import add_column, drop_column, engine_false, engine_true
+from sqlalchemy import Boolean, Column, MetaData, Table
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
 
-def upgrade(migrate_engine):
-    print(__doc__)
-    metadata.bind = migrate_engine
-    metadata.reflect()
+def engine_false(migrate_engine):
+    if migrate_engine.name in ['postgres', 'postgresql']:
+        return "FALSE"
+    elif migrate_engine.name in ['mysql', 'sqlite']:
+        return 0
+    else:
+        raise Exception('Unknown database type: %s' % migrate_engine.name)
 
-    c = Column('purged', Boolean, index=True, default=False)
-    add_column(c, 'library_dataset', metadata, index_name='ix_library_dataset_purged')
+
+def engine_true(migrate_engine):
+    if migrate_engine.name in ['postgres', 'postgresql']:
+        return "TRUE"
+    elif migrate_engine.name in ['mysql', 'sqlite']:
+        return 1
+    else:
+        raise Exception('Unknown database type: %s' % migrate_engine.name)
+
+
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
+    print(__doc__)
+    metadata.reflect()
+    try:
+        LibraryDataset_table = Table("library_dataset", metadata, autoload=True)
+        c = Column("purged", Boolean, index=True, default=False)
+        c.create(LibraryDataset_table, index_name='ix_library_dataset_purged')
+        assert c is LibraryDataset_table.c.purged
+    except Exception:
+        log.exception("Adding purged column to library_dataset table failed.")
     # Update the purged flag to the default False
     cmd = "UPDATE library_dataset SET purged = %s;" % engine_false(migrate_engine)
     try:
@@ -43,7 +63,8 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-
-    # SQLAlchemy Migrate has a bug when dropping a boolean column in SQLite
-    if migrate_engine.name != 'sqlite':
-        drop_column('purged', 'library_dataset', metadata)
+    try:
+        LibraryDataset_table = Table("library_dataset", metadata, autoload=True)
+        LibraryDataset_table.c.purged.drop()
+    except Exception:
+        log.exception("Dropping purged column from library_dataset table failed.")

@@ -1,7 +1,5 @@
-/** Upload app contains the upload progress button and upload modal, compiles model data for API request **/
 import _l from "utils/localization";
-import Backbone from "backbone";
-import { getGalaxyInstance } from "app";
+/** Upload app contains the upload progress button and upload modal, compiles model data for API request **/
 import Utils from "utils/utils";
 import Modal from "mvc/ui/ui-modal";
 import Tabs from "mvc/ui/ui-tabs";
@@ -11,6 +9,7 @@ import UploadViewDefault from "mvc/upload/default/default-view";
 import UploadViewComposite from "mvc/upload/composite/composite-view";
 import UploadViewCollection from "mvc/upload/collection/collection-view";
 import UploadViewRuleBased from "mvc/upload/collection/rules-input-view";
+import { getGalaxyInstance } from "app";
 
 export default Backbone.View.extend({
     options: {
@@ -65,7 +64,7 @@ export default Backbone.View.extend({
 
     /** Show/hide upload dialog */
     show: function() {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         var self = this;
         if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
             window.setTimeout(() => {
@@ -114,7 +113,7 @@ export default Backbone.View.extend({
 
     /** Refresh user and current history */
     currentHistory: function() {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         return this.current_user && Galaxy.currHistoryPanel.model.get("id");
     },
 
@@ -173,8 +172,6 @@ export default Backbone.View.extend({
                                 file: it.get("file_data")
                             });
                     }
-                } else if (it.get("optional")) {
-                    continue;
                 } else {
                     data.error_message = "Upload content incomplete.";
                     it.set("status", "error");

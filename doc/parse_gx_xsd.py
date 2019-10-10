@@ -11,6 +11,9 @@ import sys
 from lxml import etree
 from six import StringIO
 
+with open(sys.argv[1], "r") as f:
+    MARKDOWN_TEMPLATE = f.read()
+
 with open(sys.argv[2], "r") as f:
     xmlschema_doc = etree.parse(f)
 
@@ -19,26 +22,11 @@ markdown_buffer = StringIO()
 
 def main():
     """Entry point for the function that builds Markdown help for the Galaxy XSD."""
-    toc_list = []
-    content_list = []
-    found_tag = False
-    with open(sys.argv[1], "r") as markdown_template:
-        for line in markdown_template:
-            if line.startswith("$tag:"):
-                found_tag = True
-                tag = Tag(line.rstrip())
-                toc_list.append(tag.build_toc_entry())
-                content_list.append(tag.build_help())
-            elif not found_tag:
-                print(line, end='')
-            else:
-                raise Exception("No normal text allowed after the first $tag")
-    print("## Contents\n")
-    for el in toc_list:
-        print(el)
-    print("\n")
-    for el in content_list:
-        print(el, end='')
+    for line in MARKDOWN_TEMPLATE.splitlines():
+        if line.startswith("$tag:"):
+            print(Tag(line).build_help())
+        else:
+            print(line)
 
 
 class Tag(object):
@@ -59,28 +47,15 @@ class Tag(object):
         self.hide_attributes = hide_attributes
         self.title = title
 
-    @property
-    def _anchor(self):
-        anchor = self.title
-        for _ in ['|', '_']:
-            anchor = anchor.replace(_, '-')
-        return '#' + anchor
-
-    @property
-    def _pretty_title(self):
-        return " > ".join(["``%s``" % p for p in self.title.split("|")])
-
-    def build_toc_entry(self):
-        return "* [%s](%s)" % (self._pretty_title, self._anchor)
-
     def build_help(self):
         tag = xmlschema_doc.find(self.xpath)
         if tag is None:
             raise Exception("Could not find xpath for %s" % self.xpath)
 
+        title = self.title
         tag_help = StringIO()
-        tag_help.write("## " + self._pretty_title)
-        tag_help.write("\n\n")
+        tag_help.write("## " + " > ".join(["``%s``" % p for p in title.split("|")]))
+        tag_help.write("\n")
         tag_help.write(_build_tag(tag, self.hide_attributes))
         tag_help.write("\n\n")
         return tag_help.getvalue()
@@ -140,7 +115,7 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
     attribute_table.write("\n\n")
     if attributes and not hide_attributes:
         header_prefix = '#' * header_level
-        attribute_table.write("\n%s Attributes\n\n" % header_prefix)
+        attribute_table.write("\n%s Attributes\n" % header_prefix)
         attribute_table.write("Attribute | Details | Required\n")
         attribute_table.write("--- | --- | ---\n")
         for attribute in attributes:
@@ -170,20 +145,10 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
 
 
 def _find_attributes(tag):
-    raw_attributes = tag.findall("{http://www.w3.org/2001/XMLSchema}attribute") or \
+    return tag.findall("{http://www.w3.org/2001/XMLSchema}attribute") or \
         tag.findall("{http://www.w3.org/2001/XMLSchema}complexType/{http://www.w3.org/2001/XMLSchema}attribute") or \
         tag.findall("{http://www.w3.org/2001/XMLSchema}complexContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attribute") or \
         tag.findall("{http://www.w3.org/2001/XMLSchema}simpleContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attribute")
-    attribute_groups = tag.findall("{http://www.w3.org/2001/XMLSchema}attributeGroup") or \
-        tag.findall("{http://www.w3.org/2001/XMLSchema}complexType/{http://www.w3.org/2001/XMLSchema}attributeGroup") or \
-        tag.findall("{http://www.w3.org/2001/XMLSchema}complexContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attributeGroup") or \
-        tag.findall("{http://www.w3.org/2001/XMLSchema}simpleContent/{http://www.w3.org/2001/XMLSchema}extension/{http://www.w3.org/2001/XMLSchema}attributeGroup")
-    attributes = list(raw_attributes)
-    for attribute_group in attribute_groups:
-        attribute_group_name = attribute_group.get("ref")
-        attribute_group_def = xmlschema_doc.find("//{http://www.w3.org/2001/XMLSchema}attributeGroup/[@name='%s']" % attribute_group_name)
-        attributes.extend(_find_attributes(attribute_group_def))
-    return attributes
 
 
 def _find_tag_el(tag):

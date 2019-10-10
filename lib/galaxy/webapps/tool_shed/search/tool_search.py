@@ -16,7 +16,7 @@ from galaxy.exceptions import ObjectNotFound
 
 log = logging.getLogger(__name__)
 
-schema = Schema(
+tool_schema = Schema(
     name=TEXT(stored=True),
     description=TEXT(stored=True),
     owner=TEXT(stored=True),
@@ -58,7 +58,7 @@ class ToolSearch(object):
                     'name',
                     'description',
                     'help',
-                    'repo_owner_username'], schema=schema)
+                    'repo_owner_username'], schema=tool_schema)
 
                 user_query = parser.parse('*' + search_term + '*')
 

@@ -1,11 +1,7 @@
-"""
-"""
 import datetime
 import logging
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
-
-from galaxy.model.migrate.versions.util import create_table, drop_table
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
@@ -25,12 +21,10 @@ MetadataFile_table = Table("metadata_file", metadata,
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-
-    create_table(MetadataFile_table)
+    MetadataFile_table.create()
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-
-    drop_table(MetadataFile_table)
+    MetadataFile_table.drop()

@@ -197,13 +197,13 @@ import { getAppRoot } from "onload/loadConfig";
 
         // construct form data
         var form = new FormData();
-        for (const key in data.payload) {
+        for (let key in data.payload) {
             form.append(key, data.payload[key]);
         }
 
         // add files to submission
         var sizes = 0;
-        for (const key in data.files) {
+        for (let key in data.files) {
             var d = data.files[key];
             form.append(d.name, d.file, d.file.name);
             sizes += d.file.size;
@@ -256,7 +256,7 @@ import { getAppRoot } from "onload/loadConfig";
         );
 
         // drag/drop events
-        const element = el.get(0);
+        let element = el.get(0);
         element.addEventListener("drop", e => {
             opts.ondragleave(e);
             if (e.dataTransfer) {
@@ -377,7 +377,7 @@ import { getAppRoot } from "onload/loadConfig";
 
             // get an identifier from the queue
             var index = -1;
-            for (const key in queue) {
+            for (let key in queue) {
                 index = key;
                 break;
             }

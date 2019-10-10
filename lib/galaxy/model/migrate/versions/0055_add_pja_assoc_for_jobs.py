@@ -7,8 +7,6 @@ import logging
 
 from sqlalchemy import Column, ForeignKey, Integer, MetaData, Table
 
-from galaxy.model.migrate.versions.util import create_table, drop_table
-
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
@@ -19,15 +17,20 @@ PostJobActionAssociation_table = Table("post_job_action_association", metadata,
 
 
 def upgrade(migrate_engine):
-    print(__doc__)
     metadata.bind = migrate_engine
+    print(__doc__)
     metadata.reflect()
-
-    create_table(PostJobActionAssociation_table)
+    try:
+        PostJobActionAssociation_table.create()
+    except Exception:
+        log.exception("Creating PostJobActionAssociation table failed.")
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
+    # Load existing tables
     metadata.reflect()
-
-    drop_table(PostJobActionAssociation_table)
+    try:
+        PostJobActionAssociation_table.drop()
+    except Exception:
+        log.exception("Dropping PostJobActionAssociation table failed.")

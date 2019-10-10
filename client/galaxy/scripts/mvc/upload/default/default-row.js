@@ -1,9 +1,7 @@
-/** Renders the default uploader rows */
-import $ from "jquery";
-import _ from "underscore";
-import Backbone from "backbone";
 import _l from "utils/localization";
+/** Renders the default uploader rows */
 import Utils from "utils/utils";
+import UploadModel from "mvc/upload/upload-model";
 import UploadSettings from "mvc/upload/upload-settings";
 import Popover from "mvc/ui/ui-popover";
 import UploadExtension from "mvc/upload/upload-extension";
@@ -84,7 +82,7 @@ export default Backbone.View.extend({
         // handle extension info popover
         this.$(".upload-extension-info")
             .on("click", e => {
-                const upload_ext = this.upload_extension;
+                let upload_ext = this.upload_extension;
                 if (upload_ext) {
                     if (upload_ext.extension_popup.visible) {
                         upload_ext.extension_popup.hide();
@@ -280,7 +278,7 @@ export default Backbone.View.extend({
                             <input class="upload-title ml-2 border rounded"/>
                             <div class="upload-text">
                                 <div class="upload-text-info">
-                                    Download data from the web by entering URLs (one per line) or directly paste content.
+                                    You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.
                                 </div>
                                 <textarea class="upload-text-content form-control"/>
                             </div>

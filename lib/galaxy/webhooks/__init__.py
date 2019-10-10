@@ -1,7 +1,6 @@
 """
 This module manages loading of Galaxy webhooks.
 """
-import io
 import logging
 import os
 
@@ -65,8 +64,8 @@ class WebhooksRegistry(object):
                     log.exception(e)
 
     def load_webhook_from_config(self, webhook_dir, config_file_path):
-        with open(config_file_path) as fh:
-            config = yaml.safe_load(fh)
+        with open(config_file_path) as file:
+            config = yaml.safe_load(file)
 
         weight = config.get('weight', 1)
         if weight < 1:
@@ -84,8 +83,8 @@ class WebhooksRegistry(object):
         # single file
         try:
             styles_file = os.path.join(webhook_dir, 'styles.css')
-            with open(styles_file, 'r') as fh:
-                webhook.styles = fh.read().replace('\n', '')
+            with open(styles_file, 'r') as file:
+                webhook.styles = file.read().replace('\n', '')
         except IOError:
             pass
 
@@ -93,8 +92,8 @@ class WebhooksRegistry(object):
         # single file
         try:
             script_file = os.path.join(webhook_dir, 'script.js')
-            with io.open(script_file, 'r', encoding='utf-8') as fh:
-                webhook.script = fh.read()
+            with open(script_file, 'r') as file:
+                webhook.script = file.read()
         except IOError:
             pass
 

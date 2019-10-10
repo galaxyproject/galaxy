@@ -3,8 +3,12 @@
         <b-card title="Import a history from an archive">
             <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
             <p>Please provide a Galaxy history export URL or a history file.</p>
-            <b-form-group label="Archived History URL"> <b-form-input type="url" v-model="sourceURL" /> </b-form-group>
-            <b-form-group label="Archived History File"> <b-form-file v-model="sourceFile" /> </b-form-group>
+            <b-form-group label="Archived History URL">
+                <b-form-input type="url" v-model="sourceURL"/>
+            </b-form-group>
+            <b-form-group label="Archived History File">
+                <b-form-file v-model="sourceFile"/>
+            </b-form-group>
             <b-button type="submit">Import history</b-button>
         </b-card>
     </b-form>
@@ -36,7 +40,7 @@ export default {
             if (!this.sourceFile && !this.sourceURL) {
                 this.errorMessage = "You must provide a history archive URL or file.";
             } else {
-                const formData = new FormData();
+                let formData = new FormData();
                 formData.append("archive_file", this.sourceFile);
                 formData.append("archive_source", this.sourceURL);
                 axios
@@ -47,7 +51,7 @@ export default {
                         }&status=success`;
                     })
                     .catch(error => {
-                        const message = error.response.data && error.response.data.err_msg;
+                        let message = error.response.data && error.response.data.err_msg;
                         this.errorMessage = message || "Import failed for an unknown reason.";
                     });
             }

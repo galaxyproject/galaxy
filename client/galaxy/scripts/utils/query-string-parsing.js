@@ -1,5 +1,4 @@
-import _ from "underscore";
-
+// ============================================================================
 function get(key, queryString) {
     queryString = queryString || window.location.search.substr(1);
     var keyRegex = new RegExp(`${key}=([^&#$]+)`, "g");

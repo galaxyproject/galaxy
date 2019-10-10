@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 class RepositoryRevisionsController(BaseAPIController):
     """RESTful controller for interactions with tool shed repository revisions."""
 
-    @web.legacy_expose_api_anonymous
+    @web.expose_api_anonymous
     def export(self, trans, payload, **kwd):
         """
         POST /api/repository_revisions/export
@@ -66,7 +66,7 @@ class RepositoryRevisionsController(BaseAPIController):
                         'user_id' : trans.security.encode_id}
         return value_mapper
 
-    @web.legacy_expose_api_anonymous
+    @web.expose_api_anonymous
     def index(self, trans, **kwd):
         """
         GET /api/repository_revisions
@@ -103,7 +103,7 @@ class RepositoryRevisionsController(BaseAPIController):
             repository_metadata_dicts.append(repository_metadata_dict)
         return repository_metadata_dicts
 
-    @web.legacy_expose_api_anonymous
+    @web.expose_api_anonymous
     def repository_dependencies(self, trans, id, **kwd):
         """
         GET /api/repository_revisions/{encoded repository_metadata id}/repository_dependencies
@@ -175,7 +175,7 @@ class RepositoryRevisionsController(BaseAPIController):
                 repository_dependencies_dicts.append(repository_dependency_metadata_dict)
         return repository_dependencies_dicts
 
-    @web.legacy_expose_api_anonymous
+    @web.expose_api_anonymous
     def show(self, trans, id, **kwd):
         """
         GET /api/repository_revisions/{encoded_repository_metadata_id}
@@ -196,7 +196,7 @@ class RepositoryRevisionsController(BaseAPIController):
                                                       id=encoded_repository_id)
         return repository_metadata_dict
 
-    @web.legacy_expose_api
+    @web.expose_api
     def update(self, trans, payload, **kwd):
         """
         PUT /api/repository_revisions/{encoded_repository_metadata_id}/{payload}

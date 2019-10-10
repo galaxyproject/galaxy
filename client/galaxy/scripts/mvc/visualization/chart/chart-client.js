@@ -12,7 +12,7 @@ import Menu from "mvc/visualization/chart/views/menu";
 
 export default Backbone.View.extend({
     initialize: function(options) {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         this.modal = Galaxy && Galaxy.modal ? Galaxy.modal : new Modal.View();
         this.setElement(
             $("<div/>")
@@ -45,7 +45,7 @@ export default Backbone.View.extend({
                 this.chart.trigger("redraw");
             })
             .fail(response => {
-                const message = response.responseJSON && response.responseJSON.err_msg;
+                let message = response.responseJSON && response.responseJSON.err_msg;
                 this.errormessage = message || "Import failed for unkown reason.";
             });
     }

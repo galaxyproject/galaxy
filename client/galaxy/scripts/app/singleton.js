@@ -9,7 +9,7 @@ import { serverPath } from "utils/serverPath";
 export function setGalaxyInstance(factory) {
     console.warn("setGalaxyInstance", serverPath());
 
-    const storage = getStorage();
+    let storage = getStorage();
     let newInstance = factory(GalaxyApp);
     if (!(newInstance instanceof GalaxyApp)) {
         newInstance = new GalaxyApp(newInstance);
@@ -18,18 +18,40 @@ export function setGalaxyInstance(factory) {
         addLogging(newInstance, "GalaxyApp");
     }
 
+    // Debugging frame property
+    // storage._galaxyInstance = new Proxy(newInstance, {
+    //     get(galaxy, prop) {
+    //         if (prop == "frame") {
+    //             console.groupCollapsed("Frame Get", serverPath());
+    //             console.trace();
+    //             console.groupEnd();
+    //         }
+    //         return galaxy[prop];
+    //     },
+    //     set(galaxy, prop, val) {
+    //         galaxy[prop] = val;
+    //         if (prop == "frame") {
+    //             console.groupCollapsed("Frame Set", serverPath());
+    //             console.log(val);
+    //             console.trace();
+    //             console.groupEnd();
+    //         }
+    //         return true;
+    //     }
+    // });
+
     storage._galaxyInstance = newInstance;
 
     return storage._galaxyInstance;
 }
 
 export function getGalaxyInstance() {
-    const storage = getStorage();
+    let storage = getStorage();
     return storage._galaxyInstance;
 }
 
 export function galaxyIsInitialized() {
-    const instance = getGalaxyInstance();
+    let instance = getGalaxyInstance();
     return instance !== null;
 }
 

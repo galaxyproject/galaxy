@@ -30,6 +30,8 @@ class TagsController(BaseUIController, UsesTagsMixin):
                                    user=trans.user,
                                    tagged_item=item,
                                    elt_context=elt_context,
+                                   in_form=False,
+                                   input_size="22",
                                    tag_click_fn="default_tag_click_fn",
                                    use_toggle_link=False)
 
@@ -90,6 +92,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         user = trans.user
         item_class = self.get_class(item_class)
         q = '' if q is None else q
+        q = q.encode('utf-8')
         if q.find(":") == -1:
             return self._get_tag_autocomplete_names(trans, q, limit, timestamp, user, item, item_class)
         else:

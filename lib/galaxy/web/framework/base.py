@@ -433,7 +433,7 @@ class Response(object):
         Create a new Response defaulting to HTML content and "200 OK" status
         """
         self.status = "200 OK"
-        self.headers = HeaderDict({"content-type": "text/html; charset=UTF-8"})
+        self.headers = HeaderDict({"content-type": "text/html"})
         self.cookies = SimpleCookie()
 
     def set_content_type(self, type_):
@@ -451,7 +451,7 @@ class Response(object):
         """
         if "\n" in url or "\r" in url:
             raise webob.exc.HTTPInternalServerError("Invalid redirect URL encountered.")
-        raise webob.exc.HTTPFound(location=url, headers=self.wsgi_headeritems())
+        raise webob.exc.HTTPFound(location=url)
 
     def wsgi_headeritems(self):
         """
@@ -499,12 +499,12 @@ def send_file(start_response, trans, body):
     return body
 
 
-def iterate_file(fh):
+def iterate_file(file):
     """
     Progressively return chunks from `file`.
     """
     while 1:
-        chunk = fh.read(CHUNK_SIZE)
+        chunk = file.read(CHUNK_SIZE)
         if not chunk:
             break
         yield chunk

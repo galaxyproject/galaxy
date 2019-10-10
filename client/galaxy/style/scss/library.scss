@@ -60,10 +60,6 @@
             }
         }
     }
-    tr.light {
-        font-weight: initial;
-        color: initial;
-    }
     tr.light td {
         background-color: white;
         color: black;
@@ -78,12 +74,6 @@
     tr.dark:hover td {
         background-color: #ebd4a4;
         color: white;
-    }
-    tr.table-primary td {
-        color: $brand-light;
-    }
-    tr.table-primary td a {
-        color: $brand-white;
     }
     a.dark {
         color: white;

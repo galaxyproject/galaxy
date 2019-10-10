@@ -1,5 +1,3 @@
-import $ from "jquery";
-import Backbone from "backbone";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 

@@ -51,15 +51,23 @@
 
 ## creates grid
 <%def name="load( embedded=False, insert=None )">
+    <!-- grid_base.mako -->
+    ## imports
+    ${h.css(
+        "autocomplete_tagging",
+        "jquery.rating"
+    )}
+    ## ${h.js(
+    ##     "libs/jquery/jquery.autocomplete",
+    ## )}
 
-    <!-- grid_base.mako, load -->
+    ## grid container
     <div id="grid-container"></div>
 
+    ## load javascript
     <script type="text/javascript">
-        config.addInitialization(function() {
-            var legacyGridViewConfig = ${ h.dumps( self.get_grid_config( embedded=embedded, insert=insert ) ) };
-            console.log("grid_base.mako, javascript_app", legacyGridViewConfig);
-            new window.bundleEntries.LegacyGridView(legacyGridViewConfig);
+        $(function() {
+            var gridView = new window.bundleEntries.LegacyGridView( ${ h.dumps( self.get_grid_config( embedded=embedded, insert=insert ) ) } );
         });
     </script>
 </%def>

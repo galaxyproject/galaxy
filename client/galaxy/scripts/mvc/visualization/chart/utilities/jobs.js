@@ -142,7 +142,7 @@ var wait = function(chart, success, error) {
 
 /** Refresh history panel */
 var refreshHdas = function() {
-    const Galaxy = getGalaxyInstance();
+    let Galaxy = getGalaxyInstance();
     if (Galaxy && Galaxy.currHistoryPanel) {
         Galaxy.currHistoryPanel.refreshContents();
     }

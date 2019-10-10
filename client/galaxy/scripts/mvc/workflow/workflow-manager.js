@@ -1,6 +1,6 @@
 import $ from "jquery";
 import Connector from "mvc/workflow/workflow-connector";
-import { Toast } from "ui/toast";
+import * as Toastr from "libs/toastr";
 
 class Workflow {
     constructor(app, canvas_container) {
@@ -37,7 +37,7 @@ class Workflow {
             this.unregisterOutputLabel(fromLabel);
         }
         if (!this.canLabelOutputWith(toLabel)) {
-            Toast.warning(
+            Toastr.warning(
                 `Workflow contains duplicate workflow output labels ${toLabel}. This must be fixed before it can be saved.`
             );
         }
@@ -53,10 +53,6 @@ class Workflow {
         } else {
             return false;
         }
-    }
-    updateDatatype(node, outputName, newDatatype) {
-        node.changeOutputDatatype(outputName, newDatatype);
-        return true;
     }
     create_node(type, title_text, content_id) {
         var node = this.app.prebuildNode(type, title_text, content_id);
@@ -265,7 +261,10 @@ class Workflow {
                     $.each(v, (l, x) => {
                         var other_node = wf.nodes[parseInt(x.id) + offset];
                         var c = new Connector();
-                        c.connect(other_node.output_terminals[x.output_name], node.input_terminals[k]);
+                        c.connect(
+                            other_node.output_terminals[x.output_name],
+                            node.input_terminals[k]
+                        );
                         c.redraw();
                     });
                 }

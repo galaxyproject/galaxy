@@ -1,10 +1,6 @@
-import $ from "jquery";
-import _ from "underscore";
-import Backbone from "backbone";
-import { Toast } from "ui/toast";
+import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_folderrow_view from "mvc/library/library-folderrow-view";
-import { getGalaxyInstance } from "app";
 
 var FolderListView = Backbone.View.extend({
     el: "#folder_items_element",
@@ -59,7 +55,8 @@ var FolderListView = Backbone.View.extend({
         this.fetchFolder();
     },
 
-    fetchFolder: function(options = {}) {
+    fetchFolder: function(options) {
+        var options = options || {};
         this.options.include_deleted = options.include_deleted;
         var self = this;
 
@@ -77,15 +74,14 @@ var FolderListView = Backbone.View.extend({
                 self.render();
             },
             error: function(model, response) {
-                const Galaxy = getGalaxyInstance();
                 if (typeof response.responseJSON !== "undefined") {
-                    Toast.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
+                    mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
                     });
                 } else {
-                    Toast.error("An error occurred. Click this to go back.", "", {
+                    mod_toastr.error("An error occurred. Click this to go back.", "", {
                         onclick: function() {
                             Galaxy.libraries.library_router.back();
                         }
@@ -128,7 +124,7 @@ var FolderListView = Backbone.View.extend({
             if (row) {
                 row.showDatasetDetails();
             } else {
-                Toast.error("Requested dataset not found. Showing folder instead.");
+                mod_toastr.error("Requested dataset not found. Showing folder instead.");
             }
         } else {
             if (this.options.show_page === null || this.options.show_page < 1) {
@@ -141,7 +137,6 @@ var FolderListView = Backbone.View.extend({
     },
 
     paginate: function(options) {
-        const Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
 
         if (this.options.show_page === null || this.options.show_page < 1) {
@@ -181,7 +176,6 @@ var FolderListView = Backbone.View.extend({
      *  be added to the view's collection.
      */
     addAll: function(models) {
-        const Galaxy = getGalaxyInstance();
         _.each(models, model => {
             Galaxy.libraries.folderListView.collection.add(model, {
                 current_sort_order: false
@@ -198,7 +192,6 @@ var FolderListView = Backbone.View.extend({
      * and that event will be bound on all subviews.
      */
     postRender: function() {
-        const Galaxy = getGalaxyInstance();
         var fetched_metadata = this.folderContainer.attributes.metadata;
         fetched_metadata.contains_file_or_folder =
             typeof this.collection.findWhere({ type: "file" }) !== "undefined" ||
@@ -329,11 +322,29 @@ var FolderListView = Backbone.View.extend({
     },
 
     makeDarkRow: function($row) {
-        $row.addClass("table-primary");
+        $row.removeClass("light").addClass("dark");
+        $row.find("a")
+            .removeClass("light")
+            .addClass("dark");
+        $row.find(".fa-file-o")
+            .removeClass("fa-file-o")
+            .addClass("fa-file");
+        $row.find(".fa-folder-o")
+            .removeClass("fa-folder-o")
+            .addClass("fa-folder");
     },
 
     makeWhiteRow: function($row) {
-        $row.removeClass("table-primary");
+        $row.removeClass("dark").addClass("light");
+        $row.find("a")
+            .removeClass("dark")
+            .addClass("light");
+        $row.find(".fa-file")
+            .removeClass("fa-file")
+            .addClass("fa-file-o");
+        $row.find(".fa-folder")
+            .removeClass("fa-folder")
+            .addClass("fa-folder-o");
     },
 
     renderSortIcon: function() {
@@ -347,186 +358,55 @@ var FolderListView = Backbone.View.extend({
         }
     },
 
-    /**
-     * Create the new folder inline
-     */
-    createFolderInline: function() {
-        if (this.$el.find("tr.new-row").length) {
-            this.$el.find("tr.new-row textarea")[0].focus();
-        } else {
-            const template = this.templateNewFolder();
-            this.$el.find("#first_folder_item").after(template);
-
-            this.$el.find("tr.new-row textarea")[0].focus();
-
-            this.$el.find("tr.new-row .save_folder_btn").click(() => {
-                this.createNewFolder(
-                    this.$el.find("tr.new-row textarea")[0].value,
-                    this.$el.find("tr.new-row textarea")[1].value
-                );
-            });
-
-            this.$el.find("tr.new-row .cancel_folder_btn").click(() => {
-                this.$el.find("tr.new-row").remove();
-            });
-        }
-    },
-
-    /**
-     * Create the new library using the API asynchronously.
-     */
-    createNewFolder: function(name, description) {
-        const Galaxy = getGalaxyInstance();
-        const folderDetails = {
-            name,
-            description
-        };
-        if (folderDetails.name !== "") {
-            var folder = new mod_library_model.FolderAsModel();
-            var url_items = Backbone.history.fragment.split("/");
-            var current_folder_id;
-            if (url_items.indexOf("page") > -1) {
-                current_folder_id = url_items[url_items.length - 3];
-            } else {
-                current_folder_id = url_items[url_items.length - 1];
-            }
-            folder.url = folder.urlRoot + current_folder_id;
-
-            folder.save(folderDetails, {
-                success: folder => {
-                    Toast.success("Folder created.");
-                    folder.set({ type: "folder" });
-                    this.$el.find("tr.new-row").remove();
-                    Galaxy.libraries.folderListView.collection.add(folder);
-
-                    $(`tr[data-id="${folder.attributes.id}"`)
-                        .addClass("table-success")
-                        .on("mouseover click", function() {
-                            $(this).removeClass("table-success");
-                        });
-                },
-                error: (model, response) => {
-                    Galaxy.modal.hide();
-                    if (typeof response.responseJSON !== "undefined") {
-                        Toast.error(response.responseJSON.err_msg);
-                    } else {
-                        Toast.error("An error occurred.");
-                    }
-                }
-            });
-        } else {
-            Toast.error("Folder's name is missing.");
-        }
-        return false;
-    },
-
-    templateNewFolder: function() {
-        return _.template(
-            `<tr class="new-row">
-                <td class="mid">
-                    <span title="Folder" class="fa fa-folder-o"></span>
-                </td>
-                <td></td>
-                <td>
-                    <textarea name="input_folder_name" rows="4" class="form-control input_folder_name" placeholder="name" ></textarea>
-                </td>
-                <td>
-                    <textarea rows="4" class="form-control input_folder_description" placeholder="description" ></textarea>
-                </td>
-                <td>folder</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td class="right-center">
-                    <button data-toggle="tooltip" data-placement="left" title="Save changes"
-                        class="btn btn-secondary btn-sm save_folder_btn" type="button">
-                        <span class="fa fa-floppy-o"></span> Save
-                    </button>
-                    <button data-toggle="tooltip" data-placement="left" title="Discard changes"
-                        class="btn btn-secondary btn-sm cancel_folder_btn" type="button">
-                        <span class="fa fa-times"></span> Cancel
-                    </button>
-                </td>
-            </tr>`
-        );
-    },
-
     templateFolder: function() {
         return _.template(
-            `<ol class="breadcrumb">
-                <li class="breadcrumb-item">
-                    <a title="Return to the list of libraries" href="#">Libraries</a>
-                </li>
-                <% _.each(path, function(path_item) { %>
-                    <% if (path_item[0] != id) { %>
-                        <li class="breadcrumb-item">
-                            <a title="Return to this folder" href="#/folders/<%- path_item[0] %>">
-                                <%- path_item[1] %>
-                            </a>
-                        </li> 
-                    <% } else { %>
-                        <li class="breadcrumb-item active">
-                            <span title="You are in this folder">
-                                <%- path_item[1] %>
-                            </span>
-                        </li>
-                    <% } %>
-                <% }); %>
-            </ol>
+            [
+                '<ol class="breadcrumb">',
+                '<li class="breadcrumb-item"><a title="Return to the list of libraries" href="#">Libraries</a></li>',
+                "<% _.each(path, function(path_item) { %>",
+                "<% if (path_item[0] != id) { %>",
+                '<li class="breadcrumb-item"><a title="Return to this folder" href="#/folders/<%- path_item[0] %>"><%- path_item[1] %></a> </li> ',
+                "<% } else { %>",
+                '<li class="breadcrumb-item active"><span title="You are in this folder"><%- path_item[1] %></span></li>',
+                "<% } %>",
+                "<% }); %>",
+                "</ol>",
 
-            <!-- FOLDER CONTENT -->
-            <table data-library-id="<%- parent_library_id  %>" class="grid table table-hover table-sm">
-                <thead>
-                    <th class="button_heading"></th>
-                    <th class="mid" style="width: 20px;"
-                        title="Check to select all datasets">
-                        <input id="select-all-checkboxes" style="margin: 0;" type="checkbox">
-                    </th>
-                    <th>
-                        <a class="sort-folder-name" title="Click to reverse order" href="#">Name</a>
-                        <span title="Sorted alphabetically"
-                            class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span>
-                    </th>
-                    <th style="width:20%;">
-                        <a class="sort-folder-description" title="Click to reverse order" href="#">Description</a>
-                        <span title="Sorted alphabetically" class="sort-icon-description fa"></span>
-                    </th>
-                    <th style="width:5%;">
-                        <a class="sort-folder-file_ext" title="Click to reverse order" href="#">Data Type</a>
-                        <span title="Sorted alphabetically" class="sort-icon-file_ext fa"></span>
-                    </th>
-                    <th style="width:10%;">Size</th>
-                    <th style="width:160px;">Time Updated (UTC)</th>
-                    <th style="width:5%;">
-                        <a class="sort-folder-state" title="Click to reverse order" href="#">State</a>
-                        <span title="Sorted alphabetically" class="sort-icon-state fa"></span>
-                    </th>
-                    <th style="width:160px;"></th> 
-                </thead>
-                <tbody id="folder_list_body">
-                    <tr id="first_folder_item">
-                        <td>
-                            <a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>"
-                                title="Go to parent folder" class="btn_open_folder btn btn-secondary btn-sm">..<a>
-                        </td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="empty-folder-message" style="display:none;">
-                This folder is either empty or you do not have proper access permissions to see the contents.
-                If you expected something to show up please consult the
-                <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">
-                    library security wikipage
-                </a>.
-            </div>`
+                // FOLDER CONTENT
+                '<table data-library-id="<%- parent_library_id  %>" class="grid table table-sm">',
+                "<thead>",
+                '<th class="button_heading"></th>',
+                '<th class="mid" style="width: 20px; " title="Check to select all datasets"><input id="select-all-checkboxes" style="margin: 0;" type="checkbox"></th>',
+                '<th><a class="sort-folder-name" title="Click to reverse order" href="#">name</a> <span title="Sorted alphabetically" class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span></th>',
+                '<th style="width:20%;"><a class="sort-folder-description" title="Click to reverse order" href="#">description</a> <span title="Sorted alphabetically" class="sort-icon-description fa"></span></th>',
+                '<th style="width:5%;"><a class="sort-folder-file_ext" title="Click to reverse order" href="#">data type</a> <span title="Sorted alphabetically" class="sort-icon-file_ext fa"></span></th>',
+                '<th style="width:10%;">size</th>',
+                '<th style="width:160px;">time updated (UTC)</th>',
+                '<th style="width:5%;"><a class="sort-folder-state" title="Click to reverse order" href="#">state</a> <span title="Sorted alphabetically" class="sort-icon-state fa"></span></th>',
+                '<th style="width:150px;"></th> ',
+                "</thead>",
+                '<tbody id="folder_list_body">',
+                '<tr id="first_folder_item">',
+                "<td>",
+                '<a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-secondary btn-sm">..<a>',
+                "</td>",
+                "<td></td>",
+                "<td></td>",
+                "<td></td>",
+                "<td></td>",
+                "<td></td>",
+                "<td></td>",
+                "<td></td>",
+                "<td></td>",
+                "</tr>",
+                "</tbody>",
+                "</table>",
+                '<div class="empty-folder-message" style="display:none;">',
+                "This folder is either empty or you do not have proper access permissions to see the contents. If you expected something to show up",
+                ' please consult the <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">library security wikipage</a>',
+                ' or visit the <a href="https://biostar.usegalaxy.org/" target="_blank">Galaxy support site</a>.',
+                "</div>"
+            ].join("")
         );
     }
 });

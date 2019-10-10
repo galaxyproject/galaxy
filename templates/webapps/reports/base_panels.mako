@@ -38,11 +38,13 @@
         </table>
     </div>
     ## Logo, layered over tabs to be clickable
-    <a class="navbar-brand" href="${h.url_for( app.config.get( 'logo_url', '/' ) )}">
-        <img class="navbar-brand-image" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" />
-        <span class="navbar-brand-title">Galaxy Reports</span>
+    <div class="navbar-brand" style="position: absolute; top: 0; left: 0;">
+        <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}">
+        <img border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}" style="width: 26px; vertical-align: top;">
+        Galaxy Reports
         %if app.config.brand:
             <span class='brand'>/ ${app.config.brand}</span>
         %endif
-    </a>
+        </a>
+    </div>
 </%def>

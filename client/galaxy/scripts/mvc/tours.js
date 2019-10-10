@@ -12,10 +12,7 @@ import { getAppRoot } from "onload/loadConfig";
 import "libs/bootstrap-tour";
 
 // bootstrap-tour configures a window.Tour object; keep a local ref.
-const Tour = window.Tour;
-
-// For buttons to show, we need to add them to bootstrap/popper's sanitizing filters.
-$.fn.tooltip.Constructor.Default.whiteList.button = ["data-role"];
+let Tour = window.Tour;
 
 var gxy_root = getAppRoot();
 
@@ -27,19 +24,23 @@ const TOURPAGE_TEMPLATE = `
 <div class="row mb-3">
     <div class="col-12 btn-group" role="group" aria-label="Tag selector">
         <% _.each(tourtagorder, function(tag) { %>
-        <button class="btn btn-primary tag-selector-button" tag-selector-button="<%- tag.key %>">
-            <%- tag.name %>
+        <button class="btn btn-primary tag-selector-button" tag-selector-button="<%- tag %>">
+            <%- tag %>
         </button>
         <% }); %>
     </div>
 </div>
 
-<div class="row mb-3">
+<% _.each(tourtagorder, function(tourtagkey) { %>
+<div tag="<%- tourtagkey %>" class="row mb-3">
     <div class="col-12">
-    <h4>Tours</h4>
+    <% var tourtag = tourtags[tourtagkey]; %>
+    <h4>
+        <%- tourtag.name %>
+    </h4>
     <ul class="list-group">
-    <% _.each(tours, function(tour) { %>
-        <li class="list-group-item" tags="<%- tour.attributes.tags_lc %>">
+    <% _.each(tourtag.tours, function(tour) { %>
+        <li class="list-group-item">
             <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
                 <%- tour.attributes.name || tour.id %>
             </a>
@@ -53,7 +54,8 @@ const TOURPAGE_TEMPLATE = `
     <% }); %>
     </ul>
     </div>
-</div>`;
+</div>
+<% }); %>`;
 
 var tour_opts = {
     storage: window.sessionStorage,
@@ -137,28 +139,22 @@ export var ToursView = Backbone.View.extend({
 
         var tourtags = {};
         _.each(this.model.models, tour => {
-            tour.attributes.tags_lc = [];
             if (tour.attributes.tags === null) {
                 if (tourtags.Untagged === undefined) {
                     tourtags.Untagged = { name: "Untagged", tours: [] };
                 }
                 tourtags.Untagged.tours.push(tour);
             } else {
-                _.each(tour.attributes.tags, otag => {
-                    var tag = otag.charAt(0).toUpperCase() + otag.slice(1);
+                _.each(tour.attributes.tags, tag => {
+                    tag = tag.charAt(0).toUpperCase() + tag.slice(1);
                     if (tourtags[tag] === undefined) {
                         tourtags[tag] = { name: tag, tours: [] };
                     }
-                    tour.attributes.tags_lc.push(otag.toLowerCase());
                     tourtags[tag].tours.push(tour);
                 });
             }
         });
-        //var tourtagorder = Object.keys(tourtags).sort();
-        var tourtagorder = [];
-        Object.keys(tourtags).forEach(function(tag, index) {
-            tourtagorder.push({ name: tag, key: tag.toLowerCase() });
-        });
+        var tourtagorder = Object.keys(tourtags).sort();
 
         this.$el
             .html(
@@ -174,42 +170,25 @@ export var ToursView = Backbone.View.extend({
             })
             .on("click", ".tag-selector-button", e => {
                 var elem = $(e.target);
-                var active_tags = [];
+                var display = "block";
+                var tag = elem.attr("tag-selector-button");
 
-                // Switch classes for the buttons
                 elem.toggleClass("btn-primary");
                 elem.toggleClass("btn-secondary");
 
-                // Get all non-disabled tags
-                $(`.tag-selector-button.btn-primary`).each(function() {
-                    active_tags.push($(this).attr("tag-selector-button"));
-                });
-
-                // Loop over all list items, subsequently determine these are
-                // only the tours (tags should be unique). Then use the non-disabled tags to
-                // determien whether or not to display this specific tour.
-                $(`li.list-group-item`).each(function() {
-                    if ($(this).attr("tags")) {
-                        var tour_tags = [];
-                        var tour_tags_html = $(this).attr("tags");
-
-                        tour_tags = tour_tags_html.split(",");
-                        var fil_tour_tags = tour_tags.filter(function(tag) {
-                            return active_tags.indexOf(tag.toLowerCase()) > -1;
-                        });
-
-                        $(this).css("display", fil_tour_tags.length > 0 ? "block" : "none");
-                    }
-                });
+                if (elem.hasClass("btn-secondary")) {
+                    display = "none";
+                }
+                $(`div[tag='${tag}']`).css({ display: display });
             });
     }
 });
 
 export function giveTourWithData(data) {
-    const hookedTourData = hooked_tour_from_data(data);
+    let hookedTourData = hooked_tour_from_data(data);
     window.sessionStorage.setItem("activeGalaxyTour", JSON.stringify(data));
     // Store tour steps in sessionStorage to easily persist w/o hackery.
-    const tour = new Tour(_.extend({ steps: hookedTourData.steps }, tour_opts));
+    let tour = new Tour(_.extend({ steps: hookedTourData.steps }, tour_opts));
     // Always clean restart, since this is a new, explicit execution.
     tour.init();
     tour.goTo(0);

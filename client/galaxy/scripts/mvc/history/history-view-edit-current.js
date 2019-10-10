@@ -117,7 +117,7 @@ var CurrentHistoryView = _super.extend(
 
         /** loads a history & contents w/ details and makes them the current history */
         switchToHistory: function(historyId, attributes) {
-            const Galaxy = getGalaxyInstance();
+            let Galaxy = getGalaxyInstance();
             if (Galaxy.user.isAnonymous()) {
                 this.trigger("error", _l("You must be logged in to switch histories"), _l("Anonymous user"));
                 return $.when();
@@ -129,7 +129,7 @@ var CurrentHistoryView = _super.extend(
 
         /** creates a new history on the server and sets it as the user's current history */
         createNewHistory: function(attributes) {
-            const Galaxy = getGalaxyInstance();
+            let Galaxy = getGalaxyInstance();
             if (Galaxy.user.isAnonymous()) {
                 this.trigger("error", _l("You must be logged in to create histories"), _l("Anonymous user"));
                 return $.when();
@@ -224,7 +224,16 @@ var CurrentHistoryView = _super.extend(
 
         /** In this override, get and set current panel preferences when editor is used */
         _renderTags: function($where) {
-            return _super.prototype._renderTags.call(this, $where);
+            var panel = this;
+            // render tags and show/hide based on preferences
+            _super.prototype._renderTags.call(panel, $where);
+            if (panel.preferences.get("tagsEditorShown")) {
+                panel.tagsEditor.toggle(true);
+            }
+            // store preference when shown or hidden
+            panel.listenTo(panel.tagsEditor, "hiddenUntilActivated:shown hiddenUntilActivated:hidden", tagsEditor => {
+                panel.preferences.set("tagsEditorShown", tagsEditor.hidden);
+            });
         },
 
         /** In this override, get and set current panel preferences when editor is used */
@@ -344,7 +353,7 @@ var CurrentHistoryView = _super.extend(
         events: _.extend(_.clone(_super.prototype.events), {
             // the two links in the empty message
             "click .uploader-link": function(ev) {
-                const Galaxy = getGalaxyInstance();
+                let Galaxy = getGalaxyInstance();
                 Galaxy.upload.show(ev);
             },
             "click .get-data-link": function(ev) {
@@ -384,7 +393,7 @@ var CurrentHistoryView = _super.extend(
                 // when the center panel is given a new view, clear the current indicator
                 "center-panel:load": function(view) {
                     try {
-                        const hdaId = view.model.attributes.dataset_id || null;
+                        let hdaId = view.model.attributes.dataset_id || null;
                         if (hdaId === null) {
                             throw "Invalid id";
                         }

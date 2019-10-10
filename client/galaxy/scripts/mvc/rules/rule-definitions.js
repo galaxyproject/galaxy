@@ -1,4 +1,3 @@
-import _ from "underscore";
 import _l from "utils/localization";
 import pyre from "pyre-to-regexp";
 
@@ -18,7 +17,7 @@ const multiColumnsToString = function(targetColumns, colHeaders) {
 
 const removeColumns = function(columns, targetColumns) {
     const newColumns = [];
-    for (const index in columns) {
+    for (let index in columns) {
         if (targetColumns.indexOf(index) === -1) {
             newColumns.push(columns[index]);
         }
@@ -223,7 +222,7 @@ const RULES = {
                 const tags = sources[index]["tags"];
                 tags.sort();
                 let groupTagValue = rule.default_value;
-                for (const index in tags) {
+                for (let index in tags) {
                     const tag = tags[index];
                     if (tag.indexOf(groupTagPrefix) == 0) {
                         groupTagValue = tag.substr(groupTagPrefix.length);
@@ -402,7 +401,7 @@ const RULES = {
             const targets = rule.target_columns;
             function newRow(row) {
                 const newRow = [];
-                for (const index in row) {
+                for (let index in row) {
                     if (targets.indexOf(parseInt(index)) == -1) {
                         newRow.push(row[index]);
                     }
@@ -861,8 +860,8 @@ const colHeadersFor = function(data, columns) {
     }
 };
 
-const applyRules = function(data, sources, columns, rules, headersPerRule = []) {
-    const colHeadersPerRule = Array.from(headersPerRule);
+const applyRules = function(data, sources, columns, rules, colHeadersPerRule) {
+    var colHeadersPerRule = colHeadersPerRule || [];
     let hasRuleError = false;
     for (var ruleIndex in rules) {
         const ruleHeaders = colHeadersFor(data, columns);
@@ -889,7 +888,7 @@ const applyRules = function(data, sources, columns, rules, headersPerRule = []) 
             columns = res.columns || columns;
         }
     }
-    return { data, sources, columns, colHeadersPerRule };
+    return { data, sources, columns };
 };
 
 export default {

@@ -14,10 +14,9 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    print(__doc__)
     metadata.bind = migrate_engine
+    print(__doc__)
     metadata.reflect()
-
     for t_name in ('dataset', 'job', 'metadata_file'):
         t = Table(t_name, metadata, autoload=True)
         c = Column("object_store_id", TrimmedString(255), index=True)
@@ -31,7 +30,6 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-
     for t_name in ('dataset', 'job', 'metadata_file'):
         t = Table(t_name, metadata, autoload=True)
         try:

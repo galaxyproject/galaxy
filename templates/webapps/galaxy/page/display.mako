@@ -1,12 +1,10 @@
 <%inherit file="/display_base.mako"/>
 
-<%def name="javascript_app()">
-
-    ${parent.javascript_app()}
-
+<%def name="javascripts()">
+    ${parent.javascripts()}
     <script type="text/javascript">
-        config.addInitialization(function() {
-            console.log("page/display.mako, javascript_app", "Setup embedded content");
+    
+        $(function() {
             // Setup embedded content:
             //  (a) toggles for showing/hiding embedded content;
             //  (b) ...
@@ -35,7 +33,7 @@
                                 container.find(".toggle-expand").hide();
                                 container.find(".toggle").show();
 
-                                window.bundleEntries.make_popup_menus();
+                                make_popup_menus();
                             }
                         });
                     } else {
@@ -86,7 +84,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "base" )}
+    ${h.css( "base", "autocomplete_tagging" )}
     <style type="text/css">
         .toggle { display: none; }
         .embedded-item .title {

@@ -7,7 +7,7 @@
     <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true" />
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true" description="File must start with definition line in the following format (columns may be in any order)." >
     </datatype>
-    <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" auto_compressed_types="gz" display_in_upload="true">
+    <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true">
         <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
     </datatype>
     <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" />
@@ -42,7 +42,6 @@
     <datatype extension="data_manager_json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
     <datatype extension="binary" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
-    <datatype extension="shp" type="galaxy.datatypes.gis:Shapefile" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true">
     </datatype>
     <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">

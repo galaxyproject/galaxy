@@ -78,14 +78,14 @@ export default Backbone.View.extend({
 
     _renderSelectedType: function() {
         const selectionType = this.selectionType;
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         if (selectionType == "dataset") {
             if (!this.datasetSelectorView) {
                 this.selectedDatasetId = null;
                 const history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
                 const historyContentModels = history.contents.models;
                 const options = [];
-                for (const historyContentModel of historyContentModels) {
+                for (let historyContentModel of historyContentModels) {
                     const attr = historyContentModel.attributes;
                     if (attr.history_content_type !== "dataset") {
                         continue;
@@ -113,7 +113,7 @@ export default Backbone.View.extend({
     },
 
     _onDataset: function(selectedDatasetId) {
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         this.selectedDatasetId = selectedDatasetId;
         if (!selectedDatasetId) {
             this._setPreview("");
@@ -146,7 +146,7 @@ export default Backbone.View.extend({
     _buildSelection: function(content) {
         const selectionType = this.selectionType;
         const selection = {};
-        const Galaxy = getGalaxyInstance();
+        let Galaxy = getGalaxyInstance();
         if (selectionType == "dataset" || selectionType == "paste") {
             selection.selectionType = "raw";
             selection.content = content;
@@ -182,9 +182,9 @@ export default Backbone.View.extend({
         return `
             <div class="upload-view-default">
                 <div class="upload-top">
-                    <div class="upload-top-info">
+                    <h6 class="upload-top-info">
                         Tabular source data to extract collection files and metadata from
-                    </div>
+                    </h6>
                 </div>
                 <div class="upload-box" style="height: 335px;">
                     <span style="width: 25%; display: inline; height: 100%" class="float-left">

@@ -1,16 +1,16 @@
 <template>
     <div>
-        <!-- eslint-disable-next-line vue/require-v-for-key -->
         <div v-for="error in errorMessages">
-            <div class="alert alert-danger" role="alert">{{ error }}</div>
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
+            </div>
         </div>
-        <div v-html="historyTemplate"></div>
+        <div v-html="historyTemplate">
+        </div>
     </div>
 </template>
 
 <script>
-import $ from "jquery";
-import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import HDAModel from "mvc/history/hda-model";
@@ -32,8 +32,8 @@ export default {
         };
     },
     created: function() {
-        const historyId = this.id;
-        let url = "";
+        let historyId = this.id,
+            url = "";
         if (historyId !== undefined && historyId !== "" && historyId !== null) {
             url = getAppRoot() + "history/display_structured?id=" + historyId;
         } else {
@@ -56,13 +56,12 @@ export default {
                 });
         },
         _updateHistoryData: function(response) {
-            const historyItems = response.data;
+            let historyItems = response.data;
             this.historyTemplate = historyItems.template;
             this.historyJSON = historyItems.history_json;
         },
         makeHistoryView: function(historyDict) {
             window.hdas = historyDict.map(hda => {
-                const Galaxy = getGalaxyInstance();
                 return new HDAListItemEdit.HDAListItemEdit({
                     model: new HDAModel.HistoryDatasetAssociation(hda),
                     el: $("#hda-" + hda.id),
@@ -74,7 +73,7 @@ export default {
             // toggle the body section of each item in the structure
             $(function() {
                 $(".workflow, .tool").each((index, element) => {
-                    const body = $(element).children(".body");
+                    let body = $(element).children(".body");
                     $(element)
                         .children(".header")
                         .click(e => {

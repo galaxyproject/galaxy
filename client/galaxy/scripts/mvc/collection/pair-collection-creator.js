@@ -1,6 +1,3 @@
-import $ from "jquery";
-import _ from "underscore";
-import Backbone from "backbone";
 import LIST_CREATOR from "mvc/collection/list-collection-creator";
 import HDCA from "mvc/history/hdca-model";
 import BASE_MVC from "mvc/base-mvc";
@@ -88,7 +85,7 @@ var PairCollectionCreator = _super.extend({
         //precondition: there are two valid elements in workingElements
         var creator = this;
 
-        var $tmp = $("<div/>");
+        var $tmp = jQuery("<div/>");
         var $list = creator.$list();
 
         // lose the original views, create the new, append all at once, then call their renders

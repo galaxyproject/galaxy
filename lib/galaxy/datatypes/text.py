@@ -106,30 +106,6 @@ class Json(Text):
             return "JSON file (%s)" % (nice_size(dataset.get_size()))
 
 
-class ExpressionJson(Json):
-    """ Represents the non-data input or output to a tool or workflow.
-    """
-    file_ext = "json"
-    MetadataElement(name="json_type", default=None, desc="JavaScript or JSON type of expression", readonly=True, visible=True, no_value=None)
-
-    def set_meta(self, dataset, **kwd):
-        """
-        """
-        json_type = "null"
-        with open(dataset.file_name) as f:
-            obj = json.load(f)
-            if isinstance(obj, int):
-                json_type = "int"
-            elif isinstance(obj, float):
-                json_type = "float"
-            elif isinstance(obj, list):
-                json_type = "list"
-            elif isinstance(obj, dict):
-                json_type = "object"
-
-        dataset.metadata.json_type = json_type
-
-
 @build_sniff_from_prefix
 class Ipynb(Json):
     file_ext = "ipynb"
@@ -280,10 +256,9 @@ class Biom1(Json):
                         if b_name == "columns" and metadata_value:
                             keep_columns = set()
                             for column in metadata_value:
-                                if column['metadata'] is not None:
-                                    for k, v in column['metadata'].items():
-                                        if v is not None:
-                                            keep_columns.add(k)
+                                for k, v in column['metadata'].items():
+                                    if v is not None:
+                                        keep_columns.add(k)
                             final_list = sorted(list(keep_columns))
                             dataset.metadata.table_column_metadata_headers = final_list
                         if b_name in b_transform:
@@ -292,122 +267,6 @@ class Biom1(Json):
                     except Exception:
                         log.exception("Something in the metadata detection for biom1 went wrong.")
                         pass
-
-
-@build_sniff_from_prefix
-class ImgtJson(Json):
-    file_ext = "imgt.json"
-    MetadataElement(name="taxon_names", default=[], desc="taxonID: names", readonly=True, visible=True, no_value=[])
-    """
-        https://github.com/repseqio/library-imgt/releases
-        Data coming from IMGT server may be used for academic research only,
-        provided that it is referred to IMGT®, and cited as:
-        "IMGT®, the international ImMunoGeneTics information system®
-        http://www.imgt.org (founder and director: Marie-Paule Lefranc, Montpellier, France)."
-    """
-
-    def set_peek(self, dataset, is_multi_byte=False):
-        super(ImgtJson, self).set_peek(dataset)
-        if not dataset.dataset.purged:
-            dataset.blurb = "IMGT Library"
-
-    def sniff_prefix(self, file_prefix):
-        """
-        Determines whether the file is in json format with imgt elements
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( '1.json' )
-        >>> ImgtJson().sniff( fname )
-        False
-        >>> fname = get_test_fname( 'imgt.json' )
-        >>> ImgtJson().sniff( fname )
-        True
-        """
-        is_imgt = False
-        if self._looks_like_json(file_prefix):
-            is_imgt = self._looks_like_imgt(file_prefix)
-        return is_imgt
-
-    def _looks_like_imgt(self, file_prefix, load_size=5000):
-        """
-        @param filepath: [str] The path to the evaluated file.
-        @param load_size: [int] The size of the file block load in RAM (in
-                          bytes).
-        """
-        is_imgt = False
-        try:
-            with open(file_prefix.filename, "r") as fh:
-                segment_str = fh.read(load_size)
-                if segment_str.strip().startswith('['):
-                    if '"taxonId"' in segment_str and '"anchorPoints"' in segment_str:
-                        is_imgt = True
-        except Exception:
-            pass
-        return is_imgt
-
-    def set_meta(self, dataset, **kwd):
-        """
-            Store metadata information from the imgt file.
-        """
-        if dataset.has_data():
-            with open(dataset.file_name) as fh:
-                try:
-                    json_dict = json.load(fh)
-                    tax_names = []
-                    for i, entry in enumerate(json_dict):
-                        if 'taxonId' in entry:
-                            names = "%d: %s" % (entry['taxonId'], ','.join(entry['speciesNames']))
-                            tax_names.append(names)
-                    dataset.metadata.taxon_names = tax_names
-                except Exception:
-                    return
-
-
-@build_sniff_from_prefix
-class GeoJson(Json):
-    """
-        GeoJSON is a geospatial data interchange format based on JavaScript Object Notation (JSON).
-        https://tools.ietf.org/html/rfc7946
-    """
-    file_ext = "geojson"
-
-    def set_peek(self, dataset, is_multi_byte=False):
-        super(GeoJson, self).set_peek(dataset)
-        if not dataset.dataset.purged:
-            dataset.blurb = "GeoJSON"
-
-    def sniff_prefix(self, file_prefix):
-        """
-        Determines whether the file is in json format with imgt elements
-
-        >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( '1.json' )
-        >>> GeoJson().sniff( fname )
-        False
-        >>> fname = get_test_fname( 'gis.geojson' )
-        >>> GeoJson().sniff( fname )
-        True
-        """
-        is_geojson = False
-        if self._looks_like_json(file_prefix):
-            is_geojson = self._looks_like_geojson(file_prefix)
-        return is_geojson
-
-    def _looks_like_geojson(self, file_prefix, load_size=5000):
-        """
-        One of "Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", and "GeometryCollection" needs to be present.
-        All of "type", "geometry", and "coordinates" needs to be present.
-        """
-        is_geojson = False
-        try:
-            with open(file_prefix.filename, "r") as fh:
-                segment_str = fh.read(load_size)
-                if any(x in segment_str for x in ["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", "GeometryCollection"]):
-                    if all(x in segment_str for x in ["type", "geometry", "coordinates"]):
-                        return True
-        except Exception:
-            pass
-        return is_geojson
 
 
 @build_sniff_from_prefix

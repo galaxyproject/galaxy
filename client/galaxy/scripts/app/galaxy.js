@@ -26,12 +26,12 @@ export function GalaxyApp(options = {}, bootstrapped = {}) {
 addLogging(GalaxyApp, "GalaxyApp");
 
 // a debug flag can be set via local storage and made available during script/page loading
-const DEBUGGING_KEY = "galaxy:debug";
+var DEBUGGING_KEY = "galaxy:debug";
 
-const NAMESPACE_KEY = `${DEBUGGING_KEY}:namespaces`;
-const FLATTEN_LOG_MESSAGES_KEY = `${DEBUGGING_KEY}:flatten`;
+var NAMESPACE_KEY = `${DEBUGGING_KEY}:namespaces`;
+var FLATTEN_LOG_MESSAGES_KEY = `${DEBUGGING_KEY}:flatten`;
 
-let localDebugging = false;
+var localDebugging = false;
 try {
     localDebugging = localStorage.getItem(DEBUGGING_KEY) == "true";
 } catch (storageErr) {
@@ -40,50 +40,51 @@ try {
 
 /** initalize options and sub-components */
 GalaxyApp.prototype._init = function(options, bootstrapped) {
-    _.extend(this, Backbone.Events);
+    var self = this;
+    _.extend(self, Backbone.Events);
     if (localDebugging) {
-        this.logger = console;
+        self.logger = console;
         console.debug("debugging galaxy:", "options:", options, "bootstrapped:", bootstrapped);
     }
 
-    this._processOptions(options);
-    this._initConfig(options.config || {});
+    self._processOptions(options);
+    self._initConfig(options.config || {});
 
     // Patch if this galaxy instance is replacing an existing one
     // _patchGalaxy depends on options.patchExisting
     // TODO: rethink this behavior
-    const existingGalaxy = getGalaxyInstance();
+    let existingGalaxy = getGalaxyInstance();
     if (existingGalaxy) {
-        this._patchGalaxy(existingGalaxy);
+        self._patchGalaxy(existingGalaxy);
     }
 
     // add root and url parameters
-    this.root = options.root || "/";
-    this.params = options.params || {};
-    this.session_csrf_token = options.session_csrf_token || null;
+    self.root = options.root || "/";
+    self.params = options.params || {};
+    self.session_csrf_token = options.session_csrf_token || null;
 
-    this._initLogger(this.options.loggerOptions || {});
+    self._initLogger(self.options.loggerOptions || {});
     // at this point, either logging or not and namespaces are enabled - chat it up
-    this.debug("GalaxyApp.options: ", this.options);
-    this.debug("GalaxyApp.config: ", this.config);
-    this.debug("GalaxyApp.logger: ", this.logger);
+    self.debug("GalaxyApp.options: ", self.options);
+    self.debug("GalaxyApp.config: ", self.config);
+    self.debug("GalaxyApp.logger: ", self.logger);
 
-    this._initLocale();
-    this.debug("GalaxyApp.localize: ", this.localize);
+    self._initLocale();
+    self.debug("GalaxyApp.localize: ", self.localize);
 
-    this.config = options.config || {};
-    this.debug("GalaxyApp.config: ", this.config);
+    self.config = options.config || {};
+    self.debug("GalaxyApp.config: ", self.config);
 
-    this._initUser(options.user || {});
-    this.debug("GalaxyApp.user: ", this.user);
+    self._initUser(options.user || {});
+    self.debug("GalaxyApp.user: ", self.user);
 
-    this._initUserLocale();
-    this.debug("currentLocale: ", sessionStorage.getItem("currentLocale"));
+    self._initUserLocale();
+    self.debug("currentLocale: ", sessionStorage.getItem("currentLocale"));
 
-    this._setUpListeners();
-    this.trigger("ready", this);
+    self._setUpListeners();
+    self.trigger("ready", self);
 
-    return this;
+    return self;
 };
 
 /** default options */
@@ -97,38 +98,41 @@ GalaxyApp.prototype.defaultOptions = {
 
 /** filter to options present in defaultOptions (and default to them) */
 GalaxyApp.prototype._processOptions = function _processOptions(options) {
-    const defaults = this.defaultOptions;
+    var self = this;
+    var defaults = self.defaultOptions;
 
-    this.options = {};
-    for (const k in defaults) {
+    self.options = {};
+    for (var k in defaults) {
         if (defaults.hasOwnProperty(k)) {
-            this.options[k] = options.hasOwnProperty(k) ? options[k] : defaults[k];
+            self.options[k] = options.hasOwnProperty(k) ? options[k] : defaults[k];
         }
     }
-    return this;
+    return self;
 };
 
 /** parse the config and any extra info derived from it */
 GalaxyApp.prototype._initConfig = function _initConfig(config) {
-    this.config = config;
+    var self = this;
+    self.config = config;
 
     // give precendence to localdebugging for this setting
-    this.config.debug = localDebugging || this.config.debug;
+    self.config.debug = localDebugging || self.config.debug;
 
-    return this;
+    return self;
 };
 
 // TODO: Remove this behavior when we can, it is kind of non-intuitive
 GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
+    var self = this;
     // in case req or plain script tag order has created a prev. version of the Galaxy obj...
-    if (this.options.patchExisting && patchWith) {
-        // this.debug( 'found existing Galaxy object:', patchWith );
+    if (self.options.patchExisting && patchWith) {
+        // self.debug( 'found existing Galaxy object:', patchWith );
         // ...(for now) monkey patch any added attributes that the previous Galaxy may have had
         //TODO: move those attributes to more formal assignment in GalaxyApp
-        for (const k in patchWith) {
+        for (var k in patchWith) {
             if (patchWith.hasOwnProperty(k)) {
-                // this.debug( '\t patching in ' + k + ' to Galaxy:', this[ k ] );
-                this[k] = patchWith[k];
+                // self.debug( '\t patching in ' + k + ' to Galaxy:', self[ k ] );
+                self[k] = patchWith[k];
             }
         }
     }
@@ -136,61 +140,61 @@ GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
 
 /** set up the metrics logger (utils/metrics-logger) and pass loggerOptions */
 GalaxyApp.prototype._initLogger = function _initLogger(loggerOptions) {
+    var self = this;
 
     // default to console logging at the debug level if the debug flag is set
-    if (this.config.debug) {
+    if (self.config.debug) {
         loggerOptions.consoleLogger = loggerOptions.consoleLogger || console;
         loggerOptions.consoleLevel = loggerOptions.consoleLevel || metricsLogger.MetricsLogger.ALL;
         // load any logging namespaces from localStorage if we can
         try {
             loggerOptions.consoleNamespaceWhitelist = localStorage.getItem(NAMESPACE_KEY).split(",");
-        } catch (storageErr) {
-            console.debug(storageErr);
-        }
+        } catch (storageErr) {}
         try {
             loggerOptions.consoleFlattenMessages = localStorage.getItem(FLATTEN_LOG_MESSAGES_KEY) == "true";
-        } catch (storageErr) {
-            console.debug(storageErr);
-        }
+        } catch (storageErr) {}
         console.log(loggerOptions.consoleFlattenMessages);
     }
 
-    this.logger = new metricsLogger.MetricsLogger(loggerOptions);
-    this.emit = {};
+    self.logger = new metricsLogger.MetricsLogger(loggerOptions);
+    self.emit = {};
     ["log", "debug", "info", "warn", "error", "metric"].map(i => {
-        this.emit[i] = data => {
-            this.logger.emit(i, arguments[0], Array.prototype.slice.call(arguments, 1));
+        self.emit[i] = function(data) {
+            self.logger.emit(i, arguments[0], Array.prototype.slice.call(arguments, 1));
         };
     });
 
-    if (this.config.debug) {
+    if (self.config.debug) {
         // add this logger to mvc's loggable mixin so that all models can use the logger
-        BASE_MVC.LoggableMixin.logger = this.logger;
+        BASE_MVC.LoggableMixin.logger = self.logger;
     }
-    return this;
+    return self;
 };
 
 /** add the localize fn to this object and the window namespace (as '_l') */
 GalaxyApp.prototype._initLocale = function _initLocale(options) {
-    this.debug("_initLocale:", options);
-    this.localize = localize;
+    var self = this;
+    self.debug("_initLocale:", options);
+    self.localize = localize;
     // add to window as global shortened alias
     // TODO: temporary - remove when can require for plugins
-    window._l = this.localize;
-    return this;
+    window._l = self.localize;
+    return self;
 };
 
 /** add the localize fn to this object and the window namespace (as '_l') */
 GalaxyApp.prototype._initUserLocale = function _initUserLocale(options) {
-    // Choose best locale
-    const global_locale = this.config.default_locale ? this.config.default_locale.toLowerCase() : false;
+    var self = this;
 
-    let extra_user_preferences = {};
-    if (this.user && this.user.attributes.preferences && "extra_user_preferences" in this.user.attributes.preferences) {
-        extra_user_preferences = JSON.parse(this.user.attributes.preferences.extra_user_preferences);
+    // Choose best locale
+    var global_locale = self.config.default_locale ? self.config.default_locale.toLowerCase() : false;
+
+    var extra_user_preferences = {};
+    if (self.user && self.user.attributes.preferences && "extra_user_preferences" in self.user.attributes.preferences) {
+        extra_user_preferences = JSON.parse(self.user.attributes.preferences.extra_user_preferences);
     }
 
-    let user_locale =
+    var user_locale =
         "localization|locale" in extra_user_preferences
             ? extra_user_preferences["localization|locale"].toLowerCase()
             : false;
@@ -199,48 +203,50 @@ GalaxyApp.prototype._initUserLocale = function _initUserLocale(options) {
         user_locale = false;
     }
 
-    const nav_locale =
+    var nav_locale =
         typeof navigator === "undefined"
             ? "__root"
             : (navigator.language || navigator.userLanguage || "__root").toLowerCase();
 
-    const locale = user_locale || global_locale || nav_locale;
+    let locale = user_locale || global_locale || nav_locale;
 
     sessionStorage.setItem("currentLocale", locale);
 };
 
 /** set up the current user as a Backbone model (mvc/user/user-model) */
 GalaxyApp.prototype._initUser = function _initUser(userJSON) {
-    this.debug("_initUser:", userJSON);
-    this.user = new userModel.User(userJSON);
-    this.user.logger = this.logger;
-    return this;
+    var self = this;
+    self.debug("_initUser:", userJSON);
+    self.user = new userModel.User(userJSON);
+    self.user.logger = self.logger;
+    return self;
 };
 
 /** Set up DOM/jQuery/Backbone event listeners enabled for all pages */
 GalaxyApp.prototype._setUpListeners = function _setUpListeners() {
+    var self = this;
+
     // hook to jq beforeSend to record the most recent ajax call and cache some data about it
     /** cached info about the last ajax call made through jQuery */
-    this.lastAjax = {};
+    self.lastAjax = {};
     $(document).bind("ajaxSend", (ev, xhr, options) => {
-        let data = options.data;
+        var data = options.data;
         try {
             data = JSON.parse(data);
-        } catch (err) {
-            // data isn't JSON, skip.
-        }
+        } catch (err) {}
 
-        this.lastAjax = {
+        self.lastAjax = {
             url: location.href.slice(0, -1) + options.url,
             data: data
         };
         //TODO:?? we might somehow manage to *retry* ajax using either this hook or Backbone.sync
     });
-    return this;
+    return self;
 };
 
 /** Turn debugging/console-output on/off by passing boolean. Pass nothing to get current setting. */
 GalaxyApp.prototype.debugging = function _debugging(setting) {
+    var self = this;
     try {
         if (setting === undefined) {
             return localStorage.getItem(DEBUGGING_KEY) === "true";
@@ -252,7 +258,7 @@ GalaxyApp.prototype.debugging = function _debugging(setting) {
 
         localStorage.removeItem(DEBUGGING_KEY);
         // also remove all namespaces
-        this.debuggingNamespaces(null);
+        self.debuggingNamespaces(null);
     } catch (storageErr) {
         console.log(localize("localStorage not available for debug flag retrieval"));
     }
@@ -266,18 +272,19 @@ GalaxyApp.prototype.debugging = function _debugging(setting) {
  *  Returns the new/current namespaces as an array;
  */
 GalaxyApp.prototype.debuggingNamespaces = function _debuggingNamespaces(namespaces) {
+    var self = this;
     try {
         if (namespaces === undefined) {
-            const csv = localStorage.getItem(NAMESPACE_KEY);
+            var csv = localStorage.getItem(NAMESPACE_KEY);
             return typeof csv === "string" ? csv.split(",") : [];
         } else if (namespaces === null) {
             localStorage.removeItem(NAMESPACE_KEY);
         } else {
             localStorage.setItem(NAMESPACE_KEY, namespaces);
         }
-        const newSettings = this.debuggingNamespaces();
-        if (this.logger) {
-            this.logger.options.consoleNamespaceWhitelist = newSettings;
+        var newSettings = self.debuggingNamespaces();
+        if (self.logger) {
+            self.logger.options.consoleNamespaceWhitelist = newSettings;
         }
         return newSettings;
     } catch (storageErr) {
@@ -287,7 +294,7 @@ GalaxyApp.prototype.debuggingNamespaces = function _debuggingNamespaces(namespac
 
 /** string rep */
 GalaxyApp.prototype.toString = function toString() {
-    const userEmail = this.user ? this.user.get("email") || "(anonymous)" : "uninitialized";
+    var userEmail = this.user ? this.user.get("email") || "(anonymous)" : "uninitialized";
     return `GalaxyApp(${userEmail})`;
 };
 

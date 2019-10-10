@@ -32,13 +32,11 @@
       <param name="input_text" value="foo" />
       <output name="direct_output" ftype="txt">
         <assert_contents><has_line line="test" /></assert_contents>
-        <metadata name="created_from_basename" value="1" />
       </output>
       <!-- In this case input_based_output ftype is "randomly" either
            fastqsanger or fastqsolexa -->
       <output name="format_source_1_output" ftype="fastqsanger">
         <assert_contents><has_line line="test" /></assert_contents>
-        <metadata name="created_from_basename" value="3" />
       </output>
       <output name="format_source_2_output" ftype="fastqsolexa">
         <assert_contents><has_line line="test" /></assert_contents>
