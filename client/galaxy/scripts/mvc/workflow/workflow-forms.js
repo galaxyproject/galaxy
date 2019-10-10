@@ -10,11 +10,10 @@ import ToolFormBase from "mvc/tool/tool-form-base";
 /** Default form wrapper for non-tool modules in the workflow editor. */
 var Default = Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         var node = options.node;
         this.form = new Form(
             Utils.merge(options, {
-                onchange: function() {
+                onchange: () => {
                     Utils.request({
                         type: "POST",
                         url: `${getAppRoot()}api/workflows/build_module`,
@@ -22,7 +21,7 @@ var Default = Backbone.View.extend({
                             id: node.id,
                             type: node.type,
                             content_id: node.content_id,
-                            inputs: self.form.data.create()
+                            inputs: this.form.data.create()
                         },
                         success: function(data) {
                             node.update_field_data(data);
@@ -39,7 +38,6 @@ var Default = Backbone.View.extend({
 /** Tool form wrapper for the workflow editor. */
 var Tool = Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         var node = options.node;
         this.form = new ToolFormBase(
             Utils.merge(options, {
@@ -48,14 +46,14 @@ var Tool = Backbone.View.extend({
                 narrow: true,
                 initial_errors: true,
                 cls: "ui-portlet-section",
-                initialmodel: function(process, form) {
-                    self._customize(form);
+                initialmodel: (process, form) => {
+                    this._customize(form);
                     process.resolve();
                 },
                 buildmodel: function(process, form) {
                     form.model.get("postchange")(process, form);
                 },
-                postchange: function(process, form) {
+                postchange: (process, form) => {
                     const Galaxy = getGalaxyInstance();
                     var options = form.model.attributes;
                     var current_state = {
@@ -69,9 +67,9 @@ var Tool = Backbone.View.extend({
                         type: "POST",
                         url: `${getAppRoot()}api/workflows/build_module`,
                         data: current_state,
-                        success: function(data) {
+                        success: data => {
                             form.model.set(data.config_form);
-                            self._customize(form);
+                            this._customize(form);
                             form.update(data.config_form);
                             form.errors(data.config_form);
                             // This hasn't modified the workflow, just returned

@@ -7,7 +7,6 @@ import Buttons from "mvc/ui/ui-buttons";
 
 var Base = Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -26,13 +25,12 @@ var Base = Backbone.View.extend({
         this.listenTo(this.model, "change:data", this._changeData, this);
         this.listenTo(this.model, "change:visible", this._changeVisible, this);
         this.on("change", () => {
-            self.model.get("onchange")(self.value());
+            this.model.get("onchange")(this.value());
         });
         this.render();
     },
 
     render: function() {
-        var self = this;
         this.$el
             .empty()
             .removeClass()
@@ -46,10 +44,10 @@ var Base = Backbone.View.extend({
         this.all_button = null;
         if (this.model.get("multiple")) {
             this.all_button = new Buttons.ButtonCheck({
-                onclick: function() {
-                    self.$("input").prop("checked", self.all_button.value() !== 0);
-                    self.value(self._getValue());
-                    self.trigger("change");
+                onclick: () => {
+                    this.$("input").prop("checked", this.all_button.value() !== 0);
+                    this.value(this._getValue());
+                    this.trigger("change");
                 }
             });
             this.$menu.append(this.all_button.$el);
@@ -69,14 +67,13 @@ var Base = Backbone.View.extend({
     },
 
     _changeData: function() {
-        var self = this;
         this.$options.empty();
         if (this._templateOptions) {
             this.$options.append(this._templateOptions(this.model.get("data")));
         } else {
             _.each(this.model.get("data"), option => {
-                self.$options.append(
-                    $(self._templateOption(option))
+                this.$options.append(
+                    $(this._templateOption(option))
                         .addClass("ui-option")
                         .tooltip({
                             title: option.tooltip || "",
@@ -86,8 +83,8 @@ var Base = Backbone.View.extend({
             });
         }
         this.$("input").on("change", () => {
-            self.value(self._getValue());
-            self.trigger("change");
+            this.value(this._getValue());
+            this.trigger("change");
         });
         this._changeValue();
         this._changeWait();
@@ -168,13 +165,12 @@ var Base = Backbone.View.extend({
 
     /** Set value to dom */
     _setValue: function(new_value) {
-        var self = this;
         if (new_value !== undefined) {
             this.$("input").prop("checked", false);
             if (new_value !== null) {
                 var values = $.isArray(new_value) ? new_value : [new_value];
                 _.each(values, v => {
-                    self.$(`input[value="${v}"]`)
+                    this.$(`input[value="${v}"]`)
                         .first()
                         .prop("checked", true);
                 });

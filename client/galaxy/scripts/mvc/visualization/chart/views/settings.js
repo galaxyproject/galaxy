@@ -7,15 +7,13 @@ import FormData from "mvc/form/form-data";
 
 export default Backbone.View.extend({
     initialize: function(app, options) {
-        var self = this;
         this.chart = app.chart;
         this.setElement("<div/>");
-        this.listenTo(this.chart, "load", function() {
-            self.render();
+        this.listenTo(this.chart, "load", () => {
+            this.render();
         });
     },
     render: function() {
-        var self = this;
         var inputs = Utils.clone(this.chart.plugin.settings) || [];
         var panel_option = this.chart.plugin.specs.use_panels;
         if (panel_option == "optional") {
@@ -30,17 +28,17 @@ export default Backbone.View.extend({
         }
         this.$el.empty();
         if (_.size(inputs) > 0) {
-            FormData.visitInputs(inputs, function(input, name) {
-                var model_value = self.chart.settings.get(name);
+            FormData.visitInputs(inputs, (input, name) => {
+                var model_value = this.chart.settings.get(name);
                 if (model_value !== undefined && !input.hidden) {
                     input.value = model_value;
                 }
             });
             this.form = new Form({
                 inputs: inputs,
-                onchange: function() {
-                    self.chart.settings.set(self.form.data.create());
-                    self.chart.trigger("redraw");
+                onchange: () => {
+                    this.chart.settings.set(this.form.data.create());
+                    this.chart.trigger("redraw");
                 }
             });
             this.chart.settings.set(this.form.data.create());

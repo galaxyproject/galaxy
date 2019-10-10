@@ -20,7 +20,6 @@ var Collection = Backbone.Collection.extend({
 var View = Backbone.View.extend({
     initialize: function(options) {
         const Galaxy = getGalaxyInstance();
-        var self = this;
         this.active_tab = "user";
         var history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
         this.model = new Backbone.Model();
@@ -30,8 +29,8 @@ var View = Backbone.View.extend({
         this.message = new Ui.Message({});
         this.installed_builds = new Ui.Select.View({
             optional: true,
-            onchange: function() {
-                self.installed_builds.value(null);
+            onchange: () => {
+                this.installed_builds.value(null);
             },
             empty_text: "List of available builds:",
             error_text: "No system installed builds available."
@@ -73,10 +72,10 @@ var View = Backbone.View.extend({
                 )
         );
         this.listenTo(this.collection, "add remove reset", () => {
-            self._renderTable();
+            this._renderTable();
         });
         this.listenTo(this.model, "change", () => {
-            self._renderForm();
+            this._renderForm();
         });
         this.collection.fetch();
         this.model.fetch();
@@ -88,14 +87,13 @@ var View = Backbone.View.extend({
     },
 
     _renderTable: function() {
-        var self = this;
         this.table.delAll();
         this.collection.sort();
         this.collection.each(model => {
-            self.table.add(model.get("name"));
-            self.table.add(model.id);
-            self.table.add(model.get("count") !== undefined ? model.get("count") : "Processing...");
-            self.table.add(
+            this.table.add(model.get("name"));
+            this.table.add(model.id);
+            this.table.add(model.get("count") !== undefined ? model.get("count") : "Processing...");
+            this.table.add(
                 new Ui.Button({
                     icon: "fa-trash-o",
                     cls: "ui-button-icon-plain",
@@ -105,12 +103,11 @@ var View = Backbone.View.extend({
                     }
                 }).$el
             );
-            self.table.append(model.id);
+            this.table.append(model.id);
         });
     },
 
     _renderForm: function() {
-        var self = this;
         var initial_type = "fasta";
         var form = new Form({
             inputs: [
@@ -193,32 +190,32 @@ var View = Backbone.View.extend({
                     tooltip: _l("Create new Build"),
                     title: _l("Save"),
                     cls: "btn btn-primary",
-                    onclick: function() {
+                    onclick: () => {
                         var data = form.data.create();
                         if (!data.id || !data.name) {
-                            self.message.update({
+                            this.message.update({
                                 message: "All inputs are required.",
                                 status: "danger"
                             });
                         } else {
-                            self.collection.create(data, {
+                            this.collection.create(data, {
                                 wait: true,
-                                success: function(response) {
+                                success: response => {
                                     if (response.get("message")) {
-                                        self.message.update({
+                                        this.message.update({
                                             message: response.get("message"),
                                             status: "warning"
                                         });
                                     } else {
-                                        self.message.update({
+                                        this.message.update({
                                             message: "Successfully added a new custom build.",
                                             status: "success"
                                         });
                                     }
                                 },
-                                error: function(response, err) {
+                                error: (response, err) => {
                                     var message = err && err.responseJSON && err.responseJSON.err_msg;
-                                    self.message.update({
+                                    this.message.update({
                                         message: message || "Failed to create custom build.",
                                         status: "danger"
                                     });
@@ -228,11 +225,11 @@ var View = Backbone.View.extend({
                     }
                 })
             },
-            onchange: function() {
+            onchange: () => {
                 var input_id = form.data.match("len|type");
                 if (input_id) {
                     var input_field = form.field_list[input_id];
-                    self._renderHelp(input_field.value());
+                    this._renderHelp(input_field.value());
                 }
             }
         });

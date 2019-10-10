@@ -20,7 +20,6 @@ export default Backbone.View.extend({
     },
 
     initialize: function(app, options) {
-        var self = this;
         this.app = app;
         this.list_extensions = app.list_extensions;
         this.model = options.model;
@@ -51,11 +50,11 @@ export default Backbone.View.extend({
         // create select genomes
         this.select_genome = new Select.View({
             css: "upload-genome",
-            data: self.app.list_genomes,
+            data: this.app.list_genomes,
             container: this.$(".upload-genome"),
             value: default_genome,
-            onchange: function(genome) {
-                self.model.set("genome", genome);
+            onchange: genome => {
+                this.model.set("genome", genome);
             }
         });
 
@@ -65,8 +64,8 @@ export default Backbone.View.extend({
             data: _.filter(this.list_extensions, ext => !ext.composite_files),
             container: this.$(".upload-extension"),
             value: default_extension,
-            onchange: function(extension) {
-                self.model.set("extension", extension);
+            onchange: extension => {
+                this.model.set("extension", extension);
             }
         });
 
@@ -78,7 +77,7 @@ export default Backbone.View.extend({
 
         // handle click event
         this.$symbol.on("click", () => {
-            self._removeRow();
+            this._removeRow();
         });
 
         // handle extension info popover
@@ -103,7 +102,7 @@ export default Backbone.View.extend({
         // handle settings popover
         this.$settings
             .on("click", e => {
-                self._showSettings();
+                this._showSettings();
             })
             .on("mousedown", e => {
                 e.preventDefault();
@@ -111,7 +110,7 @@ export default Backbone.View.extend({
 
         // handle text editing event
         this.$text_content.on("change input", e => {
-            self.model.set({
+            this.model.set({
                 url_paste: $(e.target).val(),
                 file_size: $(e.target).val().length
             });
@@ -119,27 +118,27 @@ export default Backbone.View.extend({
 
         // handle text editing event
         this.$title.on("change input", e => {
-            self.model.set({ file_name: $(e.target).val() });
+            this.model.set({ file_name: $(e.target).val() });
         });
 
         // model events
         this.listenTo(this.model, "change:percentage", () => {
-            self._refreshPercentage();
+            this._refreshPercentage();
         });
         this.listenTo(this.model, "change:status", () => {
-            self._refreshStatus();
+            this._refreshStatus();
         });
         this.listenTo(this.model, "change:info", () => {
-            self._refreshInfo();
+            this._refreshInfo();
         });
         this.listenTo(this.model, "change:genome", () => {
-            self._refreshGenome();
+            this._refreshGenome();
         });
         this.listenTo(this.model, "change:extension", () => {
-            self._refreshExtension();
+            this._refreshExtension();
         });
         this.listenTo(this.model, "change:file_size", () => {
-            self._refreshFileSize();
+            this._refreshFileSize();
         });
     },
 

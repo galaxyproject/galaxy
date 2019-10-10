@@ -11,29 +11,27 @@ import FormData from "mvc/form/form-data";
 
 var GroupView = Backbone.View.extend({
     initialize: function(app, options) {
-        var self = this;
         this.deferred = app.deferred;
         this.chart = app.chart;
         this.group = options.group;
         this.setElement($("<div/>"));
-        this.listenTo(this.chart, "change:dataset_id", function() {
-            self.render();
+        this.listenTo(this.chart, "change:dataset_id", () => {
+            this.render();
         });
         this.render();
     },
     render: function() {
-        var self = this;
         var inputs = Utils.clone(this.chart.plugin.groups) || [];
         var dataset_id = this.chart.get("dataset_id");
         if (dataset_id) {
             this.chart.state("wait", "Loading metadata...");
-            this.deferred.execute(function(process) {
+            this.deferred.execute(process => {
                 Utils.get({
                     url: getAppRoot() + "api/datasets/" + dataset_id,
                     cache: true,
-                    success: function(dataset) {
+                    success: dataset => {
                         var data_columns = {};
-                        FormData.visitInputs(inputs, function(input, prefixed) {
+                        FormData.visitInputs(inputs, (input, prefixed) => {
                             if (input.type == "data_column") {
                                 data_columns[prefixed] = Utils.clone(input);
                                 var columns = [];
@@ -54,7 +52,7 @@ var GroupView = Backbone.View.extend({
                                 }
                                 input.data = columns;
                             }
-                            var model_value = self.group.get(prefixed);
+                            var model_value = this.group.get(prefixed);
                             if (model_value !== undefined && !input.hidden) {
                                 input.value = model_value;
                             }
@@ -65,19 +63,19 @@ var GroupView = Backbone.View.extend({
                             hidden: true,
                             value: data_columns
                         });
-                        self.chart.state("ok", "Metadata initialized...");
-                        self.form = new Form({
+                        this.chart.state("ok", "Metadata initialized...");
+                        this.form = new Form({
                             inputs: inputs,
-                            onchange: function() {
-                                self.group.set(self.form.data.create());
-                                self.chart.set("modified", true);
-                                self.chart.trigger("redraw");
+                            onchange: () => {
+                                this.group.set(this.form.data.create());
+                                this.chart.set("modified", true);
+                                this.chart.trigger("redraw");
                             }
                         });
-                        self.group.set(self.form.data.create());
-                        self.$el.empty().append(self.form.$el);
+                        this.group.set(this.form.data.create());
+                        this.$el.empty().append(this.form.$el);
                         process.resolve();
-                        self.chart.trigger("redraw");
+                        this.chart.trigger("redraw");
                     }
                 });
             });
@@ -87,31 +85,30 @@ var GroupView = Backbone.View.extend({
 
 export default Backbone.View.extend({
     initialize: function(app) {
-        var self = this;
         this.app = app;
         this.chart = app.chart;
         this.repeat = new Repeat.View({
             title: "Data series",
             title_new: "Data series",
             min: 1,
-            onnew: function() {
-                self.chart.groups.add({ id: Utils.uid() });
+            onnew: () => {
+                this.chart.groups.add({ id: Utils.uid() });
             }
         });
         this.setElement($("<div/>").append(this.repeat.$el));
-        this.listenTo(this.chart.groups, "remove", function(group) {
-            self.repeat.del(group.id);
-            self.chart.trigger("redraw");
+        this.listenTo(this.chart.groups, "remove", group => {
+            this.repeat.del(group.id);
+            this.chart.trigger("redraw");
         });
-        this.listenTo(this.chart.groups, "reset", function() {
-            self.repeat.delAll();
+        this.listenTo(this.chart.groups, "reset", () => {
+            this.repeat.delAll();
         });
-        this.listenTo(this.chart.groups, "add", function(group) {
-            self.repeat.add({
+        this.listenTo(this.chart.groups, "add", group => {
+            this.repeat.add({
                 id: group.id,
-                $el: new GroupView(self.app, { group: group }).$el,
-                ondel: function() {
-                    self.chart.groups.remove(group);
+                $el: new GroupView(this.app, { group: group }).$el,
+                ondel: () => {
+                    this.chart.groups.remove(group);
                 }
             });
         });

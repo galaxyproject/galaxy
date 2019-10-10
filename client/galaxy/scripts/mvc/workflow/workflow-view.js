@@ -160,26 +160,26 @@ function add_node_icon($to_el, nodeType) {
 // create form view
 export default Backbone.View.extend({
     initialize: function(options) {
-        var self = (window.workflow_globals.app = this);
+        window.workflow_globals.app = this;
         this.options = options;
         this.urls = (options && options.urls) || {};
-        var workflow_index = self.urls.workflow_index;
+        var workflow_index = this.urls.workflow_index;
         var save_current_workflow = (eventObj, success_callback) => {
             show_message("Saving workflow", "progress");
-            self.workflow.check_changes_in_active_form();
-            if (!self.workflow.has_changes) {
+            this.workflow.check_changes_in_active_form();
+            if (!this.workflow.has_changes) {
                 hide_modal();
                 if (success_callback) {
                     success_callback();
                 }
                 return;
             }
-            self.workflow.rectify_workflow_outputs();
+            this.workflow.rectify_workflow_outputs();
             Utils.request({
-                url: `${getAppRoot()}api/workflows/${self.options.id}`,
+                url: `${getAppRoot()}api/workflows/${this.options.id}`,
                 type: "PUT",
-                data: { workflow: self.workflow.to_simple() },
-                success: function(data) {
+                data: { workflow: this.workflow.to_simple() },
+                success: data => {
                     var body = $("<div/>").text(data.message);
                     if (data.errors) {
                         body.addClass("warningmark");
@@ -193,12 +193,12 @@ export default Backbone.View.extend({
                     } else {
                         body.addClass("donemark");
                     }
-                    self.workflow.name = data.name;
-                    self.workflow.has_changes = false;
-                    self.workflow.stored = true;
-                    self.workflow.workflow_version = data.version;
-                    self.showWorkflowParameters();
-                    self.build_version_select();
+                    this.workflow.name = data.name;
+                    this.workflow.has_changes = false;
+                    this.workflow.stored = true;
+                    this.workflow.workflow_version = data.version;
+                    this.showWorkflowParameters();
+                    this.build_version_select();
                     if (data.errors) {
                         show_modal("Saving workflow", body, {
                             Ok: hide_modal
@@ -228,32 +228,32 @@ export default Backbone.View.extend({
                 $(this).focus();
                 $(this).select();
             })
-            .keyup(function(e) {
+            .keyup(e => {
                 // If ESC is pressed clear the search field
                 if (e.keyCode == 27) {
-                    this.value = "";
+                    e.currentTarget.value = "";
                 }
                 // Remove italics.
-                $(this).css("font-style", "normal");
+                $(e.currentTarget).css("font-style", "normal");
                 // Don't update if same value as last time
-                if (this.value.length < 3) {
+                if (e.currentTarget.value.length < 3) {
                     reset_tool_search(false);
-                } else if (this.value != this.lastValue) {
+                } else if (e.currentTarget.value != e.currentTarget.lastValue) {
                     // Add class to denote that searching is active.
-                    $(this).addClass("search_active");
+                    $(e.currentTarget).addClass("search_active");
                     // input.addClass(config.loadingClass);
                     // Add '*' to facilitate partial matching.
-                    var q = this.value;
+                    var q = e.currentTarget.value;
                     // Stop previous ajax-request
-                    if (this.timer) {
-                        window.clearTimeout(this.timer);
+                    if (e.currentTarget.timer) {
+                        window.clearTimeout(e.currentTarget.timer);
                     }
                     // Start a new ajax-request in X ms
                     $("#search-spinner").show();
                     $("#search-clear-btn").hide();
                     this.timer = window.setTimeout(() => {
                         $.get(
-                            self.urls.tool_search,
+                            this.urls.tool_search,
                             { q: q },
                             data => {
                                 // input.removeClass(config.loadingClass);
@@ -344,11 +344,11 @@ export default Backbone.View.extend({
         this.ext_to_type = this.datatypes_mapping.ext_to_class_name;
         this.type_to_type = this.datatypes_mapping.class_to_classes;
 
-        this.get_workflow_versions = function() {
+        this.get_workflow_versions = () => {
             const _workflow_version_dropdown = {};
             const workflow_versions = JSON.parse(
                 $.ajax({
-                    url: `${getAppRoot()}api/workflows/${self.options.id}/versions`,
+                    url: `${getAppRoot()}api/workflows/${this.options.id}/versions`,
                     async: false
                 }).responseText
             );
@@ -357,7 +357,7 @@ export default Backbone.View.extend({
                 const current_wf = workflow_versions[i];
                 let version_text = `Version ${current_wf.version}, ${current_wf.steps} steps`;
                 let selected = false;
-                if (i == self.workflow.workflow_version) {
+                if (i == this.workflow.workflow_version) {
                     version_text = `${version_text} (active)`;
                     selected = true;
                 }
@@ -380,34 +380,34 @@ export default Backbone.View.extend({
                         .selected(v.selected)
                 );
             });
-            $("#workflow-version-switch").on("change", function() {
+            $("#workflow-version-switch").on("change", e => {
                 $("#workflow-version-switch").unbind("change");
-                if (this.value != self.workflow.workflow_version) {
-                    if (self.workflow && self.workflow.has_changes) {
+                if (e.currentTarget.value != this.workflow.workflow_version) {
+                    if (this.workflow && this.workflow.has_changes) {
                         const r = window.confirm(
                             "There are unsaved changes to your workflow which will be lost. Continue ?"
                         );
                         if (r == false) {
                             // We rebuild the version select list, to reset the selected version
-                            self.build_version_select();
+                            this.build_version_select();
                             return;
                         }
                     }
-                    self.load_workflow(self.options.id, this.value);
+                    this.load_workflow(this.options.id, this.value);
                 }
             });
         };
 
         this.load_workflow = function load_workflow(id, version) {
             this._workflowLoadAjax(id, version, {
-                success: function(data) {
-                    self.reset();
-                    self.workflow.from_simple(data, true);
-                    self.workflow.has_changes = false;
-                    self.workflow.fit_canvas_to_nodes();
-                    self.scroll_to_nodes();
-                    self.canvas_manager.draw_overview();
-                    self.build_version_select();
+                success: data => {
+                    this.reset();
+                    this.workflow.from_simple(data, true);
+                    this.workflow.has_changes = false;
+                    this.workflow.fit_canvas_to_nodes();
+                    this.scroll_to_nodes();
+                    this.canvas_manager.draw_overview();
+                    this.build_version_select();
 
                     // Determine if any parameters were 'upgraded' and provide message
                     var upgrade_message = "";
@@ -421,7 +421,7 @@ export default Backbone.View.extend({
                         });
                         if (details) {
                             upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${
-                                self.workflow.nodes[step_id].name
+                                this.workflow.nodes[step_id].name
                             }<ul>${details}</ul></li>`;
                         }
                     });
@@ -434,7 +434,7 @@ export default Backbone.View.extend({
                     } else {
                         hide_modal();
                     }
-                    self.showWorkflowParameters();
+                    this.showWorkflowParameters();
                 },
                 error: function(response) {
                     show_modal("Loading workflow failed.", response.err_msg, {
@@ -451,10 +451,10 @@ export default Backbone.View.extend({
         };
 
         // Load workflow definition
-        this.load_workflow(self.options.id, self.options.version);
+        this.load_workflow(this.options.id, this.options.version);
         if (make_popupmenu) {
             $("#workflow-run-button").click(
-                () => (window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`)
+                () => (window.location = `${getAppRoot()}workflows/run?id=${this.options.id}`)
             );
             $("#workflow-save-button").click(() => save_current_workflow());
             $("#workflow-report-button").click(() => edit_report());
@@ -462,12 +462,12 @@ export default Backbone.View.extend({
             $("#workflow-canvas-button").click(() => edit_canvas());
             make_popupmenu($("#workflow-options-button"), {
                 "Save As": workflow_save_as,
-                "Edit Attributes": function() {
-                    self.workflow.clear_active_node();
+                "Edit Attributes": () => {
+                    this.workflow.clear_active_node();
                 },
                 "Auto Re-layout": layout_editor,
                 Download: {
-                    url: `${getAppRoot()}api/workflows/${self.options.id}/download?format=json-download`,
+                    url: `${getAppRoot()}api/workflows/${this.options.id}/download?format=json-download`,
                     action: function() {}
                 }
             });
@@ -480,20 +480,20 @@ export default Backbone.View.extend({
                     '<br><label style="display:inline-block; width: 100%;">Annotation: </label><input type="text" id="wf_annotation" style="width: 80%;" /></form>'
             );
             show_modal("Save As a New Workflow", body, {
-                OK: function() {
+                OK: () => {
                     var rename_name =
                         $("#workflow_rename").val().length > 0
                             ? $("#workflow_rename").val()
-                            : `SavedAs_${self.workflow.name}`;
+                            : `SavedAs_${this.workflow.name}`;
                     var rename_annotation = $("#wf_annotation").val().length > 0 ? $("#wf_annotation").val() : "";
                     $.ajax({
-                        url: self.urls.workflow_save_as,
+                        url: this.urls.workflow_save_as,
                         type: "POST",
                         data: {
                             workflow_name: rename_name,
                             workflow_annotation: rename_annotation,
-                            workflow_data: function() {
-                                return JSON.stringify(self.workflow.to_simple());
+                            workflow_data: () => {
+                                return JSON.stringify(this.workflow.to_simple());
                             }
                         }
                     })
@@ -512,10 +512,10 @@ export default Backbone.View.extend({
         }
 
         function layout_editor() {
-            self.workflow.layout();
-            self.workflow.fit_canvas_to_nodes();
-            self.scroll_to_nodes();
-            self.canvas_manager.draw_overview();
+            this.workflow.layout();
+            this.workflow.fit_canvas_to_nodes();
+            this.scroll_to_nodes();
+            this.canvas_manager.draw_overview();
         }
 
         function edit_report() {
@@ -554,7 +554,7 @@ export default Backbone.View.extend({
 
         // Unload handler
         window.onbeforeunload = () => {
-            if (self.workflow && self.workflow.has_changes) {
+            if (this.workflow && this.workflow.has_changes) {
                 return "There are unsaved changes to your workflow which will be lost.";
             }
         };
@@ -584,7 +584,7 @@ export default Backbone.View.extend({
         });
 
         // Rename async.
-        async_save_text("workflow-name", "workflow-name", self.urls.rename_async, "new_name");
+        async_save_text("workflow-name", "workflow-name", this.urls.rename_async, "new_name");
 
         // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
         $("#workflow-tag").click(() => {
@@ -595,7 +595,7 @@ export default Backbone.View.extend({
         async_save_text(
             "workflow-annotation",
             "workflow-annotation",
-            self.urls.annotate_async,
+            this.urls.annotate_async,
             "new_annotation",
             25,
             true,
@@ -604,7 +604,6 @@ export default Backbone.View.extend({
     },
 
     _buildToolPanelWorkflows: function() {
-        var self = this;
         var $section = $(
             '<div class="toolSectionWrapper">' +
                 '<div class="toolSectionTitle">' +
@@ -616,15 +615,15 @@ export default Backbone.View.extend({
                 "</div>"
         );
         _.each(this.options.workflows, workflow => {
-            if (workflow.id !== self.options.id) {
+            if (workflow.id !== this.options.id) {
                 var copy = new Ui.Button({
                     icon: "fa fa-copy",
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Copy and insert individual steps"),
-                    onclick: function() {
+                    onclick: () => {
                         const Galaxy = getGalaxyInstance();
                         if (workflow.step_count < 2) {
-                            self.copy_into_workflow(workflow.id, workflow.name);
+                            this.copy_into_workflow(workflow.id, workflow.name);
                         } else {
                             // don't ruin the workflow by adding 50 steps unprompted.
                             Galaxy.modal.show({
@@ -634,9 +633,9 @@ export default Backbone.View.extend({
                                     Cancel: function() {
                                         Galaxy.modal.hide();
                                     },
-                                    Copy: function() {
+                                    Copy: () => {
                                         Galaxy.modal.hide();
-                                        self.copy_into_workflow(workflow.id, workflow.name);
+                                        this.copy_into_workflow(workflow.id, workflow.name);
                                     }
                                 }
                             });
@@ -648,7 +647,7 @@ export default Backbone.View.extend({
                     .attr("role", "button")
                     .html(workflow.name)
                     .on("click", () => {
-                        self.add_node_for_subworkflow(workflow.latest_id, workflow.name);
+                        this.add_node_for_subworkflow(workflow.latest_id, workflow.name);
                     });
                 $section.find(".toolSectionBg").append(
                     $("<div/>")
@@ -663,14 +662,13 @@ export default Backbone.View.extend({
 
     copy_into_workflow: function(workflowId) {
         // Load workflow definition
-        var self = this;
         this._workflowLoadAjax(workflowId, null, {
-            success: function(data) {
-                self.workflow.from_simple(data, false);
+            success: data => {
+                this.workflow.from_simple(data, false);
                 // Determine if any parameters were 'upgraded' and provide message
                 var upgrade_message = "";
                 $.each(data.upgrade_messages, (k, v) => {
-                    upgrade_message += `<li>Step ${parseInt(k, 10) + 1}: ${self.workflow.nodes[k].name}<ul>`;
+                    upgrade_message += `<li>Step ${parseInt(k, 10) + 1}: ${this.workflow.nodes[k].name}<ul>`;
                     $.each(v, (i, vv) => {
                         upgrade_message += `<li>${vv}</li>`;
                     });
@@ -730,12 +728,11 @@ export default Backbone.View.extend({
     },
 
     _moduleInitAjax: function(node, request_data) {
-        var self = this;
         Utils.request({
             type: "POST",
             url: `${getAppRoot()}api/workflows/build_module`,
             data: request_data,
-            success: function(data) {
+            success: data => {
                 const Galaxy = getGalaxyInstance();
                 node.init_field_data(data);
                 node.update_field_data(data);
@@ -749,7 +746,7 @@ export default Backbone.View.extend({
                     var callout = $(node.element).find(`.callout.${ot.name.replace(/(?=[()])/g, "\\")}`);
                     callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
                 });
-                self.workflow.activate_node(node);
+                this.workflow.activate_node(node);
             }
         });
     },
@@ -878,7 +875,6 @@ export default Backbone.View.extend({
     },
 
     prebuildNode: function(type, title_text, content_id) {
-        var self = this;
         var $f = $(`<div class='toolForm toolFormInCanvas' tabindex = '0' aria-label='Node ${title_text}'/>`);
         var $title = $(`<div class='toolFormTitle unselectable'><span class='nodeTitle'>${title_text}</div></div>`);
         add_node_icon($title.find(".nodeTitle"), type);
@@ -935,27 +931,27 @@ export default Backbone.View.extend({
         width += buttons.width() + 10;
         $f.css("width", width);
         $f.bind("dragstart", () => {
-            self.workflow.activate_node(node);
+            this.workflow.activate_node(node);
         })
-            .bind("dragend", function() {
-                self.workflow.node_changed(this);
-                self.workflow.fit_canvas_to_nodes();
-                self.canvas_manager.draw_overview();
+            .bind("dragend", e => {
+                this.workflow.node_changed(e.currentTarget);
+                this.workflow.fit_canvas_to_nodes();
+                this.canvas_manager.draw_overview();
             })
             .bind("dragclickonly", () => {
-                self.workflow.activate_node(node);
+                this.workflow.activate_node(node);
             })
-            .bind("drag", function(e, d) {
+            .bind("drag", (e, d) => {
                 // Move
-                var po = $(this)
+                var po = $(e.currentTarget)
                     .offsetParent()
                     .offset();
                 // Find relative offset and scale by zoom
-                var x = (d.offsetX - po.left) / self.canvas_manager.canvasZoom;
-                var y = (d.offsetY - po.top) / self.canvas_manager.canvasZoom;
-                $(this).css({ left: x, top: y });
+                var x = (d.offsetX - po.left) / this.canvas_manager.canvasZoom;
+                var y = (d.offsetY - po.top) / this.canvas_manager.canvasZoom;
+                $(e.currentTarget).css({ left: x, top: y });
                 // Redraw
-                $(this)
+                $(e.currentTarget)
                     .find(".terminal")
                     .each(function() {
                         this.terminal.redraw();

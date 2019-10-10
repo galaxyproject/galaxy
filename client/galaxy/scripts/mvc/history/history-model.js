@@ -266,17 +266,16 @@ export var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             /** fetch this histories data (using options) then it's contents (using contentsOptions) */
             fetchWithContents: function(options, contentsOptions) {
                 options = options || {};
-                var self = this;
 
                 // console.log( this + '.fetchWithContents' );
                 // TODO: push down to a base class
                 options.view = "dev-detailed";
 
                 // fetch history then use history data to fetch (paginated) contents
-                return this.fetch(options).then(function getContents(history) {
-                    self.contents.history = self;
-                    self.contents.setHistoryId(history.id);
-                    return self.fetchContents(contentsOptions);
+                return this.fetch(options).then(history => {
+                    this.contents.history = this;
+                    this.contents.setHistoryId(history.id);
+                    return this.fetchContents(contentsOptions);
                 });
             },
 

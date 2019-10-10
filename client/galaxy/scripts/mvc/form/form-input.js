@@ -51,24 +51,23 @@ export default Backbone.View.extend({
         this.render();
 
         // add click handler
-        var self = this;
         this.$collapsible_icon.on("click", () => {
-            self.field.collapsed = !self.field.collapsed;
-            self.field.connected = false;
+            this.field.collapsed = !this.field.collapsed;
+            this.field.connected = false;
             app.trigger && app.trigger("change");
-            self.render();
+            this.render();
         });
         this.$connected_icon.on("click", () => {
-            self.field.connected = !self.field.connected;
-            self.field.collapsed = self.field.connected;
+            this.field.connected = !this.field.connected;
+            this.field.collapsed = this.field.connected;
             app.trigger && app.trigger("change");
-            self.render();
+            this.render();
         });
 
         // hide error on value change
         if (this.field.model && !this.model.get("always_refresh")) {
             this.listenTo(this.field.model, "change:value", () => {
-                self.reset();
+                this.reset();
             });
         }
 

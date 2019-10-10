@@ -55,7 +55,6 @@ export default Backbone.Model.extend({
 
     /** Pack and save nested chart model */
     save: function(options) {
-        var self = this;
         options = options || {};
         this.chart_dict = this.serialize();
         var viz = new Visualization({
@@ -68,9 +67,9 @@ export default Backbone.Model.extend({
             }
         });
         viz.save()
-            .then(function(response) {
+            .then(response => {
                 if (response && response.id) {
-                    self.visualization_id = response.id;
+                    this.visualization_id = response.id;
                     if (options.success) {
                         options.success();
                     }

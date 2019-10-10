@@ -73,15 +73,14 @@ var LibraryDatasetView = Backbone.View.extend({
         this.model = new mod_library_model.Item({
             id: this.options.id
         });
-        var self = this;
         this.model.fetch({
-            success: function() {
-                if (self.options.show_permissions) {
-                    self.showPermissions();
-                } else if (self.options.show_version) {
-                    self.fetchVersion();
+            success: () => {
+                if (this.options.show_permissions) {
+                    this.showPermissions();
+                } else if (this.options.show_version) {
+                    this.fetchVersion();
                 } else {
-                    self.render();
+                    this.render();
                 }
             },
             error: function(model, response) {
@@ -127,7 +126,6 @@ var LibraryDatasetView = Backbone.View.extend({
 
     fetchVersion: function(options) {
         this.options = _.extend(this.options, options);
-        var self = this;
         if (!this.options.ldda_id) {
             this.render();
             Toast.error("Library dataset version requested but no id provided.");
@@ -137,8 +135,8 @@ var LibraryDatasetView = Backbone.View.extend({
             });
             this.ldda.url = `${this.ldda.urlRoot + this.model.id}/versions/${this.ldda.id}`;
             this.ldda.fetch({
-                success: function() {
-                    self.renderVersion();
+                success: () => {
+                    this.renderVersion();
                 },
                 error: function(model, response) {
                     if (typeof response.responseJSON !== "undefined") {
@@ -199,17 +197,17 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     importIntoHistory: function() {
-        this.refreshUserHistoriesList(self => {
+        this.refreshUserHistoriesList(context => {
             const Galaxy = getGalaxyInstance();
-            var template = self.templateBulkImportInModal();
-            self.modal = Galaxy.modal;
-            self.modal.show({
+            var template = context.templateBulkImportInModal();
+            context.modal = Galaxy.modal;
+            context.modal.show({
                 closing_events: true,
                 title: _l("Import into History"),
-                body: template({ histories: self.histories.models }),
+                body: template({ histories: context.histories.models }),
                 buttons: {
                     Import: function() {
-                        self.importCurrentIntoHistory();
+                        context.importCurrentIntoHistory();
                     },
                     Close: function() {
                         Galaxy.modal.hide();
@@ -220,10 +218,9 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     refreshUserHistoriesList: function(callback) {
-        var self = this;
         this.histories = new mod_library_model.GalaxyHistories();
         this.histories.fetch({
-            success: function(histories) {
+            success: histories => {
                 if (histories.length === 0) {
                     Toast.warning("You have to create history first. Click this to do so.", "", {
                         onclick: function() {
@@ -231,7 +228,7 @@ var LibraryDatasetView = Backbone.View.extend({
                         }
                     });
                 } else {
-                    callback(self);
+                    callback(this);
                 }
             },
             error: function(model, response) {
@@ -247,19 +244,18 @@ var LibraryDatasetView = Backbone.View.extend({
     importCurrentIntoHistory: function() {
         this.modal.disableButton("Import");
         var new_history_name = this.modal.$("input[name=history_name]").val();
-        var self = this;
         if (new_history_name !== "") {
             $.post(`${getAppRoot()}api/histories`, {
                 name: new_history_name
             })
                 .done(new_history => {
-                    self.processImportToHistory(new_history.id);
+                    this.processImportToHistory(new_history.id);
                 })
                 .fail((xhr, status, error) => {
                     Toast.error("An error occurred.");
                 })
                 .always(() => {
-                    self.modal.enableButton("Import");
+                    this.modal.enableButton("Import");
                 });
         } else {
             var history_id = $(this.modal.$el)
@@ -303,7 +299,6 @@ var LibraryDatasetView = Backbone.View.extend({
     showPermissions: function(options) {
         const Galaxy = getGalaxyInstance();
         var template = this.templateDatasetPermissions();
-        var self = this;
         this.options = _.extend(this.options, options);
         $(".tooltip").remove();
         if (this.options.fetched_permissions !== undefined) {
@@ -319,9 +314,9 @@ var LibraryDatasetView = Backbone.View.extend({
                 is_admin: Galaxy.config.is_admin_user
             })
         );
-        $.get(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?scope=current`)
+        $.get(`${getAppRoot()}api/libraries/datasets/${this.id}/permissions?scope=current`)
             .done(fetched_permissions => {
-                self.prepareSelectBoxes({
+                this.prepareSelectBoxes({
                     fetched_permissions: fetched_permissions,
                     is_admin: Galaxy.config.is_admin_user
                 });
@@ -492,11 +487,10 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     makeDatasetPrivate: function() {
-        var self = this;
-        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=make_private`)
+        $.post(`${getAppRoot()}api/libraries/datasets/${this.id}/permissions?action=make_private`)
             .done(fetched_permissions => {
-                self.model.set({ is_unrestricted: false });
-                self.showPermissions({
+                this.model.set({ is_unrestricted: false });
+                this.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
                 Toast.success("The dataset is now private to you.");
@@ -507,11 +501,10 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     removeDatasetRestrictions: function() {
-        var self = this;
-        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`)
+        $.post(`${getAppRoot()}api/libraries/datasets/${this.id}/permissions?action=remove_restrictions`)
             .done(fetched_permissions => {
-                self.model.set({ is_unrestricted: true });
-                self.showPermissions({
+                this.model.set({ is_unrestricted: true });
+                this.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
                 Toast.success("Access to this dataset is now unrestricted.");
@@ -536,17 +529,16 @@ var LibraryDatasetView = Backbone.View.extend({
      * Save the permissions for roles entered in the select boxes.
      */
     savePermissions: function(event) {
-        var self = this;
         var access_ids = this._extractIds(this.accessSelectObject.$el.select2("data"));
         var manage_ids = this._extractIds(this.manageSelectObject.$el.select2("data"));
         var modify_ids = this._extractIds(this.modifySelectObject.$el.select2("data"));
-        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=set_permissions`, {
+        $.post(`${getAppRoot()}api/libraries/datasets/${this.id}/permissions?action=set_permissions`, {
             "access_ids[]": access_ids,
             "manage_ids[]": manage_ids,
             "modify_ids[]": modify_ids
         })
             .done(fetched_permissions => {
-                self.showPermissions({
+                this.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
                 Toast.success("Permissions saved.");
@@ -561,35 +553,34 @@ var LibraryDatasetView = Backbone.View.extend({
      * and save them in sorted arrays.
      */
     fetchExtAndGenomes: function() {
-        var self = this;
         if (this.list_genomes.length == 0) {
             mod_utils.get({
                 url: `${getAppRoot()}api/datatypes?extension_only=False`,
-                success: function(datatypes) {
+                success: datatypes => {
                     for (var key in datatypes) {
-                        self.list_extensions.push({
+                        this.list_extensions.push({
                             id: datatypes[key].extension,
                             text: datatypes[key].extension,
                             description: datatypes[key].description,
                             description_url: datatypes[key].description_url
                         });
                     }
-                    self.list_extensions.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
-                    self.list_extensions.unshift(self.auto);
+                    this.list_extensions.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
+                    this.list_extensions.unshift(this.auto);
                 }
             });
         }
         if (this.list_extensions.length == 0) {
             mod_utils.get({
                 url: `${getAppRoot()}api/genomes`,
-                success: function(genomes) {
+                success: genomes => {
                     for (var key in genomes) {
-                        self.list_genomes.push({
+                        this.list_genomes.push({
                             id: genomes[key][1],
                             text: genomes[key][0]
                         });
                     }
-                    self.list_genomes.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
+                    this.list_genomes.sort((a, b) => (a.id > b.id ? 1 : a.id < b.id ? -1 : 0));
                 }
             });
         }
@@ -600,7 +591,6 @@ var LibraryDatasetView = Backbone.View.extend({
         // See this.fetchExtAndGenomes()
         // TODO switch to common resources:
         // https://trello.com/c/dIUE9YPl/1933-ui-common-resources-and-data-into-galaxy-object
-        var self = this;
         var current_genome = "?";
         var current_ext = "auto";
         if (typeof options !== "undefined") {
@@ -613,14 +603,14 @@ var LibraryDatasetView = Backbone.View.extend({
         }
         this.select_genome = new mod_select.View({
             css: "dataset-genome-select",
-            data: self.list_genomes,
-            container: self.$el.find("#dataset_genome_select"),
+            data: this.list_genomes,
+            container: this.$el.find("#dataset_genome_select"),
             value: current_genome
         });
         this.select_extension = new mod_select.View({
             css: "dataset-extension-select",
-            data: self.list_extensions,
-            container: self.$el.find("#dataset_extension_select"),
+            data: this.list_extensions,
+            container: this.$el.find("#dataset_extension_select"),
             value: current_ext
         });
     },

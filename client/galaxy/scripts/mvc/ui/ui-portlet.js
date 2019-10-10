@@ -6,7 +6,6 @@ import Ui from "mvc/ui/ui-misc";
 export var View = Backbone.View.extend({
     visible: false,
     initialize: function(options) {
-        var self = this;
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -44,15 +43,14 @@ export var View = Backbone.View.extend({
             icon: "fa-eye",
             tooltip: "Collapse/Expand",
             cls: "ui-button-icon-plain",
-            onclick: function() {
-                self[self.collapsed ? "expand" : "collapse"]();
+            onclick: () => {
+                this[this.collapsed ? "expand" : "collapse"]();
             }
         });
         this.render();
     },
 
     render: function() {
-        var self = this;
         var options = this.model.attributes;
         this.$el
             .removeClass()
@@ -79,7 +77,7 @@ export var View = Backbone.View.extend({
         this.$title_text[options.collapsible ? "addClass" : "removeClass"]("no-highlight collapsible").off();
         if (options.collapsible) {
             this.$title_text.on("click", () => {
-                self[self.collapsed ? "expand" : "collapse"]();
+                this[this.collapsed ? "expand" : "collapse"]();
             });
             options.collapsed ? this.collapse() : this.expand();
         }
@@ -98,7 +96,7 @@ export var View = Backbone.View.extend({
             this.$buttons.empty().show();
             $.each(this.model.get("buttons"), (name, item) => {
                 item.$el.prop("id", name);
-                self.$buttons.append(item.$el);
+                this.$buttons.append(item.$el);
             });
         } else {
             this.$buttons.hide();
@@ -112,7 +110,7 @@ export var View = Backbone.View.extend({
         if (options.operations) {
             $.each(options.operations, (name, item) => {
                 item.$el.prop("id", name);
-                self.$operations.append(item.$el);
+                this.$operations.append(item.$el);
             });
         }
         return this;

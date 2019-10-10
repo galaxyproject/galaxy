@@ -20,7 +20,6 @@ export default Backbone.View.extend({
     },
 
     initialize: function(app, options) {
-        var self = this;
         this.app = app;
         this.model = options.model;
         this.setElement(this._template());
@@ -39,21 +38,21 @@ export default Backbone.View.extend({
 
         // build upload functions
         this.uploadinput = this.$el.uploadinput({
-            ondragover: function() {
-                self.model.get("enabled") && self.$el.addClass("alert-success");
+            ondragover: () => {
+                this.model.get("enabled") && this.$el.addClass("alert-success");
             },
-            ondragleave: function() {
-                self.$el.removeClass("alert-success");
+            ondragleave: () => {
+                this.$el.removeClass("alert-success");
             },
-            onchange: function(files) {
-                if (self.model.get("status") != "running" && files && files.length > 0) {
-                    self.model.reset({
+            onchange: files => {
+                if (this.model.get("status") != "running" && files && files.length > 0) {
+                    this.model.reset({
                         file_data: files[0],
                         file_name: files[0].name,
                         file_size: files[0].size,
                         file_mode: files[0].mode || "local"
                     });
-                    self._refreshReady();
+                    this._refreshReady();
                 }
             }
         });
@@ -68,24 +67,24 @@ export default Backbone.View.extend({
         this.button_menu.addMenu({
             icon: "fa-laptop",
             title: _l("Choose local file"),
-            onclick: function() {
-                self.uploadinput.dialog();
+            onclick: () => {
+                this.uploadinput.dialog();
             }
         });
         if (this.app.ftp_upload_site) {
             this.button_menu.addMenu({
                 icon: "fa-folder-open-o",
                 title: _l("Choose FTP file"),
-                onclick: function() {
-                    self._showFtp();
+                onclick: () => {
+                    this._showFtp();
                 }
             });
         }
         this.button_menu.addMenu({
             icon: "fa-edit",
             title: "Paste/Fetch data",
-            onclick: function() {
-                self.model.reset({
+            onclick: () => {
+                this.model.reset({
                     file_mode: "new",
                     file_name: "New File"
                 });
@@ -108,17 +107,17 @@ export default Backbone.View.extend({
 
         // handle text editing event
         this.$text_content.on("change input", e => {
-            self.model.set({
+            this.model.set({
                 url_paste: $(e.target).val(),
                 file_size: $(e.target).val().length
             });
-            self._refreshReady();
+            this._refreshReady();
         });
 
         // handle settings popover
         this.$settings
             .on("click", e => {
-                self._showSettings();
+                this._showSettings();
             })
             .on("mousedown", e => {
                 e.preventDefault();
@@ -126,28 +125,28 @@ export default Backbone.View.extend({
 
         // model events
         this.listenTo(this.model, "change:percentage", () => {
-            self._refreshPercentage();
+            this._refreshPercentage();
         });
         this.listenTo(this.model, "change:status", () => {
-            self._refreshStatus();
+            this._refreshStatus();
         });
         this.listenTo(this.model, "change:info", () => {
-            self._refreshInfo();
+            this._refreshInfo();
         });
         this.listenTo(this.model, "change:file_name", () => {
-            self._refreshFileName();
+            this._refreshFileName();
         });
         this.listenTo(this.model, "change:file_mode", () => {
-            self._refreshMode();
+            this._refreshMode();
         });
         this.listenTo(this.model, "change:file_size", () => {
-            self._refreshFileSize();
+            this._refreshFileSize();
         });
         this.listenTo(this.model, "remove", () => {
-            self.remove();
+            this.remove();
         });
         this.app.collection.on("reset", () => {
-            self.remove();
+            this.remove();
         });
     },
 
@@ -258,20 +257,19 @@ export default Backbone.View.extend({
 
     /** Show/hide ftp popup */
     _showFtp: function() {
-        var self = this;
         this.ftp.show(
             new UploadFtp({
                 ftp_upload_site: this.app.ftp_upload_site,
-                onchange: function(ftp_file) {
-                    self.ftp.hide();
-                    if (self.model.get("status") != "running" && ftp_file) {
-                        self.model.reset({
+                onchange: ftp_file => {
+                    this.ftp.hide();
+                    if (this.model.get("status") != "running" && ftp_file) {
+                        this.model.reset({
                             file_mode: "ftp",
                             file_name: ftp_file.path,
                             file_size: ftp_file.size,
                             file_path: ftp_file.path
                         });
-                        self._refreshReady();
+                        this._refreshReady();
                     }
                 }
             }).$el

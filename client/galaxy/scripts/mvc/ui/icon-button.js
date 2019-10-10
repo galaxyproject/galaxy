@@ -120,7 +120,6 @@ var IconButtonMenuView = Backbone.View.extend({
 
     render: function() {
         // initialize icon buttons
-        var self = this;
         this.collection.each(button => {
             // create and add icon button to menu
             var elt = $("<a/>")
@@ -128,7 +127,7 @@ var IconButtonMenuView = Backbone.View.extend({
                 .attr("title", button.attributes.title)
                 .addClass("icon-button menu-button")
                 .addClass(button.attributes.icon_class)
-                .appendTo(self.$el)
+                .appendTo(this.$el)
                 .click(button.attributes.on_click);
 
             // configure tooltip

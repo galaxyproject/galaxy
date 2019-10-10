@@ -62,7 +62,6 @@ var FolderListView = Backbone.View.extend({
 
     fetchFolder: function(options = {}) {
         this.options.include_deleted = options.include_deleted;
-        var self = this;
 
         this.folderContainer = new mod_library_model.FolderContainer({
             id: this.options.id
@@ -73,11 +72,11 @@ var FolderListView = Backbone.View.extend({
             this.folderContainer.url = `${this.folderContainer.url}?include_deleted=true`;
         }
         this.folderContainer.fetch({
-            success: function(folder_container) {
-                self.folder_container = folder_container;
-                self.render();
+            success: folder_container => {
+                this.folder_container = folder_container;
+                this.render();
             },
-            error: function(model, response) {
+            error: (model, response) => {
                 const Galaxy = getGalaxyInstance();
                 if (typeof response.responseJSON !== "undefined") {
                     Toast.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
@@ -123,7 +122,7 @@ var FolderListView = Backbone.View.extend({
 
         // when dataset_id is present render its details too
         if (this.options.dataset_id) {
-            var row = _.findWhere(self.rowViews, {
+            var row = _.findWhere(this.rowViews, {
                 id: this.options.dataset_id
             });
             if (row) {
@@ -212,9 +211,8 @@ var FolderListView = Backbone.View.extend({
      * function for each. Also binds the hover behavior.
      */
     renderAll: function() {
-        var self = this;
         _.each(this.collection.models.reverse(), model => {
-            self.renderOne(model);
+            this.renderOne(model);
         });
         this.postRender();
     },
@@ -298,16 +296,15 @@ var FolderListView = Backbone.View.extend({
      */
     selectAll: function(event) {
         var selected = event.target.checked;
-        var self = this;
         // Iterate each checkbox
-        $(":checkbox", "#folder_list_body").each(function() {
-            this.checked = selected;
-            var $row = $(this).closest("tr");
+        $(":checkbox", "#folder_list_body").each((index, element) => {
+            element.checked = selected;
+            var $row = $(element).closest("tr");
             // Change color of selected/unselected
             if (selected) {
-                self.makeDarkRow($row);
+                this.makeDarkRow($row);
             } else {
-                self.makeWhiteRow($row);
+                this.makeWhiteRow($row);
             }
         });
     },

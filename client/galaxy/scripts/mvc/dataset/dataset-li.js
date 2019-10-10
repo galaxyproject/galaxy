@@ -60,32 +60,31 @@ export var DatasetListItemView = _super.extend(
         /** event listeners */
         _setUpListeners: function() {
             _super.prototype._setUpListeners.call(this);
-            var self = this;
 
             // re-rendering on any model changes
-            return self.listenTo(self.model, {
-                change: function(model) {
+            return this.listenTo(this.model, {
+                change: model => {
                     // if the model moved into the ready state and is expanded without details, fetch those details now
                     if (
-                        self.model.changedAttributes().state &&
-                        self.model.inReadyState() &&
-                        self.expanded &&
-                        !self.model.hasDetails()
+                        this.model.changedAttributes().state &&
+                        this.model.inReadyState() &&
+                        this.expanded &&
+                        !this.model.hasDetails()
                     ) {
                         // normally, will render automatically (due to fetch -> change),
                         // but! setting_metadata sometimes doesn't cause any other changes besides state
                         // so, not rendering causes it to seem frozen in setting_metadata state
-                        self.model.fetch({ silent: true }).done(() => {
-                            self.render();
+                        this.model.fetch({ silent: true }).done(() => {
+                            this.render();
                         });
                     } else {
-                        if (_.has(self.model.changed, "tags") && _.keys(self.model.changed).length === 2) {
+                        if (_.has(this.model.changed, "tags") && _.keys(this.model.changed).length === 2) {
                             // If only the tags and update time have changed,
                             // rerender specifically the titlebar region.
                             // Otherwise default to the full render.
-                            self._mountVueNametags();
+                            this._mountVueNametags();
                         } else {
-                            self.render();
+                            this.render();
                         }
                     }
                 }
@@ -179,12 +178,11 @@ export var DatasetListItemView = _super.extend(
                 displayBtnData.href = this.model.urls.display;
 
                 // add frame manager option onclick event
-                var self = this;
                 displayBtnData.onclick = ev => {
                     const Galaxy = getGalaxyInstance();
                     if (Galaxy.frame && Galaxy.frame.active) {
                         // Add dataset to frames.
-                        Galaxy.frame.addDataset(self.model.get("id"));
+                        Galaxy.frame.addDataset(this.model.get("id"));
                         ev.preventDefault();
                     }
                 };

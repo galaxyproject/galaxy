@@ -5,7 +5,6 @@ import _l from "utils/localization";
 
 var View = Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -20,7 +19,7 @@ var View = Backbone.View.extend({
         this.$progress = this.$(".progress-bar");
         this.listenTo(this.model, "change", this.render, this);
         this.render();
-        $(window).on("beforeunload", () => self.model.get("onunload")());
+        $(window).on("beforeunload", () => this.model.get("onunload")());
     },
 
     render: function() {

@@ -75,7 +75,6 @@ export var View = Backbone.View.extend({
      * Render modal
      */
     render: function() {
-        var self = this;
         this.$el.html(this._template());
 
         // link elements
@@ -115,8 +114,8 @@ export var View = Backbone.View.extend({
                     .attr("id", `button-${counter++}`)
                     .text(name)
                     .click(callback);
-                self.$buttons.append($button).append("&nbsp;");
-                self.buttonList[name] = $button;
+                this.$buttons.append($button).append("&nbsp;");
+                this.buttonList[name] = $button;
             });
         } else {
             this.$footer.hide();

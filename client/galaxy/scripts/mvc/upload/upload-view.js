@@ -66,10 +66,9 @@ export default Backbone.View.extend({
     /** Show/hide upload dialog */
     show: function() {
         const Galaxy = getGalaxyInstance();
-        var self = this;
         if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
             window.setTimeout(() => {
-                self.show();
+                this.show();
             }, 500);
             return;
         }

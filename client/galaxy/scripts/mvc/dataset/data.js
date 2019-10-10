@@ -98,20 +98,18 @@ export var TabularDataset = Dataset.extend({
         }
 
         // Get next chunk.
-        var self = this;
-
         var next_chunk = $.Deferred();
         $.getJSON(this.attributes.chunk_url, {
-            offset: self.attributes.offset
+            offset: this.attributes.offset
         }).success(chunk => {
             var rval;
             if (chunk.ck_data !== "") {
                 // Found chunk.
                 rval = chunk;
-                self.attributes.offset = chunk.offset;
+                this.attributes.offset = chunk.offset;
             } else {
                 // At EOF.
-                self.attributes.at_eof = true;
+                this.attributes.at_eof = true;
                 rval = null;
             }
             next_chunk.resolve(rval);
@@ -153,17 +151,16 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     },
 
     attempt_to_fetch: function(func) {
-        var self = this;
         if (!this.loading_chunk && this.scrolled_to_bottom()) {
             this.loading_chunk = true;
             this.loading_indicator.show();
-            $.when(self.model.get_next_chunk()).then(result => {
+            $.when(this.model.get_next_chunk()).then(result => {
                 if (result) {
-                    self._renderChunk(result);
-                    self.loading_chunk = false;
+                    this._renderChunk(result);
+                    this.loading_chunk = false;
                 }
-                self.loading_indicator.hide();
-                self.expand_to_container();
+                this.loading_indicator.hide();
+                this.expand_to_container();
             });
         }
     },
@@ -191,16 +188,14 @@ var TabularDatasetChunkedView = Backbone.View.extend({
         }
 
         // Render first chunk.
-        var self = this;
-
         var first_chunk = this.model.get("first_data_chunk");
         if (first_chunk) {
             // First chunk is bootstrapped, so render now.
             this._renderChunk(first_chunk);
         } else {
             // No bootstrapping, so get first chunk and then render.
-            $.when(self.model.get_next_chunk()).then(result => {
-                self._renderChunk(result);
+            $.when(this.model.get_next_chunk()).then(result => {
+                this._renderChunk(result);
             });
         }
 
@@ -208,7 +203,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
 
         // Set up chunk loading when scrolling using the scrolling element.
         this.scroll_elt.scroll(() => {
-            self.attempt_to_fetch();
+            this.attempt_to_fetch();
         });
     },
 
@@ -517,7 +512,6 @@ var TabularButtonTracksterView = Backbone.View.extend({
 
     // show button
     show: function(e) {
-        var self = this;
 
         // is numeric
         function is_numeric(n) {
@@ -569,9 +563,9 @@ var TabularButtonTracksterView = Backbone.View.extend({
             });
             $("#btn_viz").off("click");
             $("#btn_viz").click(() => {
-                self.frame.add({
+                this.frame.add({
                     title: _l("Trackster"),
-                    url: `${self.url_viz}/trackster?${$.param(btn_viz_pars)}`
+                    url: `${this.url_viz}/trackster?${$.param(btn_viz_pars)}`
                 });
             });
 

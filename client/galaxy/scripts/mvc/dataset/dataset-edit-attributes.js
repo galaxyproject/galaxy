@@ -31,22 +31,21 @@ var View = Backbone.View.extend({
 
     /** fetch data for the selected dataset and build forms */
     render: function() {
-        var self = this;
         $.ajax({
-            url: `${getAppRoot()}dataset/get_edit?dataset_id=${self.model.get("dataset_id")}`,
-            success: function(response) {
-                !self.initial_message && self.message.update(response);
-                self.initial_message = true;
-                _.each(self.forms, (form, key) => {
+            url: `${getAppRoot()}dataset/get_edit?dataset_id=${this.model.get("dataset_id")}`,
+            success: response => {
+                !this.initial_message && this.message.update(response);
+                this.initial_message = true;
+                _.each(this.forms, (form, key) => {
                     form.model.set("inputs", response[`${key}_inputs`]);
                     form.model.set("hide_operations", response[`${key}_disable`]);
                     form.render();
                 });
-                self.$el.show();
+                this.$el.show();
             },
-            error: function(response) {
+            error: response => {
                 var err_msg = response.responseJSON && response.responseJSON.err_msg;
-                self.message.update({
+                this.message.update({
                     status: "danger",
                     message: err_msg || "Error occurred while loading the dataset."
                 });
@@ -56,7 +55,6 @@ var View = Backbone.View.extend({
 
     /** submit data to backend to update attributes */
     _submit: function(operation, form) {
-        var self = this;
         var data = form.data.create();
         data.dataset_id = this.model.get("dataset_id");
         data.operation = operation;
@@ -64,14 +62,14 @@ var View = Backbone.View.extend({
             type: "PUT",
             url: `${getAppRoot()}dataset/set_edit`,
             data: data,
-            success: function(response) {
-                self.message.update(response);
-                self.render();
-                self._reloadHistory();
+            success: response => {
+                this.message.update(response);
+                this.render();
+                this._reloadHistory();
             },
-            error: function(response) {
+            error: response => {
                 var err_msg = response.responseJSON && response.responseJSON.err_msg;
-                self.message.update({
+                this.message.update({
                     status: "danger",
                     message: err_msg || "Error occurred while editing the dataset attributes."
                 });
@@ -121,7 +119,6 @@ var View = Backbone.View.extend({
 
     /** edit main attributes form */
     _getAttribute: function() {
-        var self = this;
         var form = new Form({
             title: _l("Edit attributes"),
             operations: {
@@ -129,8 +126,8 @@ var View = Backbone.View.extend({
                     tooltip: _l("Save attributes of the dataset."),
                     icon: "fa-floppy-o",
                     title: _l("Save"),
-                    onclick: function() {
-                        self._submit("attributes", form);
+                    onclick: () => {
+                        this._submit("attributes", form);
                     }
                 }),
                 submit_autodetect: new Ui.Button({
@@ -138,8 +135,8 @@ var View = Backbone.View.extend({
                         "This will inspect the dataset and attempt to correct the values of fields if they are not accurate.",
                     icon: "fa-undo",
                     title: "Auto-detect",
-                    onclick: function() {
-                        self._submit("autodetect", form);
+                    onclick: () => {
+                        this._submit("autodetect", form);
                     }
                 })
             }
@@ -149,7 +146,6 @@ var View = Backbone.View.extend({
 
     /** datatype conversion form */
     _getConversion: function() {
-        var self = this;
         var form = new Form({
             title: _l("Convert to new format"),
             operations: {
@@ -157,8 +153,8 @@ var View = Backbone.View.extend({
                     tooltip: _l("Convert the datatype to a new format."),
                     title: _l("Convert datatype"),
                     icon: "fa-exchange",
-                    onclick: function() {
-                        self._submit("conversion", form);
+                    onclick: () => {
+                        this._submit("conversion", form);
                     }
                 })
             }
@@ -168,7 +164,6 @@ var View = Backbone.View.extend({
 
     /** change datatype form */
     _getDatatype: function() {
-        var self = this;
         var form = new Form({
             title: _l("Change datatype"),
             operations: {
@@ -176,16 +171,16 @@ var View = Backbone.View.extend({
                     tooltip: _l("Change the datatype to a new type."),
                     title: _l("Change datatype"),
                     icon: "fa-exchange",
-                    onclick: function() {
-                        self._submit("datatype", form);
+                    onclick: () => {
+                        this._submit("datatype", form);
                     }
                 }),
                 submit_datatype_detect: new Ui.Button({
                     tooltip: _l("Detect the datatype and change it."),
                     title: _l("Detect datatype"),
                     icon: "fa-undo",
-                    onclick: function() {
-                        self._submit("datatype_detect", form);
+                    onclick: () => {
+                        this._submit("datatype_detect", form);
                     }
                 })
             }
@@ -195,7 +190,6 @@ var View = Backbone.View.extend({
 
     /** dataset permissions form */
     _getPermission: function() {
-        var self = this;
         var form = new Form({
             title: _l("Manage dataset permissions"),
             operations: {
@@ -203,8 +197,8 @@ var View = Backbone.View.extend({
                     tooltip: _l("Save permissions."),
                     title: _l("Save permissions"),
                     icon: "fa-floppy-o ",
-                    onclick: function() {
-                        self._submit("permission", form);
+                    onclick: () => {
+                        this._submit("permission", form);
                     }
                 })
             }

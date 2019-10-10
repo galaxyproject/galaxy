@@ -53,7 +53,7 @@ var AnnotatedHistoryView = _super.extend(
                 ])
                 .appendTo($controls);
 
-            return self.views;
+            return this.views;
         },
 
         // ------------------------------------------------------------------------ sub-views

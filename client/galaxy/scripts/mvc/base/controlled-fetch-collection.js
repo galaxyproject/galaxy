@@ -215,14 +215,13 @@ var PaginatedCollection = ControlledFetchCollection.extend({
 
     /** fetch the next page of data */
     fetchPage: function(pageNum, options) {
-        var self = this;
-        pageNum = self.constrainPageNum(pageNum);
-        self.currentPage = pageNum;
-        options = _.defaults(options || {}, self.getPageLimitOffset(pageNum));
+        pageNum = this.constrainPageNum(pageNum);
+        this.currentPage = pageNum;
+        options = _.defaults(options || {}, this.getPageLimitOffset(pageNum));
 
-        self.trigger("fetching-more");
-        return self.fetch(options).always(() => {
-            self.trigger("fetching-more-done");
+        this.trigger("fetching-more");
+        return this.fetch(options).always(() => {
+            this.trigger("fetching-more-done");
         });
     },
 
@@ -333,12 +332,11 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
         // whitelist options to prevent allowing limit/offset/filters
         // (use vanilla fetch instead)
         options = options || {};
-        var self = this;
         options = _.pick(options, "silent");
         options.filters = {};
-        return self.fetch(options).done(() => {
-            self.allFetched = true;
-            self.trigger("all-fetched", self);
+        return this.fetch(options).done(() => {
+            this.allFetched = true;
+            this.trigger("all-fetched", this);
         });
     }
 });

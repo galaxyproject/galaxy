@@ -19,12 +19,11 @@ var View = Options.BaseIcons.extend({
     _setValue: function(new_value) {
         Options.BaseIcons.prototype._setValue.call(this, new_value);
         if (new_value !== undefined && new_value !== null && this.header_index) {
-            var self = this;
             var values = $.isArray(new_value) ? new_value : [new_value];
             _.each(values, v => {
-                var list = self.header_index[v];
+                var list = this.header_index[v];
                 _.each(list, element => {
-                    self._setState(element, true);
+                    this._setState(element, true);
                 });
             });
         }
@@ -46,25 +45,24 @@ var View = Options.BaseIcons.extend({
 
     /** Template to create options tree */
     _templateOptions: function() {
-        var self = this;
         this.header_index = {};
 
         // attach event handler
-        function attach($el, header_id) {
+        const attach = ($el, header_id) => {
             var $button = $el.find(`.button-${header_id}`);
             $button.on("click", () => {
-                self._setState(header_id, !$button.data("is_expanded"));
+                this._setState(header_id, !$button.data("is_expanded"));
             });
         }
 
         // recursive function which iterates through options
-        function iterate($tmpl, options, header) {
+        const iterate = ($tmpl, options, header) => {
             header = header || [];
             for (var i in options) {
                 var level = options[i];
                 var has_options = level.options && level.options.length > 0;
                 var new_header = header.slice(0);
-                self.header_index[level.value] = new_header.slice(0);
+                this.header_index[level.value] = new_header.slice(0);
                 var $group = $("<div/>");
                 if (has_options) {
                     var header_id = Utils.uid();
@@ -78,7 +76,7 @@ var View = Options.BaseIcons.extend({
                         $("<div/>")
                             .append($button)
                             .append(
-                                self._templateOption({
+                                this._templateOption({
                                     label: level.name,
                                     value: level.value
                                 })
@@ -90,7 +88,7 @@ var View = Options.BaseIcons.extend({
                     attach($group, header_id);
                 } else {
                     $group.append(
-                        self._templateOption({
+                        this._templateOption({
                             label: level.name,
                             value: level.value
                         })

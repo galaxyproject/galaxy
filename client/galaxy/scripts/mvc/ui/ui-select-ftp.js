@@ -9,16 +9,14 @@ import List from "mvc/ui/ui-list";
 var View = Backbone.View.extend({
     // initialize
     initialize: function(options) {
-        // link this
-        var self = this;
 
         // create ui-list view to keep track of selected ftp files
         this.ftpfile_list = new List.View({
             name: "file",
             optional: options.optional,
             multiple: options.multiple,
-            onchange: function() {
-                options.onchange && options.onchange(self.value());
+            onchange: () => {
+                options.onchange && options.onchange(this.value());
             }
         });
 
@@ -28,7 +26,7 @@ var View = Backbone.View.extend({
         // initial fetch of ftps
         Utils.get({
             url: `${getAppRoot()}api/remote_files`,
-            success: function(response) {
+            success: response => {
                 var data = [];
                 for (var i in response) {
                     data.push({
@@ -36,7 +34,7 @@ var View = Backbone.View.extend({
                         label: response[i]["path"]
                     });
                 }
-                self.ftpfile_list.update(data);
+                this.ftpfile_list.update(data);
             }
         });
     },

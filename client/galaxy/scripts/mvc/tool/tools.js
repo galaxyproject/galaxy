@@ -204,9 +204,8 @@ var Tool = Backbone.Model.extend({
      * Set many input values at once.
      */
     set_input_values: function(inputs_dict) {
-        var self = this;
         _.each(_.keys(inputs_dict), input_name => {
-            self.set_input_value(input_name, inputs_dict[input_name]);
+            this.set_input_value(input_name, inputs_dict[input_name]);
         });
     },
 
@@ -387,17 +386,16 @@ var ToolSearch = Backbone.Model.extend({
             // Start a new ajax-request in X ms
             $("#search-clear-btn").hide();
             $("#search-spinner").show();
-            var self = this;
             this.timer = setTimeout(() => {
                 // log the search to analytics if present
                 if (typeof ga !== "undefined") {
                     ga("send", "pageview", `${getAppRoot()}?q=${q}`);
                 }
                 $.get(
-                    self.urlRoot,
+                    this.urlRoot,
                     { q: q },
                     data => {
-                        self.set("results", data);
+                        this.set("results", data);
                         $("#search-spinner").hide();
                         $("#search-clear-btn").show();
                     },
@@ -430,7 +428,6 @@ var ToolPanel = Backbone.Model.extend({
      */
     parse: function(response) {
         // Recursive function to parse tool panel elements.
-        var self = this;
 
         var // Helper to recursively parse tool panel.
             parse_elt = elt_dict => {
@@ -438,7 +435,7 @@ var ToolPanel = Backbone.Model.extend({
                 // There are many types of tools; for now, anything that ends in 'Tool'
                 // and is not a ExpressionTool is treated as a generic tool.
                 if (type.indexOf("Tool") === type.length - 4) {
-                    const tool = self.attributes.tools.get(elt_dict.id);
+                    const tool = this.attributes.tools.get(elt_dict.id);
                     if (type === "ExpressionTool") {
                         tool.hide();
                     }

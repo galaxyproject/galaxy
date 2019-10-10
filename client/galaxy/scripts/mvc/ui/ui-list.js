@@ -78,7 +78,6 @@ var View = Backbone.View.extend({
 
     /** Add row */
     add: function(options) {
-        var self = this;
         if (this.$(`[id="${options.id}"]`).length === 0) {
             if (!Utils.isEmpty(options.id)) {
                 var $el = $(
@@ -89,7 +88,7 @@ var View = Backbone.View.extend({
                 );
                 $el.find("button").on("click", () => {
                     $el.remove();
-                    self._refresh();
+                    this._refresh();
                 });
                 this.selections.append($el);
                 this._refresh();

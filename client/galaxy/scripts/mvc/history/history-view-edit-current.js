@@ -450,15 +450,14 @@ var CurrentHistoryView = _super.extend(
         //TODO: remove to batch
         /** unhide any hidden datasets */
         unhideHidden: function() {
-            var self = this;
             if (window.confirm(_l("Really unhide all hidden datasets?"))) {
                 // get all hidden, regardless of deleted/purged
-                return self.model.contents
+                return this.model.contents
                     ._filterAndUpdate({ visible: false, deleted: "", purged: "" }, { visible: true })
                     .done(() => {
                         // TODO: would be better to render these as they're unhidden instead of all at once
-                        if (!self.model.contents.includeHidden) {
-                            self.renderItems();
+                        if (!this.model.contents.includeHidden) {
+                            this.renderItems();
                         }
                     });
             }
@@ -467,9 +466,8 @@ var CurrentHistoryView = _super.extend(
 
         /** delete any hidden datasets */
         deleteHidden: function() {
-            var self = this;
             if (window.confirm(_l("Really delete all hidden datasets?"))) {
-                return self.model.contents._filterAndUpdate(
+                return this.model.contents._filterAndUpdate(
                     // get all hidden, regardless of deleted/purged
                     { visible: false, deleted: "", purged: "" },
                     // both delete *and* unhide them

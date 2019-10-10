@@ -9,7 +9,6 @@ import LoadingIndicator from "ui/loading-indicator";
 
 var View = Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         const Galaxy = getGalaxyInstance();
         LoadingIndicator.markViewAsLoading(this);
         this.model = new Backbone.Model(options);
@@ -20,9 +19,9 @@ var View = Backbone.View.extend({
         }
         $.ajax({
             url: `${getAppRoot() + this.item}/${this.model.get("action_id")}?${$.param(Galaxy.params)}`,
-            success: function(response) {
-                self.model.set(response);
-                self.render();
+            success: response => {
+                this.model.set(response);
+                this.render();
             }
         });
     },
@@ -34,7 +33,6 @@ var View = Backbone.View.extend({
     },
 
     _templateShared: function() {
-        var self = this;
         var $tmpl = $(`<div><br/><h2>${this.model.get("plural")} shared with you by others</h2></div>`);
         var options = this.model.attributes;
         if (options.shared_by_others && options.shared_by_others.length > 0) {
@@ -47,7 +45,7 @@ var View = Backbone.View.extend({
                     "</table>"
             );
             _.each(options.shared_by_others, (it, index) => {
-                var display_url = `${getAppRoot() + self.item}/display_by_username_and_slug?username=${
+                var display_url = `${getAppRoot() + this.item}/display_by_username_and_slug?username=${
                     it.username
                 }&slug=${it.slug}`;
                 $table.append(

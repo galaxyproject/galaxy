@@ -75,10 +75,9 @@ var LibraryView = Backbone.View.extend({
         var template = this.templateLibraryPermissions();
         this.$el.html(template({ library: this.model, is_admin: is_admin }));
 
-        var self = this;
-        $.get(`${getAppRoot()}api/libraries/${self.id}/permissions?scope=current`)
+        $.get(`${getAppRoot()}api/libraries/${this.id}/permissions?scope=current`)
             .done(fetched_permissions => {
-                self.prepareSelectBoxes({
+                this.prepareSelectBoxes({
                     fetched_permissions: fetched_permissions
                 });
             })
@@ -102,38 +101,37 @@ var LibraryView = Backbone.View.extend({
     prepareSelectBoxes: function(options) {
         this.options = _.extend(this.options, options);
         var fetched_permissions = this.options.fetched_permissions;
-        var self = this;
 
         var selected_access_library_roles = this._serializeRoles(fetched_permissions.access_library_role_list);
         var selected_add_item_roles = this._serializeRoles(fetched_permissions.add_library_item_role_list);
         var selected_manage_library_roles = this._serializeRoles(fetched_permissions.manage_library_role_list);
         var selected_modify_library_roles = this._serializeRoles(fetched_permissions.modify_library_role_list);
 
-        self.accessSelectObject = new mod_select.View(
+        this.accessSelectObject = new mod_select.View(
             this._createSelectOptions(this, "access_perm", selected_access_library_roles, true)
         );
-        self.addSelectObject = new mod_select.View(
+        this.addSelectObject = new mod_select.View(
             this._createSelectOptions(this, "add_perm", selected_add_item_roles, false)
         );
-        self.manageSelectObject = new mod_select.View(
+        this.manageSelectObject = new mod_select.View(
             this._createSelectOptions(this, "manage_perm", selected_manage_library_roles, false)
         );
-        self.modifySelectObject = new mod_select.View(
+        this.modifySelectObject = new mod_select.View(
             this._createSelectOptions(this, "modify_perm", selected_modify_library_roles, false)
         );
     },
 
-    _createSelectOptions: function(self, id, init_data, is_library_access) {
+    _createSelectOptions: function(context, id, init_data, is_library_access) {
         is_library_access = is_library_access === true ? is_library_access : false;
         var select_options = {
             minimumInputLength: 0,
             css: id,
             multiple: true,
             placeholder: "Click to select a role",
-            container: self.$el.find(`#${id}`),
+            container: context.$el.find(`#${id}`),
             ajax: {
                 url: `${getAppRoot()}api/libraries/${
-                    self.id
+                    context.id
                 }/permissions?scope=available&is_library_access=${is_library_access}`,
                 dataType: "json",
                 quietMillis: 100,
@@ -181,11 +179,10 @@ var LibraryView = Backbone.View.extend({
     },
 
     makeDatasetPrivate: function() {
-        var self = this;
-        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=make_private`)
+        $.post(`${getAppRoot()}api/libraries/datasets/${this.id}/permissions?action=make_private`)
             .done(fetched_permissions => {
-                self.model.set({ is_unrestricted: false });
-                self.showPermissions({
+                this.model.set({ is_unrestricted: false });
+                this.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
                 Toast.success("The dataset is now private to you.");
@@ -196,11 +193,10 @@ var LibraryView = Backbone.View.extend({
     },
 
     removeDatasetRestrictions: function() {
-        var self = this;
-        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`)
+        $.post(`${getAppRoot()}api/libraries/datasets/${this.id}/permissions?action=remove_restrictions`)
             .done(fetched_permissions => {
-                self.model.set({ is_unrestricted: true });
-                self.showPermissions({
+                this.model.set({ is_unrestricted: true });
+                this.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
                 Toast.success("Access to this dataset is now unrestricted.");
@@ -218,14 +214,13 @@ var LibraryView = Backbone.View.extend({
         return ids_list;
     },
     savePermissions: function(event) {
-        var self = this;
 
         var access_ids = this._extractIds(this.accessSelectObject.$el.select2("data"));
         var add_ids = this._extractIds(this.addSelectObject.$el.select2("data"));
         var manage_ids = this._extractIds(this.manageSelectObject.$el.select2("data"));
         var modify_ids = this._extractIds(this.modifySelectObject.$el.select2("data"));
 
-        $.post(`${getAppRoot()}api/libraries/${self.id}/permissions?action=set_permissions`, {
+        $.post(`${getAppRoot()}api/libraries/${this.id}/permissions?action=set_permissions`, {
             "access_ids[]": access_ids,
             "add_ids[]": add_ids,
             "manage_ids[]": manage_ids,
@@ -233,7 +228,7 @@ var LibraryView = Backbone.View.extend({
         })
             .done(fetched_permissions => {
                 //fetch dataset again
-                self.showPermissions({
+                this.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
                 Toast.success("Permissions saved.");

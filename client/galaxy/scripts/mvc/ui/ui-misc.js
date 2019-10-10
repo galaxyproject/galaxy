@@ -43,9 +43,8 @@ export var Message = Backbone.View.extend({
             this.$el[this.model.get("fade") ? "fadeIn" : "show"]();
             this.timeout && window.clearTimeout(this.timeout);
             if (!this.model.get("persistent")) {
-                var self = this;
                 this.timeout = window.setTimeout(() => {
-                    self.model.set("message", "");
+                    this.model.set("message", "");
                 }, 3000);
             }
         } else {
@@ -93,7 +92,6 @@ export var Input = Backbone.View.extend({
         return this.model.get("value");
     },
     render: function() {
-        var self = this;
         this.$el
             .removeClass()
             .addClass(`ui-${this.tagName}`)
@@ -107,11 +105,11 @@ export var Input = Backbone.View.extend({
         var datalist = this.model.get("datalist");
         if ($.isArray(datalist) && datalist.length > 0) {
             this.$el.autocomplete({
-                source: function(request, response) {
-                    response(self.model.get("datalist"));
+                source: (request, response) => {
+                    response(this.model.get("datalist"));
                 },
-                change: function() {
-                    self._onchange();
+                change: () => {
+                    this._onchange();
                 }
             });
         }
@@ -119,7 +117,7 @@ export var Input = Backbone.View.extend({
             this.$el.val(this.model.get("value"));
         }
         _.each(["readonly", "disabled"], attr_name => {
-            self.model.get(attr_name) ? self.$el.attr(attr_name, true) : self.$el.removeAttr(attr_name);
+            this.model.get(attr_name) ? this.$el.attr(attr_name, true) : this.$el.removeAttr(attr_name);
         });
         this.$el[this.model.get("visible") ? "show" : "hide"]();
         return this;
@@ -204,7 +202,6 @@ export var TextSelect = Backbone.View.extend({
 /** Creates a upload element input field */
 export var Upload = Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         this.model = (options && options.model) || new Backbone.Model(options);
         this.setElement(
             $("<div/>")
@@ -223,7 +220,7 @@ export var Upload = Backbone.View.extend({
         );
         this.listenTo(this.model, "change", this.render, this);
         this.$file.on("change", e => {
-            self._readFile(e);
+            this._readFile(e);
         });
         this.render();
     },
@@ -239,12 +236,11 @@ export var Upload = Backbone.View.extend({
         return this;
     },
     _readFile: function(e) {
-        var self = this;
         var file = e.target.files && e.target.files[0];
         if (file) {
             var reader = new FileReader();
-            reader.onload = function() {
-                self.model.set({ wait: false, value: this.result });
+            reader.onload = () => {
+                this.model.set({ wait: false, value: this.result });
             };
             this.model.set({ wait: true, value: null });
             reader.readAsText(file);

@@ -796,16 +796,15 @@ var FolderToolbarView = Backbone.View.extend({
      */
     selectAll: function(event) {
         var selected = event.target.checked;
-        var self = this;
         // Iterate each checkbox
-        $(":checkbox", "#dataset_list tbody").each(function() {
+        $(":checkbox", "#dataset_list tbody").each((index, element) => {
             this.checked = selected;
-            var $row = $(this).closest("tr");
+            var $row = $(element).closest("tr");
             // Change color of selected/unselected
             if (selected) {
-                self.makeDarkRow($row);
+                this.makeDarkRow($row);
             } else {
-                self.makeWhiteRow($row);
+                this.makeWhiteRow($row);
             }
         });
     },

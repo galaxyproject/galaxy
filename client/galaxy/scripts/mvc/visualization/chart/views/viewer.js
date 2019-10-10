@@ -8,7 +8,6 @@ import Utils from "utils/utils";
 
 export default Backbone.View.extend({
     initialize: function(app, options) {
-        var self = this;
         this.app = app;
         this.chart = this.app.chart;
         this.options = options;
@@ -27,25 +26,25 @@ export default Backbone.View.extend({
         this.$text = this.$(".text");
         this._fullscreen(this.$el, 20);
         this._createContainer("div");
-        this.chart.on("redraw", function(confirmed) {
-            if (!self.chart.get("modified") || !self.chart.plugin.specs.confirm || confirmed) {
-                self.app.deferred.execute(function(process) {
+        this.chart.on("redraw", confirmed => {
+            if (!this.chart.get("modified") || !this.chart.plugin.specs.confirm || confirmed) {
+                this.app.deferred.execute(process => {
                     console.debug("viewer:redraw() - Redrawing...");
-                    self._draw(process, self.chart);
+                    this._draw(process, this.chart);
                 });
             } else {
-                self.chart.state("info", "Please confirm the settings before rendering the results.");
+                this.chart.state("info", "Please confirm the settings before rendering the results.");
             }
         });
-        this.chart.on("set:state", function() {
-            var $container = self.$(".charts-viewer-container");
-            var $info = self.$info;
-            var $icon = self.$icon;
-            var $text = self.$text;
+        this.chart.on("set:state", () => {
+            var $container = this.$(".charts-viewer-container");
+            var $info = this.$info;
+            var $icon = this.$icon;
+            var $text = this.$text;
             $icon.removeClass();
             $info.show();
-            $text.html(self.chart.get("state_info"));
-            var state = self.chart.get("state");
+            $text.html(this.chart.get("state_info"));
+            var state = this.chart.get("state");
             switch (state) {
                 case "ok":
                     $info.hide();

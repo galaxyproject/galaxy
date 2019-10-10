@@ -143,21 +143,20 @@ class CanvasManager {
     }
 
     init_drag() {
-        var self = this;
         var move = (x, y) => {
-            x = Math.min(x, self.cv.width() / 2);
-            x = Math.max(x, -self.cc.width() + self.cv.width() / 2);
-            y = Math.min(y, self.cv.height() / 2);
-            y = Math.max(y, -self.cc.height() + self.cv.height() / 2);
-            self.cc.css({
+            x = Math.min(x, this.cv.width() / 2);
+            x = Math.max(x, -this.cc.width() + this.cv.width() / 2);
+            y = Math.min(y, this.cv.height() / 2);
+            y = Math.max(y, -this.cc.height() + this.cv.height() / 2);
+            this.cc.css({
                 left: x,
                 top: y
             });
-            self.cv.css({
+            this.cv.css({
                 "background-position-x": x,
                 "background-position-y": y
             });
-            self.update_viewport_overlay();
+            this.update_viewport_overlay();
         };
         // Dragging within canvas background
         this.cc.each(function() {
@@ -169,9 +168,9 @@ class CanvasManager {
             .bind("click", function() {
                 document.activeElement.blur();
             })
-            .bind("dragstart", function() {
-                var o = $(this).offset();
-                var p = self.cc.position();
+            .bind("dragstart", e => {
+                var o = $(e.currentTarget).offset();
+                var p = this.cc.position();
                 y_adjust = p.top - o.top;
                 x_adjust = p.left - o.left;
             })
@@ -179,50 +178,50 @@ class CanvasManager {
                 move((d.offsetX + x_adjust) / this.canvasZoom, (d.offsetY + y_adjust) / this.canvasZoom);
             })
             .bind("dragend", () => {
-                self.app.workflow.fit_canvas_to_nodes();
-                self.draw_overview();
+                this.app.workflow.fit_canvas_to_nodes();
+                this.draw_overview();
             });
         this.overview.click(e => {
-            if (self.overview.hasClass("blockaclick")) {
-                self.overview.removeClass("blockaclick");
+            if (this.overview.hasClass("blockaclick")) {
+                this.overview.removeClass("blockaclick");
             } else {
-                var in_w = self.cc.width();
-                var in_h = self.cc.height();
-                var o_w = self.oc.width();
-                var o_h = self.oc.height();
-                var new_x_offset = e.pageX - self.oc.offset().left - self.ov.width() / 2;
-                var new_y_offset = e.pageY - self.oc.offset().top - self.ov.height() / 2;
+                var in_w = this.cc.width();
+                var in_h = this.cc.height();
+                var o_w = this.oc.width();
+                var o_h = this.oc.height();
+                var new_x_offset = e.pageX - this.oc.offset().left - this.ov.width() / 2;
+                var new_y_offset = e.pageY - this.oc.offset().top - this.ov.height() / 2;
                 move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
-                self.app.workflow.fit_canvas_to_nodes();
-                self.draw_overview();
+                this.app.workflow.fit_canvas_to_nodes();
+                this.draw_overview();
             }
         });
         // Dragging for overview pane
         this.ov
             .bind("drag", (e, d) => {
-                var in_w = self.cc.width();
-                var in_h = self.cc.height();
-                var o_w = self.oc.width();
-                var o_h = self.oc.height();
-                var new_x_offset = d.offsetX - self.overview.offset().left;
-                var new_y_offset = d.offsetY - self.overview.offset().top;
+                var in_w = this.cc.width();
+                var in_h = this.cc.height();
+                var o_w = this.oc.width();
+                var o_h = this.oc.height();
+                var new_x_offset = d.offsetX - this.overview.offset().left;
+                var new_y_offset = d.offsetY - this.overview.offset().top;
                 move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
             })
             .bind("dragend", () => {
-                self.overview.addClass("blockaclick");
-                self.app.workflow.fit_canvas_to_nodes();
-                self.draw_overview();
+                this.overview.addClass("blockaclick");
+                this.app.workflow.fit_canvas_to_nodes();
+                this.draw_overview();
             });
         // Dragging for overview border (resize)
-        $(".workflow-overview").bind("drag", function(e, d) {
-            var op = $(this).offsetParent();
+        $(".workflow-overview").bind("drag", (e, d) => {
+            var op = $(e.currentTarget).offsetParent();
             var opo = op.offset();
             var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
-            $(this).css({
+            $(e.currentTarget).css({
                 width: new_size,
                 height: new_size
             });
-            self.draw_overview();
+            this.draw_overview();
         });
         /*  Disable dragging for child element of the panel so that resizing can
                 only be done by dragging the borders */

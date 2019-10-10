@@ -32,12 +32,11 @@ export default Backbone.View.extend({
         $(this.$target).popover("show");
 
         // add event to hide if click is outside of popup and not on container
-        var self = this;
         const $popover = $(this.$target.data("bs.popover").tip);
         $popover.find(".popover-header > i").on("click", () => this.hide());
         $("body").on(`mousedown.${this.uid}`, e => {
             if (!$($popover).is(e.target) && $($popover).has(e.target).length === 0) {
-                self.hide();
+                this.hide();
             }
         });
     },

@@ -363,7 +363,6 @@ var ConfigSettingCollectionView = Backbone.View.extend({
      */
     render_in_modal: function(title) {
         // Set up handlers for cancel, ok button and for handling esc key.
-        var self = this;
         const Galaxy = getGalaxyInstance();
 
         var cancel_fn = () => {
@@ -374,7 +373,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
         var ok_fn = () => {
             Galaxy.modal.hide();
             $(window).unbind("keypress.check_enter_esc");
-            self.update_from_form();
+            this.update_from_form();
         };
 
         var check_enter_esc = e => {
@@ -408,14 +407,13 @@ var ConfigSettingCollectionView = Backbone.View.extend({
      * Update settings with new values entered via form.
      */
     update_from_form: function() {
-        var self = this;
         this.collection.each((setting, index) => {
             if (!setting.get("hidden")) {
                 // Set value from view.
                 var id = `param_${index}`;
-                var value = self.$el.find(`#${id}`).val();
+                var value = this.$el.find(`#${id}`).val();
                 if (setting.get("type") === "bool") {
-                    value = self.$el.find(`#${id}`).is(":checked");
+                    value = this.$el.find(`#${id}`).is(":checked");
                 }
                 setting.set_value(value);
             }

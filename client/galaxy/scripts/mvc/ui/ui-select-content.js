@@ -125,7 +125,6 @@ const Configurations = {
 /** View for hda and hdca content selector ui elements */
 const View = Backbone.View.extend({
     initialize: function(options) {
-        const self = this;
         this.model =
             (options && options.model) ||
             new Backbone.Model({
@@ -161,13 +160,13 @@ const View = Backbone.View.extend({
         const element = this.$el.get(0);
         element.addEventListener("dragenter", e => {
             this.lastenter = e.target;
-            self.$el.addClass("ui-dragover");
+            this.$el.addClass("ui-dragover");
         });
         element.addEventListener("dragover", e => {
             e.preventDefault();
         });
         element.addEventListener("dragleave", e => {
-            this.lastenter === e.target && self.$el.removeClass("ui-dragover");
+            this.lastenter === e.target && this.$el.removeClass("ui-dragover");
         });
         element.addEventListener("drop", e => {
             e.preventDefault();
@@ -197,7 +196,7 @@ const View = Backbone.View.extend({
 
         // add change event
         this.on("change", () => {
-            options.onchange && options.onchange(self.value());
+            options.onchange && options.onchange(this.value());
         });
     },
 
@@ -258,12 +257,11 @@ const View = Backbone.View.extend({
 
     /** Change of current select field */
     _changeCurrent: function() {
-        const self = this;
         _.each(this.fields, (field, i) => {
-            const cnf = self.config[i];
-            if (self.model.get("current") == i) {
+            const cnf = this.config[i];
+            if (this.model.get("current") == i) {
                 field.$el.show();
-                _.each(self.$batch, ($batchfield, batchmode) => {
+                _.each(this.$batch, ($batchfield, batchmode) => {
                     if (cnf.batch == batchmode) {
                         $batchfield.show();
                     } else {
@@ -271,11 +269,11 @@ const View = Backbone.View.extend({
                     }
                 });
                 if (cnf.src == "hda") {
-                    self.button_dialog.show();
+                    this.button_dialog.show();
                 } else {
-                    self.button_dialog.hide();
+                    this.button_dialog.hide();
                 }
-                self.button_type.value(i);
+                this.button_type.value(i);
             } else {
                 field.$el.hide();
             }
@@ -289,7 +287,6 @@ const View = Backbone.View.extend({
 
     /** Change of type */
     _changeType: function() {
-        const self = this;
         const galaxy = getGalaxyInstance();
 
         // identify selector type identifier i.e. [ flavor ]_[ type ]_[ multiple ]
@@ -305,7 +302,7 @@ const View = Backbone.View.extend({
         }
 
         // prepare extension component of error message
-        const data = self.model.get("data");
+        const data = this.model.get("data");
         const extensions = Utils.textify(this.model.get("extensions"));
         const src_labels = this.model.get("src_labels");
 
@@ -313,21 +310,21 @@ const View = Backbone.View.extend({
         this.fields = [];
         this.button_data = [];
         _.each(this.config, (c, i) => {
-            self.button_data.push({
+            this.button_data.push({
                 value: i,
                 icon: c.icon,
                 tooltip: c.tooltip
             });
-            self.fields.push(
+            this.fields.push(
                 new Select.View({
-                    optional: self.model.get("optional"),
+                    optional: this.model.get("optional"),
                     multiple: c.multiple,
                     searchable:
-                        !c.multiple || (data && data[c.src] && data[c.src].length > self.model.get("pagelimit")),
+                        !c.multiple || (data && data[c.src] && data[c.src].length > this.model.get("pagelimit")),
                     individual: true,
                     error_text: `No ${extensions ? `${extensions} ` : ""}${src_labels[c.src] || "content"} available.`,
-                    onchange: function() {
-                        self.trigger("change");
+                    onchange: () => {
+                        this.trigger("change");
                     }
                 })
             );
@@ -336,9 +333,9 @@ const View = Backbone.View.extend({
             value: this.model.get("current"),
             data: this.button_data,
             cls: "pr-lg-2",
-            onchange: function(value) {
-                self.model.set("current", value);
-                self.trigger("change");
+            onchange: value => {
+                this.model.set("current", value);
+                this.trigger("change");
             }
         });
 
@@ -383,16 +380,14 @@ const View = Backbone.View.extend({
 
     /** Change of wait flag */
     _changeWait: function() {
-        const self = this;
         _.each(this.fields, field => {
-            field[self.model.get("wait") ? "wait" : "unwait"]();
+            field[this.model.get("wait") ? "wait" : "unwait"]();
         });
     },
 
     /** Change of available options */
     _changeData: function() {
         const options = this.model.get("data");
-        const self = this;
         const select_options = {};
         _.each(options, (items, src) => {
             select_options[src] = [];
@@ -405,11 +400,11 @@ const View = Backbone.View.extend({
                     origin: item.origin,
                     tags: item.tags
                 });
-                self.cache[`${item.id}_${src}`] = item;
+                this.cache[`${item.id}_${src}`] = item;
             });
         });
         _.each(this.config, (c, i) => {
-            select_options[c.src] && self.fields[i].add(select_options[c.src], (a, b) => b.hid - a.hid);
+            select_options[c.src] && this.fields[i].add(select_options[c.src], (a, b) => b.hid - a.hid);
         });
     },
 
@@ -468,7 +463,6 @@ const View = Backbone.View.extend({
 
     /** Add values from drag/drop */
     _handleDropValues: function(drop_data, drop_partial = true) {
-        const self = this;
         const data = this.model.get("data");
         const current = this.model.get("current");
         const config = this.config[current];
@@ -478,7 +472,7 @@ const View = Backbone.View.extend({
             if (values.length > 0) {
                 let data_changed = false;
                 _.each(values, v => {
-                    self._patchValue(v);
+                    this._patchValue(v);
                     const new_id = v.id;
                     const new_src = (v.src = this._getSource(v));
                     const new_value = { id: new_id, src: new_src };
@@ -524,10 +518,9 @@ const View = Backbone.View.extend({
 
     /** Highlight drag result */
     _handleDropStatus: function(status) {
-        const self = this;
         this.$el.removeClass("ui-dragover").addClass(`ui-dragover-${status}`);
         setTimeout(() => {
-            self.$el.removeClass(`ui-dragover-${status}`);
+            this.$el.removeClass(`ui-dragover-${status}`);
         }, this.model.get("statustimer"));
     },
 

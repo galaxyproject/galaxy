@@ -420,12 +420,11 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
         },
 
         _destroyItemViews: function(view) {
-            var self = this;
-            self.views.forEach(v => {
-                self.stopListening(v);
+            this.views.forEach(v => {
+                this.stopListening(v);
             });
-            self.views = [];
-            return self;
+            this.views = [];
+            return this;
         },
 
         /** free any sub-views the list has */
@@ -487,10 +486,9 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
 
         /** Attach views in this.views to the model based on $whereTo */
         _attachItems: function($whereTo) {
-            var self = this;
             // console.log( '_attachItems:', $whereTo, this.$list( $whereTo ) );
             //ASSUMES: $list has been emptied
-            this.$list($whereTo).append(this.views.map(view => self._renderItemView$el(view)));
+            this.$list($whereTo).append(this.views.map(view => this._renderItemView$el(view)));
             return this;
         },
 

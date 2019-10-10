@@ -51,10 +51,9 @@ var View = Backbone.View.extend({
             }
 
             // add change event
-            var self = this;
             if (this.options.onchange) {
                 this.$el.on("change", () => {
-                    self.options.onchange(self.value());
+                    this.options.onchange(this.value());
                 });
             }
         }

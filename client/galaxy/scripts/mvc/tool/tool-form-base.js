@@ -19,7 +19,6 @@ import axios from "axios";
 export default FormBase.extend({
     initialize: function(options) {
         const Galaxy = getGalaxyInstance();
-        var self = this;
         this.deferred = new Deferred();
         FormBase.prototype.initialize.call(this, options);
 
@@ -29,25 +28,24 @@ export default FormBase.extend({
         // listen to history panel
         if (this.model.get("listen_to_history") && Galaxy.currHistoryPanel) {
             this.listenTo(Galaxy.currHistoryPanel.collection, "change", () => {
-                self.model.get("onchange")();
+                this.model.get("onchange")();
             });
         }
         // destroy dom elements
         this.$el.on("remove", () => {
-            self._destroy();
+            this._destroy();
         });
     },
 
     /** Allows tool form variation to update tool model */
     _update: function(callback) {
-        var self = this;
         callback = callback || this.model.get("buildmodel");
         if (callback) {
             this.deferred.reset();
             this.deferred.execute(process => {
-                callback(process, self);
+                callback(process, this);
                 process.then(() => {
-                    self._render();
+                    this._render();
                 });
             });
         } else {
@@ -57,10 +55,9 @@ export default FormBase.extend({
 
     /** Wait for deferred build processes before removal */
     _destroy: function() {
-        var self = this;
         this.$el.off().hide();
         this.deferred.execute(() => {
-            FormBase.prototype.remove.call(self);
+            FormBase.prototype.remove.call(this);
             const Galaxy = getGalaxyInstance();
             Galaxy.emit.debug("tool-form-base::_destroy()", "Destroy view.");
         });
@@ -68,17 +65,16 @@ export default FormBase.extend({
 
     /** Build form */
     _render: function() {
-        var self = this;
         var options = this.model.attributes;
         this.model.set({
             title:
                 options.fixed_title ||
                 `<b>${options.name}</b> ${options.description} (Galaxy Version ${options.version})`,
             operations: !options.hide_operations && this._operations(),
-            onchange: function() {
-                self.deferred.reset();
-                self.deferred.execute(process => {
-                    self.model.get("postchange")(process, self);
+            onchange: () => {
+                this.deferred.reset();
+                this.deferred.execute(process => {
+                    this.model.get("postchange")(process, this);
                 });
             }
         });
@@ -107,7 +103,6 @@ export default FormBase.extend({
 
     /** Create tool operation menu */
     _operations: function() {
-        var self = this;
         var options = this.model.attributes;
         const Galaxy = getGalaxyInstance();
 
@@ -162,11 +157,11 @@ export default FormBase.extend({
                         title: `Switch to ${version}`,
                         version: version,
                         icon: "fa-cube",
-                        onclick: function() {
+                        onclick: e => {
                             // here we update the tool version (some tools encode the version also in the id)
-                            self.model.set("id", options.id.replace(options.version, this.version));
-                            self.model.set("version", this.version);
-                            self._update();
+                            this.model.set("id", options.id.replace(options.version, e.currentTarget.version));
+                            this.model.set("version", e.currentTarget.version);
+                            this._update();
                         }
                     });
                 }
@@ -209,18 +204,18 @@ export default FormBase.extend({
             menu_button.addMenu({
                 icon: "fa-info-circle",
                 title: _l("Requirements"),
-                onclick: function() {
-                    if (!this.requirements_visible || self.portlet.collapsed) {
-                        this.requirements_visible = true;
-                        self.portlet.expand();
-                        self.message.update({
+                onclick: e => {
+                    if (!e.currentTarget.requirements_visible || this.portlet.collapsed) {
+                        e.currentTarget.requirements_visible = true;
+                        this.portlet.expand();
+                        this.message.update({
                             persistent: true,
-                            message: self._templateRequirements(options),
+                            message: this._templateRequirements(options),
                             status: "info"
                         });
                     } else {
-                        this.requirements_visible = false;
-                        self.message.update({ message: "" });
+                        e.currentTarget.requirements_visible = false;
+                        this.message.update({ message: "" });
                     }
                 }
             });

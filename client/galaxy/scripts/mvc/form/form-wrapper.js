@@ -18,13 +18,12 @@ var View = Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
         $.ajax({
             url: getAppRoot() + this.url,
             type: "GET"
         })
             .done(response => {
-                var options = $.extend({}, self.model.attributes, response);
+                var options = $.extend({}, this.model.attributes, response);
                 var form = new Form({
                     title: options.title,
                     title_id: options.title_id,
@@ -40,18 +39,18 @@ var View = Backbone.View.extend({
                             title: options.submit_title || "Save",
                             icon: options.submit_icon || "fa-save",
                             cls: "btn btn-primary",
-                            onclick: function() {
-                                self._submit(form);
+                            onclick: () => {
+                                this._submit(form);
                             }
                         })
                     }
                 });
-                self.$el.empty().append(form.$el);
+                this.$el.empty().append(form.$el);
             })
             .fail(response => {
-                self.$el.empty().append(
+                this.$el.empty().append(
                     new Ui.Message({
-                        message: `Failed to load resource ${self.url}.`,
+                        message: `Failed to load resource ${this.url}.`,
                         status: "danger",
                         persistent: true
                     }).$el
@@ -60,9 +59,8 @@ var View = Backbone.View.extend({
     },
 
     _submit: function(form) {
-        var self = this;
         $.ajax({
-            url: getAppRoot() + self.url,
+            url: getAppRoot() + this.url,
             data: JSON.stringify(form.data.create()),
             type: "PUT",
             contentType: "application/json"
@@ -78,17 +76,17 @@ var View = Backbone.View.extend({
                         persistent: false
                     };
                 }
-                if (self.redirect) {
-                    window.location = `${getAppRoot() + self.redirect}?${$.param(params)}`;
+                if (this.redirect) {
+                    window.location = `${getAppRoot() + this.redirect}?${$.param(params)}`;
                 } else {
                     form.data.matchModel(response, (input, input_id) => {
                         form.field_list[input_id].value(input.value);
                     });
-                    self._showMessage(form, response.message);
+                    this._showMessage(form, response.message);
                 }
             })
             .fail(response => {
-                self._showMessage(form, {
+                this._showMessage(form, {
                     message: response.responseJSON.err_msg,
                     status: "danger",
                     persistent: false

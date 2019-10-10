@@ -38,7 +38,6 @@ var FrameView = Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
         var options = this.model.attributes;
         this.$title.html(_.escape(options.title) || "");
         this.$header.find(".f-icon-left").remove();
@@ -51,14 +50,14 @@ var FrameView = Backbone.View.extend({
             } else {
                 $option
                     .on("click", () => {
-                        option.onclick(self);
+                        option.onclick(this);
                     })
                     .tooltip({
                         title: option.tooltip || "",
                         placement: "bottom"
                     });
             }
-            self.$header.append($option);
+            this.$header.append($option);
         });
         if (options.url) {
             this.$content.html(
@@ -69,9 +68,9 @@ var FrameView = Backbone.View.extend({
             );
         } else if (options.content) {
             if (_.isFunction(options.content)) {
-                options.content(self.$content);
+                options.content(this.$content);
             } else {
-                self.$content.html(options.content);
+                this.$content.html(options.content);
             }
         }
     }
@@ -106,7 +105,6 @@ var View = Backbone.View.extend({
     event: {}, // dictionary keeping track of current event
 
     initialize: function(options) {
-        var self = this;
         this.options = _.defaults(options || {}, this.defaultOptions);
         this.visible = this.options.visible;
         this.top = this.top_max = this.options.top_min;
@@ -135,8 +133,8 @@ var View = Backbone.View.extend({
         }
         this._panelRefresh();
         $(window).resize(() => {
-            if (self.visible) {
-                self._panelRefresh();
+            if (this.visible) {
+                this._panelRefresh();
             }
         });
     },
@@ -209,15 +207,14 @@ var View = Backbone.View.extend({
 
     /** Remove a frame */
     del: function(frame) {
-        var self = this;
         var $frame = frame.$el;
         $frame.fadeOut("fast", () => {
             $frame.remove();
-            delete self.frame_list[frame.id];
-            self.frame_counter--;
-            self._panelRefresh(true);
-            self._panelAnimationComplete();
-            self.trigger("remove");
+            delete this.frame_list[frame.id];
+            this.frame_counter--;
+            this._panelRefresh(true);
+            this._panelAnimationComplete();
+            this.trigger("remove");
         });
     },
 
@@ -508,11 +505,10 @@ var View = Backbone.View.extend({
 
     /** Complete panel animation / frames not moving */
     _panelAnimationComplete: function() {
-        var self = this;
         $(".frame")
             .promise()
             .done(() => {
-                self._panelScroll(0, true);
+                this._panelScroll(0, true);
             });
     },
 
@@ -552,7 +548,6 @@ var View = Backbone.View.extend({
 
     /** Insert frame at given location */
     _frameInsert: function(frame, new_loc, animate) {
-        var self = this;
         var place_list = [];
         if (frame) {
             frame.grid_location = null;
@@ -566,12 +561,12 @@ var View = Backbone.View.extend({
         });
         place_list.sort((a, b) => (a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0));
         _.each(place_list, place => {
-            self._framePlace(place[0], animate);
+            this._framePlace(place[0], animate);
         });
         this.top_max = 0;
         _.each(this.frame_list, f => {
             if (f.grid_location !== null) {
-                self.top_max = Math.max(self.top_max, f.grid_location.top + f.grid_location.height);
+                this.top_max = Math.max(this.top_max, f.grid_location.top + f.grid_location.height);
             }
         });
         this.top_max = $(window).height() - this.top_max * this.options.cell - 2 * this.options.margin;
@@ -615,9 +610,8 @@ var View = Backbone.View.extend({
         frame.screen_location.top = p.top;
         if (animate) {
             this._frameFocus(frame, true);
-            var self = this;
             frame.$el.animate({ top: p.top, left: p.left }, "fast", () => {
-                self._frameFocus(frame, false);
+                this._frameFocus(frame, false);
             });
         } else {
             frame.$el.css({ top: p.top, left: p.left });

@@ -14,7 +14,6 @@ import Ui from "mvc/ui/ui-misc";
 export default Backbone.View.extend({
     collection: new UploadModel.Collection(),
     initialize: function(app) {
-        var self = this;
         this.app = app;
         this.options = app.options;
         this.list_extensions = app.list_extensions;
@@ -26,26 +25,26 @@ export default Backbone.View.extend({
         this.btnReset = new Ui.Button({
             id: "btn-reset",
             title: _l("Reset"),
-            onclick: function() {
-                self._eventReset();
+            onclick: () => {
+                this._eventReset();
             }
         });
         this.btnStart = new Ui.Button({
             title: _l("Start"),
-            onclick: function() {
-                self._eventStart();
+            onclick: () => {
+                this._eventStart();
             }
         });
         this.btnClose = new Ui.Button({
             title: _l("Close"),
-            onclick: function() {
-                self.app.modal.hide();
+            onclick: () => {
+                this.app.modal.hide();
             }
         });
 
         // append buttons to dom
         _.each([this.btnReset, this.btnStart, this.btnClose], button => {
-            self.$(".upload-buttons").prepend(button.$el);
+            this.$(".upload-buttons").prepend(button.$el);
         });
 
         // select extension
@@ -53,15 +52,15 @@ export default Backbone.View.extend({
             css: "upload-footer-selection",
             container: this.$(".upload-footer-extension"),
             data: _.filter(this.list_extensions, ext => ext.composite_files),
-            onchange: function(extension) {
-                self.collection.reset();
-                var details = _.findWhere(self.list_extensions, {
+            onchange: extension => {
+                this.collection.reset();
+                var details = _.findWhere(this.list_extensions, {
                     id: extension
                 });
                 if (details && details.composite_files) {
                     _.each(details.composite_files, item => {
-                        self.collection.add({
-                            id: self.collection.size(),
+                        this.collection.add({
+                            id: this.collection.size(),
                             file_desc: item.description || item.name,
                             optional: item.optional
                         });
@@ -75,9 +74,9 @@ export default Backbone.View.extend({
             .on("click", e => {
                 new UploadExtension({
                     $el: $(e.target),
-                    title: self.select_extension.text(),
-                    extension: self.select_extension.value(),
-                    list: self.list_extensions,
+                    title: this.select_extension.text(),
+                    extension: this.select_extension.value(),
+                    list: this.list_extensions,
                     placement: "top"
                 });
             })
@@ -95,10 +94,10 @@ export default Backbone.View.extend({
 
         // listener for collection triggers on change in composite datatype and extension selection
         this.listenTo(this.collection, "add", model => {
-            self._eventAnnounce(model);
+            this._eventAnnounce(model);
         });
         this.listenTo(this.collection, "change add", () => {
-            self.render();
+            this.render();
         });
         this.select_extension.options.onchange(this.select_extension.value());
         this.render();
@@ -141,24 +140,23 @@ export default Backbone.View.extend({
 
     /** Start upload process */
     _eventStart: function() {
-        var self = this;
         this.collection.each(model => {
             model.set({
-                genome: self.select_genome.value(),
-                extension: self.select_extension.value()
+                genome: this.select_genome.value(),
+                extension: this.select_extension.value()
             });
         });
         $.uploadpost({
             url: this.app.options.upload_path,
             data: this.app.toData(this.collection.filter()),
-            success: function(message) {
-                self._eventSuccess(message);
+            success: message => {
+                this._eventSuccess(message);
             },
-            error: function(message) {
-                self._eventError(message);
+            error: message => {
+                this._eventError(message);
             },
-            progress: function(percentage) {
-                self._eventProgress(percentage);
+            progress: percentage => {
+                this._eventProgress(percentage);
             }
         });
     },

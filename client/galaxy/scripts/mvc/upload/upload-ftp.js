@@ -43,33 +43,31 @@ export default Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
         this.$wait.show();
         this.$content.hide();
         this.$warning.hide();
         this.$help.hide();
         UploadUtils.getRemoteFiles(
-            function(ftp_files) {
-                self.model.set("ftp_files", ftp_files);
-                self._index();
-                self._renderTable();
+            (ftp_files) => {
+                this.model.set("ftp_files", ftp_files);
+                this._index();
+                this._renderTable();
             },
-            function() {
-                self._renderTable();
+            () => {
+                this._renderTable();
             }
         );
     },
 
     /** Fill table with ftp entries */
     _renderTable: function() {
-        var self = this;
         var ftp_files = this.model.get("ftp_files");
         this.rows = [];
         if (ftp_files && ftp_files.length > 0) {
             this.$body.empty();
             var size = 0;
             _.each(ftp_files, ftp_file => {
-                self.rows.push(self._renderRow(ftp_file));
+                this.rows.push(this._renderRow(ftp_file));
                 size += ftp_file.size;
             });
             this.$number.html(`${ftp_files.length} files`);
@@ -80,7 +78,7 @@ export default Backbone.View.extend({
                     .addClass(this.model.get("class_add"))
                     .off()
                     .on("click", () => {
-                        self._all();
+                        this._all();
                     });
                 this._refresh();
             }
@@ -94,7 +92,6 @@ export default Backbone.View.extend({
 
     /** Add row */
     _renderRow: function(ftp_file) {
-        var self = this;
         var options = this.model.attributes;
         var $it = $(this._templateRow(ftp_file));
         var $icon = $it.find(".icon");
@@ -103,8 +100,8 @@ export default Backbone.View.extend({
             var model_index = this.ftp_index[ftp_file.path];
             $icon.addClass(model_index === undefined ? options.class_add : options.class_remove);
             $it.on("click", () => {
-                self._switch($icon, ftp_file);
-                self._refresh();
+                this._switch($icon, ftp_file);
+                this._refresh();
             });
         } else {
             $it.on("click", () => {
@@ -116,12 +113,11 @@ export default Backbone.View.extend({
 
     /** Create ftp index */
     _index: function() {
-        var self = this;
         this.ftp_index = {};
         this.collection &&
             this.collection.each(model => {
                 if (model.get("file_mode") == "ftp") {
-                    self.ftp_index[model.get("file_path")] = model.id;
+                    this.ftp_index[model.get("file_path")] = model.id;
                 }
             });
     },

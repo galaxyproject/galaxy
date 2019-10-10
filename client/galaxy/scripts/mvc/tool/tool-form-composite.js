@@ -39,7 +39,6 @@ var View = Backbone.View.extend({
 
     /** Configures form/step options for each workflow step */
     _configure: function() {
-        var self = this;
         const Galaxy = getGalaxyInstance();
         this.forms = [];
         this.steps = [];
@@ -63,7 +62,7 @@ var View = Backbone.View.extend({
                     help: null,
                     citations: null,
                     collapsible: true,
-                    collapsed: i > 0 && !self._isDataStep(step),
+                    collapsed: i > 0 && !this._isDataStep(step),
                     sustain_version: true,
                     sustain_repeats: true,
                     sustain_conditionals: true,
@@ -81,24 +80,24 @@ var View = Backbone.View.extend({
                 },
                 step
             );
-            self.steps[i] = step;
-            self.links[i] = [];
-            self.parms[i] = {};
+            this.steps[i] = step;
+            this.links[i] = [];
+            this.parms[i] = {};
         });
 
         // build linear index of step input pairs
         _.each(this.steps, (step, i) => {
             FormData.visitInputs(step.inputs, (input, name) => {
-                self.parms[i][name] = input;
+                this.parms[i][name] = input;
             });
         });
 
         // iterate through data input modules and collect linked sub steps
         _.each(this.steps, (step, i) => {
             _.each(step.output_connections, output_connection => {
-                _.each(self.steps, (sub_step, j) => {
+                _.each(this.steps, (sub_step, j) => {
                     if (sub_step.step_index === output_connection.input_step_index) {
-                        self.links[i].push(sub_step);
+                        this.links[i].push(sub_step);
                     }
                 });
             });
@@ -107,14 +106,14 @@ var View = Backbone.View.extend({
         // convert all connected data inputs to hidden fields with proper labels,
         // and track the linked source step
         _.each(this.steps, (step, i) => {
-            _.each(self.steps, (sub_step, j) => {
+            _.each(this.steps, (sub_step, j) => {
                 var connections_by_name = {};
                 _.each(step.output_connections, connection => {
                     if (sub_step.step_index === connection.input_step_index) {
                         connections_by_name[connection.input_name] = connection;
                     }
                 });
-                _.each(self.parms[j], (input, name) => {
+                _.each(this.parms[j], (input, name) => {
                     var connection = connections_by_name[name];
                     if (connection) {
                         input.type = "hidden";
@@ -131,8 +130,8 @@ var View = Backbone.View.extend({
         var wp_count = 0;
         this.wp_inputs = {};
 
-        function _ensureWorkflowParameter(wp_name) {
-            return (self.wp_inputs[wp_name] = self.wp_inputs[wp_name] || {
+        const _ensureWorkflowParameter = (wp_name) => {
+            return (this.wp_inputs[wp_name] = this.wp_inputs[wp_name] || {
                 label: wp_name,
                 name: wp_name,
                 type: "text",
@@ -151,7 +150,7 @@ var View = Backbone.View.extend({
             }
         }
         _.each(this.steps, (step, i) => {
-            _.each(self.parms[i], (input, name) => {
+            _.each(this.parms[i], (input, name) => {
                 _handleWorkflowParameter(input.value, wp_input => {
                     wp_input.links.push(step);
                     input.wp_linked = true;
@@ -174,7 +173,7 @@ var View = Backbone.View.extend({
                     var is_runtime_value = input.value && input.value.__class__ == "RuntimeValue";
                     var is_data_input = ["data", "data_collection"].indexOf(input.type) != -1;
                     var data_ref = context[input.data_ref];
-                    if (input.step_linked && !self._isDataStep(input.step_linked)) {
+                    if (input.step_linked && !this._isDataStep(input.step_linked)) {
                         data_resolved = false;
                     }
                     if (input.options && ((input.options.length == 0 && !data_resolved) || input.wp_linked)) {
@@ -182,7 +181,7 @@ var View = Backbone.View.extend({
                     }
                     if (data_ref) {
                         input.is_workflow =
-                            (data_ref.step_linked && !self._isDataStep(data_ref.step_linked)) || input.wp_linked;
+                            (data_ref.step_linked && !this._isDataStep(data_ref.step_linked)) || input.wp_linked;
                     }
                     if (
                         is_data_input ||
@@ -206,7 +205,6 @@ var View = Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
         this.deferred.reset();
         this._renderHeader();
         this._renderMessage();
@@ -215,20 +213,19 @@ var View = Backbone.View.extend({
         this._renderUseCachedJob();
         this._renderResourceParameters();
         _.each(this.steps, step => {
-            self._renderStep(step);
+            this._renderStep(step);
         });
     },
 
     /** Render header */
     _renderHeader: function() {
-        var self = this;
         this.execute_btn = new Ui.Button({
             id: "run-workflow",
             icon: "fa-check",
             title: _l("Run workflow"),
             cls: "btn btn-primary",
-            onclick: function() {
-                self._execute();
+            onclick: () => {
+                this._execute();
             }
         });
         this.$header
@@ -268,17 +265,16 @@ var View = Backbone.View.extend({
 
     /** Render workflow parameters */
     _renderParameters: function() {
-        var self = this;
         this.wp_form = null;
         if (!_.isEmpty(this.wp_inputs)) {
             this.wp_form = new Form({
                 title: "<b>Workflow Parameters</b>",
                 inputs: this.wp_inputs,
                 cls: "ui-portlet-section",
-                onchange: function() {
-                    _.each(self.wp_form.input_list, (input_def, i) => {
+                onchange: () => {
+                    _.each(this.wp_form.input_list, (input_def, i) => {
                         _.each(input_def.links, step => {
-                            self._refreshStep(step);
+                            this._refreshStep(step);
                         });
                     });
                 }
@@ -372,11 +368,10 @@ var View = Backbone.View.extend({
     /** Render step */
     _renderStep: function(step) {
         const Galaxy = getGalaxyInstance();
-        var self = this;
         var form = null;
         this.deferred.execute(promise => {
-            self.$steps.addClass("ui-steps");
-            if (step.step_type == "tool") {
+            this.$steps.addClass("ui-steps");
+            if (this.step_type == "tool") {
                 step.postchange = function(process, form) {
                     var current_state = {
                         tool_id: step.id,
@@ -434,9 +429,9 @@ var View = Backbone.View.extend({
                     Utils.merge(
                         {
                             title: step.fixed_title,
-                            onchange: function() {
-                                _.each(self.links[step.index], link => {
-                                    self._refreshStep(link);
+                            onchange: () => {
+                                _.each(this.links[step.index], link => {
+                                    this._refreshStep(link);
                                 });
                             },
                             inputs:
@@ -457,17 +452,17 @@ var View = Backbone.View.extend({
                     form.$el.attr("step-label", step.step_label);
                 }
             }
-            self.forms[step.index] = form;
-            self._append(self.$steps, form.$el);
+            this.forms[step.index] = form;
+            this._append(this.$steps, form.$el);
             if (step.needs_refresh) {
-                self._refreshStep(step);
+                this._refreshStep(step);
             }
-            form.portlet[!self.show_progress ? "enable" : "disable"]();
-            if (self.show_progress) {
-                self.execute_btn.model.set({
+            form.portlet[!this.show_progress ? "enable" : "disable"]();
+            if (this.show_progress) {
+                this.execute_btn.model.set({
                     wait: true,
                     wait_text: "Preparing...",
-                    percentage: ((step.index + 1) * 100.0) / self.steps.length
+                    percentage: ((step.index + 1) * 100.0) / this.steps.length
                 });
             }
             Galaxy.emit.debug("tool-form-composite::initialize()", `${step.index} : Workflow step state ready.`, step);
@@ -479,10 +474,9 @@ var View = Backbone.View.extend({
 
     /** Refreshes step values from source step values */
     _refreshStep: function(step) {
-        var self = this;
         var form = this.forms[step.index];
         if (form) {
-            _.each(self.parms[step.index], (input, name) => {
+            _.each(this.parms[step.index], (input, name) => {
                 if (input.step_linked || input.wp_linked) {
                     var field = form.field_list[form.data.match(name)];
                     if (field) {
@@ -490,8 +484,8 @@ var View = Backbone.View.extend({
                         if (input.step_linked) {
                             new_value = { values: [] };
                             _.each(input.step_linked, source_step => {
-                                if (self._isDataStep(source_step)) {
-                                    var value = self.forms[source_step.index].data.create().input;
+                                if (this._isDataStep(source_step)) {
+                                    var value = this.forms[source_step.index].data.create().input;
                                     if (value) {
                                         _.each(value.values, v => {
                                             new_value.values.push(v);
@@ -509,7 +503,7 @@ var View = Backbone.View.extend({
                             var re = /\$\{(.+?)\}/g;
                             var match;
                             while ((match = re.exec(input.value))) {
-                                var wp_field = self.wp_form.field_list[self.wp_form.data.match(match[1])];
+                                var wp_field = this.wp_form.field_list[this.wp_form.data.match(match[1])];
                                 var wp_value = wp_field && wp_field.value();
                                 if (wp_value) {
                                     new_value = new_value.split(match[0]).join(wp_value);
@@ -531,7 +525,6 @@ var View = Backbone.View.extend({
     /** Refresh the history after job submission while form is shown */
     _refreshHistory: function() {
         const Galaxy = getGalaxyInstance();
-        var self = this;
         var history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
         if (this._refresh_history) {
             window.clearTimeout(this._refresh_history);
@@ -539,8 +532,8 @@ var View = Backbone.View.extend({
         if (history) {
             history.refresh().success(() => {
                 if (history.numOfUnfinishedShownContents() === 0) {
-                    self._refresh_history = window.setTimeout(() => {
-                        self._refreshHistory();
+                    this._refresh_history = window.setTimeout(() => {
+                        this._refreshHistory();
                     }, history.UPDATE_DELAY);
                 }
             });
@@ -549,13 +542,12 @@ var View = Backbone.View.extend({
 
     /** Build remaining steps */
     _execute: function() {
-        var self = this;
         this.show_progress = true;
         this._enabled(false);
         this.deferred.execute(promise => {
             window.setTimeout(() => {
                 promise.resolve();
-                self._submit();
+                this._submit();
             }, 0);
         });
     },
@@ -563,7 +555,6 @@ var View = Backbone.View.extend({
     /** Validate and submit workflow */
     _submit: function() {
         const Galaxy = getGalaxyInstance();
-        var self = this;
         var history_form_data = this.history_form.data.create();
         var job_def = {
             new_history_name: history_form_data["new_history|name"] ? history_form_data["new_history|name"] : null,
@@ -588,7 +579,7 @@ var View = Backbone.View.extend({
         for (var i in this.forms) {
             var form = this.forms[i];
             var job_inputs = form.data.create();
-            var step = self.steps[i];
+            var step = this.steps[i];
             var step_index = step.step_index;
             form.trigger("reset");
             for (var job_input_id in job_inputs) {
@@ -617,7 +608,7 @@ var View = Backbone.View.extend({
             }
         }
         if (!validated) {
-            self._enabled(true);
+            this._enabled(true);
             Galaxy.emit.debug("tool-form-composite::submit()", "Validation failed.", job_def);
         } else {
             Galaxy.emit.debug("tool-form-composite::submit()", "Validation complete.", job_def);
@@ -625,14 +616,14 @@ var View = Backbone.View.extend({
                 type: "POST",
                 url: `${getAppRoot()}api/workflows/${this.model.id}/invocations`,
                 data: job_def,
-                success: function(response) {
+                success: response => {
                     Galaxy.emit.debug("tool-form-composite::submit", "Submission successful.", response);
-                    self.$el.children().hide();
-                    self.$el.append(self._templateSuccess(response));
+                    this.$el.children().hide();
+                    this.$el.append(this._templateSuccess(response));
                     mountWorkflowInvocationState();
                     // Show Webhook if job is running
                     if ($.isArray(response) && response.length > 0) {
-                        self.$el.append($("<div/>", { id: "webhook-view" }));
+                        this.$el.append($("<div/>", { id: "webhook-view" }));
                         new Webhooks.WebhookView({
                             type: "workflow",
                             toolId: job_def.tool_id,
@@ -640,14 +631,14 @@ var View = Backbone.View.extend({
                         });
                     }
 
-                    self._refreshHistory();
+                    this._refreshHistory();
                 },
-                error: function(response) {
+                error: response => {
                     Galaxy.emit.debug("tool-form-composite::submit", "Submission failed.", response);
                     var input_found = false;
                     if (response && response.err_data) {
-                        for (var i in self.forms) {
-                            var form = self.forms[i];
+                        for (var i in this.forms) {
+                            var form = this.forms[i];
                             var step_related_errors = response.err_data[form.model.get("step_index")];
                             if (step_related_errors) {
                                 var error_messages = form.data.matchResponse(step_related_errors);
@@ -660,19 +651,19 @@ var View = Backbone.View.extend({
                         }
                     }
                     if (!input_found) {
-                        self.modal.show({
+                        this.modal.show({
                             title: _l("Workflow submission failed"),
-                            body: self._templateError(job_def, response && response.err_msg),
+                            body: this._templateError(job_def, response && response.err_msg),
                             buttons: {
-                                Close: function() {
-                                    self.modal.hide();
+                                Close: () => {
+                                    this.modal.hide();
                                 }
                             }
                         });
                     }
                 },
-                complete: function() {
-                    self._enabled(true);
+                complete: () => {
+                    this._enabled(true);
                 }
             });
         }

@@ -27,9 +27,8 @@ export default Backbone.View.extend({
 
     /** Update available options */
     update: function(new_model) {
-        var self = this;
         this.data.matchModel(new_model, (node, input_id) => {
-            var field = self.field_list[input_id];
+            var field = this.field_list[input_id];
             if (field.update) {
                 field.update(node);
                 field.trigger("change");
@@ -89,7 +88,6 @@ export default Backbone.View.extend({
 
     /** Render tool form */
     render: function() {
-        var self = this;
         this.off("change");
         this.off("reset");
         // contains the dom field elements as created by the parameter factory i.e. form-parameters
@@ -108,17 +106,17 @@ export default Backbone.View.extend({
         // add listener which triggers on checksum change, and reset the form input wrappers
         var current_check = this.data.checksum();
         this.on("change", input_id => {
-            var input = self.input_list[input_id];
-            if (!input || input.refresh_on_change || self.model.get("always_refresh")) {
-                var new_check = self.data.checksum();
+            var input = this.input_list[input_id];
+            if (!input || input.refresh_on_change || this.model.get("always_refresh")) {
+                var new_check = this.data.checksum();
                 if (new_check != current_check) {
                     current_check = new_check;
-                    self.model.get("onchange")();
+                    this.model.get("onchange")();
                 }
             }
         });
         this.on("reset", () => {
-            _.each(self.element_list, input_element => {
+            _.each(this.element_list, input_element => {
                 input_element.reset();
             });
         });

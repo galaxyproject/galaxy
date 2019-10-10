@@ -118,12 +118,11 @@ var Tours = Backbone.Collection.extend({
 export var ToursView = Backbone.View.extend({
     title: _l("Tours"),
     initialize: function() {
-        var self = this;
         this.setElement("<div/>");
         this.model = new Tours();
         this.model.fetch({
-            success: function() {
-                self.render();
+            success: () => {
+                this.render();
             },
             error: function() {
                 // Do something.

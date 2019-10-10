@@ -33,7 +33,6 @@ export default Backbone.View.extend({
     },
 
     initialize: function(app) {
-        var self = this;
         this.app = app;
         this.options = app.options;
         this.list_extensions = app.list_extensions;
@@ -46,60 +45,60 @@ export default Backbone.View.extend({
         this.btnLocal = new Ui.Button({
             id: "btn-local",
             title: _l("Choose local files"),
-            onclick: function() {
-                self.uploadbox.select();
+            onclick: () => {
+                this.uploadbox.select();
             },
             icon: "fa fa-laptop"
         });
         this.btnFtp = new Ui.Button({
             id: "btn-ftp",
             title: _l("Choose FTP files"),
-            onclick: function() {
-                self._eventFtp();
+            onclick: () => {
+                this._eventFtp();
             },
             icon: "fa fa-folder-open-o"
         });
         this.btnCreate = new Ui.Button({
             id: "btn-new",
             title: "Paste/Fetch data",
-            onclick: function() {
-                self._eventCreate();
+            onclick: () => {
+                this._eventCreate();
             },
             icon: "fa fa-edit"
         });
         this.btnStart = new Ui.Button({
             id: "btn-start",
             title: _l("Start"),
-            onclick: function() {
-                self._eventStart();
+            onclick: () => {
+                this._eventStart();
             }
         });
         this.btnBuild = new Ui.Button({
             id: "btn-build",
             title: _l("Build"),
-            onclick: function() {
-                self._eventBuild();
+            onclick: () => {
+                this._eventBuild();
             }
         });
         this.btnStop = new Ui.Button({
             id: "btn-stop",
             title: _l("Pause"),
-            onclick: function() {
-                self._eventStop();
+            onclick: () => {
+                this._eventStop();
             }
         });
         this.btnReset = new Ui.Button({
             id: "btn-reset",
             title: _l("Reset"),
-            onclick: function() {
-                self._eventReset();
+            onclick: () => {
+                this._eventReset();
             }
         });
         this.btnClose = new Ui.Button({
             id: "btn-close",
             title: _l("Close"),
-            onclick: function() {
-                self.app.modal.hide();
+            onclick: () => {
+                this.app.modal.hide();
             }
         });
         _.each(
@@ -114,36 +113,36 @@ export default Backbone.View.extend({
                 this.btnClose
             ],
             button => {
-                self.$(".upload-buttons").prepend(button.$el);
+                this.$(".upload-buttons").prepend(button.$el);
             }
         );
 
         // file upload
         this.uploadbox = this.$(".upload-box").uploadbox({
             url: this.app.options.upload_path,
-            announce: function(index, file) {
-                self._eventAnnounce(index, file);
+            announce: (index, file) => {
+                this._eventAnnounce(index, file);
             },
-            initialize: function(index) {
-                return self.app.toData([self.collection.get(index)], self.history_id);
+            initialize: index => {
+                return this.app.toData([this.collection.get(index)], this.history_id);
             },
-            progress: function(index, percentage) {
-                self._eventProgress(index, percentage);
+            progress: (index, percentage) => {
+                this._eventProgress(index, percentage);
             },
-            success: function(index, message) {
-                self._eventSuccess(index, message);
+            success: (index, message) => {
+                this._eventSuccess(index, message);
             },
-            error: function(index, message) {
-                self._eventError(index, message);
+            error: (index, message) => {
+                this._eventError(index, message);
             },
-            complete: function() {
-                self._eventComplete();
+            complete: () => {
+                this._eventComplete();
             },
-            ondragover: function() {
-                self.$(".upload-box").addClass("highlight");
+            ondragover: () => {
+                this.$(".upload-box").addClass("highlight");
             },
-            ondragleave: function() {
-                self.$(".upload-box").removeClass("highlight");
+            ondragleave: () => {
+                this.$(".upload-box").removeClass("highlight");
             }
         });
 
@@ -158,8 +157,8 @@ export default Backbone.View.extend({
             container: this.$(".upload-footer-extension"),
             data: _.filter(this.list_extensions, ext => !ext.composite_files),
             value: this.options.default_extension,
-            onchange: function(extension) {
-                self.updateExtension(extension);
+            onchange: extension => {
+                this.updateExtension(extension);
             }
         });
 
@@ -172,8 +171,8 @@ export default Backbone.View.extend({
                 { id: "list:paired", text: "List of Pairs" }
             ],
             value: "list",
-            onchange: function(collectionType) {
-                self.updateCollectionType(collectionType);
+            onchange: collectionType => {
+                this.updateCollectionType(collectionType);
             }
         });
 
@@ -182,9 +181,9 @@ export default Backbone.View.extend({
             .on("click", e => {
                 new UploadExtension({
                     $el: $(e.target),
-                    title: self.select_extension.text(),
-                    extension: self.select_extension.value(),
-                    list: self.list_extensions,
+                    title: this.select_extension.text(),
+                    extension: this.select_extension.value(),
+                    list: this.list_extensions,
                     placement: "top"
                 });
             })
@@ -198,14 +197,14 @@ export default Backbone.View.extend({
             container: this.$(".upload-footer-genome"),
             data: this.list_genomes,
             value: this.options.default_genome,
-            onchange: function(genome) {
-                self.updateGenome(genome);
+            onchange: genome => {
+                this.updateGenome(genome);
             }
         });
 
         // events
         this.collection.on("remove", model => {
-            self._eventRemove(model);
+            this._eventRemove(model);
         });
         this._updateScreen();
     },
@@ -312,13 +311,12 @@ export default Backbone.View.extend({
 
     /** Show/hide ftp popup */
     _eventFtp: function() {
-        var self = this;
         this.ftp.show(
             new UploadFtp({
                 collection: this.collection,
                 ftp_upload_site: this.ftp_upload_site,
-                onadd: function(ftp_file) {
-                    return self.uploadbox.add([
+                onadd: ftp_file => {
+                    return this.uploadbox.add([
                         {
                             mode: "ftp",
                             name: ftp_file.path,
@@ -327,8 +325,8 @@ export default Backbone.View.extend({
                         }
                     ]);
                 },
-                onremove: function(model_index) {
-                    self.collection.remove(model_index);
+                onremove: model_index => {
+                    this.collection.remove(model_index);
                 }
             }).$el
         );
@@ -344,13 +342,12 @@ export default Backbone.View.extend({
         if (this.counter.announce == 0 || this.counter.running > 0) {
             return;
         }
-        var self = this;
         this.upload_size = 0;
         this.upload_completed = 0;
         this.collection.each(model => {
             if (model.get("status") == "init") {
                 model.set("status", "queued");
-                self.upload_size += model.get("file_size");
+                this.upload_size += model.get("file_size");
             }
         });
         this.ui_button.model.set({ percentage: 0, status: "success" });
@@ -384,11 +381,10 @@ export default Backbone.View.extend({
 
     /** Update extension for all models */
     updateExtension: function(extension, defaults_only) {
-        var self = this;
         this.collection.each(model => {
             if (
                 model.get("status") == "init" &&
-                (model.get("extension") == self.options.default_extension || !defaults_only)
+                (model.get("extension") == this.options.default_extension || !defaults_only)
             ) {
                 model.set("extension", extension);
             }
@@ -402,11 +398,10 @@ export default Backbone.View.extend({
 
     /** Update genome for all models */
     updateGenome: function(genome, defaults_only) {
-        var self = this;
         this.collection.each(model => {
             if (
                 model.get("status") == "init" &&
-                (model.get("genome") == self.options.default_genome || !defaults_only)
+                (model.get("genome") == this.options.default_genome || !defaults_only)
             ) {
                 model.set("genome", genome);
             }

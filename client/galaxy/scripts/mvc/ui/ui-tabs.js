@@ -97,7 +97,6 @@ export var View = Backbone.View.extend({
 
     /** Adds a new tab */
     _add: function(tab_model) {
-        var self = this;
         var options = tab_model.attributes;
         this.$content.append(
             $("<div/>")
@@ -111,11 +110,11 @@ export var View = Backbone.View.extend({
                 .tooltip({
                     title: options.tooltip || "",
                     placement: "bottom",
-                    container: self.$el
+                    container: this.$el
                 })
                 .on("click", e => {
                     e.preventDefault();
-                    self.show(options.id);
+                    this.show(options.id);
                 })
         );
         if (this.size() == 1) {

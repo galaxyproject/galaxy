@@ -68,10 +68,9 @@ var FolderView = Backbone.View.extend({
         var template = this.templateFolderPermissions();
         this.$el.html(template({ folder: this.model, is_admin: is_admin }));
 
-        var self = this;
-        $.get(`${getAppRoot()}api/folders/${self.id}/permissions?scope=current`)
+        $.get(`${getAppRoot()}api/folders/${this.id}/permissions?scope=current`)
             .done(fetched_permissions => {
-                self.prepareSelectBoxes({
+                this.prepareSelectBoxes({
                     fetched_permissions: fetched_permissions
                 });
             })
@@ -95,32 +94,31 @@ var FolderView = Backbone.View.extend({
     prepareSelectBoxes: function(options) {
         this.options = _.extend(this.options, options);
         var fetched_permissions = this.options.fetched_permissions;
-        var self = this;
 
         var selected_add_item_roles = this._serializeRoles(fetched_permissions.add_library_item_role_list);
         var selected_manage_folder_roles = this._serializeRoles(fetched_permissions.manage_folder_role_list);
         var selected_modify_folder_roles = this._serializeRoles(fetched_permissions.modify_folder_role_list);
 
-        self.addSelectObject = new mod_select.View(
+        this.addSelectObject = new mod_select.View(
             this._createSelectOptions(this, "add_perm", selected_add_item_roles, false)
         );
-        self.manageSelectObject = new mod_select.View(
+        this.manageSelectObject = new mod_select.View(
             this._createSelectOptions(this, "manage_perm", selected_manage_folder_roles, false)
         );
-        self.modifySelectObject = new mod_select.View(
+        this.modifySelectObject = new mod_select.View(
             this._createSelectOptions(this, "modify_perm", selected_modify_folder_roles, false)
         );
     },
 
-    _createSelectOptions: function(self, id, init_data) {
+    _createSelectOptions: function(context, id, init_data) {
         var select_options = {
             minimumInputLength: 0,
             css: id,
             multiple: true,
             placeholder: "Click to select a role",
-            container: self.$el.find(`#${id}`),
+            container: context.$el.find(`#${id}`),
             ajax: {
-                url: `${getAppRoot()}api/folders/${self.id}/permissions?scope=available`,
+                url: `${getAppRoot()}api/folders/${context.id}/permissions?scope=available`,
                 dataType: "json",
                 quietMillis: 100,
                 data: function(term, page) {
@@ -180,17 +178,16 @@ var FolderView = Backbone.View.extend({
      * Save the permissions for roles entered in the select boxes.
      */
     savePermissions: function(event) {
-        var self = this;
         var add_ids = this._extractIds(this.addSelectObject.$el.select2("data"));
         var manage_ids = this._extractIds(this.manageSelectObject.$el.select2("data"));
         var modify_ids = this._extractIds(this.modifySelectObject.$el.select2("data"));
-        $.post(`${getAppRoot()}api/folders/${self.id}/permissions?action=set_permissions`, {
+        $.post(`${getAppRoot()}api/folders/${this.id}/permissions?action=set_permissions`, {
             "add_ids[]": add_ids,
             "manage_ids[]": manage_ids,
             "modify_ids[]": modify_ids
         })
             .done(fetched_permissions => {
-                self.showPermissions({
+                this.showPermissions({
                     fetched_permissions: fetched_permissions
                 });
                 Toast.success("Permissions saved.");

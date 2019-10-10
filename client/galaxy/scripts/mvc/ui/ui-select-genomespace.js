@@ -8,8 +8,6 @@ import GenomespaceBrowser from "mvc/tool/tool-genomespace";
 var View = Backbone.View.extend({
     // initialize
     initialize: function(options) {
-        // link this
-        var self = this;
         this.options = options;
 
         // create insert new list element button
@@ -18,8 +16,8 @@ var View = Backbone.View.extend({
             icon: "fa fa-sign-in",
             cls: "btn btn-secondary float-left",
             tooltip: _l("Browse GenomeSpace"),
-            onclick: function() {
-                self.browseGenomeSpace(options);
+            onclick: () => {
+                this.browseGenomeSpace(options);
             }
         });
 
@@ -34,10 +32,9 @@ var View = Backbone.View.extend({
 
     /** Browse GenomeSpace */
     browseGenomeSpace: function(options) {
-        var self = this;
         GenomespaceBrowser.openFileBrowser({
-            successCallback: function(data) {
-                self.value(data.destination);
+            successCallback: data => {
+                this.value(data.destination);
             }
         });
     },

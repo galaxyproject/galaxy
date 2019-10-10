@@ -31,17 +31,16 @@ export default Backbone.View.extend({
         this.visible = false;
         this.value(this.options.value);
         this.$boxes = this.$(".ui-color-picker-box");
-        var self = this;
-        this.$boxes.on("click", function() {
-            self.value($(this).css("background-color"));
-            self.$header.trigger("click");
+        this.$boxes.on("click", () => {
+            this.value($(this).css("background-color"));
+            this.$header.trigger("click");
         });
         this.$header.on("click", () => {
-            self.visible = !self.visible;
-            if (self.visible) {
-                self.$view.fadeIn("fast");
+            this.visible = !this.visible;
+            if (this.visible) {
+                this.$view.fadeIn("fast");
             } else {
-                self.$view.fadeOut("fast");
+                this.$view.fadeOut("fast");
             }
         });
     },

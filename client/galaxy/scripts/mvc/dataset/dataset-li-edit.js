@@ -48,7 +48,6 @@ var DatasetListItemEdit = _super.extend(
 
         /** Render icon-button to edit the attributes (format, permissions, etc.) this dataset. */
         _renderEditButton: function() {
-            var self = this;
             // don't show edit while uploading, in-accessible
             // DO show if in error (ala previous history panel)
             if (this.model.get("state") === STATES.DISCARDED || !this.model.get("accessible")) {
@@ -62,12 +61,12 @@ var DatasetListItemEdit = _super.extend(
                 href: `${getAppRoot()}datasets/edit?dataset_id=${this.model.attributes.id}`,
                 faIcon: "fa-pencil",
                 classes: "edit-btn",
-                onclick: function(ev) {
+                onclick: e => {
                     const Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
-                        ev.preventDefault();
+                        e.preventDefault();
                         Galaxy.router.push("datasets/edit", {
-                            dataset_id: self.model.attributes.id
+                            dataset_id: this.model.attributes.id
                         });
                     }
                 }
@@ -97,16 +96,15 @@ var DatasetListItemEdit = _super.extend(
                 return null;
             }
 
-            var self = this;
             var deletedAlready = this.model.isDeletedOrPurged();
             return faIconButton({
                 title: !deletedAlready ? _l("Delete") : _l("Dataset is already deleted"),
                 disabled: deletedAlready,
                 faIcon: "fa-times",
                 classes: "delete-btn",
-                onclick: function() {
-                    self.$el.find(".icon-btn.delete-btn").tooltip("dispose");
-                    self.model["delete"]();
+                onclick: () => {
+                    this.$el.find(".icon-btn.delete-btn").tooltip("dispose");
+                    this.model["delete"]();
                 }
             });
         },
@@ -139,7 +137,6 @@ var DatasetListItemEdit = _super.extend(
         _renderToolHelpButton: function() {
             var datasetID = this.model.attributes.dataset_id;
             var jobID = this.model.attributes.creating_job;
-            var self = this;
 
             var parseToolBuild = data => {
                 var helpString = `<div id="thdiv-${datasetID}" class="toolhelp">`;
@@ -150,7 +147,7 @@ var DatasetListItemEdit = _super.extend(
                     helpString += "<strong>Tool help is unavailable for this dataset.</strong><hr/>";
                 }
                 helpString += "</div>";
-                self.$el.find(".details").append($.parseHTML(helpString));
+                this.$el.find(".details").append($.parseHTML(helpString));
             };
             var parseToolID = data => {
                 $.ajax({
@@ -174,9 +171,9 @@ var DatasetListItemEdit = _super.extend(
                 classes: "icon-btn",
                 href: "#",
                 faIcon: "fa-question",
-                onclick: function() {
-                    if (self.$el.find(".toolhelp").length > 0) {
-                        self.$el.find(".toolhelp").toggle();
+                onclick: () => {
+                    if (this.$el.find(".toolhelp").length > 0) {
+                        this.$el.find(".toolhelp").toggle();
                     } else {
                         $.ajax({
                             url: `${getAppRoot()}api/jobs/${jobID}`
@@ -219,18 +216,17 @@ var DatasetListItemEdit = _super.extend(
 
         /** Render icon-button to report an error on this dataset to the galaxy admin. */
         _renderErrButton: function() {
-            var self = this;
             return faIconButton({
                 title: _l("View or report this error"),
                 href: `${getAppRoot()}datasets/error?dataset_id=${this.model.attributes.id}`,
                 classes: "report-error-btn",
                 faIcon: "fa-bug",
-                onclick: function(ev) {
+                onclick: e => {
                     const Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
-                        ev.preventDefault();
+                        e.preventDefault();
                         Galaxy.router.push("datasets/error", {
-                            dataset_id: self.model.attributes.id
+                            dataset_id: this.model.attributes.id
                         });
                     }
                 }

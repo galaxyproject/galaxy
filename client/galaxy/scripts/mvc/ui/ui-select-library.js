@@ -12,10 +12,9 @@ var Libraries = Backbone.Collection.extend({
 // collection of dataset
 var LibraryDatasets = Backbone.Collection.extend({
     initialize: function() {
-        var self = this;
         this.config = new Backbone.Model({ library_id: null });
         this.config.on("change", () => {
-            self.fetch({ reset: true });
+            this.fetch({ reset: true });
         });
     },
     url: function() {
@@ -27,9 +26,6 @@ var LibraryDatasets = Backbone.Collection.extend({
 var View = Backbone.View.extend({
     // initialize
     initialize: function(options) {
-        // link this
-        var self = this;
-
         // collections
         this.libraries = new Libraries();
         this.datasets = new LibraryDatasets();
@@ -40,8 +36,8 @@ var View = Backbone.View.extend({
         // select field for the library
         // TODO: Remove this once the library API supports searching for library datasets
         this.library_select = new Ui.Select.View({
-            onchange: function(value) {
-                self.datasets.config.set("library_id", value);
+            onchange: value => {
+                this.datasets.config.set("library_id", value);
             }
         });
 
@@ -50,29 +46,29 @@ var View = Backbone.View.extend({
             name: "dataset",
             optional: options.optional,
             multiple: options.multiple,
-            onchange: function() {
-                self.trigger("change");
+            onchange: () => {
+                this.trigger("change");
             }
         });
 
         // add reset handler for fetched libraries
         this.libraries.on("reset", () => {
             var data = [];
-            self.libraries.each(model => {
+            this.libraries.each(model => {
                 data.push({
                     value: model.id,
                     label: model.get("name")
                 });
             });
-            self.library_select.update({ data: data });
+            this.library_select.update({ data: data });
         });
 
         // add reset handler for fetched library datasets
         this.datasets.on("reset", () => {
             var data = [];
-            var library_current = self.library_select.text();
+            var library_current = this.library_select.text();
             if (library_current !== null) {
-                self.datasets.each(model => {
+                this.datasets.each(model => {
                     if (model.get("type") === "file") {
                         data.push({
                             value: model.id,
@@ -81,13 +77,13 @@ var View = Backbone.View.extend({
                     }
                 });
             }
-            self.dataset_list.update({ data: data });
+            this.dataset_list.update({ data: data });
         });
 
         // add change event. fires on trigger
         this.on("change", () => {
             if (options.onchange) {
-                options.onchange(self.value());
+                options.onchange(this.value());
             }
         });
 
@@ -99,10 +95,10 @@ var View = Backbone.View.extend({
         // initial fetch of libraries
         this.libraries.fetch({
             reset: true,
-            success: function() {
-                self.library_select.trigger("change");
-                if (self.options.value !== undefined) {
-                    self.value(self.options.value);
+            success: () => {
+                this.library_select.trigger("change");
+                if (this.options.value !== undefined) {
+                    this.value(this.options.value);
                 }
             }
         });
