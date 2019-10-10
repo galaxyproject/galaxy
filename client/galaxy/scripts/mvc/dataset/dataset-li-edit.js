@@ -343,7 +343,6 @@ var DatasetListItemEdit = _super.extend(
             if (!this.hasUser) {
                 return;
             }
-            var view = this;
             this.annotationEditor = new ANNOTATIONS.AnnotationEditor({
                 model: this.model,
                 el: $where.find(".annotation-display"),
@@ -351,11 +350,11 @@ var DatasetListItemEdit = _super.extend(
                     this.render();
                 },
                 // persist state on the hda view (and not the editor) since these are currently re-created each time
-                onshow: function() {
-                    view.annotationEditorShown = true;
+                onshow: () => {
+                    this.annotationEditorShown = true;
                 },
-                onhide: function() {
-                    view.annotationEditorShown = false;
+                onhide: () => {
+                    this.annotationEditorShown = false;
                 },
                 $activator: faIconButton({
                     title: _l("Edit dataset annotation"),

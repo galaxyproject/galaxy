@@ -160,7 +160,7 @@ const SidePanel = Backbone.View.extend({
     // ..............................................................
     //TODO: only used in message.mako?
     /**   */
-    handle_minwidth_hint: hint => {
+    handle_minwidth_hint: function(hint) {
         const space = this.$center().width() - (this.hidden ? this.saved_size : 0);
         if (space < hint) {
             if (!this.hidden) {
@@ -177,7 +177,7 @@ const SidePanel = Backbone.View.extend({
     },
 
     /**   */
-    force_panel: op => {
+    force_panel: function(op) {
         if (op == "show") {
             return this.show();
         }

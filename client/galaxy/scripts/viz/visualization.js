@@ -389,12 +389,10 @@ var GenomeDataManager = Cache.extend({
         }
 
         // Do request.
-        var manager = this;
-
         var entry = $.getJSON(dataset.url(), params, result => {
             // Add region to the result.
             result.region = region;
-            manager.set_data(region, result);
+            this.set_data(region, result);
         });
 
         this.set_data(region, entry);
@@ -521,7 +519,6 @@ var GenomeDataManager = Cache.extend({
         // Get additional data, append to current data, and set new data. Use a custom deferred object
         // to signal when new data is available.
         //
-        var data_manager = this;
 
         var new_data_request = this.load_data(query_region, mode, resolution, extra_params);
 
@@ -541,7 +538,7 @@ var GenomeDataManager = Cache.extend({
                     result.message = result.message.replace(/[0-9]+/, result.data.length);
                 }
             }
-            data_manager.set_data(region, result);
+            this.set_data(region, result);
             new_data_available.resolve(result);
         });
         return new_data_available;

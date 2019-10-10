@@ -272,13 +272,12 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     //TODO:?? why not just pass in view?
     /** return a plain JSON object with both the view and dataset attributes */
     toJSON: function() {
-        var chooser = this;
         return {
-            label: chooser.label,
-            datasets: chooser.datasetJSON,
+            label: this.label,
+            datasets: this.datasetJSON,
             selected: _.compact(
-                _.map(chooser.selected, id =>
-                    _.findWhere(chooser.datasetJSON, {
+                _.map(this.selected, id =>
+                    _.findWhere(this.datasetJSON, {
                         id: id
                     })
                 )
@@ -300,20 +299,19 @@ var DatasetChoice = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
      *  @fires 'error' if the modal has no selectable datasets based on this.where - passed this and other args
      */
     chooseWithModal: function() {
-        var chooser = this;
 
         return this._createModal()
             .done(json => {
                 if (json) {
-                    chooser.selected = _.pluck(json, "id");
-                    chooser.trigger("selected", chooser, json);
-                    chooser.render();
+                    this.selected = _.pluck(json, "id");
+                    this.trigger("selected", this, json);
+                    this.render();
                 } else {
-                    chooser.trigger("cancelled", chooser);
+                    this.trigger("cancelled", this);
                 }
             })
             .fail(function() {
-                chooser.trigger("error", chooser, arguments);
+                this.trigger("error", this, arguments);
             });
     },
 

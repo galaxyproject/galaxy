@@ -86,20 +86,19 @@ var PairCollectionCreator = _super.extend({
     _renderList: function(speed, callback) {
         //this.debug( '-- _renderList' );
         //precondition: there are two valid elements in workingElements
-        var creator = this;
 
         var $tmp = $("<div/>");
-        var $list = creator.$list();
+        var $list = this.$list();
 
         // lose the original views, create the new, append all at once, then call their renders
         _.each(this.elementViews, view => {
             view.destroy();
-            creator.removeElementView(view);
+            this.removeElementView(view);
         });
-        $tmp.append(creator._createForwardElementView().$el);
-        $tmp.append(creator._createReverseElementView().$el);
+        $tmp.append(this._createForwardElementView().$el);
+        $tmp.append(this._createReverseElementView().$el);
         $list.empty().append($tmp.children());
-        _.invoke(creator.elementViews, "render");
+        _.invoke(this.elementViews, "render");
     },
 
     /** create the forward element view */

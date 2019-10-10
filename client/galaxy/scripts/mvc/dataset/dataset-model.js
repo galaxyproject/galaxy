@@ -147,9 +147,8 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             // ........................................................................ ajax
             fetch: function(options) {
-                var dataset = this;
                 return Backbone.Model.prototype.fetch.call(this, options).always(() => {
-                    dataset._generateUrls();
+                    this._generateUrls();
                 });
             },
 
@@ -199,11 +198,10 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
                 //TODO: ideally this would be a DELETE call to the api
                 //  using purge async for now
-                var hda = this;
 
                 var xhr = jQuery.ajax(options);
                 xhr.done((message, status, responseObj) => {
-                    hda.set({ deleted: true, purged: true });
+                    this.set({ deleted: true, purged: true });
                 });
                 xhr.fail((xhr, status, message) => {
                     // Exception messages are hidden within error page including:  '...not allowed in this Galaxy instance.'
@@ -217,7 +215,7 @@ var DatasetAssociation = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                         error = messageBuriedInUnfortunatelyFormattedError;
                     }
                     xhr.responseText = error;
-                    hda.trigger("error", hda, xhr, options, _l(error), {
+                    this.trigger("error", this, xhr, options, _l(error), {
                         error: error
                     });
                 });

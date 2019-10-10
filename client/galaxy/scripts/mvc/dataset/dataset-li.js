@@ -96,9 +96,8 @@ export var DatasetListItemView = _super.extend(
          *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
          */
         _fetchModelDetails: function() {
-            var view = this;
-            if (view.model.inReadyState() && !view.model.hasDetails()) {
-                return view.model.fetch({ silent: true });
+            if (this.model.inReadyState() && !this.model.hasDetails()) {
+                return this.model.fetch({ silent: true });
             }
             return $.when();
         },
@@ -109,12 +108,11 @@ export var DatasetListItemView = _super.extend(
          *  @param {Function} callback      an optional function called when removal is done (scoped to this view)
          */
         remove: function(speed, callback) {
-            var view = this;
             speed = speed || this.fxSpeed;
             this.$el.fadeOut(speed, () => {
-                Backbone.View.prototype.remove.call(view);
+                Backbone.View.prototype.remove.call(this);
                 if (callback) {
-                    callback.call(view);
+                    callback.call(this);
                 }
             });
         },
@@ -228,12 +226,11 @@ export var DatasetListItemView = _super.extend(
 
         /** Render messages to be displayed only when the details are shown */
         _renderDetailMessages: function() {
-            var view = this;
             var $warnings = $('<div class="detail-messages"></div>');
-            var json = view.model.toJSON();
+            var json = this.model.toJSON();
             //TODO:! unordered (map)
             _.each(view.templates.detailMessages, templateFn => {
-                $warnings.append($(templateFn(json, view)));
+                $warnings.append($(templateFn(json, this)));
             });
             return $warnings;
         },

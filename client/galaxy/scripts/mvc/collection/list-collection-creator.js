@@ -84,7 +84,7 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
         var parentWidth = this.$el.parent().width();
         this.$el.animate({ "margin-right": parentWidth }, "fast", () => {
             this.trigger("discard", {
-                source: view
+                source: this
             });
             this.destroy();
         });
