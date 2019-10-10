@@ -112,7 +112,7 @@
             <div>
                 <div v-if="item.users_shared_with && item.users_shared_with.length > 0">
                     <b-table small caption-top :fields="share_fields" :items="item.users_shared_with">
-                        <template slot="table-caption">
+                        <template v-slot:table-caption>
                             The following users will see this {{ model_class_lc }} in their {{ model_class_lc }} list
                             and will be able to view, import and run it.
                         </template>

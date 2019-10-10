@@ -11,14 +11,14 @@
             @row-clicked="clicked"
             @filtered="filtered"
         >
-            <template slot="label" slot-scope="data">
+            <template v-slot:cell(label)="data">
                 <i v-if="data.item.isDataset" class="fa fa-file-o" /> <i v-else class="fa fa-folder" />
                 {{ data.value ? data.value : "-" }}
             </template>
-            <template slot="details" slot-scope="data">
+            <template v-slot:cell(details)="data">
                 {{ data.value ? data.value : "-" }}
             </template>
-            <template slot="time" slot-scope="data">
+            <template v-slot:cell(time)="data">
                 {{ data.value ? data.value : "-" }}
             </template>
         </b-table>

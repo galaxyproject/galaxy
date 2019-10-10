@@ -267,7 +267,7 @@ mapping:
           to this path, such as the default conda prefix, default Galaxy packages path, legacy
           tool shed dependencies path, and the dependency cache directory.
 
-          Set the string to None to explicitly disable tool dependency handling.
+          Set the string to null to explicitly disable tool dependency handling.
           If this option is set to none or an invalid path, installing tools with dependencies
           from the Tool Shed or in Conda will fail.
 
@@ -570,7 +570,7 @@ mapping:
         required: false
         desc: |
           File containing old-style genome builds. Value will be resolved with respect to
-          '<tool_data_path>'.
+          <tool_data_path>.
 
       len_file_path:
         type: str
@@ -578,7 +578,7 @@ mapping:
         required: false
         desc: |
           Directory where chrom len files are kept, currently mainly used by trackster. Value will
-          be resolved with respect to '<tool_data_path>'.
+          be resolved with respect to <tool_data_path>.
 
       datatypes_config_file:
         type: str
@@ -848,7 +848,7 @@ mapping:
 
       registration_warning_message:
         type: str
-        default: |
+        default: >-
           Please register only one account - we provide this service free of charge and have limited
           computational resources. Multi-accounts are tracked and will be subjected to account
           termination and data deletion.
@@ -879,7 +879,7 @@ mapping:
 
       inactivity_box_content:
         type: str
-        default: |
+        default: >-
           Your account has not been activated yet.  Feel free to browse around and see what's
           available, but you won't be able to upload data or run jobs until you have verified your
           email address.
@@ -1463,14 +1463,14 @@ mapping:
 
       log_events:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Turn on logging of application events and some user events to the database.
 
       log_actions:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Turn on logging of user actions to the database.  Actions currently logged
