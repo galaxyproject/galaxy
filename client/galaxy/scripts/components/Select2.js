@@ -6,15 +6,14 @@ export default {
     props: ["options", "value", "placeholder"],
     template: `<select><slot></slot></select>`,
     mounted: function() {
-        const vm = this;
         $(this.$el)
             // init select2
             .select2({ data: this.options, placeholder: this.placeholder, allowClear: this.placeholder })
             .val(this.value)
             .trigger("change")
             // emit event on change.
-            .on("change", function(event) {
-                vm.$emit("input", event.val);
+            .on("change", event => {
+                this.$emit("input", event.val);
             });
     },
     watch: {

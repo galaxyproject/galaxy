@@ -57,14 +57,13 @@ export class BaseModel {
     // Setting a property name as transient for a class means its
     // state will be caclulated without regard to that propety
     static setTransient(...fieldNames) {
-        const klass = this; // this will be a class
-        if (!transients.has(klass)) {
-            transients.set(klass, new Set());
+        if (!transients.has(this)) {
+            transients.set(this, new Set());
         }
 
-        const fields = transients.get(klass);
+        const fields = transients.get(this);
         fieldNames.forEach(fieldName => fields.add(fieldName));
-        transients.set(klass, fields);
+        transients.set(this, fields);
     }
 
     /* Validation */

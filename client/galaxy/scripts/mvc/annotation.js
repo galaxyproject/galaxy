@@ -28,16 +28,15 @@ var AnnotationEditor = Backbone.View.extend(baseMVC.LoggableMixin)
 
         /** Build the DOM elements, call select to on the created input, and set up behaviors */
         render: function() {
-            var view = this;
             this.$el.html(this._template());
 
             //TODO: handle empties better
             this.$annotation().make_text_editable({
                 use_textarea: true,
-                on_finish: function(newAnnotation) {
-                    view.$annotation().text(newAnnotation);
-                    view.model.save({ annotation: newAnnotation }, { silent: true }).fail(() => {
-                        view.$annotation().text(view.model.previous("annotation"));
+                on_finish: newAnnotation => {
+                    this.$annotation().text(newAnnotation);
+                    this.model.save({ annotation: newAnnotation }, { silent: true }).fail(() => {
+                        this.$annotation().text(this.model.previous("annotation"));
                     });
                 }
             });

@@ -81,13 +81,12 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
 
     /** animate the removal of this element and pub */
     discard: function() {
-        var view = this;
         var parentWidth = this.$el.parent().width();
         this.$el.animate({ "margin-right": parentWidth }, "fast", () => {
-            view.trigger("discard", {
+            this.trigger("discard", {
                 source: view
             });
-            view.destroy();
+            this.destroy();
         });
     },
 
@@ -201,14 +200,13 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         /** set up initial options, instance vars, behaviors */
         initialize: function(attributes) {
             this.metric("ListCollectionCreator.initialize", attributes);
-            var creator = this;
             _.each(this.defaultAttributes, (value, key) => {
                 value = attributes[key] || value;
-                creator[key] = value;
+                this[key] = value;
             });
 
             /** unordered, original list - cache to allow reversal */
-            creator.initialElements = attributes.elements || [];
+            this.initialElements = attributes.elements || [];
 
             this._setUpCommonSettings(attributes);
             this._instanceSetUp();
@@ -258,13 +256,12 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
         /** separate working list into valid and invalid elements for this collection */
         _validateElements: function() {
-            var creator = this;
-            creator.invalidElements = [];
+            this.invalidElements = [];
 
             this.workingElements = this.workingElements.filter(element => {
-                var problem = creator._isElementInvalid(element);
+                var problem = this._isElementInvalid(element);
                 if (problem) {
-                    creator.invalidElements.push({
+                    this.invalidElements.push({
                         element: element,
                         text: problem
                     });
@@ -417,14 +414,13 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         /** render the elements in order (or a warning if no elements found) */
         _renderList: function(speed, callback) {
             //this.debug( '-- _renderList' );
-            var creator = this;
 
             var $tmp = jQuery("<div/>");
-            var $list = creator.$list();
+            var $list = this.$list();
 
             _.each(this.elementViews, view => {
                 view.destroy();
-                creator.removeElementView(view);
+                this.removeElementView(view);
             });
 
             // if( !this.workingElements.length ){
@@ -432,14 +428,14 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
             //     return;
             // }
 
-            creator.workingElements.forEach(element => {
-                var elementView = creator._createElementView(element);
+            this.workingElements.forEach(element => {
+                var elementView = this._createElementView(element);
                 $tmp.append(elementView.$el);
             });
 
-            creator._renderClearSelected();
+            this._renderClearSelected();
             $list.empty().append($tmp.children());
-            _.invoke(creator.elementViews, "render");
+            _.invoke(this.elementViews, "render");
 
             if ($list.height() > $list.css("max-height")) {
                 $list.css("border-width", "1px 0px 1px 0px");
@@ -463,19 +459,18 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
         /** listen to any element events */
         _listenToElementView: function(view) {
-            var creator = this;
-            creator.listenTo(view, {
-                select: function(data) {
+            this.listenTo(view, {
+                select: data => {
                     var element = data.source.element;
                     if (data.selected) {
-                        creator.selectedIds[element.id] = true;
+                        this.selectedIds[element.id] = true;
                     } else {
-                        delete creator.selectedIds[element.id];
+                        delete this.selectedIds[element.id];
                     }
-                    creator.trigger("elements:select", data);
+                    this.trigger("elements:select", data);
                 },
                 discard: function(data) {
-                    creator.trigger("elements:discard", data);
+                    this.trigger("elements:discard", data);
                 }
             });
         },
@@ -529,28 +524,26 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                 return;
             }
 
-            var creator = this;
+            var elements = this.workingElements.map(element => this._elementToJSON(element));
 
-            var elements = this.workingElements.map(element => creator._elementToJSON(element));
-
-            creator.blocking = true;
-            return creator
-                .creationFn(elements, name, creator.hideOriginals)
+            this.blocking = true;
+            return this
+                .creationFn(elements, name, this.hideOriginals)
                 .always(() => {
-                    creator.blocking = false;
+                    this.blocking = false;
                 })
                 .fail((xhr, status, message) => {
-                    creator.trigger("error", {
+                    this.trigger("error", {
                         xhr: xhr,
                         status: status,
                         message: _l("An error occurred while creating this collection")
                     });
                 })
-                .done(function(response, message, xhr) {
-                    creator.trigger("collection:created", response, message, xhr);
-                    creator.metric("collection:created", response);
-                    if (typeof creator.oncreate === "function") {
-                        creator.oncreate.call(this, response, message, xhr);
+                .done((response, message, xhr) => {
+                    this.trigger("collection:created", response, message, xhr);
+                    this.metric("collection:created", response);
+                    if (typeof this.oncreate === "function") {
+                        this.oncreate.call(this, response, message, xhr);
                     }
                 });
         },
@@ -588,7 +581,6 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         _errorHandler: function(data) {
             this.error(data);
 
-            var creator = this;
             var content = data.message || _l("An error occurred");
             if (data.xhr) {
                 var xhr = data.xhr;
@@ -603,7 +595,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     content += `: ${message}`;
                 }
             }
-            creator._showAlert(content, "alert-danger");
+            this._showAlert(content, "alert-danger");
         },
 
         events: {
@@ -735,18 +727,17 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
         /** resync the creator's list of elements based on the DOM order */
         _syncOrderToDom: function() {
-            var creator = this;
             var newElements = [];
             //TODO: doesn't seem wise to use the dom to store these - can't we sync another way?
-            this.$(".collection-elements .collection-element").each(function() {
-                var id = $(this).attr("data-element-id");
+            this.$(".collection-elements .collection-element").each((index, element) => {
+                var id = $(element).attr("data-element-id");
 
-                var element = _.findWhere(creator.workingElements, {
+                var workingElement = _.findWhere(this.workingElements, {
                     id: id
                 });
 
-                if (element) {
-                    newElements.push(element);
+                if (workingElement) {
+                    newElements.push(workingElement);
                 } else {
                     console.error("missing element: ", id);
                 }

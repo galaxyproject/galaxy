@@ -152,23 +152,22 @@ var ControlledFetchCollection = Backbone.Collection.extend({
      */
     setOrder: function(order, options) {
         options = options || {};
-        var collection = this;
-        var comparator = collection.comparators[order];
+        var comparator = this.comparators[order];
         if (_.isUndefined(comparator)) {
             throw new Error(`unknown order: ${order}`);
         }
         // if( _.isUndefined( comparator ) ){ return; }
-        if (comparator === collection.comparator) {
+        if (comparator === this.comparator) {
             return;
         }
 
-        collection.order = order;
-        collection.comparator = comparator;
+        this.order = order;
+        this.comparator = comparator;
 
         if (!options.silent) {
-            collection.trigger("changed-order", options);
+            this.trigger("changed-order", options);
         }
-        return collection;
+        return this;
     }
 });
 
@@ -289,10 +288,9 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
 
         Galaxy.debug("ControlledFetchCollection.fetchMore:", options);
         options = _.clone(options || {});
-        var collection = this;
 
         Galaxy.debug("fetchMore, options.reset:", options.reset);
-        if (!options.reset && collection.allFetched) {
+        if (!options.reset && this.allFetched) {
             return jQuery.when();
         }
 
@@ -301,27 +299,27 @@ var InfinitelyScrollingCollection = ControlledFetchCollection.extend({
         if (options.reset) {
             options.offset = 0;
         } else if (options.offset === undefined) {
-            options.offset = collection.lastFetched;
+            options.offset = this.lastFetched;
         }
-        var limit = (options.limit = options.limit || collection.limitPerFetch || null);
+        var limit = (options.limit = options.limit || this.limitPerFetch || null);
         Galaxy.debug("fetchMore, limit:", limit, "offset:", options.offset);
 
-        collection.trigger("fetching-more");
+        this.trigger("fetching-more");
         return (
-            collection
+            this
                 .fetch(options)
                 .always(() => {
-                    collection.trigger("fetching-more-done");
+                    this.trigger("fetching-more-done");
                 })
                 // maintain allFetched flag and trigger if all were fetched this time
-                .done(function _postFetchMore(fetchedData) {
+                .done(fetchedData => {
                     var numFetched = _.isArray(fetchedData) ? fetchedData.length : 0;
-                    collection.lastFetched += numFetched;
-                    Galaxy.debug("fetchMore, lastFetched:", collection.lastFetched);
+                    this.lastFetched += numFetched;
+                    Galaxy.debug("fetchMore, lastFetched:", this.lastFetched);
                     // anything less than a full page means we got all there is to get
                     if (!limit || numFetched < limit) {
-                        collection.allFetched = true;
-                        collection.trigger("all-fetched", this);
+                        this.allFetched = true;
+                        this.trigger("all-fetched", this);
                     }
                 })
         );

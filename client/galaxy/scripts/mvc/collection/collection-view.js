@@ -51,14 +51,13 @@ var CollectionView = _super.extend(
 
         _queueNewRender: function($newRender, speed) {
             speed = speed === undefined ? this.fxSpeed : speed;
-            var panel = this;
             this.handleWarning($newRender);
-            panel.log("_queueNewRender:", $newRender, speed);
+            this.log("_queueNewRender:", $newRender, speed);
             // TODO: jquery@1.12 doesn't change display when the elem has display: flex
             // this causes display: block for those elems after the use of show/hide animations
             // animations are removed from this view for now until fixed
-            panel._swapNewRender($newRender);
-            panel.trigger("rendered", panel);
+            this._swapNewRender($newRender);
+            this.trigger("rendered", this);
         },
 
         handleWarning: function($newRender) {
@@ -105,11 +104,10 @@ var CollectionView = _super.extend(
         // ------------------------------------------------------------------------ collection sub-views
         /** In this override, add/remove expanded/collapsed model ids to/from web storage */
         _setUpItemViewListeners: function(view) {
-            var panel = this;
-            _super.prototype._setUpItemViewListeners.call(panel, view);
+            _super.prototype._setUpItemViewListeners.call(this, view);
 
             // use pub-sub to: handle drilldown expansion and collapse
-            panel.listenTo(view, {
+            this.listenTo(view, {
                 "expanded:drilldown": function(v, drilldown) {
                     this._expandDrilldownPanel(drilldown);
                 },

@@ -57,7 +57,6 @@ var CollectionViewEdit = _super.extend(
             this.tagsEditorShown = true;
 
             //TODO: extract
-            var panel = this;
 
             var nameSelector = "> .controls .name";
             $where
@@ -65,15 +64,15 @@ var CollectionViewEdit = _super.extend(
                 .attr("title", _l("Click to rename collection"))
                 .tooltip({ placement: "bottom" })
                 .make_text_editable({
-                    on_finish: function(newName) {
-                        var previousName = panel.model.get("name");
+                    on_finish: newName => {
+                        var previousName = this.model.get("name");
                         if (newName && newName !== previousName) {
-                            panel.$el.find(nameSelector).text(newName);
-                            panel.model.save({ name: newName }).fail(() => {
-                                panel.$el.find(nameSelector).text(panel.model.previous("name"));
+                            this.$el.find(nameSelector).text(newName);
+                            this.model.save({ name: newName }).fail(() => {
+                                this.$el.find(nameSelector).text(this.model.previous("name"));
                             });
                         } else {
-                            panel.$el.find(nameSelector).text(previousName);
+                            this.$el.find(nameSelector).text(previousName);
                         }
                     }
                 });

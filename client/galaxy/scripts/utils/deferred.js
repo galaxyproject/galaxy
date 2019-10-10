@@ -16,7 +16,6 @@ export default Backbone.Model.extend({
      *  If the callback does not take any arguments, the deferred is resolved instantly.
      */
     execute: function(callback) {
-        var self = this;
         var id = Utils.uid();
         var has_deferred = callback.length > 0;
         const Galaxy = getGalaxyInstance();
@@ -26,20 +25,20 @@ export default Backbone.Model.extend({
 
         // deferred process
         var process = $.Deferred();
-        process.promise().always(function() {
-            delete self.active[id];
+        process.promise().always(() => {
+            delete this.active[id];
             has_deferred &&
                 Galaxy.emit.debug(
                     "deferred::execute()",
-                    `${this.state()
+                    `${process.state()
                         .charAt(0)
-                        .toUpperCase() + this.state().slice(1)} ${id}`
+                        .toUpperCase() + process.state().slice(1)} ${id}`
                 );
         });
 
         // deferred queue
         $.when(this.last).always(() => {
-            if (self.active[id]) {
+            if (this.active[id]) {
                 has_deferred && Galaxy.emit.debug("deferred::execute()", `Running ${id}`);
                 callback(process);
                 !has_deferred && process.resolve();

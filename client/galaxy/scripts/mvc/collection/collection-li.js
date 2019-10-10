@@ -204,9 +204,8 @@ var DatasetDCEListItemView = DatasetListItemView.extend(
          *  Note: fetch with no 'change' event triggering to prevent automatic rendering.
          */
         _fetchModelDetails: function() {
-            var view = this;
-            if (view.model.inReadyState() && !view.model.hasDetails()) {
-                return view.model.fetch({ silent: true });
+            if (this.model.inReadyState() && !this.model.hasDetails()) {
+                return this.model.fetch({ silent: true });
             }
             return $.when();
         },

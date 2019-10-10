@@ -234,8 +234,7 @@ var SearchableModelMixin = {
      *      returning a list of keys of attributes that contain searchFor
      */
     search: function(searchFor) {
-        var model = this;
-        return _.filter(this.searchAttributes, key => model.searchAttribute(key, searchFor));
+        return _.filter(this.searchAttributes, key => this.searchAttribute(key, searchFor));
     },
 
     /** alias of search, but returns a boolean; accepts attribute specifiers where
@@ -266,12 +265,11 @@ var SearchableModelMixin = {
      *      To include whitespace in terms: wrap the term in double quotations (name="blah bler").
      */
     matchesAll: function(terms) {
-        var model = this;
         // break the terms up by whitespace and filter out the empty strings
         terms = terms.match(/(".*"|\w*=".*"|\S*)/g).filter(s => !!s);
         return _.all(terms, term => {
             term = term.replace(/"/g, "");
-            return model.matches(term);
+            return this.matches(term);
         });
     }
 };
@@ -312,9 +310,8 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */ {
         this.hidden = this.isHidden();
 
         if ($activator) {
-            var mixin = this;
             $activator.on("click", ev => {
-                mixin.toggle(mixin.HUAVOptions.showSpeed);
+                this.toggle(mixin.HUAVOptions.showSpeed);
             });
         }
     },

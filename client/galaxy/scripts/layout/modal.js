@@ -83,13 +83,12 @@ $.extend(Modal.prototype, {
         }
     },
     hide: function() {
-        const modal = this;
-        modal.$dialog.fadeOut(() => {
-            modal.$overlay.hide();
-            modal.$backdrop.removeClass("in");
-            modal.$body.children().remove();
+        this.$dialog.fadeOut(() => {
+            this.$overlay.hide();
+            this.$backdrop.removeClass("in");
+            this.$body.children().remove();
             // Clear min-width to allow for modal to take size of new body.
-            modal.$body.css("min-width", undefined);
+            this.$body.css("min-width", undefined);
         });
     }
 });
