@@ -123,6 +123,19 @@ const View = Backbone.View.extend({
 
     _customize: function(form) {
         const options = form.model.attributes;
+        var inputs = options.inputs;
+        inputs.push({
+            name: `pja__-TEMPVAR_REPLACE-__EmailAction`,
+            label: "Email notification",
+            type: "boolean",
+            /*TODO: change value to pull from input*/
+            value: "true",
+            ignore: "false",
+            help: _l("An email notification will be sent when the job has completed."),
+            payload: {
+                host: window.location.host
+            }
+        });
         // build execute button
         const execute_button = new Ui.Button({
             icon: "fa-check",
