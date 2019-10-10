@@ -8,15 +8,14 @@ import metrics from "utils/metrics-logger";
 import testApp from "qunit/test-app";
 
 var MockConsole = function() {
-    var self = this;
-    self.lastMessage = null;
-    ["log", "debug", "info", "warn", "error"].forEach(function(fnName) {
-        self[fnName] = function() {
+    this.lastMessage = null;
+    ["log", "debug", "info", "warn", "error"].forEach(fnName => {
+        this[fnName] = () => {
             var args = Array.prototype.slice.call(arguments, 0);
-            self.lastMessage = { level: fnName, args: args };
+            this.lastMessage = { level: fnName, args: args };
         };
     });
-    return self;
+    return this;
 };
 
 (window.bootstrapped = {}).user = {

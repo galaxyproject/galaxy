@@ -7,14 +7,13 @@ QUnit.module("Modal dialog test", {
     beforeEach: function() {
         $.fx.off = true;
         testApp.create();
-        var self = this;
         this.app = new GalaxyModal.View({
             title: "Test title",
             body: "Test body",
             buttons: {
                 Ok: function() {},
-                Cancel: function() {
-                    self.app.hide();
+                Cancel: () => {
+                    this.app.hide();
                 }
             }
         });

@@ -21,12 +21,11 @@ QUnit.module("Ui test", {
 
 QUnit.test("tabs", function(assert) {
     assert.ok($.fn);
-    var self = this;
     var tabs = new Tabs.View({});
     var collection = tabs.collection;
     collection.add({ id: "id_a", title: "title_a", icon: "icon_a", $el: "el_a" });
-    var _test = function() {
-        self.clock.tick(window.WAIT_FADE);
+    var _test = () => {
+        this.clock.tick(window.WAIT_FADE);
         collection.each(function(model, index) {
             var $tab_element = tabs.$("#tab-" + model.id + " .nav-link");
             var $tab_content = tabs.$("#" + model.id);
@@ -50,10 +49,10 @@ QUnit.test("tabs", function(assert) {
     _test();
     tabs.model.set("visible", false);
     tabs.collection.reset();
-    self.clock.tick(window.WAIT_FADE);
+    this.clock.tick(window.WAIT_FADE);
     assert.ok(tabs.$el.css("display", "none"), "Everything hidden.");
     tabs.model.set("visible", true);
-    self.clock.tick(window.WAIT_FADE);
+    this.clock.tick(window.WAIT_FADE);
     assert.ok(tabs.$el.css("display", "block"), "Everything shown.");
     collection.add({ id: "id_c", title: "title_c", icon: "icon_c", $el: "el_c" });
     tabs.model.set("current", "id_c");

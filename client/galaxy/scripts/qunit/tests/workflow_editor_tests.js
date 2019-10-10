@@ -159,35 +159,31 @@ QUnit.test("input type can accept any datatype", function(assert) {
 });
 
 QUnit.test("cannot accept when already connected", function(assert) {
-    var self = this;
     // If other is subtype but already connected, cannot accept
-    this.with_test_connector(function() {
-        assert.ok(!self.test_accept());
+    this.with_test_connector(() => {
+        assert.ok(!this.test_accept());
     });
 });
 
 QUnit.test("can accept already connected inputs if input is multiple", function(assert) {
-    var self = this;
     this.multiple();
-    this.with_test_connector(function() {
-        assert.ok(self.test_accept());
+    this.with_test_connector(() => {
+        assert.ok(this.test_accept());
     });
 });
 
 QUnit.test("cannot accept already connected inputs if input is multiple but datatypes don't match", function(assert) {
     var other = { node: {}, datatypes: ["binary"] }; // binary is not txt
 
-    var self = this;
     this.multiple();
-    this.with_test_connector(function() {
-        assert.ok(!self.test_accept(other));
+    this.with_test_connector(() => {
+        assert.ok(!this.test_accept(other));
     });
 });
 
 QUnit.test("can accept list collection for multiple input parameters if datatypes match", function(assert) {
-    var self = this;
     this.multiple();
-    assert.ok(self.test_accept());
+    assert.ok(this.test_accept());
 });
 
 QUnit.test("can accept list collection for empty multiple inputs", function(assert) {
@@ -198,9 +194,8 @@ QUnit.test("can accept list collection for empty multiple inputs", function(asse
             return new Terminals.CollectionTypeDescription("list");
         }
     };
-    var self = this;
     this.multiple();
-    assert.ok(self.test_accept(other));
+    assert.ok(this.test_accept(other));
 });
 
 QUnit.test("cannot accept list collection for multiple input if collection already connected", function(assert) {
@@ -211,10 +206,9 @@ QUnit.test("cannot accept list collection for multiple input if collection alrea
             return new Terminals.CollectionTypeDescription("list");
         }
     };
-    var self = this;
     this.multiple();
     this.with_test_connector(function() {
-        assert.ok(!self.test_accept(other));
+        assert.ok(!this.test_accept(other));
     });
 });
 
@@ -290,8 +284,7 @@ QUnit.module("Input collection terminal model test", {
 });
 
 QUnit.test("Collection output can connect to same collection input type", function(assert) {
-    var self = this;
-    var inputTerminal = self.input_terminal;
+    var inputTerminal = this.input_terminal;
     assert.ok(inputTerminal);
     var outputTerminal = new Terminals.OutputCollectionTerminal({
         datatypes: "txt",
@@ -305,8 +298,7 @@ QUnit.test("Collection output can connect to same collection input type", functi
 });
 
 QUnit.test("Collection output cannot connect to different collection input type", function(assert) {
-    var self = this;
-    var inputTerminal = self.input_terminal;
+    var inputTerminal = this.input_terminal;
     var outputTerminal = new Terminals.OutputCollectionTerminal({
         datatypes: "txt",
         collection_type: "paired"
@@ -913,10 +905,9 @@ QUnit.module("terminal mapping logic", {
         return new Node(create_app(), { element: nodeEl });
     },
     _addExistingOutput: function(terminal, output, connected) {
-        var self = this;
         var node = terminal.node;
         if (connected) {
-            var inputTerminal = self.newInputTerminal();
+            var inputTerminal = this.newInputTerminal();
             new Connector(inputTerminal, output);
         }
         this._addTerminalTo(output, node.output_terminals);
@@ -938,10 +929,9 @@ QUnit.module("terminal mapping logic", {
         return this._addExistingOutput(terminal, connectedOutput, true);
     },
     addConnectedInput: function(terminal) {
-        var self = this;
         var connectedInput = this.newInputTerminal();
         var node = terminal.node;
-        var outputTerminal = self.newOutputTerminal();
+        var outputTerminal = this.newOutputTerminal();
         new Connector(connectedInput, outputTerminal);
         this._addTerminalTo(connectedInput, node.input_terminals);
         return connectedInput;
