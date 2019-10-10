@@ -8,7 +8,7 @@ import sys
 def main():
 	(input_file, json_file) = sys.argv[1:3]
 	
-	r = subprocess.run(["/srv/amp/ina-speech-tools-singularity/ina-speech-tools-singularity.sif", input_file, json_file])
+	r = subprocess.run(["singularity", "run", "/srv/amp/ina-speech-tools-singularity/ina-speech-tools-singularity.sif", input_file, json_file])
 	
 	exit(r.returncode)
 		
