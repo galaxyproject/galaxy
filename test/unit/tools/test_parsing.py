@@ -5,7 +5,8 @@ import tempfile
 import unittest
 from math import isinf
 
-from galaxy.tools.parser.factory import get_tool_source
+from galaxy.tool_util.parser.factory import get_tool_source
+from galaxy.util import galaxy_directory
 
 
 TOOL_XML_1 = """
@@ -38,6 +39,42 @@ TOOL_XML_1 = """
             </output>
         </test>
     </tests>
+</tool>
+"""
+
+TOOL_WITH_TOKEN = r"""
+<tool id="tool_with_token" name="Token" version="1">
+    <macros>
+        <token name="@ESCAPE_IDENTIFIER@">
+<![CDATA[
+#set identifier = re.sub('[^\s\w\-]', '_', str($file.element_identifier))
+        ]]></token>
+        <token name="@NESTED_TOKEN@">
+<![CDATA[
+    before
+    @ESCAPE_IDENTIFIER@
+    after
+        ]]></token>
+    </macros>
+    <command>
+@NESTED_TOKEN@
+    </command>
+</tool>
+"""
+
+TOOL_WITH_RECURSIVE_TOKEN = r"""
+<tool id="tool_with_recursive_token" name="Token" version="1">
+    <macros>
+        <token name="@NESTED_TOKEN@">
+<![CDATA[
+    before
+    @NESTED_TOKEN@
+    after
+        ]]></token>
+    </macros>
+    <command>
+@NESTED_TOKEN@
+    </command>
 </tool>
 """
 
@@ -92,6 +129,39 @@ tests:
          compare: sim_size
 """
 
+TOOL_EXPRESSION_XML_1 = """
+<tool name="parse_int" id="parse_int" version="0.1.0" tool_type="expression">
+    <description>Parse Int</description>
+    <expression type="ecma5.1">
+        {return {'output': parseInt($job.input1)};}
+    </expression>
+    <inputs>
+        <input type="text" label="Text to parse." name="input1" />
+    </inputs>
+    <outputs>
+        <output type="integer" name="out1" from="output" />
+    </outputs>
+    <help>Parse an integer from text.</help>
+</tool>
+"""
+
+
+TOOL_EXPRESSION_YAML_1 = """
+class: GalaxyExpressionTool
+name: "parse_int"
+id: parse_int
+version: 1.0.2
+expression: "{return {'output': parseInt($job.input1)};}"
+inputs:
+ - name: input1
+   label: Text to parse
+   type: text
+outputs:
+  out1:
+    type: integer
+    from: "#output"
+"""
+
 
 class BaseLoaderTestCase(unittest.TestCase):
 
@@ -117,6 +187,22 @@ class BaseLoaderTestCase(unittest.TestCase):
             path = source_file_name
         tool_source = get_tool_source(path)
         return tool_source
+
+
+class XmlExpressionLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = "expression.xml"
+    source_contents = TOOL_EXPRESSION_XML_1
+
+    def test_expression(self):
+        assert self._tool_source.parse_expression().strip() == "{return {'output': parseInt($job.input1)};}"
+
+    def test_tool_type(self):
+        assert self._tool_source.parse_tool_type() == "expression"
+
+
+class YamlExpressionLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = "expression.yml"
+    source_contents = TOOL_EXPRESSION_XML_1
 
 
 class XmlLoaderTestCase(BaseLoaderTestCase):
@@ -252,6 +338,16 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
 
     def test_refresh_option(self):
         assert self._tool_source.parse_refresh() is False
+
+    def test_nested_token(self):
+        tool_source = self._get_tool_source(source_contents=TOOL_WITH_TOKEN)
+        command = tool_source.parse_command()
+        assert command
+        assert '@' not in command
+
+    def test_recursive_token(self):
+        with self.assertRaises(Exception):
+            self._get_tool_source(source_contents=TOOL_WITH_RECURSIVE_TOKEN)
 
 
 class YamlLoaderTestCase(BaseLoaderTestCase):
@@ -426,7 +522,7 @@ class DataSourceLoaderTestCase(BaseLoaderTestCase):
 
 
 class ApplyRulesToolLoaderTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/apply_rules.xml")
+    source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/apply_rules.xml")
     source_contents = None
 
     def test_tool_type(self):
@@ -442,7 +538,7 @@ class ApplyRulesToolLoaderTestCase(BaseLoaderTestCase):
 
 
 class BuildListToolLoaderTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/build_list.xml")
+    source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/build_list.xml")
     source_contents = None
 
     def test_tool_type(self):
@@ -452,7 +548,7 @@ class BuildListToolLoaderTestCase(BaseLoaderTestCase):
 
 
 class SpecialToolLoaderTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/imp_exp/exp_history_to_archive.xml")
+    source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/imp_exp/exp_history_to_archive.xml")
     source_contents = None
 
     def test_tool_type(self):
@@ -477,7 +573,7 @@ class SpecialToolLoaderTestCase(BaseLoaderTestCase):
 
 
 class CollectionTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/collection_two_paired.xml")
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_two_paired.xml")
     source_contents = None
 
     def test_tests(self):
@@ -485,12 +581,13 @@ class CollectionTestCase(BaseLoaderTestCase):
         tests = tests_dict["tests"]
         assert len(tests) == 2
         assert len(tests[0]["inputs"]) == 3, tests[0]
+
         outputs, output_collections = self._tool_source.parse_outputs(None)
         assert len(output_collections) == 0
 
 
 class CollectionOutputXmlTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/collection_creates_pair.xml")
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_creates_pair.xml")
     source_contents = None
 
     def test_tests(self):
@@ -499,9 +596,22 @@ class CollectionOutputXmlTestCase(BaseLoaderTestCase):
 
 
 class CollectionOutputYamlTestCase(BaseLoaderTestCase):
-    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/collection_creates_pair_y.yml")
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_creates_pair_y.yml")
     source_contents = None
 
     def test_tests(self):
         outputs, output_collections = self._tool_source.parse_outputs(None)
         assert len(output_collections) == 1
+
+
+class ExpectationsTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/detect_errors.xml")
+    source_contents = None
+
+    def test_tests(self):
+        tests_dict = self._tool_source.parse_tests_to_dict()
+        tests = tests_dict["tests"]
+        assert len(tests) == 10
+        test_0 = tests[0]
+        assert len(test_0["stderr"]) == 1
+        assert len(test_0["stdout"]) == 2

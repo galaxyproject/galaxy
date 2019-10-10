@@ -245,7 +245,7 @@ class NavigatesGalaxy(HasDriver):
 
     def history_panel_create_new(self):
         """Click create new and pause a bit for the history to begin to refresh."""
-        self.click_history_option('Create New')
+        self.history_click_create_new()
         self.sleep_for(WAIT_TYPES.UX_RENDER)
 
     def history_panel_wait_for_hid_ok(self, hid, allowed_force_refreshes=0):
@@ -367,22 +367,16 @@ class NavigatesGalaxy(HasDriver):
     def submit_login(self, email, password=None, assert_valid=True, retries=0):
         if password is None:
             password = self.default_password
-
         login_info = {
             'login': email,
             'password': password,
         }
-
         self.click_masthead_user()
-        self.wait_for_and_click(self.navigation.masthead.labels.login)
-
-        with self.main_panel():
-            self.sleep_for(WAIT_TYPES.UX_RENDER)
-            form = self.wait_for_visible(self.navigation.login.selectors.form)
-            self.fill(form, login_info)
-            self.snapshot("logging-in")
-            self.click_submit(form)
-
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
+        form = self.wait_for_visible(self.navigation.login.selectors.form)
+        self.fill(form, login_info)
+        self.snapshot("logging-in")
+        self.wait_for_and_click(self.navigation.login.selectors.submit)
         self.snapshot("login-submitted")
         if assert_valid:
             try:
@@ -407,26 +401,25 @@ class NavigatesGalaxy(HasDriver):
 
         self.home()
         self.click_masthead_user()
-        self.wait_for_and_click(self.navigation.masthead.labels.register)
-        with self.main_panel():
-            form = self.wait_for_visible(self.navigation.registration.selectors.form)
-            self.fill(form, dict(
-                email=email,
-                password=password,
-                username=username,
-                confirm=confirm
-            ))
-            self.wait_for_and_click(self.navigation.registration.selectors.submit)
-            # Give the browser a bit of time to submit the request.
-            # It would be good to eliminate this sleep, but it can't be because Galaxy
-            # doesn't swap the "User" menu automatically after it registers a user and
-            # and the donemessage visible comment below doesn't work when using Selenium.
-            # Something about the Selenium session or quickness of registering causes the
-            # following in the Galaxy logs which gets propaged to the GUI as a generic error:
-            # /api/histories/cfc05ccec54895e2/contents?keys=type_id%2Celement_count&order=hid&v=dev&q=history_content_type&q=deleted&q=purged&q=visible&qv=dataset_collection&qv=False&qv=False&qv=True HTTP/1.1" 403 - "http://localhost:8080/"
-            # Like the logged in user doesn't have permission to the previously anonymous user's
-            # history, it is odd but I cannot replicate this outside of Selenium.
-            time.sleep(1.35)
+        self.wait_for_and_click(self.navigation.registration.selectors.toggle)
+        form = self.wait_for_visible(self.navigation.registration.selectors.form)
+        self.fill(form, dict(
+            email=email,
+            password=password,
+            username=username,
+            confirm=confirm
+        ))
+        self.wait_for_and_click(self.navigation.registration.selectors.submit)
+        # Give the browser a bit of time to submit the request.
+        # It would be good to eliminate this sleep, but it can't be because Galaxy
+        # doesn't swap the "User" menu automatically after it registers a user and
+        # and the donemessage visible comment below doesn't work when using Selenium.
+        # Something about the Selenium session or quickness of registering causes the
+        # following in the Galaxy logs which gets propaged to the GUI as a generic error:
+        # /api/histories/cfc05ccec54895e2/contents?keys=type_id%2Celement_count&order=hid&v=dev&q=history_content_type&q=deleted&q=purged&q=visible&qv=dataset_collection&qv=False&qv=False&qv=True HTTP/1.1" 403 - "http://localhost:8080/"
+        # Like the logged in user doesn't have permission to the previously anonymous user's
+        # history, it is odd but I cannot replicate this outside of Selenium.
+        time.sleep(1.35)
 
         if assert_valid:
             # self.wait_for_selector_visible(".donemessage")
@@ -807,6 +800,13 @@ class NavigatesGalaxy(HasDriver):
     def workflow_editor_options_menu_element(self):
         return self.wait_for_selector_visible("#workflow-options-button-menu")
 
+    def workflow_editor_click_run(self):
+        return self.wait_for_and_click_selector("#workflow-run-button")
+
+    def workflow_editor_click_save(self):
+        self.wait_for_and_click_selector("#workflow-save-button")
+        self.sleep_for(self.wait_types.DATABASE_OPERATION)
+
     def admin_open(self):
         self.components.masthead.admin.wait_for_and_click()
 
@@ -837,10 +837,10 @@ class NavigatesGalaxy(HasDriver):
 
     def libraries_index_create(self, name):
         self.libraries_index_click_create_new()
-        name_text_box = self.wait_for_selector_clickable("input[name='Name']")
+        name_text_box = self.wait_for_selector_visible("textarea[name='input_library_name']")
         name_text_box.send_keys(name)
 
-        self.wait_for_and_click_selector("#button-0")
+        self.wait_for_and_click_selector(".save_library_btn")
 
     def libraries_index_click_search(self):
         self.sleep_for(WAIT_TYPES.UX_RENDER)
@@ -868,10 +868,10 @@ class NavigatesGalaxy(HasDriver):
     def libraries_folder_create(self, name):
         self.components.libraries.folder.add_folder.wait_for_and_click()
 
-        name_text_box = self.wait_for_selector_clickable("input[name='Name']")
+        name_text_box = self.wait_for_selector_visible("textarea[name='input_folder_name']")
         name_text_box.send_keys(name)
 
-        create_button = self.wait_for_selector_clickable("#button-0")
+        create_button = self.wait_for_selector_clickable(".save_folder_btn")
         create_button.click()
 
     def libraries_click_dataset_import(self):
@@ -992,7 +992,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_tags(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
         tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
-        tag_spans = tag_display.find_elements_by_css_selector("span.badge-tags")
+        tag_spans = tag_display.find_elements_by_css_selector(".tag-name")
         tags = []
         for tag_span in tag_spans:
             tags.append(tag_span.text)
@@ -1086,9 +1086,12 @@ class NavigatesGalaxy(HasDriver):
 
         # Click labelled option
         self.wait_for_visible(self.navigation.history_panel.options_menu)
-        menu_item_sizzle_selector = '#history-options-button-menu > li > a:contains("%s")' % option_label
+        menu_item_sizzle_selector = '#history-options-button-menu > a:contains("%s")' % option_label
         menu_selection_element = self.wait_for_sizzle_selector_clickable(menu_item_sizzle_selector)
         menu_selection_element.click()
+
+    def history_click_create_new(self):
+        self.components.history_panel.new_history_button.wait_for_and_click()
 
     def history_panel_click_copy_elements(self):
         self.click_history_option("Copy Datasets")
@@ -1258,7 +1261,7 @@ class NavigatesGalaxy(HasDriver):
             self.home()
             self.click_masthead_user()
             self.wait_for_and_click(self.navigation.masthead.labels.logout)
-            self.click_label('go to the home page')
+            self.sleep_for(WAIT_TYPES.UX_TRANSITION)
             assert not self.is_logged_in()
 
     def run_tour(self, path, skip_steps=None, sleep_on_steps=None, tour_callback=None):

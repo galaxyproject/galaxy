@@ -270,7 +270,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         grid['shared_by_others'] = self._get_shared(trans)
         return grid
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_login("use Galaxy visualizations", use_panels=True)
     def list(self, trans, **kwargs):
         message = kwargs.get('message')
@@ -527,7 +527,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         vis_annotation = annotation or vis_config.get('annotation', None)
         return self.save_visualization(trans, vis_config, vis_type, vis_id, vis_title, vis_dbkey, vis_annotation)
 
-    @web.expose_api
+    @web.legacy_expose_api
     @web.require_login("edit visualizations")
     def edit(self, trans, payload=None, **kwd):
         """
@@ -623,7 +623,7 @@ class VisualizationController(BaseUIController, SharableMixin, UsesVisualization
         """
         log.exception('error rendering visualization (%s)', visualization_name)
         if trans.debug:
-            raise
+            raise exception
         return trans.show_error_message(
             "There was an error rendering the visualization. " +
             "Contact your Galaxy administrator if the problem persists." +

@@ -28,10 +28,10 @@ from galaxy.util import (
     string_as_bool
 )
 from galaxy.web import (
-    _future_expose_api as expose_api,
-    _future_expose_api_anonymous as expose_api_anonymous,
-    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
-    _future_expose_api_raw as expose_api_raw,
+    expose_api,
+    expose_api_anonymous,
+    expose_api_anonymous_and_sessionless,
+    expose_api_raw,
     url_for
 )
 from galaxy.web.base.controller import (
@@ -149,7 +149,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         # and any sent in from the query string
         filters += self.filters.parse_filters(filter_params)
 
-        order_by = self._parse_order_by(kwd.get('order', 'create_time-dsc'))
+        order_by = self._parse_order_by(manager=self.manager, order_by_string=kwd.get('order', 'create_time-dsc'))
         histories = self.manager.list(filters=filters, order_by=order_by, limit=limit, offset=offset)
 
         rval = []
@@ -181,13 +181,6 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
 
         # otherwise, do the default filter of removing the deleted histories
         return [self.app.model.History.deleted == false()]
-
-    def _parse_order_by(self, order_by_string):
-        ORDER_BY_SEP_CHAR = ','
-        manager = self.manager
-        if ORDER_BY_SEP_CHAR in order_by_string:
-            return [manager.parse_order_by(o) for o in order_by_string.split(ORDER_BY_SEP_CHAR)]
-        return manager.parse_order_by(order_by_string)
 
     @expose_api_anonymous
     def show(self, trans, id, deleted='False', **kwd):
@@ -254,7 +247,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         limit, offset = self.parse_limit_offset(kwd)
         filter_params = self.parse_filter_params(kwd)
         filters = self.filters.parse_filters(filter_params)
-        order_by = self._parse_order_by(kwd.get('order', 'create_time-dsc'))
+        order_by = self._parse_order_by(manager=self.manager, order_by_string=kwd.get('order', 'create_time-dsc'))
         histories = self.manager.list_published(filters=filters, order_by=order_by, limit=limit, offset=offset)
         rval = []
         for history in histories:
@@ -280,7 +273,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         limit, offset = self.parse_limit_offset(kwd)
         filter_params = self.parse_filter_params(kwd)
         filters = self.filters.parse_filters(filter_params)
-        order_by = self._parse_order_by(kwd.get('order', 'create_time-dsc'))
+        order_by = self._parse_order_by(manager=self.manager, order_by_string=kwd.get('order', 'create_time-dsc'))
         histories = self.manager.list_shared_with(current_user,
             filters=filters, order_by=order_by, limit=limit, offset=offset)
         rval = []

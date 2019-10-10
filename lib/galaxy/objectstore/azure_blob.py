@@ -90,7 +90,7 @@ class AzureBlobObjectStore(ObjectStore):
     store_type = 'azure_blob'
 
     def __init__(self, config, config_dict):
-        super(AzureBlobObjectStore, self).__init__(config)
+        super(AzureBlobObjectStore, self).__init__(config, config_dict)
 
         self.transfer_progress = 0
 
@@ -106,10 +106,6 @@ class AzureBlobObjectStore(ObjectStore):
 
         self.cache_size = cache_dict.get('size', -1)
         self.staging_path = cache_dict.get('path') or self.config.object_store_cache_path
-
-        extra_dirs = dict(
-            (e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
-        self.extra_dirs.update(extra_dirs)
 
         self._initialize()
 

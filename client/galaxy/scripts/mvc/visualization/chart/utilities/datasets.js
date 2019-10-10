@@ -86,9 +86,9 @@ var request = function(options) {
             for (let i = 0; i < results.length; i++) {
                 results[i] = [];
             }
-            for (let i in response.data) {
+            for (const i in response.data) {
                 var row = response.data[i];
-                for (let j in row) {
+                for (const j in row) {
                     var v = row[j];
                     if (v !== undefined && v != 2147483647 && j < column_length) {
                         results[j].push(v);
@@ -96,7 +96,7 @@ var request = function(options) {
                 }
             }
             console.debug("tabular-datasets::_fetch() - Fetching complete.");
-            for (let i in results) {
+            for (const i in results) {
                 var column = column_list[i];
                 var block_id = _block_id(dataset_id, column);
                 _cache[block_id] = results[i];

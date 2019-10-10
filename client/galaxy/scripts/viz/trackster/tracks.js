@@ -783,11 +783,11 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
                 //
                 this.filters_manager.remove_all();
                 for (var filter_name in shared_filters) {
-                    let filters = shared_filters[filter_name];
+                    const filters = shared_filters[filter_name];
                     if (filters.length === num_feature_tracks) {
                         // Add new filter.
                         // FIXME: can filter.copy() be used?
-                        let new_filter = new filters_mod.NumberFilter({
+                        const new_filter = new filters_mod.NumberFilter({
                             name: filters[0].name,
                             index: filters[0].index
                         });
@@ -1000,6 +1000,9 @@ var TracksterView = Backbone.View.extend({
                 });
             });
 
+        // We break out of the parent container with nav (and potentially other
+        // things?) so we need to override any overflow settings here.
+        parent_element.css("overflow", "visible");
         // Navigation at top
         this.nav_container = $("<div/>")
             .addClass("trackster-nav-container")
@@ -1607,7 +1610,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         var view = this;
 
         var // Either redrawing a single drawable or all view's drawables.
-        track_list = drawable ? [drawable] : view.drawables;
+            track_list = drawable ? [drawable] : view.drawables;
 
         // Add/update tracks in track list to redraw list.
         _.each(track_list, track => {
@@ -1947,7 +1950,7 @@ var TracksterToolView = Backbone.View.extend({
      */
     run_on_dataset: function() {
         var tool = this.model;
-        let Galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         this.run(
             // URL params.
             {
@@ -2447,7 +2450,7 @@ extend(Track.prototype, Drawable.prototype, {
             title: _l("Tool parameter space visualization"),
             css_class: "arrow-split",
             on_click_fn: track => {
-                let Galaxy = getGalaxyInstance();
+                const Galaxy = getGalaxyInstance();
 
                 var html = `
                     <strong>Tool</strong>:${track.tool.get("name")}<br/>
@@ -2714,7 +2717,7 @@ extend(Track.prototype, Drawable.prototype, {
                         $("<a href='javascript:void(0);'></a>")
                             .text("View error")
                             .click(() => {
-                                let Galaxy = getGalaxyInstance();
+                                const Galaxy = getGalaxyInstance();
                                 Galaxy.modal.show({
                                     title: _l("Trackster Error"),
                                     body: `<pre>${result.message}</pre>`,
@@ -3084,10 +3087,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         this.tiles_div.children().addClass("remove");
 
         var // Tile width in bases.
-        tile_width = Math.floor(TILE_SIZE * resolution);
+            tile_width = Math.floor(TILE_SIZE * resolution);
 
         var // Index of first tile that overlaps visible region.
-        tile_index = Math.floor(low / tile_width);
+            tile_index = Math.floor(low / tile_width);
 
         var tile_region;
         var tile_promise;

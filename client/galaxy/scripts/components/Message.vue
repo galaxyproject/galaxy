@@ -1,5 +1,5 @@
 <template>
-  <div v-if="message" :class="[status + 'message']">{{ message }}</div>
+    <div v-if="message" :class="[status + 'message']">{{ message }}</div>
 </template>
 
 <script>

@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<openid>
+    <provider file="genomespace.xml" />
+</openid>

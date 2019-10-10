@@ -300,27 +300,22 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             if (!actions.length) {
                 return $menu.empty();
             }
-
             var $newMenu = $(
-                [
-                    '<div class="list-action-menu btn-group">',
-                    '<button class="list-action-menu-btn btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
-                    _l("For all selected"),
-                    "...",
-                    "</button>",
-                    '<ul class="dropdown-menu float-right" role="menu">',
-                    "</ul>",
-                    "</div>"
-                ].join("")
+                `<div class="list-action-menu btn-group">
+                    <button class="list-action-menu-btn btn btn-secondary dropdown-toggle" data-toggle="dropdown">
+                        ${_l("For all selected")}...
+                    </button>
+                    <div class="dropdown-menu float-right" role="menu"/>
+                </div>`
             );
             var $actions = actions.map(action => {
-                var html = ['<li><a href="javascript:void(0);">', action.html, "</a></li>"].join("");
+                var html = `<a class="dropdown-item" href="javascript:void(0);">${action.html}</a>`;
                 return $(html).click(ev => {
                     ev.preventDefault();
                     return action.func(ev);
                 });
             });
-            $newMenu.find("ul").append($actions);
+            $newMenu.find(".dropdown-menu").append($actions);
             $menu.replaceWith($newMenu);
             return $newMenu;
         },

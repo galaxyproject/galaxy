@@ -4,7 +4,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import STATES from "mvc/dataset/states";
 import DATASET_LI from "mvc/dataset/dataset-li";
-import TAGS from "mvc/tag";
+import { mountModelTags } from "components/Tags";
 import ANNOTATIONS from "mvc/annotation";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
@@ -63,7 +63,7 @@ var DatasetListItemEdit = _super.extend(
                 faIcon: "fa-pencil",
                 classes: "edit-btn",
                 onclick: function(ev) {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/edit", {
@@ -164,7 +164,7 @@ var DatasetListItemEdit = _super.extend(
                     });
             };
 
-            let Galaxy = getGalaxyInstance();
+            const Galaxy = getGalaxyInstance();
             if (Galaxy.user.id === null) {
                 return null;
             }
@@ -226,7 +226,7 @@ var DatasetListItemEdit = _super.extend(
                 classes: "report-error-btn",
                 faIcon: "fa-bug",
                 onclick: function(ev) {
-                    let Galaxy = getGalaxyInstance();
+                    const Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/error", {
@@ -248,7 +248,7 @@ var DatasetListItemEdit = _super.extend(
                     target: this.linkTarget,
                     faIcon: "fa-refresh",
                     onclick: function(ev) {
-                        let Galaxy = getGalaxyInstance();
+                        const Galaxy = getGalaxyInstance();
                         if (Galaxy.router) {
                             ev.preventDefault();
                             Galaxy.router.push("/", {
@@ -273,15 +273,15 @@ var DatasetListItemEdit = _super.extend(
             }
 
             if (visualizations.length >= 1) {
-                let dsid = this.model.get("id");
-                let url = getAppRoot() + "visualizations?dataset_id=" + dsid;
+                const dsid = this.model.get("id");
+                const url = getAppRoot() + "visualizations?dataset_id=" + dsid;
                 return faIconButton({
                     title: _l("Visualize this data"),
                     href: url,
                     classes: "visualization-link",
                     faIcon: "fa-bar-chart-o",
                     onclick: ev => {
-                        let Galaxy = getGalaxyInstance();
+                        const Galaxy = getGalaxyInstance();
                         if (Galaxy.frame && Galaxy.frame.active) {
                             ev.preventDefault();
                             Galaxy.frame.add({ url: url, title: "Visualization" });
@@ -297,35 +297,44 @@ var DatasetListItemEdit = _super.extend(
             }
         },
 
-        //TODO: if possible move these to readonly view - but display the owner's tags/annotation (no edit)
         /** Render the tags list/control */
         _renderTags: function($where) {
             if (!this.hasUser) {
                 return;
             }
-            var view = this;
-            this.tagsEditor = new TAGS.TagsEditor({
+
+            const el = $where.find(".tags-display")[0];
+
+            const propsData = {
                 model: this.model,
-                el: $where.find(".tags-display"),
-                onshowFirstTime: function() {
-                    this.render();
-                },
-                // persist state on the hda view (and not the editor) since these are currently re-created each time
-                onshow: function() {
-                    view.tagsEditorShown = true;
-                },
-                onhide: function() {
-                    view.tagsEditorShown = false;
-                },
-                $activator: faIconButton({
-                    title: _l("Edit dataset tags"),
-                    classes: "tag-btn",
-                    faIcon: "fa-tags"
-                }).appendTo($where.find(".actions .right"))
-            });
+                disabled: false,
+                context: "dataset-li-edit"
+            };
+
+            const vm = mountModelTags(propsData, el);
+
+            // tag icon button open/closes
+            const activator = faIconButton({
+                title: _l("Edit dataset tags"),
+                classes: "tag-btn",
+                faIcon: "fa-tags"
+            }).appendTo($where.find(".actions .right"));
+
+            const toggleEditor = () => {
+                $(vm.$el).toggleClass("active");
+                this.tagsEditorShown = $(vm.$el).hasClass("active");
+            };
+
+            activator.on("click", toggleEditor);
+
             if (this.tagsEditorShown) {
-                this.tagsEditor.toggle(true);
+                const editorIsOpen = $(vm.$el).hasClass("active");
+                if (!editorIsOpen) {
+                    toggleEditor();
+                }
             }
+
+            return vm;
         },
 
         /** Render the annotation display/control */
@@ -458,41 +467,8 @@ DatasetListItemEdit.prototype.templates = (() => {
             "dataset"
         )
     });
-
-    var visualizationsTemplate = BASE_MVC.wrapTemplate(
-        [
-            "<% if( visualizations.length === 1 ){ %>",
-            '<a class="visualization-link icon-btn" href="<%- visualizations[0].href %>"',
-            ' target="<%- visualizations[0].target %>" title="',
-            _l("Visualize in"),
-            ' <%- visualizations[0].html %>">',
-            '<span class="fa fa-bar-chart-o"></span>',
-            "</a>",
-
-            "<% } else { %>",
-            '<div class="visualizations-dropdown dropdown icon-btn">',
-            '<a data-toggle="dropdown" title="',
-            _l("Visualize"),
-            '">',
-            '<span class="fa fa-bar-chart-o"></span>',
-            "</a>",
-            '<ul class="dropdown-menu" role="menu">',
-            "<% _.each( visualizations, function( visualization ){ %>",
-            '<li><a class="visualization-link" href="<%- visualization.href %>"',
-            ' target="<%- visualization.target %>">',
-            "<%- visualization.html %>",
-            "</a></li>",
-            "<% }); %>",
-            "</ul>",
-            "</div>",
-            "<% } %>"
-        ],
-        "visualizations"
-    );
-
     return _.extend({}, _super.prototype.templates, {
-        warnings: warnings,
-        visualizations: visualizationsTemplate
+        warnings: warnings
     });
 })();
 

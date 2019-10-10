@@ -57,11 +57,9 @@ masthead:
     admin: 'Admin'
 
     # user menu
-    register: 'Register'
-    login: 'Login'
     logout: 'Logout'
     custom_builds: 'Custom Builds'
-    saved_histories: 'Saved Histories'
+    histories: 'Histories'
 
     # Shared data
     libraries: 'Data Libraries'
@@ -104,7 +102,7 @@ history_panel:
     selectors:
       show_button: '#current-history-panel .actions .show-selectors-btn'
       action_button: '#current-history-panel .list-action-menu .list-action-menu-btn'
-      action_menu: '.list-action-menu ul.dropdown-menu'
+      action_menu: '.list-action-menu div.dropdown-menu'
 
     labels:
       build_pair: "Build Dataset Pair"
@@ -145,6 +143,7 @@ history_panel:
     options_button: '#history-options-button'
     options_button_icon: '#history-options-button span.fa-cog'
     options_menu: '#history-options-button-menu'
+    new_history_button: '#history-new-button'
     multi_view_button: '#history-view-multi-button'
 
     pagination_pages: '.list-pagination .pages'
@@ -205,14 +204,18 @@ histories:
 
 login:
   selectors:
-     form: 'form#login'
+    form: 'form#login'
+    submit:
+      type: xpath
+      selector: "//button[@name='login']"
 
 registration:
   selectors:
-    form: '#registration'
+    toggle: '#register-toggle'
+    form: 'form#registration'
     submit:
       type: xpath
-      selector: "//input[@value='Submit']"
+      selector: "//button[@name='create']"
 
 tool_form:
   selectors:
@@ -235,7 +238,7 @@ workflows:
 
 workflow_run:
 
-  selectors: 
+  selectors:
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .select2-container"
     # TODO: put step labels in the DOM ideally
@@ -321,7 +324,7 @@ admin:
     users_grid: '#users-grid'
     users_grid_create_button: '.manage-table-actions .action-button'
     groups_grid_create_button: '.manage-table-actions .action-button'
-    registration_form: 'form[name="registration"]'
+    registration_form: 'form#registration'
     groups_grid: '#groups-grid'
     roles_grid: '#roles-grid'
     groups_create_view: '#create-group'
@@ -335,7 +338,7 @@ libraries:
     selectors:
       add_items_button: '.add-library-items-datasets'
       add_items_menu: '.add-library-items-datasets .dropdown-menu'
-      add_items_options: '.add-library-items-datasets .dropdown-menu li a'
+      add_items_options: '.add-library-items-datasets .dropdown-menu div a'
 
       add_folder: '.add-library-items-folder'
 
@@ -349,7 +352,7 @@ libraries:
       import_datasets_cancel_button: '.modal-footer .buttons #button-1'
       import_progress_bar: '.progress-bar-import'
       import_history_content: '.library_selected_history_content'
-      import_history_contents_items: '.library_selected_history_content ul li'
+      import_history_contents_items: '.library_selected_history_content tbody > tr'
       import_from_path_textarea: '#import_paths'
       select_all: '#select-all-checkboxes'
 

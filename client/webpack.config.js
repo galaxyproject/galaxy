@@ -13,22 +13,24 @@ const imageBase = path.join(__dirname, "../static/style");
 
 let buildconfig = {
     entry: {
-        login: ["onload", "apps/login"],
-        analysis: ["onload", "apps/analysis"],
-        admin: ["onload", "apps/admin"],
-        extended: ["onload", "apps/extended"]
+        login: ["polyfills", "bundleEntries", "entry/login"],
+        analysis: ["polyfills", "bundleEntries", "entry/analysis"],
+        admin: ["polyfills", "bundleEntries", "entry/admin"],
+        generic: ["polyfills", "bundleEntries", "entry/generic"]
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
+        publicPath: "/static/scripts/bundled/",
         filename: "[name].bundled.js",
         chunkFilename: "[name].chunk.js"
     },
     resolve: {
+        extensions: ["*", ".js", ".json", ".vue", ".scss"],
         modules: [scriptsBase, "node_modules", styleBase, imageBase],
         alias: {
             jquery$: `${libsBase}/jquery.custom.js`,
             jqueryVendor$: `${libsBase}/jquery/jquery.js`,
-            store$: "store/dist/store.modern.js"
+            storemodern$: "store/dist/store.modern.js"
         }
     },
     optimization: {
@@ -42,7 +44,7 @@ let buildconfig = {
                 },
                 libs: {
                     name: "libs",
-                    test: /(node_modules|galaxy\/scripts\/(?!apps)).*\.(vue|js)$/, // .*\.(vue|js)$
+                    test: /node_modules[\\/](?!(handsontable|pikaday|moment)[\\/])|galaxy\/scripts\/libs/,
                     chunks: "all",
                     priority: -10
                 }
@@ -63,7 +65,22 @@ let buildconfig = {
                     libsBase
                 ],
                 loader: "babel-loader",
-                options: { babelrc: true }
+                options: {
+                    cacheDirectory: true,
+                    cacheCompression: false,
+                    presets: [
+                        ["@babel/preset-env", { modules: false }]
+                    ],
+                    plugins: [
+                        "transform-vue-template",
+                        "@babel/plugin-syntax-dynamic-import"
+                    ],
+                    ignore: [
+                        "i18n.js",
+                        "utils/localization.js",
+                        "nls/*"
+                    ]
+                }
             },
             {
                 test: `${libsBase}/jquery.custom.js`,
@@ -102,15 +119,24 @@ let buildconfig = {
                 }
             },
             // Alternative to setting window.bundleEntries
-            // Just import "extended" in any endpoint that needs
+            // Just import "bundleEntries" in any endpoint that needs
             // access to these globals, or even-better, make
             // more endpoints and skip the global altogether
             {
-                test: /apps\/extended/,
+                test: `${scriptsBase}/bundleEntries`,
                 use: [
                     {
                         loader: "expose-loader",
                         options: "bundleEntries"
+                    }
+                ]
+            },
+            {
+                test: `${scriptsBase}/onload/loadConfig.js`,
+                use: [
+                    {
+                        loader: "expose-loader",
+                        options: "config"
                     }
                 ]
             },
@@ -134,9 +160,19 @@ let buildconfig = {
                     },
                     {
                         loader: "sass-loader",
-                        options: { sourceMap: true }
+                        options: { 
+                            sourceMap: true,
+                            includePaths: [
+                                "galaxy/style/scss", 
+                                path.resolve(__dirname, './node_modules') 
+                            ]
+                        }
                     }
                 ]
+            },
+            {
+                test: /\.(txt|tmpl)$/,
+                loader: "raw-loader"
             }
         ]
     },

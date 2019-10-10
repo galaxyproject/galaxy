@@ -1,3 +1,5 @@
+"""
+"""
 import datetime
 import logging
 import sys
@@ -6,8 +8,15 @@ from migrate import ForeignKeyConstraint
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, MetaData, String, Table, TEXT
 from sqlalchemy.exc import NoSuchTableError
 
-# Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import JSONType, MetadataType, TrimmedString
+from galaxy.model.migrate.versions.util import (
+    add_column,
+    add_index,
+    drop_index,
+    engine_false,
+    localtimestamp,
+    nextval
+)
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
@@ -304,35 +313,9 @@ JobExternalOutputMetadata_table = Table("job_external_output_metadata", metadata
 Index("ix_jeom_library_dataset_dataset_association_id", JobExternalOutputMetadata_table.c.library_dataset_dataset_association_id)
 
 
-def engine_false(migrate_engine):
-    if migrate_engine.name in ['postgres', 'postgresql']:
-        return "FALSE"
-    elif migrate_engine.name in ['mysql', 'sqlite']:
-        return 0
-    else:
-        raise Exception('Unknown database type: %s' % migrate_engine.name)
-
-
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    # Load existing tables
     metadata.reflect()
-
-    def nextval(table, col='id'):
-        if migrate_engine.name in ['postgres', 'postgresql']:
-            return "nextval('%s_%s_seq')" % (table, col)
-        elif migrate_engine.name in ['mysql', 'sqlite']:
-            return "null"
-        else:
-            raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
-
-    def localtimestamp():
-        if migrate_engine.name in ['mysql', 'postgres', 'postgresql']:
-            return "LOCALTIMESTAMP"
-        elif migrate_engine.name == 'sqlite':
-            return "current_date || ' ' || current_time"
-        else:
-            raise Exception('Unable to convert data for unknown database type: %s' % migrate_engine.name)
 
     # Add 2 new columns to the galaxy_user table
     try:
@@ -341,18 +324,10 @@ def upgrade(migrate_engine):
         User_table = None
         log.debug("Failed loading table galaxy_user")
     if User_table is not None:
-        try:
-            col = Column('deleted', Boolean, index=True, default=False)
-            col.create(User_table, index_name='ix_user_deleted')
-            assert col is User_table.c.deleted
-        except Exception:
-            log.exception("Adding column 'deleted' to galaxy_user table failed.")
-        try:
-            col = Column('purged', Boolean, index=True, default=False)
-            col.create(User_table, index_name='ix_user_purged')
-            assert col is User_table.c.purged
-        except Exception:
-            log.exception("Adding column 'purged' to galaxy_user table failed.")
+        col = Column('deleted', Boolean, index=True, default=False)
+        add_column(col, User_table, index_name='ix_galaxy_user_deleted')
+        col = Column('purged', Boolean, index=True, default=False)
+        add_column(col, User_table, index_name='ix_galaxy_user_purged')
     # Add 1 new column to the history_dataset_association table
     try:
         HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
@@ -396,17 +371,7 @@ def upgrade(migrate_engine):
         except Exception:
             log.exception("Adding column 'importable' to stored_workflow table failed.")
     # Create an index on the Job.state column - changeset 2192
-    try:
-        Job_table = Table("job", metadata, autoload=True)
-    except NoSuchTableError:
-        Job_table = None
-        log.debug("Failed loading table job")
-    if Job_table is not None:
-        try:
-            i = Index('ix_job_state', Job_table.c.state)
-            i.create()
-        except Exception:
-            log.exception("Adding index to job.state column failed.")
+    add_index('ix_job_state', 'job', 'state', metadata)
     # Add all of the new tables above
     metadata.create_all()
     # Add 1 foreign key constraint to the history_dataset_association table
@@ -470,7 +435,7 @@ def upgrade(migrate_engine):
                 "%s AS deleted " + \
                 "FROM galaxy_user " + \
                 "ORDER BY id;"
-            cmd = cmd % (nextval('role'), localtimestamp(), localtimestamp(), engine_false(migrate_engine))
+            cmd = cmd % (nextval(migrate_engine, 'role'), localtimestamp(migrate_engine), localtimestamp(migrate_engine), engine_false(migrate_engine))
             migrate_engine.execute(cmd)
             # Create private roles for each user - pass 2
             if migrate_engine.name in ['postgres', 'postgresql', 'sqlite']:
@@ -489,7 +454,7 @@ def upgrade(migrate_engine):
                 "FROM galaxy_user, role " + \
                 "WHERE galaxy_user.email = role.name " + \
                 "ORDER BY galaxy_user.id;"
-            cmd = cmd % (nextval('user_role_association'), localtimestamp(), localtimestamp())
+            cmd = cmd % (nextval(migrate_engine, 'user_role_association'), localtimestamp(migrate_engine), localtimestamp(migrate_engine))
             migrate_engine.execute(cmd)
             # Create default permissions for each user
             cmd = \
@@ -501,7 +466,7 @@ def upgrade(migrate_engine):
                 "FROM galaxy_user " + \
                 "JOIN user_role_association ON user_role_association.user_id = galaxy_user.id " + \
                 "ORDER BY galaxy_user.id;"
-            cmd = cmd % nextval('default_user_permissions')
+            cmd = cmd % nextval(migrate_engine, 'default_user_permissions')
             migrate_engine.execute(cmd)
             # Create default history permissions for each active history associated with a user
 
@@ -514,7 +479,7 @@ def upgrade(migrate_engine):
                 "FROM history " + \
                 "JOIN user_role_association ON user_role_association.user_id = history.user_id " + \
                 "WHERE history.purged = %s AND history.user_id IS NOT NULL;"
-            cmd = cmd % (nextval('default_history_permissions'), engine_false(migrate_engine))
+            cmd = cmd % (nextval(migrate_engine, 'default_history_permissions'), engine_false(migrate_engine))
             migrate_engine.execute(cmd)
             # Create "manage permissions" dataset_permissions for all activate-able datasets
             cmd = \
@@ -530,14 +495,14 @@ def upgrade(migrate_engine):
                 "JOIN dataset ON history_dataset_association.dataset_id = dataset.id " + \
                 "JOIN user_role_association ON user_role_association.user_id = history.user_id " + \
                 "WHERE dataset.purged = %s AND history.user_id IS NOT NULL;"
-            cmd = cmd % (nextval('dataset_permissions'), localtimestamp(), localtimestamp(), engine_false(migrate_engine))
+            cmd = cmd % (nextval(migrate_engine, 'dataset_permissions'), localtimestamp(migrate_engine), localtimestamp(migrate_engine), engine_false(migrate_engine))
             migrate_engine.execute(cmd)
 
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
-    # Load existing tables
     metadata.reflect()
+
     # NOTE: all new data added in the upgrade method is eliminated here via table drops
     # Drop 1 foreign key constraint from the metadata_file table
     try:
@@ -705,17 +670,7 @@ def downgrade(migrate_engine):
     except Exception:
         log.exception("Dropping library_item_info_template table failed.")
     # Drop the index on the Job.state column - changeset 2192
-    try:
-        Job_table = Table("job", metadata, autoload=True)
-    except NoSuchTableError:
-        Job_table = None
-        log.debug("Failed loading table job")
-    if Job_table is not None:
-        try:
-            i = Index('ix_job_state', Job_table.c.state)
-            i.drop()
-        except Exception:
-            log.exception("Dropping index from job.state column failed.")
+    drop_index('ix_job_state', 'job', 'state', metadata)
     # Drop 1 column from the stored_workflow table - changeset 2328
     try:
         StoredWorkflow_table = Table("stored_workflow", metadata, autoload=True)

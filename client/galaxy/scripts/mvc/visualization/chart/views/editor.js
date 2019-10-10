@@ -2,8 +2,9 @@
  *  The charts editor holds the tabs for selecting chart types, chart configuration
  *  and data group selections.
  */
+import $ from "jquery";
+import Backbone from "backbone";
 import Ui from "mvc/ui/ui-misc";
-import Utils from "utils/utils";
 import Tabs from "mvc/ui/ui-tabs";
 import Groups from "mvc/visualization/chart/views/groups";
 import Settings from "mvc/visualization/chart/views/settings";

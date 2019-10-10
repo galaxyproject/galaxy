@@ -1,0 +1,9 @@
+bleach
+boltons
+bz2file; python_version < '3.3'
+Cheetah3
+docutils
+markupsafe
+packaging
+pyyaml
+six>=1.9.0

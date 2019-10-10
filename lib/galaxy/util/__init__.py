@@ -24,6 +24,8 @@ import time
 import unicodedata
 import xml.dom.minidom
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
 from xml.etree import ElementInclude, ElementTree
@@ -40,7 +42,10 @@ from boltons.iterutils import (
     remap,
 )
 from six import binary_type, iteritems, PY2, string_types, text_type
-from six.moves import email_mime_multipart, email_mime_text, xrange, zip
+from six.moves import (
+    xrange,
+    zip
+)
 from six.moves.urllib import (
     parse as urlparse,
     request as urlrequest
@@ -62,6 +67,8 @@ inflector = Inflector(English)
 
 log = get_logger(__name__)
 _lock = threading.RLock()
+
+namedtuple = collections.namedtuple
 
 CHUNK_SIZE = 65536  # 64k
 
@@ -1429,9 +1436,9 @@ def send_mail(frm, to, subject, body, config, html=None):
 
     to = listify(to)
     if html:
-        msg = email_mime_multipart.MIMEMultipart('alternative')
+        msg = MIMEMultipart('alternative')
     else:
-        msg = email_mime_text.MIMEText(body.encode('ascii', 'replace'))
+        msg = MIMEText(body, 'plain', 'utf-8')
 
     msg['To'] = ', '.join(to)
     msg['From'] = frm
@@ -1443,8 +1450,8 @@ def send_mail(frm, to, subject, body, config, html=None):
         return
 
     if html:
-        mp_text = email_mime_text.MIMEText(body.encode('ascii', 'replace'), 'plain')
-        mp_html = email_mime_text.MIMEText(html.encode('ascii', 'replace'), 'html')
+        mp_text = MIMEText(body, 'plain', 'utf-8')
+        mp_html = MIMEText(html, 'html', 'utf-8')
         msg.attach(mp_text)
         msg.attach(mp_html)
 
@@ -1524,7 +1531,10 @@ galaxy_root_path = os.path.join(__path__[0], "..", "..", "..")
 
 
 def galaxy_directory():
-    return os.path.abspath(galaxy_root_path)
+    root_path = os.path.abspath(galaxy_root_path)
+    if os.path.basename(root_path) == "packages":
+        root_path = os.path.abspath(os.path.join(root_path, ".."))
+    return root_path
 
 
 def config_directories_from_setting(directories_setting, galaxy_root=galaxy_root_path):
@@ -1638,7 +1648,7 @@ def url_get(base_url, password_mgr=None, pathspec=None, params=None):
     response = urlopener.open(full_url)
     content = response.read()
     response.close()
-    return content
+    return unicodify(content)
 
 
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2 ** 20):

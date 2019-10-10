@@ -11,4 +11,5 @@ cd `dirname $0`
 
 setup_python
 
+find lib/galaxy/model/migrate/versions -name '*.pyc' -delete
 python ./scripts/manage_db.py $@

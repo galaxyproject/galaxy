@@ -7,7 +7,7 @@ API operations for for querying and recording user metrics from some client
 import datetime
 import logging
 
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+from galaxy.web import expose_api_anonymous
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)

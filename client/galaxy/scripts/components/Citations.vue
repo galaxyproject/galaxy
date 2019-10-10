@@ -2,23 +2,24 @@
     <b-card>
         <h4 slot="header" class="mb-0">
             Citations
-            <b-button v-if="viewRender" @click="toggleViewRender" title="Show all in BibTeX format." class="citations-to-bibtex">
-                <i class="fa fa-pencil-square-o"></i>
-                Show BibTeX
+            <b-button
+                v-if="viewRender"
+                @click="toggleViewRender"
+                title="Show all in BibTeX format."
+                class="citations-to-bibtex"
+            >
+                <i class="fa fa-pencil-square-o"></i> Show BibTeX
             </b-button>
             <b-button v-else @click="toggleViewRender" title="Return to formatted citation list.">
-                <i class="fa fa-times"></i>
-                Hide BibTeX
+                <i class="fa fa-times"></i> Hide BibTeX
             </b-button>
         </h4>
         <div v-if="source === 'histories'" class="infomessage">
-            When writing up your analysis, remember to include all references that should be cited in order
-            to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
+            When writing up your analysis, remember to include all references that should be cited in order to
+            completely describe your work. Also, please remember to
+            <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
         </div>
-        <span v-if="viewRender" class="citations-formatted">
-            <p v-html="formattedReferences">
-            </p>
-        </span>
+        <span v-if="viewRender" class="citations-formatted"> <p v-html="formattedReferences"></p> </span>
         <pre v-else>
             <code class="citations-bibtex">
                 {{ content }}
@@ -27,11 +28,16 @@
     </b-card>
 </template>
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import _ from "underscore";
 import axios from "axios";
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+import { getAppRoot } from "onload/loadConfig";
 import * as bibtexParse from "libs/bibtexParse";
 import { convertLaTeX } from "latex-to-unicode-converter";
 import { stringifyLaTeX } from "latex-parser";
+
+Vue.use(BootstrapVue);
 
 export default {
     props: {
@@ -69,17 +75,17 @@ export default {
             .get(`${getAppRoot()}api/${this.source}/${this.id}/citations`)
             .then(response => {
                 this.content = "";
-                for (var rawCitation of response.data) {
+                for (const rawCitation of response.data) {
                     try {
-                        var citation = {
+                        const citation = {
                             fields: {},
                             entryType: undefined
                         };
-                        var parsed = bibtexParse.toJSON(rawCitation.content);
+                        let parsed = bibtexParse.toJSON(rawCitation.content);
                         if (parsed) {
                             parsed = _.first(parsed);
                             citation.entryType = parsed.entryType || undefined;
-                            for (var key in parsed.entryTags) {
+                            for (const key in parsed.entryTags) {
                                 citation.fields[key.toLowerCase()] = parsed.entryTags[key];
                             }
                         }
@@ -96,18 +102,18 @@ export default {
     },
     methods: {
         formattedReference: function(citation) {
-            var entryType = citation.entryType;
-            var fields = citation.fields;
+            const entryType = citation.entryType;
+            const fields = citation.fields;
 
-            var ref = "";
-            var authorsAndYear = `${this._asSentence(
+            let ref = "";
+            const authorsAndYear = `${this._asSentence(
                 (fields.author ? fields.author : "") + (fields.year ? ` (${fields.year})` : "")
             )} `;
-            var title = fields.title || "";
-            var pages = fields.pages ? `pp. ${fields.pages}` : "";
-            var address = fields.address;
+            const title = fields.title || "";
+            const pages = fields.pages ? `pp. ${fields.pages}` : "";
+            const address = fields.address;
             if (entryType == "article") {
-                var volume =
+                const volume =
                     (fields.volume ? fields.volume : "") +
                     (fields.number ? ` (${fields.number})` : "") +
                     (pages ? `, ${pages}` : "");
@@ -142,19 +148,19 @@ export default {
                     fields.howpublished
                 )}${this._asSentence(fields.note)}`;
             }
-            var doiUrl = "";
+            let doiUrl = "";
             if (fields.doi) {
                 doiUrl = `https://doi.org/${fields.doi}`;
                 ref += `[<a href="${doiUrl}" target="_blank">doi:${fields.doi}</a>]`;
             }
-            var url = fields.url || doiUrl;
+            const url = fields.url || doiUrl;
             if (url) {
                 ref += `[<a href="${url}" target="_blank">Link</a>]`;
             }
             return convertLaTeX({ onError: (error, latex) => `{${stringifyLaTeX(latex)}}` }, ref);
         },
         _formatBookInfo: function(fields) {
-            var info = "";
+            let info = "";
             if (fields.chapter) {
                 info += `${fields.chapter} in `;
             }

@@ -1,10 +1,11 @@
-import _l from "utils/localization";
 /** Renders the collection uploader rows */
+import _l from "utils/localization";
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import Utils from "utils/utils";
-import UploadModel from "mvc/upload/upload-model";
 import UploadSettings from "mvc/upload/upload-settings";
 import Popover from "mvc/ui/ui-popover";
-import Select from "mvc/ui/ui-select";
 export default Backbone.View.extend({
     /** Dictionary of upload states and associated icons */
     status_classes: {
@@ -39,8 +40,9 @@ export default Backbone.View.extend({
         });
 
         // identify default genome and extension values
-        var default_genome = this.app.select_genome.value();
-        var default_extension = this.app.select_extension.value();
+        // TODO: These appear unused.
+        //var default_genome = this.app.select_genome.value();
+        //var default_extension = this.app.select_extension.value();
 
         // handle click event
         this.$symbol.on("click", () => {
@@ -158,7 +160,7 @@ export default Backbone.View.extend({
     _template: function(options) {
         return `<tr id="upload-row-${
             options.id
-        }" class="upload-row"><td><div class="upload-text-column"><div class="upload-mode"/><div class="upload-title-extended"/><div class="upload-text"><div class="upload-text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div><textarea class="upload-text-content form-control"/></div></div></td><td><div class="upload-size"/></td><td><div class="upload-info"><div class="upload-info-text"/><div class="upload-info-progress progress"><div class="upload-progress-bar progress-bar progress-bar-success"/><div class="upload-percentage">0%</div></div></div></td><td><div class="upload-symbol ${
+        }" class="upload-row"><td><div class="upload-text-column"><div class="upload-mode"/><div class="upload-title-extended"/><div class="upload-text"><div class="upload-text-info">Download data from the web by entering URLs (one per line) or directly paste content.</div><textarea class="upload-text-content form-control"/></div></div></td><td><div class="upload-size"/></td><td><div class="upload-info"><div class="upload-info-text"/><div class="upload-info-progress progress"><div class="upload-progress-bar progress-bar progress-bar-success"/><div class="upload-percentage">0%</div></div></div></td><td><div class="upload-symbol ${
             this.status_classes.init
         }"/></td></tr>`;
     }

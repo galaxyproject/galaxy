@@ -4,12 +4,12 @@ from xml.etree.ElementTree import XML
 
 from galaxy import model
 from galaxy.exceptions import UserActivationRequiredException
+from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
     on_text_for_names
 )
-from galaxy.tools.parser.output_objects import ToolOutput
 from .. import tools_support
 
 
@@ -273,6 +273,9 @@ class MockObjectStore(object):
         self.created_datasets = []
         self.first_create = True
         self.object_store_id = "mycoolid"
+
+    def exists(self, *args, **kwargs):
+        return True
 
     def create(self, dataset):
         self.created_datasets.append(dataset)

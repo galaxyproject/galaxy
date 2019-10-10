@@ -1,6 +1,5 @@
+import Backbone from "backbone";
 import _l from "utils/localization";
-// dependencies
-import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import GenomespaceBrowser from "mvc/tool/tool-genomespace";
 /**

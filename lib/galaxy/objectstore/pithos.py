@@ -87,16 +87,12 @@ class PithosObjectStore(ObjectStore):
     store_type = 'pithos'
 
     def __init__(self, config, config_dict):
-        super(PithosObjectStore, self).__init__(config)
+        super(PithosObjectStore, self).__init__(config, config_dict)
         self.staging_path = self.config.file_path
         log.info('Parse config_xml for pithos object store')
         self.config_dict = config_dict
         log.debug(self.config_dict)
 
-        log.info('Define extra_dirs')
-        extra_dirs = dict(
-            (e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
-        self.extra_dirs.update(extra_dirs)
         self._initialize()
 
     def _initialize(self):

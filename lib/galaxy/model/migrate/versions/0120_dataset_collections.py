@@ -9,6 +9,7 @@ import logging
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT, Unicode
 
 from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrate.versions.util import create_table, drop_table
 
 now = datetime.datetime.utcnow
 log = logging.getLogger(__name__)
@@ -129,12 +130,12 @@ TABLES = [
 
 
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print(__doc__)
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     for table in TABLES:
-        __create(table)
+        create_table(table)
 
     try:
         hda_table = Table("history_dataset_association", metadata, autoload=True)
@@ -155,18 +156,4 @@ def downgrade(migrate_engine):
         log.exception("Dropping HDA column failed.")
 
     for table in reversed(TABLES):
-        __drop(table)
-
-
-def __create(table):
-    try:
-        table.create()
-    except Exception:
-        log.exception("Creating %s table failed.", table.name)
-
-
-def __drop(table):
-    try:
-        table.drop()
-    except Exception:
-        log.exception("Dropping %s table failed.", table.name)
+        drop_table(table)

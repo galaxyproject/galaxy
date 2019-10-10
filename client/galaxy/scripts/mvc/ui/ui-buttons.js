@@ -1,8 +1,7 @@
 /** This module contains all button views. */
+import $ from "jquery";
 import Utils from "utils/utils";
-import * as Backbone from "backbone";
-
-/* global $ */
+import Backbone from "backbone";
 
 /** This renders the default button which is used e.g. at the bottom of the upload modal. */
 var Button = Backbone.View.extend({
@@ -166,7 +165,7 @@ var ButtonCheck = Backbone.View.extend({
     },
 
     render: function(options) {
-        var options = this.model.attributes;
+        options = this.model.attributes;
         this.$el
             .addClass("ui-button-check")
             .css("display", options.visible ? "inline-block" : "none")
@@ -183,11 +182,11 @@ var ButtonCheck = Backbone.View.extend({
     },
 
     /* Sets a new value and/or returns the value.
-        * @param{Integer}   new_val - Set a new value 0=unchecked, 1=partial and 2=checked.
-        * OR:
-        * @param{Integer}   new_val - Number of selected options.
-        * @param{Integer}   total   - Total number of available options.
-        */
+     * @param{Integer}   new_val - Set a new value 0=unchecked, 1=partial and 2=checked.
+     * OR:
+     * @param{Integer}   new_val - Number of selected options.
+     * @param{Integer}   total   - Total number of available options.
+     */
     value: function(new_val, total) {
         if (new_val !== undefined) {
             if (total && new_val !== 0) {
@@ -263,7 +262,7 @@ var ButtonMenu = Backbone.View.extend({
                 .html(options.title);
         this.$menu && this.$menu.remove();
         if (this.collection.length > 0) {
-            this.$menu = $("<ul/>")
+            this.$menu = $("<div/>")
                 .addClass("menu dropdown-menu dropdown-menu-right")
                 .addClass(`pull-${this.model.get("pull")}`)
                 .attr("role", "menu");
@@ -291,8 +290,8 @@ var ButtonMenu = Backbone.View.extend({
                             suboptions.onclick();
                         }
                     });
-                this.$menu.append($("<li/>").append($link));
-                suboptions.divider && this.$menu.append($("<li/>").addClass("divider"));
+                this.$menu.append($link);
+                suboptions.divider && this.$menu.append($("<div/>").addClass("divider"));
             }
         });
     },
