@@ -1,0 +1,23 @@
+<tool id="KL-2" name="Kaldi Local to JSON" version="1.0.2">
+  <description>Local Kaldi STT to standardaized JSON Schema</description>
+    <requirements>
+        <requirement type="package" version="8.30">coreutils</requirement>
+    </requirements>
+  <command detect_errors="exit_code">$__tool_directory__/../json_schema/kaldi_local_to_schema.py $input $kalid_out $json_out</command>
+   <inputs>
+   <!-- should be wave data type -->
+    <param name="input" type="data" format="binary" label="From dataset" help="An audio file"/>
+    <param name="kalid_out" type="data" format="json" label="From Kaldi" help="Output from Kaldi"/>
+  </inputs>
+  <outputs>
+    <data format="json" name="json_out" />
+  </outputs>
+  <tests>
+  </tests>
+  <help>
+.. class:: infomark
+
+Takes the output of a Kaldi STT and transform it to a standardized schema
+
+  </help>
+</tool>

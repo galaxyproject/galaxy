@@ -14,7 +14,7 @@
     </param>
   </inputs>
   <outputs>
-    <data format="binary" name="binary_out" />
+    <data format="wav" name="binary_out" />
     <data format="json" name="kept_segments_json" />
   </outputs>
   <tests>

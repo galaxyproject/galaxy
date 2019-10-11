@@ -19,7 +19,9 @@
   
   <section id="Transcribe" name="Speech to Text">
     <tool file="aws/transcribe.xml"/>
+    <tool file="aws/aws_transcribe_to_schema.xml"/>
     <tool file="kaldi/kaldi_local.xml"/>
+    <tool file="kaldi/kaldi_local_to_schema.xml"/>
   </section>
   <section id="Segmentation" name="Segmentation">
     <tool file="ina_speech_segmenter/ina_speech_segmenter.xml"/>
