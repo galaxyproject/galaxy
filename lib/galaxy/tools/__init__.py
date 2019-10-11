@@ -324,7 +324,7 @@ class ToolBox(BaseGalaxyToolBox):
         }
 
     def _get_tool_shed_repository(self, tool_shed, name, owner, installed_changeset_revision):
-        # Abstract toolbox doesn't have a dependency on the the database, so
+        # Abstract toolbox doesn't have a dependency on the database, so
         # override _get_tool_shed_repository here to provide this information.
 
         return repository_util.get_installed_repository(
@@ -513,13 +513,17 @@ class Tool(Dictifiable):
     @property
     def tool_shed_repository(self):
         # If this tool is included in an installed tool shed repository, return it.
+        repo_id = self.repository_id
+        if self.repository_id:
+            repo_id = self.app.security.decode_id(self.repository_id)
+
         if self.tool_shed:
             return repository_util.get_installed_repository(self.app,
                                                             tool_shed=self.tool_shed,
                                                             name=self.repository_name,
                                                             owner=self.repository_owner,
                                                             installed_changeset_revision=self.installed_changeset_revision,
-                                                            repository_id=self.repository_id)
+                                                            repository_id=repo_id)
 
     @property
     def produces_collections_with_unknown_structure(self):
