@@ -201,7 +201,8 @@ class DataManager(object):
         self.load_tool(os.path.join(tool_path, path),
                        guid=tool_guid,
                        data_manager_id=self.id,
-                       tool_shed_repository_id=tool_shed_repository_id)
+                       tool_shed_repository_id=tool_shed_repository_id,
+                       tool_shed_repository=tool_shed_repository)
         self.name = elem.get('name', self.tool.name)
         self.description = elem.get('description', self.tool.description)
         self.undeclared_tables = util.asbool(elem.get('undeclared_tables', self.undeclared_tables))
