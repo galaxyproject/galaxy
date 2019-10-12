@@ -199,7 +199,7 @@ mapping:
 
       shed_tool_config_file:
         type: str
-        default: config/shed_tool_conf.xml
+        default: shed_tool_conf.xml
         required: false
         desc: |
           Tool config file for tools installed from the Galaxy Tool Shed. Must
@@ -211,6 +211,8 @@ mapping:
           preferable. This file will be created automatically upon tool
           installation, whereas Galaxy will fail to start if any files in
           tool_config_file cannot be read.
+
+          The value of this option will be resolved with respect to <mutable_config_dir>.
 
       check_migrate_tools:
         type: bool
@@ -232,8 +234,7 @@ mapping:
           scripts to install tools that have been migrated to the tool shed upon a new
           release, they will be added to this tool config file.
 
-          Default value will be resolved to 'config/migrated_tools_conf.xml' where 'config' is the
-          default value of the 'config_dir' option).
+          The value of this option will be resolved with respect to <config_dir>.
 
       integrated_tool_panel_config:
         type: str
@@ -267,12 +268,11 @@ mapping:
           If this option is set to none or an invalid path, installing tools with dependencies
           from the Tool Shed or in Conda will fail.
 
-          Default value will be resolved to 'database/dependencies' where 'database' is the default
-          value of the 'data_dir' option).
+          The value of this option will be resolved with respect to <data_dir>.
 
       dependency_resolvers_config_file:
         type: str
-        default: config/dependency_resolvers_conf.xml
+        default: dependency_resolvers_conf.xml
         required: false
         desc: |
           The dependency resolvers config file specifies an ordering and options for how
@@ -281,6 +281,8 @@ mapping:
           Galaxy packages, and then use Conda if available.
           See https://github.com/galaxyproject/galaxy/blob/dev/doc/source/admin/dependency_resolvers.rst
           for more information on these options.
+
+          The value of this option will be resolved with respect to <config_dir>.
 
       conda_prefix:
         type: str
@@ -383,11 +385,13 @@ mapping:
 
       tool_sheds_config_file:
         type: str
-        default: config/tool_sheds_conf.xml
+        default: tool_sheds_conf.xml
         required: false
         desc: |
           File containing the Galaxy Tool Sheds that should be made available to
           install from in the admin interface (.sample used if default does not exist).
+
+          The value of this option will be resolved with respect to <config_dir>.
 
       watch_tools:
         type: str
@@ -465,7 +469,7 @@ mapping:
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
 
-          Value will be resolved with respect to '<tool_dependency_dir>'.
+          The value of this option will be resolved with respect to <tool_dependency_dir>.
 
       involucro_auto_init:
         type: bool
@@ -522,7 +526,7 @@ mapping:
 
       shed_tool_data_table_config:
         type: str
-        default: config/shed_tool_data_table_conf.xml
+        default: shed_tool_data_table_conf.xml
         required: false
         desc: |
           XML config file that contains additional data table entries for the
@@ -531,6 +535,8 @@ mapping:
           tool_data_table_conf.xml.sample files.  At the time of installation, these
           entries are automatically added to the following file, which is parsed and
           applied to the ToolDataTableManager at server start up.
+
+          The value of this option will be resolved with respect to <mutable_config_dir>.
 
       tool_data_path:
         type: str
@@ -566,16 +572,18 @@ mapping:
         default: shared/ucsc/builds.txt
         required: false
         desc: |
-          File containing old-style genome builds. Value will be resolved with respect to
-          <tool_data_path>.
+          File containing old-style genome builds.
+
+          The value of this option will be resolved with respect to <tool_data_path>.
 
       len_file_path:
         type: str
         default: shared/ucsc/chrom
         required: false
         desc: |
-          Directory where chrom len files are kept, currently mainly used by trackster. Value will
-          be resolved with respect to <tool_data_path>.
+          Directory where chrom len files are kept, currently mainly used by trackster.
+
+          The value of this option will be resolved with respect to <tool_data_path>.
 
       datatypes_config_file:
         type: str
@@ -655,8 +663,7 @@ mapping:
           This option defines in what parent directory those directories will be
           created.
 
-          Default value will be resolved to 'database/jobs_directory' where 'database' is the
-          default value of the 'data_dir' option).
+          The value of this option will be resolved with respect to <data_dir>.
 
       cluster_files_directory:
         type: str
@@ -741,11 +748,13 @@ mapping:
 
       object_store_config_file:
         type: str
-        default: config/object_store_conf.xml
+        default: object_store_conf.xml
         required: false
         desc: |
           Configuration file for the object store
           If this is set and exists, it overrides any other objectstore settings.
+
+          The value of this option will be resolved with respect to <config_dir>.
 
       object_store_store_by:
         type: str
@@ -998,10 +1007,12 @@ mapping:
 
       user_preferences_extra_conf_path:
         type: str
-        default: 'config/user_preferences_extra_conf.yml'
+        default: 'user_preferences_extra_conf.yml'
         required: false
         desc: |
           Location of the configuration file containing extra user preferences.
+
+          The value of this option will be resolved with respect to <config_dir>.
 
       default_locale:
         type: str
@@ -2201,26 +2212,32 @@ mapping:
 
       oidc_config_file:
         type: str
-        default: config/oidc_config.xml
+        default: oidc_config.xml
         required: false
         desc: |
           Sets the path to OIDC configuration file.
 
+          The value of this option will be resolved with respect to <config_dir>.
+
       oidc_backends_config_file:
         type: str
-        default: config/oidc_backends_config.xml
+        default: oidc_backends_config.xml
         required: false
         desc: |
           Sets the path to OIDC backends configuration file.
 
+          The value of this option will be resolved with respect to <config_dir>.
+
       auth_config_file:
         type: str
-        default: config/auth_conf.xml
+        default: auth_conf.xml
         required: false
         desc: |
           XML config file that allows the use of different authentication providers
           (e.g. LDAP) instead or in addition to local authentication (.sample is used
           if default does not exist).
+
+          The value of this option will be resolved with respect to <config_dir>.
 
       api_allow_run_as:
         type: str
@@ -2372,11 +2389,13 @@ mapping:
 
       shed_data_manager_config_file:
         type: str
-        default: config/shed_data_manager_conf.xml
+        default: shed_data_manager_conf.xml
         required: false
         desc: |
           File where Tool Shed based Data Managers are configured. This file will be created
           automatically upon data manager installation.
+
+          The value of this option will be resolved with respect to <mutable_config_dir>.
 
       galaxy_data_manager_data_path:
         type: str
@@ -2629,7 +2648,7 @@ mapping:
 
       job_resource_params_file:
         type: str
-        default: config/job_resource_params_conf.xml
+        default: job_resource_params_conf.xml
         required: false
         desc: |
           Optional file containing job resource data entry fields definition.
@@ -2637,15 +2656,19 @@ mapping:
           overwrite default job resources such as number of processors, memory and
           walltime.
 
+          The value of this option will be resolved with respect to <config_dir>.
+
       workflow_resource_params_file:
         type: str
-        default: config/workflow_resource_params_conf.xml
+        default: workflow_resource_params_conf.xml
         required: false
         desc: |
           Similar to the above parameter, workflows can describe parameters used to
           influence scheduling of jobs within the workflow. This requires both a description
           of the fields available (which defaults to the definitions in
           job_resource_params_file if not set).
+
+          The value of this option will be resolved with respect to <config_dir>.
 
       workflow_resource_params_mapper:
         type: str
@@ -2662,11 +2685,13 @@ mapping:
 
       workflow_schedulers_config_file:
         type: str
-        default: config/workflow_schedulers_conf.xml
+        default: workflow_schedulers_conf.xml
         required: false
         desc: |
           Optional configuration file similar to `job_config_file` to specify
           which Galaxy processes should schedule workflows.
+
+          The value of this option will be resolved with respect to <config_dir>.
 
       cache_user_job_count:
         type: bool
