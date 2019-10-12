@@ -35,7 +35,6 @@ Configuration options NOT tested:
 - job_config (no obvious testable defaults)
 """
 
-
 OptionData = namedtuple('OptionData', 'key, expected, loaded')
 
 
