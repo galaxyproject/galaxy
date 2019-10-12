@@ -1,17 +1,17 @@
 <tool id="interactive_tool_askomics" tool_type="interactive" name="AskOmics" version="0.1">
-    <description>a visual SPARQL query builder</description>
+    <description>AskOmics, a visual SPARQL query builder</description>
     <requirements>
-        <container type="docker">quay.io/askomics/askomics-ie:17.12_g19.09</container>
+        <container type="docker">askomics/askomics-ie:19.01.3</container>
     </requirements>
     <entry_points>
         <entry_point name="AskOmics instance on $infile.display_name" requires_domain="True">
             <port>6543</port>
-            <url>/login_api_gie?key=abcd</url>
+            <url>/login_api_gie?key=${__user_name__}</url>
         </entry_point>
     </entry_points>
     <environment_variables>
         <environment_variable name="GALAXY_URL">${__app__.config.galaxy_infrastructure_url}</environment_variable> <!-- FIXME: Warning: The use of __app__ is deprecated and will break backward compatibility in the near future -->
-        <environment_variable name="API_KEY" strip="True">
+        <environment_variable name="GALAXY_API_KEY" strip="True">
             #if $__user__:
                 #for $api_key in $__user__.api_keys:
                     ${api_key.key}
@@ -19,15 +19,26 @@
                 #end for
             #end if
         </environment_variable>
+        <environment_variable name="GALAXY_USER_NAME">${__user_name__}</environment_variable>
+        <environment_variable name="GALAXY_USER_EMAIL">${__user_email__}</environment_variable>
+        <environment_variable name="ASKOMICS_API_KEY">${__user_name__}</environment_variable><!--FIXME: use a random string instead of the username-->
     </environment_variables>
     <command><![CDATA[
         #import re
-        ## ToDo: the key could be generated randomly
+
+        ## AskOmics configuration, don't change anything here
+        export ASKO_files_dir='/tmp/askomics-ie' &&
+        export ASKO_database_path='/tmp/askomics-ie/database.db' &&
         export ASKO_load_url='http://localhost:6543' &&
-        export ASKOMICS_API_KEY='abcd' &&
-        export ASKO_files_dir='/tmp/askomics-ie'  &&
+
+        ## Triplestore configuration. Update VIRT_Parameters_NumberOfBuffers and 
+        ## VIRT_Parameters_MaxDirtyBuffers according to https://github.com/askomics/askomics-docker-compose/tree/master/virtuoso#configuration
+        export SPARQL_UPDATE='true' &&
         export VIRT_Parameters_NumberOfBuffers='10000'  &&
         export VIRT_Parameters_MaxDirtyBuffers='6000'  &&
+        export VIRT_SPARQL_ResultSetMaxRows='100000' &&
+        export VIRT_SPARQL_MaxQueryCostEstimationTime='40000' &&
+        export VIRT_SPARQL_MaxQueryExecutionTime='40000' &&
 
         #set link_name = re.sub('[^\w_]', '_', $infile.element_identifier)
         #if $infile.ext == 'tabular':
@@ -57,3 +68,4 @@
         querying while shielding the user from most of the technical difficulties underlying RDF and SPARQL.
     </help>
 </tool>
+
