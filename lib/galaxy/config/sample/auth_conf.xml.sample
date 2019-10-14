@@ -108,8 +108,8 @@
             <!-- For Active Directory: -->
 <!--        <bind-user>{sAMAccountName}@dc1.example.com</bind-user>
             <bind-password>{password}</bind-password>
-            <auto-register-username>{sAMAccountName}</auto-register-username>
-            <auto-register-email>{mail}</auto-register-email>
+            <auto-register-username>{username}</auto-register-username>
+            <auto-register-email>{email}</auto-register-email>
             <auto-register-roles>{gidNumber}</auto-register-roles>
 -->
             <!-- For OpenLDAP: -->
