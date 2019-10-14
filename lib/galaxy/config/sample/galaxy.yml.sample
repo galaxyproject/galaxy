@@ -1405,8 +1405,7 @@ galaxy:
 
   # Enable beta workflow modules that should not yet be considered part
   # of Galaxy's stable API. (The module state definitions may change and
-  # workflows built using  these modules may not function in the
-  # future.)
+  # workflows built using these modules may not function in the future.)
   #enable_beta_workflow_modules: false
 
   # Default format for the export of workflows. Possible values are 'ga'
@@ -1844,4 +1843,11 @@ galaxy:
   # This should normally be left enabled unless there is a specific
   # reason to disable it.
   #use_pbkdf2: true
+
+  # Tell Galaxy that multiple domains sharing the same root are
+  # associated to this instance and wants to share the same session
+  # cookie. This allow a user to stay logged in when passing from one
+  # subdomain to the other. This root domain will be written in the
+  # unique session cookie shared by all subdomains.
+  #cookie_domain: null
 
