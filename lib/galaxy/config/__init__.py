@@ -620,8 +620,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 log.warning('Config file (%s) could not be found or is malformed.' % self.user_preferences_extra_conf_path)
             self.user_preferences_extra = {'preferences': {}}
 
-        self.default_locale = kwargs.get('default_locale', None)
-
         # Experimental: This will not be enabled by default and will hide
         # nonproduction code.
         # The api_folders refers to whether the API exposes the /folders section.
