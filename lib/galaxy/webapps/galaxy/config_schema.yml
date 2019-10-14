@@ -999,7 +999,7 @@ mapping:
           Format string used when showing date and time information.
           The string may contain:
           - the directives used by Python time.strftime() function (see
-            https://docs.python.org/library/time.html#time.strftime ),
+            https://docs.python.org/library/time.html#time.strftime),
           - $locale (complete format string for the server locale),
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
