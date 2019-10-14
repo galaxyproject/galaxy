@@ -13,7 +13,7 @@
             'remote_user_logout_href'   : app.config.remote_user_logout_href,
             'enable_cloud_launch'       : app.config.get_bool('enable_cloud_launch', False),
             'lims_doc_url'              : app.config.get("lims_doc_url", "https://usegalaxy.org/u/rkchak/p/sts"),
-            'default_locale'            : app.config.get("default_locale",  "auto"),
+            'default_locale'            : app.config.default_locale,
             'support_url'               : app.config.get("support_url", "https://galaxyproject.org/support"),
             'search_url'                : app.config.get("search_url", "http://galaxyproject.org/search/"),
             'mailing_lists'             : app.config.get("mailing_lists", "https://galaxyproject.org/mailing-lists"),
