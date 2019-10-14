@@ -5,9 +5,21 @@
             <loading-span v-if="loading" message="Loading installed repositories" />
             <div v-else>
                 <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-                <div class="installed-message mt-3 mb-1 mx-1 text-muted">
-                    {{ repositories.length }} repositories installed on this instance.
+                <div class="m-1">
+                    <span class="installed-message text-muted">
+                        {{ repositories.length }} repositories installed on this instance.
+                    </span>
+                    <b-link id="popover-monitor">
+                        <span class="fa fa-angle-double-down" />
+                        Show installation queue.
+                    </b-link>
                 </div>
+                <b-popover target="popover-monitor" triggers="hover" placement="top" :show.sync="showMonitor">
+                    <template v-slot:title>
+                        Installation Monitor
+                    </template>
+                    <Monitor @onQuery="onQuery" />
+                </b-popover>
                 <b-table
                     id="repository-table"
                     striped
@@ -43,12 +55,14 @@ import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "../services.js";
 import RepositoryDetails from "./Details.vue";
+import Monitor from "./Monitor";
 import LoadingSpan from "components/LoadingSpan";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        Monitor,
         LoadingSpan,
         RepositoryDetails
     },
@@ -70,6 +84,7 @@ export default {
             message: null,
             messageVariant: null,
             nRepositories: 0,
+            showMonitor: false,
             repositories: []
         };
     },
@@ -103,8 +118,12 @@ export default {
                     this.error = error;
                 });
         },
-        filtered: function(items) {
+        filtered(items) {
             this.nRepositories = items.length;
+        },
+        onQuery(q) {
+            this.showMonitor = false;
+            this.$emit("onQuery", q);
         }
     }
 };

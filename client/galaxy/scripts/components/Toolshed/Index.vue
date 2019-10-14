@@ -21,7 +21,7 @@
                 <SearchList :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
             </div>
             <div v-else>
-                <InstalledList :filter="queryInput" />
+                <InstalledList :filter="queryInput" @onQuery="setQuery" />
             </div>
         </div>
     </div>

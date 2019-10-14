@@ -152,8 +152,12 @@ export class Services {
         throw message;
     }
     _getParamsString(params) {
-        return Object.keys(params).reduce(function(previous, key) {
-            return `${previous}${key}=${params[key]}&`;
-        }, "");
+        if (params) {
+            return Object.keys(params).reduce(function(previous, key) {
+                return `${previous}${key}=${params[key]}&`;
+            }, "");
+        } else {
+            return "";
+        }
     }
 }
