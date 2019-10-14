@@ -1,6 +1,8 @@
 """
 Module for building and searching the index of tools
-installed within this Galaxy.
+installed within this Galaxy. Before changing index-building
+or searching related parts it is deeply recommended to read
+through the library docs at https://whoosh.readthedocs.io.
 """
 import logging
 import re
@@ -19,6 +21,7 @@ from whoosh.filedb.filestore import (
     RamStorage
 )
 from whoosh.qparser import MultifieldParser
+from whoosh.qparser import OrGroup
 from whoosh.scoring import BM25F
 
 from galaxy.util import ExecutionTimer
@@ -34,9 +37,6 @@ class ToolBoxSearch(object):
     """
 
     def __init__(self, toolbox, index_help=True):
-        """
-        Create a searcher for `toolbox`.
-        """
         self.schema = Schema(id=STORED,
                              stub=KEYWORD,
                              name=TEXT(analyzer=analysis.SimpleAnalyzer()),
@@ -90,7 +90,7 @@ class ToolBoxSearch(object):
             "help": to_unicode("")
         }
         if tool.name.find('-') != -1:
-            # Hyphens are wildcards in Whoosh causing bad things
+            # Replace hyphens, since they are wildcards in Whoosh causing false positives
             add_doc_kwds['name'] = (' ').join([token.text for token in self.rex(to_unicode(tool.name))])
         else:
             add_doc_kwds['name'] = to_unicode(tool.name)
@@ -109,17 +109,19 @@ class ToolBoxSearch(object):
                 try:
                     add_doc_kwds['help'] = to_unicode(raw_help)
                 except Exception:
-                    # Don't fail to build index just because a help message
-                    # won't render.
+                    # Don't fail to build index just because help can't be converted.
                     pass
         return add_doc_kwds
 
-    def search(self, q, tool_name_boost, tool_section_boost, tool_description_boost, tool_label_boost, tool_stub_boost, tool_help_boost, tool_search_limit, tool_enable_ngram_search, tool_ngram_minsize, tool_ngram_maxsize):
+    def search(self, q, tool_name_boost, tool_section_boost,
+            tool_description_boost, tool_label_boost, tool_stub_boost,
+            tool_help_boost, tool_search_limit, tool_enable_ngram_search,
+            tool_ngram_minsize, tool_ngram_maxsize):
         """
         Perform search on the in-memory index. Weight in the given boosts.
         """
         # Change field boosts for searcher
-        searcher = self.index.searcher(
+        self.searcher = self.index.searcher(
             weighting=BM25F(
                 field_B={'name_B': float(tool_name_boost),
                          'section_B': float(tool_section_boost),
@@ -129,39 +131,56 @@ class ToolBoxSearch(object):
                          'help_B': float(tool_help_boost)}
             )
         )
-        # Set query to search name, description, section, help, and labels.
-        parser = MultifieldParser(['name', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema)
-        # Hyphens are wildcards in Whoosh causing bad things
-        if q.find('-') != -1:
-            q = (' ').join([token.text for token in self.rex(to_unicode(q))])
-        # Perform tool search with ngrams if set to true in the config file
-        if (tool_enable_ngram_search is True or tool_enable_ngram_search == "True"):
-            hits_with_score = {}
-            token_analyzer = StandardAnalyzer() | analysis.NgramFilter(minsize=int(tool_ngram_minsize), maxsize=int(tool_ngram_maxsize))
-            ngrams = [token.text for token in token_analyzer(q)]
-            for query in ngrams:
-                # Get the tool list with respective scores for each qgram
-                curr_hits = searcher.search(parser.parse('*' + query + '*'), limit=float(tool_search_limit))
-                for i, curr_hit in enumerate(curr_hits):
-                    is_present = False
-                    for prev_hit in hits_with_score:
-                        # Check if the tool appears again for the next qgram search
-                        if curr_hit['id'] == prev_hit:
-                            is_present = True
-                            # Add the current score with the previous one if the
-                            # tool appears again for the next qgram
-                            hits_with_score[prev_hit] = curr_hits.score(i) + hits_with_score[prev_hit]
-                    # Add the tool if not present to the collection with its score
-                    if not is_present:
-                        hits_with_score[curr_hit['id']] = curr_hits.score(i)
-            # Sort the results based on aggregated BM25 score in decreasing order of scores
-            hits_with_score = sorted(hits_with_score.items(), key=lambda x: x[1], reverse=True)
-            # Return the tool ids
-            return [item[0] for item in hits_with_score[0:int(tool_search_limit)]]
+        # Use OrGroup to change the default operation for joining multiple terms to logical OR.
+        # This means e.g. for search 'bowtie of king arthur' a document that only has 'bowtie' will be a match.
+        # https://whoosh.readthedocs.io/en/latest/api/qparser.html#whoosh.qparser.MultifieldPlugin
+        # However this changes scoring i.e. searching 'bowtie of king arthur' a document with 'arthur arthur arthur'
+        # would have a higher score than a document with 'bowtie arthur' which is usually unexpected for a user.
+        # Hence we introduce a bonus on multi-hits using the 'factory()' method using a scaling factor between 0-1.
+        # https://whoosh.readthedocs.io/en/latest/parsing.html#searching-for-any-terms-instead-of-all-terms-by-default
+        og = OrGroup.factory(0.9)
+        self.parser = MultifieldParser(['name', 'description', 'section', 'help', 'labels', 'stub'], schema=self.schema, group=og)
+        cleaned_query = q.lower()
+        # Replace hyphens, since they are wildcards in Whoosh causing false positives
+        if cleaned_query.find('-') != -1:
+            cleaned_query = (' ').join([token.text for token in self.rex(to_unicode(cleaned_query))])
+        if tool_enable_ngram_search is True:
+            rval = self._search_ngrams(cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit)
+            return rval
         else:
-            # Perform the search
-            hits = searcher.search(parser.parse('*' + q + '*'), limit=float(tool_search_limit))
+            # Use asterisk Whoosh wildcard so e.g. 'bow' easily matches 'bowtie'
+            parsed_query = self.parser.parse(cleaned_query + '*')
+            hits = self.searcher.search(parsed_query, limit=float(tool_search_limit), sortedby='')
             return [hit['id'] for hit in hits]
+
+    def _search_ngrams(self, cleaned_query, tool_ngram_minsize, tool_ngram_maxsize, tool_search_limit):
+        """
+        Break tokens into ngrams and search on those instead.
+        This should make searching more resistant to typos and unfinished words.
+        See docs at https://whoosh.readthedocs.io/en/latest/ngrams.html
+        """
+        hits_with_score = {}
+        token_analyzer = StandardAnalyzer() | analysis.NgramFilter(minsize=int(tool_ngram_minsize), maxsize=int(tool_ngram_maxsize))
+        ngrams = [token.text for token in token_analyzer(cleaned_query)]
+        for query in ngrams:
+            # Get the tool list with respective scores for each qgram
+            curr_hits = self.searcher.search(self.parser.parse('*' + query + '*'), limit=float(tool_search_limit))
+            for i, curr_hit in enumerate(curr_hits):
+                is_present = False
+                for prev_hit in hits_with_score:
+                    # Check if the tool appears again for the next qgram search
+                    if curr_hit['id'] == prev_hit:
+                        is_present = True
+                        # Add the current score with the previous one if the
+                        # tool appears again for the next qgram
+                        hits_with_score[prev_hit] = curr_hits.score(i) + hits_with_score[prev_hit]
+                # Add the tool if not present to the collection with its score
+                if not is_present:
+                    hits_with_score[curr_hit['id']] = curr_hits.score(i)
+        # Sort the results based on aggregated BM25 score in decreasing order of scores
+        hits_with_score = sorted(hits_with_score.items(), key=lambda x: x[1], reverse=True)
+        # Return the tool ids
+        return [item[0] for item in hits_with_score[0:int(tool_search_limit)]]
 
 
 def _temp_storage(self, name=None):
