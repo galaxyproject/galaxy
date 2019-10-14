@@ -326,18 +326,19 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
         self.gid = os.getgid()  # if running under newgrp(1) we'll need to fix the group of data created on the cluster
 
         self.version_major = VERSION_MAJOR
+
         # Database related configuration
         self.check_migrate_databases = kwargs.get('check_migrate_databases', True)
-        self.database_connection = kwargs.get("database_connection",
-                                              "sqlite:///%s?isolation_level=IMMEDIATE" % os.path.join(self.data_dir, "universe.sqlite"))
+        if not self.database_connection:  # Provide default if not supplied by user
+            db_path = os.path.join(self.data_dir, 'universe.sqlite')
+            self.database_connection = 'sqlite:///%s?isolation_level=IMMEDIATE' % db_path
         self.database_engine_options = get_database_engine_options(kwargs)
-        self.database_create_tables = string_as_bool(kwargs.get("database_create_tables", "True"))
-        self.database_encoding = kwargs.get("database_encoding", None)  # Create new databases with this encoding.
+        self.database_create_tables = string_as_bool(kwargs.get('database_create_tables', 'True'))
+        self.database_encoding = kwargs.get('database_encoding')  # Create new databases with this encoding
         self.thread_local_log = None
-        if string_as_bool(kwargs.get("enable_per_request_sql_debugging", "False")):
+        if self.enable_per_request_sql_debugging:
             self.thread_local_log = threading.local()
-
-        # Install database related configuration (if different).
+        # Install database related configuration (if different)
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
 
         override_tempdir = string_as_bool(kwargs.get("override_tempdir", "True"))
