@@ -280,6 +280,35 @@ class ToolShedRepositoriesController(BaseAPIController):
 
         return tool_shed_url, name, owner, changeset_revision
 
+    @web.expose_api
+    @web.require_admin
+    def reset_metadata_on_selected_installed_repositories(self, trans, **kwd):
+        repository_ids = util.listify(kwd.get("repository_ids"))
+        if repository_ids:
+            irmm = InstalledRepositoryMetadataManager(self.app)
+            failed = []
+            successful = []
+            for repository_id in repository_ids:
+                try:
+                    repository = repository_util.get_installed_tool_shed_repository(self.app, repository_id)
+                    irmm.set_repository(repository)
+                    irmm.reset_all_metadata_on_installed_repository()
+                    if irmm.invalid_file_tups:
+                        failed.append(repository_id)
+                    else:
+                        successful.append(repository_id)
+                except Exception:
+                    failed.append(repository_id)
+            if successful:
+                message = "Successful reset of metadata for %s." % len(successful)
+                if failed:
+                    message += " Failed for %s." % len(failed)
+            elif failed:
+                message = "Failed to reset metadata for %s." % len(failed)
+            return dict(message=message, successful=successful, failed=failed)
+        else:
+            raise exceptions.MessageException("Please specify repository ids [repository_ids].")
+
     @expose_api
     def reset_metadata_on_installed_repositories(self, trans, payload, **kwd):
         """
