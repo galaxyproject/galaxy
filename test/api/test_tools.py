@@ -53,10 +53,25 @@ class ToolsTestCase(api.ApiTestCase):
         assert "upload1" in tool_ids
 
     @skip_without_tool("cat1")
-    def test_search(self):
-        url = self._api_url("tools?q=cat")
-        get_response = get(url).json()
+    def test_search_cat(self):
+        url = self._api_url("tools")
+        payload = dict(q="concat")
+        get_response = get(url, payload).json()
         assert "cat1" in get_response
+
+    @skip_without_tool("trimmer")
+    def test_search_trimmer(self):
+        url = self._api_url("tools")
+        payload = dict(q="leading or trailing characters")
+        get_response = get(url, payload).json()
+        assert "trimmer" in get_response
+
+    @skip_without_tool("Grep1")
+    def test_search_grep(self):
+        url = self._api_url("tools")
+        payload = dict(q="Select lines that match an expression")
+        get_response = get(url, payload).json()
+        assert "Grep1" in get_response
 
     def test_no_panel_index(self):
         index = self._get("tools", data=dict(in_panel=False))
