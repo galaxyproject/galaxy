@@ -1718,6 +1718,30 @@ class ExecutionTimer(object):
         return (time.time() - self.begin)
 
 
+class StructuredExecutionTimer(object):
+
+    def __init__(self, timer_id, template, **tags):
+        self.begin = time.time()
+        self.timer_id = timer_id
+        self.template = template
+        self.tags = tags
+
+    def __str__(self):
+        return self.to_str()
+
+    def to_str(self, **kwd):
+        if kwd:
+            message = string.Template(self.template).safe_substitute(kwd)
+        else:
+            message = self.template
+        log_message = message + " (%0.3f ms)" % (self.elapsed * 1000)
+        return log_message
+
+    @property
+    def elapsed(self):
+        return (time.time() - self.begin)
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod(sys.modules[__name__], verbose=False)

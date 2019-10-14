@@ -1537,7 +1537,10 @@ class JobWrapper(HasResourceParameters):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
-        finish_timer = util.ExecutionTimer()
+        finish_timer = self.app.execution_timer_factory.get_timer(
+            'internals.galaxy.jobs.job_wrapper_finish',
+            'job_wrapper.finish for job ${job_id} executed'
+        )
 
         # default post job setup
         self.sa_session.expunge_all()
@@ -1687,12 +1690,12 @@ class JobWrapper(HasResourceParameters):
             # If job was composed of tasks, don't attempt to recollect statisitcs
             self._collect_metrics(job, job_metrics_directory)
         self.sa_session.flush()
-        log.debug('job %d ended (finish() executed in %s)' % (self.job_id, finish_timer))
         if job.state == job.states.ERROR:
             self._report_error()
         cleanup_job = self.cleanup_job
         delete_files = cleanup_job == 'always' or (job.state == job.states.OK and cleanup_job == 'onsuccess')
         self.cleanup(delete_files=delete_files)
+        log.debug(finish_timer.to_str(job_id=self.job_id, tool_id=job.tool_id))
 
     def discover_outputs(self, job, inp_data, out_data, out_collections):
         input_ext = 'data'
