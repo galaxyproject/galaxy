@@ -4658,6 +4658,15 @@ class WorkflowStep(RepresentById):
     def tool_uuid(self):
         return self.dynamic_tool and self.dynamic_tool.uuid
 
+    @property
+    def input_default_value(self):
+        tool_inputs = self.tool_inputs
+        tool_state = tool_inputs
+        default_value = tool_state.get("default")
+        if default_value:
+            default_value = json.loads(default_value)["value"]
+        return default_value
+
     def get_input(self, input_name):
         for step_input in self.inputs:
             if step_input.name == input_name:
@@ -5115,6 +5124,8 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                             if output_step_type in ['data_input', 'data_collection_input']:
                                 src = "hda" if output_step_type == 'data_input' else 'hdca'
                                 for job_input in job.input_datasets:
+                                    if not job_input.dataset:
+                                        continue
                                     if job_input.name == step_input.input_name:
                                         inputs[str(step_input.output_step.order_index)] = {
                                             "id": job_input.dataset_id, "src": src,

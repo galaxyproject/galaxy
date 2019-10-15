@@ -689,7 +689,7 @@ export default Backbone.View.extend({
         Utils.request({
             url: `${getAppRoot()}api/workflows/${self.options.id}`,
             type: "PUT",
-            data: { workflow: self.workflow.to_simple() },
+            data: { workflow: self.workflow.to_simple(), from_tool_form: true },
             success: function(data) {
                 var body = $("<div/>").text(data.message);
                 if (data.errors) {
@@ -743,6 +743,7 @@ export default Backbone.View.extend({
                     data: {
                         workflow_name: rename_name,
                         workflow_annotation: rename_annotation,
+                        from_tool_form: true,
                         workflow_data: function() {
                             return JSON.stringify(self.workflow.to_simple());
                         }
