@@ -235,7 +235,7 @@
     of files, or (for backwards compatibility) a comma-separated list
     of files.
 :Default: ``config/tool_conf.xml``
-:Type: list or str
+:Type: any
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -320,7 +320,7 @@
     defaults set relative to this path, such as the default conda
     prefix, default Galaxy packages path, legacy tool shed
     dependencies path, and the dependency cache directory.  Set the
-    string to None to explicitly disable tool dependency handling. If
+    string to null to explicitly disable tool dependency handling. If
     this option is set to none or an invalid path, installing tools
     with dependencies from the Tool Shed or in Conda will fail.
 :Default: ``database/dependencies``
@@ -3217,7 +3217,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    File where Tool Shed based Data Managers are configured.
+    File where Tool Shed based Data Managers are configured. This file
+    will be created automatically upon data manager installation.
 :Default: ``config/shed_data_manager_conf.xml``
 :Type: str
 

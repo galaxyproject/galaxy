@@ -242,7 +242,7 @@ galaxy:
   # Various dependency resolver configuration parameters will have
   # defaults set relative to this path, such as the default conda
   # prefix, default Galaxy packages path, legacy tool shed dependencies
-  # path, and the dependency cache directory.  Set the string to None to
+  # path, and the dependency cache directory.  Set the string to null to
   # explicitly disable tool dependency handling. If this option is set
   # to none or an invalid path, installing tools with dependencies from
   # the Tool Shed or in Conda will fail.
@@ -1543,7 +1543,8 @@ galaxy:
   # does not exist).
   #data_manager_config_file: config/data_manager_conf.xml
 
-  # File where Tool Shed based Data Managers are configured.
+  # File where Tool Shed based Data Managers are configured. This file
+  # will be created automatically upon data manager installation.
   #shed_data_manager_config_file: config/shed_data_manager_conf.xml
 
   # Directory to store Data Manager based tool-data; defaults to
