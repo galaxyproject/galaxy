@@ -1,15 +1,11 @@
 /** User Preferences view */
-import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-// import Form from "mvc/form/form-view";
-import Ui from "mvc/ui/ui-misc";
-import QueryStringParsing from "utils/query-string-parsing";
 
-/** Contains descriptive dictionaries describing user forms */
+/** TODO delete this model */
 const Model = Backbone.Model.extend({
     initialize: function(options) {
         const Galaxy = getGalaxyInstance();
@@ -148,92 +144,6 @@ const Model = Backbone.Model.extend({
     }
 });
 
-/** View of the main user preference panel with links to individual user forms */
-const View = Backbone.View.extend({
-    title: _l("User Preferences"),
-    active_tab: "user",
-    initialize: function() {
-        this.model = new Model();
-        this.setElement("<div/>");
-        this.render();
-    },
-
-    render: function() {
-        const Galaxy = getGalaxyInstance();
-        const config = Galaxy.config;
-        $.getJSON(`${getAppRoot()}api/users/${Galaxy.user.id}`, data => {
-            this.$preferences = $("<div/>")
-                .append($("<h2/>").append("User preferences"))
-                .append($("<p/>").append(`You are logged in as <strong>${_.escape(data.email)}</strong>.`))
-                .append((this.$table = $("<table/>")));
-            const message = QueryStringParsing.get("message");
-            const status = QueryStringParsing.get("status");
-            if (message && status) {
-                this.$preferences.prepend(new Ui.Message({ message: message, status: status }).$el);
-            }
-            if (!config.use_remote_user) {
-                this._addLink("information");
-                this._addLink("password");
-            }
-            if (config.enable_communication_server) {
-                this._addLink("communication");
-            }
-            this._addLink("custom_builds");
-            this._addLink("permissions");
-            this._addLink("make_data_private");
-            this._addLink("api_key");
-            this._addLink("cloud_auth");
-            if (config.enable_openid) {
-                this._addLink("genomespace");
-            }
-            if (config.has_user_tool_filters) {
-                this._addLink("toolbox_filters");
-            }
-            if (Galaxy.session_csrf_token) {
-                this._addLink("logout");
-            }
-            this.$preferences.append(this._templateFooter(data));
-            this.$el.empty().append(this.$preferences);
-        });
-    },
-
-    _addLink: function(action) {
-        const options = this.model.get(action);
-        const $row = $(this._templateLink(options));
-        const $a = $row.find("a");
-        if (options.onclick) {
-            $a.on("click", () => {
-                options.onclick();
-            });
-        } else {
-            $a.attr("href", `${getAppRoot()}user/${action}`);
-        }
-        this.$table.append($row);
-    },
-
-    _templateLink: function(options) {
-        return `<tr>
-                    <td class="align-top">
-                        <i class="ml-3 mr-3 fa fa-lg ${options.icon}">
-                    </td>
-                    <td>
-                        <a href="javascript:void(0)"><b>${options.title}</b></a>
-                        <div class="form-text text-muted">${options.description}</div>
-                    </td>
-                </tr>`;
-    },
-
-    _templateFooter: function(options) {
-        const Galaxy = getGalaxyInstance();
-        return `<p class="mt-2">You are using <strong>${
-            options.nice_total_disk_usage
-        }</strong> of disk space in this Galaxy instance. ${
-            Galaxy.config.enable_quotas ? `Your disk quota is: <strong>${options.quota}</strong>. ` : ""
-        }Is your usage more than expected? See the <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank"><b>documentation</b></a> for tips on how to find all of the data in your account.</p>`;
-    }
-});
-
 export default {
-    View: View,
     Model: Model
 };
