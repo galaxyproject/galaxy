@@ -570,27 +570,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
             if section.startswith('server:'):
                 self.server_names.append(section.replace('server:', '', 1))
 
-        # Default URL (with schema http/https) of the Galaxy instance within the
-        # local network - used to remotely communicate with the Galaxy API.
-        web_port = kwargs.get("galaxy_infrastructure_web_port", None)
-        self.galaxy_infrastructure_web_port = web_port
-        galaxy_infrastructure_url = kwargs.get('galaxy_infrastructure_url', None)
-        galaxy_infrastructure_url_set = True
-        if galaxy_infrastructure_url is None:
-            # Still provide a default but indicate it was not explicitly set
-            # so dependending on the context a better default can be used (
-            # request url in a web thread, Docker parent in IE stuff, etc...)
-            galaxy_infrastructure_url = "http://localhost"
-            web_port = self.galaxy_infrastructure_web_port
-            if web_port:
-                galaxy_infrastructure_url += ":%s" % (web_port)
-            galaxy_infrastructure_url_set = False
-        if "HOST_IP" in galaxy_infrastructure_url:
-            galaxy_infrastructure_url = string.Template(galaxy_infrastructure_url).safe_substitute({
-                'HOST_IP': socket.gethostbyname(socket.gethostname())
-            })
-        self.galaxy_infrastructure_url = galaxy_infrastructure_url
-        self.galaxy_infrastructure_url_set = galaxy_infrastructure_url_set
+        self._set_galaxy_infrastructure_url(kwargs)
 
         # Asynchronous execution process pools - limited functionality for now, attach_to_pools is designed to allow
         # webless Galaxy server processes to attach to arbitrary message queues (e.g. as job handlers) so they do not
@@ -701,6 +681,16 @@ class GalaxyAppConfiguration(BaseAppConfiguration):
                 'filename': kwargs['log_destination'],
                 'filters': ['stack']
             }
+
+    def _set_galaxy_infrastructure_url(self, kwargs):
+        # indicate if this was not set explicitly, so dependending on the context a better default
+        # can be used (request url in a web thread, Docker parent in IE stuff, etc.)
+        self.galaxy_infrastructure_url_set = kwargs.get('galaxy_infrastructure_url') is not None
+
+        if "HOST_IP" in self.galaxy_infrastructure_url:
+            self.galaxy_infrastructure_url = string.Template(self.galaxy_infrastructure_url).safe_substitute({
+                'HOST_IP': socket.gethostbyname(socket.gethostname())
+            })
 
     @property
     def admin_users(self):
