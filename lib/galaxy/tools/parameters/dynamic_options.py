@@ -2,9 +2,9 @@
 Support for generating the options for a SelectToolParameter dynamically (based
 on the values of other parameters or other aspects of the current state)
 """
-from collections import OrderedDict
 import copy
 import logging
+from collections import OrderedDict
 import os
 import re
 from io import StringIO
@@ -163,7 +163,11 @@ class DataMetaFilter(Filter):
             if isinstance(m, list):
                 meta_value |= set(m)
             elif isinstance(m, dict) or isinstance(m, OrderedDict):
-                meta_value |= set([ "%s,%s" %(k, v) for k, v in m.iteritems() ])
+                meta_value |= set(["%s,%s" % (k, v) for k, v in m.iteritems()])
+            elif isinstance(m, str) and os.path.isfile(m):
+                with open(m) as fh:
+                    for line in fh:
+                        meta_value.add(line)
             else:
                 meta_value.add(m)
 
@@ -218,9 +222,9 @@ class DataMetaFilter(Filter):
         else:
             if not self.dynamic_option.columns:
                 self.dynamic_option.columns = {
-                    "name" : 0,
-                    "value" : 1,
-                    "selected" : 2
+                    "name": 0,
+                    "value": 1,
+                    "selected": 2
                 }
                 self.dynamic_option.largest_index = 2
             for value in meta_value:
@@ -636,7 +640,7 @@ class DynamicOptions:
                             name = "a configuration file"
                         # Perhaps this should be an error, but even a warning is useful.
                         log.warning("Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r" %
-                                  (field_count, len(fields), name, self.separator, line))
+                                    (field_count, len(fields), name, self.separator, line))
                     rval.append(fields)
         return rval
 
