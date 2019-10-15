@@ -23,8 +23,8 @@
                         </b-button>
                     </template>
                 </b-table>
-                <div v-if="showEmpty">
-                    Currently there are no repositories being installed.
+                <div v-if="showEmpty" class="text-center">
+                    Currently no repositories are being installed.
                 </div>
             </div>
         </div>
