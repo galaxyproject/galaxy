@@ -33,6 +33,7 @@
     import axios from "axios";
     import Ui from "mvc/ui/ui-misc";
     import QueryStringParsing from "utils/query-string-parsing";
+    import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 
     export default {
         data() {
@@ -42,85 +43,8 @@
                 user: Galaxy.user,
                 email: "",
                 diskUsage: "",
-                quotaString: "",
+                quotaUsageString: "",
                 baseUrl: `${getAppRoot()}user`,
-                links: [
-                    {
-                        action: `information`,
-                        title: _l("Manage information"),
-                        description: "Edit your email, addresses and custom parameters or change your public name.",
-                        icon: "fa-user",
-                        shouldRender: !config.use_remote_user,
-                    },
-                    {
-                        action: "password",
-                        title: _l("Change password"),
-                        description: _l("Allows you to change your login credentials."),
-                        icon: "fa-unlock-alt",
-                        shouldRender: !config.use_remote_user,
-                    },
-                    {
-                        action: "communication",
-                        title: _l("Change communication settings"),
-                        description: _l("Enable or disable the communication feature to chat with other users."),
-                        icon: "fa-comments-o",
-                        shouldRender: !!config.enable_communication_server,
-                    },
-                    {
-                        action: "permissions",
-                        title: _l("Set dataset permissions for new histories"),
-                        description:
-                            "Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.",
-                        icon: "fa-users",
-                    },
-                    {
-                        title: _l("Make all data private"),
-                        description: _l("Click here to make all data private."),
-                        icon: "fa-lock",
-                        onclick: this.makeDataPrivate,
-                    },
-                    {
-                        action: "api_key",
-                        title: _l("Manage API key"),
-                        description: _l("Access your current API key or create a new one."),
-                        icon: "fa-key",
-                    },
-                    {
-                        action: "cloud_auth",
-                        title: _l("Manage Cloud Authorization"),
-                        description: _l(
-                            "Add or modify the configuration that grants Galaxy to access your cloud-based resources."
-                        ),
-                        icon: "fa-cloud",
-                    },
-                    {
-                        action: "toolbox_filters",
-                        title: _l("Manage Toolbox filters"),
-                        description: _l("Customize your Toolbox by displaying or omitting sets of Tools."),
-                        icon: "fa-filter",
-                        shouldRender: !!config.has_user_tool_filters,
-                    },
-                    {
-                        title: _l("Manage custom builds"),
-                        description: _l("Add or remove custom builds using history datasets."),
-                        icon: "fa-cubes",
-                        onclick: this.openManageCustomBuilds,
-                    },
-                    {
-                        title: _l("Request GenomeSpace token"),
-                        description: _l("Requests token through OpenID."),
-                        icon: "fa-openid",
-                        onclick: this.requestGenomeSpace,
-                    },
-                    {
-                        title: _l("Sign out"),
-                        description: _l("Click here to sign out of all sessions."),
-                        icon: "fa-sign-out",
-                        onclick: this.signOut,
-                        shouldRender: !!Galaxy.session_csrf_token
-                    }
-
-                ]
             }
         },
         created() {
@@ -137,14 +61,38 @@
                 .then(response => {
                     this.email = response.data.email
                     this.diskUsage = response.data.nice_total_disk_usage;
-                    this.quotaUsageString =  config.enable_quotas ? `Your disk quota is: <strong>${response.data.quota}</strong>.` : "";
+                    this.quotaUsageString = config.enable_quotas ? `Your disk quota is: <strong>${response.data.quota}</strong>.` : "";
                 })
         },
         computed: {
             activeLinks() {
-                return this.links.filter(function (link) {
-                    return link.shouldRender !== false;
-                })
+                const activeLinks = {};
+                const UserPreferencesModel = getUserPreferencesModel();
+
+                for (const key in UserPreferencesModel) {
+                    if (UserPreferencesModel[key].shouldRender !== false) {
+                        activeLinks[key] = UserPreferencesModel[key];
+
+                        switch(key) {
+                            case "make_data_private":
+                                activeLinks[key]["onclick"] = this.makeDataPrivate;
+                                break;
+                            case "custom_builds":
+                                activeLinks[key]["onclick"] = this.openManageCustomBuilds;
+                                break;
+                            case "genomespace":
+                                activeLinks[key]["onclick"] = this.requestGenomeSpace;
+                                break;
+                            case "logout":
+                                activeLinks[key]["onclick"] = this.signOut;
+                                break;
+                            default:
+                                activeLinks[key]["action"] = key;
+                        }
+                    }
+                }
+
+                return activeLinks;
             }
         },
         methods: {

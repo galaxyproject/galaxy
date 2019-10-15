@@ -19,7 +19,7 @@ import ToolForm from "mvc/tool/tool-form";
 import FormWrapper from "mvc/form/form-wrapper";
 import Sharing from "components/Sharing.vue";
 import UserPreferences from "components/User/UserPreferences.vue";
-import UserPreferencesModel from "mvc/user/user-preferences"; /** TODO delete this model import */
+import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import CustomBuilds from "mvc/user/user-custom-builds";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
@@ -113,12 +113,9 @@ export const getAnalysisRouter = Galaxy =>
 
         show_user_form: function(form_id) {
             const Galaxy = getGalaxyInstance();
-
-            /** TODO delete this model */
-            const model = new UserPreferencesModel.Model({
-                user_id: Galaxy.params.id
-            });
-            this.page.display(new FormWrapper.View(_.extend(model.get(form_id), { active_tab: "user" })));
+            const model = getUserPreferencesModel();
+            model.user_id = Galaxy.params.id;
+            this.page.display(new FormWrapper.View(_.extend(model[form_id], { active_tab: "user" })));
         },
 
         show_interactivetool_list: function() {
