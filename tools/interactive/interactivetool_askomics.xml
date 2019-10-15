@@ -1,4 +1,4 @@
-<tool id="interactive_tool_askomics" tool_type="interactive" name="AskOmics" version="0.1">
+<tool id="interactive_tool_askomics" tool_type="interactive" name="AskOmics" version="0.2">
     <description>AskOmics, a visual SPARQL query builder</description>
     <requirements>
         <container type="docker">askomics/askomics-ie:19.01.3</container>
