@@ -2,23 +2,23 @@
     <div>
         <h2>User preferences</h2>
         <p>You are logged in as <strong>{{ email }}</strong>.</p>
-        <table>
-            <tbody>
-            <tr v-for="link in activeLinks">
-                <td class="align-top">
+        <b-container>
+            <b-row class= "w-75" v-for="link in activeLinks" >
+                <b-col cols="1" >
                     <i :class="`ml-3 mr-3 fa fa-lg ${link.icon}`">
                     </i>
-                </td>
-                <td>
-                    <a v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"><b>{{link.title}}</b></a>
-                    <a v-else :href="`${baseUrl}/${link.action}`"><b>{{link.title}}</b></a>
+                </b-col>
+                <b-col cols="11">
+                    <div>
+                        <a v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"><b>{{link.title}}</b></a>
+                        <a v-else :href="`${baseUrl}/${link.action}`"><b>{{link.title}}</b></a>
+                    </div>
                     <div class="form-text text-muted">
                         {{link.description}}
                     </div>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+                </b-col>
+            </b-row>
+        </b-container>
         <p class="mt-2">You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
             {{ quotaUsageString }}
             Is your usage more than expected? See the <a
@@ -34,11 +34,13 @@
     import Ui from "mvc/ui/ui-misc";
     import QueryStringParsing from "utils/query-string-parsing";
     import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
+    import Vue from "vue";
+    import BootstrapVue from "bootstrap-vue";
+    Vue.use(BootstrapVue);
 
     export default {
         data() {
             const Galaxy = getGalaxyInstance();
-            const config = Galaxy.config;
             return {
                 user: Galaxy.user,
                 email: "",

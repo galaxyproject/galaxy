@@ -1,6 +1,5 @@
 import { getGalaxyInstance } from "app";
 
-
 export const getUserPreferencesModel = () => {
     const Galaxy = getGalaxyInstance();
     const config = Galaxy.config;
@@ -88,5 +87,3 @@ export const getUserPreferencesModel = () => {
         }
     }
 }
-
-
