@@ -37,7 +37,7 @@ describe("InstalledList", () => {
         await Vue.nextTick();
         expect(wrapper.find(".installed-message").text()).to.equal("2 repositories installed on this instance.");
         const links = wrapper.findAll("a");
-        expect(links.length).to.equal(2);
+        expect(links.length).to.equal(3);
         expect(links.at(1).text()).to.equal("name_0");
         expect(links.at(2).text()).to.equal("name_1");
     });

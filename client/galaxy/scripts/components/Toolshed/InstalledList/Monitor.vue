@@ -6,12 +6,7 @@
                 <loading-span message="Loading currently installing repositories" />
             </span>
             <div v-else>
-                <b-table
-                    sticky-header
-                    thead-class="installation-monitor-header"
-                    :items="items"
-                    :fields="fields"
-                >
+                <b-table sticky-header thead-class="installation-monitor-header" :items="items" :fields="fields">
                     <template v-slot:cell(name)="data">
                         <b-link @click="onQuery(data.value)">
                             {{ data.value }}
@@ -63,7 +58,15 @@ export default {
             this.services
                 .getInstalledRepositories()
                 .then(items => {
-                    this.items = items.filter(x => x.status !== "Installed");
+                    const hash = {};
+                    this.items = items.filter(x => {
+                        const id = `${x.name}${x.owner}`;
+                        if (!hash[id] && x.status !== "Installed") {
+                            hash[id] = true;
+                            return true;
+                        }
+                        return false;
+                    });
                     this.loading = false;
                 })
                 .catch(error => {
@@ -82,6 +85,6 @@ export default {
     min-width: 500px;
 }
 .installation-monitor-header {
-  display: none;
+    display: none;
 }
 </style>
