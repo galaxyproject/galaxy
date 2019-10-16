@@ -75,8 +75,8 @@ class DataManagers(object):
             if e.errno == errno.ENOENT:
                 # File does not exist
                 return None
-        except Exception as e:
-            log.error("Error loading data_manager '%s':\n%s" % (e, util.xml_to_string(data_manager_elem)))
+        except Exception:
+            log.error("Error loading data_manager", exc_info=True)
             return None
         if add_manager:
             self.add_manager(data_manager)
