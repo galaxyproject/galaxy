@@ -9,10 +9,6 @@ from six import string_types
 from galaxy import util
 from galaxy.tools.data import TabularToolDataTable
 from galaxy.util.template import fill_template
-from tool_shed.util import (
-    common_util,
-    repository_util
-)
 
 log = logging.getLogger(__name__)
 
@@ -150,7 +146,7 @@ class DataManager(object):
         if path is None:
             tool_elem = elem.find('tool')
             assert tool_elem is not None, "Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n%s" % (util.xml_to_string(elem))
-            path = tool_elem.get("file", None)
+            path = tool_elem.get("file", path)
             tool_guid = tool_elem.get("guid", None)
             # need to determine repository info so that dependencies will work correctly
             if hasattr(self.data_managers.app, 'tool_cache') and tool_guid in self.data_managers.app.tool_cache._tool_paths_by_id:

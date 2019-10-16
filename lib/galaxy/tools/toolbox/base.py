@@ -624,7 +624,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     # In that case recreating the tool will correct the cached version.
                     from_cache = False
             if guid and not from_cache:  # tool was not in cache and is a tool shed tool
-                tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
+                tool_shed_repository = self.get_tool_repository_from_xml_item(item.elem)
                 if tool_shed_repository:
                     if hasattr(tool_shed_repository, 'deleted'):
                         # The shed tool is in the install database
@@ -659,14 +659,14 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 
-    def get_tool_repository_from_xml_item(self, item, path):
-        tool_shed = item.elem.find("tool_shed").text
-        repository_name = item.elem.find("repository_name").text
-        repository_owner = item.elem.find("repository_owner").text
-        installed_changeset_revision_elem = item.elem.find("installed_changeset_revision")
+    def get_tool_repository_from_xml_item(self, elem):
+        tool_shed = elem.find("tool_shed").text
+        repository_name = elem.find("repository_name").text
+        repository_owner = elem.find("repository_owner").text
+        installed_changeset_revision_elem = elem.find("installed_changeset_revision")
         if installed_changeset_revision_elem is None:
             # Backward compatibility issue - the tag used to be named 'changeset_revision'.
-            installed_changeset_revision_elem = item.elem.find("changeset_revision")
+            installed_changeset_revision_elem = elem.find("changeset_revision")
         installed_changeset_revision = installed_changeset_revision_elem.text
         repository = self._get_tool_shed_repository(tool_shed=tool_shed,
                                                     name=repository_name,
